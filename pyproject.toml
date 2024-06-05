@@ -52,7 +52,7 @@ graphql-core = ">=3.2.3"
 django-settings-holder = ">=0.1.2"
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.1"
+pytest = "8.2.2"
 coverage = "7.5.3"
 pytest-django = "4.8.0"
 pre-commit = "3.7.1"
