@@ -1,0 +1,397 @@
+from __future__ import annotations
+
+from typing import Any, Iterator
+
+import pytest
+from graphql import GraphQLBoolean, GraphQLNonNull, GraphQLString
+
+from example_project.app.models import Task
+from tests.helpers import MockGQLInfo, exact
+from undine import MutationType, QueryType
+from undine.errors.exceptions import MissingModelError
+from undine.middleware.mutation import MutationMiddleware
+from undine.registies import GRAPHQL_TYPE_REGISTRY
+from undine.typing import GQLInfo, Root
+
+
+def test_mutation_type__registered():
+    assert "MyCreateMutation" not in GRAPHQL_TYPE_REGISTRY
+
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert "MyCreateMutation" not in GRAPHQL_TYPE_REGISTRY
+
+    input_type = MyCreateMutation.__input_type__()
+
+    assert "MyCreateMutation" in GRAPHQL_TYPE_REGISTRY
+    assert GRAPHQL_TYPE_REGISTRY["MyCreateMutation"] == input_type
+
+
+def test_mutation_type__attributes():
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert MyCreateMutation.__model__ == Task
+    assert MyCreateMutation.__mutation_kind__ == "create"
+    assert MyCreateMutation.__typename__ == "MyCreateMutation"
+    assert MyCreateMutation.__extensions__ == {"undine_mutation": MyCreateMutation}
+    assert sorted(MyCreateMutation.__input_map__) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "check_time",
+        "comments",
+        "contact_email",
+        "demo_url",
+        "done",
+        "due_by",
+        "external_uuid",
+        "extra_data",
+        "image",
+        "name",
+        "objective",
+        "points",
+        "progress",
+        "project",
+        "related_tasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "worked_hours",
+    ]
+
+
+def test_mutation_type__middleware():
+    class MyMiddleware(MutationMiddleware):
+        priority = 100
+
+        def __iter__(self) -> Iterator:
+            yield
+
+    class MyCreateMutation(MutationType, model=Task):
+        @classmethod
+        def __middleware__(cls) -> list[type[MutationMiddleware]]:
+            return [MyMiddleware]
+
+    assert MyCreateMutation.__middleware__() == [MyMiddleware]
+
+
+def test_mutation_type__input_type():
+    class MyCreateMutation(MutationType, model=Task):
+        """Description."""
+
+    input_type = MyCreateMutation.__input_type__()
+    assert input_type.name == "MyCreateMutation"
+    assert input_type.description == "Description."
+    assert input_type.extensions == {"undine_mutation": MyCreateMutation}
+
+    assert sorted(input_type.fields) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "checkTime",
+        "comments",
+        "contactEmail",
+        "demoUrl",
+        "done",
+        "dueBy",
+        "externalUuid",
+        "extraData",
+        "image",
+        "name",
+        "objective",
+        "points",
+        "progress",
+        "project",
+        "relatedTasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "workedHours",
+    ]
+    assert input_type.fields["name"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_mutation_type__output_type():
+    class MyQueryType(QueryType, model=Task): ...
+
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert MyCreateMutation.__output_type__() == MyQueryType.__output_type__()
+
+
+def test_mutation_type__no_model():
+    with pytest.raises(MissingModelError):
+
+        class MyCreateMutation(MutationType): ...
+
+
+def test_mutation_type__mutation_kind__create__implicit():
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert MyCreateMutation.__mutation_kind__ == "create"
+
+
+def test_mutation_type__mutation_kind__create__explicit():
+    class MyMutation(MutationType, model=Task, mutation_kind="create"): ...
+
+    assert MyMutation.__mutation_kind__ == "create"
+
+
+def test_mutation_type__mutation_kind__create__primary_key():
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert "pk" not in MyCreateMutation.__input_map__
+
+
+def test_mutation_type__mutation_kind__create__output_type():
+    class MyQueryType(QueryType, model=Task): ...
+
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    assert MyCreateMutation.__output_type__() == MyQueryType.__output_type__()
+
+
+def test_mutation_type__mutation_kind__update__implicit():
+    class MyUpdateMutation(MutationType, model=Task): ...
+
+    assert MyUpdateMutation.__mutation_kind__ == "update"
+
+
+def test_mutation_type__mutation_kind__update__explicit():
+    class MyMutation(MutationType, model=Task, mutation_kind="update"): ...
+
+    assert MyMutation.__mutation_kind__ == "update"
+
+
+def test_mutation_type__mutation_kind__update__primary_key():
+    class MyUpdateMutation(MutationType, model=Task): ...
+
+    assert "pk" in MyUpdateMutation.__input_map__
+
+
+def test_mutation_type__mutation_kind__update__output_type():
+    class MyQueryType(QueryType, model=Task): ...
+
+    class MyUpdateMutation(MutationType, model=Task): ...
+
+    assert MyUpdateMutation.__output_type__() == MyQueryType.__output_type__()
+
+
+def test_mutation_type__mutation_kind__delete__implicit():
+    class MyDeleteMutation(MutationType, model=Task): ...
+
+    assert MyDeleteMutation.__mutation_kind__ == "delete"
+
+
+def test_mutation_type__mutation_kind__delete__exlicit():
+    class MyMutation(MutationType, model=Task, mutation_kind="delete"): ...
+
+    assert MyMutation.__mutation_kind__ == "delete"
+
+
+def test_mutation_type__mutation_kind__delete__primary_key():
+    class MyDeleteMutation(MutationType, model=Task): ...
+
+    assert "pk" in MyDeleteMutation.__input_map__
+
+
+def test_mutation_type__mutation_kind__delete__output_type():
+    class MyDeleteMutation(MutationType, model=Task): ...
+
+    output_type = MyDeleteMutation.__output_type__()
+    assert output_type.name == "DeleteMutationOutput"
+    assert sorted(output_type.fields) == ["success"]
+    assert output_type.fields["success"].type == GraphQLNonNull(GraphQLBoolean)
+    assert output_type.fields["success"].description is None
+    assert output_type.fields["success"].deprecation_reason is None
+
+
+def test_mutation_type__mutation_kind__custom__implicit():
+    class MyOtherMutation(MutationType, model=Task): ...
+
+    assert MyOtherMutation.__mutation_kind__ == "custom"
+
+
+def test_mutation_type__mutation_kind__custom__implicit__from_method_defined():
+    class MyCreateMutation(MutationType, model=Task):
+        def __mutate__(self, root: Root, info: GQLInfo, input_data: dict[str, Any]) -> Any: ...
+
+    assert MyCreateMutation.__mutation_kind__ == "custom"
+
+
+def test_mutation_type__mutation_kind__custom__explicit():
+    class MyCreateMutation(MutationType, model=Task, mutation_kind="custom"): ...
+
+    assert MyCreateMutation.__mutation_kind__ == "custom"
+
+
+def test_mutation_type__mutation_kind__custom__primary_key():
+    class MyOtherMutation(MutationType, model=Task): ...
+
+    assert "pk" in MyOtherMutation.__input_map__
+
+
+def test_mutation_type__mutation_kind__custom__output_type():
+    class MyQueryType(QueryType, model=Task): ...
+
+    class MyOtherMutation(MutationType, model=Task): ...
+
+    assert MyOtherMutation.__output_type__() == MyQueryType.__output_type__()
+
+
+def test_mutation_type__auto():
+    class MyMutation(MutationType, model=Task, auto=False): ...
+
+    assert MyMutation.__input_map__ == {}
+
+
+def test_mutation_type__exclude():
+    class MyMutation(MutationType, model=Task, exclude=["name"]): ...
+
+    assert sorted(MyMutation.__input_map__) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "check_time",
+        "comments",
+        "contact_email",
+        "demo_url",
+        "done",
+        "due_by",
+        "external_uuid",
+        "extra_data",
+        "image",
+        "objective",
+        "pk",
+        "points",
+        "progress",
+        "project",
+        "related_tasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "worked_hours",
+    ]
+
+    input_type = MyMutation.__input_type__()
+    assert sorted(input_type.fields) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "checkTime",
+        "comments",
+        "contactEmail",
+        "demoUrl",
+        "done",
+        "dueBy",
+        "externalUuid",
+        "extraData",
+        "image",
+        "objective",
+        "pk",
+        "points",
+        "progress",
+        "project",
+        "relatedTasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "workedHours",
+    ]
+
+
+def test_mutation_type__exclude__multiple():
+    class MyMutation(MutationType, model=Task, exclude=["name", "pk"]): ...
+
+    assert sorted(MyMutation.__input_map__) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "check_time",
+        "comments",
+        "contact_email",
+        "demo_url",
+        "done",
+        "due_by",
+        "external_uuid",
+        "extra_data",
+        "image",
+        "objective",
+        "points",
+        "progress",
+        "project",
+        "related_tasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "worked_hours",
+    ]
+
+    input_type = MyMutation.__input_type__()
+    assert sorted(input_type.fields) == [
+        "acceptancecriteria",
+        "assignees",
+        "attachment",
+        "checkTime",
+        "comments",
+        "contactEmail",
+        "demoUrl",
+        "done",
+        "dueBy",
+        "externalUuid",
+        "extraData",
+        "image",
+        "objective",
+        "points",
+        "progress",
+        "project",
+        "relatedTasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+        "workedHours",
+    ]
+
+
+def test_mutation_type__typename():
+    class MyMutation(MutationType, model=Task, typename="CustomName"): ...
+
+    assert MyMutation.__typename__ == "CustomName"
+
+    input_type = MyMutation.__input_type__()
+    assert input_type.name == "CustomName"
+
+
+def test_mutation_type__extensions():
+    class MyMutation(MutationType, model=Task, extensions={"foo": "bar"}): ...
+
+    assert MyMutation.__extensions__ == {"foo": "bar", "undine_mutation": MyMutation}
+
+    input_type = MyMutation.__input_type__()
+    assert input_type.extensions == {"foo": "bar", "undine_mutation": MyMutation}
+
+
+def test_mutation_type__validate():
+    class MyMutation(MutationType, model=Task):
+        @classmethod
+        def __validate__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            if input_data["foo"] is not True:
+                msg = "Foo must be True"
+                raise ValueError(msg)
+
+    MyMutation.__validate__(MockGQLInfo(), {"foo": True})
+
+    with pytest.raises(ValueError, match=exact("Foo must be True")):
+        MyMutation.__validate__(MockGQLInfo(), {"foo": False})

@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+from django.db.models import Model
+from graphql import GraphQLNamedType
+
+from undine.errors.exceptions import RegistryDuplicateError, RegistryMissingTypeError
+from undine.utils.reflection import get_instance_name
+
+if TYPE_CHECKING:
+    from undine import QueryType
+
+
+__all__ = [
+    "GRAPHQL_TYPE_REGISTRY",
+    "QUERY_TYPE_REGISTRY",
+]
+
+
+From = TypeVar("From")
+To = TypeVar("To")
+
+
+class Registry(Generic[From, To]):
+    """
+    A registry that stores mappings from one type to another.
+    Verifies that a value for a given key is only registered once.
+    """
+
+    def __class_getitem__(cls, _: tuple[From, To]) -> type[Registry[From, To]]:
+        return cls
+
+    def __init__(self) -> None:
+        self.__registry: dict[From, To] = {}
+        self.__name = get_instance_name()
+
+    def __getitem__(self, key: From) -> To:
+        try:
+            return self.__registry[key]
+        except KeyError as error:
+            raise RegistryMissingTypeError(registry_name=self.__name, key=key) from error
+
+    def __setitem__(self, key: From, value: To) -> None:
+        if key in self.__registry:
+            raise RegistryDuplicateError(key=key, value=self.__registry[key], registry_name=self.__name)
+        self.__registry[key] = value
+
+    def __contains__(self, key: From) -> bool:
+        return key in self.__registry
+
+    def clear(self) -> None:
+        self.__registry.clear()
+
+
+QUERY_TYPE_REGISTRY = Registry[type[Model], type["QueryType"]]()
+"""
+Maps Django model classes to their corresponding `QueryTypes`.
+This allows deferring the creation of field resolvers for related fields,
+which would use a `QueryType` that is not created when the field is defined.
+"""
+
+GRAPHQL_TYPE_REGISTRY = Registry[str, GraphQLNamedType]()
+"""
+Caches created GraphQL types by their names, so that they can be reused during schema creation,
+because a GraphQL Schema cannot contain multiple types with the same name.
+"""

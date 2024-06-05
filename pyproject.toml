@@ -1,0 +1,443 @@
+[tool.poetry]
+name = "undine"
+version = "0.0.1"
+description = "A GraphQL library for Django"
+authors = [
+    "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
+]
+packages = [
+    { include = "undine" },
+    { include = "pytest_undine" },
+]
+license = "MIT"
+readme = "README.md"
+homepage = "https://mrthearman.github.io/undine"
+repository = "https://github.com/MrThearMan/undine"
+documentation = "https://mrthearman.github.io/undine"
+keywords = [
+    "Django",
+    "GraphQL",
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    # "Development Status :: 2 - Pre-Alpha",
+    # "Development Status :: 3 - Alpha",
+    # "Development Status :: 4 - Beta",
+    # "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Utilities",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+]
+exclude = [
+    "tests",
+]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/MrThearMan/undine/issues"
+
+[tool.poetry.plugins.pytest11]
+undine = "pytest_undine.fixtures"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4"
+Django = ">=4.2"
+graphql-core = ">=3.2.3"
+django-settings-holder = ">=0.2.2"
+requests = {version = ">=2.32.3", optional = true}
+
+[tool.poetry.group.test.dependencies]
+pytest = "8.3.4"
+pytest-django = "4.9.0"
+coverage = "7.6.9"
+hypothesis = "6.122.7"
+freezegun = "1.5.1"
+factory-boy = "3.3.1"
+tox = "4.23.2"
+tox-gh-actions = "3.2.0"
+urllib3 = "2.3.0"
+psycopg = {version = "3.2.3", extras = ["binary", "pool"]}
+pillow = "11.0.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "1.6.1"
+pymdown-extensions = "10.12"
+mkdocs-mermaid2-plugin = "1.2.1"
+
+[tool.poetry.group.lint.dependencies]
+pre-commit = "4.0.1"
+mypy = "1.14.0"
+grimp = "3.5"
+
+[tool.poetry.extras]
+static = ["requests"]
+
+[tool.ruff]
+fix = true
+unsafe-fixes = true
+line-length = 120
+extend-exclude = [
+    "tests/*",
+]
+
+[tool.ruff.lint]
+typing-modules = [
+    "undine.typing",
+]
+preview = true
+explicit-preview-rules = true
+select = [
+    "A",        # flake8-builtins
+    "ANN",      # flake8-annotations
+    "ARG",      # flake8-unused-arguments
+    "B",        # flake8-bugbear
+    "BLE",      # flake8-blind-except
+    "C90",      # mccabe
+    "C4",       # flake8-comprehensions
+    "COM",      # flake8-commas
+    "D200",     # pydocstyle: One-line docstring should fit on one line
+    "D201",     # pydocstyle: No blank lines allowed before function docstring (found {num_lines})
+    "D202",     # pydocstyle: No blank lines allowed after function docstring (found {num_lines})
+    "D209",     # pydocstyle: Multi-line docstring closing quotes should be on a separate line
+    "D213",     # pydocstyle: Multi-line docstring summary should start at the second line
+    "DJ",       # flake8-django
+    "DTZ",      # flake8-datetimez
+    "E",        # pycodestyle errors
+    "EM",       # flake8-errmsg
+    "F",        # pyflakes
+    "FA",       # flake8-future-annotations
+    "FBT",      # flake8-boolean-trap
+    "FURB",     # refurb
+    "FLY",      # flynt
+    "G",        # flake8-logging-format
+    "I",        # isort
+    "ICN",      # flake8-import-conventions
+    "INP",      # flake8-no-pep420
+    "INT",      # flake8-gettext
+    "ISC",      # flake8-implicit-str-concat
+    "LOG",      # flake8-logging
+    "N",        # pep8-naming
+    "PERF",     # perflint
+    "PGH",      # pygrep-hooks
+    "PIE",      # flake8-pie
+    "PL",       # pylint
+    "PLC",      # pylint convention
+    "PLE",      # pylint error
+    "PLR",      # pylint refactor
+    "PLW",      # pylint warning
+    "PT",       # flake8-pytest-style
+    "PTH",      # flake8-use-pathlib
+    "PYI",      # flake8-pyi
+    "Q",        # flake8-quotes
+    "R",        # Refactor
+    "RET",      # flake8-return
+    "RSE",      # flake8-raise
+    "RUF",      # ruff-specific rules
+    "S",        # flake8-bandit
+    "SIM",      # flake8-simplify
+    "SLF",      # flake8-self
+    "T20",      # flake8-print
+    "TCH",      # flake8-type-checking
+    "TID",      # flake8-tidy-imports
+    "TRY",      # tryceratops
+    "UP",       # pyupgrade
+    "W",        # pycodestyle warnings
+]
+# Preview rules
+extend-select = [
+    "B901",     # return-in-generator
+    "B909",     # loop-iterator-mutation
+    #
+    "FURB101",  # read-whole-file
+    "FURB103",  # write-whole-file
+    "FURB110",  # if-exp-instead-of-or-operator
+    "FURB113",  # repeated-append
+    "FURB116",  # f-string-number-format
+    "FURB118",  # reimplemented-operator
+    "FURB131",  # delete-full-slice
+    "FURB132",  # check-and-remove-from-set
+    "FURB140",  # reimplemented-starmap
+    "FURB142",  # for-loop-set-mutations
+    "FURB145",  # slice-copy
+    "FURB148",  # unnecessary-enumerate
+    "FURB152",  # math-constant
+    "FURB154",  # repeated-global
+    "FURB157",  # verbose-decimal-constructor
+    "FURB164",  # unnecessary-from-float
+    "FURB166",  # int-on-sliced-str
+    "FURB171",  # single-item-membership-test
+    "FURB180",  # meta-class-abc-meta
+    "FURB192",  # sorted-min-max
+    #
+    "PLC0206",  # dict-index-missing-items
+    "PLC0415",  # import-outside-top-level
+    "PLC2701",  # import-private-name
+    "PLC2801",  # unnecessary-dunder-call
+    #
+    "PLR0202",  # no-classmethod-decorator
+    "PLR0203",  # no-staticmethod-decorator
+    "PLR0904",  # too-many-public-methods
+    "PLR0914",  # too-many-local-variables
+    "PLR0916",  # too-many-boolean-expressions
+    "PLR0917",  # too-many-positional-arguments
+    "PLR1702",  # too-many-nested-blocks
+    "PLR1733",  # unnecessary-dict-index-lookup
+    "PLR6104",  # non-augmented-assignment
+    "PLR6201",  # literal-membership
+    #
+    "PLW0108",  # unnecessary-lambda
+    "PLW0177",  # nan-comparison
+    "PLW1514",  # unspecified-encoding
+    "PLW1641",  # eq-without-hash
+    #
+    "RUF021",   # parenthesize-chained-operators
+    "RUF022",   # unsorted-dunder-all
+    "RUF023",   # unsorted-dunder-slots
+    "RUF028",   # invalid-formatter-suppression-comment
+    "RUF029",   # unused-async
+    "RUF030",   # assert-with-print-message
+    #
+    "UP042",    # replace-str-enum
+]
+ignore = [
+    "ANN401",   # Any-typing allowed
+    "ARG001",   # Unused function argument
+    "ARG002",   # Unused method argument
+    "ARG003",   # Unused class method argument
+    "RUF012",   # No need for ClassVar
+    "G004",     # Logging statement uses f-string
+    #
+    # Conflicting with ruff-format (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
+    #
+    # "COM812",   # missing-trailing-comma
+    "COM819",   # prohibited-trailing-comma
+    "D206",     # indent-with-spaces
+    "D300",     # triple-single-quotes
+    "E111",     # indentation-with-invalid-multiple
+    "E114",     # indentation-with-invalid-multiple-comment
+    "E117",     # over-indented
+    "ISC001",   # single-line-implicit-string-concatenation
+    "ISC002",   # multi-line-implicit-string-concatenation
+    "Q000",     # bad-quotes-inline-string
+    "Q001",     # bad-quotes-multiline-string
+    "Q002",     # bad-quotes-docstring
+    "Q003",     # avoidable-escaped-quote
+    "W191",     # tab-indentation
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"**/*/test_*.py" = [
+    "ANN",      # No need to annotate tests
+    "E721",     # No need to compare to True
+    "N801",     # Allow whatever class names in tests
+    "N802",     # Allow whatever function names in tests
+    "N815",     # Allow whatever variable names in tests
+    "PLR0915",  # Can have as many statements as needed
+    "PLR2004",  # Magic value comparisons are allowed in tests
+    "S101",     # Assert is fine
+    "S105",     # Hardcoded passwords are fine in tests
+    "S106",     # Hardcoded passwords are fine in tests
+    "S108",     # No need to care about insecure temp file usages in tests
+    "S311",     # Pseudo-random generators are fine here
+    "SLF",      # Allow accessing private members in tests
+    "UP",       # No upgrade rules
+    "PLR0914",  # Too many local variables
+    "TCH001",   # No typing-only imports
+    "TCH002",   # No typing-only imports
+    "TCH003",   # No typing-only imports
+]
+"**/*/conftest.py" = [
+    "ARG",      # Fixtures can be unused
+    "ANN",      # No need to annotate tests
+    "UP",       # No upgrade rules
+]
+"**/*/factories/*.py" = [
+    "FBT001",    # Allow boolean traps in factories
+    "FBT002",    # Allow boolean traps in factories
+]
+"undine/converters/*.py" = [
+    # No typing-only imports for converters due to FunctionDispatcher
+    "TCH001",
+    "TCH002",
+    "TCH003",
+    # Ignore boolean trap
+    "FBT001",
+    # ignore "int | float"
+    "PYI041",
+    # Can import outside top-level
+    "PLC0415",
+]
+"undine/parsers/parse_description.py" = [
+    # No typing-only imports for converters due to FunctionDispatcher
+    "TCH001",
+    "TCH002",
+    "TCH003",
+]
+"**/*/management/commands/*.py" = [
+    "T201",     # Allowing print statements for debugging here
+    "PLR0915",  # Test data creation is long on purpose
+]
+"**/*/migrations/*.py" = [
+    "ICN003",     # Allowing imports from "django.db"
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = false
+split-on-trailing-comma = false
+known-third-party = [
+    "django",
+    "graphql",
+]
+known-first-party = [
+    "undine",
+]
+
+[tool.ruff.lint.flake8-import-conventions]
+banned-from = [
+    # Standard library
+    "base64",
+    "csv",
+    "datetime",
+    "hashlib",
+    "hmac",
+    "json",
+    "logging",
+    "math",
+    "os",
+    "pickle",
+    "random",
+    "re",
+    "shutil",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "time",
+    "uuid",
+    "xml",
+    "yaml",
+    # Django
+    "django.db",
+    # Project specific
+    "error_codes",
+]
+
+[tool.ruff.lint.flake8-self]
+extend-ignore-names = [
+    "_base_manager",
+    "_default_manager",
+    "_meta",
+    "_hints",
+    "_get_fields",
+    "_relation_tree",
+    "_getframe",
+    "_get_pk_val",
+    "_non_pk_concrete_field_names",
+]
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = [
+    "undine.utils.decorators.cached_class_property",
+    "undine.utils.decorators.cached_class_method",
+]
+staticmethod-decorators = [
+    "undine.mutation.Input.validator",
+]
+
+[tool.ruff.lint.pydocstyle]
+property-decorators = [
+    "undine.utils.decorators.cached_class_property",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-args = 9
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = "True"
+warn_unused_configs = "True"
+ignore_missing_imports = "True"
+plugins = [
+    "mypy_django_plugin.main",
+]
+
+[tool.django-stubs]
+django_settings_module = "tests.project.settings"
+
+[tool.coverage.run]
+relative_files = true
+
+[tool.coverage.report]
+omit = [
+    "example_project/*",
+    "tests/*",
+    "docs/*",
+    ".venv/*",
+    ".tox/*",
+]
+exclude_lines = [
+    "if TYPE_CHECKING:",
+    "except ImportError:",
+    "pragma: no cover",
+    "pass",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "example_project.project.settings"
+addopts = "-vv -s --disable-warnings"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py{311, 312, 313}-django{42, 50, 51}
+isolated_build = true
+
+[gh-actions]
+python =
+    3.11: py311
+    3.12: py312
+    3.13: py313
+
+[testenv]
+allowlist_externals =
+    poetry
+setenv =
+    PYTHONPATH = {toxinidir}
+    DJANGO_SETTINGS_MODULE = example_project.project.settings
+deps =
+    django42: Django >=4.2,<4.3
+    django50: Django >=5.0,<5.1
+    django51: Django >=5.1,<5.2
+
+    graphql-core >= 3.2.3
+    graphql-relay >= 3.2.0
+    django-settings-holder
+    typing-extensions
+    urllib3
+    requests
+
+    pytest
+    pytest-django
+    coverage
+    factory-boy
+    hypothesis
+commands =
+    coverage run -m pytest -vv -s --disable-warnings
+"""
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"

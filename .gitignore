@@ -1,0 +1,11 @@
+*.idea
+*.tox
+*.grimp_cache
+*.ruff_cache
+*.mypy_cache
+*.hypothesis
+*.pytest_cache
+*__pycache__
+*.coverage
+pytest.ini
+/undine/static/undine/vendor/*
