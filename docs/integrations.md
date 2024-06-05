@@ -1,0 +1,61 @@
+# Integrations
+
+In this section, we'll cover the integrations to other libraries that
+Undine includes.
+
+## pytest
+
+Undine ships with a pytest plugin that includes a testing client and few fixtures
+to help you write tests for your GraphQL APIs.
+
+The `GraphQLClient` class is wrapper around Django's test client that
+makes testing your GraphQL API easier. It can be added to a test using
+the `graphql` fixture. Here is a simple example:
+
+```python
+-8<- "integrations/graphql_test_client.py"
+```
+
+GraphQL requests can be made by calling the client as shown above.
+This makes a request to the GraphQL endpoint set by the `GRAPHQL_PATH` setting.
+
+GraphQL variables can be passed using the `variables` argument. If these variables
+include any files, the client will automatically create a GraphQL multipart request
+instead of a normal GraphQL request.
+
+The client returns a custom response object `GraphQLClientResponse`,
+which has a number of useful properties for introspecting the response.
+The response object also has details on the database queries that were executed
+during the request, which can be useful for debugging the performance of your
+GraphQL API.
+
+The plugin also includes a `undine_settings` fixture that allows modifying
+Undine's settings during testing more easily.
+
+## django-modeltranslation
+
+Undine integrates with [django-modeltranslation]{:target="_blank"}
+by allowing you to modify how auto-generated `Fields`, `Inputs`, `Filters`
+and `Orders` are created. Specifically, this happens using two settings:
+`MODELTRANSLATION_INCLUDE_TRANSLATABLE` and `MODELTRANSLATION_INCLUDE_TRANSLATIONS`.
+
+[django-modeltranslation]: https://github.com/deschler/django-modeltranslation
+
+Let's say you the following model and translation options:
+
+```python
+-8<- "integrations/model_translation.py"
+```
+
+As noted in the example, due to the way that `django-modeltranslation` works,
+your models will get additional fields for each language you have defined.
+We'll call the fields for which the translations are created _"translatable"_ fields,
+and the fields that are created for each language _"translation"_ fields.
+
+Using the `MODELTRANSLATION_INCLUDE_TRANSLATABLE` and `MODELTRANSLATION_INCLUDE_TRANSLATIONS`
+settings, you can control which of these fields undine will add to your schema
+using auto-generation. By default, only the translation fields are added.
+You can of course always add the translatable fields manually.
+
+> Note that due to the way that `django-modeltranslation` works,
+> the translation fields are always nullable, even for the default language.

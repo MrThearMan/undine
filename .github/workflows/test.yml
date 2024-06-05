@@ -1,0 +1,20 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/test.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@main
+    with:
+      python-version: '["3.11", "3.12", "3.13"]'
+      coveralls: false

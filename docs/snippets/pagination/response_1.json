@@ -1,0 +1,39 @@
+{
+  "data": {
+    "pagedTasks": {
+      "totalCount": 3,
+      "pageInfo": {
+        "hasNextPage": false,
+        "hasPreviousPage": false,
+        "startCursor": "YXJyYXljb25uZWN0aW9uOjA=",
+        "endCursor": "YXJyYXljb25uZWN0aW9uOjI="
+      },
+      "edges": [
+        {
+          "cursor": "YXJyYXljb25uZWN0aW9uOjA=",
+          "node": {
+            "pk": 1,
+            "name": "Task 1",
+            "done": false
+          }
+        },
+        {
+          "cursor": "YXJyYXljb25uZWN0aW9uOjE=",
+          "node": {
+            "pk": 2,
+            "name": "Task 2",
+            "done": true
+          }
+        },
+        {
+          "cursor": "YXJyYXljb25uZWN0aW9uOjI=",
+          "node": {
+            "pk": 3,
+            "name": "Task 3",
+            "done": false
+          }
+        }
+      ]
+    }
+  }
+}

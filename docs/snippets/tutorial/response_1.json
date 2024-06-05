@@ -1,0 +1,21 @@
+{
+  "data": {
+    "tasks": [
+      {
+        "pk": 1,
+        "name": "Task 1",
+        "done": false
+      },
+      {
+        "pk": 2,
+        "name": "Task 2",
+        "done": true
+      },
+      {
+        "pk": 3,
+        "name": "Task 3",
+        "done": false
+      }
+    ]
+  }
+}

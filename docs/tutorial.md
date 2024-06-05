@@ -1,0 +1,637 @@
+# Tutorial
+
+> Before starting the tutorial, read the [Getting Started](getting-started.md) section.
+
+This tutorial will guide you through creating a simple GraphQL API using Undine.
+You'll learn the fundamental aspects of creating a GraphQL schema:
+queries, mutations, filtering, ordering, permissions, and validation.
+This should give you familiarity with how Undine works so that
+you can explore the rest of the documentation for more details.
+
+The example application will be a project management system, where users can create
+tasks with multiple steps and add them to projects. _Very exciting!_
+The Django project will have a single app called `service` where you'll create
+your models and schema. See the full directory structure below:
+
+```
+system/
+├─ config/
+│  ├─ __init__.py
+│  ├─ settings.py
+│  ├─ urls.py
+│  ├─ wsgi.py
+├─ service/
+│  ├─ migrations/
+│  │  ├─ __init__.py
+│  ├─ __init__.py
+│  ├─ apps.py
+│  ├─ models.py
+├─ manage.py
+```
+
+> A starting template is available in [docs/snippets/tutorial/template].
+
+[docs/snippets/tutorial/template]: https://github.com/MrThearMan/undine/tree/main/docs/snippets/tutorial/template
+
+## Part 1: Setup
+
+First, install Undine using the [installation instructions](getting-started.md#installation).
+
+Undine comes with an example schema that you can try out before
+creating your own. To access it, add the following to your project's `urls.py` file:
+
+```python
+-8<- "tutorial/urls.py"
+```
+
+Next, configure Undine to enable [GraphiQL]{:target="_blank"},
+a tool for exploring GraphQL schemas in the browser. Undine is configured using
+the `UNDINE` setting in your Django project's `settings.py` file, so add the following to it:
+
+[GraphiQL]: https://github.com/graphql/graphiql
+
+```python
+UNDINE = {
+    "GRAPHIQL_ENABLED": True,
+    "ALLOW_INTROSPECTION_QUERIES": True,
+}
+```
+
+You'll also need to fetch static files for GraphiQL, so run the following command:
+
+```shell
+python manage.py fetch_graphiql_static_for_undine
+```
+
+Now start the Django server and navigate to `/graphql/` to see the GraphiQL UI.
+Make the following request:
+
+```graphql
+query {
+  testing
+}
+```
+
+You should see the following response:
+
+```json
+{
+  "data": {
+    "testing": "Hello World"
+  }
+}
+```
+
+---
+
+## Part 2: Creating the Schema
+
+Next, let's replace the example schema with your own. Create a file called
+`schema.py` in your `service` app directory, and add the following to it:
+
+```python
+-8<- "tutorial/create_schema.py"
+```
+
+This code creates the same schema as Undine's example schema. To make it your own,
+simply modify the return value of the `testing` method with your own custom message.
+
+In Undine, [`Entrypoints`](schema.md#entrypoints) are used in the class bodies of
+[`RootTypes`](schema.md#roottypes) to define the operations that can be executed
+at the root of the GraphQL schema.
+
+Now you need to tell Undine to use your custom schema instead of the example one.
+Add the `SCHEMA` setting to Undine's configuration and set it to point
+to the `schema` variable you created in your `schema.py` file.
+
+```python hl_lines="4"
+UNDINE = {
+    "GRAPHIQL_ENABLED": True,
+    "ALLOW_INTROSPECTION_QUERIES": True,
+    "SCHEMA": "service.schema.schema",
+}
+```
+
+/// details | How do I determine the value for `SCHEMA`?
+
+The value for `SCHEMA` is a "dotted import path" — a string that can be imported with Django's
+[`import_string`](https://docs.djangoproject.com/en/dev/ref/utils/#django.utils.module_loading.import_string)
+utility. In other words, `"service.schema.schema"` points to a file `service/schema.py`
+with a variable `schema`.
+
+///
+
+Restart the Django server and make the same request as before.
+You should see your own message instead of the example one.
+
+---
+
+## Part 3: Adding Queries
+
+Now that you have your own schema, let's start exposing Django models through it.
+In your `models.py` file, add the following model:
+
+```python
+-8<- "tutorial/models_1.py"
+```
+
+Create and run migrations for this model.
+
+To add the `Task` model to the schema, let's add two `Entrypoints`:
+one for fetching a single `Task`, and another for fetching all `Tasks`. Replace the
+current `schema.py` file with the following:
+
+```python
+-8<- "tutorial/adding_query_type.py"
+```
+
+A [`QueryType`](queries.md#querytypes) is a class that represents a GraphQL `ObjectType` for
+a Django model in the GraphQL schema. `QueryTypes` automatically introspect their model to create
+[`Fields`](queries.md#fields) based on the model's fields — that's why you don't
+need to add anything to the `TaskType` class body to expose the model in this basic way.
+
+To create `Entrypoints` for this `QueryType`, you simply use the `QueryType` as an
+argument to the `Entrypoint` class instead of decorating a method like you did before.
+This creates an `Entrypoint` for fetching a single `Task` by its primary key.
+For fetching all `Tasks`, pass `many=True` to indicate a list endpoint.
+
+Now it's time to try out your new schema. But wait, first you need some data to query!
+In your terminal, run `python manage.py shell` to start Django's shell and
+create a few rows for the `Task` model.
+
+```pycon
+>>> from service.models import Task
+>>> Task.objects.create(name="Task 1", done=False)
+>>> Task.objects.create(name="Task 2", done=True)
+>>> Task.objects.create(name="Task 3", done=False)
+```
+
+Now reboot the Django server and make the following request:
+
+```graphql
+query {
+  tasks {
+    pk
+    name
+    done
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_1.json"
+```
+
+///
+
+Next, let's add a couple more models to your project.
+
+```python hl_lines="4 5 13 16 17 18 19 20"
+-8<- "tutorial/models_2.py"
+```
+
+Create and run migrations for these models, then create some data for them:
+
+```pycon
+>>> from service.models import Project, Step, Task
+>>> project_1 = Project.objects.create(name="Project 1")
+>>> project_2 = Project.objects.create(name="Project 2")
+>>> task_1 = Task.objects.get(name="Task 1")
+>>> task_2 = Task.objects.get(name="Task 2")
+>>> task_3 = Task.objects.get(name="Task 3")
+>>> task_1.project = project_1
+>>> task_1.save()
+>>> task_2.project = project_2
+>>> task_2.save()
+>>> step_1 = Step.objects.create(name="Step 1", done=false, task=task_1)
+>>> step_2 = Step.objects.create(name="Step 2", done=true, task=task_1)
+>>> step_3 = Step.objects.create(name="Step 3", done=false, task=task_2)
+>>> step_4 = Step.objects.create(name="Step 4", done=true, task=task_3)
+>>> step_5 = Step.objects.create(name="Step 5", done=true, task=task_3)
+```
+
+Then, add these models to your schema by creating a `QueryType` for each of them.
+
+```python hl_lines="3 6 12"
+-8<- "tutorial/adding_more_query_types.py"
+```
+
+`QueryTypes` will automatically link to each other through their model's relations,
+so you don't need to do anything else here.
+
+Reboot the Django server once more and make the following request:
+
+```graphql
+query {
+  tasks {
+    pk
+    name
+    done
+    project {
+      pk
+      name
+    }
+    steps {
+      pk
+      name
+      done
+    }
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_2.json"
+```
+
+///
+
+Now that you're are using relations, Undine will _automatically_ optimize the database queries
+for those relations.
+
+---
+
+## Part 4: Adding Mutations
+
+Next, let's add a mutation to your schema for creating `Tasks`.
+Add the following to the `schema.py` file:
+
+```python hl_lines="1 20 21 22 23 24 25 26 27"
+-8<- "tutorial/adding_mutation_types.py"
+```
+
+Undine will know that the [`MutationType`](mutations.md#mutationtypes) `TaskCreateMutation`
+is a create mutation because the class has the word _"create"_ in its name. Similarly,
+having _"update"_ in the name will create an update mutation, and _"delete"_ will create a delete mutation.
+You could also use the `kind` argument in the `MutationType` class definition to be more explicit.
+
+```python hl_lines="6"
+-8<- "tutorial/mutation_type_explicit_kind.py"
+```
+
+Undine will automatically generate different [`Inputs`](mutations.md#inputs) for the `MutationType`
+based on what `kind` of `MutationType` is created:
+
+- For create mutations, the model's primary key is not included.
+- For update mutations, the primary key is required and all other fields are not required.
+- For delete mutations, only the primary key is included in both the input and output types.
+
+Undine will use the `TaskType` `QueryType` as the output type for `MutationTypes` automatically
+since they share the same model. All mutations require a `QueryType` for the same model to
+be created (even if it's not otherwise queryable from the GraphQL schema).
+
+Let's try out the new mutations. Boot up the Django server and make the following request:
+
+```graphql
+mutation {
+  createTask(input: {name: "New task"}) {
+    name
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_3.json"
+```
+
+///
+
+You can also mutate related objects by using other `MutationTypes` as `Inputs`.
+Modify the `TaskCreateMutation` by adding a `Project` Input.
+
+```python hl_lines="1 3 20 24"
+-8<- "tutorial/adding_related_mutation_type.py"
+```
+
+Here `TaskProjectInput` is a special _"related"_ `kind` of `MutationType`.
+These `MutationTypes` allow you to freely modify the related objects during the mutation.
+For example, using the above configuration, you could create a `Task` and a `Project` in a single mutation.
+
+```graphql hl_lines="5 6 7"
+mutation {
+  createTask(
+    input: {
+      name: "New task"
+      project: {
+        name: "New project"
+      }
+    }
+  ) {
+    name
+    project {
+      name
+    }
+  }
+}
+```
+
+Or you could link an existing `Project` to a new `Task`.
+
+```graphql hl_lines="5 6 7"
+mutation {
+  createTask(
+    input: {
+      name: "New task"
+      project: {
+        pk: 1
+      }
+    }
+  ) {
+    name
+    project {
+      name
+    }
+  }
+}
+```
+
+Or link an existing `Project` while renaming it.
+
+```graphql hl_lines="5 6 7 8"
+mutation {
+  createTask(
+    input: {
+      name: "New task"
+      project: {
+        pk: 1
+        name: "Renamed project"
+      }
+    }
+  ) {
+    name
+    project {
+      name
+    }
+  }
+}
+```
+
+Undine also supports bulk mutations by using the `many` argument on the `Entrypoint`.
+Let's add a bulk mutation for creating `Tasks` using the `TaskCreateMutation`.
+
+```python hl_lines="29"
+-8<- "tutorial/adding_bulk_mutation.py"
+```
+
+Bulk mutations work just like regular mutations.
+Boot up the Django server and make the following request:
+
+```graphql
+mutation {
+  bulkCreateTasks(
+    input: [
+      {
+        name: "New Task"
+        project: {
+          name: "New Project"
+        }
+      }
+      {
+        name: "Other Task"
+        project: {
+          name: "Other Project"
+        }
+      }
+    ]
+  ) {
+    name
+    project {
+      name
+    }
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_4.json"
+```
+
+///
+
+---
+
+## Part 5: Adding Permissions
+
+In Undine, you can add permission checks to `QueryTypes` or `MutationTypes`
+as well as individual `Fields` or `Inputs`. Let's add a permission check for querying `Tasks`.
+
+```python hl_lines="1 2 11 12 13 14 15"
+-8<- "tutorial/query_type_permissions.py"
+```
+
+Now all users need to be logged in to access `Tasks` through `TaskType`.
+Boot up the Django server and make the following request:
+
+```graphql
+query {
+  tasks {
+    name
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_5.json"
+```
+
+///
+
+The permission check will be called for each instance returned by the `QueryType`.
+
+For `Field` permissions, you first need to define a `Field` explicitly on the `QueryType`
+and then decorate a method with `@<field_name>.permissions`.
+
+```python hl_lines="1 2 11 12 13 14 15 16 17"
+-8<- "tutorial/query_type_field_permissions.py"
+```
+
+Now users need to be logged in to be able to query Task names.
+
+Mutation permissions work similarly to query permissions.
+
+```python hl_lines="3 4 23 24 25 26 27 28 29 30 31 32 33 34 35"
+-8<- "tutorial/mutation_type_permissions.py"
+```
+
+Now users need to be staff members to be able to create new Tasks using `TaskCreateMutation`.
+
+You can also restrict the usage of specific `Inputs` by defining the input on the
+`MutationType` and decorating a method with `@<input_name>.permissions`.
+
+```python hl_lines="22 23 24 25 26 27 28"
+-8<- "tutorial/mutation_type_input_permissions.py"
+```
+
+Now only superusers can add Tasks that are already done,
+since in this case the default value of `Task.done` is `False`,
+and `Input` permissions are only checked for non-default values.
+
+---
+
+## Part 6: Adding Validation
+
+Mutations using `MutationTypes` can also be validated on both the `MutationType`
+and individual `Input` level.
+
+To add validation for a `MutationType`, add the `__validate__` classmethod to it.
+
+```python hl_lines="3 4 24 25 26 27 28"
+-8<- "tutorial/mutation_type_validation.py"
+```
+
+Now users cannot create tasks that are already marked as done.
+Boot up the Django server and make the following request:
+
+```graphql
+mutation {
+  createTask(input: {name: "New task", done: true}) {
+    name
+  }
+}
+```
+
+/// details | You should see this response:
+
+```json
+-8<- "tutorial/response_6.json"
+```
+
+///
+
+To add validation for an `Input`, define the input on the `MutationType`
+and decorate a method with `@<input_name>.validate`.
+
+```python hl_lines="22 23 24 25 26 27 28"
+-8<- "tutorial/mutation_type_input_validate.py"
+```
+
+Now users cannot create tasks with names that are less than 3 characters long.
+
+---
+
+## Part 7: Adding Filtering
+
+Results from `QueryTypes` can be filtered using [`Filters`](filtering.md#filter)
+defined in a [`FilterSet`](filtering.md#filterset).
+To filter results, create a `FilterSet` for the `Task` model and add it to your `TaskType`.
+
+```python hl_lines="1 9 10 11 12"
+-8<- "tutorial/adding_filters.py"
+```
+
+Similar to `QueryTypes`, `FilterSets` automatically introspect their model to construct
+all possible filtering options depending on the model's fields and those fields' lookups.
+Boot up the Django server and make the following request:
+
+```graphql
+query {
+  tasks(
+    filter: {
+      nameContains: "a"
+    }
+  ) {
+    pk
+    name
+  }
+}
+```
+
+Check the response. You should only see tasks with names that contain the letter "a".
+
+Different `Filters` can also be combined to narrow down the results.
+
+```graphql hl_lines="5"
+query {
+  tasks(
+    filter: {
+      nameContains: "a"
+      doneExact: false
+    }
+  ) {
+    pk
+    name
+  }
+}
+```
+
+With this query, you should only see tasks that contain the letter "a" _and_ are not done.
+
+If you wanted to see _either_ tasks containing the letter a _or_ tasks that are not done,
+you could put the filters inside an `OR` block:
+
+```graphql hl_lines="4 5 6 7"
+query {
+  tasks(
+    filter: {
+      OR: {
+        nameContains: "a"
+        doneExact: false
+      }
+    }
+  ) {
+    pk
+    name
+  }
+}
+```
+
+Similar logical blocks exist for AND, NOT and XOR, and they can be nested as deeply as needed.
+
+---
+
+## Part 8: Adding Ordering
+
+Results from `QueryTypes` can be ordered using [`Orders`](ordering.md#order)
+defined in an [`OrderSet`](ordering.md#orderset).
+To order results, create an `OrderSet` for the `Task` model and add it to your `TaskType`.
+
+```python hl_lines="1 9 10 11 12"
+-8<- "tutorial/adding_ordering.py"
+```
+
+Similarly to `QueryTypes` and `FilterSets`, `OrderSets` automatically introspect
+their model to construct an Enum with all possible orderings (both in ascending and
+descending directions) based on the model's fields.
+Boot up the Django server and make the following request:
+
+```graphql
+query {
+  tasks(
+    orderBy: [
+      nameAsc
+      pkDesc
+    ]
+  ) {
+    pk
+    name
+  }
+}
+```
+
+With this ordering, you should see the tasks ordered primarily by name in ascending order,
+and secondarily by primary key in descending order.
+
+---
+
+## Next Steps
+
+In this tutorial, you've learned the basics of creating a GraphQL schema using Undine.
+It's likely your GraphQL schema has requirements outside of what has been covered here,
+so it's recommended to read the [Queries](queries.md), [Mutations](mutations.md),
+[Filtering](filtering.md), and [Ordering](ordering.md) sections next.
+The [Pagination](pagination.md) section is also helpful to learn how to
+paginate your `QueryTypes` using Relay Connections.
+
+For more in-depth information on how Undine optimizes queries to your
+GraphQL Schema, as well as how to provide custom optimizations for more complex use cases,
+see the [Optimizer](optimizer.md) section.

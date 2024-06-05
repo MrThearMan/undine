@@ -1,0 +1,56 @@
+site_name: Undine
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Tutorial: tutorial.md
+  - Schema: schema.md
+  - Queries: queries.md
+  - Mutations: mutations.md
+  - Filtering: filtering.md
+  - Ordering: ordering.md
+  - Pagination: pagination.md
+  - Global Object IDs: global-object-ids.md
+  - File Upload: file-upload.md
+  - Persisted Documents: persisted-documents.md
+  - Interfaces: interfaces.md
+  - Unions: unions.md
+  - Scalars: scalars.md
+  - Directives: directives.md
+  - Hacking Undine: hacking-undine.md
+  - Optimizer: optimizer.md
+  - Settings: settings.md
+  - Lifecycle Hooks: lifecycle-hooks.md
+  - Integrations: integrations.md
+  - FAQ: faq.md
+  - Contributing: contributing.md
+
+theme:
+  name: readthedocs
+  highlightjs: false  # Use pygments instead.
+
+markdown_extensions:
+  pymdownx.highlight:
+    anchor_linenums: true
+    linenums: true
+  pymdownx.inlinehilite:
+  pymdownx.blocks.details:
+  pymdownx.snippets:
+    base_path: docs/snippets
+  pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:mermaid2.fence_mermaid
+  toc:
+    permalink: 🔗
+  attr_list:
+
+plugins:
+  - search:
+  - mermaid2:
+      version: 11.6.0
+
+extra_css:
+  - css/docs.css
+  - css/pygments.css

@@ -1,0 +1,18 @@
+{
+  "data": {
+    "bulkCreateTasks": [
+      {
+        "name": "New Task",
+        "project": {
+          "name": "New Project"
+        }
+      },
+      {
+        "name": "Other Task",
+        "project": {
+          "name": "Other Project"
+        }
+      }
+    ]
+  }
+}

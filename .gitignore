@@ -1,0 +1,25 @@
+# Caches
+.nox
+.grimp_cache
+.ruff_cache
+.mypy_cache
+*.pytest_cache
+*.hypothesis
+*__pycache__
+
+# Build dirs
+dist
+build
+
+# Generated files
+/undine/static/undine/vendor/*
+coverage.xml
+profile.svg
+.coverage
+/example_project/project/testdb
+
+# Local configs
+.idea
+.vscode
+pytest.ini
+mypy.ini
