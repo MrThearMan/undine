@@ -12,17 +12,11 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Upload")
-parse_upload: TypeMapper[Any, Any]
-parse_upload = TypeMapper("parse_upload", wrapper=error_wrapper)
+parse_upload = TypeMapper[Any, Any](wrapper=error_wrapper)
 
 
 @parse_upload.register
-def _(input_value: object) -> Any:
-    return input_value
-
-
-@parse_upload.register
-def _(input_value: type) -> Any:
+def _(input_value: Any) -> Any:
     return input_value
 
 

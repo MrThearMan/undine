@@ -1,5 +1,4 @@
-import datetime
-import random
+# ruff: noqa: T201
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -7,14 +6,17 @@ from django.core.management.base import BaseCommand
 from faker import Faker
 
 from tests.example.models import (
-    Example,
-    ExampleState,
-    ForwardManyToMany,
-    ForwardManyToOne,
-    ForwardOneToOne,
-    ReverseManyToMany,
-    ReverseOneToMany,
-    ReverseOneToOne,
+    AcceptanceCriteria,
+    Comment,
+    Person,
+    Project,
+    Report,
+    ServiceRequest,
+    Task,
+    TaskResult,
+    TaskStep,
+    TaskType,
+    Team,
 )
 
 faker = Faker(locale="en_US")
@@ -30,49 +32,93 @@ class Command(BaseCommand):
 def create_test_data() -> None:
     call_command("flush", "--noinput")
 
+    print("Creating users...")
     User.objects.create_superuser("admin", "admin@example.com", "admin")
 
-    f10 = ForwardOneToOne.objects.create(name=faker.name())
-    f11 = ForwardOneToOne.objects.create(name=faker.name())
-    f20 = ForwardManyToOne.objects.create(name=faker.name())
-    f21 = ForwardManyToOne.objects.create(name=faker.name())
-    f30 = ForwardManyToMany.objects.create(name=faker.name())
-    f31 = ForwardManyToMany.objects.create(name=faker.name())
-    f32 = ForwardManyToMany.objects.create(name=faker.name())
+    print("Creating persons...")
+    person_1 = Person.objects.create(name=faker.name(), email=faker.email())
+    person_2 = Person.objects.create(name=faker.name(), email=faker.email())
+    person_3 = Person.objects.create(name=faker.name(), email=faker.email())
+    person_4 = Person.objects.create(name=faker.name(), email=faker.email())
+    person_5 = Person.objects.create(name=faker.name(), email=faker.email())
 
-    e1 = Example.objects.create(
-        name="foo: " + faker.name(),
-        number=random.randint(0, 100),
-        email=faker.safe_email(),
-        example_state=ExampleState.ACTIVE.value,
-        duration=datetime.timedelta(seconds=900),
-        forward_one_to_one_field=f10,
-        forward_many_to_one_field=f20,
-    )
-    e1.forward_many_to_many_fields.add(f30, f31)
+    print("Creating service requests...")
+    service_request_1 = ServiceRequest.objects.create(details=faker.text())
+    service_request_2 = ServiceRequest.objects.create(details=faker.text())
 
-    e2 = Example.objects.create(
-        name="foo: " + faker.name(),
-        number=random.randint(0, 100),
-        email=faker.safe_email(),
-        example_state=ExampleState.INACTIVE.value,
-        duration=datetime.timedelta(seconds=1800),
-        forward_one_to_one_field=f11,
-        forward_many_to_one_field=f21,
-    )
-    e2.forward_many_to_many_fields.add(f30, f32)
+    print("Creating teams...")
+    team_1 = Team.objects.create(name=faker.name())
+    team_1.members.add(person_1, person_2)
+    team_2 = Team.objects.create(name=faker.name())
+    team_2.members.add(person_2, person_3, person_4)
 
-    e1.symmetrical_field.add(e2)
+    print("Creating projects...")
+    project_1 = Project.objects.create(name=faker.name(), team=team_1)
+    project_2 = Project.objects.create(name=faker.name(), team=team_2)
+    project_3 = Project.objects.create(name=faker.name(), team=team_1)
 
-    ReverseOneToOne.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToOne.objects.create(name=faker.name(), example_field=e2)
+    print("Creating tasks...")
+    task_1 = Task.objects.create(name=faker.name(), type=TaskType.STORY, request=service_request_1, project=project_1)
+    task_1.assignees.add(person_1, person_4)
 
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e2)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e2)
+    task_2 = Task.objects.create(name=faker.name(), type=TaskType.BUG_FIX, project=project_2)
+    task_2.assignees.add(person_3)
 
-    r30 = ReverseManyToMany.objects.create(name=faker.name())
-    r30.example_fields.add(e1, e2)
-    r31 = ReverseManyToMany.objects.create(name=faker.name())
-    r31.example_fields.add(e1, e2)
+    task_3 = Task.objects.create(name=faker.name(), type=TaskType.TASK, request=service_request_2, project=project_3)
+    task_3.assignees.add(person_2, person_5)
+
+    task_4 = Task.objects.create(name=faker.name(), type=TaskType.STORY, project=project_1)
+    task_4.assignees.add(person_1, person_2, person_5)
+
+    print("Creating task results...")
+    TaskResult.objects.create(details=faker.text(), time_used=faker.time_delta(), task=task_1)
+    TaskResult.objects.create(details=faker.text(), time_used=faker.time_delta(), task=task_4)
+
+    print("Creating task steps...")
+    TaskStep.objects.create(name=faker.name(), done=True, task=task_1)
+    TaskStep.objects.create(name=faker.name(), done=False, task=task_1)
+    TaskStep.objects.create(name=faker.name(), done=False, task=task_1)
+    TaskStep.objects.create(name=faker.name(), done=False, task=task_2)
+    TaskStep.objects.create(name=faker.name(), done=True, task=task_3)
+    TaskStep.objects.create(name=faker.name(), done=False, task=task_3)
+    TaskStep.objects.create(name=faker.name(), done=True, task=task_4)
+    TaskStep.objects.create(name=faker.name(), done=True, task=task_4)
+    TaskStep.objects.create(name=faker.name(), done=False, task=task_4)
+
+    print("Creating acceptance criteria...")
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=True, task=task_1)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_1)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_2)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_3)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_4)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_4)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=False, task=task_4)
+    AcceptanceCriteria.objects.create(details=faker.text(), fulfilled=True, task=task_4)
+
+    print("Creating reports...")
+    report_1 = Report.objects.create(name=faker.name(), content=faker.text())
+    report_1.tasks.add(task_1, task_2, task_3)
+
+    report_2 = Report.objects.create(name=faker.name(), content=faker.text())
+    report_2.tasks.add(task_4)
+
+    report_3 = Report.objects.create(name=faker.name(), content=faker.text())
+    report_3.tasks.add(task_2, task_4)
+
+    report_4 = Report.objects.create(name=faker.name(), content=faker.text())
+    report_4.tasks.add(task_1)
+
+    print("Creating comments...")
+    Comment.objects.create(contents=faker.text(), commenter=person_1, target=task_1)
+    Comment.objects.create(contents=faker.text(), commenter=person_2, target=task_1)
+    Comment.objects.create(contents=faker.text(), commenter=person_2, target=task_2)
+    Comment.objects.create(contents=faker.text(), commenter=person_2, target=task_3)
+    Comment.objects.create(contents=faker.text(), commenter=person_2, target=project_1)
+    Comment.objects.create(contents=faker.text(), commenter=person_2, target=project_2)
+    Comment.objects.create(contents=faker.text(), commenter=person_3, target=task_2)
+    Comment.objects.create(contents=faker.text(), commenter=person_3, target=task_4)
+    Comment.objects.create(contents=faker.text(), commenter=person_5, target=task_1)
+    Comment.objects.create(contents=faker.text(), commenter=person_5, target=task_4)
+    Comment.objects.create(contents=faker.text(), commenter=person_5, target=project_3)
+
+    print("Done!")

@@ -1,4 +1,3 @@
-import datetime
 from typing import Any
 
 from django.core.validators import URLValidator
@@ -14,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("URL")
-parse_url: TypeMapper[Any, datetime.timedelta]
-parse_url = TypeMapper("parse_url", wrapper=error_wrapper)
+parse_url = TypeMapper[Any, str](wrapper=error_wrapper)
 validator = URLValidator()
 
 

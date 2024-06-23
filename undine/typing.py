@@ -1,20 +1,46 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypedDict
+from dataclasses import dataclass
+from types import FunctionType
+from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict, Union
+
+from django.db import models
+from graphql import Undefined
 
 if TYPE_CHECKING:
-    from graphql import InputValueDefinitionNode
+    from undine.types import DeferredModelGQLType, ModelGQLType
 
 
 __all__ = [
-    "ArgumentVariables",
+    "FieldParams",
+    "Ref",
+    "ToManyField",
+    "ToOneField",
+]
+
+Ref: TypeAlias = Union[
+    models.Field,  #
+    FunctionType,
+    property,
+    type["ModelGQLType"],
+    "DeferredModelGQLType",
 ]
 
 
-class ArgumentVariables(TypedDict):
-    default_value: Any
+class FieldParams(TypedDict):
     description: str | None
     deprecation_reason: str | None
-    out_name: str | None
     extensions: dict[str, Any] | None
-    ast_node: InputValueDefinitionNode | None
+    nullable: bool
+    many: bool
+
+
+ToOneField = models.OneToOneField | models.OneToOneRel | models.ForeignKey
+ToManyField = models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel
+
+
+@dataclass
+class Parameter:
+    name: str
+    annotation: type
+    default_value: Any = Undefined

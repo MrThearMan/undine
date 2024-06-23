@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("DateTime")
-parse_datetime: TypeMapper[Any, datetime.datetime]
-parse_datetime = TypeMapper("parse_datetime", wrapper=error_wrapper)
+parse_datetime = TypeMapper[Any, datetime.datetime](wrapper=error_wrapper)
 
 
 @parse_datetime.register

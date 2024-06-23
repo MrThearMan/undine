@@ -21,6 +21,9 @@ class DefaultSettings(NamedTuple):
     REACT_VERSION: str = "18.3.1"
     PLUGIN_EXPLORER_VERSION: str = "3.0.2"
     DOCSTRING_FORMAT: str = "reStructuredText"
+    CURRENT_MODEL_KEY: str = "__current_node_model__"
+    USE_PK_FIELD_NAME: bool = True
+    CAMEL_CASE_SCHEMA_FIELDS: bool = True
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()

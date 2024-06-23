@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from django.http.request import MediaType
 
 from undine.errors import GraphQLStatusError
-from undine.files import place_files
+from undine.http.files import place_files
 
 if TYPE_CHECKING:
     from django.core.files import File

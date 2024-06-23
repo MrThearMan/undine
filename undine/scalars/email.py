@@ -1,4 +1,3 @@
-import datetime
 from typing import Any
 
 from django.core.validators import validate_email
@@ -14,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Email")
-parse_email: TypeMapper[Any, datetime.timedelta]
-parse_email = TypeMapper("parse_email", wrapper=error_wrapper)
+parse_email = TypeMapper[Any, str](wrapper=error_wrapper)
 
 
 @parse_email.register

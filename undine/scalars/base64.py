@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Base64")
-parse_base64: TypeMapper[Any, str]
-parse_base64 = TypeMapper("parse_base64", wrapper=error_wrapper)
+parse_base64 = TypeMapper[Any, str](wrapper=error_wrapper)
 
 
 @parse_base64.register

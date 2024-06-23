@@ -20,8 +20,8 @@ from graphql import (
 )
 
 from undine.errors import GraphQLStatusError, convert_errors_to_execution_result
-from undine.http import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.parsers import GraphQLParamsParser
+from undine.http.request_parser import GraphQLParamsParser
+from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 from undine.settings import undine_settings
 
 if TYPE_CHECKING:
@@ -38,15 +38,14 @@ class GraphQLView(View):
 
     def __init__(self) -> None:
         self.schema = undine_settings.SCHEMA
+        # TODO:
         self.middleware = None
         self.root_value = None
         self.field_resolver = None
         self.type_resolver = None
         self.subscribe_field_resolver = None
-        self.execution_context_class = None
         self.no_location = False
         self.max_tokens = None
-        self.allow_legacy_fragment_variables = False
         self.max_errors = None
         self.validation_rules = None
         super().__init__()
@@ -78,7 +77,6 @@ class GraphQLView(View):
                 source=params.query,
                 no_location=self.no_location,
                 max_tokens=self.max_tokens,
-                allow_legacy_fragment_variables=self.allow_legacy_fragment_variables,
             )
         except GraphQLError as parse_error:
             return ExecutionResult(errors=[parse_error], extensions={"status_code": 400})
@@ -106,7 +104,6 @@ class GraphQLView(View):
             type_resolver=self.type_resolver,
             subscribe_field_resolver=self.subscribe_field_resolver,
             middleware=self.middleware,
-            execution_context_class=self.execution_context_class,
         )
 
     def get_first_supported_media_type(self, request: HttpRequest) -> MediaType | None:

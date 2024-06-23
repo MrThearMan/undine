@@ -8,11 +8,11 @@ from typing import Self
 from undine.settings import undine_settings
 
 __all__ = [
-    "parse_description",
+    "parse_docstring",
 ]
 
 
-def parse_description(docstring: str | None) -> DocData:
+def parse_docstring(docstring: str | None) -> DocData:
     """Format the docstring of a function as a GraphQL description."""
     if not docstring:
         return DocData()
@@ -20,12 +20,12 @@ def parse_description(docstring: str | None) -> DocData:
 
 
 TRIM_PATTERN = re.compile(r"\s+")
-STOP = r"(?=:param|:returns?|:raises?|:deprecated|$)"
-RST_BODY = re.compile(rf"^(?P<text>.+?){STOP}.*", flags=re.DOTALL)
-RST_PARAM = re.compile(rf":param (?P<name>\w+): (?P<text>.+?){STOP}", flags=re.DOTALL)
-RST_RETURNS = re.compile(rf":returns?: (?P<text>.+?){STOP}", flags=re.DOTALL)
-RST_RAISES = re.compile(rf":raises? (?P<name>\w+): (?P<text>.+?){STOP}", flags=re.DOTALL)
-RST_DEPR = re.compile(rf":deprecated? (?P<name>\w+): (?P<text>.+?){STOP}", flags=re.DOTALL)
+RST_STOP = r"(?=:param|:returns?|:raises?|:deprecated?|$)"
+RST_BODY = re.compile(rf"^(?P<text>.+?){RST_STOP}.*", flags=re.DOTALL)
+RST_PARAM = re.compile(rf":param (?P<name>\w+): (?P<text>.+?){RST_STOP}", flags=re.DOTALL)
+RST_RETURNS = re.compile(rf":returns?: (?P<text>.+?){RST_STOP}", flags=re.DOTALL)
+RST_RAISES = re.compile(rf":raises? (?P<name>\w+): (?P<text>.+?){RST_STOP}", flags=re.DOTALL)
+RST_DEPR = re.compile(rf":deprecated? (?P<name>\w+): (?P<text>.+?){RST_STOP}", flags=re.DOTALL)
 
 
 @dataclasses.dataclass

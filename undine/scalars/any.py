@@ -21,17 +21,11 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Generic")
-parse_generic: TypeMapper[Any, Any]
-parse_generic = TypeMapper("parse_generic", wrapper=error_wrapper)
+parse_generic = TypeMapper[Any, Any](wrapper=error_wrapper)
 
 
 @parse_generic.register
-def _(input_value: object) -> Any:
-    return input_value
-
-
-@parse_generic.register
-def _(input_value: type) -> Any:
+def _(input_value: Any) -> Any:
     return input_value
 
 

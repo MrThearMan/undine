@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Decimal")
-parse_decimal: TypeMapper[Any, Decimal]
-parse_decimal = TypeMapper("parse_decimal", wrapper=error_wrapper)
+parse_decimal = TypeMapper[Any, Decimal](wrapper=error_wrapper)
 
 
 @parse_decimal.register
