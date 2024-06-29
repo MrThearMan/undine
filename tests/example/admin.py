@@ -1,39 +1,54 @@
 from django.contrib import admin
 
 from .models import (
-    Example,
-    ForwardManyToMany,
-    ForwardManyToOne,
-    ForwardOneToOne,
-    ReverseManyToMany,
-    ReverseOneToMany,
-    ReverseOneToOne,
+    AcceptanceCriteria,
+    Comment,
+    Person,
+    Project,
+    Report,
+    ServiceRequest,
+    Task,
+    TaskResult,
+    TaskStep,
+    Team,
 )
 
 
-@admin.register(Example)
-class ExampleAdmin(admin.ModelAdmin): ...
+@admin.register(AcceptanceCriteria)
+class AcceptanceCriteriaAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ForwardManyToMany)
-class ForwardManyToManyAdmin(admin.ModelAdmin): ...
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ForwardManyToOne)
-class ForwardManyToOneAdmin(admin.ModelAdmin): ...
+@admin.register(Person)
+class PersonAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ForwardOneToOne)
-class ForwardOneToOneAdmin(admin.ModelAdmin): ...
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ReverseManyToMany)
-class ReverseManyToManyAdmin(admin.ModelAdmin): ...
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ReverseOneToOne)
-class ReverseManyToManyAdmin(admin.ModelAdmin): ...
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(admin.ModelAdmin): ...
 
 
-@admin.register(ReverseOneToMany)
-class ReverseOneToManyAdmin(admin.ModelAdmin): ...
+@admin.register(Task)
+class TaskAdmin(admin.ModelAdmin): ...
+
+
+@admin.register(TaskResult)
+class TaskResultAdmin(admin.ModelAdmin): ...
+
+
+@admin.register(TaskStep)
+class TaskStepAdmin(admin.ModelAdmin): ...
+
+
+@admin.register(Team)
+class TeamAdmin(admin.ModelAdmin): ...

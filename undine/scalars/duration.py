@@ -4,7 +4,7 @@ from typing import Any
 from graphql import GraphQLScalarType, Undefined, ValueNode
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher
 
 __all__ = [
     "GraphQLDuration",
@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Duration")
-parse_timedelta: TypeMapper[Any, datetime.timedelta]
-parse_timedelta = TypeMapper("parse_timedelta", wrapper=error_wrapper)
+parse_timedelta = TypeDispatcher[Any, datetime.timedelta](wrapper=error_wrapper)
 
 
 @parse_timedelta.register
@@ -38,7 +37,7 @@ def serialize(output_value: Any) -> str:
 
 
 @error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> datetime.time:
+def parse_literal(value_node: ValueNode, _variables: Any = None) -> datetime.timedelta:
     value: Any = getattr(value_node, "value", Undefined)
     return parse_timedelta(value)
 

@@ -4,7 +4,7 @@ from typing import Any
 from graphql import GraphQLScalarType, Undefined, ValueNode
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher
 
 __all__ = [
     "GraphQLBase64",
@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Base64")
-parse_base64: TypeMapper[Any, str]
-parse_base64 = TypeMapper("parse_base64", wrapper=error_wrapper)
+parse_base64 = TypeDispatcher[Any, str](wrapper=error_wrapper)
 
 
 @parse_base64.register

@@ -4,7 +4,7 @@ from typing import Any
 from graphql import GraphQLScalarType, Undefined, ValueNode
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher
 
 __all__ = [
     "GraphQLTime",
@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Time")
-parse_time: TypeMapper[Any, datetime.time]
-parse_time = TypeMapper("parse_time", wrapper=error_wrapper)
+parse_time = TypeDispatcher[Any, datetime.time](wrapper=error_wrapper)
 
 
 @parse_time.register

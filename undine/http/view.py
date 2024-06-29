@@ -20,9 +20,10 @@ from graphql import (
 )
 
 from undine.errors import GraphQLStatusError, convert_errors_to_execution_result
-from undine.http import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.parsers import GraphQLParamsParser
+from undine.http.request_parser import GraphQLRequestParamsParser
+from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 from undine.settings import undine_settings
+from undine.utils.query_logging import capture_database_queries
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -38,15 +39,14 @@ class GraphQLView(View):
 
     def __init__(self) -> None:
         self.schema = undine_settings.SCHEMA
+        # TODO:
         self.middleware = None
         self.root_value = None
         self.field_resolver = None
         self.type_resolver = None
         self.subscribe_field_resolver = None
-        self.execution_context_class = None
         self.no_location = False
         self.max_tokens = None
-        self.allow_legacy_fragment_variables = False
         self.max_errors = None
         self.validation_rules = None
         super().__init__()
@@ -62,12 +62,13 @@ class GraphQLView(View):
         if media_type.main_type == "text" and media_type.sub_type == "html":
             return render(request, "undine/graphiql.html")
 
-        result = self.execute_graphql(request)
+        with capture_database_queries():
+            result = self.execute_graphql(request)
         return self.json_response(result, media_type)
 
     @convert_errors_to_execution_result
     def execute_graphql(self, request: HttpRequest) -> ExecutionResult:
-        params = GraphQLParamsParser.run(request)
+        params = GraphQLRequestParamsParser.run(request)
 
         schema_validation_errors = validate_schema(self.schema)
         if schema_validation_errors:
@@ -78,7 +79,6 @@ class GraphQLView(View):
                 source=params.query,
                 no_location=self.no_location,
                 max_tokens=self.max_tokens,
-                allow_legacy_fragment_variables=self.allow_legacy_fragment_variables,
             )
         except GraphQLError as parse_error:
             return ExecutionResult(errors=[parse_error], extensions={"status_code": 400})
@@ -106,7 +106,6 @@ class GraphQLView(View):
             type_resolver=self.type_resolver,
             subscribe_field_resolver=self.subscribe_field_resolver,
             middleware=self.middleware,
-            execution_context_class=self.execution_context_class,
         )
 
     def get_first_supported_media_type(self, request: HttpRequest) -> MediaType | None:

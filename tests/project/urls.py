@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 
-from undine.view import GraphQLView
+from undine.http.view import GraphQLView
 
 urlpatterns = [
     path("graphql/", GraphQLView.as_view()),

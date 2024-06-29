@@ -4,7 +4,7 @@ from typing import Any
 from graphql import GraphQLScalarType, Undefined, ValueNode
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher
 
 __all__ = [
     "GraphQLDecimal",
@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Decimal")
-parse_decimal: TypeMapper[Any, Decimal]
-parse_decimal = TypeMapper("parse_decimal", wrapper=error_wrapper)
+parse_decimal = TypeDispatcher[Any, Decimal](wrapper=error_wrapper)
 
 
 @parse_decimal.register

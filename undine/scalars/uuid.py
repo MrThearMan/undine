@@ -4,7 +4,7 @@ from typing import Any
 from graphql import GraphQLScalarType, Undefined, ValueNode
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher
 
 __all__ = [
     "GraphQLUUID",
@@ -13,8 +13,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("UUID")
-parse_uuid: TypeMapper[Any, uuid.UUID]
-parse_uuid = TypeMapper("parse_uuid", wrapper=error_wrapper)
+parse_uuid = TypeDispatcher[Any, uuid.UUID](wrapper=error_wrapper)
 
 
 @parse_uuid.register

@@ -83,6 +83,6 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 
 UNDINE = {
-    "SCHEMA": "tests.project.schema.schema",
+    "SCHEMA": "tests.example.schema.schema",
     "GRAPHIQL_ENABLED": True,
 }

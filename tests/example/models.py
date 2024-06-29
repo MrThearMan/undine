@@ -1,102 +1,105 @@
 from __future__ import annotations
 
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 __all__ = [
-    "Example",
-    "ForwardManyToMany",
-    "ForwardManyToOne",
-    "ForwardOneToOne",
-    "ReverseManyToMany",
-    "ReverseOneToMany",
-    "ReverseOneToOne",
+    "AcceptanceCriteria",
+    "Comment",
+    "Person",
+    "Project",
+    "Report",
+    "ServiceRequest",
+    "Task",
+    "TaskResult",
+    "TaskStep",
+    "TaskType",
+    "Team",
 ]
 
 
-class ForwardOneToOne(models.Model):
+class TaskType(models.TextChoices):
+    BUG_FIX = "BUG_FIX"
+    TASK = "TASK"
+    STORY = "STORY"
+
+
+class Person(models.Model):
     name = models.CharField(max_length=255)
-
-
-class ForwardManyToOne(models.Model):
-    name = models.CharField(max_length=255)
-
-
-class ForwardManyToMany(models.Model):
-    name = models.CharField(max_length=255)
-
-
-class ExampleState(models.TextChoices):
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-
-
-class Example(models.Model):
-    name = models.CharField(max_length=255)
-    number = models.IntegerField()
     email = models.EmailField(unique=True)
-    example_state = models.CharField(choices=ExampleState.choices, max_length=255)
-    duration = models.DurationField()
-
-    symmetrical_field = models.ManyToManyField("self")
-    forward_one_to_one_field = models.OneToOneField(
-        ForwardOneToOne,
-        on_delete=models.CASCADE,
-        related_name="example_rel",
-    )
-    forward_many_to_one_field = models.ForeignKey(
-        ForwardManyToOne,
-        on_delete=models.CASCADE,
-        related_name="example_rels",
-    )
-    forward_many_to_many_fields = models.ManyToManyField(
-        ForwardManyToMany,
-        related_name="example_rels",
-    )
-
-    # Translation fields
-    name_en: str | None
-    name_fi: str | None
-
-    @property
-    def example_property(self) -> str:
-        return "example_property"
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["name", "number"],
-                name="unique_name",
-                violation_error_message="Example unique violation message.",
-            ),
-            models.CheckConstraint(
-                check=models.Q(name__icontains="foo"),
-                name="check_example",
-                violation_error_message="Example constraint violation message.",
-            ),
-        ]
 
 
-class ReverseOneToOne(models.Model):
+class Comment(models.Model):
+    contents = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    commenter = models.ForeignKey(Person, on_delete=models.CASCADE, related_name="comments")
+
+    object_id = models.CharField(max_length=255)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    target = GenericForeignKey()
+
+
+class ServiceRequest(models.Model):
+    details = models.TextField()
+    created_at = models.DateField(auto_now_add=True)
+    submitted_at = models.DateField(null=True)
+
+
+class Team(models.Model):
     name = models.CharField(max_length=255)
-    example_field = models.OneToOneField(
-        Example,
-        on_delete=models.CASCADE,
-        related_name="reverse_one_to_one_rel",
-    )
+    members = models.ManyToManyField(Person)
 
 
-class ReverseOneToMany(models.Model):
+class Project(models.Model):
     name = models.CharField(max_length=255)
-    example_field = models.ForeignKey(
-        Example,
-        on_delete=models.CASCADE,
-        related_name="reverse_one_to_many_rels",
-    )
+
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="projects")
+
+    comments = GenericRelation(Comment)
 
 
-class ReverseManyToMany(models.Model):
+class Task(models.Model):
     name = models.CharField(max_length=255)
-    example_fields = models.ManyToManyField(
-        Example,
-        related_name="reverse_many_to_many_rels",
-    )
+    type = models.CharField(choices=TaskType.choices, max_length=255)
+    created_at = models.DateField(auto_now_add=True)
+
+    related_tasks = models.ManyToManyField("self")
+
+    request = models.OneToOneField(ServiceRequest, null=True, default=None, on_delete=models.SET_NULL)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
+    assignees = models.ManyToManyField(Person, related_name="tasks")
+
+    comments = GenericRelation(Comment)
+
+
+class TaskResult(models.Model):
+    details = models.TextField()
+    time_used = models.DurationField()
+    created_at = models.DateField(auto_now_add=True)
+
+    task = models.OneToOneField(Task, on_delete=models.CASCADE, related_name="result")
+
+
+class TaskStep(models.Model):
+    name = models.CharField(max_length=255)
+    done = models.BooleanField(default=False)
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="steps")
+
+
+class AcceptanceCriteria(models.Model):
+    details = models.TextField()
+    fulfilled = models.BooleanField(default=False)
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="acceptance_criteria")
+
+
+class Report(models.Model):
+    name = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateField(auto_now_add=True)
+
+    tasks = models.ManyToManyField(Task, related_name="reports")

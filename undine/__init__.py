@@ -1,7 +1,14 @@
-from .field import field
-from .view import GraphQLView
+from .fields import Field
+from .filters import Filter, ModelGQLFilters
+from .http.view import GraphQLView
+from .schema import create_schema
+from .types import ModelGQLType
 
 __all__ = [
+    "Field",
+    "Filter",
     "GraphQLView",
-    "field",
+    "ModelGQLFilters",
+    "ModelGQLType",
+    "create_schema",
 ]
