@@ -1,10 +1,10 @@
 import datetime
-from typing import Any
+from typing import Any, NoReturn
 
-from graphql import GraphQLScalarType, Undefined, ValueNode
+from graphql import GraphQLScalarType
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher, dotpath
 
 __all__ = [
     "GraphQLDateTime",
@@ -13,8 +13,13 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("DateTime")
-parse_datetime: TypeMapper[Any, datetime.datetime]
-parse_datetime = TypeMapper("parse_datetime", wrapper=error_wrapper)
+parse_datetime = TypeDispatcher[Any, datetime.datetime](wrapper=error_wrapper)
+
+
+@parse_datetime.register
+def _(input_value: Any) -> NoReturn:
+    msg = f"Type '{dotpath(type(input_value))}' is not supported"
+    raise ValueError(msg)
 
 
 @parse_datetime.register
@@ -32,12 +37,6 @@ def serialize(output_value: Any) -> str:
     return parse_datetime(output_value).isoformat()
 
 
-@error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> datetime.datetime:
-    value: Any = getattr(value_node, "value", Undefined)
-    return parse_datetime(value)
-
-
 GraphQLDateTime = GraphQLScalarType(
     name="DateTime",
     description=(
@@ -47,5 +46,4 @@ GraphQLDateTime = GraphQLScalarType(
     ),
     serialize=serialize,
     parse_value=parse_datetime,
-    parse_literal=parse_literal,
 )

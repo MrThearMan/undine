@@ -1,46 +1,45 @@
 import datetime
-from typing import Any
+from typing import Any, NoReturn
 
-from graphql import GraphQLScalarType, Undefined, ValueNode
+from graphql import GraphQLScalarType
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher, dotpath
 
 __all__ = [
     "GraphQLDuration",
-    "parse_timedelta",
+    "parse_duration",
 ]
 
 
 error_wrapper = handle_conversion_errors("Duration")
-parse_timedelta: TypeMapper[Any, datetime.timedelta]
-parse_timedelta = TypeMapper("parse_timedelta", wrapper=error_wrapper)
+parse_duration = TypeDispatcher[Any, datetime.timedelta](wrapper=error_wrapper)
 
 
-@parse_timedelta.register
+@parse_duration.register
+def _(input_value: Any) -> NoReturn:
+    msg = f"Type '{dotpath(type(input_value))}' is not supported"
+    raise ValueError(msg)
+
+
+@parse_duration.register
 def _(input_value: datetime.timedelta) -> datetime.timedelta:
     return input_value
 
 
-@parse_timedelta.register
+@parse_duration.register
 def _(input_value: int) -> datetime.timedelta:
     return datetime.timedelta(seconds=input_value)
 
 
-@parse_timedelta.register
+@parse_duration.register
 def _(input_value: str) -> datetime.timedelta:
     return datetime.timedelta(seconds=int(input_value))
 
 
 @error_wrapper
-def serialize(output_value: Any) -> str:
-    return str(parse_timedelta(output_value).total_seconds())
-
-
-@error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> datetime.time:
-    value: Any = getattr(value_node, "value", Undefined)
-    return parse_timedelta(value)
+def serialize(output_value: Any) -> int:
+    return int(parse_duration(output_value).total_seconds())
 
 
 GraphQLDuration = GraphQLScalarType(
@@ -50,6 +49,5 @@ GraphQLDuration = GraphQLScalarType(
         "It maps to the Python `datetime.timedelta` type."
     ),
     serialize=serialize,
-    parse_value=parse_timedelta,
-    parse_literal=parse_literal,
+    parse_value=parse_duration,
 )

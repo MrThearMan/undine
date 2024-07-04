@@ -1,11 +1,11 @@
-import datetime
-from typing import Any
+from typing import Any, NoReturn
 
+from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from graphql import GraphQLScalarType, Undefined, ValueNode
+from graphql import GraphQLScalarType
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher, dotpath
 
 __all__ = [
     "GraphQLEmail",
@@ -14,13 +14,21 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Email")
-parse_email: TypeMapper[Any, datetime.timedelta]
-parse_email = TypeMapper("parse_email", wrapper=error_wrapper)
+parse_email = TypeDispatcher[Any, str](wrapper=error_wrapper)
+
+
+@parse_email.register
+def _(input_value: Any) -> NoReturn:
+    msg = f"Type '{dotpath(type(input_value))}' is not supported"
+    raise ValueError(msg)
 
 
 @parse_email.register
 def _(input_value: str) -> str:
-    validate_email(input_value)
+    try:
+        validate_email(input_value)
+    except ValidationError as error:
+        raise ValueError(error.message) from error
     return input_value
 
 
@@ -29,16 +37,9 @@ def serialize(output_value: Any) -> str:
     return parse_email(output_value)
 
 
-@error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> str:
-    value: Any = getattr(value_node, "value", Undefined)
-    return parse_email(value)
-
-
 GraphQLEmail = GraphQLScalarType(
     name="Email",
     description="The `Email` scalar type represents a valid email address.",
     serialize=serialize,
     parse_value=parse_email,
-    parse_literal=parse_literal,
 )

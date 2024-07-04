@@ -49,16 +49,19 @@ exclude = [
 python = ">=3.10,<4"
 Django = ">=4.2"
 graphql-core = ">=3.2.3"
+graphql-relay = ">=3.2.0"
 django-settings-holder = ">=0.1.2"
+typing-extensions = {version = ">=4.12.2", python = "<3.11"}
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.1"
-coverage = "7.5.3"
+pytest = "8.2.2"
 pytest-django = "4.8.0"
+coverage = "7.5.4"
+hypothesis = "6.104.1"
 factory-boy = "3.3.0"
-pre-commit = "3.7.1"
-tox = "4.15.0"
+tox = "4.15.1"
 tox-gh-actions = "3.2.0"
+urllib3 = "2.2.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.0"
@@ -66,8 +69,8 @@ pymdown-extensions = "10.8.1"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.10.0"
-django-stubs = "5.0.2"
+pre-commit = "3.7.1"
+mypy = "1.10.1"
 
 [tool.ruff]
 fix = true
@@ -202,6 +205,15 @@ lint.ignore = [
     "ANN",      # No need to annotate tests
     "UP",       # No upgrade rules
 ]
+"undine/converters/*.py" = [
+    "TCH001",
+    "TCH002",
+    "TCH003",
+]
+"example_project/app/management/commands/create_test_data.py" = [
+    "T201",
+    "PLR0915",
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = false
@@ -243,6 +255,10 @@ extend-ignore-names = [
     "_base_manager",
     "_default_manager",
     "_meta",
+    "_get_fields",
+    "_relation_tree",
+    "_getframe",
+    "_get_pk_val",
 ]
 
 [tool.mypy]
@@ -275,6 +291,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "example_project.project.settings"
 addopts = "-vv -s --disable-warnings"
 
 [tool.tox]
@@ -294,15 +311,21 @@ allowlist_externals =
     poetry
 setenv =
     PYTHONPATH = {toxinidir}
-    DJANGO_SETTINGS_MODULE = tests.project.settings
+    DJANGO_SETTINGS_MODULE = example_project.project.settings
 deps =
     django42: Django >=4.2,<4.3
     django50: Django >=5.0,<5.1
-    graphql-core
+    graphql-core >= 3.2.3
+    graphql-relay >= 3.2.0
+    django-settings-holder
+    typing-extensions
+    urllib3
 
     pytest
-    coverage
     pytest-django
+    coverage
+    factory-boy
+    hypothesis
 commands =
     coverage run -m pytest -vv -s --disable-warnings
 """

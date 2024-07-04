@@ -1,10 +1,10 @@
 import uuid
-from typing import Any
+from typing import Any, NoReturn
 
-from graphql import GraphQLScalarType, Undefined, ValueNode
+from graphql import GraphQLScalarType
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher, dotpath
 
 __all__ = [
     "GraphQLUUID",
@@ -13,8 +13,13 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("UUID")
-parse_uuid: TypeMapper[Any, uuid.UUID]
-parse_uuid = TypeMapper("parse_uuid", wrapper=error_wrapper)
+parse_uuid = TypeDispatcher[Any, uuid.UUID](wrapper=error_wrapper)
+
+
+@parse_uuid.register
+def _(input_value: Any) -> NoReturn:
+    msg = f"Type '{dotpath(type(input_value))}' is not supported"
+    raise ValueError(msg)
 
 
 @parse_uuid.register
@@ -29,10 +34,7 @@ def _(input_value: str) -> Any:
 
 @parse_uuid.register
 def _(input_value: bytes) -> Any:
-    try:
-        return uuid.UUID(bytes=input_value)  # big endian
-    except ValueError:
-        return uuid.UUID(bytes_le=input_value)  # little endian
+    return uuid.UUID(bytes=input_value)
 
 
 @parse_uuid.register
@@ -45,12 +47,6 @@ def serialize(output_value: Any) -> str:
     return str(parse_uuid(output_value))
 
 
-@error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> Any:
-    value: Any = getattr(value_node, "value", Undefined)
-    return parse_uuid(value)
-
-
 GraphQLUUID = GraphQLScalarType(
     name="UUID",
     description=(
@@ -61,5 +57,4 @@ GraphQLUUID = GraphQLScalarType(
     ),
     serialize=serialize,
     parse_value=parse_uuid,
-    parse_literal=parse_literal,
 )

@@ -1,10 +1,10 @@
 import base64
-from typing import Any
+from typing import Any, NoReturn
 
-from graphql import GraphQLScalarType, Undefined, ValueNode
+from graphql import GraphQLScalarType
 
 from undine.errors import handle_conversion_errors
-from undine.utils import TypeMapper
+from undine.utils import TypeDispatcher, dotpath
 
 __all__ = [
     "GraphQLBase64",
@@ -13,29 +13,32 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Base64")
-parse_base64: TypeMapper[Any, str]
-parse_base64 = TypeMapper("parse_base64", wrapper=error_wrapper)
+parse_base64 = TypeDispatcher[Any, str](wrapper=error_wrapper)
 
 
 @parse_base64.register
-def _(input_value: bytes) -> str:
-    return base64.b64decode(input_value).decode()
+def _(input_value: Any) -> NoReturn:
+    msg = f"Type '{dotpath(type(input_value))}' is not supported"
+    raise ValueError(msg)
 
 
 @parse_base64.register
 def _(input_value: str) -> str:
-    return base64.b64decode(input_value.encode()).decode()
+    # Validates string is base64 encoded
+    base64.b64decode(input_value.encode(encoding="utf-8")).decode(encoding="utf-8")
+    return input_value
+
+
+@parse_base64.register
+def _(input_value: bytes) -> str:
+    # Validates string is base64 encoded
+    base64.b64decode(input_value).decode(encoding="utf-8")
+    return input_value.decode(encoding="utf-8")
 
 
 @error_wrapper
 def serialize(output_value: Any) -> str:
-    return base64.b64encode(parse_base64(output_value).encode()).decode()
-
-
-@error_wrapper
-def parse_literal(value_node: ValueNode, _variables: Any = None) -> str:
-    value: Any = getattr(value_node, "value", Undefined)
-    return parse_base64(value)
+    return parse_base64(output_value)
 
 
 GraphQLBase64 = GraphQLScalarType(
@@ -43,5 +46,4 @@ GraphQLBase64 = GraphQLScalarType(
     description="The `Base64` scalar type represents a base64-encoded String.",
     serialize=serialize,
     parse_value=parse_base64,
-    parse_literal=parse_literal,
 )

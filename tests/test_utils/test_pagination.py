@@ -1,0 +1,306 @@
+from typing import Any, NamedTuple, Optional
+
+import pytest
+from graphql_relay import offset_to_cursor
+
+from tests.helpers import parametrize_helper
+from undine.errors import PaginationArgumentValidationError
+from undine.utils.pagination import PaginationArgs, calculate_queryset_slice, validate_pagination_args
+from undine.utils.reflection import swappable_by_subclassing
+
+
+class PaginationInput(NamedTuple):
+    first: Any = None
+    last: Any = None
+    offset: Any = None
+    after: Any = None
+    before: Any = None
+    max_limit: Any = None
+
+
+class InputParams(NamedTuple):
+    pagination_input: PaginationInput
+    output: PaginationArgs
+    errors: Optional[str]
+
+
+class PaginationData(NamedTuple):
+    first: Optional[int] = None
+    last: Optional[int] = None
+    after: Optional[int] = None
+    before: Optional[int] = None
+    size: int = 100
+
+
+class DataParams(NamedTuple):
+    pagination_input: PaginationData
+    start: int
+    stop: int
+
+
+@pytest.mark.parametrize(
+    **parametrize_helper(
+        {
+            "first": InputParams(
+                pagination_input=PaginationInput(),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors=None,
+            ),
+            "last": InputParams(
+                pagination_input=PaginationInput(last=1),
+                output=PaginationArgs(after=None, before=None, first=None, last=1, size=None),
+                errors=None,
+            ),
+            "offset": InputParams(
+                pagination_input=PaginationInput(offset=1),
+                output=PaginationArgs(after=1, before=None, first=None, last=None, size=None),
+                errors=None,
+            ),
+            "after": InputParams(
+                pagination_input=PaginationInput(after=offset_to_cursor(0)),
+                # Add 1 to after to make it exclusive in slicing.
+                output=PaginationArgs(after=1, before=None, first=None, last=None, size=None),
+                errors=None,
+            ),
+            "before": InputParams(
+                pagination_input=PaginationInput(before=offset_to_cursor(0)),
+                output=PaginationArgs(after=None, before=0, first=None, last=None, size=None),
+                errors=None,
+            ),
+            "max limit": InputParams(
+                pagination_input=PaginationInput(max_limit=1),
+                output=PaginationArgs(after=None, before=None, first=1, last=None, size=1),
+                errors=None,
+            ),
+            "first zero": InputParams(
+                pagination_input=PaginationInput(first=0),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last zero": InputParams(
+                pagination_input=PaginationInput(last=0),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "first negative": InputParams(
+                pagination_input=PaginationInput(first=-1),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last negative": InputParams(
+                pagination_input=PaginationInput(last=-1),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "first exceeds max limit": InputParams(
+                pagination_input=PaginationInput(first=2, max_limit=1),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Requesting first 2 records exceeds the limit of 1.",
+            ),
+            "last exceeds max limit": InputParams(
+                pagination_input=PaginationInput(last=2, max_limit=1),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Requesting last 2 records exceeds the limit of 1.",
+            ),
+            "offset zero": InputParams(
+                pagination_input=PaginationInput(offset=0),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors=None,
+            ),
+            "after negative": InputParams(
+                pagination_input=PaginationInput(after=offset_to_cursor(-1)),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="The node pointed with `after` does not exist.",
+            ),
+            "before negative": InputParams(
+                pagination_input=PaginationInput(before=offset_to_cursor(-1)),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="The node pointed with `before` does not exist.",
+            ),
+            "after before": InputParams(
+                pagination_input=PaginationInput(after=offset_to_cursor(1), before=offset_to_cursor(0)),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="The node pointed with `after` must be before the node pointed with `before`.",
+            ),
+            "offset after": InputParams(
+                pagination_input=PaginationInput(offset=1, after=offset_to_cursor(0)),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Can only use either `offset` or `before`/`after` for pagination.",
+            ),
+            "offset before": InputParams(
+                pagination_input=PaginationInput(offset=1, before=offset_to_cursor(0)),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Can only use either `offset` or `before`/`after` for pagination.",
+            ),
+            "first not int": InputParams(
+                pagination_input=PaginationInput(first="0"),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last not int": InputParams(
+                pagination_input=PaginationInput(last="0"),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "offset not int": InputParams(
+                pagination_input=PaginationInput(offset="0"),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors="Argument `offset` must be a positive integer.",
+            ),
+            "max limit not int": InputParams(
+                pagination_input=PaginationInput(max_limit="0"),
+                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
+                errors=None,
+            ),
+        }
+    ),
+)
+def test_validate_pagination_args(pagination_input, output, errors):
+    try:
+        args = validate_pagination_args(**pagination_input._asdict())
+    except PaginationArgumentValidationError as error:
+        if errors is None:
+            pytest.fail(f"Unexpected error: {error}")
+        assert str(error) == errors
+    else:
+        if errors is not None:
+            pytest.fail(f"Expected error: {errors}")
+        assert args == output
+
+
+TEST_CASES = {
+    "default": DataParams(
+        pagination_input=PaginationData(),
+        start=0,
+        stop=100,
+    ),
+    "after": DataParams(
+        pagination_input=PaginationData(after=1),
+        start=1,
+        stop=100,
+    ),
+    "before": DataParams(
+        pagination_input=PaginationData(before=99),
+        start=0,
+        stop=99,
+    ),
+    "first": DataParams(
+        pagination_input=PaginationData(first=10),
+        start=0,
+        stop=10,
+    ),
+    "last": DataParams(
+        pagination_input=PaginationData(last=10),
+        start=90,
+        stop=100,
+    ),
+    "after_before": DataParams(
+        pagination_input=PaginationData(after=1, before=99),
+        start=1,
+        stop=99,
+    ),
+    "first_last": DataParams(
+        pagination_input=PaginationData(first=10, last=8),
+        start=2,
+        stop=10,
+    ),
+    "after_before_first_last": DataParams(
+        pagination_input=PaginationData(after=1, before=99, first=10, last=8),
+        start=3,
+        stop=11,
+    ),
+    "after_bigger_than_size": DataParams(
+        pagination_input=PaginationData(after=101),
+        start=100,
+        stop=100,
+    ),
+    "before_bigger_than_size": DataParams(
+        pagination_input=PaginationData(before=101),
+        start=0,
+        stop=100,
+    ),
+    "first_bigger_than_size": DataParams(
+        pagination_input=PaginationData(first=101),
+        start=0,
+        stop=100,
+    ),
+    "last_bigger_than_size": DataParams(
+        pagination_input=PaginationData(last=101),
+        start=0,
+        stop=100,
+    ),
+    "after_is_size": DataParams(
+        pagination_input=PaginationData(after=100),
+        start=100,
+        stop=100,
+    ),
+    "before_is_size": DataParams(
+        pagination_input=PaginationData(before=100),
+        start=0,
+        stop=100,
+    ),
+    "first_is_size": DataParams(
+        pagination_input=PaginationData(first=100),
+        start=0,
+        stop=100,
+    ),
+    "last_is_size": DataParams(
+        pagination_input=PaginationData(last=100),
+        start=0,
+        stop=100,
+    ),
+    "first_bigger_than_after_before": DataParams(
+        pagination_input=PaginationData(after=10, before=20, first=20),
+        start=10,
+        stop=20,
+    ),
+    "last_bigger_than_after_before": DataParams(
+        pagination_input=PaginationData(after=10, before=20, last=20),
+        start=10,
+        stop=20,
+    ),
+}
+
+
+@pytest.mark.parametrize(**parametrize_helper(TEST_CASES))
+def test_calculate_queryset_slice(pagination_input: PaginationData, start: int, stop: int) -> None:
+    cut = calculate_queryset_slice(**pagination_input._asdict())
+    assert cut.start == start
+    assert cut.stop == stop
+
+
+def test_swappable_by_subclassing():
+    @swappable_by_subclassing
+    class A:
+        def __init__(self, arg: int = 1) -> None:
+            self.one = arg
+
+    a = A()
+    assert type(a) is A
+    assert a.one == 1
+
+    class B(A):
+        def __init__(self, arg: int = 1) -> None:
+            super().__init__(arg)
+            self.two = arg * 2
+
+    b = A(2)
+    assert type(b) is B
+    assert b.one == 2
+    assert b.two == 4
+
+    class C(A):
+        def __init__(self, arg: int = 1, second_arg: int = 2) -> None:
+            super().__init__(arg)
+            self.three = second_arg * 3
+
+    c = A(3, 4)
+    assert type(c) is C
+    assert c.one == 3
+    assert not hasattr(c, "two")
+    assert c.three == 12
+
+    class D(B): ...
+
+    d = A()
+    assert type(d) is C  # Only direct subclasses are swapped.
