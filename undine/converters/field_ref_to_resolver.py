@@ -7,7 +7,8 @@ from django.db import models
 from graphql import GraphQLFieldResolver
 
 from undine.typing import FieldRef
-from undine.utils import TypeDispatcher, function_field_resolver, is_pk_property, model_field_resolver
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.resolvers import function_field_resolver, is_pk_property, model_field_resolver
 
 __all__ = [
     "convert_field_ref_to_resolver",
@@ -40,9 +41,7 @@ def load_deferred_converters() -> None:
     from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 
     @convert_field_ref_to_resolver.register
-    def _(ref: type[ModelGQLType], *, many: bool, top_level: bool, name: str) -> GraphQLFieldResolver:
-        if top_level:
-            return ref.__resolve_many__ if many else ref.__resolve_one__
+    def _(_: type[ModelGQLType], *, many: bool, name: str) -> GraphQLFieldResolver:
         return model_field_resolver(name=name, many=many)
 
     @convert_field_ref_to_resolver.register

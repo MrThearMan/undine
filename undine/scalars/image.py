@@ -7,8 +7,9 @@ from django.core.files.uploadedfile import UploadedFile  # noqa: TCH002
 from django.db.models.fields.files import ImageFieldFile
 from graphql import GraphQLScalarType
 
-from undine.errors import handle_conversion_errors
-from undine.utils import TypeDispatcher, dotpath
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.error_helpers import handle_conversion_errors
+from undine.utils.text import dotpath
 from undine.validation import validate_image_url
 
 __all__ = [

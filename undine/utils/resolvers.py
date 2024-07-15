@@ -123,6 +123,15 @@ class FieldResolverWithRootAndInfo:
         return self.func(**kwargs)
 
 
+@dataclass(frozen=True)
+class MutationResolver:
+    func: FunctionType | Callable[..., Any]
+
+    def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
+        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        return self.func(root, info, input_data)
+
+
 def is_graphql_resolver_info(value: Any) -> TypeGuard[GraphQLResolveInfo]:
     """Check is the given value is the GraphQLResolveInfo."""
     return isinstance(value, type) and issubclass(value, GraphQLResolveInfo)

@@ -2,19 +2,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from django.db import models
+from django.db import models, transaction
 from graphql import GraphQLResolveInfo, Undefined
 
-from undine.metaclasses import ModelGQLFilterMeta, ModelGQLOrderingMeta, ModelGQLTypeMeta
+from undine import error_codes
+from undine.errors import GraphQLStatusError
+from undine.metaclasses import ModelGQLFilterMeta, ModelGQLMutationMeta, ModelGQLOrderingMeta, ModelGQLTypeMeta
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
-from undine.typing import FilterResults, OrderingResults
+from undine.typing import FilterResults, OrderingResults, Root
+from undine.utils.error_helpers import handle_integrity_errors
+from undine.utils.text import dotpath
 
 if TYPE_CHECKING:
     from undine.optimizer.optimizer import QueryOptimizer
 
 __all__ = [
     "ModelGQLFilter",
+    "ModelGQLMutation",
     "ModelGQLOrdering",
     "ModelGQLType",
 ]
@@ -66,7 +71,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return queryset
 
     @classmethod
-    def __resolve_one__(cls, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> models.Model | None:
+    def __resolve_one__(cls, root: Root, info: GraphQLResolveInfo, **kwargs: Any) -> models.Model | None:
         """Top-level resolver for fetching a single model object."""
         queryset = cls.__get_queryset__(info)
         optimized_queryset = cls.__optimize_queryset__(info, queryset.filter(**kwargs))
@@ -76,7 +81,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return next(iter(optimized_queryset), None)
 
     @classmethod
-    def __resolve_many__(cls, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> models.QuerySet:
+    def __resolve_many__(cls, root: Root, info: GraphQLResolveInfo, **kwargs: Any) -> models.QuerySet:
         """Top-level resolver for fetching multiple model objects."""
         queryset = cls.__get_queryset__(info)
         return cls.__optimize_queryset__(info, queryset)
@@ -204,3 +209,79 @@ class ModelGQLOrdering(metaclass=ModelGQLOrderingMeta, model=Undefined):
             result.order_by.append(ordering_.get_expression(info, descending=descending))
 
         return result
+
+
+class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
+    """
+    Base class for creating mutations for a Django model.
+
+    The following parameters can be passed in the class definition:
+
+    - `model`: Set the Django model this `ModelGQLMutation` is for. This input is required.
+    - `output_type`: Output `ModelGQLType` for this mutation. By default, use the registered
+                    `ModelGQLType` for the given model.
+    - `lookup_field`: Name of the field to use for looking up the object for mutation. This is required for
+                      update and delete mutations. By default, this is set to None, which supports
+                      create mutations. Value 'pk' is recommended. Input for the specified lookup field
+                      will be automatically added (if missing) and marked as required.
+    - `name`: Override name for the mutation InputObjectType in the GraphQL schema. Use class name by default.
+    - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
+
+    >>> class MyMutation(ModelGQLMutation, model=MyModel): ...
+    """
+
+    # Members should use `__dunder__` names to avoid name collisions with possible input field names.
+
+    @classmethod
+    def __create_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> models.Model:
+        cls.__validate_create__(info, input_data)
+        with transaction.atomic(), handle_integrity_errors():
+            return cls.__mutation_handler__.create(input_data)
+
+    @classmethod
+    def __update_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> models.Model:
+        instance = cls.__get_instance__(input_data)
+        cls.__validate_update__(instance, info, input_data)
+        with transaction.atomic(), handle_integrity_errors():
+            return cls.__mutation_handler__.update(instance, input_data)
+
+    @classmethod
+    def __delete_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+        instance = cls.__get_instance__(input_data)
+        cls.__validate_delete__(instance, info, input_data)
+        with transaction.atomic(), handle_integrity_errors():
+            instance.delete()
+        return {"success": True}
+
+    @classmethod
+    def __custom_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
+        """Override this method for custom mutations."""
+
+    @classmethod
+    def __validate_create__(cls, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> None:
+        """Implement to perform additional validation before the given instance is created."""
+
+    @classmethod
+    def __validate_update__(cls, instance: models.Model, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> None:
+        """Implement to perform additional validation before the given instance is updated."""
+
+    @classmethod
+    def __validate_delete__(cls, instance: models.Model, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> None:
+        """Implement to perform additional validation before the given instance is deleted."""
+
+    @classmethod
+    def __get_instance__(cls, input_data: dict[str, Any]) -> models.Model:
+        key = cls.__lookup_field__
+        if key is None:
+            msg = "Cannot fetch instance without specifying a lookup field for the mutation."
+            raise GraphQLStatusError(msg, status=500, code=error_codes.LOOKUP_FIELD_MISSING)
+
+        value = input_data.get(key, Undefined)
+        if value is Undefined:
+            msg = (
+                f"Input data is missing value for the mutation lookup field {key!r}. "
+                f"Cannot fetch `{dotpath(cls.__model__)}` object for mutation."
+            )
+            raise GraphQLStatusError(msg, status=500, code=error_codes.LOOKUP_VALUE_MISSING)
+
+        return cls.__mutation_handler__.get(key=key, value=value)

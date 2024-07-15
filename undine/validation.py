@@ -7,7 +7,7 @@ from typing import Callable, ParamSpec, TypeVar
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator, get_available_image_extensions
 
-from undine.utils import comma_sep_str
+from undine.utils.text import comma_sep_str
 
 P = ParamSpec("P")
 T = TypeVar("T")

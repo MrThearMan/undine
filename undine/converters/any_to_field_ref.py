@@ -15,13 +15,9 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import FieldRef, ToManyField, ToOneField
-from undine.utils import (
-    DeferredModelField,
-    DeferredModelGQLType,
-    DeferredModelGQLTypeUnion,
-    TypeDispatcher,
-    get_wrapped,
-)
+from undine.utils.defer import DeferredModelField, DeferredModelGQLType, DeferredModelGQLTypeUnion
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.reflection import get_wrapped
 
 __all__ = [
     "convert_to_field_ref",
@@ -83,6 +79,8 @@ def _(ref: models.Field) -> FieldRef:
 
 @convert_to_field_ref.register
 def _(ref: str) -> FieldRef:
+    if ref == "self":
+        return "self"
     return DeferredModelField.from_lookup(ref)
 
 

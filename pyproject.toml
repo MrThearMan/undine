@@ -71,6 +71,7 @@ mkdocs-mermaid2-plugin = "1.1.1"
 [tool.poetry.group.lint.dependencies]
 pre-commit = "3.7.1"
 mypy = "1.10.1"
+grimp = "3.4"
 
 [tool.ruff]
 fix = true
@@ -228,6 +229,7 @@ known-first-party = [
 
 [tool.ruff.lint.flake8-import-conventions]
 banned-from = [
+    # Standard library
     "base64",
     "csv",
     "datetime",
@@ -248,6 +250,8 @@ banned-from = [
     "uuid",
     "xml",
     "yaml",
+    # Project specific
+    "error_codes",
 ]
 
 [tool.ruff.lint.flake8-self]

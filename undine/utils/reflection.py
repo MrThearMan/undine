@@ -4,19 +4,23 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generator
 
 from graphql import GraphQLResolveInfo
 
-from undine.errors import FuntionSignatureParsingError
+from undine.errors import FunctionSignatureParsingError
 
 if TYPE_CHECKING:
     from types import FrameType
+
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine.typing import T
 
 __all__ = [
     "cache_signature",
+    "generic_foreign_key_for_generic_relation",
+    "generic_relations_for_generic_foreign_key",
     "get_members",
     "get_signature",
     "get_wrapped",
@@ -99,7 +103,7 @@ def get_signature(func: FunctionType, *, depth: int = 0) -> inspect.Signature:
     try:
         return inspect.signature(func, eval_str=True, globals=frame_globals, locals=frame.f_locals)
     except NameError as error:
-        raise FuntionSignatureParsingError(name=error.name, func=func) from error
+        raise FunctionSignatureParsingError(name=error.name, func=func) from error
 
 
 def swappable_by_subclassing(cls: T) -> T:
@@ -126,3 +130,23 @@ def swappable_by_subclassing(cls: T) -> T:
 
     cls.__init_subclass__ = init_subclass
     return cls
+
+
+def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:
+    from django.contrib.contenttypes.fields import GenericRelation
+
+    return (field for field in fk.model._meta._relation_tree if isinstance(field, GenericRelation))
+
+
+def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> GenericForeignKey:
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
+    return next(
+        field
+        for field in relation.related_model._meta._relation_tree
+        if (
+            isinstance(field, GenericForeignKey)
+            and field.fk_field == relation.object_id_field_name
+            and field.ct_field == relation.content_type_field_name
+        )
+    )

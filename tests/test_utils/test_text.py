@@ -4,8 +4,15 @@ import pytest
 from hypothesis import given, strategies
 
 from tests.helpers import override_undine_settings
-from undine.utils import comma_sep_str, to_camel_case, to_pascal_case, to_snake_case
-from undine.utils.text import ALLOWED_NAME, dotpath, get_docstring
+from undine.utils.text import (
+    ALLOWED_NAME,
+    comma_sep_str,
+    dotpath,
+    get_docstring,
+    to_camel_case,
+    to_pascal_case,
+    to_snake_case,
+)
 
 
 @given(strategies.from_regex(ALLOWED_NAME))

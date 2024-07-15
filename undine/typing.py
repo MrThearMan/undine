@@ -4,7 +4,7 @@ import dataclasses
 import typing
 from dataclasses import dataclass
 from types import FunctionType, SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Protocol, TypeAlias, TypedDict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Protocol, TypeAlias, TypedDict, TypeVar, Union
 
 try:
     from typing import Self
@@ -17,14 +17,21 @@ from django.db.models.fields.related_descriptors import (
     create_forward_many_to_many_manager,
     create_reverse_many_to_one_manager,
 )
-from graphql import FieldNode, GraphQLResolveInfo, SelectionNode, Undefined
+from graphql import FieldNode, GraphQLObjectType, GraphQLResolveInfo, SelectionNode, Undefined
+
+from undine.model_graphql import ModelGQLType
 
 if TYPE_CHECKING:
-    from django.contrib.contenttypes.fields import GenericForeignKey
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.db.models.sql import Query
 
-    from undine.model_graphql import ModelGQLType
-    from undine.utils.defer import DeferredModelField, DeferredModelGQLType, DeferredModelGQLTypeUnion
+    from undine.model_graphql import ModelGQLMutation
+    from undine.utils.defer import (
+        DeferredModelField,
+        DeferredModelGQLMutation,
+        DeferredModelGQLType,
+        DeferredModelGQLTypeUnion,
+    )
 
 
 __all__ = [
@@ -106,40 +113,62 @@ ManyToManyManager: TypeAlias = create_forward_many_to_many_manager(models.Manage
 RelatedManager: TypeAlias = Union[OneToManyManager, ManyToManyManager]
 
 FieldRef: TypeAlias = Union[
-    models.Field,  #
+    models.Field,
     FunctionType,
     property,
     type["ModelGQLType"],
     "DeferredModelGQLType",
     "DeferredModelGQLTypeUnion",
     "DeferredModelField",
+    Literal["self"],
 ]
 FilterRef: TypeAlias = Union[
-    models.Field,  #
+    models.Field,
     FunctionType,
     models.Q,
     models.Expression,
     models.Subquery,
     "DeferredModelField",
+    Literal["self"],
 ]
 OrderingRef: TypeAlias = Union[
-    models.Field,  #
+    models.Field,
     models.Expression,
     models.F,
     FunctionType,
     "DeferredModelField",
+    Literal["self"],
 ]
-Ref: TypeAlias = FieldRef | FilterRef | OrderingRef
+InputRef: TypeAlias = Union[
+    models.Field,
+    type["ModelGQLMutation"],
+    "DeferredModelField",
+    "DeferredModelGQLMutation",
+    "GenericForeignKey",
+    "GenericRelation",
+    Literal["self"],
+]
+EntrypointRef: TypeAlias = Union[
+    FunctionType,
+    type["ModelGQLType"],
+    type["ModelGQLMutation"],
+]
+Ref: TypeAlias = FieldRef | FilterRef | OrderingRef | InputRef
 
+Root: TypeAlias = Any
 ToOneField: TypeAlias = models.OneToOneField | models.OneToOneRel | models.ForeignKey
 ToManyField: TypeAlias = models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel
+RelatedField: TypeAlias = Union[ToOneField, ToManyField, "GenericRelation", "GenericForeignKey"]
 ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
 QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q, models.Subquery]
-FilterFunc: TypeAlias = Callable[[Any, GraphQLResolveInfo, Any], models.Q]
-GetExprFunc: TypeAlias = Callable[[Any, GraphQLResolveInfo], ExpressionKind]
+FilterFunc: TypeAlias = Callable[[Root, GraphQLResolveInfo, Any], models.Q]
+GetExprFunc: TypeAlias = Callable[[Root, GraphQLResolveInfo], ExpressionKind]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
+MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
+MutationOutputType: TypeAlias = type[ModelGQLType] | GraphQLObjectType
+JsonType: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 
 
 @dataclass
@@ -170,3 +199,8 @@ class GraphQLParams:
     variables: dict[str, Any] | None
     operation_name: str | None
     extensions: dict[str, Any] | None
+
+
+TModel = TypeVar("TModel", bound=models.Model)
+MutationInputType = JsonType | models.Model | list[models.Model] | None
+PostSaveHandler = Callable[[models.Model], Any]

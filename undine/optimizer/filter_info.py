@@ -8,8 +8,8 @@ from graphql.execution.execute import get_field_def
 
 from undine.settings import undine_settings
 from undine.typing import GraphQLFilterInfo, ToManyField, ToOneField
-from undine.utils import to_snake_case
 from undine.utils.reflection import swappable_by_subclassing
+from undine.utils.text import to_snake_case
 
 from .ast import GraphQLASTWalker, get_underlying_type
 

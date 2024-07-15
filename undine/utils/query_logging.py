@@ -11,7 +11,7 @@ from typing import Any, Callable, Generator
 import sqlparse
 from django import db
 
-from undine.utils import undine_logger
+from undine.utils.logging import undine_logger
 
 THIS_FILE = str(Path(__file__).resolve())
 BASE_PATH = str(Path(__file__).resolve().parent.parent)

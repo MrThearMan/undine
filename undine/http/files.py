@@ -12,6 +12,7 @@ from typing import Any
 
 from django.core.files import File
 
+from undine import error_codes
 from undine.errors import GraphQLStatusError
 
 __all__ = [
@@ -99,7 +100,7 @@ def place_files(operations: dict[str, Any], files_map: dict[str, list[str]], fil
             file: File = files.get(key)
             if file is None:  # pragma: no cover
                 msg = f"File for path '{value}' not found in request files."
-                raise GraphQLStatusError(msg)
+                raise GraphQLStatusError(msg, status=400, code=error_codes.FILE_NOT_FOUND)
 
             _place_file(file, path, operations)
 
@@ -112,7 +113,7 @@ def _place_file(file: File, path: list[str], operations: dict[str, Any] | list[A
         ops: Any = operations[key]
     except (KeyError, IndexError, TypeError) as error:  # pragma: no cover
         msg = "File map does not lead to a null value."
-        raise GraphQLStatusError(msg) from error
+        raise GraphQLStatusError(msg, status=400, code=error_codes.FILE_NOT_FOUND) from error
 
     path_left = path[1:]
 
@@ -121,7 +122,7 @@ def _place_file(file: File, path: list[str], operations: dict[str, Any] | list[A
 
     if ops is not None:  # pragma: no cover
         msg = "File map does not lead to a null value."
-        raise GraphQLStatusError(message=msg)
+        raise GraphQLStatusError(msg, status=400, code=error_codes.FILE_NOT_FOUND)
 
     operations[key] = file
     return None

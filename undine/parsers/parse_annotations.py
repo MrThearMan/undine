@@ -7,7 +7,7 @@ from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors import MissingFunctionAnnotationsError, MissingFunctionReturnTypeError, NoFunctionParametersError
 from undine.typing import Parameter
-from undine.utils import get_signature
+from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
     from types import FunctionType

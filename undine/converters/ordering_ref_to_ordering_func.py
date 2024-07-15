@@ -5,8 +5,8 @@ from types import FunctionType
 from django.db import models
 
 from undine.typing import GetExprFunc, OrderingRef
-from undine.utils import TypeDispatcher, function_field_resolver
-from undine.utils.resolvers import FieldResolver
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.resolvers import FieldResolver, function_field_resolver
 
 __all__ = [
     "convert_ordering_ref_to_ordering_func",

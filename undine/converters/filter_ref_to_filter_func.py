@@ -7,8 +7,8 @@ from django.db import models
 from django.db.models.constants import LOOKUP_SEP
 
 from undine.typing import FilterFunc, FilterRef
-from undine.utils import TypeDispatcher, function_field_resolver
-from undine.utils.resolvers import FieldResolver
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.resolvers import FieldResolver, function_field_resolver
 
 __all__ = [
     "convert_filter_ref_to_filter_func",

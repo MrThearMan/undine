@@ -3,7 +3,7 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver, GraphQLResolveInfo
 
-from undine.utils import undine_logger
+from undine.utils.logging import undine_logger
 
 __all__ = [
     "error_logging_middleware",

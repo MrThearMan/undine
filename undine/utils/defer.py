@@ -5,14 +5,15 @@ from typing import TYPE_CHECKING, Callable
 
 from undine.errors import MissingDeferredGQLTypeError
 
+from .reflection import generic_relations_for_generic_foreign_key
 from .registry import TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
+    from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db import models
 
     from undine import ModelGQLType
-    from undine.typing import ToManyField, ToOneField
+    from undine.typing import RelatedField
 
 
 __all__ = [
@@ -34,7 +35,7 @@ class DeferredModelGQLType:
     model: type[models.Model]
 
     @classmethod
-    def for_related_field(cls, field: ToOneField | ToManyField | GenericRelation | GenericRel) -> DeferredModelGQLType:
+    def for_related_field(cls, field: RelatedField) -> DeferredModelGQLType:
         name = field.name
         description = getattr(field, "help_text", None)
         nullable = field.null is True
@@ -62,14 +63,11 @@ class DeferredModelGQLTypeUnion:
 
     @classmethod
     def for_generic_foreign_key(cls, field: GenericForeignKey) -> DeferredModelGQLTypeUnion:
-        from django.contrib.contenttypes.fields import GenericRelation
-
         name = field.name
         model = field.model
         deferred_types = [
-            DeferredModelGQLType.for_related_field(f.remote_field)
-            for f in model._meta._relation_tree
-            if isinstance(f, GenericRelation)
+            DeferredModelGQLType.for_related_field(field.remote_field)
+            for field in generic_relations_for_generic_foreign_key(field)
         ]
 
         def inner() -> list[type[ModelGQLType]]:
@@ -107,3 +105,12 @@ class DeferredModelField:
             return parse_model_field(model=model, lookup=name)
 
         return cls(get_field=inner)
+
+
+@dataclass(frozen=True)
+class DeferredModelGQLMutation:  # TODO: implement
+    """Represents a lazily evaluated ModelGQLMutation for a related field."""
+
+    @classmethod
+    def for_related_field(cls, field: RelatedField) -> DeferredModelGQLMutation:
+        pass

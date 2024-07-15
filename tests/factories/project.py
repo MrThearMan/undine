@@ -10,7 +10,6 @@ class ProjectFactory(GenericDjangoModelFactory[Project]):
         model = Project
 
     name = faker.Faker("name")
-    email = faker.Faker("email")
 
-    team = SubFactory("tests.factories.task.TaskFactory")
+    team = SubFactory("tests.factories.team.TeamFactory")
     tasks = OneToManyFactory("tests.factories.task.TaskFactory")

@@ -7,7 +7,7 @@ from django.db import models
 
 from undine.parsers import parse_return_annotation
 from undine.typing import FieldRef
-from undine.utils import TypeDispatcher
+from undine.utils.dispatcher import TypeDispatcher
 
 __all__ = [
     "is_field_ref_nullable",
@@ -45,6 +45,8 @@ def _(ref: models.Field) -> bool:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
     from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 
     @is_field_ref_nullable.register
@@ -53,4 +55,8 @@ def load_deferred_converters() -> None:
 
     @is_field_ref_nullable.register
     def _(_: DeferredModelGQLTypeUnion) -> bool:
+        return False
+
+    @is_field_ref_nullable.register
+    def _(_: GenericForeignKey) -> bool:
         return False

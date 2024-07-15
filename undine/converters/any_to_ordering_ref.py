@@ -8,7 +8,9 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import OrderingRef
-from undine.utils import DeferredModelField, TypeDispatcher, get_wrapped
+from undine.utils.defer import DeferredModelField
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.reflection import get_wrapped
 
 __all__ = [
     "convert_to_ordering_ref",
@@ -20,6 +22,8 @@ convert_to_ordering_ref = TypeDispatcher[Any, OrderingRef]()
 
 @convert_to_ordering_ref.register
 def _(ref: str) -> OrderingRef:
+    if ref == "self":
+        return "self"
     return DeferredModelField.from_lookup(ref)
 
 

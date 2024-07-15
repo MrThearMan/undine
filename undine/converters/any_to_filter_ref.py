@@ -8,7 +8,9 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import FilterRef
-from undine.utils import DeferredModelField, TypeDispatcher, get_wrapped
+from undine.utils.defer import DeferredModelField
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.reflection import get_wrapped
 
 __all__ = [
     "convert_to_filter_ref",
@@ -20,6 +22,8 @@ convert_to_filter_ref = TypeDispatcher[Any, FilterRef]()
 
 @convert_to_filter_ref.register
 def _(ref: str) -> FilterRef:
+    if ref == "self":
+        return "self"
     return DeferredModelField.from_lookup(ref)
 
 

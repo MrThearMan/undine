@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.http.request import MediaType
 
+from undine import error_codes
 from undine.errors import GraphQLStatusError
 from undine.http.files import place_files
 from undine.typing import GraphQLParams
@@ -29,7 +30,7 @@ class GraphQLRequestParamsParser:
 
         if not request.content_type:
             msg = "Must provide a 'Content-Type' header."
-            raise GraphQLStatusError(message=msg, status_code=415)
+            raise GraphQLStatusError(msg, status=415, code=error_codes.CONTENT_TYPE_MISSING)
 
         content_type = MediaType(request.content_type)
         charset: str = content_type.params.get("charset", "utf-8")
@@ -48,7 +49,7 @@ class GraphQLRequestParamsParser:
             return request.POST.dict()
 
         msg = f"'{content_type}' is not a supported content type."
-        raise GraphQLStatusError(message=msg, status_code=415)
+        raise GraphQLStatusError(msg, status=415, code=error_codes.UNSUPPORTED_CONTENT_TYPE)
 
     @classmethod
     def decode_body(cls, body: bytes, charset: str = "utf-8") -> str:
@@ -56,17 +57,17 @@ class GraphQLRequestParamsParser:
             return body.decode(encoding=charset)
         except Exception as error:
             msg = f"Could not decode body with encoding '{charset}'."
-            raise GraphQLStatusError(message=msg) from error
+            raise GraphQLStatusError(msg, status=400, code=error_codes.DECODING_ERROR) from error
 
     @classmethod
-    def load_json_dict(cls, string: str, *, decode_error_message: str, type_error_message: str) -> dict[str, Any]:
+    def load_json_dict(cls, string: str, *, decode_error_msg: str, type_error_msg: str) -> dict[str, Any]:
         try:
             data = json.loads(string)
         except Exception as error:
-            raise GraphQLStatusError(message=decode_error_message) from error
+            raise GraphQLStatusError(decode_error_msg, status=400, code=error_codes.DECODING_ERROR) from error
 
         if not isinstance(data, dict):
-            raise GraphQLStatusError(message=type_error_message) from None
+            raise GraphQLStatusError(type_error_msg, status=400, code=error_codes.DECODING_ERROR)
         return data
 
     @classmethod
@@ -74,8 +75,8 @@ class GraphQLRequestParamsParser:
         decoded = cls.decode_body(body, charset=charset)
         return cls.load_json_dict(
             decoded,
-            decode_error_message="Could not load JSON body.",
-            type_error_message="JSON body should convert to a dictionary.",
+            decode_error_msg="Could not load JSON body.",
+            type_error_msg="JSON body should convert to a dictionary.",
         )
 
     @classmethod
@@ -90,12 +91,12 @@ class GraphQLRequestParamsParser:
         operations: str | None = post_data.get("operations")
         if not isinstance(operations, str):
             msg = "File upload must contain an `operations` value."
-            raise GraphQLStatusError(message=msg)
+            raise GraphQLStatusError(msg, status=400, code=error_codes.MISSING_OPERATIONS)
 
         return cls.load_json_dict(
             operations,
-            decode_error_message="The `operations` value must be a JSON object.",
-            type_error_message="The `operations` value is not a mapping.",
+            decode_error_msg="The `operations` value must be a JSON object.",
+            type_error_msg="The `operations` value is not a mapping.",
         )
 
     @classmethod
@@ -103,18 +104,18 @@ class GraphQLRequestParamsParser:
         files_map_str: str | None = post_data.get("map")
         if not isinstance(files_map_str, str):
             msg = "File upload must contain an `map` value."
-            raise GraphQLStatusError(message=msg)
+            raise GraphQLStatusError(msg, status=400, code=error_codes.MISSING_FILE_MAP)
 
         files_map = cls.load_json_dict(
             files_map_str,
-            decode_error_message="The `map` value must be a JSON object.",
-            type_error_message="The `map` value is not a mapping.",
+            decode_error_msg="The `map` value must be a JSON object.",
+            type_error_msg="The `map` value is not a mapping.",
         )
 
         for value in files_map.values():
             if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
                 msg = "The `map` value is not a mapping from string to list of strings."
-                raise GraphQLStatusError(message=msg) from None
+                raise GraphQLStatusError(msg, status=400, code=error_codes.DECODING_ERROR)
 
         return files_map
 
@@ -123,7 +124,7 @@ class GraphQLRequestParamsParser:
         query: str | None = data.get("query")
         if not query or query == "null":
             msg = "Requests must contain a `query` string describing the graphql document."
-            raise GraphQLStatusError(message=msg) from None
+            raise GraphQLStatusError(msg, status=400, code=error_codes.EMPTY_QUERY)
 
         operation_name: str | None = data.get("operationName") or None
 
@@ -131,16 +132,16 @@ class GraphQLRequestParamsParser:
         if isinstance(variables, str):
             variables: dict[str, str] = cls.load_json_dict(
                 variables,
-                decode_error_message="Variables are invalid JSON.",
-                type_error_message="Variables must be a mapping.",
+                decode_error_msg="Variables are invalid JSON.",
+                type_error_msg="Variables must be a mapping.",
             )
 
         extensions: str | None = data.get("extensions")
         if isinstance(extensions, str):
             extensions: dict[str, str] = cls.load_json_dict(
                 extensions,
-                decode_error_message="Extensions are invalid JSON.",
-                type_error_message="Extensions must be a mapping.",
+                decode_error_msg="Extensions are invalid JSON.",
+                type_error_msg="Extensions must be a mapping.",
             )
 
         return GraphQLParams(
