@@ -54,10 +54,10 @@ django-settings-holder = ">=0.1.2"
 typing-extensions = {version = ">=4.12.2", python = "<3.11"}
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.2"
+pytest = "8.3.1"
 pytest-django = "4.8.0"
 coverage = "7.6.0"
-hypothesis = "6.108.2"
+hypothesis = "6.108.3"
 factory-boy = "3.3.0"
 tox = "4.16.0"
 tox-gh-actions = "3.2.0"
@@ -70,8 +70,8 @@ mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "3.7.1"
-mypy = "1.10.1"
-grimp = "3.4"
+mypy = "1.11.0"
+grimp = "3.4.1"
 
 [tool.ruff]
 fix = true
