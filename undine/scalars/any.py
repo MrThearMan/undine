@@ -6,8 +6,9 @@ from typing import Any, NoReturn
 from graphql import GraphQLScalarType
 from graphql.type.scalars import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
-from undine.errors import handle_conversion_errors
-from undine.utils import TypeDispatcher, dotpath
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.error_helpers import handle_conversion_errors
+from undine.utils.text import dotpath
 
 __all__ = [
     "GraphQLAny",

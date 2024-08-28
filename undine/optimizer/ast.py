@@ -19,7 +19,7 @@ from graphql.execution.execute import get_field_def
 
 from undine.errors import OptimizerError
 from undine.settings import undine_settings
-from undine.utils import to_snake_case
+from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
     from undine import ModelGQLType

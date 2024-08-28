@@ -4,8 +4,9 @@ from typing import Any, Collection
 
 from graphql import GraphQLDirective, GraphQLNamedType, GraphQLObjectType, GraphQLSchema, specified_directives
 
-from undine.fields import Field
-from undine.utils import get_docstring, get_members, get_schema_name
+from undine.fields import Entrypoint
+from undine.utils.reflection import get_members
+from undine.utils.text import get_docstring, get_schema_name
 
 __all__ = [
     "create_schema",
@@ -26,14 +27,14 @@ def create_schema(  # noqa: PLR0913
     schema_extensions: dict[str, Any] | None = None,
 ) -> GraphQLSchema:
     """Creates the GraphQL schema."""
-    query_object_type = create_object_type(query_class, query_extensions)
-    mutation_object_type = create_object_type(mutation_class, mutation_extensions)
-    subscription_object_type = create_object_type(subscription_class, subscription_extensions)
+    query_object_type = create_query(query_class, query_extensions)
+    mutation_object_type = create_mutation(mutation_class, mutation_extensions)
+    # subscription_object_type = create_object_type(subscription_class, subscription_extensions)
 
     return GraphQLSchema(
         query=query_object_type,
         mutation=mutation_object_type,
-        subscription=subscription_object_type,
+        subscription=None,
         types=additional_types,
         directives=(*specified_directives, *additional_directives) if additional_directives else None,
         description=schema_description,
@@ -41,16 +42,25 @@ def create_schema(  # noqa: PLR0913
     )
 
 
-def create_object_type(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
+def create_query(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
     if cls is None:
         return None
 
     return GraphQLObjectType(
         cls.__name__,
-        fields={
-            get_schema_name(name): field.get_graphql_field(top_level=True)  #
-            for name, field in get_members(cls, Field)
-        },
+        fields={get_schema_name(name): entr.get_graphql_field() for name, entr in get_members(cls, Entrypoint)},
+        extensions=extensions,
+        description=get_docstring(cls),
+    )
+
+
+def create_mutation(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
+    if cls is None:
+        return None
+
+    return GraphQLObjectType(
+        cls.__name__,
+        fields={get_schema_name(name): entr.get_graphql_field() for name, entr in get_members(cls, Entrypoint)},
         extensions=extensions,
         description=get_docstring(cls),
     )

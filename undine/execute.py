@@ -16,6 +16,7 @@ from graphql import (
 )
 
 from undine.settings import undine_settings
+from undine.utils.logging import undine_logger
 
 if TYPE_CHECKING:
     from undine.typing import GraphQLParams
@@ -36,8 +37,10 @@ def _convert_errors_to_execution_result(func: Callable[P, ExecutionResult]) -> C
         try:
             return func(*args, **kwargs)
         except GraphQLError as error:
+            undine_logger.info("Expected error in GraphQL execution", exc_info=error)
             return ExecutionResult(errors=[error], extensions=error.extensions)
         except Exception as error:  # noqa: BLE001
+            undine_logger.error("Unexpected error in GraphQL execution", exc_info=error)
             return ExecutionResult(errors=[GraphQLError(message=str(error))], extensions={"status_code": 500})
 
     return wrapper

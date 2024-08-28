@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, TypeGuard
 
-from django.db import models
 from graphql import GraphQLResolveInfo
 
 from undine.settings import undine_settings
@@ -13,13 +12,20 @@ from .reflection import get_signature
 if TYPE_CHECKING:
     from types import FunctionType
 
+    from django.db import models
     from graphql import GraphQLFieldResolver
 
     from undine.typing import RelatedManager
 
 __all__ = [
+    "FieldResolver",
+    "FieldResolverWithInfo",
+    "FieldResolverWithRoot",
+    "FieldResolverWithRootAndInfo",
+    "ModelFieldResolver",
+    "ModelManyRelatedResolver",
+    "MutationResolver",
     "function_field_resolver",
-    "is_pk_property",
     "model_field_resolver",
 ]
 
@@ -62,7 +68,7 @@ def function_field_resolver(func: FunctionType, *, depth: int = 0) -> GraphQLFie
     return FieldResolver(func=func)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ModelFieldResolver:
     name: str
 
@@ -70,7 +76,7 @@ class ModelFieldResolver:
         return getattr(model, self.name, None)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ModelManyRelatedResolver:
     name: str
 
@@ -79,7 +85,7 @@ class ModelManyRelatedResolver:
         return related_manager.get_queryset()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FieldResolver:
     func: FunctionType | Callable[..., Any]
     other_params: list[str] = field(default_factory=list)
@@ -88,7 +94,7 @@ class FieldResolver:
         return self.func(**kwargs)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FieldResolverWithRoot:
     func: FunctionType | Callable[..., Any]
     root_param: str
@@ -99,7 +105,7 @@ class FieldResolverWithRoot:
         return self.func(**kwargs)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FieldResolverWithInfo:
     func: FunctionType | Callable[..., Any]
     info_param: str
@@ -110,7 +116,7 @@ class FieldResolverWithInfo:
         return self.func(**kwargs)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FieldResolverWithRootAndInfo:
     func: FunctionType | Callable[..., Any]
     root_param: str
@@ -123,11 +129,15 @@ class FieldResolverWithRootAndInfo:
         return self.func(**kwargs)
 
 
+@dataclass(frozen=True)
+class MutationResolver:
+    func: FunctionType | Callable[..., Any]
+
+    def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
+        input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
+        return self.func(root, info, input_data)
+
+
 def is_graphql_resolver_info(value: Any) -> TypeGuard[GraphQLResolveInfo]:
     """Check is the given value is the GraphQLResolveInfo."""
     return isinstance(value, type) and issubclass(value, GraphQLResolveInfo)
-
-
-def is_pk_property(value: Any) -> TypeGuard[property]:
-    """Check is the given value is the Django Model 'pk' property."""
-    return isinstance(value, property) and value.fget == models.Model._get_pk_val

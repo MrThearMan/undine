@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from functools import wraps
 from string import Formatter
-from typing import Any, Callable, ClassVar, ParamSpec, TypeVar
+from typing import Any, ClassVar
 
 from graphql import GraphQLError, ValueNode, print_ast
 from graphql.pyutils import inspect
@@ -11,8 +10,6 @@ __all__ = [
     "FuntionSignatureParsingError",
     "GraphQLConversionError",
     "GraphQLConversionError",
-    "GraphQLNotFoundError",
-    "GraphQLNotFoundError",
     "GraphQLStatusError",
     "GraphQLStatusError",
     "InvalidParserError",
@@ -21,6 +18,7 @@ __all__ = [
     "MissingFunctionAnnotationsError",
     "MissingFunctionReturnTypeError",
     "MissingModelError",
+    "MissingOutputTypeError",
     "ModelFieldDoesNotExistError",
     "ModelFieldNotARelationError",
     "NoFunctionParametersError",
@@ -29,7 +27,6 @@ __all__ = [
     "TypeDispatcherError",
     "TypeRegistryDuplicateError",
     "UndineError",
-    "handle_conversion_errors",
 ]
 
 
@@ -37,7 +34,7 @@ class ErrorMessageFormatter(Formatter):
     """Formatter for error strings."""
 
     def format_field(self, value: Any, format_spec: str) -> str:
-        from undine.utils import comma_sep_str, dotpath
+        from undine.utils.text import comma_sep_str, dotpath
 
         if format_spec == "dotpath":
             return dotpath(value)
@@ -83,6 +80,16 @@ class InvalidParserError(UndineError):
     msg = "'{cls:dotpath}' does not implement 'DocstringParserProtocol'."
 
 
+class LookupFieldAttributeError(UndineError):
+    """Error raised if the lookup field on a ModelGQLMutation is not an Input object."""
+
+    msg = (
+        "Attribute {name} exists on a model, but is not an Input field. "
+        "'{name}' needs to be an Input field since it has been declared "
+        "as the lookup field for this ModelGQLMutation."
+    )
+
+
 class MismatchingModelError(UndineError):
     """
     Error raised if provided model for `ModelGQLFilter` or `ModelGQLOrdering`
@@ -126,6 +133,17 @@ class ModelFieldNotARelationError(UndineError):
     """Error raised if a field is not a relation in the given model."""
 
     msg = "Field '{field}' is not a relation in model '{model:dotpath}'."
+
+
+class MissingOutputTypeError(UndineError):
+    """Error raised if no output type is provided to `ModelGQLMutation`."""
+
+    msg = (
+        "Could not find an `output_type` for {name}. Make sure that a `ModelGQLType` "
+        "is registered for the model of this mutation. You can also provide an `output_type` "
+        "keyword argument to the mutation class definition: "
+        "`class {name}({cls}, output_type=MyModelGQLType)`."
+    )
 
 
 class NoFunctionParametersError(UndineError):
@@ -174,17 +192,11 @@ class TypeRegistryDuplicateError(UndineError):
 
 
 class GraphQLStatusError(GraphQLError):
-    def __init__(self, message: str, status_code: int = 400, **kwargs: Any) -> None:
+    def __init__(self, message: str, *, status: int, code: str, **kwargs: Any) -> None:
         extensions = kwargs.setdefault("extensions", {})
-        extensions["status_code"] = status_code
-        super().__init__(message, **kwargs)
-
-
-class GraphQLNotFoundError(GraphQLError):
-    def __init__(self, message: str, **kwargs: Any) -> None:
-        extensions = kwargs.setdefault("extensions", {})
-        extensions["error_code"] = "NOT_FOUND"
-        extensions["status_code"] = 404
+        extensions["status_code"] = status
+        if code is not None:
+            extensions["error_code"] = code
         super().__init__(message, **kwargs)
 
 
@@ -200,25 +212,3 @@ class GraphQLConversionError(GraphQLError):
             kwargs["message"] += f": {extra}"
 
         super().__init__(**kwargs)
-
-
-# Helpers
-
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def handle_conversion_errors(string: str):  # noqa: ANN201
-    def decorator(func: Callable[P, R], **kwargs: Any) -> Callable[P, R]:
-        @wraps(func)
-        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            try:
-                return func(*args, **kwargs)
-            except GraphQLConversionError:
-                raise
-            except Exception as error:
-                raise GraphQLConversionError(string, args[0], extra=str(error)) from error
-
-        return wrapper
-
-    return decorator

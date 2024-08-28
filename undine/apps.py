@@ -16,7 +16,7 @@ class UndineConfig(AppConfig):
         # django apps are ready. This is to avoid circular imports and
         # issues importing from other django apps.
         import undine.converters
-        from undine.utils import get_members
+        from undine.utils.reflection import get_members
 
         for _, module in get_members(undine.converters, ModuleType):
             if hasattr(module, "load_deferred_converters") and callable(module.load_deferred_converters):

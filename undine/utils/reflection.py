@@ -4,7 +4,7 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generator
 
 from graphql import GraphQLResolveInfo
 
@@ -13,13 +13,17 @@ from undine.errors import FuntionSignatureParsingError
 if TYPE_CHECKING:
     from types import FrameType
 
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+
     from undine.typing import T
 
 __all__ = [
-    "cache_signature",
+    "cache_signature_if_function",
+    "generic_foreign_key_for_generic_relation",
+    "generic_relations_for_generic_foreign_key",
     "get_members",
     "get_signature",
-    "get_wrapped",
+    "get_wrapped_func",
     "swappable_by_subclassing",
 ]
 
@@ -29,8 +33,11 @@ def get_members(obj: object, type_: type[T]) -> list[tuple[str, T]]:
     return inspect.getmembers(obj, lambda x: isinstance(x, type_))
 
 
-def get_wrapped(func: partial) -> FunctionType:
-    """Get the inner function of a partial function or one wrapped with `functools.wraps`."""
+def get_wrapped_func(func: partial | classmethod | staticmethod | property | FunctionType) -> FunctionType:
+    """
+    Get the inner function of a partial function, classmethod, staticmethod, property,
+    or a function wrapped with `functools.wraps`.
+    """
     while True:
         if hasattr(func, "__wrapped__"):  # Wrapped with functools.wraps
             func = func.__wrapped__
@@ -38,11 +45,17 @@ def get_wrapped(func: partial) -> FunctionType:
         if isinstance(func, partial):
             func = func.func
             continue
+        if isinstance(func, (classmethod, staticmethod)):
+            func = func.__func__
+            continue
+        if isinstance(func, property):
+            func = func.fget
+            continue
         break
     return func
 
 
-def cache_signature(value: T, *, depth: int = 0) -> T:
+def cache_signature_if_function(value: T, *, depth: int = 0) -> T:
     """
     Cache signature of the given value if it's a known function type.
     This allows calling `get_signature` later without knowing the function globals or locals.
@@ -51,12 +64,7 @@ def cache_signature(value: T, *, depth: int = 0) -> T:
     :param depth: How many function calls deep is the code calling this method compared to the parsed function?
     :returns: The value as is.
     """
-    if isinstance(value, partial):
-        value = get_wrapped(value)
-    if isinstance(value, (classmethod, staticmethod)):
-        value = value.__func__
-    if isinstance(value, property):
-        value = value.fget
+    value = get_wrapped_func(value)
     if isinstance(value, FunctionType):
         get_signature(value, depth=depth + 1)
     return value
@@ -126,3 +134,23 @@ def swappable_by_subclassing(cls: T) -> T:
 
     cls.__init_subclass__ = init_subclass
     return cls
+
+
+def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:
+    from django.contrib.contenttypes.fields import GenericRelation
+
+    return (field for field in fk.model._meta._relation_tree if isinstance(field, GenericRelation))
+
+
+def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> GenericForeignKey:
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
+    return next(
+        field
+        for field in relation.related_model._meta.get_fields()
+        if (
+            isinstance(field, GenericForeignKey)
+            and field.fk_field == relation.object_id_field_name
+            and field.ct_field == relation.content_type_field_name
+        )
+    )

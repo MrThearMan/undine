@@ -121,16 +121,18 @@ class OptimizationCompiler(GraphQLASTWalker):
             super().handle_to_many_field(parent_type, field_node, related_field, related_model)
 
     def handle_custom_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        undine_field: Field | None = field_type.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
-        if undine_field is None:  # pragma: no cover
-            msg = (
-                f"Field '{field_node.name.value}' not found from object type '{field_type}'. "
-                f"Cannot optimize custom field."
-            )
-            undine_logger.warning(msg)
-            return None
+        field = field_type.fields.get(field_node.name.value)
+        if field is not None:
+            undine_field: Field | None = field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
+            if undine_field is not None:
+                return undine_field.optimizer_hook(self.optimizer)
 
-        return undine_field.optimizer_hook(self.optimizer)
+        msg = (
+            f"Field '{field_node.name.value}' not found from object type '{field_type}'. "
+            f"Cannot optimize custom field."
+        )
+        undine_logger.warning(msg)
+        return None
 
     @contextlib.contextmanager
     def use_optimizer(self, optimizer: QueryOptimizer) -> None:

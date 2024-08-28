@@ -4,7 +4,7 @@ import dataclasses
 import typing
 from dataclasses import dataclass
 from types import FunctionType, SimpleNamespace
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Protocol, TypeAlias, TypedDict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Protocol, TypeAlias, TypedDict, TypeVar, Union
 
 try:
     from typing import Self
@@ -20,11 +20,11 @@ from django.db.models.fields.related_descriptors import (
 from graphql import FieldNode, GraphQLResolveInfo, SelectionNode, Undefined
 
 if TYPE_CHECKING:
-    from django.contrib.contenttypes.fields import GenericForeignKey
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.db.models.sql import Query
 
-    from undine.model_graphql import ModelGQLType
-    from undine.utils.defer import DeferredModelField, DeferredModelGQLType, DeferredModelGQLTypeUnion
+    from undine import ModelGQLMutation, ModelGQLType
+    from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 
 
 __all__ = [
@@ -58,7 +58,7 @@ class FieldParams(TypedDict):
     many: bool
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Parameter:
     name: str
     annotation: type
@@ -105,41 +105,52 @@ OneToManyManager: TypeAlias = create_reverse_many_to_one_manager(models.Manager,
 ManyToManyManager: TypeAlias = create_forward_many_to_many_manager(models.Manager, _rel_mock, True)  # noqa: FBT003
 RelatedManager: TypeAlias = Union[OneToManyManager, ManyToManyManager]
 
-FieldRef: TypeAlias = Union[
-    models.Field,  #
+EntrypointRef: TypeAlias = Union[
+    type["ModelGQLType"],
+    type["ModelGQLMutation"],
     FunctionType,
-    property,
+]
+FieldRef: TypeAlias = Union[
+    models.Field,
     type["ModelGQLType"],
     "DeferredModelGQLType",
     "DeferredModelGQLTypeUnion",
-    "DeferredModelField",
+    models.Expression,
+    models.Subquery,
+    FunctionType,
 ]
 FilterRef: TypeAlias = Union[
-    models.Field,  #
-    FunctionType,
+    models.Field,
     models.Q,
     models.Expression,
     models.Subquery,
-    "DeferredModelField",
+    FunctionType,
 ]
 OrderingRef: TypeAlias = Union[
-    models.Field,  #
-    models.Expression,
     models.F,
-    FunctionType,
-    "DeferredModelField",
+    models.Expression,
 ]
-Ref: TypeAlias = FieldRef | FilterRef | OrderingRef
+InputRef: TypeAlias = Union[
+    models.Field,
+    type["ModelGQLMutation"],
+]
 
+Ref: TypeAlias = FieldRef | FilterRef | OrderingRef | InputRef
+
+Root: TypeAlias = Any
 ToOneField: TypeAlias = models.OneToOneField | models.OneToOneRel | models.ForeignKey
 ToManyField: TypeAlias = models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel
+RelatedField: TypeAlias = Union[ToOneField, ToManyField, "GenericRelation", "GenericForeignKey"]
 ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
 QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
+MutationResolver: TypeAlias = Callable[[Root, GraphQLResolveInfo, dict[str, Any]], Model]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q, models.Subquery]
-FilterFunc: TypeAlias = Callable[[Any, GraphQLResolveInfo, Any], models.Q]
-GetExprFunc: TypeAlias = Callable[[Any, GraphQLResolveInfo], ExpressionKind]
+FilterFunc: TypeAlias = Callable[[Root, GraphQLResolveInfo, Any], models.Q]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
+MutationMethod: TypeAlias = Literal["create", "update", "delete"]
+MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
+JsonType: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 
 
 @dataclass
@@ -152,21 +163,26 @@ class GraphQLFilterInfo:
     children: dict[str, GraphQLFilterInfo] = dataclasses.field(default_factory=dict)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FilterResults:
     q: models.Q
     distinct: bool
     aliases: dict[str, models.Expression | models.Subquery]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderingResults:
     order_by: list[models.OrderBy]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GraphQLParams:
     query: str
     variables: dict[str, Any] | None
     operation_name: str | None
     extensions: dict[str, Any] | None
+
+
+TModel = TypeVar("TModel", bound=models.Model)
+MutationInputType = JsonType | models.Model | list[models.Model] | None
+PostSaveHandler = Callable[[models.Model], Any]

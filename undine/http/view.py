@@ -11,7 +11,6 @@ from django.views import View
 from undine.execute import execute_graphql
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.utils.query_logging import capture_database_queries
 
 from .responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 
@@ -40,8 +39,7 @@ class GraphQLView(View):
             return render(request, "undine/graphiql.html")
 
         params = GraphQLRequestParamsParser.run(request)
-        with capture_database_queries():  # TODO: Debuging, remove later
-            result = execute_graphql(params, request.method, request)
+        result = execute_graphql(params, request.method, request)
         return self.json_response(result, media_type)
 
     @staticmethod

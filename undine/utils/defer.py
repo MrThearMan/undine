@@ -5,24 +5,24 @@ from typing import TYPE_CHECKING, Callable
 
 from undine.errors import MissingDeferredGQLTypeError
 
+from .reflection import generic_relations_for_generic_foreign_key
 from .registry import TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
+    from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db import models
 
     from undine import ModelGQLType
-    from undine.typing import ToManyField, ToOneField
+    from undine.typing import RelatedField
 
 
 __all__ = [
-    "DeferredModelField",
     "DeferredModelGQLType",
     "DeferredModelGQLTypeUnion",
 ]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DeferredModelGQLType:
     """Represents a lazily evaluated ModelGQLType for a related field."""
 
@@ -34,9 +34,9 @@ class DeferredModelGQLType:
     model: type[models.Model]
 
     @classmethod
-    def for_related_field(cls, field: ToOneField | ToManyField | GenericRelation | GenericRel) -> DeferredModelGQLType:
+    def for_related_field(cls, field: RelatedField) -> DeferredModelGQLType:
         name = field.name
-        description = getattr(field, "help_text", None)
+        description = getattr(field, "help_text", None) or None
         nullable = field.null is True
         many = bool(field.many_to_many or field.one_to_many)
         model = field.related_model
@@ -51,7 +51,7 @@ class DeferredModelGQLType:
         return cls(get_type=inner, name=name, description=description, nullable=nullable, many=many, model=model)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DeferredModelGQLTypeUnion:
     """Represents a lazily evaluated ModelGQLType for a related field."""
 
@@ -62,48 +62,23 @@ class DeferredModelGQLTypeUnion:
 
     @classmethod
     def for_generic_foreign_key(cls, field: GenericForeignKey) -> DeferredModelGQLTypeUnion:
-        from django.contrib.contenttypes.fields import GenericRelation
-
         name = field.name
         model = field.model
         deferred_types = [
-            DeferredModelGQLType.for_related_field(f.remote_field)
-            for f in model._meta._relation_tree
-            if isinstance(f, GenericRelation)
+            DeferredModelGQLType.for_related_field(field.remote_field)
+            for field in generic_relations_for_generic_foreign_key(field)
         ]
 
         def inner() -> list[type[ModelGQLType]]:
             return [deferred_type.get_type() for deferred_type in deferred_types]
 
-        return cls(get_types=inner, name=name, description="", model=model)
+        return cls(get_types=inner, name=name, description=None, model=model)
 
 
-@dataclass(frozen=True)
-class DeferredModelField:
-    """Represents a lazily evaluated Django Model Field."""
-
-    get_field: Callable[[type[models.Model], str], models.Field]
-    name: str | None = None
+@dataclass(frozen=True, slots=True)
+class DeferredModelGQLMutation:  # TODO: implement
+    """Represents a lazily evaluated ModelGQLMutation for a related field."""
 
     @classmethod
-    def from_lookup(cls, lookup: str) -> DeferredModelField:
-        """Defer loading a field until the model of the filed is known."""
-        from undine.parsers import parse_model_field
-
-        def inner(model: type[models.Model], name: str) -> models.Field:
-            return parse_model_field(model=model, lookup=name)
-
-        return cls(get_field=inner, name=lookup)
-
-    @classmethod
-    def from_none(cls) -> DeferredModelField:
-        """
-        Defer loading a field until the model and the filed name are given.
-        This is a sort of "promise" that a filed should be added later.
-        """
-        from undine.parsers import parse_model_field
-
-        def inner(model: type[models.Model], name: str) -> models.Field:
-            return parse_model_field(model=model, lookup=name)
-
-        return cls(get_field=inner)
+    def for_related_field(cls, field: RelatedField) -> DeferredModelGQLMutation:
+        pass

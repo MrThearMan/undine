@@ -8,8 +8,8 @@ from graphql.execution.execute import get_field_def
 
 from undine.settings import undine_settings
 from undine.typing import GraphQLFilterInfo, ToManyField, ToOneField
-from undine.utils import to_snake_case
 from undine.utils.reflection import swappable_by_subclassing
+from undine.utils.text import to_snake_case
 
 from .ast import GraphQLASTWalker, get_underlying_type
 
@@ -59,8 +59,8 @@ class FilterInfoCompiler(GraphQLASTWalker):
                 distinct = filter_results.distinct
                 aliases = filter_results.aliases
             if model_type.__ordering__:
-                ordering_data = arg_values.get(undine_settings.ORDERING_INPUT_TYPE_KEY, [])
-                ordering_results = model_type.__ordering__.__build__(ordering_data, self.info)
+                ordering_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
+                ordering_results = model_type.__ordering__.__build__(ordering_data)
                 order_by = ordering_results.order_by
 
         self.filter_info[field_name] = GraphQLFilterInfo(

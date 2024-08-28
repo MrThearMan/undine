@@ -6,7 +6,8 @@ from django.db import models
 
 from undine.parsers import docstring_parser
 from undine.typing import Ref
-from undine.utils import TypeDispatcher, get_docstring
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.text import get_docstring
 
 __all__ = [
     "convert_ref_to_field_description",
@@ -34,6 +35,8 @@ def _(_: models.Expression | models.F | models.Q | models.Subquery) -> Any:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
     from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 
     @convert_ref_to_field_description.register
@@ -43,3 +46,7 @@ def load_deferred_converters() -> None:
     @convert_ref_to_field_description.register
     def _(ref: DeferredModelGQLTypeUnion) -> Any:
         return ref.description
+
+    @convert_ref_to_field_description.register
+    def _(_: GenericForeignKey) -> Any:
+        return None

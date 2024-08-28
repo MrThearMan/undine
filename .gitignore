@@ -1,5 +1,6 @@
 *.idea
 *.tox
+*.grimp_cache
 *.ruff_cache
 *.mypy_cache
 *.hypothesis

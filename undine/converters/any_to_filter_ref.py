@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from functools import partial
 from types import FunctionType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
+from undine.parsers import parse_model_field
 from undine.typing import FilterRef
-from undine.utils import DeferredModelField, TypeDispatcher, get_wrapped
+from undine.utils.dispatcher import TypeDispatcher
+
+if TYPE_CHECKING:
+    from undine.fields import Filter
+
 
 __all__ = [
     "convert_to_filter_ref",
@@ -19,40 +23,32 @@ convert_to_filter_ref = TypeDispatcher[Any, FilterRef]()
 
 
 @convert_to_filter_ref.register
-def _(ref: str) -> FilterRef:
-    return DeferredModelField.from_lookup(ref)
+def _(ref: str, **kwargs: Any) -> FilterRef:
+    caller: Filter = kwargs["caller"]
+    return parse_model_field(model=caller.owner.__model__, lookup=ref)
 
 
 @convert_to_filter_ref.register
-def _(_: None) -> FilterRef:
-    return DeferredModelField.from_none()
+def _(_: None, **kwargs: Any) -> FilterRef:
+    caller: Filter = kwargs["caller"]
+    return parse_model_field(model=caller.owner.__model__, lookup=caller.name)
 
 
 @convert_to_filter_ref.register
-def _(ref: FunctionType) -> FilterRef:
+def _(ref: FunctionType, **kwargs: Any) -> FilterRef:
     return ref
 
 
 @convert_to_filter_ref.register
-def _(ref: partial) -> FilterRef:
-    return get_wrapped(ref)
-
-
-@convert_to_filter_ref.register
-def _(ref: staticmethod | classmethod) -> FilterRef:
-    return ref.__func__  # type: ignore[return-value]
-
-
-@convert_to_filter_ref.register
-def _(ref: models.Q | models.Expression | models.Subquery) -> FilterRef:
+def _(ref: models.Q | models.Expression | models.Subquery, **kwargs: Any) -> FilterRef:
     return ref
 
 
 @convert_to_filter_ref.register
-def _(ref: DeferredAttribute) -> FilterRef:
-    return convert_to_filter_ref(ref.field)
+def _(ref: DeferredAttribute, **kwargs: Any) -> FilterRef:
+    return ref.field
 
 
 @convert_to_filter_ref.register
-def _(ref: models.Field) -> FilterRef:
+def _(ref: models.Field, **kwargs: Any) -> FilterRef:
     return ref

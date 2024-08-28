@@ -27,7 +27,8 @@ from undine.scalars import (
     GraphQLTime,
     GraphQLUUID,
 )
-from undine.utils import TypeDispatcher, get_docstring
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.text import get_docstring
 
 __all__ = [
     "convert_type_to_graphql_output_type",

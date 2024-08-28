@@ -8,8 +8,9 @@ from django.core.validators import URLValidator
 from django.db.models.fields.files import FieldFile
 from graphql import GraphQLScalarType
 
-from undine.errors import handle_conversion_errors
-from undine.utils import TypeDispatcher, dotpath
+from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.error_helpers import handle_conversion_errors
+from undine.utils.text import dotpath
 from undine.validation import validate_file_url
 
 __all__ = [
