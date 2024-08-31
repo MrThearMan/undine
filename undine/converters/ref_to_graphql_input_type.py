@@ -80,7 +80,7 @@ def load_deferred_converters() -> None:
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLInputType:
-        return ref.__input_object__
+        return ref.__input_type__
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: GenericRelation, **kwargs: Any) -> GraphQLInputType:

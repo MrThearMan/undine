@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Collection
+from typing import TYPE_CHECKING, Any, Iterable
 
-from django.core.exceptions import FieldDoesNotExist
-from graphql import GraphQLInputObjectType, Undefined
+from graphql import GraphQLInputObjectType, GraphQLObjectType, Undefined
 
-from undine.errors import (
-    LookupFieldAttributeError,
-    MissingModelError,
-    MissingOutputTypeError,
-    ModelFieldDoesNotExistError,
-)
-from undine.fields import Input
+from undine.errors import MissingModelError, MissingOutputTypeError
+from undine.fields import Input, get_inputs_for_model
 from undine.parsers import parse_model_field
 from undine.settings import undine_settings
+from undine.utils.decorators import cached_class_property
 from undine.utils.delete_output_type import DeleteMutationOutputType
 from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_members
@@ -38,144 +33,100 @@ class ModelGQLMutationMeta(type):
 
     def __new__(  # noqa: PLR0913
         cls,
-        __name: str,
-        __bases: tuple[type, ...],
-        __attrs: dict[str, Any],
+        _name: str,
+        _bases: tuple[type, ...],
+        _attrs: dict[str, Any],
         *,
         model: type[models.Model] | None = None,
-        output_type: type[ModelGQLType] | None = None,
+        mutation_kind: MutationKind | None = None,
+        output_type: type[ModelGQLType] | GraphQLObjectType | None = None,
         auto_inputs: bool = False,
-        exclude: Collection[str] = (),
+        exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         name: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> ModelGQLMutationMeta:
         """See `ModelGQLMutation` for documentation of arguments."""
         if model is Undefined:  # Early return for the `ModelGQLMutation` class itself.
-            return super().__new__(cls, __name, __bases, __attrs)
+            return super().__new__(cls, _name, _bases, _attrs)
 
         if model is None:
-            raise MissingModelError(name=__name, cls="ModelGQLMutation")
+            raise MissingModelError(name=_name, cls="ModelGQLMutation")
+
+        if mutation_kind is None:
+            if "create" in _name.lower():
+                mutation_kind = "create"
+            elif "update" in _name.lower():
+                mutation_kind = "update"
+            elif "delete" in _name.lower():
+                mutation_kind = "delete"
+            else:
+                mutation_kind = "custom"
+
+        if mutation_kind == "delete" and output_type is None:
+            output_type = DeleteMutationOutputType
+
+        if lookup_field not in _attrs and mutation_kind in ["create", "update"]:
+            field = parse_model_field(model=model, lookup=lookup_field)
+            _attrs[lookup_field] = Input(field, required=True)
 
         if auto_inputs:
-            cls._add_all_inputs(model, __attrs, exclude)
+            _attrs |= get_inputs_for_model(model, exclude=set(exclude) | set(_attrs))
 
-        if lookup_field is not None:  # Not a create mutation
-            cls._add_lookup_input_field(model, lookup_field, __attrs)
-
-        # Add model to attrs before class creation so that it's available during `__set_name__`.
-        __attrs["__model__"] = model
-        instance: type[ModelGQLMutation] = super().__new__(cls, __name, __bases, __attrs)  # type: ignore[assignment]
+        # Add model to attrs before class creation so that it's available during `Input.__set_name__`.
+        _attrs["__model__"] = model
+        instance: type[ModelGQLMutation] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
         # Members should use '__dunder__' names to avoid name collisions with possible filter names.
         instance.__model__ = model
+        instance.__input_map__ = {get_schema_name(name): input_ for name, input_ in get_members(instance, Input)}
+        instance.__lookup_field__ = lookup_field
+        instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
-        instance.__lookup_field__ = cls._validate_lookup_field(model, lookup_field)
-        instance.__mutation_kind__ = cls._get_mutation_kind(instance, lookup_field, __name)
-        instance.__inputs__ = {get_schema_name(name): input_ for name, input_ in get_members(instance, Input)}
-        instance.__output_type__ = cls._get_output_type(output_type)
-        instance.__input_object__ = cls._get_input_object_type(instance, name, extensions)
+        instance.__output_type__ = output_type or get_output_object_type_for_model_mutation()
+        instance.__input_type__ = get_input_object_type_for_model_mutation(instance, name=name, extensions=extensions)
         return instance
 
-    @classmethod
-    def _add_all_inputs(cls, model: type[models.Model], attrs: dict[str, Any], exclude: Collection[str]) -> None:
-        """Add inputs for all model fields, except those in exclude or already defined in the class."""
-        for model_field in model._meta._get_fields():
-            field_name = model_field.name
-            # TODO: Don't add pk for create mutation?
-            if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-                field_name = "pk"
 
-            if field_name in exclude or field_name in attrs:
-                continue
+def get_output_object_type_for_model_mutation() -> type[ModelGQLType]:
+    @cached_class_property
+    def wrapper(cls: type[ModelGQLMutation]) -> type[ModelGQLType]:
+        output_type = TYPE_REGISTRY.get(cls.__model__)
+        if output_type is None:
+            raise MissingOutputTypeError(name=cls.__name__, cls="ModelGQLMutation")
+        return output_type
 
-            many = bool(model_field.many_to_many or model_field.one_to_many)
-            nullable = getattr(model_field, "null", False)
-            description = getattr(model_field, "help_text", None)
-            attrs[field_name] = Input(model_field, description=description, many=many, nullable=nullable)
+    return wrapper  # type: ignore[return-value]
 
-    @classmethod
-    def _add_lookup_input_field(cls, model: type[models.Model], name: str, attrs: dict[str, Any]) -> None:
-        existing_input: Input | None = attrs.get(name)
-        if existing_input is not None:
-            if not isinstance(existing_input, Input):
-                raise LookupFieldAttributeError(name=name)
 
-            # Lookup field is required for update and delete
-            existing_input.required = True
-            return
+def get_input_object_type_for_model_mutation(
+    instance: type[ModelGQLMutation],
+    *,
+    name: str | None = None,
+    extensions: dict[str, Any] | None,
+) -> GraphQLInputObjectType:
+    """
+    Create the InputObjectType argument for the given `ModelGQLMutation`
 
-        field = parse_model_field(model=model, lookup=name)
-        attrs[name] = Input(field, required=True)
+    `InputObjectType` should be created once, since GraphQL schema cannot
+    contain multiple types with the same name.
+    """
+    if name is None:
+        name = instance.__name__
+    if extensions is None:
+        extensions = {}
 
-    @classmethod
-    def _get_mutation_kind(cls, instance: type[ModelGQLMutation], lookup_field: str, name: str) -> MutationKind:
-        # If the custom mutation function has been overridden, then this must be a custom mutation
-        from undine.modelgql.model_mutation import ModelGQLMutation
-
-        if instance.__custom_mutation__.__func__ != ModelGQLMutation.__custom_mutation__.__func__:
-            return "custom"
-        # If there is no lookup field, then this must be a create mutation
-        if lookup_field is None:
-            return "create"
-        if "delete" in name.lower():  # TODO: Something better here.
-            return "delete"
-        return "update"
-
-    @classmethod
-    def _get_output_type(cls, output_type: type[ModelGQLType] | None) -> type[ModelGQLType]:
-        if output_type is not None:
-            return output_type
-
-        # Use a classproperty to defer loading output type until TYPE_REGISTRY has been populated.
-        def _get_output_type(cls: type[ModelGQLMutation]) -> type[ModelGQLType]:
-            nonlocal output_type
-
-            if cls.__mutation_kind__ in ["create", "update"]:
-                output_type = TYPE_REGISTRY.get(cls.__model__)
-
-            elif cls.__mutation_kind__ == "delete":
-                output_type = DeleteMutationOutputType
-
-            if output_type is None:
-                raise MissingOutputTypeError(name=cls.__name__, cls="ModelGQLMutation")
-            return output_type
-
-        return classmethod(property(_get_output_type))  # type: ignore[return-value]
-
-    @classmethod
-    def _validate_lookup_field(cls, model: type[models.Model], lookup_field: str) -> str:
-        if lookup_field != "pk":
-            try:
-                model._meta.get_field(lookup_field)
-            except FieldDoesNotExist as error:
-                raise ModelFieldDoesNotExistError(field=lookup_field, model=model) from error
-        return lookup_field
-
-    @classmethod
-    def _get_input_object_type(
-        cls,
-        instance: type[ModelGQLMutation],
-        name: str,
-        extensions: dict[str, Any] | None,
-    ) -> GraphQLInputObjectType:
-        """
-        Create the InputObjectType argument for the given `ModelGQLMutation`
-
-        `InputObjectType` should be created once, since GraphQL schema cannot
-        contain multiple types with the same name.
-        """
-        return GraphQLInputObjectType(
-            name=name or instance.__name__,
-            description=get_docstring(instance),
-            # Defer creating fields so that self-referential related fields can be created.
-            fields=lambda: {
-                # Lookup field is always required.
-                input_name: input_.as_input_field(required=input_name == instance.__lookup_field__)
-                for input_name, input_ in instance.__inputs__.items()
-            },
-            extensions={
-                **(extensions or {}),
-                undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: instance,
-            },
-        )
+    return GraphQLInputObjectType(
+        name=name,
+        description=get_docstring(instance),
+        # Defer creating fields so that self-referential related fields can be created.
+        fields=lambda: {
+            # Lookup field is always required.
+            input_name: input_.as_input_field(required=input_name == instance.__lookup_field__)
+            for input_name, input_ in instance.__input_map__.items()
+        },
+        extensions={
+            **extensions,
+            undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: instance,
+        },
+    )

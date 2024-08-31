@@ -80,16 +80,6 @@ class InvalidParserError(UndineError):
     msg = "'{cls:dotpath}' does not implement 'DocstringParserProtocol'."
 
 
-class LookupFieldAttributeError(UndineError):
-    """Error raised if the lookup field on a ModelGQLMutation is not an Input object."""
-
-    msg = (
-        "Attribute {name} exists on a model, but is not an Input field. "
-        "'{name}' needs to be an Input field since it has been declared "
-        "as the lookup field for this ModelGQLMutation."
-    )
-
-
 class MismatchingModelError(UndineError):
     """
     Error raised if provided model for `ModelGQLFilter` or `ModelGQLOrdering`

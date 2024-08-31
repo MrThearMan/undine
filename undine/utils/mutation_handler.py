@@ -114,7 +114,7 @@ class MutationHandler(Generic[TModel]):
 
     def get_related_handler(self, field_name: str) -> MutationHandler:
         """Get the related handler for the given field name."""
-        input_field = self.mutation_class.__inputs__.get(field_name, None)
+        input_field = self.mutation_class.__input_map__.get(field_name, None)
         if input_field is None:
             msg = (
                 f"Mutation input contains data for a field '{field_name}', "

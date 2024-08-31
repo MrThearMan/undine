@@ -56,7 +56,7 @@ def load_deferred_converters() -> None:
             arguments: GraphQLArgumentMap = {}
             if ref.__filters__:
                 arguments[undine_settings.FILTER_INPUT_TYPE_KEY] = GraphQLArgument(
-                    ref.__filters__.__input_object__,
+                    ref.__filters__.__input_type__,
                 )
             if ref.__ordering__:
                 arguments[undine_settings.ORDER_BY_INPUT_TYPE_KEY] = GraphQLArgument(

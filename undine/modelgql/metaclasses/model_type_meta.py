@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Collection, Literal
+from typing import TYPE_CHECKING, Any, Iterable, Literal
 
-from graphql import GraphQLArgument, GraphQLArgumentMap, GraphQLField, GraphQLObjectType, Undefined
+from graphql import GraphQLObjectType, Undefined
 
-from undine.converters import convert_model_field_to_graphql_input_type
 from undine.errors import MismatchingModelError, MissingModelError, TypeRegistryDuplicateError
-from undine.fields import Field
-from undine.parsers import parse_model_field
+from undine.fields import Field, get_fields_for_model
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
 from undine.utils.registry import TYPE_REGISTRY
@@ -31,15 +29,15 @@ class ModelGQLTypeMeta(type):
 
     def __new__(  # noqa: PLR0913
         cls,
-        __name: str,
-        __bases: tuple[type, ...],
-        __attrs: dict[str, Any],
+        _name: str,
+        _bases: tuple[type, ...],
+        _attrs: dict[str, Any],
         *,
         model: type[models.Model] | None = None,
         filters: type[ModelGQLFilter] | Literal[True] | None = None,
         ordering: type[ModelGQLOrdering] | Literal[True] | None = None,
         auto_fields: bool = True,
-        exclude: Collection[str] = (),
+        exclude: Iterable[str] = (),
         lookup_field: str | None = "pk",
         name: str | None = None,
         register: bool = True,
@@ -47,55 +45,14 @@ class ModelGQLTypeMeta(type):
     ) -> ModelGQLTypeMeta:
         """See `ModelGQLType` for documentation of arguments."""
         if model is Undefined:  # Early return for the `ModelGQLType` class itself.
-            return super().__new__(cls, __name, __bases, __attrs)
+            return super().__new__(cls, _name, _bases, _attrs)
 
         if model is None:
-            raise MissingModelError(name=__name, cls="ModelGQLType")
+            raise MissingModelError(name=_name, cls="ModelGQLType")
 
         if auto_fields:
-            cls._add_all_fields(model, __attrs, exclude)
+            _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
 
-        filters = cls._validate_filters(filters, model, __name)
-        ordering = cls._validate_ordering(ordering, model, __name)
-
-        # Add model to attrs before class creation so that it's available during Field `__set_name__`.
-        __attrs["__model__"] = model
-        instance: type[ModelGQLType] = super().__new__(cls, __name, __bases, __attrs)  # type: ignore[assignment]
-
-        if register:
-            cls._register_type(model, instance)
-
-        # Members should use '__dunder__' names to avoid name collisions with possible field names.
-        instance.__model__ = model
-        instance.__filters__ = filters
-        instance.__ordering__ = ordering
-        instance.__object_type__ = cls._create_object_type(instance, name, extensions)
-        instance.__lookup_argument_map__ = cls._create_lookup_argument_map(model, lookup_field)
-        return instance
-
-    @classmethod
-    def _add_all_fields(cls, model: type[models.Model], attrs: dict[str, Any], exclude: Collection[str]) -> None:
-        """Add fields for all model fields, except those in exclude or already defined in the class."""
-        for model_field in model._meta._get_fields():
-            field_name = model_field.name
-            if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-                field_name = "pk"
-
-            if field_name in exclude or field_name in attrs:
-                continue
-
-            many = bool(model_field.many_to_many or model_field.one_to_many)
-            nullable = getattr(model_field, "null", False)
-            description = getattr(model_field, "help_text", None)
-            attrs[field_name] = Field(model_field, description=description, many=many, nullable=nullable)
-
-    @staticmethod
-    def _validate_filters(
-        filters: type[ModelGQLFilter] | Literal[True] | None,
-        model: type[models.Model],
-        name: str,
-    ) -> type[ModelGQLFilter] | None:
-        """Validate the given filters class."""
         if filters is True:
             from undine import ModelGQLFilter
 
@@ -105,19 +62,10 @@ class ModelGQLTypeMeta(type):
             raise MismatchingModelError(
                 cls=filters.__name__,
                 bad_model=model,
-                name=name,
+                type=_name,
                 expected_model=filters.__model__,
             )
 
-        return filters
-
-    @staticmethod
-    def _validate_ordering(
-        ordering: type[ModelGQLOrdering] | Literal[True] | None,
-        model: type[models.Model],
-        name: str,
-    ) -> type[ModelGQLOrdering] | None:
-        """Validate the given ordering class."""
         if ordering is True:
             from undine import ModelGQLOrdering
 
@@ -127,53 +75,55 @@ class ModelGQLTypeMeta(type):
             raise MismatchingModelError(
                 cls=ordering.__name__,
                 bad_model=model,
-                type=name,
+                type=_name,
                 expected_model=ordering.__model__,
             )
 
-        return ordering
+        # Add model to attrs before class creation so that it's available during `Field.__set_name__`.
+        _attrs["__model__"] = model
+        instance: type[ModelGQLType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
-    @classmethod
-    def _register_type(cls, model: type[models.Model], graphql_type: type[ModelGQLType]) -> None:
-        """Registers the created ModelGQLType in the `TYPE_REGISTRY` for the given model."""
-        if model in TYPE_REGISTRY:
-            raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
-        TYPE_REGISTRY[model] = graphql_type
+        if register:
+            if model in TYPE_REGISTRY:
+                raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
+            TYPE_REGISTRY[model] = instance
 
-    @classmethod
-    def _create_object_type(
-        cls,
-        instance: type[ModelGQLType],
-        name: str,
-        extensions: dict[str, Any] | None,
-    ) -> GraphQLObjectType:
-        """
-        Creates the GraphQL ObjectType for this `ModelGQLType`.
+        # Members should use '__dunder__' names to avoid name collisions with possible field names.
+        instance.__model__ = model
+        instance.__filters__ = filters
+        instance.__ordering__ = ordering
+        instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
+        instance.__lookup_field__ = lookup_field
+        instance.__output_type__ = get_output_object_type_model_type(instance, name=name, extensions=extensions)
+        return instance
 
-        ObjectType should be created once, since GraphQL schema cannot
-        contain multiple types with the same name.
-        """
-        return GraphQLObjectType(
-            name=name or instance.__name__,
-            # Give fields as a callable to delay their creation.
-            # This gives time for all ModelGQLTypes to be registered.
-            fields=lambda: cls._get_fields(instance),
-            description=get_docstring(instance),
-            is_type_of=instance.__is_type_of__,
-            extensions={
-                **(extensions or {}),
-                undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance,
-            },
-        )
 
-    @classmethod
-    def _get_fields(cls, instance: type[ModelGQLType]) -> dict[str, GraphQLField]:
-        """Get the GraphQL fields for the given ModelGQLType."""
-        return {get_schema_name(name): field_.get_graphql_field() for name, field_ in get_members(instance, Field)}
+def get_output_object_type_model_type(
+    instance: type[ModelGQLType],
+    *,
+    name: str | None = None,
+    extensions: dict[str, Any] | None,
+) -> GraphQLObjectType:
+    """
+    Creates the GraphQL ObjectType for this `ModelGQLType`.
 
-    @classmethod
-    def _create_lookup_argument_map(cls, model: type[models.Model], lookup_field: str) -> GraphQLArgumentMap:
-        """Create the lookup argument for the ModelGQLType."""
-        field = model._meta.pk if lookup_field == "pk" else parse_model_field(model=model, lookup=lookup_field)
-        field_name = "pk" if field.primary_key and undine_settings.USE_PK_FIELD_NAME else field.name
-        return {get_schema_name(field_name): GraphQLArgument(convert_model_field_to_graphql_input_type(field))}
+    ObjectType should be created once, since GraphQL schema cannot
+    contain multiple types with the same name.
+    """
+    if name is None:
+        name = instance.__name__
+    if extensions is None:
+        extensions = {}
+
+    return GraphQLObjectType(
+        name=name,
+        # Give fields as a callable to delay their creation.
+        # This gives time for all ModelGQLTypes to be registered.
+        fields=lambda: {name: field.get_graphql_field() for name, field in instance.__field_map__.items()},
+        description=get_docstring(instance),
+        is_type_of=instance.__is_type_of__,
+        extensions={
+            **extensions,
+            undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance,
+        },
+    )

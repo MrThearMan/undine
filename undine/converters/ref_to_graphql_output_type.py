@@ -47,7 +47,7 @@ def load_deferred_converters() -> None:  # noqa: C901
     def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLOutputType:
         many: bool = kwargs["many"]
         nullable: bool = kwargs["nullable"]
-        obj_type = ref.__object_type__
+        obj_type = ref.__output_type__
         if nullable is False:
             obj_type = GraphQLNonNull(obj_type)
         if many is True:
@@ -58,7 +58,7 @@ def load_deferred_converters() -> None:  # noqa: C901
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLOutputType:
         many: bool = kwargs["many"]
         nullable: bool = kwargs["nullable"]
-        obj_type = ref.__output_type__.__object_type__
+        obj_type = ref.__output_type__.__output_type__
         if nullable is False:
             obj_type = GraphQLNonNull(obj_type)
         if many is True:

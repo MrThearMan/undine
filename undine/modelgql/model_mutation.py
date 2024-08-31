@@ -50,11 +50,12 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
             return cls.__mutation_handler__.update(instance, input_data)
 
     @classmethod
-    def __delete_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> models.Model:
+    def __delete_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
         instance = cls.__get_instance__(input_data)
         cls.__validate_delete__(instance, info)
         with handle_integrity_errors():
-            return instance.delete()
+            instance.delete()
+        return {"success": True}
 
     @classmethod
     def __custom_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
@@ -75,10 +76,6 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     @classmethod
     def __get_instance__(cls, input_data: dict[str, Any]) -> models.Model:
         key = cls.__lookup_field__
-        if key is None:
-            msg = "Cannot fetch instance without specifying a lookup field for the mutation."
-            raise GraphQLStatusError(msg, status=500, code=error_codes.LOOKUP_FIELD_MISSING)
-
         value = input_data.get(key, Undefined)
         if value is Undefined:
             msg = (

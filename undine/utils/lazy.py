@@ -4,14 +4,14 @@ import math
 from copy import copy, deepcopy
 from typing import Any, AsyncIterator, Callable, TypeVar
 
+from undine.typing import empty
+
 __all__ = [
     "lazy",
 ]
 
 
 R = TypeVar("R")
-
-empty = object()
 
 
 class lazy:  # noqa: N801

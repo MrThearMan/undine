@@ -148,7 +148,6 @@ MutationResolver: TypeAlias = Callable[[Root, GraphQLResolveInfo, dict[str, Any]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q, models.Subquery]
 FilterFunc: TypeAlias = Callable[[Root, GraphQLResolveInfo, Any], models.Q]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
-MutationMethod: TypeAlias = Literal["create", "update", "delete"]
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
 JsonType: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 
@@ -182,6 +181,8 @@ class GraphQLParams:
     operation_name: str | None
     extensions: dict[str, Any] | None
 
+
+empty = object()
 
 TModel = TypeVar("TModel", bound=models.Model)
 MutationInputType = JsonType | models.Model | list[models.Model] | None

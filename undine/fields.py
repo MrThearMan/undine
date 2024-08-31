@@ -1,7 +1,7 @@
 # ruff: noqa: PLR0913
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Container, Literal
 
 from django.db import models
 from graphql import (
@@ -127,8 +127,8 @@ class Field:
         self,
         ref: Any = None,
         *,
-        nullable: bool = Undefined,
         many: bool = Undefined,
+        nullable: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -140,10 +140,10 @@ class Field:
                     e.g., a string referencing a model field name, a model field, an expression, a function, etc.
                     If not provided, use the name of the attribute this is assigned to
                     in the `ModelGQLType` class.
-        :param nullable: Whether the referenced type can be null. If not provided, looks at the converted
-                         reference and tries to determine nullability from it.
         :param many: Whether the field should contain a non-null list of the referenced type.
                      If not provided, looks at the reference and tries to determine this from it.
+        :param nullable: Whether the referenced type can be null. If not provided, looks at the converted
+                         reference and tries to determine nullability from it.
         :param description: Description for the field. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the field is deprecated, describes the reason for deprecation.
@@ -401,3 +401,75 @@ class Input:
         if self.many:
             graphql_type = GraphQLNonNull(GraphQLList(graphql_type))
         return graphql_type
+
+
+def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:
+    """Add 'Field's for all of the given model's fields, except those in the 'exclude' list."""
+    result: dict[str, Field] = {}
+    for model_field in model._meta._get_fields():
+        field_name = model_field.name
+        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Field(model_field)
+
+    return result
+
+
+def get_filters_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Filter]:
+    """Creates 'Filter's for all of the given model's non-related fields, except those in the 'exclude' list."""
+    result: dict[str, Filter] = {}
+    for model_field in model._meta._get_fields(reverse=False):
+        if model_field.is_relation:
+            continue
+
+        field_name = model_field.name
+        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        for lookup_expr in model_field.get_lookups():
+            result[f"{field_name}_{lookup_expr}"] = Filter(field_name, lookup_expr=lookup_expr)
+
+    return result
+
+
+def get_orderings_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Ordering]:
+    """Creates 'Ordering's for all of the given model's non-related fields, except those in the 'exclude' list."""
+    result: dict[str, Ordering] = {}
+    for model_field in model._meta._get_fields(reverse=False):
+        if model_field.is_relation:
+            continue
+
+        field_name = model_field.name
+        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Ordering(field_name)
+
+    return result
+
+
+def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
+    """Add 'Input's for all of the given model's fields, except those in the 'exclude' list."""
+    result: dict[str, Input] = {}
+    for model_field in model._meta._get_fields():
+        field_name = model_field.name
+        # TODO: Don't add pk for create mutation?
+        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Input(model_field)
+
+    return result
