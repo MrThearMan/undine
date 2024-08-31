@@ -36,6 +36,7 @@ classifiers = [
     "Framework :: Django",
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
 ]
 exclude = [
     "tests",
@@ -301,7 +302,7 @@ addopts = "-vv -s --disable-warnings"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py{311, 312}-django{42, 50}
+envlist = py{311, 312}-django{42, 50, 51}
 isolated_build = true
 
 [gh-actions]
@@ -318,6 +319,8 @@ setenv =
 deps =
     django42: Django >=4.2,<4.3
     django50: Django >=5.0,<5.1
+    django51: Django >=5.1,<5.2
+
     graphql-core >= 3.2.3
     graphql-relay >= 3.2.0
     django-settings-holder
