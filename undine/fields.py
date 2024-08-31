@@ -1,11 +1,11 @@
 # ruff: noqa: PLR0913
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Container, Literal
+from types import FunctionType
+from typing import TYPE_CHECKING, Any, Literal
 
 from django.db import models
 from graphql import (
-    GraphQLArgument,
     GraphQLArgumentMap,
     GraphQLField,
     GraphQLFieldResolver,
@@ -20,26 +20,25 @@ from graphql import (
 
 from undine.converters import (
     convert_entrypoint_ref_to_graphql_argument_map,
+    convert_entrypoint_ref_to_resolver,
     convert_field_ref_to_graphql_argument_map,
     convert_field_ref_to_resolver,
-    convert_filter_ref_to_filter_func,
-    convert_ref_to_field_description,
+    convert_filter_ref_to_filter_resolver,
     convert_ref_to_graphql_input_type,
     convert_ref_to_graphql_output_type,
+    convert_to_description,
     convert_to_field_ref,
     convert_to_filter_ref,
     convert_to_input_ref,
     convert_to_ordering_ref,
-    is_field_ref_many,
-    is_field_ref_nullable,
+    is_field_nullable,
+    is_input_required,
+    is_many,
 )
-from undine.converters.entrypoint_ref_to_resolver import convert_entrypoint_ref_to_resolver
 from undine.settings import undine_settings
 from undine.utils.reflection import cache_signature_if_function
 
 if TYPE_CHECKING:
-    from types import FunctionType
-
     from undine import ModelGQLFilter, ModelGQLMutation, ModelGQLOrdering, ModelGQLType
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import EntrypointRef, Self
@@ -59,8 +58,7 @@ class Entrypoint:
         self,
         ref: EntrypointRef,
         *,
-        many: bool = Undefined,
-        nullable: bool = Undefined,
+        many: bool = False,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -70,9 +68,7 @@ class Entrypoint:
 
         :param ref: Reference to the ModelGQLType or ModelGQLMutation to use as the entrypoint.
         :param many: Whether the entrypoint should return a list of the referenced type.
-                     If not provided, looks at the reference and tries to determine this from it.
-        :param nullable: Whether the referenced type can be null. If not provided, looks at the converted
-                         reference and tries to determine nullability from it.
+                     For function based entrypoints, this is determined from the function's return type.
         :param description: Description for the entrypoint. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the entrypoint is deprecated, describes the reason for deprecation.
@@ -80,7 +76,6 @@ class Entrypoint:
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.many = many
-        self.nullable = nullable
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
@@ -90,12 +85,10 @@ class Entrypoint:
         self.owner = owner
         self.name = name
 
+        if isinstance(self.ref, FunctionType):
+            self.many = is_many(self.ref)
         if self.description is Undefined:
-            self.description = convert_ref_to_field_description(self.ref)
-        if self.nullable is Undefined:
-            self.nullable = is_field_ref_nullable(self.ref)
-        if self.many is Undefined:
-            self.many = is_field_ref_many(self.ref)
+            self.description = convert_to_description(self.ref)
 
     def __call__(self, _ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Entrypoint()"""
@@ -113,7 +106,14 @@ class Entrypoint:
         )
 
     def get_field_type(self) -> GraphQLOutputType:
-        return convert_ref_to_graphql_output_type(self.ref, many=self.many, nullable=self.nullable)
+        graphql_type, nullable = convert_ref_to_graphql_output_type(self.ref, return_nullable=True)
+        if self.many is True and not isinstance(graphql_type, GraphQLList):
+            if not isinstance(graphql_type, GraphQLNonNull):
+                graphql_type = GraphQLNonNull(graphql_type)
+            graphql_type = GraphQLList(graphql_type)
+        if not nullable:
+            graphql_type = GraphQLNonNull(graphql_type)
+        return graphql_type
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
         return convert_entrypoint_ref_to_graphql_argument_map(self.ref, many=self.many)
@@ -150,9 +150,9 @@ class Field:
         :param extensions: GraphQL extensions for the field.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
-        self.description = description
-        self.nullable = nullable
         self.many = many
+        self.nullable = nullable
+        self.description = description
         self.deprecation_reason = deprecation_reason
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
@@ -162,12 +162,12 @@ class Field:
         self.name = name
         self.ref = convert_to_field_ref(self.ref, caller=self)
 
-        if self.description is Undefined:
-            self.description = convert_ref_to_field_description(self.ref)
-        if self.nullable is Undefined:
-            self.nullable = is_field_ref_nullable(self.ref)
         if self.many is Undefined:
-            self.many = is_field_ref_many(self.ref)
+            self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
+        if self.nullable is Undefined:
+            self.nullable = is_field_nullable(self.ref)
+        if self.description is Undefined:
+            self.description = convert_to_description(self.ref)
 
     def __call__(self, _ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Field()"""
@@ -185,7 +185,14 @@ class Field:
         )
 
     def get_field_type(self) -> GraphQLOutputType:
-        return convert_ref_to_graphql_output_type(self.ref, many=self.many, nullable=self.nullable)
+        graphql_type = convert_ref_to_graphql_output_type(self.ref)
+        if self.many is True and not isinstance(graphql_type, GraphQLList):
+            if not isinstance(graphql_type, GraphQLNonNull):
+                graphql_type = GraphQLNonNull(graphql_type)
+            graphql_type = GraphQLList(graphql_type)
+        if self.nullable is False and not isinstance(graphql_type, GraphQLNonNull):
+            graphql_type = GraphQLNonNull(graphql_type)
+        return graphql_type
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
         arg_map = convert_field_ref_to_graphql_argument_map(self.ref, many=self.many)
@@ -248,9 +255,9 @@ class Filter:
         self.ref = convert_to_filter_ref(self.ref, caller=self)
 
         if self.description is Undefined:
-            self.description = convert_ref_to_field_description(self.ref)
+            self.description = convert_to_description(self.ref)
 
-        self.filter_func = convert_filter_ref_to_filter_func(self.ref, lookup_expr=self.lookup_expr, name=name)
+        self.resolver = convert_filter_ref_to_filter_resolver(self.ref, lookup_expr=self.lookup_expr, name=name)
 
     def __call__(self, _ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Filter()"""
@@ -258,15 +265,7 @@ class Filter:
         return self
 
     def get_expression(self, value: Any, info: GraphQLResolveInfo) -> models.Q:
-        return self.filter_func(self.owner, info, value=value)
-
-    def as_argument(self) -> GraphQLArgument:
-        return GraphQLArgument(
-            type_=self.get_field_type(),
-            description=self.description,
-            deprecation_reason=self.deprecation_reason,
-            extensions=self.extensions,
-        )
+        return self.resolver(self.owner, info, value=value)
 
     def as_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
@@ -278,9 +277,11 @@ class Filter:
 
     def get_field_type(self) -> GraphQLInputType:
         graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
-        if self.many:
+        if self.many and not isinstance(graphql_type, GraphQLList):
+            if not isinstance(graphql_type, GraphQLNonNull):
+                graphql_type = GraphQLNonNull(graphql_type)
             graphql_type = GraphQLList(graphql_type)
-        if self.required:
+        if self.required and not isinstance(graphql_type, GraphQLNonNull):
             graphql_type = GraphQLNonNull(graphql_type)
         return graphql_type
 
@@ -327,11 +328,10 @@ class Ordering:
         self.ref = convert_to_ordering_ref(self.ref, caller=self)
 
         if self.description is Undefined:
-            self.description = convert_ref_to_field_description(self.ref)
+            self.description = convert_to_description(self.ref)
 
     def get_expression(self, *, descending: bool = False) -> models.OrderBy:
-        kwargs = {"nulls_first": self.nulls_first, "nulls_last": self.nulls_last, "descending": descending}
-        return models.OrderBy(self.ref, **kwargs)
+        return models.OrderBy(self.ref, nulls_first=self.nulls_first, nulls_last=self.nulls_last, descending=descending)
 
 
 class Input:
@@ -340,7 +340,7 @@ class Input:
         ref: Any = None,
         *,
         many: bool = Undefined,
-        required: bool = False,
+        required: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -354,7 +354,8 @@ class Input:
                     in the `ModelGQLMutation` class.
         :param many: Whether the input should contain a non-null list of the referenced type.
                      If not provided, looks at the reference and tries to determine this from it.
-        :param required: Whether the input should be required.
+        :param required: Whether the input should be required. If not provided, looks at the reference
+                         and the ModelGQLMutation's mutation kind to determine this.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
@@ -362,8 +363,8 @@ class Input:
         """
         self.ref = ref
         self.many = many
-        self.description = description
         self.required = required
+        self.description = description
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
@@ -373,103 +374,27 @@ class Input:
         self.name = name
         self.ref = convert_to_input_ref(self.ref, caller=self)
 
-        if self.description is Undefined:
-            self.description = convert_ref_to_field_description(self.ref)
         if self.many is Undefined:
-            self.many = is_field_ref_many(self.ref)
+            self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
+        if self.required is Undefined:
+            self.required = is_input_required(self.ref, caller=self)
+        if self.description is Undefined:
+            self.description = convert_to_description(self.ref)
 
-    def as_argument(self) -> GraphQLArgument:
-        return GraphQLArgument(
+    def as_input_field(self) -> GraphQLInputField:
+        return GraphQLInputField(
             type_=self.get_field_type(),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
         )
 
-    def as_input_field(self, *, required: bool = False) -> GraphQLInputField:
-        return GraphQLInputField(
-            type_=self.get_field_type(required=required),
-            description=self.description,
-            deprecation_reason=self.deprecation_reason,
-            extensions=self.extensions,
-        )
-
-    def get_field_type(self, *, required: bool = False) -> GraphQLInputType:
+    def get_field_type(self) -> GraphQLInputType:
         graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
-        if self.required or required:
+        if self.many and not isinstance(graphql_type, GraphQLList):
+            if not isinstance(graphql_type, GraphQLNonNull):
+                graphql_type = GraphQLNonNull(graphql_type)
+            graphql_type = GraphQLList(graphql_type)
+        if self.required and not isinstance(graphql_type, GraphQLNonNull):
             graphql_type = GraphQLNonNull(graphql_type)
-        if self.many:
-            graphql_type = GraphQLNonNull(GraphQLList(graphql_type))
         return graphql_type
-
-
-def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:
-    """Add 'Field's for all of the given model's fields, except those in the 'exclude' list."""
-    result: dict[str, Field] = {}
-    for model_field in model._meta._get_fields():
-        field_name = model_field.name
-        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-            field_name = "pk"
-
-        if field_name in exclude:
-            continue
-
-        result[field_name] = Field(model_field)
-
-    return result
-
-
-def get_filters_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Filter]:
-    """Creates 'Filter's for all of the given model's non-related fields, except those in the 'exclude' list."""
-    result: dict[str, Filter] = {}
-    for model_field in model._meta._get_fields(reverse=False):
-        if model_field.is_relation:
-            continue
-
-        field_name = model_field.name
-        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-            field_name = "pk"
-
-        if field_name in exclude:
-            continue
-
-        for lookup_expr in model_field.get_lookups():
-            result[f"{field_name}_{lookup_expr}"] = Filter(field_name, lookup_expr=lookup_expr)
-
-    return result
-
-
-def get_orderings_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Ordering]:
-    """Creates 'Ordering's for all of the given model's non-related fields, except those in the 'exclude' list."""
-    result: dict[str, Ordering] = {}
-    for model_field in model._meta._get_fields(reverse=False):
-        if model_field.is_relation:
-            continue
-
-        field_name = model_field.name
-        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-            field_name = "pk"
-
-        if field_name in exclude:
-            continue
-
-        result[field_name] = Ordering(field_name)
-
-    return result
-
-
-def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
-    """Add 'Input's for all of the given model's fields, except those in the 'exclude' list."""
-    result: dict[str, Input] = {}
-    for model_field in model._meta._get_fields():
-        field_name = model_field.name
-        # TODO: Don't add pk for create mutation?
-        if undine_settings.USE_PK_FIELD_NAME and getattr(model_field, "primary_key", False):
-            field_name = "pk"
-
-        if field_name in exclude:
-            continue
-
-        result[field_name] = Input(model_field)
-
-    return result

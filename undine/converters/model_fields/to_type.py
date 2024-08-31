@@ -14,6 +14,7 @@ __all__ = [
 ]
 
 convert_model_field_to_type = TypeDispatcher[models.Field, type]()
+"""Convert the given model field to a python type."""
 
 
 @convert_model_field_to_type.register

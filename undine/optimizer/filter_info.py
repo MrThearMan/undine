@@ -7,7 +7,7 @@ from graphql import FieldNode, GraphQLOutputType, GraphQLResolveInfo, get_argume
 from graphql.execution.execute import get_field_def
 
 from undine.settings import undine_settings
-from undine.typing import GraphQLFilterInfo, ToManyField, ToOneField
+from undine.typing import CombinableExpression, GraphQLFilterInfo, ToManyField, ToOneField
 from undine.utils.reflection import swappable_by_subclassing
 from undine.utils.text import to_snake_case
 
@@ -46,7 +46,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
 
         filters: models.Q | None = None
         distinct: bool = False
-        aliases: dict[str, models.Expression | models.Subquery] = {}
+        aliases: dict[str, CombinableExpression] = {}
         order_by: list[models.OrderBy] = []
 
         arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)

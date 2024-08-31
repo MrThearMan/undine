@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.parsers import parse_model_field
-from undine.typing import FilterRef
+from undine.typing import CombinableExpression, FilterRef, ModelField
 from undine.utils.dispatcher import TypeDispatcher
 
 if TYPE_CHECKING:
@@ -20,6 +20,7 @@ __all__ = [
 
 
 convert_to_filter_ref = TypeDispatcher[Any, FilterRef]()
+"""Convert the given value to a Undine Filter reference."""
 
 
 @convert_to_filter_ref.register
@@ -35,12 +36,13 @@ def _(_: None, **kwargs: Any) -> FilterRef:
 
 
 @convert_to_filter_ref.register
-def _(ref: FunctionType, **kwargs: Any) -> FilterRef:
-    return ref
+def _(ref: models.F, **kwargs: Any) -> FilterRef:
+    caller: Filter = kwargs["caller"]
+    return parse_model_field(model=caller.owner.__model__, lookup=ref.name)
 
 
 @convert_to_filter_ref.register
-def _(ref: models.Q | models.Expression | models.Subquery, **kwargs: Any) -> FilterRef:
+def _(ref: ModelField, **kwargs: Any) -> FilterRef:
     return ref
 
 
@@ -50,5 +52,10 @@ def _(ref: DeferredAttribute, **kwargs: Any) -> FilterRef:
 
 
 @convert_to_filter_ref.register
-def _(ref: models.Field, **kwargs: Any) -> FilterRef:
+def _(ref: FunctionType, **kwargs: Any) -> FilterRef:
+    return ref
+
+
+@convert_to_filter_ref.register
+def _(ref: CombinableExpression | models.Q, **kwargs: Any) -> FilterRef:
     return ref

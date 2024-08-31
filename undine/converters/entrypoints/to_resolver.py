@@ -15,6 +15,7 @@ __all__ = [
 
 
 convert_entrypoint_ref_to_resolver = TypeDispatcher[EntrypointRef, GraphQLFieldResolver]()
+"""Convert the Undine Entrypoint reference to a GraphQL field resolver."""
 
 
 @convert_entrypoint_ref_to_resolver.register

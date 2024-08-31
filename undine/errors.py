@@ -14,11 +14,9 @@ __all__ = [
     "GraphQLStatusError",
     "InvalidParserError",
     "MismatchingModelError",
-    "MissingDeferredGQLTypeError",
     "MissingFunctionAnnotationsError",
     "MissingFunctionReturnTypeError",
     "MissingModelError",
-    "MissingOutputTypeError",
     "ModelFieldDoesNotExistError",
     "ModelFieldNotARelationError",
     "NoFunctionParametersError",
@@ -26,6 +24,7 @@ __all__ = [
     "SchemaNameValidationError",
     "TypeDispatcherError",
     "TypeRegistryDuplicateError",
+    "TypeRegistryMissingTypeError",
     "UndineError",
 ]
 
@@ -89,12 +88,6 @@ class MismatchingModelError(UndineError):
     msg = "'{cls}' model '{bad_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
 
 
-class MissingDeferredGQLTypeError(UndineError):
-    """Error raised if deferred ModelGQLType is does not exist."""
-
-    msg = "'ModelGQLType' for field '{name}' of type '{model:dotpath}' does not exist."
-
-
 class MissingFunctionAnnotationsError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 
@@ -123,17 +116,6 @@ class ModelFieldNotARelationError(UndineError):
     """Error raised if a field is not a relation in the given model."""
 
     msg = "Field '{field}' is not a relation in model '{model:dotpath}'."
-
-
-class MissingOutputTypeError(UndineError):
-    """Error raised if no output type is provided to `ModelGQLMutation`."""
-
-    msg = (
-        "Could not find an `output_type` for {name}. Make sure that a `ModelGQLType` "
-        "is registered for the model of this mutation. You can also provide an `output_type` "
-        "keyword argument to the mutation class definition: "
-        "`class {name}({cls}, output_type=MyModelGQLType)`."
-    )
 
 
 class NoFunctionParametersError(UndineError):
@@ -175,6 +157,18 @@ class TypeRegistryDuplicateError(UndineError):
         "`class MyType(ModelGQLType, model=MyModel, register=False)`. "
         "Note that the registered 'ModelGQLType' will be used when creating "
         "resolvers for related fields automatically."
+    )
+
+
+class TypeRegistryMissingTypeError(UndineError):
+    """Error raised when a ModelGQLType for a model is not registered in the TypeRegistry."""
+
+    msg = (
+        "A 'ModelGQLType' for model '{model:dotpath}' has not been registered. "
+        "Make sure one has been created and registered with "
+        "`class MyType(ModelGQLType, model=MyModel, register=True)`. "
+        "(by default, registration is enabled). For ModelGQLMutation, you can also "
+        "provide the output type with the `output_type` keyword argument."
     )
 
 

@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from undine.parsers import parse_model_field
+from undine.typing import InputRef, ModelField
+from undine.utils.dispatcher import TypeDispatcher
+
+if TYPE_CHECKING:
+    from undine.fields import Input
+
+__all__ = [
+    "is_input_required",
+]
+
+
+is_input_required = TypeDispatcher[InputRef, bool]()
+"""Determine whether the reference requires an input."""
+
+
+@is_input_required.register
+def _(ref: ModelField, **kwargs: Any) -> bool:
+    caller: Input = kwargs["caller"]
+    is_primary_key = bool(getattr(ref, "primary_key", False))
+
+    return is_primary_key or (  # Primary keys are always required.
+        # Only create mutations can have required fields.
+        caller.owner.__mutation_kind__ == "create"
+        # Only non-'*-to-many' fields can be required.
+        and not (bool(ref.one_to_many) or bool(ref.many_to_many))
+        # Only non-null fields can be required.
+        and not bool(getattr(ref, "null", True))
+    )
+
+
+def load_deferred_converters() -> None:  # pragma: no cover
+    # See. `undine.apps.UndineConfig.ready()` for explanation
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
+    from undine import ModelGQLMutation
+
+    @is_input_required.register
+    def _(_: type[ModelGQLMutation], **kwargs: Any) -> bool:
+        caller: Input = kwargs["caller"]
+        field = parse_model_field(model=caller.owner.__model__, lookup=caller.name)
+        return is_input_required(field, caller=caller)
+
+    @is_input_required.register
+    def _(_: GenericForeignKey, **kwargs: Any) -> bool:
+        caller: Input = kwargs["caller"]
+        return caller.owner.__mutation_kind__ == "create"

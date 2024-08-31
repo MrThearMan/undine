@@ -25,7 +25,7 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     - `model`: Set the Django model this `ModelGQLMutation` is for. This input is required.
     - `output_type`: Output `ModelGQLType` for this mutation. By default, use the registered
                     `ModelGQLType` for the given model.
-    - `auto_inputs`: Whether to add inputs for all model fields automatically. Defaults to `False`.
+    - `auto_inputs`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Use "pk" by default.
     - `name`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
@@ -53,7 +53,7 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     def __delete_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
         instance = cls.__get_instance__(input_data)
         cls.__validate_delete__(instance, info)
-        with handle_integrity_errors():
+        with transaction.atomic(), handle_integrity_errors():
             instance.delete()
         return {"success": True}
 

@@ -64,7 +64,7 @@ tox-gh-actions = "3.2.0"
 urllib3 = "2.2.2"
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "1.6.0"
+mkdocs = "1.6.1"
 pymdown-extensions = "10.9"
 mkdocs-mermaid2-plugin = "1.1.1"
 
@@ -265,6 +265,14 @@ extend-ignore-names = [
     "_getframe",
     "_get_pk_val",
 ]
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = [
+    "cached_class_property",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
 
 [tool.mypy]
 python_version = "3.12"

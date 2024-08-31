@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Container, Iterable
 
 from graphql import GraphQLInputField, GraphQLInputObjectType, Undefined
 
 from undine.errors import MissingModelError
-from undine.fields import Filter, get_filters_for_model
+from undine.fields import Filter
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
 from undine.utils.text import get_docstring, get_schema_name
@@ -91,3 +91,24 @@ def get_input_object_type_for_model_filter(
 
     input_object_type._fields = _get_fields
     return input_object_type
+
+
+def get_filters_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Filter]:
+    """Creates 'Filter's for all of the given model's non-related fields, except those in the 'exclude' list."""
+    result: dict[str, Filter] = {}
+    for model_field in model._meta._get_fields(reverse=False):
+        if model_field.is_relation:
+            continue
+
+        field_name = model_field.name
+        is_primary_key = bool(getattr(model_field, "primary_key", False))
+        if undine_settings.USE_PK_FIELD_NAME and is_primary_key:
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        for lookup_expr in model_field.get_lookups():
+            result[f"{field_name}_{lookup_expr}"] = Filter(field_name, lookup_expr=lookup_expr)
+
+    return result

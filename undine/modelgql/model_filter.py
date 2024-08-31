@@ -5,7 +5,7 @@ from typing import Any
 from django.db import models
 from graphql import GraphQLResolveInfo, Undefined
 
-from undine.typing import FilterResults
+from undine.typing import CombinableExpression, FilterResults
 
 from .metaclasses.model_filter_meta import ModelGQLFilterMeta
 
@@ -42,7 +42,7 @@ class ModelGQLFilter(metaclass=ModelGQLFilterMeta, model=Undefined):
         """
         q: models.Q = models.Q()
         distinct: bool = False
-        aliases: dict[str, models.Expression | models.Subquery] = {}
+        aliases: dict[str, CombinableExpression] = {}
 
         for filter_name, filter_value in filter_data.items():
             if filter_name in ("AND", "OR", "XOR", "NOT"):

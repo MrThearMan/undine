@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Container, Iterable
 
 from graphql import GraphQLInputObjectType, GraphQLObjectType, Undefined
 
-from undine.errors import MissingModelError, MissingOutputTypeError
-from undine.fields import Input, get_inputs_for_model
+from undine.errors import MissingModelError
+from undine.fields import Input
 from undine.parsers import parse_model_field
 from undine.settings import undine_settings
-from undine.utils.decorators import cached_class_property
 from undine.utils.delete_output_type import DeleteMutationOutputType
 from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_members
@@ -40,7 +39,7 @@ class ModelGQLMutationMeta(type):
         model: type[models.Model] | None = None,
         mutation_kind: MutationKind | None = None,
         output_type: type[ModelGQLType] | GraphQLObjectType | None = None,
-        auto_inputs: bool = False,
+        auto_inputs: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         name: str | None = None,
@@ -55,26 +54,30 @@ class ModelGQLMutationMeta(type):
 
         if mutation_kind is None:
             if "create" in _name.lower():
-                mutation_kind = "create"
+                mutation_kind: MutationKind = "create"
             elif "update" in _name.lower():
-                mutation_kind = "update"
+                mutation_kind: MutationKind = "update"
             elif "delete" in _name.lower():
-                mutation_kind = "delete"
+                mutation_kind: MutationKind = "delete"
             else:
-                mutation_kind = "custom"
+                mutation_kind: MutationKind = "custom"
 
         if mutation_kind == "delete" and output_type is None:
             output_type = DeleteMutationOutputType
 
-        if lookup_field not in _attrs and mutation_kind in ["create", "update"]:
+        if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
             field = parse_model_field(model=model, lookup=lookup_field)
             _attrs[lookup_field] = Input(field, required=True)
 
         if auto_inputs:
-            _attrs |= get_inputs_for_model(model, exclude=set(exclude) | set(_attrs))
+            exclude = set(exclude) | set(_attrs)
+            if mutation_kind == "create":
+                exclude.add(lookup_field)
+            _attrs |= get_inputs_for_model(model, exclude=exclude)
 
-        # Add model to attrs before class creation so that it's available during `Input.__set_name__`.
+        # Add to attrs before class creation so that these are available during `Input.__set_name__`
         _attrs["__model__"] = model
+        _attrs["__mutation_kind__"] = mutation_kind
         instance: type[ModelGQLMutation] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
         # Members should use '__dunder__' names to avoid name collisions with possible filter names.
@@ -83,20 +86,9 @@ class ModelGQLMutationMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
-        instance.__output_type__ = output_type or get_output_object_type_for_model_mutation()
+        instance.__model_type__ = output_type or TYPE_REGISTRY.get_deferred(model)
         instance.__input_type__ = get_input_object_type_for_model_mutation(instance, name=name, extensions=extensions)
         return instance
-
-
-def get_output_object_type_for_model_mutation() -> type[ModelGQLType]:
-    @cached_class_property
-    def wrapper(cls: type[ModelGQLMutation]) -> type[ModelGQLType]:
-        output_type = TYPE_REGISTRY.get(cls.__model__)
-        if output_type is None:
-            raise MissingOutputTypeError(name=cls.__name__, cls="ModelGQLMutation")
-        return output_type
-
-    return wrapper  # type: ignore[return-value]
 
 
 def get_input_object_type_for_model_mutation(
@@ -120,13 +112,31 @@ def get_input_object_type_for_model_mutation(
         name=name,
         description=get_docstring(instance),
         # Defer creating fields so that self-referential related fields can be created.
-        fields=lambda: {
-            # Lookup field is always required.
-            input_name: input_.as_input_field(required=input_name == instance.__lookup_field__)
-            for input_name, input_ in instance.__input_map__.items()
-        },
+        fields=lambda: {input_name: input_.as_input_field() for input_name, input_ in instance.__input_map__.items()},
         extensions={
             **extensions,
             undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: instance,
         },
     )
+
+
+def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
+    """Add 'Input's for all of the given model's fields, except those in the 'exclude' list."""
+    result: dict[str, Input] = {}
+    for model_field in model._meta._get_fields():
+        field_name = model_field.name
+        is_primary_key = bool(getattr(model_field, "primary_key", False))
+        editable = bool(getattr(model_field, "editable", True))
+
+        if not editable:
+            continue
+
+        if is_primary_key and undine_settings.USE_PK_FIELD_NAME:
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Input(model_field)
+
+    return result

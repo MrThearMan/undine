@@ -15,44 +15,33 @@ from undine import ModelGQLMutation
 from undine.fields import Input
 
 
-class TeamCreateMutation(ModelGQLMutation, model=Team):
-    name = Input()
+class TeamCreateMutation(ModelGQLMutation, model=Team): ...
 
 
 class ProjectCreateMutation(ModelGQLMutation, model=Project):
-    name = Input()
     team = Input(TeamCreateMutation)
 
 
-class ServiceRequestCreateMutation(ModelGQLMutation, model=ServiceRequest):
-    details = Input()
+class ServiceRequestCreateMutation(ModelGQLMutation, model=ServiceRequest): ...
 
 
-class PersonCreateMutation(ModelGQLMutation, model=Person):
-    name = Input()
+class PersonCreateMutation(ModelGQLMutation, model=Person): ...
 
 
-class TaskResultCreateMutation(ModelGQLMutation, model=TaskResult):
-    details = Input()
-    time_used = Input()
+class TaskResultCreateMutation(ModelGQLMutation, model=TaskResult): ...
 
 
-class TaskStepCreateMutation(ModelGQLMutation, model=TaskStep):
-    name = Input()
+class TaskStepCreateMutation(ModelGQLMutation, model=TaskStep): ...
 
 
-class ReportCreateMutation(ModelGQLMutation, model=Report):
-    name = Input()
-    content = Input()
+class ReportCreateMutation(ModelGQLMutation, model=Report): ...
 
 
 class CommentCreateMutation(ModelGQLMutation, model=Comment):
-    contents = Input()
     commenter = Input(PersonCreateMutation)
     target = Input()
 
 
-# TODO: How to determine mutation type: create, update, delete, or other?
 class TaskCreateMutation(ModelGQLMutation, model=Task):
     """Create a task."""
 
@@ -61,12 +50,12 @@ class TaskCreateMutation(ModelGQLMutation, model=Task):
 
     request = Input(ServiceRequestCreateMutation)
     project = Input(ProjectCreateMutation)
-    assignees = Input(PersonCreateMutation, many=True)
+    assignees = Input(PersonCreateMutation)
 
     result = Input(TaskResultCreateMutation)
-    steps = Input(TaskStepCreateMutation, many=True)
-    reports = Input(ReportCreateMutation, many=True)
+    steps = Input(TaskStepCreateMutation)
+    reports = Input(ReportCreateMutation)
 
-    comments = Input(CommentCreateMutation, many=True)
+    comments = Input(CommentCreateMutation)
 
-    related_tasks = Input("self", many=True)
+    related_tasks = Input("self")

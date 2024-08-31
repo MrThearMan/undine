@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import sys
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, get_args, get_origin
+from typing import Any, Callable, Generic, Union, get_args, get_origin
 
 from graphql import Undefined
 
@@ -15,6 +15,8 @@ from .reflection import get_signature
 __all__ = [
     "TypeDispatcher",
 ]
+
+from undine.parsers import parse_return_annotation
 
 
 class TypeDispatcher(Generic[From, To]):
@@ -37,7 +39,6 @@ class TypeDispatcher(Generic[From, To]):
         *,
         union_default: From = Undefined,
         wrapper: DispatchWrapper[From, To] | None = None,
-        process_nullable: Callable[[To, bool], To] | None = None,
     ) -> None:
         """
         Initialize the dispatcher.
@@ -46,12 +47,10 @@ class TypeDispatcher(Generic[From, To]):
                               more than one non-null type.
         :param wrapper: A function that wraps all implementated functions for
                         performing additional logic.
-        :param process_nullable: A function for processing `Union[..., None]` types.
         """
         self.name = self._get_name()
         self.union_default = union_default
         self.wrapper = wrapper
-        self.process_nullable = process_nullable
         self.default = Undefined
         self.implementations: dict[From, Callable[[From], To]] = {}
 
@@ -61,6 +60,7 @@ class TypeDispatcher(Generic[From, To]):
 
     def __call__(self, key: From, **kwargs: Any) -> To:
         """Find the implementation for the given key and call it with the given arguments."""
+        return_nullable = kwargs.pop("return_nullable", False)
         if key is Undefined:
             msg = "TypeDispatcher key must be a type or value."
             raise TypeDispatcherError(msg)
@@ -79,12 +79,12 @@ class TypeDispatcher(Generic[From, To]):
                 if self.default is not Undefined:
                     value = self.default
                 else:
-                    msg = f"'{self.name}' doesn't contain an implementation for '{type_}' (derived from {key!r})."
+                    msg = f"'{self.name}' doesn't contain an implementation for '{type_}'."
                     raise TypeDispatcherError(msg) from error
 
         result = value(new_key, **kwargs)
-        if self.process_nullable:
-            return self.process_nullable(result, nullable=nullable)
+        if return_nullable:
+            return result, nullable
         return result
 
     def get_key(self, key: Any) -> type:
@@ -93,17 +93,23 @@ class TypeDispatcher(Generic[From, To]):
 
     def handle_nullable(self, key: From) -> tuple[type, bool]:
         """For types like Union[str, None], return 'str, True'."""
-        if get_origin(key) is not UnionType:
+        annotation = key
+        origin = get_origin(key)
+        if isinstance(key, FunctionType):
+            annotation = parse_return_annotation(key)
+            origin = get_origin(annotation)
+
+        if origin is not UnionType:
             return key, False
 
         nullable: bool = False
-        args = get_args(key)
+        args = get_args(annotation)
         if NoneType in args:
             args = tuple(arg for arg in args if arg is not NoneType)
             nullable = True
 
         if len(args) == 1:
-            return args[0], nullable
+            return key if isinstance(key, FunctionType) else args[0], nullable
 
         # Allow using a default type for union with multiple non-null types.
         if self.union_default is not Undefined:
@@ -135,7 +141,7 @@ class TypeDispatcher(Generic[From, To]):
         origin = get_origin(type_)
         keys: list[type] = (
             [origin or type_]
-            if origin not in [type, UnionType]
+            if origin not in [type, UnionType, Union]
             else [get_origin(arg) or arg for arg in get_args(type_)]
         )
 

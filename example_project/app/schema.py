@@ -11,7 +11,7 @@ class Query:
     reports = Entrypoint(ReportNode, many=True)
 
     @Entrypoint
-    def function(self, arg: str | None = None) -> list[str | None]:
+    def function(self, arg: str = "None") -> list[str]:
         """
         Function docstring.
 

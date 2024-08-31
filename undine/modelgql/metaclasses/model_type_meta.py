@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
 from graphql import GraphQLObjectType, Undefined
 
-from undine.errors import MismatchingModelError, MissingModelError, TypeRegistryDuplicateError
-from undine.fields import Field, get_fields_for_model
+from undine.errors import MismatchingModelError, MissingModelError
+from undine.fields import Field
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
 from undine.utils.registry import TYPE_REGISTRY
@@ -84,8 +84,6 @@ class ModelGQLTypeMeta(type):
         instance: type[ModelGQLType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
         if register:
-            if model in TYPE_REGISTRY:
-                raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
             TYPE_REGISTRY[model] = instance
 
         # Members should use '__dunder__' names to avoid name collisions with possible field names.
@@ -127,3 +125,20 @@ def get_output_object_type_model_type(
             undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance,
         },
     )
+
+
+def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:
+    """Add 'Field's for all of the given model's fields, except those in the 'exclude' list."""
+    result: dict[str, Field] = {}
+    for model_field in model._meta._get_fields():
+        field_name = model_field.name
+        is_primary_key = bool(getattr(model_field, "primary_key", False))
+        if undine_settings.USE_PK_FIELD_NAME and is_primary_key:
+            field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Field(model_field)
+
+    return result

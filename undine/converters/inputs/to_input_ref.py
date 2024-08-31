@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.parsers import parse_model_field
-from undine.typing import InputRef
+from undine.typing import InputRef, ModelField
 from undine.utils.dispatcher import TypeDispatcher
 
 if TYPE_CHECKING:
@@ -19,6 +19,7 @@ __all__ = [
 
 
 convert_to_input_ref = TypeDispatcher[Any, InputRef]()
+"""Convert the given value to a Undine Input reference."""
 
 
 @convert_to_input_ref.register
@@ -36,18 +37,23 @@ def _(_: None, **kwargs: Any) -> InputRef:
 
 
 @convert_to_input_ref.register
+def _(ref: models.F, **kwargs: Any) -> InputRef:
+    caller: Input = kwargs["caller"]
+    return parse_model_field(model=caller.owner.__model__, lookup=ref.name)
+
+
+@convert_to_input_ref.register
+def _(ref: ModelField, **kwargs: Any) -> InputRef:
+    return ref
+
+
+@convert_to_input_ref.register
 def _(ref: DeferredAttribute, **kwargs: Any) -> InputRef:
     return ref.field
 
 
-@convert_to_input_ref.register
-def _(ref: models.Field, **kwargs: Any) -> InputRef:
-    return ref
-
-
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-
     from undine import ModelGQLMutation
 
     @convert_to_input_ref.register

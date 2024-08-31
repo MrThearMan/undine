@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -74,7 +74,16 @@ class TaskOrdering(ModelGQLOrdering, model=Task):
     length = Ordering(Length("name"))
 
 
+class CustomerDetails(TypedDict):
+    name: str
+    age: int
+
+
 class TaskNode(ModelGQLType, model=Task, filters=TaskFilter, ordering=TaskOrdering):
     """Task Node description."""
 
     assignee_count = Field(Coalesce(models.Count("assignees"), 0))
+
+    @Field
+    def customer(self, number: int = 18) -> CustomerDetails:
+        return CustomerDetails(name="John", age=number)

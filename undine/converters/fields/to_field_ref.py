@@ -4,17 +4,15 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
 from django.db import models
-from django.db.models import ForeignObjectRel
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
-    ManyToManyDescriptor,
     ReverseManyToOneDescriptor,
     ReverseOneToOneDescriptor,
 )
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.parsers import parse_model_field
-from undine.typing import FieldRef, ToManyField, ToOneField
+from undine.typing import CombinableExpression, FieldRef, ToManyField, ToOneField
 from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 from undine.utils.dispatcher import TypeDispatcher
 
@@ -28,6 +26,7 @@ __all__ = [
 
 
 convert_to_field_ref = TypeDispatcher[Any, FieldRef]()
+"""Convert the given value to a Undine Field reference."""
 
 
 @convert_to_field_ref.register
@@ -50,38 +49,28 @@ def _(ref: FunctionType, **kwargs: Any) -> FieldRef:
 
 
 @convert_to_field_ref.register
-def _(ref: models.Expression | models.Subquery, **kwargs: Any) -> FieldRef:
+def _(ref: CombinableExpression, **kwargs: Any) -> FieldRef:
     return ref
 
 
 @convert_to_field_ref.register
-def _(ref: DeferredAttribute, **kwargs: Any) -> FieldRef:
-    return ref.field
+def _(ref: models.Field, **kwargs: Any) -> FieldRef:
+    return ref
 
 
 @convert_to_field_ref.register
-def _(ref: ForwardManyToOneDescriptor | ManyToManyDescriptor, **kwargs: Any) -> FieldRef:
+def _(ref: ToOneField | ToManyField, **kwargs: Any) -> FieldRef:
+    return DeferredModelGQLType(field=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: DeferredAttribute | ForwardManyToOneDescriptor | ReverseManyToOneDescriptor, **kwargs: Any) -> FieldRef:
     return ref.field
 
 
 @convert_to_field_ref.register
 def _(ref: ReverseOneToOneDescriptor, **kwargs: Any) -> FieldRef:
     return ref.related
-
-
-@convert_to_field_ref.register
-def _(ref: ReverseManyToOneDescriptor, **kwargs: Any) -> FieldRef:
-    return ref.field
-
-
-@convert_to_field_ref.register
-def _(ref: ForeignObjectRel, **kwargs: Any) -> FieldRef:
-    return ref.target_field
-
-
-@convert_to_field_ref.register
-def _(ref: models.Field, **kwargs: Any) -> FieldRef:
-    return ref
 
 
 def load_deferred_converters() -> None:
@@ -91,21 +80,13 @@ def load_deferred_converters() -> None:
     from undine import ModelGQLType
 
     @convert_to_field_ref.register
-    def _(ref: ToOneField, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLType.for_related_field(ref)
-
-    @convert_to_field_ref.register
-    def _(ref: ToManyField, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLType.for_related_field(ref)
-
-    @convert_to_field_ref.register
     def _(ref: type[ModelGQLType], **kwargs: Any) -> FieldRef:
         return ref
 
     @convert_to_field_ref.register
     def _(ref: GenericRelation, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLType.for_related_field(ref)
+        return DeferredModelGQLType(field=ref)
 
     @convert_to_field_ref.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLTypeUnion.for_generic_foreign_key(ref)
+        return DeferredModelGQLTypeUnion(field=ref)

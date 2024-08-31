@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, TypeGuard
 
 from graphql import GraphQLResolveInfo
@@ -88,7 +88,6 @@ class ModelManyRelatedResolver:
 @dataclass(frozen=True, slots=True)
 class FieldResolver:
     func: FunctionType | Callable[..., Any]
-    other_params: list[str] = field(default_factory=list)
 
     def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         return self.func(**kwargs)
@@ -98,7 +97,6 @@ class FieldResolver:
 class FieldResolverWithRoot:
     func: FunctionType | Callable[..., Any]
     root_param: str
-    other_params: list[str] = field(default_factory=list)
 
     def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         kwargs[self.root_param] = root
@@ -109,7 +107,6 @@ class FieldResolverWithRoot:
 class FieldResolverWithInfo:
     func: FunctionType | Callable[..., Any]
     info_param: str
-    other_params: list[str] = field(default_factory=list)
 
     def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         kwargs[self.info_param] = info
@@ -121,7 +118,6 @@ class FieldResolverWithRootAndInfo:
     func: FunctionType | Callable[..., Any]
     root_param: str
     info_param: str
-    other_params: list[str] = field(default_factory=list)
 
     def __call__(self, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         kwargs[self.root_param] = root
