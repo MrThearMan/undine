@@ -7,15 +7,16 @@ from django.core.files.uploadedfile import UploadedFile  # noqa: TCH002
 from django.db.models.fields.files import ImageFieldFile
 from graphql import GraphQLScalarType
 
+from undine.errors.error_handlers import handle_conversion_errors
 from undine.utils.dispatcher import TypeDispatcher
-from undine.utils.error_helpers import handle_conversion_errors
 from undine.utils.text import dotpath
-from undine.validation import validate_image_url
+from undine.utils.urls import validate_image_url
 
 __all__ = [
     "GraphQLImage",
     "parse_image",
 ]
+
 
 error_wrapper = handle_conversion_errors("Image")
 parse_image = TypeDispatcher[Any, Any](wrapper=error_wrapper)

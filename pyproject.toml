@@ -207,14 +207,17 @@ lint.ignore = [
     "UP",       # No upgrade rules
 ]
 "undine/converters/*.py" = [
+    # No typing-only imports for converters due to TypeDispatcher
     "TCH001",
     "TCH002",
     "TCH003",
-    "ANN001",
+]
+"undine/fields.py" = [
+    "PLR0913",  # Fields contain many __init__ arguments
 ]
 "example_project/app/management/commands/create_test_data.py" = [
-    "T201",
-    "PLR0915",
+    "T201",     # Allowing print statements for debugging here
+    "PLR0915",  # Test data creation is long on purpose
 ]
 
 [tool.ruff.lint.isort]
@@ -264,11 +267,6 @@ extend-ignore-names = [
     "_relation_tree",
     "_getframe",
     "_get_pk_val",
-]
-
-[tool.ruff.lint.pep8-naming]
-classmethod-decorators = [
-    "cached_class_property",
 ]
 
 [tool.ruff.lint.mccabe]

@@ -5,8 +5,14 @@ from typing import TYPE_CHECKING, Any
 
 from django.http.request import MediaType
 
-from undine import error_codes
-from undine.errors import GraphQLStatusError
+from undine.errors.exceptions import (
+    GraphQLDecodeError,
+    GraphQLEmptyQueryError,
+    GraphQLMissingContentTypeError,
+    GraphQLMissingFileMapError,
+    GraphQLMissingOperationsError,
+    GraphQLUnsupportedContentTypeError,
+)
 from undine.http.files import place_files
 from undine.typing import GraphQLParams
 
@@ -29,8 +35,7 @@ class GraphQLRequestParamsParser:
             return request.GET.dict()
 
         if not request.content_type:
-            msg = "Must provide a 'Content-Type' header."
-            raise GraphQLStatusError(msg, status=415, code=error_codes.CONTENT_TYPE_MISSING)
+            raise GraphQLMissingContentTypeError
 
         content_type = MediaType(request.content_type)
         charset: str = content_type.params.get("charset", "utf-8")
@@ -48,8 +53,7 @@ class GraphQLRequestParamsParser:
                 return cls.parse_file_uploads(request.POST.dict(), request.FILES.dict())
             return request.POST.dict()
 
-        msg = f"'{content_type}' is not a supported content type."
-        raise GraphQLStatusError(msg, status=415, code=error_codes.UNSUPPORTED_CONTENT_TYPE)
+        raise GraphQLUnsupportedContentTypeError(content_type=content_type)
 
     @classmethod
     def decode_body(cls, body: bytes, charset: str = "utf-8") -> str:
@@ -57,17 +61,17 @@ class GraphQLRequestParamsParser:
             return body.decode(encoding=charset)
         except Exception as error:
             msg = f"Could not decode body with encoding '{charset}'."
-            raise GraphQLStatusError(msg, status=400, code=error_codes.DECODING_ERROR) from error
+            raise GraphQLDecodeError(msg) from error
 
     @classmethod
     def load_json_dict(cls, string: str, *, decode_error_msg: str, type_error_msg: str) -> dict[str, Any]:
         try:
             data = json.loads(string)
         except Exception as error:
-            raise GraphQLStatusError(decode_error_msg, status=400, code=error_codes.DECODING_ERROR) from error
+            raise GraphQLDecodeError(decode_error_msg) from error
 
         if not isinstance(data, dict):
-            raise GraphQLStatusError(type_error_msg, status=400, code=error_codes.DECODING_ERROR)
+            raise GraphQLDecodeError(type_error_msg)
         return data
 
     @classmethod
@@ -90,8 +94,7 @@ class GraphQLRequestParamsParser:
     def get_operations(cls, post_data: dict[str, str]) -> dict[str, Any]:  # pragma: no cover
         operations: str | None = post_data.get("operations")
         if not isinstance(operations, str):
-            msg = "File upload must contain an `operations` value."
-            raise GraphQLStatusError(msg, status=400, code=error_codes.MISSING_OPERATIONS)
+            raise GraphQLMissingOperationsError
 
         return cls.load_json_dict(
             operations,
@@ -103,8 +106,7 @@ class GraphQLRequestParamsParser:
     def get_map(cls, post_data: dict[str, str]) -> dict[str, list[str]]:  # pragma: no cover
         files_map_str: str | None = post_data.get("map")
         if not isinstance(files_map_str, str):
-            msg = "File upload must contain an `map` value."
-            raise GraphQLStatusError(msg, status=400, code=error_codes.MISSING_FILE_MAP)
+            raise GraphQLMissingFileMapError
 
         files_map = cls.load_json_dict(
             files_map_str,
@@ -115,7 +117,7 @@ class GraphQLRequestParamsParser:
         for value in files_map.values():
             if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
                 msg = "The `map` value is not a mapping from string to list of strings."
-                raise GraphQLStatusError(msg, status=400, code=error_codes.DECODING_ERROR)
+                raise GraphQLDecodeError(msg)
 
         return files_map
 
@@ -123,8 +125,7 @@ class GraphQLRequestParamsParser:
     def get_graphql_params(cls, data: dict[str, str]) -> GraphQLParams:
         query: str | None = data.get("query")
         if not query or query == "null":
-            msg = "Requests must contain a `query` string describing the graphql document."
-            raise GraphQLStatusError(msg, status=400, code=error_codes.EMPTY_QUERY)
+            raise GraphQLEmptyQueryError
 
         operation_name: str | None = data.get("operationName") or None
 

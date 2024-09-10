@@ -5,7 +5,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import FieldFile
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.file import parse_file, serialize
 
 

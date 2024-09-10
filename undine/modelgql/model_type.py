@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from functools import cache
 from typing import TYPE_CHECKING, Any
 
-from graphql import GraphQLResolveInfo, Undefined
+from graphql import GraphQLObjectType, Undefined
 
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
+from undine.utils.text import get_docstring
 
 from .metaclasses.model_type_meta import ModelGQLTypeMeta
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     from django.db import models
 
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import Root
+    from undine.typing import GQLInfo, Root
 
 
 class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
@@ -40,7 +42,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
     # Members should use `__dunder__` names to avoid name collisions with possible field names.
 
     @classmethod
-    def __get_queryset__(cls, info: GraphQLResolveInfo) -> models.QuerySet:
+    def __get_queryset__(cls, info: GQLInfo) -> models.QuerySet:
         """
         Base queryset for this ModelGQLType.
         Used for top-level queries and prefetches involving this ModelGQLType.
@@ -48,7 +50,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return cls.__model__._default_manager.get_queryset()
 
     @classmethod
-    def __optimize_queryset__(cls, info: GraphQLResolveInfo, queryset: models.QuerySet) -> models.QuerySet:
+    def __optimize_queryset__(cls, info: GQLInfo, queryset: models.QuerySet) -> models.QuerySet:
         """Optimize a queryset according to the given resolve info."""
         optimizer = OptimizationCompiler(info).compile(queryset)
         optimized_queryset = optimizer.optimize_queryset(queryset)
@@ -56,7 +58,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return optimized_queryset
 
     @classmethod
-    def __filter_queryset__(cls, queryset: models.QuerySet, info: GraphQLResolveInfo) -> models.QuerySet:
+    def __filter_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """
         Filtering that should always be applied to the queryset.
         Optimizer will call this method for all querysets involving this ModelGQLType.
@@ -64,7 +66,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return queryset
 
     @classmethod
-    def __resolve_one__(cls, root: Root, info: GraphQLResolveInfo, **kwargs: Any) -> models.Model | None:
+    def __resolve_one__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.Model | None:
         """Top-level resolver for fetching a single model object."""
         queryset = cls.__get_queryset__(info)
         optimized_queryset = cls.__optimize_queryset__(info, queryset.filter(**kwargs))
@@ -74,7 +76,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return next(iter(optimized_queryset), None)
 
     @classmethod
-    def __resolve_many__(cls, root: Root, info: GraphQLResolveInfo, **kwargs: Any) -> models.QuerySet:
+    def __resolve_many__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         """Top-level resolver for fetching multiple model objects."""
         queryset = cls.__get_queryset__(info)
         return cls.__optimize_queryset__(info, queryset)
@@ -88,10 +90,27 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         return queryset
 
     @classmethod
-    def __is_type_of__(cls, value: models.Model, info: GraphQLResolveInfo) -> bool:
+    def __is_type_of__(cls, value: models.Model, info: GQLInfo) -> bool:
         """
         Function for resolving types of abstract GraphQL types like unions.
         Indicates whether the given value belongs to this ModelGQLType.
         """
         # Purposely not using `isinstance` here to prevent errors from model inheritance.
         return type(value) is cls.__model__
+
+    @classmethod
+    @cache
+    def __output_type__(cls) -> GraphQLObjectType:
+        """
+        Creates a `GraphQLObjectType` for this class.
+        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
+        """
+        return GraphQLObjectType(
+            name=cls.__typename__,
+            # Give fields as a callable to delay their creation.
+            # This gives time for all ModelGQLTypes to be registered.
+            fields=lambda: {name: field.get_graphql_field() for name, field in cls.__field_map__.items()},
+            description=get_docstring(cls),
+            is_type_of=cls.__is_type_of__,
+            extensions=cls.__extensions__,
+        )

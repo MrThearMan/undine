@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.decimal import parse_decimal
 
 

@@ -1,41 +1,25 @@
+"""Contains utility functions for dealing with URLs."""
+
 from __future__ import annotations
 
-from functools import wraps
 from pathlib import Path
-from typing import Callable, ParamSpec, TypeVar
 
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator, get_available_image_extensions
 
+from undine.errors.error_handlers import handle_validation_errors
 from undine.utils.text import comma_sep_str
-
-P = ParamSpec("P")
-T = TypeVar("T")
-
-
-def _capture_validation_errors(func: Callable[P, T]) -> Callable[P, T]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        try:
-            return func(*args, **kwargs)
-        except ValidationError as error:
-            if error.params is not None:
-                error.message %= error.params
-            raise ValueError(error.message) from error
-
-    return wrapper
-
 
 url_validator = URLValidator()
 
 
-@_capture_validation_errors
+@handle_validation_errors
 def validate_url(url: str) -> str:
     url_validator(url)
     return url
 
 
-@_capture_validation_errors
+@handle_validation_errors
 def validate_file_url(url: str) -> str:
     url_validator(url)
     extension = Path(url).suffix[1:].lower()
@@ -45,13 +29,14 @@ def validate_file_url(url: str) -> str:
     return url
 
 
-@_capture_validation_errors
+@handle_validation_errors
 def validate_image_url(url: str) -> str:
     url_validator(url)
     validate_extensions(url, allowed_extensions=get_available_image_extensions())
     return url
 
 
+@handle_validation_errors
 def validate_extensions(string: str, allowed_extensions: list[str]) -> str:
     extension = Path(string).suffix[1:].lower()
     if extension not in allowed_extensions:

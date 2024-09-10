@@ -15,47 +15,58 @@ from undine import ModelGQLMutation
 from undine.fields import Input
 
 
-class TeamCreateMutation(ModelGQLMutation, model=Team): ...
+class TeamMutation(ModelGQLMutation, model=Team): ...
 
 
-class ProjectCreateMutation(ModelGQLMutation, model=Project):
-    team = Input(TeamCreateMutation)
+class ProjectMutation(ModelGQLMutation, model=Project):
+    team = Input(TeamMutation)
 
 
-class ServiceRequestCreateMutation(ModelGQLMutation, model=ServiceRequest): ...
+class ServiceRequestMutation(ModelGQLMutation, model=ServiceRequest): ...
 
 
-class PersonCreateMutation(ModelGQLMutation, model=Person): ...
+class PersonMutation(ModelGQLMutation, model=Person): ...
 
 
-class TaskResultCreateMutation(ModelGQLMutation, model=TaskResult): ...
+class TaskResultMutation(ModelGQLMutation, model=TaskResult): ...
 
 
-class TaskStepCreateMutation(ModelGQLMutation, model=TaskStep): ...
+class TaskStepMutation(ModelGQLMutation, model=TaskStep): ...
 
 
-class ReportCreateMutation(ModelGQLMutation, model=Report): ...
+class ReportMutation(ModelGQLMutation, model=Report): ...
 
 
-class CommentCreateMutation(ModelGQLMutation, model=Comment):
-    commenter = Input(PersonCreateMutation)
+class CommentMutation(ModelGQLMutation, model=Comment):
+    commenter = Input(PersonMutation)
     target = Input()
+
+
+class TaskMutation(ModelGQLMutation, model=Task):
+    request = Input(ServiceRequestMutation)
+    project = Input(ProjectMutation)
+    assignees = Input(PersonMutation)
+
+    result = Input(TaskResultMutation)
+    steps = Input(TaskStepMutation)
+    reports = Input(ReportMutation)
+
+    comments = Input(CommentMutation)
+
+    related_tasks = Input("self")
 
 
 class TaskCreateMutation(ModelGQLMutation, model=Task):
     """Create a task."""
 
-    name = Input()
-    type = Input()
+    request = Input(ServiceRequestMutation)
+    project = Input(ProjectMutation)
+    assignees = Input(PersonMutation)
 
-    request = Input(ServiceRequestCreateMutation)
-    project = Input(ProjectCreateMutation)
-    assignees = Input(PersonCreateMutation)
+    result = Input(TaskResultMutation)
+    steps = Input(TaskStepMutation)
+    reports = Input(ReportMutation)
 
-    result = Input(TaskResultCreateMutation)
-    steps = Input(TaskStepCreateMutation)
-    reports = Input(ReportCreateMutation)
+    comments = Input(CommentMutation)
 
-    comments = Input(CommentCreateMutation)
-
-    related_tasks = Input("self")
+    related_tasks = Input(TaskMutation)

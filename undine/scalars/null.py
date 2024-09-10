@@ -2,8 +2,8 @@ from typing import Any, NoReturn
 
 from graphql import GraphQLScalarType
 
+from undine.errors.error_handlers import handle_conversion_errors
 from undine.utils.dispatcher import TypeDispatcher
-from undine.utils.error_helpers import handle_conversion_errors
 from undine.utils.text import dotpath
 
 __all__ = [

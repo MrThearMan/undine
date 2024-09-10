@@ -1,3 +1,5 @@
+"""Django settings for Undine. Can be configured in the Django settings file with the key 'UNDINE'."""
+
 from __future__ import annotations
 
 from typing import Any, NamedTuple, Sequence

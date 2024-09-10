@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any
 from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
-from undine.parsers import parse_model_field
 from undine.typing import CombinableExpression, FilterRef, ModelField
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
     from undine.fields import Filter
@@ -26,19 +26,19 @@ convert_to_filter_ref = TypeDispatcher[Any, FilterRef]()
 @convert_to_filter_ref.register
 def _(ref: str, **kwargs: Any) -> FilterRef:
     caller: Filter = kwargs["caller"]
-    return parse_model_field(model=caller.owner.__model__, lookup=ref)
+    return get_model_field(model=caller.owner.__model__, lookup=ref)
 
 
 @convert_to_filter_ref.register
 def _(_: None, **kwargs: Any) -> FilterRef:
     caller: Filter = kwargs["caller"]
-    return parse_model_field(model=caller.owner.__model__, lookup=caller.name)
+    return get_model_field(model=caller.owner.__model__, lookup=caller.name)
 
 
 @convert_to_filter_ref.register
 def _(ref: models.F, **kwargs: Any) -> FilterRef:
     caller: Filter = kwargs["caller"]
-    return parse_model_field(model=caller.owner.__model__, lookup=ref.name)
+    return get_model_field(model=caller.owner.__model__, lookup=ref.name)
 
 
 @convert_to_filter_ref.register

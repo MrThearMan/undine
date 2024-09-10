@@ -4,12 +4,12 @@ from types import FunctionType
 from typing import Any
 
 from django.db import models
-from graphql import GraphQLError, GraphQLOutputType, GraphQLResolveInfo, GraphQLUnionType
+from graphql import GraphQLError, GraphQLOutputType, GraphQLUnionType
 
 from undine.parsers import parse_return_annotation
-from undine.typing import CombinableExpression, EntrypointRef, FilterRef, ModelField
-from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
+from undine.typing import CombinableExpression, EntrypointRef, FilterRef, GQLInfo, ModelField
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import dotpath, to_pascal_case
 
 from . import convert_model_field_to_graphql_type
@@ -41,15 +41,15 @@ def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLOutputType:
 
 
 @convert_ref_to_graphql_output_type.register
-def _(ref: DeferredModelGQLType, **kwargs: Any) -> GraphQLOutputType:
+def _(ref: LazyModelGQLType, **kwargs: Any) -> GraphQLOutputType:
     return convert_ref_to_graphql_output_type(ref.get_type(), **kwargs)
 
 
 @convert_ref_to_graphql_output_type.register
-def _(ref: DeferredModelGQLTypeUnion, **kwargs: Any) -> GraphQLOutputType:
+def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLOutputType:
     type_map = {model_type.__model__: convert_ref_to_graphql_output_type(model_type) for model_type in ref.get_types()}
 
-    def resolve_type(obj: type[models.Model], info: GraphQLResolveInfo, union_type: GraphQLUnionType) -> Any:
+    def resolve_type(obj: type[models.Model], info: GQLInfo, union_type: GraphQLUnionType) -> Any:
         nonlocal type_map
 
         object_type = type_map.get(obj.__class__)
@@ -62,7 +62,7 @@ def _(ref: DeferredModelGQLTypeUnion, **kwargs: Any) -> GraphQLOutputType:
     return GraphQLUnionType(
         name=f"{ref.field.model.__name__}{to_pascal_case(ref.field.name)}",
         types=list(type_map.values()),
-        resolve_type=resolve_type,
+        resolve_type=resolve_type,  # type: ignore[arg-type]
     )
 
 
@@ -72,8 +72,8 @@ def load_deferred_converters() -> None:
 
     @convert_ref_to_graphql_output_type.register
     def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLOutputType:
-        return ref.__output_type__
+        return ref.__output_type__()
 
     @convert_ref_to_graphql_output_type.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLOutputType:
-        return ref.__model_type__.__output_type__
+        return ref.__output_type__()

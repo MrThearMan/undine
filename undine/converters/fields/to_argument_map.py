@@ -9,8 +9,8 @@ from undine.converters.to_graphql_type import convert_type_to_graphql_type
 from undine.parsers import docstring_parser, parse_parameters
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, FieldRef, ModelField
-from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import get_docstring, get_schema_name
 
 __all__ = [
@@ -51,12 +51,12 @@ def _(_: ModelField | CombinableExpression, **kwargs: Any) -> GraphQLArgumentMap
 
 
 @convert_field_ref_to_graphql_argument_map.register
-def _(ref: DeferredModelGQLType, **kwargs: Any) -> GraphQLArgumentMap:
+def _(ref: LazyModelGQLType, **kwargs: Any) -> GraphQLArgumentMap:
     return convert_field_ref_to_graphql_argument_map(ref.get_type(), **kwargs)
 
 
 @convert_field_ref_to_graphql_argument_map.register
-def _(ref: DeferredModelGQLTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
+def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
 
 
@@ -71,8 +71,8 @@ def load_deferred_converters() -> None:
 
         arguments: GraphQLArgumentMap = {}
         if ref.__filters__:
-            arguments[undine_settings.FILTER_INPUT_TYPE_KEY] = GraphQLArgument(ref.__filters__.__input_type__)
+            arguments[undine_settings.FILTER_INPUT_TYPE_KEY] = GraphQLArgument(ref.__filters__.__input_type__())
         if ref.__ordering__:
-            enum_type = GraphQLList(GraphQLNonNull(ref.__ordering__.__ordering_enum__))
+            enum_type = GraphQLList(GraphQLNonNull(ref.__ordering__.__enum_type__()))
             arguments[undine_settings.ORDER_BY_INPUT_TYPE_KEY] = GraphQLArgument(enum_type)
         return arguments

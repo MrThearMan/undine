@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.date import parse_date
 
 

@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Container, Iterable
 
 from django.db import models
-from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
+from graphql import Undefined
 
-from undine.errors import MissingModelError
+from undine.errors.exceptions import MissingModelError
 from undine.fields import Ordering
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
-from undine.utils.text import get_docstring, get_schema_name
+from undine.utils.text import get_schema_name
 
 if TYPE_CHECKING:
     from undine.modelgql.model_ordering import ModelGQLOrdering
@@ -51,46 +51,9 @@ class ModelGQLOrderingMeta(type):
         # Members should use '__dunder__' names to avoid name collisions with possible ordering names.
         instance.__model__ = model
         instance.__ordering_map__ = {get_schema_name(n): o for n, o in get_members(instance, Ordering)}
-        instance.__ordering_enum__ = get_enum_type_for_model_ordering(instance, name=name, extensions=extensions)
+        instance.__typename__ = name or _name
+        instance.__extensions__ = extensions or {} | {undine_settings.ORDER_BY_EXTENSIONS_KEY: instance}
         return instance
-
-
-def get_enum_type_for_model_ordering(
-    instance: type[ModelGQLOrdering],
-    *,
-    name: str | None = None,
-    extensions: dict[str, Any] | None = None,
-) -> GraphQLEnumType:
-    """
-    Create the ordering `GraphQLEnum` argument for the given `ModelGQLOrdering`.
-
-    `GraphQLEnum` should be created once, since a GraphQL schema cannot
-    contain multiple types with the same name.
-    """
-    if name is None:
-        name = instance.__name__
-    if extensions is None:
-        extensions = {}
-
-    enum_values: dict[str, GraphQLEnumValue] = {}
-    for name_, ordering_ in instance.__ordering_map__.items():
-        if not ordering_.supports_reversing:
-            enum_values[name_] = GraphQLEnumValue(value=name_, description=ordering_.description)
-            continue
-
-        for direction in ("Asc", "Desc"):
-            schema_name = f"{name_}{direction}"
-            enum_values[schema_name] = GraphQLEnumValue(value=schema_name, description=ordering_.description)
-
-    return GraphQLEnumType(
-        name=name,
-        values=enum_values,
-        description=get_docstring(instance),
-        extensions={
-            **extensions,
-            undine_settings.ORDER_BY_EXTENSIONS_KEY: instance,
-        },
-    )
 
 
 def get_orderings_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Ordering]:

@@ -11,9 +11,9 @@ from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
 
 if TYPE_CHECKING:
-    from graphql import GraphQLResolveInfo, OperationDefinitionNode
+    from graphql import OperationDefinitionNode
 
-    from undine.typing import ToManyField
+    from undine.typing import GQLInfo, ToManyField
 
 __all__ = [
     "_register_for_prefetch_hack",
@@ -25,7 +25,7 @@ _PrefetchCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
 _PREFETCH_HACK_CACHE: WeakKeyDictionary[OperationDefinitionNode, _PrefetchCacheType] = WeakKeyDictionary()
 
 
-def _register_for_prefetch_hack(info: GraphQLResolveInfo, field: ToManyField) -> None:
+def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
     # Registers the through table of a many-to-many field for the prefetch hack.
     # See `_prefetch_hack` for more information.
     if not isinstance(field, (models.ManyToManyField, models.ManyToManyRel)):

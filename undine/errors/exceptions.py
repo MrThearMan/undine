@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from string import Formatter
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Collection
 
-from graphql import GraphQLError, ValueNode, print_ast
-from graphql.pyutils import inspect
+from graphql import GraphQLError
+
+from undine.errors import error_codes
+
+if TYPE_CHECKING:
+    from graphql import GraphQLErrorExtensions, Node, Source
 
 __all__ = [
     "FuntionSignatureParsingError",
@@ -32,9 +36,11 @@ __all__ = [
 class ErrorMessageFormatter(Formatter):
     """Formatter for error strings."""
 
-    def format_field(self, value: Any, format_spec: str) -> str:
+    def format_field(self, value: Any, format_spec: str) -> str:  # noqa: PLR0911
         from undine.utils.text import comma_sep_str, dotpath
 
+        if format_spec == "repr":
+            return repr(value)
         if format_spec == "dotpath":
             return dotpath(value)
         if format_spec == "module":
@@ -176,23 +182,159 @@ class TypeRegistryMissingTypeError(UndineError):
 
 
 class GraphQLStatusError(GraphQLError):
-    def __init__(self, message: str, *, status: int, code: str, **kwargs: Any) -> None:
-        extensions = kwargs.setdefault("extensions", {})
+    """Base error for GraphQL error in Undine."""
+
+    msg: ClassVar[str] = ""
+    status: ClassVar[int] = 500
+    code: ClassVar[str | None] = None
+    error_formatter = ErrorMessageFormatter()
+
+    def __init__(  # noqa: PLR0913
+        self,
+        message: str = "",
+        *,
+        status: int | None = None,
+        code: str | None = None,
+        nodes: Collection[Node] | Node | None = None,
+        source: Source | None = None,
+        positions: Collection[int] | None = None,
+        path: Collection[str | int] | None = None,
+        original_error: Exception | None = None,
+        extensions: GraphQLErrorExtensions | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize the GraphQL Error with some extra information.
+
+        :param message: A message describing the Error for debugging purposes.
+        :param status: HTTP status code.
+        :param code: Unique error code.
+        :param nodes: A list of GraphQL AST Nodes corresponding to this error
+        :param source: The source GraphQL document for the first location of this error.
+        :param positions: A list of character offsets within the source GraphQL document which correspond
+                          to this error.
+        :param path: A list of field names and array indexes describing the JSON-path into the execution
+                     response which corresponds to this error.
+        :param original_error: The original error thrown from a field resolver during execution.
+        :param extensions: Extension fields to add to the formatted error.
+        """
+        status = status or self.status
+        code = code or self.code
+        message = self.error_formatter.format(message or self.msg, **kwargs)
+        extensions = extensions or {}
         extensions["status_code"] = status
         if code is not None:
             extensions["error_code"] = code
-        super().__init__(message, **kwargs)
+
+        super().__init__(
+            message=message,
+            nodes=nodes,
+            source=source,
+            positions=positions,
+            path=path,
+            original_error=original_error,
+            extensions=extensions,
+        )
 
 
-class GraphQLConversionError(GraphQLError):
-    def __init__(self, name: str, value: Any, extra: str = "", **kwargs: Any) -> None:
-        if isinstance(value, ValueNode):
-            kwargs["nodes"] = value
-            kwargs["message"] = f"{name} cannot represent value {print_ast(value)}"
-        else:
-            kwargs["message"] = f"{name} cannot represent value {inspect(value)}"
+class GraphQLConversionError(GraphQLStatusError):
+    """Error raised when a value cannot be converted to a GraphQL type."""
 
-        if extra:
-            kwargs["message"] += f": {extra}"
+    msg = "{typename} cannot represent value {value}: {error}"
+    status = 400
+    code = error_codes.GRAPHQL_CONVERSION_ERROR
 
-        super().__init__(**kwargs)
+
+class GraphQLDecodeError(GraphQLStatusError):
+    """Error raised when a request content cannot be decoded to python data."""
+
+    status = 400
+    code = error_codes.DECODING_ERROR
+
+
+class GraphQLEmptyQueryError(GraphQLStatusError):
+    """Error raised when parsing file upload data doesn't contain a `map` files mapping."""
+
+    msg = "Requests must contain a `query` string describing the graphql document."
+    status = 400
+    code = error_codes.EMPTY_QUERY
+
+
+class GraphQLFileParsingError(GraphQLStatusError):
+    """Error raised when parsing file data for mutation input fails."""
+
+    status = 400
+    code = error_codes.FILE_NOT_FOUND
+
+
+class GraphQLInvalidInputDataError(GraphQLStatusError):
+    """Error raised when a request content cannot be decoded to python data."""
+
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLMissingContentTypeError(GraphQLStatusError):
+    """Error raised when a request is made wihtout a content type."""
+
+    msg = "Must provide a 'Content-Type' header."
+    status = 415
+    code = error_codes.CONTENT_TYPE_MISSING
+
+
+class GraphQLMissingFileMapError(GraphQLStatusError):
+    """Error raised when parsing file upload data doesn't contain a `map` files mapping."""
+
+    msg = "File upload must contain an `map` value."
+    status = 400
+    code = error_codes.MISSING_FILE_MAP
+
+
+class GraphQLMissingLookupFieldError(GraphQLStatusError):
+    """Error raised when a lookup field is missing from the mutation input data for fetching the mutated instance."""
+
+    msg = (
+        "Input data is missing value for the mutation lookup field '{key}'. "
+        "Cannot fetch '{model:dotpath}' object for mutation."
+    )
+    status = 400
+    code = error_codes.LOOKUP_VALUE_MISSING
+
+
+class GraphQLMissingOperationsError(GraphQLStatusError):
+    """Error raised when parsing file upload data doesn't contain an `operations` data mapping."""
+
+    msg = "File upload must contain an `operations` value."
+    status = 400
+    code = error_codes.MISSING_OPERATIONS
+
+
+class GraphQLModelConstaintViolationError(GraphQLStatusError):
+    """Error raised when a request is made with an unsupported content type."""
+
+    status = 400
+    code = error_codes.MODEL_UNIQUE_CONSTRAINT_VIOLATION
+
+
+class GraphQLModelNotFoundError(GraphQLStatusError):
+    """Error raised when a model lookup fails to find a matching row."""
+
+    msg = "Lookup `{key}={value:repr}` on model `{model:dotpath}` did not match any row."
+    status = 404
+    code = error_codes.MODEL_NOT_FOUND
+
+
+class GraphQLMultipleObjectsFoundError(GraphQLStatusError):
+    """Error raised when a model lookup finds more than one matching row."""
+
+    msg = "Lookup `{key}={value!r}` on model `{model:dotpath}` matched more than one row."
+    status = 500
+    code = error_codes.MODEL_MULTIPLE_OBJECTS
+
+
+class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
+    """Error raised when a request is made with an unsupported content type."""
+
+    msg = "'{content_type}' is not a supported content type."
+    status = 415
+    code = error_codes.UNSUPPORTED_CONTENT_TYPE

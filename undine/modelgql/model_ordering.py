@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from graphql import Undefined
+from functools import cache
 
-from undine.typing import OrderingResults
+from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
+
+from undine.typing import GQLInfo, OrderingResults
+from undine.utils.text import get_docstring
 
 from .metaclasses.model_ordering_meta import ModelGQLOrderingMeta
 
@@ -28,7 +31,7 @@ class ModelGQLOrdering(metaclass=ModelGQLOrderingMeta, model=Undefined):
     # Members should use `__dunder__` names to avoid name collisions with possible ordering field names.
 
     @classmethod
-    def __build__(cls, ordering_data: list[str]) -> OrderingResults:
+    def __build__(cls, ordering_data: list[str], info: GQLInfo) -> OrderingResults:
         """
         Build a list of ordering expressions from the given ordering data.
 
@@ -52,3 +55,27 @@ class ModelGQLOrdering(metaclass=ModelGQLOrderingMeta, model=Undefined):
             result.order_by.append(ordering_.get_expression(descending=descending))
 
         return result
+
+    @classmethod
+    @cache
+    def __enum_type__(cls) -> GraphQLEnumType:
+        """
+        Create a `GraphQLEnumType` for this class.
+        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
+        """
+        enum_values: dict[str, GraphQLEnumValue] = {}
+        for name, ordering in cls.__ordering_map__.items():
+            if not ordering.supports_reversing:
+                enum_values[name] = GraphQLEnumValue(value=name, description=ordering.description)
+                continue
+
+            for direction in ("Asc", "Desc"):
+                schema_name = f"{name}{direction}"
+                enum_values[schema_name] = GraphQLEnumValue(value=schema_name, description=ordering.description)
+
+        return GraphQLEnumType(
+            name=cls.__typename__,
+            values=enum_values,
+            description=get_docstring(cls),
+            extensions=cls.__extensions__,
+        )

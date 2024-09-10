@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import HttpRequest
 
 from tests.helpers import get_graphql_multipart_spec_request
-from undine.errors import GraphQLStatusError
+from undine.errors.exceptions import GraphQLStatusError
 from undine.parsers import GraphQLRequestParamsParser
 from undine.typing import GraphQLParams
 

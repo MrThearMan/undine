@@ -1,10 +1,12 @@
+"""Contains utility functions for dealing with text."""
+
 from __future__ import annotations
 
 import re
 from inspect import cleandoc
 from typing import TYPE_CHECKING, Any, Callable, Iterable
 
-from undine.errors import SchemaNameValidationError
+from undine.errors.exceptions import SchemaNameValidationError
 from undine.settings import undine_settings
 
 if TYPE_CHECKING:

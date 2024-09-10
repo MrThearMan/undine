@@ -1,3 +1,8 @@
+"""
+Contains a class for dispatching different registered function calls
+based on those registered function's first argument's type.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -7,7 +12,8 @@ from typing import Any, Callable, Generic, Union, get_args, get_origin
 
 from graphql import Undefined
 
-from undine.errors import TypeDispatcherError
+from undine.errors.exceptions import TypeDispatcherError
+from undine.parsers import parse_return_annotation
 from undine.typing import DispatchWrapper, From, To
 
 from .reflection import get_signature
@@ -15,8 +21,6 @@ from .reflection import get_signature
 __all__ = [
     "TypeDispatcher",
 ]
-
-from undine.parsers import parse_return_annotation
 
 
 class TypeDispatcher(Generic[From, To]):
@@ -79,7 +83,7 @@ class TypeDispatcher(Generic[From, To]):
                 if self.default is not Undefined:
                     value = self.default
                 else:
-                    msg = f"'{self.name}' doesn't contain an implementation for '{type_}'."
+                    msg = f"'{self.name}' doesn't contain an implementation for '{type_}' ({key})."
                     raise TypeDispatcherError(msg) from error
 
         result = value(new_key, **kwargs)

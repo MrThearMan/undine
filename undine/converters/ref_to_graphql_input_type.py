@@ -15,10 +15,10 @@ from graphql import (
     GraphQLNonNull,
 )
 
-from undine.parsers import parse_first_param_type, parse_model_field
+from undine.parsers import parse_first_param_type
 from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField
 from undine.utils.dispatcher import TypeDispatcher
-from undine.utils.reflection import generic_relations_for_generic_foreign_key
+from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import to_pascal_case
 
 from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
@@ -52,14 +52,14 @@ def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLInputType:
 @convert_ref_to_graphql_input_type.register
 def _(ref: str, **kwargs: Any) -> GraphQLInputType:
     model: type[models.Model] = kwargs["model"]
-    model_field = parse_model_field(model=model, lookup=ref)
+    model_field = get_model_field(model=model, lookup=ref)
     return convert_model_field_to_graphql_type(model_field)
 
 
 @convert_ref_to_graphql_input_type.register
 def _(ref: models.F, **kwargs: Any) -> GraphQLInputType:
     model: type[models.Model] = kwargs["model"]
-    model_field = parse_model_field(model=model, lookup=ref.name)
+    model_field = get_model_field(model=model, lookup=ref.name)
     return convert_model_field_to_graphql_type(model_field)
 
 
@@ -76,7 +76,7 @@ def load_deferred_converters() -> None:
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLInputType:
-        return ref.__input_type__
+        return ref.__input_type__(entrypoint=False)
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: GenericRelation, **kwargs: Any) -> GraphQLInputType:

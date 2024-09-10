@@ -5,7 +5,7 @@ import re
 import pytest
 from graphql import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.any import parse_any
 
 

@@ -12,7 +12,7 @@ from django.test.client import BOUNDARY
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
-from undine.errors import UndineError
+from undine.errors.exceptions import UndineError
 from undine.settings import SETTING_NAME, undine_settings
 
 __all__ = [

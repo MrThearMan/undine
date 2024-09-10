@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.json import parse_json
 
 

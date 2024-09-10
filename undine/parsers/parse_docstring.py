@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from inspect import cleandoc
 
-from undine.errors import InvalidParserError
+from undine.errors.exceptions import InvalidParserError
 from undine.settings import undine_settings
 from undine.typing import DocstringParserProtocol
 

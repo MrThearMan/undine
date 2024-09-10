@@ -1,8 +1,11 @@
+"""GraphQL execution middleware."""
+
 import traceback
 from typing import Any
 
-from graphql import GraphQLFieldResolver, GraphQLResolveInfo
+from graphql import GraphQLFieldResolver
 
+from undine.typing import GQLInfo
 from undine.utils.logging import undine_logger
 
 __all__ = [
@@ -10,7 +13,7 @@ __all__ = [
 ]
 
 
-def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
+def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
     try:
         return resolver(root, info, **kwargs)
     except Exception as err:  # noqa: BLE001

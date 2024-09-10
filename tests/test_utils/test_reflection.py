@@ -1,9 +1,6 @@
 from example_project.app.models import Comment, Project, Task
-from undine.utils.reflection import (
-    generic_foreign_key_for_generic_relation,
-    generic_relations_for_generic_foreign_key,
-    swappable_by_subclassing,
-)
+from undine.utils.model_utils import generic_foreign_key_for_generic_relation, generic_relations_for_generic_foreign_key
+from undine.utils.reflection import swappable_by_subclassing
 
 
 def test_generic_relations_for_generic_foreign_key():

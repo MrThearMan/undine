@@ -2,7 +2,7 @@
 This file contains all possible HTTP error codes that undine returns.
 The module should be used like this:
 
->>> from undine import error_codes
+>>> from undine.errors import error_codes
 >>>
 >>> error_codes.MODEL_NOT_FOUND
 
@@ -14,6 +14,7 @@ CONTENT_TYPE_MISSING = "CONTENT_TYPE_MISSING"
 DECODING_ERROR = "DECODING_ERROR"
 EMPTY_QUERY = "EMPTY_QUERY"
 FILE_NOT_FOUND = "FILE_NOT_FOUND"
+GRAPHQL_CONVERSION_ERROR = "GRAPHQL_CONVERSION_ERROR"
 INVALID_INPUT_DATA = "INVALID_INPUT_DATA"
 LOOKUP_FIELD_MISSING = "LOOKUP_FIELD_MISSING"
 LOOKUP_VALUE_MISSING = "LOOKUP_VALUE_MISSING"

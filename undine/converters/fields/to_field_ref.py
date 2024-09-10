@@ -11,10 +11,10 @@ from django.db.models.fields.related_descriptors import (
 )
 from django.db.models.query_utils import DeferredAttribute
 
-from undine.parsers import parse_model_field
 from undine.typing import CombinableExpression, FieldRef, ToManyField, ToOneField
-from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
     from undine.fields import Field
@@ -34,13 +34,13 @@ def _(ref: str, **kwargs: Any) -> FieldRef:
     caller: Field = kwargs["caller"]
     if ref == "self":
         return caller.owner
-    return parse_model_field(model=caller.owner.__model__, lookup=ref)
+    return get_model_field(model=caller.owner.__model__, lookup=ref)
 
 
 @convert_to_field_ref.register
 def _(_: None, **kwargs: Any) -> FieldRef:
     caller: Field = kwargs["caller"]
-    return parse_model_field(model=caller.owner.__model__, lookup=caller.name)
+    return get_model_field(model=caller.owner.__model__, lookup=caller.name)
 
 
 @convert_to_field_ref.register
@@ -60,7 +60,7 @@ def _(ref: models.Field, **kwargs: Any) -> FieldRef:
 
 @convert_to_field_ref.register
 def _(ref: ToOneField | ToManyField, **kwargs: Any) -> FieldRef:
-    return DeferredModelGQLType(field=ref)
+    return LazyModelGQLType(field=ref)
 
 
 @convert_to_field_ref.register
@@ -85,8 +85,8 @@ def load_deferred_converters() -> None:
 
     @convert_to_field_ref.register
     def _(ref: GenericRelation, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLType(field=ref)
+        return LazyModelGQLType(field=ref)
 
     @convert_to_field_ref.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
-        return DeferredModelGQLTypeUnion(field=ref)
+        return LazyModelGQLTypeUnion(field=ref)

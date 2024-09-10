@@ -3,11 +3,11 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Any
 
-from graphql import FieldNode, GraphQLOutputType, GraphQLResolveInfo, get_argument_values
+from graphql import FieldNode, GraphQLOutputType, get_argument_values
 from graphql.execution.execute import get_field_def
 
 from undine.settings import undine_settings
-from undine.typing import CombinableExpression, GraphQLFilterInfo, ToManyField, ToOneField
+from undine.typing import CombinableExpression, GQLInfo, GraphQLFilterInfo, ToManyField, ToOneField
 from undine.utils.reflection import swappable_by_subclassing
 from undine.utils.text import to_snake_case
 
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-def get_filter_info(info: GraphQLResolveInfo, model: type[models.Model]) -> GraphQLFilterInfo:
+def get_filter_info(info: GQLInfo, model: type[models.Model]) -> GraphQLFilterInfo:
     """Compile filter information included in the GraphQL query."""
     compiler = FilterInfoCompiler(info, model)
     compiler.run()
@@ -60,7 +60,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
                 aliases = filter_results.aliases
             if model_type.__ordering__:
                 ordering_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
-                ordering_results = model_type.__ordering__.__build__(ordering_data)
+                ordering_results = model_type.__ordering__.__build__(ordering_data, self.info)
                 order_by = ordering_results.order_by
 
         self.filter_info[field_name] = GraphQLFilterInfo(

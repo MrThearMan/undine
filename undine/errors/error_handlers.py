@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+from contextlib import contextmanager
+from functools import wraps
+from typing import Any, Callable, ParamSpec, TypeVar
+
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from graphql import ExecutionResult, GraphQLError
+from graphql.pyutils import inspect
+
+from undine.errors.constraints import get_constraint_message
+from undine.errors.exceptions import GraphQLConversionError, GraphQLModelConstaintViolationError
+from undine.utils.logging import undine_logger
+
+__all__ = [
+    "handle_conversion_errors",
+    "handle_integrity_errors",
+    "handle_validation_errors",
+    "raised_exceptions_as_execution_results",
+]
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def handle_conversion_errors(typename: str):  # noqa: ANN201
+    def decorator(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
+        @wraps(func)
+        def wrapper(value: Any) -> Any:
+            try:
+                return func(value)
+            except Exception as error:
+                raise GraphQLConversionError(typename=typename, value=inspect(value), error=str(error)) from error
+
+        return wrapper
+
+    return decorator
+
+
+@contextmanager
+def handle_integrity_errors() -> None:
+    """If an integrity error occurs, raise a GraphQLStatusError with the appropriate error code."""
+    try:
+        yield
+    except IntegrityError as error:
+        msg = get_constraint_message(error.args[0])
+        raise GraphQLModelConstaintViolationError(msg) from error
+
+
+def handle_validation_errors(func: Callable[P, T]) -> Callable[P, T]:
+    """Handle validation errors raised by Django's validators and reraise them as ValueErrors."""
+
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return func(*args, **kwargs)
+        except ValidationError as error:
+            if error.params is not None:
+                error.message %= error.params
+            raise ValueError(error.message) from error
+
+    return wrapper
+
+
+def raised_exceptions_as_execution_results(func: Callable[P, ExecutionResult]) -> Callable[P, ExecutionResult]:
+    """Wraps raised excetions as GraphQL ExecutionResults if they happen in `execute_graphql`."""
+
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
+        try:
+            return func(*args, **kwargs)
+        except GraphQLError as error:
+            undine_logger.info("Expected error in GraphQL execution", exc_info=error)
+            return ExecutionResult(errors=[error], extensions=error.extensions)
+        except Exception as error:  # noqa: BLE001
+            undine_logger.error("Unexpected error in GraphQL execution", exc_info=error)
+            return ExecutionResult(errors=[GraphQLError(message=str(error))], extensions={"status_code": 500})
+
+    return wrapper

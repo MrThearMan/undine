@@ -8,13 +8,13 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import ImageFieldFile
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.image import parse_image, serialize
 
 
 @pytest.fixture(autouse=True)
 def set_image_types():
-    with patch("undine.validation.get_available_image_extensions", return_value=["png"]):
+    with patch("undine.utils.urls.get_available_image_extensions", return_value=["png"]):
         yield
 
 

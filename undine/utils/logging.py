@@ -1,4 +1,4 @@
-from __future__ import annotations
+"""Contains a logger for the Undine package."""
 
 import logging
 

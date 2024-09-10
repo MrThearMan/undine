@@ -3,7 +3,11 @@ from typing import Any
 import pytest
 from graphql import Undefined
 
-from undine.errors import MissingFunctionAnnotationsError, MissingFunctionReturnTypeError, NoFunctionParametersError
+from undine.errors.exceptions import (
+    MissingFunctionAnnotationsError,
+    MissingFunctionReturnTypeError,
+    NoFunctionParametersError,
+)
 from undine.parsers.parse_annotations import parse_first_param_type, parse_parameters, parse_return_annotation
 
 

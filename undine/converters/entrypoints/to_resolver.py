@@ -5,9 +5,9 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver
 
+from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FieldResolver, UpdateResolver
 from undine.typing import EntrypointRef
 from undine.utils.dispatcher import TypeDispatcher
-from undine.utils.resolvers import MutationResolver, function_field_resolver
 
 __all__ = [
     "convert_entrypoint_ref_to_resolver",
@@ -20,7 +20,7 @@ convert_entrypoint_ref_to_resolver = TypeDispatcher[EntrypointRef, GraphQLFieldR
 
 @convert_entrypoint_ref_to_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
-    return function_field_resolver(ref)
+    return FieldResolver.from_func(ref)
 
 
 def load_deferred_converters() -> None:
@@ -35,9 +35,9 @@ def load_deferred_converters() -> None:
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLFieldResolver:
         if ref.__mutation_kind__ == "create":
-            return MutationResolver(func=ref.__create_mutation__)
+            return CreateResolver(model_mutation=ref)
         if ref.__mutation_kind__ == "update":
-            return MutationResolver(func=ref.__update_mutation__)
-        if ref.__mutation_kind__ == "update":
-            return MutationResolver(func=ref.__delete_mutation__)
-        return MutationResolver(func=ref.__custom_mutation__)
+            return UpdateResolver(model_mutation=ref)
+        if ref.__mutation_kind__ == "delete":
+            return DeleteResolver(model_mutation=ref)
+        return CustomResolver(model_mutation=ref)

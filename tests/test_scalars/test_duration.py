@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from undine.errors import GraphQLConversionError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.duration import parse_duration
 
 

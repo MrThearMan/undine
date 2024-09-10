@@ -21,7 +21,7 @@ from example_project.app.models import (
 from undine import Field, Filter, ModelGQLFilter, ModelGQLOrdering, ModelGQLType, Ordering
 
 if TYPE_CHECKING:
-    from graphql import GraphQLResolveInfo
+    from undine.typing import GQLInfo
 
 
 class ContentTypeNode(ModelGQLType, model=ContentType, exclude=["logentry", "permission"]): ...
@@ -61,7 +61,7 @@ class TaskFilter(ModelGQLFilter, model=Task):
     assignee_count_lt = Filter(models.Count("assignees"), lookup_expr="lt")
 
     @Filter
-    def in_the_past(self, info: GraphQLResolveInfo, *, value: bool) -> models.Q:
+    def in_the_past(self, info: GQLInfo, *, value: bool) -> models.Q:
         """FIlter tasks created in the past."""
         return models.Q(created_at__lt=Now()) if value else models.Q(created_at__gte=Now())
 

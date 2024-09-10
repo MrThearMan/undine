@@ -1,4 +1,5 @@
-# ruff: noqa: PLR0913
+"""Different fields for use with the different ModelGraphQL-classes."""
+
 from __future__ import annotations
 
 from types import FunctionType
@@ -11,10 +12,7 @@ from graphql import (
     GraphQLFieldResolver,
     GraphQLInputField,
     GraphQLInputType,
-    GraphQLList,
-    GraphQLNonNull,
     GraphQLOutputType,
-    GraphQLResolveInfo,
     Undefined,
 )
 
@@ -37,12 +35,12 @@ from undine.converters import (
 )
 from undine.settings import undine_settings
 from undine.utils.reflection import cache_signature_if_function
+from undine.utils.unsorted import maybe_list_or_non_null
 
 if TYPE_CHECKING:
     from undine import ModelGQLFilter, ModelGQLMutation, ModelGQLOrdering, ModelGQLType
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import EntrypointRef, Self
-
+    from undine.typing import EntrypointRef, GQLInfo, Self
 
 __all__ = [
     "Entrypoint",
@@ -107,13 +105,7 @@ class Entrypoint:
 
     def get_field_type(self) -> GraphQLOutputType:
         graphql_type, nullable = convert_ref_to_graphql_output_type(self.ref, return_nullable=True)
-        if self.many is True and not isinstance(graphql_type, GraphQLList):
-            if not isinstance(graphql_type, GraphQLNonNull):
-                graphql_type = GraphQLNonNull(graphql_type)
-            graphql_type = GraphQLList(graphql_type)
-        if not nullable:
-            graphql_type = GraphQLNonNull(graphql_type)
-        return graphql_type
+        return maybe_list_or_non_null(graphql_type, many=self.many, required=not nullable)
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
         return convert_entrypoint_ref_to_graphql_argument_map(self.ref, many=self.many)
@@ -186,19 +178,10 @@ class Field:
 
     def get_field_type(self) -> GraphQLOutputType:
         graphql_type = convert_ref_to_graphql_output_type(self.ref)
-        if self.many is True and not isinstance(graphql_type, GraphQLList):
-            if not isinstance(graphql_type, GraphQLNonNull):
-                graphql_type = GraphQLNonNull(graphql_type)
-            graphql_type = GraphQLList(graphql_type)
-        if self.nullable is False and not isinstance(graphql_type, GraphQLNonNull):
-            graphql_type = GraphQLNonNull(graphql_type)
-        return graphql_type
+        return maybe_list_or_non_null(graphql_type, many=self.many, required=not self.nullable)
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
-        arg_map = convert_field_ref_to_graphql_argument_map(self.ref, many=self.many)
-        for arg in arg_map.values():
-            arg.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
-        return arg_map
+        return convert_field_ref_to_graphql_argument_map(self.ref, many=self.many)
 
     def get_resolver(self) -> GraphQLFieldResolver:
         return convert_field_ref_to_resolver(self.ref, many=self.many, name=self.name)
@@ -264,7 +247,7 @@ class Filter:
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
 
-    def get_expression(self, value: Any, info: GraphQLResolveInfo) -> models.Q:
+    def get_expression(self, value: Any, info: GQLInfo) -> models.Q:
         return self.resolver(self.owner, info, value=value)
 
     def as_input_field(self) -> GraphQLInputField:
@@ -277,13 +260,7 @@ class Filter:
 
     def get_field_type(self) -> GraphQLInputType:
         graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
-        if self.many and not isinstance(graphql_type, GraphQLList):
-            if not isinstance(graphql_type, GraphQLNonNull):
-                graphql_type = GraphQLNonNull(graphql_type)
-            graphql_type = GraphQLList(graphql_type)
-        if self.required and not isinstance(graphql_type, GraphQLNonNull):
-            graphql_type = GraphQLNonNull(graphql_type)
-        return graphql_type
+        return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
 
 class Ordering:
@@ -341,6 +318,7 @@ class Input:
         *,
         many: bool = Undefined,
         required: bool = Undefined,
+        input_only: bool = False,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -356,6 +334,8 @@ class Input:
                      If not provided, looks at the reference and tries to determine this from it.
         :param required: Whether the input should be required. If not provided, looks at the reference
                          and the ModelGQLMutation's mutation kind to determine this.
+        :param input_only: If `True`, the input's value is not included when the mutation is performed.
+                           Value still exists for the pre and post mutation hooks.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
@@ -364,6 +344,7 @@ class Input:
         self.ref = ref
         self.many = many
         self.required = required
+        self.input_only = input_only
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
@@ -381,20 +362,14 @@ class Input:
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
 
-    def as_input_field(self) -> GraphQLInputField:
+    def as_input_field(self, *, entrypoint: bool = True) -> GraphQLInputField:
         return GraphQLInputField(
-            type_=self.get_field_type(),
+            type_=self.get_field_type(entrypoint=entrypoint),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
         )
 
-    def get_field_type(self) -> GraphQLInputType:
-        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
-        if self.many and not isinstance(graphql_type, GraphQLList):
-            if not isinstance(graphql_type, GraphQLNonNull):
-                graphql_type = GraphQLNonNull(graphql_type)
-            graphql_type = GraphQLList(graphql_type)
-        if self.required and not isinstance(graphql_type, GraphQLNonNull):
-            graphql_type = GraphQLNonNull(graphql_type)
-        return graphql_type
+    def get_field_type(self, *, entrypoint: bool = True) -> GraphQLInputType:
+        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__, entrypoint=entrypoint)
+        return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required if entrypoint else False)

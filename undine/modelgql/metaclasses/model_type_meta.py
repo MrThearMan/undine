@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
-from graphql import GraphQLObjectType, Undefined
+from graphql import Undefined
 
-from undine.errors import MismatchingModelError, MissingModelError
+from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.fields import Field
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
 from undine.utils.registry import TYPE_REGISTRY
-from undine.utils.text import get_docstring, get_schema_name
+from undine.utils.text import get_schema_name
 
 if TYPE_CHECKING:
     from django.db import models
@@ -92,39 +92,9 @@ class ModelGQLTypeMeta(type):
         instance.__ordering__ = ordering
         instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
         instance.__lookup_field__ = lookup_field
-        instance.__output_type__ = get_output_object_type_model_type(instance, name=name, extensions=extensions)
+        instance.__typename__ = name or _name
+        instance.__extensions__ = extensions or {} | {undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance}
         return instance
-
-
-def get_output_object_type_model_type(
-    instance: type[ModelGQLType],
-    *,
-    name: str | None = None,
-    extensions: dict[str, Any] | None,
-) -> GraphQLObjectType:
-    """
-    Creates the GraphQL ObjectType for this `ModelGQLType`.
-
-    ObjectType should be created once, since GraphQL schema cannot
-    contain multiple types with the same name.
-    """
-    if name is None:
-        name = instance.__name__
-    if extensions is None:
-        extensions = {}
-
-    return GraphQLObjectType(
-        name=name,
-        # Give fields as a callable to delay their creation.
-        # This gives time for all ModelGQLTypes to be registered.
-        fields=lambda: {name: field.get_graphql_field() for name, field in instance.__field_map__.items()},
-        description=get_docstring(instance),
-        is_type_of=instance.__is_type_of__,
-        extensions={
-            **extensions,
-            undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance,
-        },
-    )
 
 
 def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:

@@ -12,9 +12,7 @@ from undine.utils.reflection import swappable_by_subclassing
 from .filter_info import get_filter_info
 
 if TYPE_CHECKING:
-    from graphql import GraphQLResolveInfo
-
-    from undine.typing import ExpressionKind, GraphQLFilterInfo, QuerySetResolver
+    from undine.typing import ExpressionKind, GQLInfo, GraphQLFilterInfo, QuerySetResolver
 
 __all__ = [
     "QueryOptimizer",
@@ -54,7 +52,7 @@ class QueryOptimizer:
     def __init__(
         self,
         model: type[Model] | None,
-        info: GraphQLResolveInfo,
+        info: GQLInfo,
         name: str | None = None,
         parent: QueryOptimizer | None = None,
     ) -> None:

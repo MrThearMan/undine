@@ -11,19 +11,18 @@ from graphql import (
     FragmentDefinitionNode,
     FragmentSpreadNode,
     GraphQLOutputType,
-    GraphQLResolveInfo,
     GraphQLUnionType,
     InlineFragmentNode,
 )
 from graphql.execution.execute import get_field_def
 
-from undine.errors import OptimizerError
+from undine.errors.exceptions import OptimizerError
 from undine.settings import undine_settings
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
     from undine import ModelGQLType
-    from undine.typing import ModelField, Selections, ToManyField, ToOneField
+    from undine.typing import GQLInfo, ModelField, Selections, ToManyField, ToOneField
 
 __all__ = [
     "GraphQLASTWalker",
@@ -33,7 +32,7 @@ __all__ = [
 class GraphQLASTWalker:
     """Class for walking the GraphQL AST and handling the different nodes."""
 
-    def __init__(self, info: GraphQLResolveInfo, model: type[Model] | None = None) -> None:
+    def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:
         self.info = info
         self.complexity: int = 0
         self.model: type[Model] = model

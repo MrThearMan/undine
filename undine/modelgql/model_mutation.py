@@ -1,19 +1,19 @@
 from __future__ import annotations
 
+from functools import cache
 from typing import TYPE_CHECKING, Any
 
-from django.db import models, transaction
-from graphql import GraphQLResolveInfo, Undefined
+from graphql import GraphQLInputObjectType, GraphQLObjectType, Undefined
 
-from undine import error_codes
-from undine.errors import GraphQLStatusError
-from undine.utils.error_helpers import handle_integrity_errors
-from undine.utils.text import dotpath
+from undine.utils.registry import TYPE_REGISTRY
+from undine.utils.text import get_docstring
 
-from .metaclasses.model_mutation_meta import ModelGQLMutationMeta
+from .metaclasses.model_mutation_meta import DeleteMutationOutputType, ModelGQLMutationMeta
 
 if TYPE_CHECKING:
-    from undine.typing import Root
+    from django.db.models import Model
+
+    from undine.typing import GQLInfo, Root
 
 
 class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
@@ -23,8 +23,8 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django model this `ModelGQLMutation` is for. This input is required.
-    - `output_type`: Output `ModelGQLType` for this mutation. By default, use the registered
-                    `ModelGQLType` for the given model.
+    - `mutation_kind`: Kind of mutation this is. Can be "create", "update", or "delete" or "custom".
+                       If not given, it will be guessed based on the name of the class.
     - `auto_inputs`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Use "pk" by default.
@@ -37,51 +37,52 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     # Members should use `__dunder__` names to avoid name collisions with possible ordering field names.
 
     @classmethod
-    def __create_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> models.Model:
-        cls.__validate_create__(info, input_data)
-        with transaction.atomic(), handle_integrity_errors():
-            return cls.__mutation_handler__.create(input_data)
-
-    @classmethod
-    def __update_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> models.Model:
-        instance = cls.__get_instance__(input_data)
-        cls.__validate_update__(instance, info, input_data)
-        with transaction.atomic(), handle_integrity_errors():
-            return cls.__mutation_handler__.update(instance, input_data)
-
-    @classmethod
-    def __delete_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
-        instance = cls.__get_instance__(input_data)
-        cls.__validate_delete__(instance, info)
-        with transaction.atomic(), handle_integrity_errors():
-            instance.delete()
-        return {"success": True}
-
-    @classmethod
-    def __custom_mutation__(cls, root: Root, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> Any:
+    def __mutate__(cls, root: Root, info: GQLInfo, input_data: dict[str, Any]) -> Any:
         """Override this method for custom mutations."""
 
     @classmethod
-    def __validate_create__(cls, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> None:
-        """Implement to perform additional validation before the given instance is created."""
+    def __pre_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        """
+        Implement to perform additional actions before mutation happens.
+        Not called for custom mutations.
+
+        :param instance: The instance to be mutated. For create mutations, this will be `None`.
+        :param info: The GraphQL resolve info.
+        :param input_data: The input data for the mutation.
+        """
 
     @classmethod
-    def __validate_update__(cls, instance: models.Model, info: GraphQLResolveInfo, input_data: dict[str, Any]) -> None:
-        """Implement to perform additional validation before the given instance is updates."""
+    def __post_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        """
+        Implement to perform additional actions after mutation has happened.
+        Not called for custom mutations.
+
+        :param instance: The instance that was mutated. For delete mutations, this will be `None`.
+        :param info: The GraphQL resolve info.
+        :param input_data: The input data for the mutation.
+        """
 
     @classmethod
-    def __validate_delete__(cls, instance: models.Model, info: GraphQLResolveInfo) -> None:
-        """Implement to perform additional validation before the given instance is deleted."""
+    @cache
+    def __input_type__(cls, *, entrypoint: bool = True) -> GraphQLInputObjectType:
+        """
+        Create a `GraphQLInputObjectType` for this class.
+        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
+        """
+        return GraphQLInputObjectType(
+            name=cls.__typename__ if entrypoint else f"{cls.__typename__}Input",
+            description=get_docstring(cls),
+            # Defer creating fields so that self-referential related fields can be created.
+            fields=lambda: {
+                input_name: input_.as_input_field(entrypoint=entrypoint)
+                for input_name, input_ in cls.__input_map__.items()
+            },
+            extensions=cls.__extensions__,
+        )
 
     @classmethod
-    def __get_instance__(cls, input_data: dict[str, Any]) -> models.Model:
-        key = cls.__lookup_field__
-        value = input_data.get(key, Undefined)
-        if value is Undefined:
-            msg = (
-                f"Input data is missing value for the mutation lookup field {key!r}. "
-                f"Cannot fetch `{dotpath(cls.__model__)}` object for mutation."
-            )
-            raise GraphQLStatusError(msg, status=500, code=error_codes.LOOKUP_VALUE_MISSING)
-
-        return cls.__mutation_handler__.get(key=key, value=value)
+    def __output_type__(cls) -> GraphQLObjectType:
+        """Create a `GraphQLObjectType` for this class."""
+        if cls.__mutation_kind__ == "delete":
+            return DeleteMutationOutputType
+        return TYPE_REGISTRY[cls.__model__].__output_type__()

@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
-from undine.parsers import parse_model_field
 from undine.typing import CombinableExpression, OrderingRef
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
     from undine.fields import Ordering
@@ -25,14 +25,14 @@ convert_to_ordering_ref = TypeDispatcher[Any, OrderingRef]()
 @convert_to_ordering_ref.register
 def _(ref: str, **kwargs: Any) -> OrderingRef:
     caller: Ordering = kwargs["caller"]
-    field = parse_model_field(model=caller.owner.__model__, lookup=ref)
+    field = get_model_field(model=caller.owner.__model__, lookup=ref)
     return models.F(field.name)
 
 
 @convert_to_ordering_ref.register
 def _(_: None, **kwargs: Any) -> OrderingRef:
     caller: Ordering = kwargs["caller"]
-    field = parse_model_field(model=caller.owner.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
     return models.F(field.name)
 
 

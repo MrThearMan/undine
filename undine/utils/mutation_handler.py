@@ -1,3 +1,5 @@
+"""Contains a class for creating or updating model instances while also handling related model instances."""
+
 from __future__ import annotations
 
 from functools import partial
@@ -6,13 +8,11 @@ from typing import TYPE_CHECKING, Any, Generic
 from django.db import models
 from graphql import Undefined
 
-from undine import error_codes
-from undine.errors import GraphQLStatusError
+from undine.errors.exceptions import GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelationType
-from undine.typing import ManyToManyManager, MutationInputType, OneToManyManager, PostSaveHandler, TModel
-from undine.utils.error_helpers import get_instance_or_raise
-from undine.utils.reflection import generic_relations_for_generic_foreign_key
+from undine.typing import ManyToManyManager, MutationInputType, OneToManyManager, PostSaveData, PostSaveHandler, TModel
+from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_instance_or_raise
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -27,6 +27,8 @@ __all__ = [
 
 
 class MutationHandler(Generic[TModel]):
+    """A class for creating or updating model instances while also handling related model instances."""
+
     def __init__(self, mutation_class: type[ModelGQLMutation]) -> None:
         self.mutation_class = mutation_class
         self.related_info = parse_model_relation_info(self.model)
@@ -45,43 +47,48 @@ class MutationHandler(Generic[TModel]):
         if value is None:
             return self.create(data)
 
-        instance = self.get(key=key, value=value)
+        instance = get_instance_or_raise(model=self.model, key=key, value=value)
         if not data:
             return instance
 
         return self.update(instance, data)
 
-    def get(self, key: str, value: Any) -> TModel:
-        """Get model by the given key with the given value. Raise GraphQL errors appropriately."""
-        return get_instance_or_raise(self.model, key, value)
-
     def create(self, input_data: dict[str, Any]) -> TModel:
         """Create a new instance of the model, while also handling model relations."""
-        post_save_handlers = self.pre_save(input_data)
+        post_save_data = self.pre_save(input_data)
         instance = self.model._default_manager.create(**input_data)
-        for handler in post_save_handlers:
+        input_data.update(post_save_data.input_only_data)
+        for handler in post_save_data.post_save_handlers:
             handler(instance)
         return instance
 
     def update(self, instance: models.Model, input_data: dict[str, Any]) -> TModel:
         """Update an existing instance of the model, while also handling model relations."""
-        post_save_handlers = self.pre_save(input_data)
+        post_save_data = self.pre_save(input_data)
         for attr, value in input_data.items():
             setattr(instance, attr, value)
         instance.save(update_fields=list(input_data.keys()))
-        for handler in post_save_handlers:
+        input_data.update(post_save_data.input_only_data)
+        for handler in post_save_data.post_save_handlers:
             handler(instance)
         return instance
 
-    def pre_save(self, input_data: dict[str, MutationInputType]) -> list[PostSaveHandler]:
+    def pre_save(self, input_data: dict[str, MutationInputType]) -> PostSaveData:
         """
         Make pre-save modifications to the given input data based on the model's relations.
         Forward 'one-to-one' and 'many-to-one' related entities will be fetched, updated, or created.
         Other related entities will be set to be handled after the main model is saved.
         """
-        post_save_handlers: list[PostSaveHandler] = []
+        post_save_data = PostSaveData()
 
         for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
+            # Input-only fields should be removed from the input data.
+            input_field = self.mutation_class.__input_map__.get(field_name, None)
+            if input_field is not None and input_field.input_only:
+                if field_name in input_data:
+                    post_save_data.input_only_data[field_name] = input_data.pop(field_name)
+                continue
+
             # Only related fields need special handling.
             field_info = self.related_info.get(field_name, None)
             if field_info is None:
@@ -98,7 +105,7 @@ class MutationHandler(Generic[TModel]):
 
             elif field_info.relation_type.created_after:
                 post_handler = self.get_post_save_handler(field_info, field_name, related_data)
-                post_save_handlers.append(post_handler)
+                post_save_data.post_save_handlers.append(post_handler)
 
             elif field_info.relation_type.created_before:
                 input_data[field_name] = self.handle_before_relation(field_info, field_name, related_data)
@@ -110,7 +117,7 @@ class MutationHandler(Generic[TModel]):
                 msg = f"Unhandled relation type: {field_info.relation_type}"
                 raise TypeError(msg)
 
-        return post_save_handlers
+        return post_save_data
 
     def get_related_handler(self, field_name: str) -> MutationHandler:
         """Get the related handler for the given field name."""
@@ -120,7 +127,7 @@ class MutationHandler(Generic[TModel]):
                 f"Mutation input contains data for a field '{field_name}', "
                 f"which is not defined in the mutation class '{self.mutation_class.__name__}'."
             )
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         from undine.modelgql.metaclasses.model_mutation_meta import ModelGQLMutationMeta
 
@@ -129,7 +136,7 @@ class MutationHandler(Generic[TModel]):
                 f"Mutation input contains data for a field '{field_name}', which is not a ModelGQLMutation. "
                 "Cannot perform related mutations."
             )
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         return input_field.ref.__mutation_handler__
 
@@ -142,22 +149,22 @@ class MutationHandler(Generic[TModel]):
             return related_handler.get_update_or_create(data)
 
         msg = f"Invalid input data for field '{field_name}': {data!r}"
-        raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+        raise GraphQLInvalidInputDataError(msg)
 
     def handle_generic_fk(self, field_info: RelatedFieldInfo, field_name: str, data: Any) -> models.Model:
         if not isinstance(data, dict):
             msg = f"Invalid input data for field '{field_name}': {data!r}"
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         typename = data.get("typename")
         if typename is None:
             msg = f"Missing 'typename' field in input data for field '{field_name}': {data!r}"
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         pk = data.get("pk")
         if pk is None:
             msg = f"Missing 'pk' field in input data for field '{field_name}': {data!r}"
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         generic_fk_field: GenericForeignKey = self.model._meta.get_field(field_info.field_name)
         related_model: type[models.Model] | None = next(
@@ -170,9 +177,9 @@ class MutationHandler(Generic[TModel]):
         )
         if related_model is None:
             msg = f"Field {field_info.field_name} does not have a relation to a model named '{typename}'."
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
-        return get_instance_or_raise(related_model, "pk", pk)
+        return get_instance_or_raise(model=related_model, key="pk", value=pk)
 
     def get_post_save_handler(self, field_info: RelatedFieldInfo, field_name: str, data: Any) -> PostSaveHandler:
         """Get a post-save handler based on the relation type."""
@@ -194,7 +201,7 @@ class MutationHandler(Generic[TModel]):
         if data is None:
             if not field_info.nullable:
                 msg = f"Field '{field_info.field_name}' cannot be null."
-                raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+                raise GraphQLInvalidInputDataError(msg)
 
             instance: models.Model | None = getattr(related_instance, field_info.field_name, None)
             if instance is not None:
@@ -207,14 +214,14 @@ class MutationHandler(Generic[TModel]):
             return
 
         if isinstance(data, field_info.related_model_pk_type):
-            instance = self.get(key="pk", value=data)
+            instance = get_instance_or_raise(model=self.model, key="pk", value=data)
             # TODO: Do we need to remove existing relation before this?
             setattr(instance, field_info.related_name, related_instance)
             instance.save(update_fields=[field_info.related_name])
             return
 
         msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
-        raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+        raise GraphQLInvalidInputDataError(msg)
 
     def post_handle_one_to_many(self, related_instance: TModel, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a reverse one-to-many relation after the related instance has been created."""
@@ -225,14 +232,14 @@ class MutationHandler(Generic[TModel]):
             # This only works for nullable relations.
             if not manager.field.null:
                 msg = f"Related field '{field_info.related_name}' cannot be null."
-                raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+                raise GraphQLInvalidInputDataError(msg)
 
             manager.clear()
             return
 
         if not isinstance(data, list):
             msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         if not data:
             # Delete related objects pointing to this model.
@@ -247,11 +254,11 @@ class MutationHandler(Generic[TModel]):
                 nested_instance = self.get_update_or_create(item)
 
             elif isinstance(item, field_info.related_model_pk_type):
-                nested_instance = self.get(key="pk", value=item)
+                nested_instance = get_instance_or_raise(model=self.model, key="pk", value=item)
 
             else:
                 msg = f"Invalid input data for field '{field_info.field_name}': {item!r}"
-                raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+                raise GraphQLInvalidInputDataError(msg)
 
             pks.append(nested_instance.pk)
 
@@ -271,7 +278,7 @@ class MutationHandler(Generic[TModel]):
 
         if not isinstance(data, list):
             msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
-            raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+            raise GraphQLInvalidInputDataError(msg)
 
         if not data:
             manager.clear()
@@ -283,11 +290,11 @@ class MutationHandler(Generic[TModel]):
                 nested_instance = self.get_update_or_create(item)
 
             elif isinstance(item, field_info.related_model_pk_type):
-                nested_instance = self.get(key="pk", value=item)
+                nested_instance = get_instance_or_raise(model=self.model, key="pk", value=item)
 
             else:
                 msg = f"Invalid input data for field '{field_info.field_name}': {item!r}"
-                raise GraphQLStatusError(msg, status=400, code=error_codes.INVALID_INPUT_DATA)
+                raise GraphQLInvalidInputDataError(msg)
 
             instances.append(nested_instance)
 

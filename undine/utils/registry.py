@@ -1,15 +1,15 @@
+"""Contains a class for registering `ModelGQLType`s for reuse based on their Django model."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self
 
-from undine.errors import TypeRegistryDuplicateError, TypeRegistryMissingTypeError
-from undine.utils.lazy import lazy
+from undine.errors.exceptions import TypeRegistryDuplicateError, TypeRegistryMissingTypeError
 
 if TYPE_CHECKING:
     from django.db import models
 
     from undine import ModelGQLType
-
 
 __all__ = [
     "TYPE_REGISTRY",
@@ -43,14 +43,6 @@ class _TypeRegistry:
         if model in self.__registry:
             raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
         self.__registry[model] = graphql_type
-
-    def get_deferred(self, model: type[models.Model]) -> type[ModelGQLType]:
-        """Defer accessing given model's ModelGQLType from the registry until it's used for the first time."""
-
-        def wrapper() -> type[ModelGQLType]:
-            return self[model]
-
-        return lazy.create(wrapper)
 
 
 TYPE_REGISTRY = _TypeRegistry()

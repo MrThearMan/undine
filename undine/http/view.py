@@ -8,8 +8,8 @@ from django.http.request import MediaType
 from django.shortcuts import render
 from django.views import View
 
-from undine.execute import execute_graphql
 from undine.parsers import GraphQLRequestParamsParser
+from undine.schema import execute_graphql
 from undine.settings import undine_settings
 
 from .responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse

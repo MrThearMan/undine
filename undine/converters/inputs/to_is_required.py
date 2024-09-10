@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from undine.parsers import parse_model_field
 from undine.typing import InputRef, ModelField
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
     from undine.fields import Input
@@ -42,7 +42,7 @@ def load_deferred_converters() -> None:  # pragma: no cover
     @is_input_required.register
     def _(_: type[ModelGQLMutation], **kwargs: Any) -> bool:
         caller: Input = kwargs["caller"]
-        field = parse_model_field(model=caller.owner.__model__, lookup=caller.name)
+        field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
         return is_input_required(field, caller=caller)
 
     @is_input_required.register

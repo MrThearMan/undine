@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable
 
-from graphql import GraphQLInputField, GraphQLInputObjectType, Undefined
+from graphql import Undefined
 
-from undine.errors import MissingModelError
+from undine.errors.exceptions import MissingModelError
 from undine.fields import Filter
 from undine.settings import undine_settings
 from undine.utils.reflection import get_members
-from undine.utils.text import get_docstring, get_schema_name
+from undine.utils.text import get_schema_name
 
 if TYPE_CHECKING:
     from django.db import models
@@ -53,44 +53,9 @@ class ModelGQLFilterMeta(type):
         # Members should use '__dunder__' names to avoid name collisions with possible filter names.
         instance.__model__ = model
         instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
-        instance.__input_type__ = get_input_object_type_for_model_filter(instance, name=name, extensions=extensions)
+        instance.__typename__ = name or _name
+        instance.__extensions__ = extensions or {} | {undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance}
         return instance
-
-
-def get_input_object_type_for_model_filter(
-    instance: type[ModelGQLFilter],
-    *,
-    name: str | None = None,
-    extensions: dict[str, Any] | None = None,
-) -> GraphQLInputObjectType:
-    """
-    Create the InputObjectType argument for the given `ModelGQLFilter`
-
-    `InputObjectType` should be created once, since GraphQL schema cannot
-    contain multiple types with the same name.
-    """
-    if name is None:
-        name = instance.__name__
-    if extensions is None:
-        extensions = {}
-
-    input_object_type = GraphQLInputObjectType(
-        name=name,
-        description=get_docstring(instance),
-        fields={},
-        extensions={
-            **extensions,
-            undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance,
-        },
-    )
-
-    def _get_fields() -> dict[str, GraphQLInputField]:
-        fields = {name: filter_.as_input_field() for name, filter_ in instance.__filter_map__.items()}
-        fields["AND"] = fields["OR"] = fields["NOT"] = fields["XOR"] = GraphQLInputField(type_=input_object_type)
-        return fields
-
-    input_object_type._fields = _get_fields
-    return input_object_type
 
 
 def get_filters_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Filter]:

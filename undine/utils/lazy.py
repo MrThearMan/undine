@@ -1,20 +1,56 @@
+"""Contains a urility class for lazy evaluation of objects."""
+
 from __future__ import annotations
 
 import math
 from copy import copy, deepcopy
-from typing import Any, AsyncIterator, Callable, TypeVar
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, TypeVar
 
-from undine.typing import empty
+from undine.typing import RelatedField, empty
+from undine.utils.model_utils import generic_relations_for_generic_foreign_key
+from undine.utils.registry import TYPE_REGISTRY
+
+if TYPE_CHECKING:
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
+    from undine import ModelGQLType
 
 __all__ = [
+    "LazyModelGQLType",
+    "LazyModelGQLTypeUnion",
     "lazy",
 ]
-
 
 R = TypeVar("R")
 
 
+@dataclass(frozen=True, slots=True)
+class LazyModelGQLType:
+    """Represents a lazily evaluated ModelGQLType for a related field."""
+
+    field: RelatedField
+
+    def get_type(self) -> type[ModelGQLType]:
+        return TYPE_REGISTRY[self.field.related_model]
+
+
+@dataclass(frozen=True, slots=True)
+class LazyModelGQLTypeUnion:
+    """Represents a lazily evaluated ModelGQLType for a related field."""
+
+    field: GenericForeignKey
+
+    def get_types(self) -> list[type[ModelGQLType]]:
+        return [
+            TYPE_REGISTRY[field.remote_field.related_model]
+            for field in generic_relations_for_generic_foreign_key(self.field)
+        ]
+
+
 class lazy:  # noqa: N801
+    """Object used for lazy evaluation of objects."""
+
     @classmethod
     def create(cls, target: Callable[[], R] | type[R], *args: Any, **kwargs: Any) -> R:
         """

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 
-from undine.errors import OptimizerError
+from undine.errors.exceptions import OptimizerError
 from undine.settings import undine_settings
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import swappable_by_subclassing
@@ -15,10 +15,10 @@ from .optimizer import QueryOptimizer
 
 if TYPE_CHECKING:
     from django.db import models
-    from graphql import FieldNode, GraphQLOutputType, GraphQLResolveInfo
+    from graphql import FieldNode, GraphQLOutputType
 
     from undine import Field
-    from undine.typing import ToManyField, ToOneField
+    from undine.typing import GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [
@@ -30,11 +30,11 @@ __all__ = [
 class OptimizationCompiler(GraphQLASTWalker):
     """Class for compiling SQL optimizations based on the given query."""
 
-    def __init__(self, info: GraphQLResolveInfo, max_complexity: int | None = None) -> None:
+    def __init__(self, info: GQLInfo, max_complexity: int | None = None) -> None:
         """
         Initialize the optimization compiler with the query info.
 
-        :param info: The GraphQLResolveInfo containing the query AST.
+        :param info: The GraphQL resolve info containing the query AST.
         :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
                                Used to protect from malicious queries.
         """

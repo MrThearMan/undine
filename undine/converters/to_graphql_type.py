@@ -21,6 +21,7 @@ from graphql import (
     GraphQLString,
 )
 
+from undine.errors.exceptions import TypeDispatcherError
 from undine.scalars import (
     GraphQLAny,
     GraphQLDate,
@@ -120,7 +121,7 @@ def _(ref: type[list]) -> GraphQLList:
 def _(ref: type[dict]) -> GraphQLObjectType:
     if type(ref) is not TypedDictType:
         msg = f"Can only convert TypedDicts, got {type(ref)}."
-        raise TypeError(msg)  # TODO: Custom exception
+        raise TypeDispatcherError(msg)
 
     ref: TypedDictType
     module_globals = vars(__import__(ref.__module__))

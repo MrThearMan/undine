@@ -5,9 +5,13 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from graphql import GraphQLResolveInfo, Undefined
 
-from undine.errors import MissingFunctionAnnotationsError, MissingFunctionReturnTypeError, NoFunctionParametersError
-from undine.typing import Parameter
-from undine.utils.reflection import get_signature
+from undine.errors.exceptions import (
+    MissingFunctionAnnotationsError,
+    MissingFunctionReturnTypeError,
+    NoFunctionParametersError,
+)
+from undine.typing import GQLInfo, Parameter
+from undine.utils.reflection import get_signature, is_subclass
 
 if TYPE_CHECKING:
     from types import FunctionType
@@ -47,7 +51,7 @@ def parse_parameters(func: FunctionType | Callable[..., Any], *, depth: int = 0)
             missing.append(param.name)
             continue
 
-        if isinstance(param.annotation, type) and issubclass(param.annotation, GraphQLResolveInfo):
+        if is_subclass(param.annotation, GraphQLResolveInfo) or param.annotation is GQLInfo:
             continue
 
         parameters.append(

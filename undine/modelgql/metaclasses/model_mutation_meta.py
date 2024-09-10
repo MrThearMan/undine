@@ -2,23 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable
 
-from graphql import GraphQLInputObjectType, GraphQLObjectType, Undefined
+from graphql import GraphQLBoolean, GraphQLField, GraphQLNonNull, GraphQLObjectType, Undefined
 
-from undine.errors import MissingModelError
+from undine.errors.exceptions import MissingModelError
 from undine.fields import Input
-from undine.parsers import parse_model_field
 from undine.settings import undine_settings
-from undine.utils.delete_output_type import DeleteMutationOutputType
+from undine.utils.model_utils import get_model_field
 from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_members
-from undine.utils.registry import TYPE_REGISTRY
-from undine.utils.text import get_docstring, get_schema_name
+from undine.utils.text import get_schema_name
 
 if TYPE_CHECKING:
     from django.db import models
 
     from undine.modelgql.model_mutation import ModelGQLMutation
-    from undine.modelgql.model_type import ModelGQLType
     from undine.typing import MutationKind
 
 
@@ -38,7 +35,6 @@ class ModelGQLMutationMeta(type):
         *,
         model: type[models.Model] | None = None,
         mutation_kind: MutationKind | None = None,
-        output_type: type[ModelGQLType] | GraphQLObjectType | None = None,
         auto_inputs: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
@@ -62,12 +58,9 @@ class ModelGQLMutationMeta(type):
             else:
                 mutation_kind: MutationKind = "custom"
 
-        if mutation_kind == "delete" and output_type is None:
-            output_type = DeleteMutationOutputType
-
         if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
-            field = parse_model_field(model=model, lookup=lookup_field)
-            _attrs[lookup_field] = Input(field, required=True)
+            field = get_model_field(model=model, lookup=lookup_field)
+            _attrs[get_schema_name(lookup_field)] = Input(field, required=True)
 
         if auto_inputs:
             exclude = set(exclude) | set(_attrs)
@@ -86,38 +79,9 @@ class ModelGQLMutationMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
-        instance.__model_type__ = output_type or TYPE_REGISTRY.get_deferred(model)
-        instance.__input_type__ = get_input_object_type_for_model_mutation(instance, name=name, extensions=extensions)
+        instance.__typename__ = name or _name
+        instance.__extensions__ = extensions or {} | {undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: cls}
         return instance
-
-
-def get_input_object_type_for_model_mutation(
-    instance: type[ModelGQLMutation],
-    *,
-    name: str | None = None,
-    extensions: dict[str, Any] | None,
-) -> GraphQLInputObjectType:
-    """
-    Create the InputObjectType argument for the given `ModelGQLMutation`
-
-    `InputObjectType` should be created once, since GraphQL schema cannot
-    contain multiple types with the same name.
-    """
-    if name is None:
-        name = instance.__name__
-    if extensions is None:
-        extensions = {}
-
-    return GraphQLInputObjectType(
-        name=name,
-        description=get_docstring(instance),
-        # Defer creating fields so that self-referential related fields can be created.
-        fields=lambda: {input_name: input_.as_input_field() for input_name, input_ in instance.__input_map__.items()},
-        extensions={
-            **extensions,
-            undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: instance,
-        },
-    )
 
 
 def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
@@ -140,3 +104,9 @@ def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) 
         result[field_name] = Input(model_field)
 
     return result
+
+
+DeleteMutationOutputType = GraphQLObjectType(
+    name="DeleteMutationOutput",
+    fields={"success": GraphQLField(GraphQLNonNull(GraphQLBoolean))},
+)

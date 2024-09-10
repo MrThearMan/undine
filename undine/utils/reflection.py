@@ -1,29 +1,30 @@
+"""Contains utility functions for instrospecting code for achieving functionality."""
+
 from __future__ import annotations
 
 import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLResolveInfo
 
-from undine.errors import FuntionSignatureParsingError
+from undine.errors.exceptions import FuntionSignatureParsingError
+from undine.typing import GQLInfo
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine.typing import T
 
 __all__ = [
     "cache_signature_if_function",
-    "generic_foreign_key_for_generic_relation",
-    "generic_relations_for_generic_foreign_key",
     "get_members",
     "get_signature",
     "get_wrapped_func",
+    "has_callable_attribute",
+    "is_subclass",
     "swappable_by_subclassing",
 ]
 
@@ -62,7 +63,7 @@ def cache_signature_if_function(value: T, *, depth: int = 0) -> T:
 
     :param value: The value to cache the signature of.
     :param depth: How many function calls deep is the code calling this method compared to the parsed function?
-    :returns: The value as is.
+    :returns: The "unwrapped" function, if it was a know function type, otherwise the value as is.
     """
     value = get_wrapped_func(value)
     if isinstance(value, FunctionType):
@@ -102,6 +103,7 @@ def get_signature(func: FunctionType, *, depth: int = 0) -> inspect.Signature:
     # when parsing signatures if these type hints are in a `TYPE_CHECKING` block.
     frame_globals = frame.f_globals | {
         "GraphQLResolveInfo": GraphQLResolveInfo,
+        "GQLInfo": GQLInfo,
         "Any": Any,
     }
     try:
@@ -136,21 +138,11 @@ def swappable_by_subclassing(cls: T) -> T:
     return cls
 
 
-def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:
-    from django.contrib.contenttypes.fields import GenericRelation
+def has_callable_attribute(obj: object, name: str) -> bool:
+    """Check if the given object has a callable attribute with the given name."""
+    return hasattr(obj, name) and callable(getattr(obj, name))
 
-    return (field for field in fk.model._meta._relation_tree if isinstance(field, GenericRelation))
 
-
-def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> GenericForeignKey:
-    from django.contrib.contenttypes.fields import GenericForeignKey
-
-    return next(
-        field
-        for field in relation.related_model._meta.get_fields()
-        if (
-            isinstance(field, GenericForeignKey)
-            and field.fk_field == relation.object_id_field_name
-            and field.ct_field == relation.content_type_field_name
-        )
-    )
+def is_subclass(obj: object, cls: type) -> bool:
+    """Check if the given object is a subclass of the given class."""
+    return isinstance(obj, type) and issubclass(obj, cls)

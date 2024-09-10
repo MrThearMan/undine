@@ -5,10 +5,11 @@ from typing import Any, get_origin
 
 from django.db import models
 
-from undine.parsers import parse_model_field, parse_return_annotation
+from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, ModelField
-from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
 from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.model_utils import get_model_field
 
 __all__ = [
     "is_many",
@@ -38,12 +39,12 @@ def _(_: CombinableExpression, **kwargs: Any) -> bool:
 
 
 @is_many.register
-def _(ref: DeferredModelGQLType, **kwargs: Any) -> bool:
+def _(ref: LazyModelGQLType, **kwargs: Any) -> bool:
     return is_many(ref.field)
 
 
 @is_many.register
-def _(_: DeferredModelGQLTypeUnion, **kwargs: Any) -> bool:
+def _(_: LazyModelGQLTypeUnion, **kwargs: Any) -> bool:
     return False
 
 
@@ -57,14 +58,14 @@ def load_deferred_converters() -> None:
     def _(_: ModelGQLType, **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
-        field = parse_model_field(model=model, lookup=name)
+        field = get_model_field(model=model, lookup=name)
         return is_many(field, **kwargs)
 
     @is_many.register
     def _(_: ModelGQLMutation, **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
-        field = parse_model_field(model=model, lookup=name)
+        field = get_model_field(model=model, lookup=name)
         return is_many(field, **kwargs)
 
     @is_many.register

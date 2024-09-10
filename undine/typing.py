@@ -1,7 +1,8 @@
+"""Custom type definitions used by Undine."""
+
 from __future__ import annotations
 
 import dataclasses
-import typing
 from dataclasses import dataclass
 from types import FunctionType, SimpleNamespace
 from typing import (
@@ -15,34 +16,41 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
-    _eval_type,
+    runtime_checkable,
 )
+
+# Sort separately due to being a private import
+from typing import _eval_type  # isort: skip
+
 
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
+from django.core.handlers.wsgi import WSGIRequest
 from django.db import models
 from django.db.models.fields.related_descriptors import (
     create_forward_many_to_many_manager,
     create_reverse_many_to_one_manager,
 )
-from graphql import FieldNode, GraphQLResolveInfo, SelectionNode, Undefined
+from graphql import FieldNode, GraphQLInputType, GraphQLOutputType, GraphQLResolveInfo, SelectionNode, Undefined
 
 if TYPE_CHECKING:
+    from django.contrib.auth.models import AnonymousUser, User
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.contrib.sessions.backends.base import SessionBase
     from django.db.models.sql import Query
 
     from undine import ModelGQLMutation, ModelGQLType
-    from undine.utils.defer import DeferredModelGQLType, DeferredModelGQLTypeUnion
-
+    from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 
 __all__ = [
     "CombinableExpression",
     "CombinableExpression",
     "DispatchProtocol",
     "DispatchWrapper",
+    "DjangoRequest",
     "DocstringParserProtocol",
     "EntrypointRef",
     "Expr",
@@ -52,6 +60,7 @@ __all__ = [
     "FilterRef",
     "FilterResolverFunc",
     "FilterResults",
+    "GQLInfo",
     "GraphQLFilterInfo",
     "GraphQLParams",
     "InputRef",
@@ -71,6 +80,7 @@ __all__ = [
     "Root",
     "Selections",
     "Self",
+    "T",
     "ToManyField",
     "ToOneField",
 ]
@@ -80,6 +90,7 @@ T = TypeVar("T")
 From = TypeVar("From")
 To = TypeVar("To")
 TModel = TypeVar("TModel", bound=models.Model)
+TGraphQLType = TypeVar("TGraphQLType", GraphQLInputType, GraphQLOutputType)
 
 empty = object()
 
@@ -89,7 +100,7 @@ _rel_mock = SimpleNamespace(field=SimpleNamespace(null=True))
 # Protocols
 
 
-@typing.runtime_checkable
+@runtime_checkable
 class DocstringParserProtocol(Protocol):
     @classmethod
     def parse_body(cls, docstring: str) -> str: ...
@@ -122,6 +133,24 @@ class DispatchProtocol(Protocol[From, To]):
     def __call__(self, key: From, **kwargs: Any) -> To: ...
 
 
+# Classes purely for type-hinting.
+
+
+class DjangoRequest(WSGIRequest):
+    user: User | AnonymousUser
+    session: SessionBase
+
+
+DjangoRequest: TypeAlias = Union[WSGIRequest, DjangoRequest]
+
+
+class GQLInfo(GraphQLResolveInfo):
+    context: DjangoRequest
+
+
+GQLInfo: TypeAlias = Union[GQLInfo, GraphQLResolveInfo]
+
+
 # Dataclasses
 
 
@@ -132,7 +161,7 @@ class Parameter:
     default_value: Any = Undefined
 
 
-@dataclass
+@dataclass(slots=True)
 class GraphQLFilterInfo:
     model_type: type[ModelGQLType]
     filters: models.Q | None = None
@@ -162,6 +191,20 @@ class GraphQLParams:
     extensions: dict[str, Any] | None
 
 
+@dataclass(slots=True)
+class PostSaveData:
+    post_save_handlers: list[Callable[[models.Model], Any]] = dataclasses.field(default_factory=list)
+    input_only_data: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+
+class PaginationArgs(TypedDict):
+    after: int | None
+    before: int | None
+    first: int | None
+    last: int | None
+    size: int | None
+
+
 # Model typing
 
 ToOneField: TypeAlias = models.OneToOneField | models.OneToOneRel | models.ForeignKey
@@ -177,7 +220,7 @@ Expr: TypeAlias = CombinableExpression | models.F | models.Q
 # Misc.
 
 Root: TypeAlias = Any
-FilterResolverFunc: TypeAlias = Callable[[Root, GraphQLResolveInfo, Any], models.Q]
+FilterResolverFunc: TypeAlias = Callable[..., models.Q]
 QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
@@ -198,8 +241,8 @@ FieldRef: TypeAlias = Union[
     models.Field,
     models.ForeignObjectRel,
     type["ModelGQLType"],
-    "DeferredModelGQLType",
-    "DeferredModelGQLTypeUnion",
+    "LazyModelGQLType",
+    "LazyModelGQLTypeUnion",
     models.Expression,
     models.Subquery,
     FunctionType,
@@ -227,6 +270,6 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
     """
     Evaluate a type, possibly using the given globals and locals.
 
-    This is a simplified version of the typing._eval_type function.
+    This is a proxy of the 'typing._eval_type' function.
     """
     return _eval_type(type_, globals_ or {}, locals_ or {})
