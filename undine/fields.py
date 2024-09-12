@@ -30,6 +30,7 @@ from undine.converters import (
     convert_to_input_ref,
     convert_to_ordering_ref,
     is_field_nullable,
+    is_input_only,
     is_input_required,
     is_many,
 )
@@ -318,7 +319,7 @@ class Input:
         *,
         many: bool = Undefined,
         required: bool = Undefined,
-        input_only: bool = False,
+        input_only: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -335,7 +336,9 @@ class Input:
         :param required: Whether the input should be required. If not provided, looks at the reference
                          and the ModelGQLMutation's mutation kind to determine this.
         :param input_only: If `True`, the input's value is not included when the mutation is performed.
-                           Value still exists for the pre and post mutation hooks.
+                           Value still exists for the pre and post mutation hooks. If not provided,
+                           looks at the reference, and if it doesn't point to a field on the model,
+                           this field will be considered input-only.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
@@ -357,6 +360,8 @@ class Input:
 
         if self.many is Undefined:
             self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
+        if self.input_only is Undefined:
+            self.input_only = is_input_only(self.ref)
         if self.required is Undefined:
             self.required = is_input_required(self.ref, caller=self)
         if self.description is Undefined:

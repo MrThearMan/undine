@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 from example_project.app.models import Comment, Task, TaskType
-from example_project.app.mutations import CommentMutation, TaskCreateMutation
+from example_project.app.mutations import CommentMutationInput, TaskCreateMutation
 from tests.factories import TaskFactory
 from undine.utils.mutation_handler import MutationHandler
 
@@ -108,7 +108,7 @@ def test_mutation_handler__task():
 
 
 def test_mutation_handler__comment():
-    handler = MutationHandler[Comment](mutation_class=CommentMutation)
+    handler = MutationHandler[Comment](mutation_class=CommentMutationInput)
 
     task = TaskFactory.create(name="Test task")
 

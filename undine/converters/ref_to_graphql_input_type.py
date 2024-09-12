@@ -16,7 +16,7 @@ from graphql import (
 )
 
 from undine.parsers import parse_first_param_type
-from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField
+from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField, TypeRef
 from undine.utils.dispatcher import TypeDispatcher
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import to_pascal_case
@@ -36,7 +36,12 @@ convert_ref_to_graphql_input_type = TypeDispatcher[FilterRef | InputRef, GraphQL
 @convert_ref_to_graphql_input_type.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLInputType:
     annotation = parse_first_param_type(ref)
-    return convert_type_to_graphql_type(annotation)
+    return convert_type_to_graphql_type(annotation, is_input=True)
+
+
+@convert_ref_to_graphql_input_type.register
+def _(ref: TypeRef, **kwargs: Any) -> GraphQLInputType:
+    return convert_type_to_graphql_type(ref.ref, is_input=True)
 
 
 @convert_ref_to_graphql_input_type.register

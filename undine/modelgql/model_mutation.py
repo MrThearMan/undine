@@ -44,7 +44,6 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     def __pre_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """
         Implement to perform additional actions before mutation happens.
-        Not called for custom mutations.
 
         :param instance: The instance to be mutated. For create mutations, this will be `None`.
         :param info: The GraphQL resolve info.
@@ -55,7 +54,6 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
     def __post_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """
         Implement to perform additional actions after mutation has happened.
-        Not called for custom mutations.
 
         :param instance: The instance that was mutated. For delete mutations, this will be `None`.
         :param info: The GraphQL resolve info.
@@ -70,7 +68,7 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
         return GraphQLInputObjectType(
-            name=cls.__typename__ if entrypoint else f"{cls.__typename__}Input",
+            name=cls.__typename__,
             description=get_docstring(cls),
             # Defer creating fields so that self-referential related fields can be created.
             fields=lambda: {

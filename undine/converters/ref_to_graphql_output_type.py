@@ -7,12 +7,12 @@ from django.db import models
 from graphql import GraphQLError, GraphQLOutputType, GraphQLUnionType
 
 from undine.parsers import parse_return_annotation
-from undine.typing import CombinableExpression, EntrypointRef, FilterRef, GQLInfo, ModelField
+from undine.typing import CombinableExpression, EntrypointRef, FieldRef, GQLInfo, ModelField
 from undine.utils.dispatcher import TypeDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import dotpath, to_pascal_case
 
-from . import convert_model_field_to_graphql_type
+from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
 from .to_graphql_type import convert_type_to_graphql_type
 
 __all__ = [
@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-convert_ref_to_graphql_output_type = TypeDispatcher[FilterRef | EntrypointRef, GraphQLOutputType]()
+convert_ref_to_graphql_output_type = TypeDispatcher[FieldRef | EntrypointRef, GraphQLOutputType]()
 """Convert the given reference to a GraphQL output type."""
 
 

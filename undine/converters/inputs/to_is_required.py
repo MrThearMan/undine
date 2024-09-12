@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from undine.typing import InputRef, ModelField
+from undine.typing import InputRef, ModelField, TypeRef
 from undine.utils.dispatcher import TypeDispatcher
 from undine.utils.model_utils import get_model_field
 
@@ -31,6 +31,11 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
         # Only non-null fields can be required.
         and not bool(getattr(ref, "null", True))
     )
+
+
+@is_input_required.register
+def _(_: TypeRef, **kwargs: Any) -> bool:
+    return False
 
 
 def load_deferred_converters() -> None:  # pragma: no cover

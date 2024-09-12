@@ -6,6 +6,7 @@ from .fields.to_is_nullable import is_field_nullable
 from .fields.to_resolver import convert_field_ref_to_resolver
 from .filters.to_filter_ref import convert_to_filter_ref
 from .filters.to_resolver import convert_filter_ref_to_filter_resolver
+from .inputs.is_input_only import is_input_only
 from .inputs.to_input_ref import convert_to_input_ref
 from .inputs.to_is_required import is_input_required
 from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
@@ -34,6 +35,7 @@ __all__ = [
     "convert_to_ordering_ref",
     "convert_type_to_graphql_type",
     "is_field_nullable",
+    "is_input_only",
     "is_input_required",
     "is_many",
 ]

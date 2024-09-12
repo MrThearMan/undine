@@ -4,13 +4,15 @@ import datetime
 import uuid
 from decimal import Decimal
 from enum import Enum
-from typing import get_args
+from typing import Any, get_args
 
 from graphql import (
     GraphQLBoolean,
     GraphQLEnumType,
     GraphQLField,
     GraphQLFloat,
+    GraphQLInputField,
+    GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInt,
     GraphQLList,
@@ -45,67 +47,67 @@ convert_type_to_graphql_type = TypeDispatcher[type, GraphQLOutputType | GraphQLI
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[str]) -> GraphQLScalarType:
+def _(_: type[str], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLString
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[bool]) -> GraphQLScalarType:
+def _(_: type[bool], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLBoolean
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[int]) -> GraphQLScalarType:
+def _(_: type[int], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLInt
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[float]) -> GraphQLScalarType:
+def _(_: type[float], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLFloat
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[Decimal]) -> GraphQLScalarType:
+def _(_: type[Decimal], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLDecimal
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[datetime.datetime]) -> GraphQLScalarType:
+def _(_: type[datetime.datetime], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLDateTime
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[datetime.date]) -> GraphQLScalarType:
+def _(_: type[datetime.date], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLDate
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[datetime.time]) -> GraphQLScalarType:
+def _(_: type[datetime.time], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLTime
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[datetime.timedelta]) -> GraphQLScalarType:
+def _(_: type[datetime.timedelta], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLDuration
 
 
 @convert_type_to_graphql_type.register
-def _(_: type[uuid.UUID]) -> GraphQLScalarType:
+def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLScalarType:
     return GraphQLUUID
 
 
 @convert_type_to_graphql_type.register
-def _(ref: type[Enum]) -> GraphQLEnumType:
+def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
     return GraphQLEnumType(name=ref.__name__, values=ref, description=get_docstring(ref))
 
 
 @convert_type_to_graphql_type.register
-def _(_: type) -> GraphQLScalarType:
+def _(_: type, **kwargs: Any) -> GraphQLScalarType:
     return GraphQLAny
 
 
 @convert_type_to_graphql_type.register
-def _(ref: type[list]) -> GraphQLList:
+def _(ref: type[list], **kwargs: Any) -> GraphQLList:
     args = get_args(ref)
     # For lists without type, or with a union type, default to any.
     if len(args) != 1:
@@ -118,20 +120,27 @@ def _(ref: type[list]) -> GraphQLList:
 
 
 @convert_type_to_graphql_type.register
-def _(ref: type[dict]) -> GraphQLObjectType:
+def _(ref: type[dict], **kwargs: Any) -> GraphQLObjectType | GraphQLInputObjectType:
     if type(ref) is not TypedDictType:
         msg = f"Can only convert TypedDicts, got {type(ref)}."
         raise TypeDispatcherError(msg)
 
     ref: TypedDictType
     module_globals = vars(__import__(ref.__module__))
+    is_input = kwargs.get("is_input", False)
 
-    fields: dict[str, GraphQLField] = {}
+    fields: dict[str, GraphQLField | GraphQLInputField] = {}
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
         graphql_type, nullable = convert_type_to_graphql_type(evaluated_type, return_nullable=True)
         if not nullable:
             graphql_type = GraphQLNonNull(graphql_type)
-        fields[key] = GraphQLField(graphql_type)
 
+        if is_input:
+            fields[key] = GraphQLInputField(graphql_type)
+        else:
+            fields[key] = GraphQLField(graphql_type)
+
+    if is_input:
+        return GraphQLInputObjectType(name=ref.__name__, fields=fields)
     return GraphQLObjectType(name=ref.__name__, fields=fields)

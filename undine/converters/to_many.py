@@ -6,7 +6,7 @@ from typing import Any, get_origin
 from django.db import models
 
 from undine.parsers import parse_return_annotation
-from undine.typing import CombinableExpression, ModelField
+from undine.typing import CombinableExpression, ModelField, TypeRef
 from undine.utils.dispatcher import TypeDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.model_utils import get_model_field
@@ -31,6 +31,11 @@ def _(ref: FunctionType, **kwargs: Any) -> bool:
 @is_many.register
 def _(ref: ModelField, **kwargs: Any) -> bool:
     return bool(ref.many_to_many) or bool(ref.one_to_many)
+
+
+@is_many.register
+def _(ref: TypeRef, **kwargs: Any) -> bool:
+    return ref.ref is list or get_origin(ref.ref) is list
 
 
 @is_many.register

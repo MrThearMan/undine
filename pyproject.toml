@@ -211,6 +211,10 @@ lint.ignore = [
     "TCH001",
     "TCH002",
     "TCH003",
+    # Ignore boolean trap
+    "FBT001",
+    # ignore "int | float"
+    "PYI041",
 ]
 "undine/fields.py" = [
     "PLR0913",  # Fields contain many __init__ arguments

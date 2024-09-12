@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from undine.parsers import docstring_parser
-from undine.typing import Expr, ModelField
+from undine.typing import Expr, ModelField, TypeRef
 from undine.utils.dispatcher import TypeDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import get_docstring
@@ -30,6 +30,11 @@ def _(ref: ModelField) -> Any:
 
 @convert_to_description.register
 def _(_: Expr) -> Any:
+    return None
+
+
+@convert_to_description.register
+def _(_: TypeRef) -> Any:
     return None
 
 

@@ -197,6 +197,11 @@ class PostSaveData:
     input_only_data: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class TypeRef:
+    ref: type
+
+
 class PaginationArgs(TypedDict):
     after: int | None
     before: int | None
@@ -263,6 +268,7 @@ OrderingRef: TypeAlias = Union[
 InputRef: TypeAlias = Union[
     models.Field,
     type["ModelGQLMutation"],
+    TypeRef,
 ]
 
 
