@@ -4,7 +4,7 @@ from typing import Any, NoReturn
 from graphql import GraphQLScalarType
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Decimal")
-parse_decimal = TypeDispatcher[Any, decimal.Decimal](wrapper=error_wrapper)
+parse_decimal = FunctionDispatcher[Any, decimal.Decimal](wrapper=error_wrapper)
 
 
 @parse_decimal.register

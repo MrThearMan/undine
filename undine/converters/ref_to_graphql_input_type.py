@@ -17,7 +17,7 @@ from graphql import (
 
 from undine.parsers import parse_first_param_type
 from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import to_pascal_case
 
@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 
-convert_ref_to_graphql_input_type = TypeDispatcher[FilterRef | InputRef, GraphQLInputType]()
+convert_ref_to_graphql_input_type = FunctionDispatcher[FilterRef | InputRef, GraphQLInputType]()
 """Convert the given reference to a GraphQL input type."""
 
 

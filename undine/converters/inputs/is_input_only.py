@@ -5,14 +5,14 @@ from typing import Any
 from django.db import models
 
 from undine.typing import InputRef, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 
 __all__ = [
     "is_input_only",
 ]
 
 
-is_input_only = TypeDispatcher[InputRef, bool]()
+is_input_only = FunctionDispatcher[InputRef, bool]()
 """Determine whether a the reference is input-only or not."""
 
 

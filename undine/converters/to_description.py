@@ -4,7 +4,7 @@ from typing import Any
 
 from undine.parsers import docstring_parser
 from undine.typing import Expr, ModelField, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import get_docstring
 
@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 
-convert_to_description = TypeDispatcher[Any, str | None]()
+convert_to_description = FunctionDispatcher[Any, str | None]()
 """Parse a description from the reference."""
 
 

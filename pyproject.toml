@@ -207,7 +207,7 @@ lint.ignore = [
     "UP",       # No upgrade rules
 ]
 "undine/converters/*.py" = [
-    # No typing-only imports for converters due to TypeDispatcher
+    # No typing-only imports for converters due to FunctionDispatcher
     "TCH001",
     "TCH002",
     "TCH003",

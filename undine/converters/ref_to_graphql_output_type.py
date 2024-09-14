@@ -8,7 +8,7 @@ from graphql import GraphQLError, GraphQLOutputType, GraphQLUnionType
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, EntrypointRef, FieldRef, GQLInfo, ModelField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import dotpath, to_pascal_case
 
@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-convert_ref_to_graphql_output_type = TypeDispatcher[FieldRef | EntrypointRef, GraphQLOutputType]()
+convert_ref_to_graphql_output_type = FunctionDispatcher[FieldRef | EntrypointRef, GraphQLOutputType]()
 """Convert the given reference to a GraphQL output type."""
 
 

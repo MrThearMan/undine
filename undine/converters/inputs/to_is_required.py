@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from undine.typing import InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 
-is_input_required = TypeDispatcher[InputRef, bool]()
+is_input_required = FunctionDispatcher[InputRef, bool]()
 """Determine whether the reference requires an input."""
 
 

@@ -4,7 +4,7 @@ from typing import Any, NoReturn
 from graphql import GraphQLScalarType
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 
 __all__ = [
@@ -14,7 +14,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("UUID")
-parse_uuid = TypeDispatcher[Any, uuid.UUID](wrapper=error_wrapper)
+parse_uuid = FunctionDispatcher[Any, uuid.UUID](wrapper=error_wrapper)
 
 
 @parse_uuid.register

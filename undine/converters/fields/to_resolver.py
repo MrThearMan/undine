@@ -7,7 +7,7 @@ from graphql import GraphQLFieldResolver
 
 from undine.resolvers import FieldResolver, ModelFieldResolver, ModelManyRelatedResolver
 from undine.typing import CombinableExpression, FieldRef, ModelField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 
 __all__ = [
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-convert_field_ref_to_resolver = TypeDispatcher[FieldRef, GraphQLFieldResolver]()
+convert_field_ref_to_resolver = FunctionDispatcher[FieldRef, GraphQLFieldResolver]()
 """Convert the Undine Field reference to a GraphQL field resolver."""
 
 

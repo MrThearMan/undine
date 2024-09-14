@@ -7,13 +7,13 @@ from decimal import Decimal
 from django.db import models
 
 from undine.typing import ToManyField, ToOneField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_model_field_to_type",
 ]
 
-convert_model_field_to_type = TypeDispatcher[models.Field, type]()
+convert_model_field_to_type = FunctionDispatcher[models.Field, type]()
 """Convert the given model field to a python type."""
 
 

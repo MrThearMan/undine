@@ -7,7 +7,7 @@ from django.db import models
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, ModelField, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.model_utils import get_model_field
 
@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 
-is_many = TypeDispatcher[Any, bool]()
+is_many = FunctionDispatcher[Any, bool]()
 """Determine whether a the reference returns a list of objects or not."""
 
 

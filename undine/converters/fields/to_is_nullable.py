@@ -7,7 +7,7 @@ from django.db import models
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, FieldRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 
 __all__ = [
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-is_field_nullable = TypeDispatcher[FieldRef, bool]()
+is_field_nullable = FunctionDispatcher[FieldRef, bool]()
 """Determine whether the reference returns a nullable type."""
 
 

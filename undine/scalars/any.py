@@ -7,7 +7,7 @@ from graphql import GraphQLScalarType
 from graphql.type.scalars import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 
 __all__ = [
@@ -17,7 +17,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Any")
-parse_any = TypeDispatcher[Any, Any](wrapper=error_wrapper)
+parse_any = FunctionDispatcher[Any, Any](wrapper=error_wrapper)
 
 
 @parse_any.register

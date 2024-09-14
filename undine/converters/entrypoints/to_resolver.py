@@ -7,14 +7,14 @@ from graphql import GraphQLFieldResolver
 
 from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FieldResolver, UpdateResolver
 from undine.typing import EntrypointRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_entrypoint_ref_to_resolver",
 ]
 
 
-convert_entrypoint_ref_to_resolver = TypeDispatcher[EntrypointRef, GraphQLFieldResolver]()
+convert_entrypoint_ref_to_resolver = FunctionDispatcher[EntrypointRef, GraphQLFieldResolver]()
 """Convert the Undine Entrypoint reference to a GraphQL field resolver."""
 
 

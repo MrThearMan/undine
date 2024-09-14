@@ -9,7 +9,7 @@ from undine.converters.to_graphql_type import convert_type_to_graphql_type
 from undine.parsers import docstring_parser, parse_parameters
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, FieldRef, ModelField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.text import get_docstring, get_schema_name
 
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-convert_field_ref_to_graphql_argument_map = TypeDispatcher[FieldRef, GraphQLArgumentMap]()
+convert_field_ref_to_graphql_argument_map = FunctionDispatcher[FieldRef, GraphQLArgumentMap]()
 """Parse a GraphQL argument map from the given Undine Field reference."""
 
 

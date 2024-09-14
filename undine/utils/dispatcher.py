@@ -12,38 +12,34 @@ from typing import Any, Callable, Generic, Union, get_args, get_origin
 
 from graphql import Undefined
 
-from undine.errors.exceptions import TypeDispatcherError
+from undine.errors.exceptions import FunctionDispatcherError
 from undine.parsers import parse_return_annotation
 from undine.typing import DispatchWrapper, From, To
 
 from .reflection import get_signature
 
 __all__ = [
-    "TypeDispatcher",
+    "FunctionDispatcher",
 ]
 
 
-class TypeDispatcher(Generic[From, To]):
+class FunctionDispatcher(Generic[From, To]):
     """
-    A dispatcher that holds registered implementations for a function
+    A dispatcher that holds different implementations for a function
     based on the function's first argument's type.
 
     When called, the dispatcher will find the implementation that matches
-    with the first argument's type and call it with the given arguments.
-    If no exact match is found, the dispatcher will try look for
-    and implementation from the argument types method resolution order.
+    with the first argument's type and call it with the given keyword arguments.
+    If no exact match is found, the dispatcher will look for
+    an implementation from the argument's types' method resolution order.
     If no implementation is found, the dispatcher will try to find
-    a default implementation, and failing that, raise a TypeDispatcherError.
+    a default implementation (registed for `Any`), and failing that,
+    raise an error.
 
     Different implementations can be added with the `register` method.
     """
 
-    def __init__(
-        self,
-        *,
-        union_default: From = Undefined,
-        wrapper: DispatchWrapper[From, To] | None = None,
-    ) -> None:
+    def __init__(self, *, wrapper: DispatchWrapper[From, To] | None = None, union_default: Any = Undefined) -> None:
         """
         Initialize the dispatcher.
 
@@ -53,12 +49,12 @@ class TypeDispatcher(Generic[From, To]):
                         performing additional logic.
         """
         self.name = self._get_name()
-        self.union_default = union_default
         self.wrapper = wrapper
+        self.union_default = union_default
         self.default = Undefined
         self.implementations: dict[From, Callable[[From], To]] = {}
 
-    def __class_getitem__(cls, key: tuple[From, To]) -> TypeDispatcher[From, To]:
+    def __class_getitem__(cls, key: tuple[From, To]) -> FunctionDispatcher[From, To]:
         """Adds typing information when instantiating the class."""
         return cls  # type: ignore[return-value]
 
@@ -66,11 +62,11 @@ class TypeDispatcher(Generic[From, To]):
         """Find the implementation for the given key and call it with the given arguments."""
         return_nullable = kwargs.pop("return_nullable", False)
         if key is Undefined:
-            msg = "TypeDispatcher key must be a type or value."
-            raise TypeDispatcherError(msg)
+            msg = "FunctionDispatcher key must be a type or value."
+            raise FunctionDispatcherError(msg)
 
-        new_key, nullable = self.handle_nullable(key)
-        type_ = self.get_key(new_key)
+        new_key, nullable = self._handle_nullable(key)
+        type_ = self._get_key(new_key)
 
         try:
             value = self.implementations[type_]
@@ -84,18 +80,59 @@ class TypeDispatcher(Generic[From, To]):
                     value = self.default
                 else:
                     msg = f"'{self.name}' doesn't contain an implementation for '{type_}' ({key})."
-                    raise TypeDispatcherError(msg) from error
+                    raise FunctionDispatcherError(msg) from error
 
         result = value(new_key, **kwargs)
         if return_nullable:
             return result, nullable
         return result
 
-    def get_key(self, key: Any) -> type:
+    def register(self, func: Callable[[From], To]) -> Callable[[From], To]:
+        """
+        Register the given function as an implementation for its
+        first argument's type in the FunctionDispatcher.
+
+        If the first argument's type is 'Any', the function will be
+        registered as the default implementation.
+
+        If the first argument's type is a Union, the function will be
+        registered as the implementation for all the types in the Union.
+        """
+        if not isinstance(func, FunctionType):
+            msg = f"Can only register functions with '{self.name}'."
+            raise FunctionDispatcherError(msg)
+
+        type_ = self._first_param_type(func, depth=1)
+        if type_ is Any:
+            self.default = self.wrapper(func) if self.wrapper is not None else func
+            return func
+
+        origin = get_origin(type_)
+        keys: list[type] = (
+            [origin or type_]
+            if origin not in [type, UnionType, Union]
+            else [get_origin(arg) or arg for arg in get_args(type_)]
+        )
+
+        for key in keys:
+            if key is Undefined:
+                msg = f"'{self.name}' cannot register an implmentation for 'Undefined'."
+                raise FunctionDispatcherError(msg)
+
+            key_ = self._get_key(key)
+            if key_ is UnionType:
+                msg = f"'{self.name}' cannot register an implementation for a Union member: {key}."
+                raise FunctionDispatcherError(msg)
+
+            self.implementations[key_] = self.wrapper(func) if self.wrapper is not None else func
+
+        return func
+
+    def _get_key(self, key: Any) -> type:
         origin = get_origin(key) or key
         return type(key) if not isinstance(origin, type) else origin
 
-    def handle_nullable(self, key: From) -> tuple[type, bool]:
+    def _handle_nullable(self, key: From) -> tuple[type, bool]:
         """For types like Union[str, None], return 'str, True'."""
         annotation = key
         origin = get_origin(key)
@@ -120,68 +157,27 @@ class TypeDispatcher(Generic[From, To]):
             return self.union_default, nullable
 
         msg = f"Union type must have a single non-null type argument, got {args}."
-        raise TypeDispatcherError(msg)
+        raise FunctionDispatcherError(msg)
 
-    def register(self, func: Callable[[From], To]) -> Callable[[From], To]:
-        """
-        Register the given function as an implementation for its
-        first argument's type in the TypeDispatcher.
-
-        If the first argument's type is 'Any', the function will be
-        registered as the default implementation.
-
-        If the first argument's type is a Union, the function will be
-        registered as the implementation for all the types in the Union.
-        """
-        if not isinstance(func, FunctionType):
-            msg = f"Can only register functions with '{self.name}'."
-            raise TypeDispatcherError(msg)
-
-        type_ = self.first_param_type(func, depth=1)
-        if type_ is Any:
-            self.default = self.wrapper(func) if self.wrapper is not None else func
-            return func
-
-        origin = get_origin(type_)
-        keys: list[type] = (
-            [origin or type_]
-            if origin not in [type, UnionType, Union]
-            else [get_origin(arg) or arg for arg in get_args(type_)]
-        )
-
-        for key in keys:
-            if key is Undefined:
-                msg = f"'{self.name}' cannot register an implmentation for 'Undefined'."
-                raise TypeDispatcherError(msg)
-
-            key_ = self.get_key(key)
-            if key_ is UnionType:
-                msg = f"'{self.name}' cannot register an implementation for a Union member: {key}."
-                raise TypeDispatcherError(msg)
-
-            self.implementations[key_] = self.wrapper(func) if self.wrapper is not None else func
-
-        return func
-
-    def first_param_type(self, func: FunctionType, *, depth: int = 0) -> type:
+    def _first_param_type(self, func: FunctionType, *, depth: int = 0) -> type:
         """Get the type of the first parameter of the given function."""
         sig = get_signature(func, depth=depth + 1)
 
         type_ = next((param.annotation for param in sig.parameters.values()), Undefined)
         if type_ is Undefined:
             msg = "Registered function must have at least one argument."
-            raise TypeDispatcherError(msg)
+            raise FunctionDispatcherError(msg)
         if type_ is inspect.Parameter.empty:
             msg = "Registered function's first argument must have a type annotation."
-            raise TypeDispatcherError(msg)
+            raise FunctionDispatcherError(msg)
         return type_
 
     def _get_name(self) -> str:
         """
         Perform some python black magic to find the name of the variable
-        to which the TypeDispatcher is begin assigned to.
+        to which the FunctionDispatcher is begin assigned to.
 
-        Note: This only works if the TypeDispatcher initializer is called on the
+        Note: This only works if the FunctionDispatcher initializer is called on the
         same line as the variable for it's instance is defined on.
         """
         if hasattr(self, "name"):

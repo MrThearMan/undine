@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, FilterRef, ModelField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-convert_to_filter_ref = TypeDispatcher[Any, FilterRef]()
+convert_to_filter_ref = FunctionDispatcher[Any, FilterRef]()
 """Convert the given value to a Undine Filter reference."""
 
 

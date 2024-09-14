@@ -10,7 +10,7 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-convert_to_input_ref = TypeDispatcher[Any, InputRef]()
+convert_to_input_ref = FunctionDispatcher[Any, InputRef]()
 """Convert the given value to a Undine Input reference."""
 
 

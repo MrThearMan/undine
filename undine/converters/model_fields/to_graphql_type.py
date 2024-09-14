@@ -26,14 +26,14 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_model_field_to_graphql_type",
 ]
 
 
-convert_model_field_to_graphql_type = TypeDispatcher[models.Field, GraphQLOutputType | GraphQLInputType]()
+convert_model_field_to_graphql_type = FunctionDispatcher[models.Field, GraphQLOutputType | GraphQLInputType]()
 """Convert the given model field to a GraphQL type."""
 
 

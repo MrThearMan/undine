@@ -8,14 +8,14 @@ from django.db.models.constants import LOOKUP_SEP
 
 from undine.resolvers import FieldResolver
 from undine.typing import CombinableExpression, FilterRef, FilterResolverFunc, ModelField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_filter_ref_to_filter_resolver",
 ]
 
 
-convert_filter_ref_to_filter_resolver = TypeDispatcher[FilterRef, FilterResolverFunc]()
+convert_filter_ref_to_filter_resolver = FunctionDispatcher[FilterRef, FilterResolverFunc]()
 """Convert the Undine Filter reference to a Filter resolver function."""
 
 

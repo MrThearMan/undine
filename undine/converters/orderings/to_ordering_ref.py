@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, OrderingRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-convert_to_ordering_ref = TypeDispatcher[Any, OrderingRef]()
+convert_to_ordering_ref = FunctionDispatcher[Any, OrderingRef]()
 """Convert the given value to a Undine Ordering reference."""
 
 

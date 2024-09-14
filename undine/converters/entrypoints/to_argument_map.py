@@ -9,7 +9,7 @@ from undine.converters.fields.to_argument_map import convert_field_ref_to_graphq
 from undine.converters.model_fields.to_graphql_type import convert_model_field_to_graphql_type
 from undine.settings import undine_settings
 from undine.typing import EntrypointRef
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 from undine.utils.text import get_schema_name
 
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-convert_entrypoint_ref_to_graphql_argument_map = TypeDispatcher[EntrypointRef, GraphQLArgumentMap]()
+convert_entrypoint_ref_to_graphql_argument_map = FunctionDispatcher[EntrypointRef, GraphQLArgumentMap]()
 """Parse a GraphQL argument map from the given Undine Entrypoint reference."""
 
 

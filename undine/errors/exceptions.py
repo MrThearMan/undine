@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLErrorExtensions, Node, Source
 
 __all__ = [
+    "FunctionDispatcherError",
     "FuntionSignatureParsingError",
     "GraphQLConversionError",
     "GraphQLConversionError",
@@ -26,7 +27,6 @@ __all__ = [
     "NoFunctionParametersError",
     "OptimizerError",
     "SchemaNameValidationError",
-    "TypeDispatcherError",
     "TypeRegistryDuplicateError",
     "TypeRegistryMissingTypeError",
     "UndineError",
@@ -149,8 +149,8 @@ class SchemaNameValidationError(UndineError):
     )
 
 
-class TypeDispatcherError(UndineError):
-    """Error raised for `TypeDispatcher` errors."""
+class FunctionDispatcherError(UndineError):
+    """Error raised for `FunctionDispatcher` errors."""
 
 
 class TypeRegistryDuplicateError(UndineError):

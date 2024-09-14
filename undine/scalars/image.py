@@ -8,7 +8,7 @@ from django.db.models.fields.files import ImageFieldFile
 from graphql import GraphQLScalarType
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 from undine.utils.urls import validate_image_url
 
@@ -19,7 +19,7 @@ __all__ = [
 
 
 error_wrapper = handle_conversion_errors("Image")
-parse_image = TypeDispatcher[Any, Any](wrapper=error_wrapper)
+parse_image = FunctionDispatcher[Any, Any](wrapper=error_wrapper)
 
 
 @parse_image.register

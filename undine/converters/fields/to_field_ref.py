@@ -12,7 +12,7 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, FieldRef, ToManyField, ToOneField
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
 from undine.utils.model_utils import get_model_field
 
@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 
-convert_to_field_ref = TypeDispatcher[Any, FieldRef]()
+convert_to_field_ref = FunctionDispatcher[Any, FieldRef]()
 """Convert the given value to a Undine Field reference."""
 
 

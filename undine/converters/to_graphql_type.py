@@ -23,18 +23,18 @@ from graphql import (
     GraphQLString,
 )
 
-from undine.errors.exceptions import TypeDispatcherError
 from undine.scalars import (
     GraphQLAny,
     GraphQLDate,
     GraphQLDateTime,
     GraphQLDecimal,
     GraphQLDuration,
+    GraphQLJSON,
     GraphQLTime,
     GraphQLUUID,
 )
 from undine.typing import TypedDictType, eval_type
-from undine.utils.dispatcher import TypeDispatcher
+from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.text import get_docstring
 
 __all__ = [
@@ -42,7 +42,7 @@ __all__ = [
 ]
 
 
-convert_type_to_graphql_type = TypeDispatcher[type, GraphQLOutputType | GraphQLInputType](union_default=type)
+convert_type_to_graphql_type = FunctionDispatcher[type, GraphQLOutputType | GraphQLInputType](union_default=type)
 """Convert a regular Python type to a GraphQL type."""
 
 
@@ -113,7 +113,7 @@ def _(ref: type[list], **kwargs: Any) -> GraphQLList:
     if len(args) != 1:
         return GraphQLList(GraphQLAny)
 
-    graphql_type, nullable = convert_type_to_graphql_type(args[0], return_nullable=True)
+    graphql_type, nullable = convert_type_to_graphql_type(args[0], return_nullable=True, **kwargs)
     if not nullable:
         graphql_type = GraphQLNonNull(graphql_type)
     return GraphQLList(graphql_type)
@@ -122,8 +122,7 @@ def _(ref: type[list], **kwargs: Any) -> GraphQLList:
 @convert_type_to_graphql_type.register
 def _(ref: type[dict], **kwargs: Any) -> GraphQLObjectType | GraphQLInputObjectType:
     if type(ref) is not TypedDictType:
-        msg = f"Can only convert TypedDicts, got {type(ref)}."
-        raise TypeDispatcherError(msg)
+        return GraphQLJSON
 
     ref: TypedDictType
     module_globals = vars(__import__(ref.__module__))
@@ -132,7 +131,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLObjectType | GraphQLInputObjectT
     fields: dict[str, GraphQLField | GraphQLInputField] = {}
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
-        graphql_type, nullable = convert_type_to_graphql_type(evaluated_type, return_nullable=True)
+        graphql_type, nullable = convert_type_to_graphql_type(evaluated_type, return_nullable=True, **kwargs)
         if not nullable:
             graphql_type = GraphQLNonNull(graphql_type)
 
