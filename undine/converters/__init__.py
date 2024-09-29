@@ -9,6 +9,7 @@ from .filters.to_resolver import convert_filter_ref_to_filter_resolver
 from .inputs.is_input_only import is_input_only
 from .inputs.to_input_ref import convert_to_input_ref
 from .inputs.to_is_required import is_input_required
+from .lookup_to_graphql_input_type import convert_lookup_to_graphql_input_type
 from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
 from .model_fields.to_type import convert_model_field_to_type
 from .orderings.to_ordering_ref import convert_to_ordering_ref
@@ -24,6 +25,7 @@ __all__ = [
     "convert_field_ref_to_graphql_argument_map",
     "convert_field_ref_to_resolver",
     "convert_filter_ref_to_filter_resolver",
+    "convert_lookup_to_graphql_input_type",
     "convert_model_field_to_graphql_type",
     "convert_model_field_to_type",
     "convert_ref_to_graphql_input_type",

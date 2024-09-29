@@ -1,0 +1,93 @@
+from example_project.app.models import Task
+from undine import ModelGQLFilter
+
+
+def test_model_filter__default():
+    class MyFilter(ModelGQLFilter, model=Task): ...
+
+    assert MyFilter.__model__ == Task
+    assert MyFilter.__typename__ == "MyFilter"
+    assert MyFilter.__extensions__ == {"undine_filter_input": MyFilter}
+
+    assert sorted(MyFilter.__filter_map__) == [
+        "createdAtContains",
+        "createdAtDay",
+        "createdAtEndswith",
+        "createdAtExact",
+        "createdAtGt",
+        "createdAtGte",
+        "createdAtIcontains",
+        "createdAtIendswith",
+        "createdAtIexact",
+        "createdAtIn",
+        "createdAtIregex",
+        "createdAtIsnull",
+        "createdAtIsoWeekDay",
+        "createdAtIsoYear",
+        "createdAtIstartswith",
+        "createdAtLt",
+        "createdAtLte",
+        "createdAtMonth",
+        "createdAtQuarter",
+        "createdAtRange",
+        "createdAtRegex",
+        "createdAtStartswith",
+        "createdAtWeek",
+        "createdAtWeekDay",
+        "createdAtYear",
+        "nameContains",
+        "nameEndswith",
+        "nameExact",
+        "nameGt",
+        "nameGte",
+        "nameIcontains",
+        "nameIendswith",
+        "nameIexact",
+        "nameIn",
+        "nameIregex",
+        "nameIsnull",
+        "nameIstartswith",
+        "nameLt",
+        "nameLte",
+        "nameRange",
+        "nameRegex",
+        "nameStartswith",
+        "pkContains",
+        "pkEndswith",
+        "pkExact",
+        "pkGt",
+        "pkGte",
+        "pkIcontains",
+        "pkIendswith",
+        "pkIexact",
+        "pkIn",
+        "pkIregex",
+        "pkIsnull",
+        "pkIstartswith",
+        "pkLt",
+        "pkLte",
+        "pkRange",
+        "pkRegex",
+        "pkStartswith",
+        "typeContains",
+        "typeEndswith",
+        "typeExact",
+        "typeGt",
+        "typeGte",
+        "typeIcontains",
+        "typeIendswith",
+        "typeIexact",
+        "typeIn",
+        "typeIregex",
+        "typeIsnull",
+        "typeIstartswith",
+        "typeLt",
+        "typeLte",
+        "typeRange",
+        "typeRegex",
+        "typeStartswith",
+    ]
+
+    input_type = MyFilter.__input_type__()
+
+    assert input_type.name == "MyFilter"

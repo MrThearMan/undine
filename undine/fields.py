@@ -94,7 +94,7 @@ class Entrypoint:
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
 
-    def get_graphql_field(self) -> GraphQLField:
+    def as_graphql_field(self) -> GraphQLField:
         return GraphQLField(
             type_=self.get_field_type(),
             args=self.get_field_arguments(),
@@ -167,7 +167,7 @@ class Field:
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
 
-    def get_graphql_field(self) -> GraphQLField:
+    def as_graphql_field(self) -> GraphQLField:
         return GraphQLField(
             type_=self.get_field_type(),
             args=self.get_field_arguments(),
@@ -224,8 +224,8 @@ class Filter:
         :param extensions: GraphQL extensions for the filter.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
-        self.lookup_expr = lookup_expr
-        self.many = many or lookup_expr in ("in", "range")
+        self.lookup_expr = lookup_expr.lower()
+        self.many = many or self.lookup_expr in ("in", "range")
         self.distinct = distinct
         self.required = required
         self.description = description
@@ -251,7 +251,7 @@ class Filter:
     def get_expression(self, value: Any, info: GQLInfo) -> models.Q:
         return self.resolver(self.owner, info, value=value)
 
-    def as_input_field(self) -> GraphQLInputField:
+    def as_graphql_input(self) -> GraphQLInputField:
         return GraphQLInputField(
             type_=self.get_field_type(),
             description=self.description,
@@ -260,7 +260,7 @@ class Filter:
         )
 
     def get_field_type(self) -> GraphQLInputType:
-        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
+        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__, lookup=self.lookup_expr)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
 
@@ -367,14 +367,14 @@ class Input:
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
 
-    def as_input_field(self, *, entrypoint: bool = True) -> GraphQLInputField:
+    def as_graphql_input(self) -> GraphQLInputField:
         return GraphQLInputField(
-            type_=self.get_field_type(entrypoint=entrypoint),
+            type_=self.get_field_type(),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
         )
 
-    def get_field_type(self, *, entrypoint: bool = True) -> GraphQLInputType:
-        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__, entrypoint=entrypoint)
-        return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required if entrypoint else False)
+    def get_field_type(self) -> GraphQLInputType:
+        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
+        return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)

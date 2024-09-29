@@ -119,7 +119,7 @@ class DocstringParserProtocol(Protocol):
 
 
 class ExpressionKind(Protocol):
-    def resolve_expression(  # noqa: PLR0913
+    def resolve_expression(
         self,
         query: Query,
         allow_joins: bool,  # noqa: FBT001
@@ -164,7 +164,7 @@ class Parameter:
 @dataclass(slots=True)
 class GraphQLFilterInfo:
     model_type: type[ModelGQLType]
-    filters: models.Q | None = None
+    filters: list[models.Q] | None = None
     distinct: bool = False
     aliases: dict[str, CombinableExpression] = dataclasses.field(default_factory=dict)
     order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
@@ -173,7 +173,7 @@ class GraphQLFilterInfo:
 
 @dataclass(frozen=True, slots=True)
 class FilterResults:
-    q: models.Q
+    filters: list[models.Q]
     distinct: bool
     aliases: dict[str, CombinableExpression]
 

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from functools import cache
-
 from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
 
 from undine.typing import GQLInfo, OrderingResults
+from undine.utils.decorators import cached_class_method
 from undine.utils.text import get_docstring
 
 from .metaclasses.model_ordering_meta import ModelGQLOrderingMeta
+
+__all__ = [
+    "ModelGQLOrdering",
+]
 
 
 class ModelGQLOrdering(metaclass=ModelGQLOrderingMeta, model=Undefined):
@@ -56,8 +59,7 @@ class ModelGQLOrdering(metaclass=ModelGQLOrderingMeta, model=Undefined):
 
         return result
 
-    @classmethod
-    @cache
+    @cached_class_method
     def __enum_type__(cls) -> GraphQLEnumType:
         """
         Create a `GraphQLEnumType` for this class.

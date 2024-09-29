@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import pytest
 from graphql import Undefined
@@ -156,3 +156,29 @@ def test_function_dispatcher__undefined() -> None:
     msg = "FunctionDispatcher key must be a type or value."
     with pytest.raises(FunctionDispatcherError, match=re.escape(msg)):
         func(Undefined)
+
+
+def test_function_dispatcher__literal() -> None:
+    func = FunctionDispatcher()
+
+    @func.register
+    def _(_: Literal["foo"]) -> str:
+        return "1"
+
+    @func.register
+    def _(_: Literal["bar"]) -> str:
+        return "2"
+
+    assert func("foo") == "1"
+    assert func("bar") == "2"
+
+
+def test_function_dispatcher__literal__union() -> None:
+    func = FunctionDispatcher()
+
+    @func.register
+    def _(_: Literal["foo", "bar"]) -> str:
+        return "1"
+
+    assert func("foo") == "1"
+    assert func("bar") == "1"

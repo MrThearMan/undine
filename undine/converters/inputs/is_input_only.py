@@ -28,8 +28,14 @@ def _(_: TypeRef, **kwargs: Any) -> bool:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
     from undine import ModelGQLMutation
 
     @is_input_only.register
     def _(_: type[ModelGQLMutation], **kwargs: Any) -> bool:
+        return False
+
+    @is_input_only.register
+    def _(_: GenericForeignKey, **kwargs: Any) -> bool:
         return False

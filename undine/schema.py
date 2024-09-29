@@ -120,7 +120,7 @@ def _create_object_type(cls: type | None, extensions: dict[str, Any] | None = No
 
     return GraphQLObjectType(
         cls.__name__,
-        fields={get_schema_name(name): entr.get_graphql_field() for name, entr in get_members(cls, Entrypoint)},
+        fields={get_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
         extensions=extensions,
         description=get_docstring(cls),
     )

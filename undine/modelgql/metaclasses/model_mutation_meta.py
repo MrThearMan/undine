@@ -27,7 +27,7 @@ __all__ = [
 class ModelGQLMutationMeta(type):
     """A metaclass that modifies how a `ModelGQLMutation` is created."""
 
-    def __new__(  # noqa: PLR0913
+    def __new__(
         cls,
         _name: str,
         _bases: tuple[type, ...],
@@ -49,7 +49,9 @@ class ModelGQLMutationMeta(type):
             raise MissingModelError(name=_name, cls="ModelGQLMutation")
 
         if mutation_kind is None:
-            if "create" in _name.lower():
+            if callable(_attrs.get("__mutate__")):
+                mutation_kind: MutationKind = "custom"
+            elif "create" in _name.lower():
                 mutation_kind: MutationKind = "create"
             elif "update" in _name.lower():
                 mutation_kind: MutationKind = "update"
