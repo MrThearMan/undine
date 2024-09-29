@@ -37,7 +37,7 @@ def _(ref: ModelField, **kwargs: Any) -> GraphQLOutputType:
 
 @convert_ref_to_graphql_output_type.register
 def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLOutputType:
-    return convert_model_field_to_graphql_type(ref.output_field)
+    return convert_ref_to_graphql_output_type(ref.output_field)
 
 
 @convert_ref_to_graphql_output_type.register

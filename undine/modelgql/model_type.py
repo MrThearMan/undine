@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from functools import cache
 from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLObjectType, Undefined
 
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
+from undine.utils.decorators import cached_class_method
 from undine.utils.text import get_docstring
 
 from .metaclasses.model_type_meta import ModelGQLTypeMeta
@@ -16,6 +16,11 @@ if TYPE_CHECKING:
 
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import GQLInfo, Root
+
+
+__all__ = [
+    "ModelGQLType",
+]
 
 
 class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
@@ -98,8 +103,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         # Purposely not using `isinstance` here to prevent errors from model inheritance.
         return type(value) is cls.__model__
 
-    @classmethod
-    @cache
+    @cached_class_method
     def __output_type__(cls) -> GraphQLObjectType:
         """
         Creates a `GraphQLObjectType` for this class.
@@ -109,7 +113,7 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
             name=cls.__typename__,
             # Give fields as a callable to delay their creation.
             # This gives time for all ModelGQLTypes to be registered.
-            fields=lambda: {name: field.get_graphql_field() for name, field in cls.__field_map__.items()},
+            fields=lambda: {name: field.as_graphql_field() for name, field in cls.__field_map__.items()},
             description=get_docstring(cls),
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,

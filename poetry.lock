@@ -1359,7 +1359,10 @@ files = [
 [package.extras]
 watchmedo = ["PyYAML (>=3.10)"]
 
+[extras]
+static = ["requests"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4"
-content-hash = "09bbb9c650beb62a003b155c9528373d94dd3e12df25dd30fe9f0552c9c5468c"
+content-hash = "83168a119f6986260f896363c5bd44d26b38dcda7f41b07eaa2d485f7d3525ba"

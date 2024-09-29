@@ -8,7 +8,7 @@ from __future__ import annotations
 import inspect
 import sys
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, Union, get_args, get_origin
+from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
 
 from graphql import Undefined
 
@@ -53,6 +53,7 @@ class FunctionDispatcher(Generic[From, To]):
         self.union_default = union_default
         self.default = Undefined
         self.implementations: dict[From, Callable[[From], To]] = {}
+        self.contains_literals = False
 
     def __class_getitem__(cls, key: tuple[From, To]) -> FunctionDispatcher[From, To]:
         """Adds typing information when instantiating the class."""
@@ -67,21 +68,7 @@ class FunctionDispatcher(Generic[From, To]):
 
         new_key, nullable = self._handle_nullable(key)
         type_ = self._get_key(new_key)
-
-        try:
-            value = self.implementations[type_]
-        except KeyError as error:
-            for parent_type in type_.__mro__[1:]:
-                if parent_type in self.implementations:
-                    value = self.implementations[parent_type]
-                    break
-            else:
-                if self.default is not Undefined:
-                    value = self.default
-                else:
-                    msg = f"'{self.name}' doesn't contain an implementation for '{type_}' ({key})."
-                    raise FunctionDispatcherError(msg) from error
-
+        value = self._get_implementation(key, type_)
         result = value(new_key, **kwargs)
         if return_nullable:
             return result, nullable
@@ -108,6 +95,13 @@ class FunctionDispatcher(Generic[From, To]):
             return func
 
         origin = get_origin(type_)
+
+        if origin is Literal:
+            self.contains_literals = True
+            for name in get_args(type_):
+                self.implementations[name] = self.wrapper(func) if self.wrapper is not None else func
+            return func
+
         keys: list[type] = (
             [origin or type_]
             if origin not in [type, UnionType, Union]
@@ -127,6 +121,27 @@ class FunctionDispatcher(Generic[From, To]):
             self.implementations[key_] = self.wrapper(func) if self.wrapper is not None else func
 
         return func
+
+    def _get_implementation(self, key: From, type_: type) -> Callable[[From], To]:
+        value = self.implementations.get(type_, Undefined)
+        if value is not Undefined:
+            return value
+
+        if self.contains_literals:
+            value = self.implementations.get(key, Undefined)
+            if value is not Undefined:
+                return value
+
+        for parent_type in type_.__mro__[1:]:
+            value = self.implementations.get(parent_type, Undefined)
+            if value is not Undefined:
+                return value
+
+        if self.default is not Undefined:
+            return self.default
+
+        msg = f"'{self.name}' doesn't contain an implementation for '{type_}' ({key})."
+        raise FunctionDispatcherError(msg)
 
     def _get_key(self, key: Any) -> type:
         origin = get_origin(key) or key

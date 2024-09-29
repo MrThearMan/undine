@@ -21,7 +21,9 @@ from undine.utils.dispatcher import FunctionDispatcher
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import to_pascal_case
 
+from .lookup_to_graphql_input_type import convert_lookup_to_graphql_input_type
 from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
+from .model_fields.to_type import convert_model_field_to_type
 from .to_graphql_type import convert_type_to_graphql_type
 
 __all__ = [
@@ -46,26 +48,31 @@ def _(ref: TypeRef, **kwargs: Any) -> GraphQLInputType:
 
 @convert_ref_to_graphql_input_type.register
 def _(ref: ModelField, **kwargs: Any) -> GraphQLInputType:
-    return convert_model_field_to_graphql_type(ref)
+    lookup: str | None = kwargs.get("lookup")
+    if lookup is None:
+        return convert_model_field_to_graphql_type(ref)
+
+    default_type = convert_model_field_to_type(ref)
+    return convert_lookup_to_graphql_input_type(lookup, default_type=default_type)
 
 
 @convert_ref_to_graphql_input_type.register
 def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLInputType:
-    return convert_model_field_to_graphql_type(ref.output_field)
+    return convert_ref_to_graphql_input_type(ref.output_field, **kwargs)
 
 
 @convert_ref_to_graphql_input_type.register
 def _(ref: str, **kwargs: Any) -> GraphQLInputType:
     model: type[models.Model] = kwargs["model"]
     model_field = get_model_field(model=model, lookup=ref)
-    return convert_model_field_to_graphql_type(model_field)
+    return convert_ref_to_graphql_input_type(model_field, **kwargs)
 
 
 @convert_ref_to_graphql_input_type.register
 def _(ref: models.F, **kwargs: Any) -> GraphQLInputType:
     model: type[models.Model] = kwargs["model"]
     model_field = get_model_field(model=model, lookup=ref.name)
-    return convert_model_field_to_graphql_type(model_field)
+    return convert_ref_to_graphql_input_type(model_field, **kwargs)
 
 
 @convert_ref_to_graphql_input_type.register
@@ -81,17 +88,21 @@ def load_deferred_converters() -> None:
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLInputType:
-        return ref.__input_type__(entrypoint=False)
+        for input_ in ref.__input_map__.values():
+            input_.required = False
+        return ref.__input_type__()
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: GenericRelation, **kwargs: Any) -> GraphQLInputType:
         object_id_field = ref.related_model._meta.get_field(ref.object_id_field_name)
-        fk_type = convert_model_field_to_graphql_type(object_id_field)
+        fk_type = convert_ref_to_graphql_input_type(object_id_field, **kwargs)
         return GraphQLList(fk_type)
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLInputType:
         model: type[models.Model] = kwargs["model"]
+        field = ref.model._meta.get_field(ref.fk_field)
+        graphql_type = convert_ref_to_graphql_input_type(field)
         return GraphQLInputObjectType(
             name=f"{model.__name__}{to_pascal_case(ref.name)}Input",
             fields=lambda: {
@@ -106,10 +117,6 @@ def load_deferred_converters() -> None:
                         ),
                     )
                 ),
-                "pk": GraphQLInputField(
-                    GraphQLNonNull(
-                        convert_model_field_to_graphql_type(ref.model._meta.get_field(ref.fk_field)),
-                    ),
-                ),
+                "pk": GraphQLInputField(GraphQLNonNull(graphql_type)),
             },
         )

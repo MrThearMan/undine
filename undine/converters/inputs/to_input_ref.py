@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import datetime
-import uuid
-from decimal import Decimal
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from django.db import models
@@ -24,6 +20,11 @@ __all__ = [
 
 convert_to_input_ref = FunctionDispatcher[Any, InputRef]()
 """Convert the given value to a Undine Input reference."""
+
+
+@convert_to_input_ref.register
+def _(ref: Any, **kwargs: Any) -> InputRef:
+    return TypeRef(ref=ref)
 
 
 @convert_to_input_ref.register
@@ -65,24 +66,3 @@ def load_deferred_converters() -> None:
     @convert_to_input_ref.register
     def _(ref: type[ModelGQLMutation], **kwargs: Any) -> InputRef:
         return ref
-
-
-@convert_to_input_ref.register
-def _(
-    ref: (
-        bool
-        | int
-        | float
-        | Decimal
-        | datetime.datetime
-        | datetime.date
-        | datetime.time
-        | datetime.timedelta
-        | uuid.UUID
-        | Enum
-        | list
-        | dict
-    ),
-    **kwargs: Any,
-) -> InputRef:
-    return TypeRef(ref=ref)  # type: ignore[return-value]

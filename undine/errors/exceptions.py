@@ -172,9 +172,9 @@ class TypeRegistryMissingTypeError(UndineError):
     msg = (
         "A 'ModelGQLType' for model '{model:dotpath}' has not been registered. "
         "Make sure one has been created and registered with "
-        "`class MyType(ModelGQLType, model=MyModel, register=True)`. "
-        "(by default, registration is enabled). For ModelGQLMutation, you can also "
-        "provide the output type with the `output_type` keyword argument."
+        "`class MyType(ModelGQLType, model=MyModel, register=True)` [default]. "
+        "For ModelGQLMutation, you can also provide the output type with the "
+        "`output_type` keyword argument."
     )
 
 

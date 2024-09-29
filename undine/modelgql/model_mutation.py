@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from functools import cache
 from typing import TYPE_CHECKING, Any
 
-from graphql import GraphQLInputObjectType, GraphQLObjectType, Undefined
+from graphql import GraphQLInputField, GraphQLInputObjectType, GraphQLObjectType, Undefined
 
+from undine.utils.decorators import cached_class_method
 from undine.utils.registry import TYPE_REGISTRY
 from undine.utils.text import get_docstring
 
@@ -14,6 +14,11 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
     from undine.typing import GQLInfo, Root
+
+
+__all__ = [
+    "ModelGQLMutation",
+]
 
 
 class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
@@ -60,25 +65,25 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
         :param input_data: The input data for the mutation.
         """
 
-    @classmethod
-    @cache
-    def __input_type__(cls, *, entrypoint: bool = True) -> GraphQLInputObjectType:
+    @cached_class_method
+    def __input_type__(cls) -> GraphQLInputObjectType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
+
+        # Defer creating fields so that self-referential related fields can be created.
+        def fields() -> dict[str, GraphQLInputField]:
+            return {input_name: input_.as_graphql_input() for input_name, input_ in cls.__input_map__.items()}
+
         return GraphQLInputObjectType(
             name=cls.__typename__,
             description=get_docstring(cls),
-            # Defer creating fields so that self-referential related fields can be created.
-            fields=lambda: {
-                input_name: input_.as_input_field(entrypoint=entrypoint)
-                for input_name, input_ in cls.__input_map__.items()
-            },
+            fields=fields,
             extensions=cls.__extensions__,
         )
 
-    @classmethod
+    @cached_class_method
     def __output_type__(cls) -> GraphQLObjectType:
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":

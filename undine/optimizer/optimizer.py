@@ -150,10 +150,10 @@ class QueryOptimizer:
         queryset = filter_info.model_type.__filter_queryset__(queryset, self.info)
         if filter_info.order_by:
             queryset = queryset.order_by(*filter_info.order_by)
-        if filter_info.filters:
-            queryset = queryset.filter(filter_info.filters)
-            if filter_info.distinct:
-                queryset = queryset.distinct()
+        for ftr in filter_info.filters:
+            queryset = queryset.filter(ftr)
+        if filter_info.distinct:
+            queryset = queryset.distinct()
         return queryset
 
     def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
