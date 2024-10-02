@@ -78,8 +78,8 @@ class ModelGQLMutation(metaclass=ModelGQLMutationMeta, model=Undefined):
 
         return GraphQLInputObjectType(
             name=cls.__typename__,
-            description=get_docstring(cls),
             fields=fields,
+            description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
 

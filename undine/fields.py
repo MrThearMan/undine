@@ -36,6 +36,7 @@ from undine.converters import (
 )
 from undine.settings import undine_settings
 from undine.utils.reflection import cache_signature_if_function
+from undine.utils.text import dotpath
 from undine.utils.unsorted import maybe_list_or_non_null
 
 if TYPE_CHECKING:
@@ -93,6 +94,9 @@ class Entrypoint:
         """Called when using as decorator with parenthesis: @Entrypoint()"""
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
+
+    def __repr__(self) -> str:
+        return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
     def as_graphql_field(self) -> GraphQLField:
         return GraphQLField(
@@ -166,6 +170,9 @@ class Field:
         """Called when using as decorator with parenthesis: @Field()"""
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
+
+    def __repr__(self) -> str:
+        return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
     def as_graphql_field(self) -> GraphQLField:
         return GraphQLField(
@@ -248,6 +255,9 @@ class Filter:
         self.ref = cache_signature_if_function(_ref, depth=1)
         return self
 
+    def __repr__(self) -> str:
+        return f"<{dotpath(self.__class__)}(ref={self.ref}, lookup_expr={self.lookup_expr!r})>"
+
     def get_expression(self, value: Any, info: GQLInfo) -> models.Q:
         return self.resolver(self.owner, info, value=value)
 
@@ -308,6 +318,9 @@ class Ordering:
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
 
+    def __repr__(self) -> str:
+        return f"<{dotpath(self.__class__)}(ref={self.ref})>"
+
     def get_expression(self, *, descending: bool = False) -> models.OrderBy:
         return models.OrderBy(self.ref, nulls_first=self.nulls_first, nulls_last=self.nulls_last, descending=descending)
 
@@ -366,6 +379,9 @@ class Input:
             self.required = is_input_required(self.ref, caller=self)
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
+
+    def __repr__(self) -> str:
+        return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
     def as_graphql_input(self) -> GraphQLInputField:
         return GraphQLInputField(

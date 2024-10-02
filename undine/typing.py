@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Iterable,
     Literal,
+    MutableMapping,
     Protocol,
     TypeAlias,
     TypedDict,
@@ -50,7 +51,7 @@ __all__ = [
     "CombinableExpression",
     "DispatchProtocol",
     "DispatchWrapper",
-    "DjangoRequest",
+    "DjangoRequestProtocol",
     "DocstringParserProtocol",
     "EntrypointRef",
     "Expr",
@@ -136,19 +137,23 @@ class DispatchProtocol(Protocol[From, To]):
 # Classes purely for type-hinting.
 
 
-class DjangoRequest(WSGIRequest):
-    user: User | AnonymousUser
-    session: SessionBase
+class DjangoRequestProtocol(Protocol):
+    @property
+    def user(self) -> User | AnonymousUser: ...
+
+    @property
+    def session(self) -> SessionBase | MutableMapping[str, Any]: ...
 
 
-DjangoRequest: TypeAlias = Union[WSGIRequest, DjangoRequest]
+DjangoRequest: TypeAlias = Union[WSGIRequest, DjangoRequestProtocol]
 
 
-class GQLInfo(GraphQLResolveInfo):
-    context: DjangoRequest
+class GQLInfoProtocol(Protocol):
+    @property
+    def context(self) -> DjangoRequestProtocol: ...
 
 
-GQLInfo: TypeAlias = Union[GQLInfo, GraphQLResolveInfo]
+GQLInfo: TypeAlias = Union[GQLInfoProtocol, GraphQLResolveInfo]
 
 
 # Dataclasses

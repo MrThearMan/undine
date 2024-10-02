@@ -4,9 +4,10 @@ import json
 import re
 from contextlib import contextmanager
 from io import BytesIO
-from typing import Any, NamedTuple, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, MutableMapping, NamedTuple, TypedDict, TypeVar
 
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest
 from django.test.client import BOUNDARY
 from urllib3 import encode_multipart_formdata
@@ -15,7 +16,16 @@ from urllib3.fields import RequestField
 from undine.errors.exceptions import UndineError
 from undine.settings import SETTING_NAME, undine_settings
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
 __all__ = [
+    "MockDjangoRequest",
+    "MockGQLInfo",
+    "get_graphql_multipart_spec_request",
+    "has",
+    "like",
+    "override_undine_settings",
     "parametrize_helper",
 ]
 
@@ -31,7 +41,7 @@ class ParametrizeArgs(TypedDict):
 
 def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
     """Construct parametrize input while setting test IDs."""
-    assert __tests, "I need some tests, please!"
+    assert __tests, "I need some tests, please!"  # noqa: S101
     values = list(__tests.values())
     try:
         return ParametrizeArgs(
@@ -44,7 +54,7 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
         raise UndineError(msg) from error
 
 
-class like:
+class like:  # noqa: N801
     """Compares a string to a regular expression pattern."""
 
     def __init__(self, query: str) -> None:
@@ -56,7 +66,7 @@ class like:
         return self.pattern.match(other) is not None
 
 
-class has:
+class has:  # noqa: N801
     """
     Does the compared string contain the specified regular expression patterns?
     Use `str` of `like` objects for "contains" checks, and `bytes` for "excludes" checks.
@@ -75,7 +85,7 @@ class has:
 
 
 @contextmanager
-def override_undine_settings(**kwargs) -> None:
+def override_undine_settings(**kwargs: Any) -> None:
     """Override the undine settings from the given kwargs."""
     old_settings = getattr(settings, SETTING_NAME)
     try:
@@ -138,14 +148,46 @@ def get_graphql_multipart_spec_request(
     data, content_type = encode_multipart_formdata(fields, boundary=BOUNDARY)
 
     request = HttpRequest()
-    request._stream = BytesIO(data)
-    request._read_started = False
+    request._stream = BytesIO(data)  # noqa: SLF001
+    request._read_started = False  # noqa: SLF001
     request.content_type = "multipart/form-data"
     request.META["CONTENT_TYPE"] = content_type
     request.META["CONTENT_LENGTH"] = str(len(data))
     request.method = "POST"
     request.encoding = "utf-8"
-    request._load_post_and_files()
-    request.POST = request._post
-    request.FILES = request._files
+    request._load_post_and_files()  # noqa: SLF001
+    request.POST = request._post  # noqa: SLF001
+    request.FILES = request._files  # noqa: SLF001
     return request
+
+
+class MockDjangoRequest:
+    def __init__(
+        self,
+        *,
+        user: User | AnonymousUser | None = None,
+        session: dict[str, Any] | None = None,
+    ) -> None:
+        self._user = user or AnonymousUser()
+        self._session = session or {}
+
+    @property
+    def user(self) -> User | AnonymousUser:
+        return self._user
+
+    @property
+    def session(self) -> MutableMapping[str, Any]:
+        return self._session
+
+
+class MockGQLInfo:
+    def __init__(
+        self,
+        *,
+        context: MockDjangoRequest | None = None,
+    ) -> None:
+        self._context = context or MockDjangoRequest()
+
+    @property
+    def context(self) -> MockDjangoRequest:
+        return self._context

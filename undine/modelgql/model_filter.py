@@ -52,17 +52,11 @@ class ModelGQLFilter(metaclass=ModelGQLFilterMeta, model=Undefined):
         aliases: dict[str, CombinableExpression] = {}
 
         for filter_name, filter_value in filter_data.items():
-            if filter_name == "ALL":
+            if filter_name == "NOT":
                 results = cls.__build__(filter_value, info)
                 distinct = distinct or results.distinct
                 aliases |= results.aliases
-                filters.extend(results.filters)
-
-            elif filter_name == "NOT":
-                results = cls.__build__(filter_value, info)
-                distinct = distinct or results.distinct
-                aliases |= results.aliases
-                filters.append(reduce(op.and_, (~frt for frt in results.filters)))
+                filters.extend(~frt for frt in results.filters)
 
             elif filter_name in ("AND", "OR", "XOR"):
                 results = cls.__build__(filter_value, info)
@@ -95,15 +89,14 @@ class ModelGQLFilter(metaclass=ModelGQLFilterMeta, model=Undefined):
             extensions=cls.__extensions__,
         )
 
-        def _get_fields() -> dict[str, GraphQLInputField]:
+        def fields() -> dict[str, GraphQLInputField]:
             fields = {name: filter_.as_graphql_input() for name, filter_ in cls.__filter_map__.items()}
             input_field = GraphQLInputField(type_=input_object_type)
             fields["NOT"] = input_field
             fields["AND"] = input_field
             fields["OR"] = input_field
             fields["XOR"] = input_field
-            fields["ALL"] = input_field
             return fields
 
-        input_object_type._fields = _get_fields
+        input_object_type._fields = fields
         return input_object_type

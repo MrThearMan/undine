@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from graphql import GraphQLObjectType, Undefined
+from graphql import GraphQLField, GraphQLObjectType, Undefined
 
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
@@ -109,11 +109,14 @@ class ModelGQLType(metaclass=ModelGQLTypeMeta, model=Undefined):
         Creates a `GraphQLObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
+
+        # Defer creating fields until ModelGQLTypes have been registered.
+        def fields() -> dict[str, GraphQLField]:
+            return {name: field.as_graphql_field() for name, field in cls.__field_map__.items()}
+
         return GraphQLObjectType(
             name=cls.__typename__,
-            # Give fields as a callable to delay their creation.
-            # This gives time for all ModelGQLTypes to be registered.
-            fields=lambda: {name: field.as_graphql_field() for name, field in cls.__field_map__.items()},
+            fields=fields,
             description=get_docstring(cls),
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,
