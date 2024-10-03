@@ -309,6 +309,7 @@ relative_files = true
 
 [tool.coverage.report]
 omit = [
+    "example_project/*",
     "tests/*",
     "docs/*",
     ".venv/*",
