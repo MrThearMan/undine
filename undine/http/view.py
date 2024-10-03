@@ -54,9 +54,9 @@ class GraphQLView(View):
             ):
                 return accepted_type
             if accepted_type.main_type == "application":
-                if accepted_type.sub_type in "graphql-response+json":
+                if accepted_type.sub_type == "graphql-response+json":
                     return accepted_type
-                if accepted_type.sub_type in "json":
+                if accepted_type.sub_type == "json":
                     return accepted_type
         return None
 

@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, MutableMapping, NamedTuple, TypedDict, Ty
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django.http import HttpRequest
+from django.http import HttpHeaders, HttpRequest, QueryDict
 from django.test.client import BOUNDARY
+from django.utils.datastructures import MultiValueDict
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
@@ -18,10 +19,13 @@ from undine.settings import SETTING_NAME, undine_settings
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
+    from django.http.request import MediaType
+
+    from undine.typing import HttpMethod
 
 __all__ = [
-    "MockDjangoRequest",
     "MockGQLInfo",
+    "MockRequest",
     "get_graphql_multipart_spec_request",
     "has",
     "like",
@@ -161,33 +165,47 @@ def get_graphql_multipart_spec_request(
     return request
 
 
-class MockDjangoRequest:
-    def __init__(
+class MockRequest:
+    def __init__(  # noqa: PLR0913
         self,
         *,
+        path: str = "/",
+        method: HttpMethod = "GET",
+        body: bytes | None = None,
+        encoding: str = "utf-8",
         user: User | AnonymousUser | None = None,
-        session: dict[str, Any] | None = None,
+        session: MutableMapping[str, Any] | None = None,
+        accepted_types: list[MediaType] | None = None,
+        headers: HttpHeaders | None = None,
+        scheme: str = "http",
+        content_type: str = "application/json",
     ) -> None:
-        self._user = user or AnonymousUser()
-        self._session = session or {}
+        self.path = path
+        self.method = method
+        self.body = body or b""
+        self.encoding = encoding
+        self.user = user or AnonymousUser()
+        self.session = session or {}
+        self.accepted_types = accepted_types or []
+        self.headers = headers or {}
+        self.scheme = scheme
+        self.content_type = content_type
 
-    @property
-    def user(self) -> User | AnonymousUser:
-        return self._user
-
-    @property
-    def session(self) -> MutableMapping[str, Any]:
-        return self._session
+        self.GET = QueryDict(mutable=True)
+        self.POST = QueryDict(mutable=True)
+        self.COOKIES = {}
+        self.META = {}
+        self.FILES = MultiValueDict()
 
 
 class MockGQLInfo:
     def __init__(
         self,
         *,
-        context: MockDjangoRequest | None = None,
+        context: MockRequest | None = None,
     ) -> None:
-        self._context = context or MockDjangoRequest()
+        self._context = context or MockRequest()
 
     @property
-    def context(self) -> MockDjangoRequest:
+    def context(self) -> MockRequest:
         return self._context

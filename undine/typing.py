@@ -65,6 +65,7 @@ __all__ = [
     "GQLInfo",
     "GraphQLFilterInfo",
     "GraphQLParams",
+    "HttpMethod",
     "InputRef",
     "JsonType",
     "ManyToManyManager",
@@ -240,6 +241,7 @@ DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProt
 MutationInputType: TypeAlias = JsonType | models.Model | list[models.Model] | None
 PostSaveHandler: TypeAlias = Callable[[models.Model], Any]
 TypedDictType: TypeAlias = type(TypedDict(""))
+HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
 
 # Refs
 
