@@ -22,7 +22,11 @@ if TYPE_CHECKING:
 def test_graphql_view__method_not_allowed(method: HttpMethod):
     view = GraphQLView.as_view()
 
-    request = MockRequest(method=method)
+    request = MockRequest(
+        method=method,
+        accepted_types=[MediaType("*/*")],
+        body=b'{"query": "query { hello }"}',
+    )
     response = view(request=request)
 
     assert isinstance(response, HttpMethodNotAllowedResponse)
@@ -31,6 +35,24 @@ def test_graphql_view__method_not_allowed(method: HttpMethod):
     assert response.status_code == 405
     assert response["Allow"] == "GET, POST"
     assert response["Content-Type"] == "text/plain; charset=utf-8"
+
+
+@override_undine_settings(SCHEMA="undine.settings.example_schema")
+def test_graphql_view__content_type__get_request():
+    view = GraphQLView.as_view()
+
+    request = MockRequest(
+        method="GET",
+        accepted_types=[MediaType("*/*")],
+    )
+    request.GET.appendlist("query", "query { hello }")
+    response = view(request=request)
+
+    assert isinstance(response, HttpResponse)
+
+    assert response.content.decode() == '{"data":{"hello":"Hello, World!"}}'
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/graphql-response+json; charset=utf-8"
 
 
 @override_undine_settings(SCHEMA="undine.settings.example_schema")
