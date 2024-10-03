@@ -5,7 +5,7 @@ from tests.helpers import MockGQLInfo
 from undine.filtering import FilterSet
 
 
-def test_model_filter__default():
+def test_filterset__default():
     class MyFilterSet(FilterSet, model=Task): ...
 
     assert MyFilterSet.__model__ == Task
@@ -98,7 +98,7 @@ def test_model_filter__default():
     assert input_type.name == "MyFilterSet"
 
 
-def test_model_filter__one_field():
+def test_filterset__one_field():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -112,7 +112,7 @@ def test_model_filter__one_field():
     assert results.aliases == {}
 
 
-def test_model_filter__two_fields():
+def test_filterset__two_fields():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -127,7 +127,7 @@ def test_model_filter__two_fields():
     assert results.aliases == {}
 
 
-def test_model_filter__and_block():
+def test_filterset__and_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -144,7 +144,7 @@ def test_model_filter__and_block():
     assert results.aliases == {}
 
 
-def test_model_filter__or_block():
+def test_filterset__or_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -161,7 +161,7 @@ def test_model_filter__or_block():
     assert results.aliases == {}
 
 
-def test_model_filter__xor_block():
+def test_filterset__xor_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -178,7 +178,7 @@ def test_model_filter__xor_block():
     assert results.aliases == {}
 
 
-def test_model_filter__not_block():
+def test_filterset__not_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -195,7 +195,7 @@ def test_model_filter__not_block():
     assert results.aliases == {}
 
 
-def test_model_filter__nested_blocks():
+def test_filterset__nested_blocks():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -214,7 +214,7 @@ def test_model_filter__nested_blocks():
     assert results.aliases == {}
 
 
-def test_model_filter__nested_blocks__complex():
+def test_filterset__nested_blocks__complex():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
