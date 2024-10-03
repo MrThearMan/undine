@@ -1,4 +1,6 @@
-from typing import Any, NamedTuple, Optional
+from __future__ import annotations
+
+from typing import Any, NamedTuple
 
 import pytest
 from graphql_relay import offset_to_cursor
@@ -7,7 +9,6 @@ from tests.helpers import parametrize_helper
 from undine.errors.exceptions import PaginationArgumentValidationError
 from undine.pagination import calculate_queryset_slice, validate_pagination_args
 from undine.typing import PaginationArgs
-from undine.utils.reflection import swappable_by_subclassing
 
 
 class PaginationInput(NamedTuple):
@@ -22,14 +23,14 @@ class PaginationInput(NamedTuple):
 class InputParams(NamedTuple):
     pagination_input: PaginationInput
     output: PaginationArgs
-    errors: Optional[str]
+    errors: str | None
 
 
 class PaginationData(NamedTuple):
-    first: Optional[int] = None
-    last: Optional[int] = None
-    after: Optional[int] = None
-    before: Optional[int] = None
+    first: int | None = None
+    last: int | None = None
+    after: int | None = None
+    before: int | None = None
     size: int = 100
 
 
@@ -162,7 +163,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
     except PaginationArgumentValidationError as error:
         if errors is None:
             pytest.fail(f"Unexpected error: {error}")
-        assert str(error) == errors
+        assert str(error) == errors  # noqa: PT017
     else:
         if errors is not None:
             pytest.fail(f"Expected error: {errors}")
@@ -268,40 +269,3 @@ def test_calculate_queryset_slice(pagination_input: PaginationData, start: int, 
     cut = calculate_queryset_slice(**pagination_input._asdict())
     assert cut.start == start
     assert cut.stop == stop
-
-
-def test_swappable_by_subclassing():
-    @swappable_by_subclassing
-    class A:
-        def __init__(self, arg: int = 1) -> None:
-            self.one = arg
-
-    a = A()
-    assert type(a) is A
-    assert a.one == 1
-
-    class B(A):
-        def __init__(self, arg: int = 1) -> None:
-            super().__init__(arg)
-            self.two = arg * 2
-
-    b = A(2)
-    assert type(b) is B
-    assert b.one == 2
-    assert b.two == 4
-
-    class C(A):
-        def __init__(self, arg: int = 1, second_arg: int = 2) -> None:
-            super().__init__(arg)
-            self.three = second_arg * 3
-
-    c = A(3, 4)
-    assert type(c) is C
-    assert c.one == 3
-    assert not hasattr(c, "two")
-    assert c.three == 12
-
-    class D(B): ...
-
-    d = A()
-    assert type(d) is C  # Only direct subclasses are swapped.
