@@ -7,8 +7,8 @@ from graphql import GraphQLFieldResolver
 
 from undine.resolvers import FieldResolver, ModelFieldResolver, ModelManyRelatedResolver
 from undine.typing import CombinableExpression, FieldRef, ModelField
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
     "convert_field_ref_to_resolver",
@@ -35,21 +35,21 @@ def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFieldResolver:
 
 
 @convert_field_ref_to_resolver.register
-def _(ref: LazyModelGQLType, **kwargs: Any) -> GraphQLFieldResolver:
+def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLFieldResolver:
     return convert_field_ref_to_resolver(ref.get_type(), **kwargs)
 
 
 @convert_field_ref_to_resolver.register
-def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLFieldResolver:
+def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLFieldResolver:
     return convert_field_ref_to_resolver(ref.field, **kwargs)
 
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLType
+    from undine.query import QueryType
 
     @convert_field_ref_to_resolver.register
-    def _(_: type[ModelGQLType], **kwargs: Any) -> GraphQLFieldResolver:
+    def _(_: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
         if kwargs["many"]:
             return ModelManyRelatedResolver(name=kwargs["name"])
         return ModelFieldResolver(name=kwargs["name"])

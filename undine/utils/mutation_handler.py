@@ -17,7 +17,7 @@ from undine.utils.model_utils import generic_relations_for_generic_foreign_key, 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine.modelgql.model_mutation import ModelGQLMutation
+    from undine.mutation import MutationType
     from undine.parsers.parse_model_relation_info import RelatedFieldInfo
 
 
@@ -26,11 +26,12 @@ __all__ = [
 ]
 
 
+# TODO: Reduce coupling to MutationType
 class MutationHandler(Generic[TModel]):
     """A class for creating or updating model instances while also handling related model instances."""
 
-    def __init__(self, mutation_class: type[ModelGQLMutation]) -> None:
-        self.mutation_class = mutation_class
+    def __init__(self, mutation_type: type[MutationType]) -> None:
+        self.mutation_type = mutation_type
         self.related_info = parse_model_relation_info(self.model)
 
     def __class_getitem__(cls, item: type[TModel]) -> type[MutationHandler[TModel]]:  # type: ignore[override]
@@ -38,10 +39,10 @@ class MutationHandler(Generic[TModel]):
 
     @property
     def model(self) -> type[models.Model]:
-        return self.mutation_class.__model__
+        return self.mutation_type.__model__
 
     def get_update_or_create(self, data: dict[str, Any]) -> models.Model | None:
-        key = self.mutation_class.__lookup_field__
+        key = self.mutation_type.__lookup_field__
         value = data.pop(key, None)
 
         if value is None:
@@ -83,7 +84,7 @@ class MutationHandler(Generic[TModel]):
 
         for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
             # Input-only fields should be removed from the input data.
-            input_field = self.mutation_class.__input_map__.get(field_name, None)
+            input_field = self.mutation_type.__input_map__.get(field_name, None)
             if input_field is not None and input_field.input_only:
                 if field_name in input_data:
                     post_save_data.input_only_data[field_name] = input_data.pop(field_name)
@@ -121,19 +122,19 @@ class MutationHandler(Generic[TModel]):
 
     def get_related_handler(self, field_name: str) -> MutationHandler:
         """Get the related handler for the given field name."""
-        input_field = self.mutation_class.__input_map__.get(field_name, None)
+        from undine.mutation import MutationTypeMeta
+
+        input_field = self.mutation_type.__input_map__.get(field_name, None)
         if input_field is None:
             msg = (
                 f"Mutation input contains data for a field '{field_name}', "
-                f"which is not defined in the mutation class '{self.mutation_class.__name__}'."
+                f"which is not defined in the mutation class '{self.mutation_type.__name__}'."
             )
             raise GraphQLInvalidInputDataError(msg)
 
-        from undine.modelgql.metaclasses.model_mutation_meta import ModelGQLMutationMeta
-
-        if not isinstance(input_field.ref, ModelGQLMutationMeta):
+        if not isinstance(input_field.ref, MutationTypeMeta):
             msg = (
-                f"Mutation input contains data for a field '{field_name}', which is not a ModelGQLMutation. "
+                f"Mutation input contains data for a field '{field_name}', which is not a Mutation. "
                 "Cannot perform related mutations."
             )
             raise GraphQLInvalidInputDataError(msg)

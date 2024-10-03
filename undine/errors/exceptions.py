@@ -87,8 +87,8 @@ class InvalidParserError(UndineError):
 
 class MismatchingModelError(UndineError):
     """
-    Error raised if provided model for `ModelGQLFilter` or `ModelGQLOrdering`
-    doesn't match model of the given `ModelGQLType`.
+    Error raised if provided model for `FilterSet` or `OrderSet`
+    doesn't match model of the given `QueryType`.
     """
 
     msg = "'{cls}' model '{bad_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
@@ -107,7 +107,7 @@ class MissingFunctionReturnTypeError(UndineError):
 
 
 class MissingModelError(UndineError):
-    """Error raised if no model is provided to `ModelGQLType`, `ModelGQLFilter`, or `ModelGQLOrdering`."""
+    """Error raised if no model is provided to `QueryType`, `FilterSet`, or `OrderSet`."""
 
     msg = "{name} is missing `model` keyword argument in its class definition: `class {name}({cls}, model=MyModel)`."
 
@@ -154,26 +154,26 @@ class FunctionDispatcherError(UndineError):
 
 
 class TypeRegistryDuplicateError(UndineError):
-    """Error raised if trying to register a ModelGQLType for the same model twice."""
+    """Error raised if trying to register a QueryType for the same model twice."""
 
     msg = (
-        "A 'ModelGQLType' for model '{model:dotpath}' "
+        "A 'QueryType' for model '{model:dotpath}' "
         "has already been registered: '{graphql_type:dotpath}'. "
         "Use a proxy model or disable registration with "
-        "`class MyType(ModelGQLType, model=MyModel, register=False)`. "
-        "Note that the registered 'ModelGQLType' will be used when creating "
+        "`class MyType(QueryType, model=MyModel, register=False)`. "
+        "Note that the registered 'QueryType' will be used when creating "
         "resolvers for related fields automatically."
     )
 
 
 class TypeRegistryMissingTypeError(UndineError):
-    """Error raised when a ModelGQLType for a model is not registered in the TypeRegistry."""
+    """Error raised when a QueryType for a model is not registered in the TypeRegistry."""
 
     msg = (
-        "A 'ModelGQLType' for model '{model:dotpath}' has not been registered. "
+        "A 'QueryType' for model '{model:dotpath}' has not been registered. "
         "Make sure one has been created and registered with "
-        "`class MyType(ModelGQLType, model=MyModel, register=True)` [default]. "
-        "For ModelGQLMutation, you can also provide the output type with the "
+        "`class MyType(QueryType, model=MyModel, register=True)` [default]. "
+        "For Mutation, you can also provide the output type with the "
         "`output_type` keyword argument."
     )
 

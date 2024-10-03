@@ -12,12 +12,12 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, FieldRef, ToManyField, ToOneField
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
-    from undine.fields import Field
+    from undine import Field
 
 
 __all__ = [
@@ -26,7 +26,7 @@ __all__ = [
 
 
 convert_to_field_ref = FunctionDispatcher[Any, FieldRef]()
-"""Convert the given value to a Undine Field reference."""
+"""Convert the given value to a undine.Field reference."""
 
 
 @convert_to_field_ref.register
@@ -60,7 +60,7 @@ def _(ref: models.Field, **kwargs: Any) -> FieldRef:
 
 @convert_to_field_ref.register
 def _(ref: ToOneField | ToManyField, **kwargs: Any) -> FieldRef:
-    return LazyModelGQLType(field=ref)
+    return LazyQueryType(field=ref)
 
 
 @convert_to_field_ref.register
@@ -77,16 +77,16 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
-    from undine import ModelGQLType
+    from undine.query import QueryType
 
     @convert_to_field_ref.register
-    def _(ref: type[ModelGQLType], **kwargs: Any) -> FieldRef:
+    def _(ref: type[QueryType], **kwargs: Any) -> FieldRef:
         return ref
 
     @convert_to_field_ref.register
     def _(ref: GenericRelation, **kwargs: Any) -> FieldRef:
-        return LazyModelGQLType(field=ref)
+        return LazyQueryType(field=ref)
 
     @convert_to_field_ref.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
-        return LazyModelGQLTypeUnion(field=ref)
+        return LazyQueryTypeUnion(field=ref)

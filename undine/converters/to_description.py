@@ -4,8 +4,8 @@ from typing import Any
 
 from undine.parsers import docstring_parser
 from undine.typing import Expr, ModelField, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 from undine.utils.text import get_docstring
 
 __all__ = [
@@ -39,12 +39,12 @@ def _(_: TypeRef) -> Any:
 
 
 @convert_to_description.register
-def _(ref: LazyModelGQLType) -> Any:
+def _(ref: LazyQueryType) -> Any:
     return convert_to_description(ref.field)
 
 
 @convert_to_description.register
-def _(ref: LazyModelGQLTypeUnion) -> Any:
+def _(ref: LazyQueryTypeUnion) -> Any:
     return convert_to_description(ref.field)
 
 

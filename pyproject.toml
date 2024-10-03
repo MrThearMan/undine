@@ -221,9 +221,6 @@ lint.ignore = [
     # ignore "int | float"
     "PYI041",
 ]
-"undine/fields.py" = [
-    "PLR0913",  # Fields contain many __init__ arguments
-]
 "example_project/app/management/commands/create_test_data.py" = [
     "T201",     # Allowing print statements for debugging here
     "PLR0915",  # Test data creation is long on purpose
@@ -293,7 +290,7 @@ property-decorators = [
 max-complexity = 12
 
 [tool.ruff.lint.pylint]
-max-args = 8
+max-args = 9
 
 [tool.mypy]
 python_version = "3.12"

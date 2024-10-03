@@ -1,18 +1,20 @@
-from .fields import Entrypoint, Field, Filter, Input, Ordering
+from .filtering import Filter, FilterSet
 from .http.view import GraphQLView
-from .modelgql import ModelGQLFilter, ModelGQLMutation, ModelGQLOrdering, ModelGQLType
-from .schema import create_schema
+from .mutation import Input, MutationType
+from .ordering import Order, OrderSet
+from .query import Field, QueryType
+from .schema import Entrypoint, create_schema
 
 __all__ = [
     "Entrypoint",
     "Field",
     "Filter",
+    "FilterSet",
     "GraphQLView",
     "Input",
-    "ModelGQLFilter",
-    "ModelGQLMutation",
-    "ModelGQLOrdering",
-    "ModelGQLType",
-    "Ordering",
+    "MutationType",
+    "Order",
+    "OrderSet",
+    "QueryType",
     "create_schema",
 ]

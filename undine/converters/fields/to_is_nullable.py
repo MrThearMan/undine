@@ -7,8 +7,8 @@ from django.db import models
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, FieldRef
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
     "is_field_nullable",
@@ -48,12 +48,12 @@ def _(ref: CombinableExpression) -> bool:
 
 
 @is_field_nullable.register
-def _(ref: LazyModelGQLType) -> bool:
+def _(ref: LazyQueryType) -> bool:
     return is_field_nullable(ref.field)
 
 
 @is_field_nullable.register
-def _(_: LazyModelGQLTypeUnion) -> bool:
+def _(_: LazyQueryTypeUnion) -> bool:
     return False
 
 

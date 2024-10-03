@@ -7,7 +7,7 @@ from decimal import Decimal
 from django.db import models
 
 from undine.typing import ToManyField, ToOneField
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_model_field_to_type",

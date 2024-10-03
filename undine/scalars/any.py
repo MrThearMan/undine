@@ -7,7 +7,7 @@ from graphql import GraphQLScalarType
 from graphql.type.scalars import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 
 __all__ = [

@@ -9,8 +9,8 @@ from undine.converters.to_graphql_type import convert_type_to_graphql_type
 from undine.parsers import docstring_parser, parse_parameters
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, FieldRef, ModelField
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 from undine.utils.text import get_docstring, get_schema_name
 
 __all__ = [
@@ -51,30 +51,30 @@ def _(_: ModelField | CombinableExpression, **kwargs: Any) -> GraphQLArgumentMap
 
 
 @convert_field_ref_to_graphql_argument_map.register
-def _(ref: LazyModelGQLType, **kwargs: Any) -> GraphQLArgumentMap:
+def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLArgumentMap:
     return convert_field_ref_to_graphql_argument_map(ref.get_type(), **kwargs)
 
 
 @convert_field_ref_to_graphql_argument_map.register
-def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
+def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
 
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLType
+    from undine.query import QueryType
 
     @convert_field_ref_to_graphql_argument_map.register
-    def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLArgumentMap:
+    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
         if not kwargs["many"]:
             return {}
 
         arguments: GraphQLArgumentMap = {}
-        if ref.__filters__:
-            input_type = ref.__filters__.__input_type__()
+        if ref.__filterset__:
+            input_type = ref.__filterset__.__input_type__()
             arguments[undine_settings.FILTER_INPUT_TYPE_KEY] = GraphQLArgument(input_type)
-        if ref.__ordering__:
-            enum_type = ref.__ordering__.__enum_type__()
+        if ref.__orderset__:
+            enum_type = ref.__orderset__.__enum_type__()
             enum_type = GraphQLList(GraphQLNonNull(enum_type))
             arguments[undine_settings.ORDER_BY_INPUT_TYPE_KEY] = GraphQLArgument(enum_type)
         return arguments

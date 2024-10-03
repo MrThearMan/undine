@@ -5,7 +5,7 @@ from typing import Any
 from django.db import models
 
 from undine.typing import InputRef, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
     "is_input_only",
@@ -30,10 +30,10 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine import ModelGQLMutation
+    from undine.mutation import MutationType
 
     @is_input_only.register
-    def _(_: type[ModelGQLMutation], **kwargs: Any) -> bool:
+    def _(_: type[MutationType], **kwargs: Any) -> bool:
         return False
 
     @is_input_only.register

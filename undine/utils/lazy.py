@@ -7,18 +7,18 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, TypeVar
 
+from undine.registry import TYPE_REGISTRY
 from undine.typing import RelatedField, empty
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key
-from undine.utils.registry import TYPE_REGISTRY
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine import ModelGQLType
+    from undine.query import QueryType
 
 __all__ = [
-    "LazyModelGQLType",
-    "LazyModelGQLTypeUnion",
+    "LazyQueryType",
+    "LazyQueryTypeUnion",
     "lazy",
 ]
 
@@ -26,22 +26,22 @@ R = TypeVar("R")
 
 
 @dataclass(frozen=True, slots=True)
-class LazyModelGQLType:
-    """Represents a lazily evaluated ModelGQLType for a related field."""
+class LazyQueryType:
+    """Represents a lazily evaluated QueryType for a related field."""
 
     field: RelatedField
 
-    def get_type(self) -> type[ModelGQLType]:
+    def get_type(self) -> type[QueryType]:
         return TYPE_REGISTRY[self.field.related_model]
 
 
 @dataclass(frozen=True, slots=True)
-class LazyModelGQLTypeUnion:
-    """Represents a lazily evaluated ModelGQLType for a related field."""
+class LazyQueryTypeUnion:
+    """Represents a lazily evaluated QueryType for a related field."""
 
     field: GenericForeignKey
 
-    def get_types(self) -> list[type[ModelGQLType]]:
+    def get_types(self) -> list[type[QueryType]]:
         return [
             TYPE_REGISTRY[field.remote_field.related_model]
             for field in generic_relations_for_generic_foreign_key(self.field)

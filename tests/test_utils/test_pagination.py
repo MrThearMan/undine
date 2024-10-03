@@ -5,8 +5,8 @@ from graphql_relay import offset_to_cursor
 
 from tests.helpers import parametrize_helper
 from undine.errors.exceptions import PaginationArgumentValidationError
+from undine.pagination import calculate_queryset_slice, validate_pagination_args
 from undine.typing import PaginationArgs
-from undine.utils.pagination import calculate_queryset_slice, validate_pagination_args
 from undine.utils.reflection import swappable_by_subclassing
 
 

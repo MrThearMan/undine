@@ -3,16 +3,16 @@ from django.db import models
 
 from example_project.app.models import Comment, Task
 from example_project.app.types import (
-    CommentNode,
-    PersonNode,
-    ProjectNode,
-    ReportNode,
-    ServiceRequestNode,
+    CommentType,
+    PersonType,
+    ProjectType,
+    ReportType,
+    ServiceRequestType,
     TaskNode,
-    TaskResultNode,
-    TaskStepNode,
+    TaskResultType,
+    TaskStepType,
 )
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion, lazy
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion, lazy
 
 
 def test_lazy():
@@ -42,34 +42,34 @@ def test_lazy_model_gql_type__forward_one_to_one():
     field = Task._meta.get_field("request")
     assert isinstance(field, models.OneToOneField)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == ServiceRequestNode
+    assert gql_type == ServiceRequestType
 
 
 def test_lazy_model_gql_type__forward_many_to_one():
     field = Task._meta.get_field("project")
     assert isinstance(field, models.ForeignKey)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == ProjectNode
+    assert gql_type == ProjectType
 
 
 def test_lazy_model_gql_type__forward_many_to_many():
     field = Task._meta.get_field("assignees")
     assert isinstance(field, models.ManyToManyField)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == PersonNode
+    assert gql_type == PersonType
 
 
 def test_lazy_model_gql_type__forward_many_to_many__self():
     field = Task._meta.get_field("related_tasks")
     assert isinstance(field, models.ManyToManyField)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
     assert gql_type == TaskNode
 
@@ -78,45 +78,45 @@ def test_lazy_model_gql_type__reverse_one_to_one():
     field = Task._meta.get_field("result")
     assert isinstance(field, models.OneToOneRel)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == TaskResultNode
+    assert gql_type == TaskResultType
 
 
 def test_lazy_model_gql_type__reverse_one_to_many():
     field = Task._meta.get_field("steps")
     assert isinstance(field, models.ManyToOneRel)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == TaskStepNode
+    assert gql_type == TaskStepType
 
 
 def test_lazy_model_gql_type__reverse_many_to_many():
     field = Task._meta.get_field("reports")
     assert isinstance(field, models.ManyToManyRel)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == ReportNode
+    assert gql_type == ReportType
 
 
 def test_lazy_model_gql_type__generic_relation():
     field = Task._meta.get_field("comments")
     assert isinstance(field, GenericRelation)
 
-    lazy_type = LazyModelGQLType(field=field)
+    lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == CommentNode
+    assert gql_type == CommentType
 
 
 def test_lazy_model_gql_type_union__generic_foreign_key():
     field = Comment._meta.get_field("target")
     assert isinstance(field, GenericForeignKey)
 
-    lazy_type = LazyModelGQLTypeUnion(field=field)
+    lazy_type = LazyQueryTypeUnion(field=field)
     gql_type = lazy_type.get_types()
     assert isinstance(gql_type, list)
     assert len(gql_type) == 2
-    assert gql_type[0] == ProjectNode
+    assert gql_type[0] == ProjectType
     assert gql_type[1] == TaskNode

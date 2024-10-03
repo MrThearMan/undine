@@ -2,17 +2,17 @@ from django.db.models import Q
 
 from example_project.app.models import Task, TaskType
 from tests.helpers import MockGQLInfo
-from undine import ModelGQLFilter
+from undine.filtering import FilterSet
 
 
 def test_model_filter__default():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
-    assert MyFilter.__model__ == Task
-    assert MyFilter.__typename__ == "MyFilter"
-    assert MyFilter.__extensions__ == {"undine_filter_input": MyFilter}
+    assert MyFilterSet.__model__ == Task
+    assert MyFilterSet.__typename__ == "MyFilterSet"
+    assert MyFilterSet.__extensions__ == {"undine_filter_input": MyFilterSet}
 
-    filter_map = MyFilter.__filter_map__
+    filter_map = MyFilterSet.__filter_map__
 
     assert sorted(filter_map) == [
         "createdAtContains",
@@ -93,19 +93,19 @@ def test_model_filter__default():
         "typeStartswith",
     ]
 
-    input_type = MyFilter.__input_type__()
+    input_type = MyFilterSet.__input_type__()
 
-    assert input_type.name == "MyFilter"
+    assert input_type.name == "MyFilterSet"
 
 
 def test_model_filter__one_field():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "nameExact": "foo",
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [Q(name__exact="foo")]
     assert results.distinct is False
@@ -113,14 +113,14 @@ def test_model_filter__one_field():
 
 
 def test_model_filter__two_fields():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "nameExact": "foo",
         "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [Q(name__exact="foo"), Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -128,7 +128,7 @@ def test_model_filter__two_fields():
 
 
 def test_model_filter__and_block():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "AND": {
@@ -137,7 +137,7 @@ def test_model_filter__and_block():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [Q(name__exact="foo") & Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -145,7 +145,7 @@ def test_model_filter__and_block():
 
 
 def test_model_filter__or_block():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "OR": {
@@ -154,7 +154,7 @@ def test_model_filter__or_block():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [Q(name__exact="foo") | Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -162,7 +162,7 @@ def test_model_filter__or_block():
 
 
 def test_model_filter__xor_block():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "XOR": {
@@ -171,7 +171,7 @@ def test_model_filter__xor_block():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [Q(name__exact="foo") ^ Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -179,7 +179,7 @@ def test_model_filter__xor_block():
 
 
 def test_model_filter__not_block():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "NOT": {
@@ -188,7 +188,7 @@ def test_model_filter__not_block():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [~Q(name__exact="foo"), ~Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -196,7 +196,7 @@ def test_model_filter__not_block():
 
 
 def test_model_filter__nested_blocks():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "OR": {
@@ -207,7 +207,7 @@ def test_model_filter__nested_blocks():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [~Q(name__exact="foo") | ~Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
     assert results.distinct is False
@@ -215,7 +215,7 @@ def test_model_filter__nested_blocks():
 
 
 def test_model_filter__nested_blocks__complex():
-    class MyFilter(ModelGQLFilter, model=Task): ...
+    class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
         "OR": {
@@ -232,7 +232,7 @@ def test_model_filter__nested_blocks__complex():
         },
     }
 
-    results = MyFilter.__build__(filter_data=data, info=MockGQLInfo())
+    results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
     assert results.filters == [
         ~Q(name__exact="foo")

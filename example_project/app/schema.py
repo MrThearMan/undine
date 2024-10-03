@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from example_project.app.mutations import TaskCreateMutation
-from example_project.app.types import ReportNode, TaskNode
+from example_project.app.mutations import TaskCreateMutationType
+from example_project.app.types import ReportType, TaskNode
 from undine import Entrypoint, create_schema
 
 
 class Query:
     task = Entrypoint(TaskNode)
     tasks = Entrypoint(TaskNode, many=True)
-    reports = Entrypoint(ReportNode, many=True)
+    reports = Entrypoint(ReportType, many=True)
 
     @Entrypoint
     def function(self, arg: str = "None") -> list[str]:
@@ -21,7 +21,7 @@ class Query:
 
 
 class Mutation:
-    create_task = Entrypoint(TaskCreateMutation)
+    create_task = Entrypoint(TaskCreateMutationType)
 
 
 schema = create_schema(query_class=Query, mutation_class=Mutation)

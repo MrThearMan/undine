@@ -21,7 +21,7 @@ from undine.settings import undine_settings
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
-    from undine import ModelGQLType
+    from undine.query import QueryType
     from undine.typing import GQLInfo, ModelField, Selections, ToManyField, ToOneField
 
 __all__ = [
@@ -154,7 +154,7 @@ class GraphQLASTWalker:
         selections = get_selections(inline_fragment)
         return self.handle_selections(fragment_type, selections)
 
-    def get_model_type(self, field_type: GraphQLOutputType) -> type[ModelGQLType] | None:
+    def get_model_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
         return field_type.extensions.get(undine_settings.MODEL_TYPE_EXTENSIONS_KEY)
 
     def get_model(self, field_type: GraphQLOutputType) -> type[Model] | None:

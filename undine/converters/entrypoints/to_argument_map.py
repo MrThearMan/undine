@@ -9,7 +9,7 @@ from undine.converters.fields.to_argument_map import convert_field_ref_to_graphq
 from undine.converters.model_fields.to_graphql_type import convert_model_field_to_graphql_type
 from undine.settings import undine_settings
 from undine.typing import EntrypointRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 from undine.utils.text import get_schema_name
 
@@ -29,10 +29,11 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLMutation, ModelGQLType
+    from undine.mutation import MutationType
+    from undine.query import QueryType
 
     @convert_entrypoint_ref_to_graphql_argument_map.register
-    def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLArgumentMap:
+    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
         if kwargs["many"]:
             return convert_field_ref_to_graphql_argument_map(ref, many=True)
 
@@ -45,7 +46,7 @@ def load_deferred_converters() -> None:
         return {get_schema_name(field_name): GraphQLArgument(input_type)}
 
     @convert_entrypoint_ref_to_graphql_argument_map.register
-    def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLArgumentMap:
+    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:
         input_type = ref.__input_type__()
         input_type = GraphQLNonNull(input_type)
         return {undine_settings.MUTATION_INPUT_TYPE_KEY: GraphQLArgument(input_type)}

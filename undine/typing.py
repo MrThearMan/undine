@@ -43,8 +43,9 @@ if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
     from django.db.models.sql import Query
 
-    from undine import ModelGQLMutation, ModelGQLType
-    from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+    from undine.mutation import MutationType
+    from undine.query import QueryType
+    from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
     "CombinableExpression",
@@ -71,8 +72,8 @@ __all__ = [
     "MutationInputType",
     "MutationKind",
     "OneToManyManager",
-    "OrderingRef",
-    "OrderingResults",
+    "OrderRef",
+    "OrderResults",
     "Parameter",
     "PostSaveHandler",
     "QuerySetResolver",
@@ -168,7 +169,7 @@ class Parameter:
 
 @dataclass(slots=True)
 class GraphQLFilterInfo:
-    model_type: type[ModelGQLType]
+    model_type: type[QueryType]
     filters: list[models.Q] | None = None
     distinct: bool = False
     aliases: dict[str, CombinableExpression] = dataclasses.field(default_factory=dict)
@@ -184,7 +185,7 @@ class FilterResults:
 
 
 @dataclass(frozen=True, slots=True)
-class OrderingResults:
+class OrderResults:
     order_by: list[models.OrderBy]
 
 
@@ -243,16 +244,16 @@ TypedDictType: TypeAlias = type(TypedDict(""))
 # Refs
 
 EntrypointRef: TypeAlias = Union[
-    type["ModelGQLType"],
-    type["ModelGQLMutation"],
+    type["QueryType"],
+    type["MutationType"],
     FunctionType,
 ]
 FieldRef: TypeAlias = Union[
     models.Field,
     models.ForeignObjectRel,
-    type["ModelGQLType"],
-    "LazyModelGQLType",
-    "LazyModelGQLTypeUnion",
+    type["QueryType"],
+    "LazyQueryType",
+    "LazyQueryTypeUnion",
     models.Expression,
     models.Subquery,
     FunctionType,
@@ -265,14 +266,14 @@ FilterRef: TypeAlias = Union[
     models.Subquery,
     FunctionType,
 ]
-OrderingRef: TypeAlias = Union[
+OrderRef: TypeAlias = Union[
     models.F,
     models.Expression,
     models.Subquery,
 ]
 InputRef: TypeAlias = Union[
     models.Field,
-    type["ModelGQLMutation"],
+    type["MutationType"],
     TypeRef,
 ]
 

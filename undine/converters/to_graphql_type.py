@@ -34,7 +34,7 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.typing import TypedDictType, eval_type
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.text import get_docstring
 
 __all__ = [

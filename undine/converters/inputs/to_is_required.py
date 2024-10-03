@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from undine.typing import InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
-    from undine.fields import Input
+    from undine import Input
 
 __all__ = [
     "is_input_required",
@@ -42,10 +42,10 @@ def load_deferred_converters() -> None:  # pragma: no cover
     # See. `undine.apps.UndineConfig.ready()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine import ModelGQLMutation
+    from undine.mutation import MutationType
 
     @is_input_required.register
-    def _(_: type[ModelGQLMutation], **kwargs: Any) -> bool:
+    def _(_: type[MutationType], **kwargs: Any) -> bool:
         caller: Input = kwargs["caller"]
         field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
         return is_input_required(field, caller=caller)

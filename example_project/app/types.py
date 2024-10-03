@@ -18,43 +18,46 @@ from example_project.app.models import (
     TaskStep,
     Team,
 )
-from undine import Field, Filter, ModelGQLFilter, ModelGQLOrdering, ModelGQLType, Ordering
+from undine import Field, Filter, Order
+from undine.filtering import FilterSet
+from undine.ordering import OrderSet
+from undine.query import QueryType
 
 if TYPE_CHECKING:
     from undine.typing import GQLInfo
 
 
-class ContentTypeNode(ModelGQLType, model=ContentType, exclude=["logentry", "permission"]): ...
+class ContentTypeType(QueryType, model=ContentType, exclude=["logentry", "permission"]): ...
 
 
-class PersonNode(ModelGQLType, model=Person): ...
+class PersonType(QueryType, model=Person): ...
 
 
-class CommentNode(ModelGQLType, model=Comment): ...
+class CommentType(QueryType, model=Comment): ...
 
 
-class ServiceRequestNode(ModelGQLType, model=ServiceRequest): ...
+class ServiceRequestType(QueryType, model=ServiceRequest): ...
 
 
-class TeamNode(ModelGQLType, model=Team): ...
+class TeamType(QueryType, model=Team): ...
 
 
-class ProjectNode(ModelGQLType, model=Project): ...
+class ProjectType(QueryType, model=Project): ...
 
 
-class TaskResultNode(ModelGQLType, model=TaskResult): ...
+class TaskResultType(QueryType, model=TaskResult): ...
 
 
-class TaskStepNode(ModelGQLType, model=TaskStep): ...
+class TaskStepType(QueryType, model=TaskStep): ...
 
 
-class AcceptanceCriteriaNode(ModelGQLType, model=AcceptanceCriteria): ...
+class AcceptanceCriteriaType(QueryType, model=AcceptanceCriteria): ...
 
 
-class ReportNode(ModelGQLType, model=Report, filters=True, ordering=True): ...
+class ReportType(QueryType, model=Report, filterset=True, orderset=True): ...
 
 
-class TaskFilter(ModelGQLFilter, model=Task):
+class TaskFilterSet(FilterSet, model=Task):
     """Filter description."""
 
     has_project = Filter(models.Q(project__isnull=False))
@@ -66,12 +69,12 @@ class TaskFilter(ModelGQLFilter, model=Task):
         return models.Q(created_at__lt=Now()) if value else models.Q(created_at__gte=Now())
 
 
-class TaskOrdering(ModelGQLOrdering, model=Task):
-    """Ordering description."""
+class TaskOrderSet(OrderSet, model=Task):
+    """Order description."""
 
-    name = Ordering("name")
-    custom = Ordering(models.F("created_at"))
-    length = Ordering(Length("name"))
+    name = Order("name")
+    custom = Order(models.F("created_at"))
+    length = Order(Length("name"))
 
 
 class CustomerDetails(TypedDict):
@@ -79,7 +82,7 @@ class CustomerDetails(TypedDict):
     age: int
 
 
-class TaskNode(ModelGQLType, model=Task, filters=TaskFilter, ordering=TaskOrdering):
+class TaskNode(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet):
     """Task Node description."""
 
     assignee_count = Field(Coalesce(models.Count("assignees"), 0))

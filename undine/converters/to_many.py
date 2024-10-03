@@ -7,8 +7,8 @@ from django.db import models
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, ModelField, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 
 __all__ = [
@@ -44,12 +44,12 @@ def _(_: CombinableExpression, **kwargs: Any) -> bool:
 
 
 @is_many.register
-def _(ref: LazyModelGQLType, **kwargs: Any) -> bool:
+def _(ref: LazyQueryType, **kwargs: Any) -> bool:
     return is_many(ref.field)
 
 
 @is_many.register
-def _(_: LazyModelGQLTypeUnion, **kwargs: Any) -> bool:
+def _(_: LazyQueryTypeUnion, **kwargs: Any) -> bool:
     return False
 
 
@@ -57,17 +57,18 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine import ModelGQLMutation, ModelGQLType
+    from undine.mutation import MutationType
+    from undine.query import QueryType
 
     @is_many.register
-    def _(_: ModelGQLType, **kwargs: Any) -> bool:
+    def _(_: QueryType, **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
         field = get_model_field(model=model, lookup=name)
         return is_many(field, **kwargs)
 
     @is_many.register
-    def _(_: ModelGQLMutation, **kwargs: Any) -> bool:
+    def _(_: MutationType, **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
         field = get_model_field(model=model, lookup=name)

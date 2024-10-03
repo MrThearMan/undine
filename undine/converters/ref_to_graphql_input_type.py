@@ -17,7 +17,7 @@ from graphql import (
 
 from undine.parsers import parse_first_param_type
 from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import to_pascal_case
 
@@ -84,10 +84,10 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
-    from undine import ModelGQLMutation
+    from undine.mutation import MutationType
 
     @convert_ref_to_graphql_input_type.register
-    def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLInputType:
+    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLInputType:
         for input_ in ref.__input_map__.values():
             input_.required = False
         return ref.__input_type__()

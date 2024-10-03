@@ -8,7 +8,7 @@ import pytest
 from graphql import Undefined
 
 from undine.errors.exceptions import FunctionDispatcherError
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 
 def test_function_dispatcher__name() -> None:

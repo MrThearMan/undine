@@ -7,7 +7,7 @@ from graphql import GraphQLFieldResolver
 
 from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FieldResolver, UpdateResolver
 from undine.typing import EntrypointRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_entrypoint_ref_to_resolver",
@@ -25,15 +25,16 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLMutation, ModelGQLType
+    from undine.mutation import MutationType
+    from undine.query import QueryType
 
     @convert_entrypoint_ref_to_resolver.register
-    def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLFieldResolver:
+    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
         many: bool = kwargs["many"]
         return ref.__resolve_many__ if many else ref.__resolve_one__
 
     @convert_entrypoint_ref_to_resolver.register
-    def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLFieldResolver:
+    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
         if ref.__mutation_kind__ == "create":
             return CreateResolver(model_mutation=ref)
         if ref.__mutation_kind__ == "update":

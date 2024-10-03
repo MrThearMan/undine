@@ -8,8 +8,8 @@ from graphql import GraphQLError, GraphQLOutputType, GraphQLUnionType
 
 from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, EntrypointRef, FieldRef, GQLInfo, ModelField
-from undine.utils.dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyModelGQLType, LazyModelGQLTypeUnion
+from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 from undine.utils.text import dotpath, to_pascal_case
 
 from .model_fields.to_graphql_type import convert_model_field_to_graphql_type
@@ -41,12 +41,12 @@ def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLOutputType:
 
 
 @convert_ref_to_graphql_output_type.register
-def _(ref: LazyModelGQLType, **kwargs: Any) -> GraphQLOutputType:
+def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLOutputType:
     return convert_ref_to_graphql_output_type(ref.get_type(), **kwargs)
 
 
 @convert_ref_to_graphql_output_type.register
-def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLOutputType:
+def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLOutputType:
     type_map = {model_type.__model__: convert_ref_to_graphql_output_type(model_type) for model_type in ref.get_types()}
 
     def resolve_type(obj: type[models.Model], info: GQLInfo, union_type: GraphQLUnionType) -> Any:
@@ -68,12 +68,13 @@ def _(ref: LazyModelGQLTypeUnion, **kwargs: Any) -> GraphQLOutputType:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLMutation, ModelGQLType
+    from undine.mutation import MutationType
+    from undine.query import QueryType
 
     @convert_ref_to_graphql_output_type.register
-    def _(ref: type[ModelGQLType], **kwargs: Any) -> GraphQLOutputType:
+    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLOutputType:
         return ref.__output_type__()
 
     @convert_ref_to_graphql_output_type.register
-    def _(ref: type[ModelGQLMutation], **kwargs: Any) -> GraphQLOutputType:
+    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLOutputType:
         return ref.__output_type__()

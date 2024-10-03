@@ -6,12 +6,11 @@ from django.db import models
 from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import InputRef, ModelField, TypeRef
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
-    from undine.fields import Input
-
+    from undine import Input
 
 __all__ = [
     "convert_to_input_ref",
@@ -19,7 +18,7 @@ __all__ = [
 
 
 convert_to_input_ref = FunctionDispatcher[Any, InputRef]()
-"""Convert the given value to a Undine Input reference."""
+"""Convert the given value to a undine.Input reference."""
 
 
 @convert_to_input_ref.register
@@ -61,8 +60,8 @@ def _(ref: DeferredAttribute, **kwargs: Any) -> InputRef:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
-    from undine import ModelGQLMutation
+    from undine.mutation import MutationType
 
     @convert_to_input_ref.register
-    def _(ref: type[ModelGQLMutation], **kwargs: Any) -> InputRef:
+    def _(ref: type[MutationType], **kwargs: Any) -> InputRef:
         return ref

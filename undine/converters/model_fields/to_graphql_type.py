@@ -26,7 +26,7 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
     "convert_model_field_to_graphql_type",

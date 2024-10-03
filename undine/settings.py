@@ -42,10 +42,10 @@ class DefaultSettings(NamedTuple):
     """The key used to store a Filter in the argument GraphQL extensions."""
 
     FILTER_INPUT_EXTENSIONS_KEY: str = "undine_filter_input"
-    """The key used to store a ModelGQLFilter in the argument GraphQL extensions."""
+    """The key used to store a FilterSet in the argument GraphQL extensions."""
 
     FILTER_INPUT_TYPE_KEY: str = "filter"
-    """The key used for the filter input type of a ModelGQLType."""
+    """The key used for the filter input type of a QueryType."""
 
     INPUT_EXTENSIONS_KEY: str = "undine_input"
     """The key used to store a Input in the argument GraphQL extensions."""
@@ -66,25 +66,25 @@ class DefaultSettings(NamedTuple):
     """Middleware to use for in the GraphQL execution."""
 
     MODEL_TYPE_EXTENSIONS_KEY: str = "undine_type"
-    """The key used to store a ModelGQLType in the object type GraphQL extensions."""
+    """The key used to store a QueryType in the object type GraphQL extensions."""
 
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
     """The key used to store a Input in the argument GraphQL extensions."""
 
     MUTATION_INPUT_EXTENSIONS_KEY: str = "undine_mutation_input"
-    """The key used to store a ModelGQLMutation in the argument GraphQL extensions."""
+    """The key used to store a Mutation in the argument GraphQL extensions."""
 
     MUTATION_INPUT_TYPE_KEY: str = "input"
-    """The key used for the input argument of a ModelGQLMutation."""
+    """The key used for the input argument of a Mutation."""
 
     OPTIMIZER_MAX_COMPLEXITY: int = 10
     """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
 
     ORDER_BY_EXTENSIONS_KEY: str = "undine_order_by"
-    """The key used to store a Ordering in the argument GraphQL extensions."""
+    """The key used to store a Order in the argument GraphQL extensions."""
 
     ORDER_BY_INPUT_TYPE_KEY: str = "orderBy"
-    """The key used for the order by argument of a ModelGQLType."""
+    """The key used for the order by argument of a QueryType."""
 
     PLUGIN_EXPLORER_VERSION: str = "3.0.2"
     """The version of the plugin explorer to use for GraphiQL."""

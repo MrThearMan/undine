@@ -13,47 +13,47 @@ from example_project.app.models import (
     TaskStep,
     Team,
 )
-from undine import ModelGQLMutation
-from undine.fields import Input
+from undine import Input
+from undine.mutation import MutationType
 
 
-class TeamMutationInput(ModelGQLMutation, model=Team): ...
+class TeamMutationTypeInput(MutationType, model=Team): ...
 
 
-class ProjectMutationInput(ModelGQLMutation, model=Project):
-    team = Input(TeamMutationInput)
+class ProjectMutationTypeInput(MutationType, model=Project):
+    team = Input(TeamMutationTypeInput)
 
 
-class ServiceRequestMutationInput(ModelGQLMutation, model=ServiceRequest): ...
+class ServiceRequestMutationTypeInput(MutationType, model=ServiceRequest): ...
 
 
-class PersonMutationInput(ModelGQLMutation, model=Person): ...
+class PersonMutationTypeInput(MutationType, model=Person): ...
 
 
-class TaskResultMutationInput(ModelGQLMutation, model=TaskResult): ...
+class TaskResultMutationTypeInput(MutationType, model=TaskResult): ...
 
 
-class TaskStepMutationInput(ModelGQLMutation, model=TaskStep): ...
+class TaskStepMutationTypeInput(MutationType, model=TaskStep): ...
 
 
-class ReportMutationInput(ModelGQLMutation, model=Report): ...
+class ReportMutationTypeInput(MutationType, model=Report): ...
 
 
-class CommentMutationInput(ModelGQLMutation, model=Comment):
-    commenter = Input(PersonMutationInput)
+class CommentMutationTypeInput(MutationType, model=Comment):
+    commenter = Input(PersonMutationTypeInput)
     target = Input()
 
 
-class TaskMutationInput(ModelGQLMutation, model=Task):
-    request = Input(ServiceRequestMutationInput)
-    project = Input(ProjectMutationInput)
-    assignees = Input(PersonMutationInput)
+class TaskMutationTypeInput(MutationType, model=Task):
+    request = Input(ServiceRequestMutationTypeInput)
+    project = Input(ProjectMutationTypeInput)
+    assignees = Input(PersonMutationTypeInput)
 
-    result = Input(TaskResultMutationInput)
-    steps = Input(TaskStepMutationInput)
-    reports = Input(ReportMutationInput)
+    result = Input(TaskResultMutationTypeInput)
+    steps = Input(TaskStepMutationTypeInput)
+    reports = Input(ReportMutationTypeInput)
 
-    comments = Input(CommentMutationInput)
+    comments = Input(CommentMutationTypeInput)
 
     related_tasks = Input("self")
 
@@ -63,20 +63,20 @@ class CustomInput(TypedDict):
     age: int
 
 
-class TaskCreateMutation(ModelGQLMutation, model=Task):
+class TaskCreateMutationType(MutationType, model=Task):
     """Create a task."""
 
     input_only = Input(bool)
     custom = Input(CustomInput)
 
-    request = Input(ServiceRequestMutationInput)
-    project = Input(ProjectMutationInput)
-    assignees = Input(PersonMutationInput)
+    request = Input(ServiceRequestMutationTypeInput)
+    project = Input(ProjectMutationTypeInput)
+    assignees = Input(PersonMutationTypeInput)
 
-    result = Input(TaskResultMutationInput)
-    steps = Input(TaskStepMutationInput)
-    reports = Input(ReportMutationInput)
+    result = Input(TaskResultMutationTypeInput)
+    steps = Input(TaskStepMutationTypeInput)
+    reports = Input(ReportMutationTypeInput)
 
-    comments = Input(CommentMutationInput)
+    comments = Input(CommentMutationTypeInput)
 
-    related_tasks = Input(TaskMutationInput)
+    related_tasks = Input(TaskMutationTypeInput)

@@ -9,7 +9,7 @@ from django.db.models.fields.files import FieldFile
 from graphql import GraphQLScalarType
 
 from undine.errors.error_handlers import handle_conversion_errors
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.text import dotpath
 from undine.utils.urls import validate_file_url
 

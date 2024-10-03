@@ -1,4 +1,9 @@
-"""Contains different types of resolvers for use with the GraphQL schema."""
+"""
+Contains different types of resolvers for GraphQL operations.
+Resolvers must be callables with the following signature:
+
+(root: Root, info: GQLInfo, **kwargs: Any) -> Any
+"""
 
 from __future__ import annotations
 
@@ -20,7 +25,7 @@ if TYPE_CHECKING:
     from django.db import models
     from django.db.models import Model
 
-    from undine import ModelGQLMutation
+    from undine.mutation import MutationType
     from undine.typing import GQLInfo, RelatedManager, Root
 
 __all__ = [
@@ -109,7 +114,7 @@ class CreateResolver:
     defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[ModelGQLMutation]
+    model_mutation: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
@@ -131,7 +136,7 @@ class UpdateResolver:
     defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[ModelGQLMutation]
+    model_mutation: type[MutationType]
 
     @property
     def model(self) -> type[models.Model]:
@@ -165,7 +170,7 @@ class DeleteResolver:
     hooks defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[ModelGQLMutation]
+    model_mutation: type[MutationType]
 
     @property
     def model(self) -> type[models.Model]:
@@ -199,7 +204,7 @@ class CustomResolver:
     hooks defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[ModelGQLMutation]
+    model_mutation: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
         input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]

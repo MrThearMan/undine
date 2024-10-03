@@ -25,23 +25,26 @@ __all__ = [
 
 class FunctionDispatcher(Generic[From, To]):
     """
-    A dispatcher that holds different implementations for a function
-    based on the function's first argument's type.
+    A class that holds different implementations for a function
+    based on the function's first argument. Different implementations
+    can be added with the `register` method.
 
-    When called, the dispatcher will find the implementation that matches
-    with the first argument's type and call it with the given keyword arguments.
-    If no exact match is found, the dispatcher will look for
-    an implementation from the argument's types' method resolution order.
-    If no implementation is found, the dispatcher will try to find
-    a default implementation (registed for `Any`), and failing that,
-    raise an error.
+    When called, FunctionDispatcher will find the implementation that matches
+    the given first argument using this strategy:
 
-    Different implementations can be added with the `register` method.
+    1. Look for an implementation that matches the given argument's type.
+    2. If functions have been registered with for 'Literal' types, look for an implementation
+       that matches the given argument literally (e.g. literal strings).
+    3. Look for an implementation whose first argument is in the method resolution order
+       (mro) of the given argument's type.
+    4. Look for a default implementation (registed function's first argument's type is `Any`).
+
+    If no implmentation is found, an error will be raised.
     """
 
     def __init__(self, *, wrapper: DispatchWrapper[From, To] | None = None, union_default: Any = Undefined) -> None:
         """
-        Initialize the dispatcher.
+        Create a new FunctionDispatcher. Must be added to a variable before use!
 
         :param union_default: The default implementation to use for unions that have
                               more than one non-null type.
@@ -56,11 +59,11 @@ class FunctionDispatcher(Generic[From, To]):
         self.contains_literals = False
 
     def __class_getitem__(cls, key: tuple[From, To]) -> FunctionDispatcher[From, To]:
-        """Adds typing information when instantiating the class."""
+        """Adds typing information when used like this: `foo = FunctionDispatcher[From, To]()`."""
         return cls  # type: ignore[return-value]
 
     def __call__(self, key: From, **kwargs: Any) -> To:
-        """Find the implementation for the given key and call it with the given arguments."""
+        """Find the implementation for the given key and call it with the given keyword arguments."""
         return_nullable = kwargs.pop("return_nullable", False)
         if key is Undefined:
             msg = "FunctionDispatcher key must be a type or value."

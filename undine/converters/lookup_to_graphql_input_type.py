@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from graphql import GraphQLInputType
 
-from undine.utils.dispatcher import FunctionDispatcher
+from undine.utils.function_dispatcher import FunctionDispatcher
 
 from .to_graphql_type import convert_type_to_graphql_type
 
