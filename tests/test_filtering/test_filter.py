@@ -10,7 +10,7 @@ from undine.resolvers import FieldResolver
 
 
 def test_filter__simple():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter()
 
     frt = MyFilter.name
@@ -44,7 +44,7 @@ def test_filter__simple():
 
 
 def test_filter__q_expession():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         has_project = Filter(models.Q(project__isnull=False))
 
     frt = MyFilter.has_project
@@ -76,7 +76,7 @@ def test_filter__q_expession():
 
 
 def test_filter__function():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         @Filter
         def in_the_past(self, *, value: bool) -> models.Q:
             """Filter tasks created in the past."""
@@ -113,7 +113,7 @@ def test_filter__function():
 
 
 def test_filter__function__with_args():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         @Filter(distinct=True)
         def in_the_past(self, *, value: bool) -> models.Q: ...
 
@@ -121,7 +121,7 @@ def test_filter__function__with_args():
 
 
 def test_filter__deprecation_reason():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(deprecation_reason="Use something else.")
 
     frt = MyFilter.name
@@ -133,7 +133,7 @@ def test_filter__deprecation_reason():
 
 
 def test_filter__description():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(description="Description.")
 
     frt = MyFilter.name
@@ -145,7 +145,7 @@ def test_filter__description():
 
 
 def test_filter__required():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(required=True)
 
     frt = MyFilter.name
@@ -158,7 +158,7 @@ def test_filter__required():
 
 
 def test_filter__many():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(many=True)
 
     frt = MyFilter.name
@@ -172,7 +172,7 @@ def test_filter__many():
 
 
 def test_filter__many_and_required():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(many=True, required=True)
 
     frt = MyFilter.name
@@ -188,7 +188,7 @@ def test_filter__many_and_required():
 
 @pytest.mark.parametrize("lookup_expr", ["in", "range", "IN", "RANGE"])
 def test_filter__lookup_expr__assume_many(lookup_expr):
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(lookup_expr=lookup_expr)
 
     frt = MyFilter.name
@@ -197,7 +197,7 @@ def test_filter__lookup_expr__assume_many(lookup_expr):
 
 
 def test_filter__extensions():
-    class MyFilter(FilterSet, model=Task, auto_filters=False):
+    class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter(extensions={"foo": "bar"})
 
     frt = MyFilter.name

@@ -91,7 +91,7 @@ class MismatchingModelError(UndineError):
     doesn't match model of the given `QueryType`.
     """
 
-    msg = "'{cls}' model '{bad_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
+    msg = "'{cls}' model '{given_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
 
 
 class MissingFunctionAnnotationsError(UndineError):

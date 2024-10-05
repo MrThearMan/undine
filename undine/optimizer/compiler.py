@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
+from django.db import models
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 
 from undine.errors.exceptions import OptimizerError
@@ -14,7 +15,6 @@ from .ast import GraphQLASTWalker
 from .optimizer import QueryOptimizer
 
 if TYPE_CHECKING:
-    from django.db import models
     from graphql import FieldNode, GraphQLOutputType
 
     from undine import Field
@@ -125,6 +125,9 @@ class OptimizationCompiler(GraphQLASTWalker):
         if field is not None:
             undine_field: Field | None = field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
             if undine_field is not None:
+                if isinstance(undine_field.ref, (models.Expression, models.Subquery)):
+                    self.optimizer.annotations[undine_field.name] = undine_field.ref
+
                 return undine_field.optimizer_hook(self.optimizer)
 
         msg = (

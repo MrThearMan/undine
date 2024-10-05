@@ -1,4 +1,4 @@
-"""Code creating filters for a `QueryType`."""
+"""Contains code for creating filtering options for a `QueryType`."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class FilterSetMeta(type):
         _attrs: dict[str, Any],
         *,
         model: type[models.Model] | None = None,
-        auto_filters: bool = True,
+        auto: bool = True,
         exclude: Iterable[str] = (),
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -55,7 +55,7 @@ class FilterSetMeta(type):
         if model is None:
             raise MissingModelError(name=_name, cls="FilterSet")
 
-        if auto_filters:
+        if auto:
             _attrs |= get_filters_for_model(model, exclude=set(exclude) | set(_attrs))
 
         # Add model to attrs before class creation so that it's available during `Filter.__set_name__`.
@@ -66,21 +66,20 @@ class FilterSetMeta(type):
         instance.__model__ = model
         instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
         instance.__typename__ = typename or _name
-        instance.__extensions__ = extensions or {} | {undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance}
         return instance
 
 
 class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     """
-    Base class for creating a set of filters for a `QueryType`.
-    Creates a single GraphQL InputObjectType from undine.Filters defined in the class,
-    which can then be combined using logical operators.
+    A class representing a `GraphQLInputObjectType` used for filtering a `QueryType`.
 
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django model this `FilterSet` is for. This input is required.
                Must match the model of the `QueryType` this `FilterSet` is for.
-    - `auto_filters`: Whether to add filters for all model fields and their lookups automatically. Defaults to `True`.
+    - `auto`: Whether to add undine.Filter fields for all model fields and their lookups automatically.
+              Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added filters. No excludes by default.
     - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
@@ -88,15 +87,15 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     >>> class MyFilters(FilterSet, model=...): ...
     """
 
-    # Members should use `__dunder__` names to avoid name collisions with possible filter names.
+    # Members should use `__dunder__` names to avoid name collisions with possible `undine.Filter` names.
 
     @classmethod
     def __build__(cls, filter_data: dict[str, Any], info: GQLInfo) -> FilterResults:
         """
-        Build a Q-object from the given filter data.
-        Also indicate whether the filter should be distinct based on the fields in the filter data.
+        Build a list of 'models.Q' expression from the given filter data to apply to the queryset.
+        Also indicate if 'queryset.distinct()' is needed, and what aliases required.
 
-        :param filter_data: A map of filter schema names to input values.
+        :param filter_data: The data to build filters from.
         :param info: The GraphQL resolve info for the request.
         """
         filters: list[models.Q] = []
@@ -175,13 +174,13 @@ class Filter:
                     If not provided, use the name of the attribute this is assigned to
                     in the `FilterSet` class.
         :param lookup_expr: Lookup expression to use for the filter.
-        :param many: Whether the filter requires the input to be a list of values. If not provided,
+        :param many: Whether the Filter requires the input to be a list of values. If not provided,
                      looks at the lookup expression and tries to determine this from it.
-        :param distinct: Whether the filter requires `queryset.distinct()` to be used.
-        :param required: Whether the filter should be required.
-        :param description: Description of the filter. If not provided, looks at the converted reference,
+        :param distinct: Whether the Filter requires `queryset.distinct()` to be used.
+        :param required: Whether the Filter is a required input.
+        :param description: Description of the Filter. If not provided, looks at the converted reference,
                             and tries to find the description from it.
-        :param deprecation_reason: If the filter is deprecated, describes the reason for deprecation.
+        :param deprecation_reason: If the Filter is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the filter.
         """
         self.ref = cache_signature_if_function(ref, depth=1)

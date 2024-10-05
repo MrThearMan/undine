@@ -56,7 +56,7 @@ def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLArgumentMap:
 
 
 @convert_field_ref_to_graphql_argument_map.register
-def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
+def _(_: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
 
 

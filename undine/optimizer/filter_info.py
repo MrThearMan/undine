@@ -59,9 +59,9 @@ class FilterInfoCompiler(GraphQLASTWalker):
                 distinct = filter_results.distinct
                 aliases = filter_results.aliases
             if model_type.__orderset__:
-                ordering_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
-                ordering_results = model_type.__orderset__.__build__(ordering_data, self.info)
-                order_by = ordering_results.order_by
+                order_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
+                order_results = model_type.__orderset__.__build__(order_data, self.info)
+                order_by = order_results.order_by
 
         self.filter_info[field_name] = GraphQLFilterInfo(
             model_type=model_type,

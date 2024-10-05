@@ -1,8 +1,9 @@
+"""Contains code for creating Query ObjectTypes for a GraphQL schema."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
-from django.db import models
 from graphql import (
     GraphQLArgumentMap,
     GraphQLField,
@@ -34,6 +35,8 @@ from undine.utils.text import dotpath, get_docstring, get_schema_name
 if TYPE_CHECKING:
     from types import FunctionType
 
+    from django.db import models
+
     from undine import FilterSet, OrderSet
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import GQLInfo, Root, Self
@@ -56,7 +59,7 @@ class QueryTypeMeta(type):
         model: type[models.Model] | None = None,
         filterset: type[FilterSet] | Literal[True] | None = None,
         orderset: type[OrderSet] | Literal[True] | None = None,
-        auto_fields: bool = True,
+        auto: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str | None = "pk",
         typename: str | None = None,
@@ -70,18 +73,19 @@ class QueryTypeMeta(type):
         if model is None:
             raise MissingModelError(name=_name, cls="QueryType")
 
-        if auto_fields:
+        if auto:
             _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
 
         if filterset is True:
             from undine import FilterSet
 
-            filterset = type(f"{model.__name__}Filter", (FilterSet,), {}, model=model)
+            class_name = model.__name__ + FilterSet.__name__
+            filterset = type(class_name, (FilterSet,), {}, model=model)
 
         if filterset is not None and filterset.__model__ is not model:
             raise MismatchingModelError(
                 cls=filterset.__name__,
-                bad_model=model,
+                given_model=model,
                 type=_name,
                 expected_model=filterset.__model__,
             )
@@ -89,12 +93,13 @@ class QueryTypeMeta(type):
         if orderset is True:
             from undine import OrderSet
 
-            orderset = type(f"{model.__name__}Order", (OrderSet,), {}, model=model)
+            class_name = model.__name__ + OrderSet.__name__
+            orderset = type(class_name, (OrderSet,), {}, model=model)
 
         if orderset is not None and orderset.__model__ is not model:
             raise MismatchingModelError(
                 cls=orderset.__name__,
-                bad_model=model,
+                given_model=model,
                 type=_name,
                 expected_model=orderset.__model__,
             )
@@ -110,35 +115,36 @@ class QueryTypeMeta(type):
         instance.__model__ = model
         instance.__filterset__ = filterset
         instance.__orderset__ = orderset
-        instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
         instance.__lookup_field__ = lookup_field
+        instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
         instance.__typename__ = typename or _name
-        instance.__extensions__ = extensions or {} | {undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance}
         return instance
 
 
 class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     """
-    Base class for all GraphQL Object Types backing a Django model.
+    A class for creating a 'GraphQLObjectType' for a Django model.
 
     The following parameters can be passed in the class definition:
 
-    - `model`: Set the Django model this QueryType represents. This input is required.
+    - `model`: Set the Django model this `QueryType` represents. This input is required.
     - `filterset`: Set the `FilterSet` class this QueryType uses, or `True` to create one with
                    default parameters. Defaults to `None`.
     - `orderset`: Set the `OrderSet` class this QueryType uses, or `True` to create one with
                   default parameters. Defaults to `None`.
-    - `auto_fields`: Whether to add fields for all model fields automatically. Defaults to `True`.
+    - `auto`: Whether to add fields for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added fields. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Defaults to `"pk"`.
     - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
-    - `register`: Whether to register the `QueryType` in `TYPE_REGISTRY`. Defaults to `True`.
+    - `register`: Whether to register the `QueryType` for the given model so that other `QueryTypes` can use it in
+                 their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
     - `extensions`: GraphQL extensions for the created ObjectType. Defaults to `None`.
 
     >>> class MyType(QueryType, model=...): ...
     """
 
-    # Members should use `__dunder__` names to avoid name collisions with possible field names.
+    # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.
 
     @classmethod
     def __get_queryset__(cls, info: GQLInfo) -> models.QuerySet:
@@ -229,7 +235,8 @@ class Field:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a GraphQL field.
+        A class representing a `GraphQLField` in the `GraphQLObjectType` of a `QueryType`.
+        In other words, it's a field that can be queried from the `QueryType` it belongs to.
 
         :param ref: Reference to build the field from. Can be anything that `convert_to_field_ref` can convert,
                     e.g., a string referencing a model field name, a model field, an expression, a function, etc.
@@ -294,8 +301,6 @@ class Field:
 
     def optimizer_hook(self, optimizer: QueryOptimizer) -> None:
         """Hook for customizing how the field is optimized by the QueryOptimizer."""
-        if isinstance(self.ref, (models.Expression, models.Subquery)):
-            optimizer.annotations[self.name] = self.ref
 
 
 def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:

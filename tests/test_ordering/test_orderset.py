@@ -1,0 +1,123 @@
+import pytest
+from django.db import models
+
+from example_project.app.models import Task
+from tests.helpers import MockGQLInfo
+from undine import Order, OrderSet
+from undine.errors.exceptions import MissingModelError
+
+
+def test_orderset__default():
+    class MyOrderSet(OrderSet, model=Task):
+        """Description."""
+
+    assert MyOrderSet.__model__ == Task
+    assert MyOrderSet.__typename__ == "MyOrderSet"
+    assert MyOrderSet.__extensions__ == {"undine_order_by": MyOrderSet}
+
+    order_map = MyOrderSet.__order_map__
+
+    assert sorted(order_map) == ["createdAt", "name", "pk", "type"]
+
+    enum_type = MyOrderSet.__enum_type__()
+    assert enum_type.name == "MyOrderSet"
+    assert sorted(enum_type.values) == [
+        "createdAtAsc",
+        "createdAtDesc",
+        "nameAsc",
+        "nameDesc",
+        "pkAsc",
+        "pkDesc",
+        "typeAsc",
+        "typeDesc",
+    ]
+    assert enum_type.description == "Description."
+    assert enum_type.extensions == {"undine_order_by": MyOrderSet}
+
+
+def test_filterset__no_model():
+    with pytest.raises(MissingModelError):
+
+        class MyOrderSet(OrderSet): ...
+
+
+def test_orderset__one_field():
+    class MyOrderSet(OrderSet, model=Task):
+        name = Order()
+
+    data = ["nameAsc"]
+    results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
+    assert results.order_by == [
+        models.OrderBy(models.F("name")),
+    ]
+
+    data = ["nameDesc"]
+    results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
+    assert results.order_by == [
+        models.OrderBy(models.F("name"), descending=True),
+    ]
+
+
+def test_orderset__two_fields():
+    class MyOrderSet(OrderSet, model=Task):
+        name = Order()
+
+    data = ["nameAsc", "pkDesc"]
+    results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
+    assert results.order_by == [
+        models.OrderBy(models.F("name")),
+        models.OrderBy(models.F("id"), descending=True),
+    ]
+
+
+def test_orderset__single_direction():
+    class MyOrderSet(OrderSet, model=Task):
+        name = Order(single_direction=True)
+
+    data = ["name"]
+    results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
+    assert results.order_by == [
+        models.OrderBy(models.F("name")),
+    ]
+
+
+def test_orderset__typename():
+    class MyOrderSet(OrderSet, model=Task, typename="CustomName"): ...
+
+    assert MyOrderSet.__typename__ == "CustomName"
+
+    enum_type = MyOrderSet.__enum_type__()
+    assert enum_type.name == "CustomName"
+
+
+def test_orderset__extensions():
+    class MyOrderSet(OrderSet, model=Task, extensions={"foo": "bar"}): ...
+
+    assert MyOrderSet.__extensions__ == {"foo": "bar", "undine_order_by": MyOrderSet}
+
+    enum_type = MyOrderSet.__enum_type__()
+    assert enum_type.extensions == {"foo": "bar", "undine_order_by": MyOrderSet}
+
+
+def test_filterset__no_auto():
+    class MyOrderSet(OrderSet, model=Task, auto=False): ...
+
+    assert MyOrderSet.__order_map__ == {}
+
+
+def test_filterset__exclude():
+    class MyOrderSet(OrderSet, model=Task, exclude=["name"]): ...
+
+    assert "pk" in MyOrderSet.__order_map__
+    assert "name" not in MyOrderSet.__order_map__
+    assert "type" in MyOrderSet.__order_map__
+    assert "createdAt" in MyOrderSet.__order_map__
+
+
+def test_filterset__exclude__multiple():
+    class MyOrderSet(OrderSet, model=Task, exclude=["name", "pk"]): ...
+
+    assert "pk" not in MyOrderSet.__order_map__
+    assert "name" not in MyOrderSet.__order_map__
+    assert "type" in MyOrderSet.__order_map__
+    assert "createdAt" in MyOrderSet.__order_map__

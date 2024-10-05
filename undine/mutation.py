@@ -1,3 +1,5 @@
+"""Contains code for creating Mutation ObjectTypes for a GraphQL schema."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable
@@ -55,7 +57,7 @@ class MutationTypeMeta(type):
         *,
         model: type[models.Model] | None = None,
         mutation_kind: MutationKind | None = None,
-        auto_inputs: bool = True,
+        auto: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         typename: str | None = None,
@@ -84,7 +86,7 @@ class MutationTypeMeta(type):
             field = get_model_field(model=model, lookup=lookup_field)
             _attrs[lookup_field] = Input(field, required=True)
 
-        if auto_inputs:
+        if auto:
             exclude = set(exclude) | set(_attrs)
             if mutation_kind == "create":
                 exclude.add(lookup_field)
@@ -102,20 +104,20 @@ class MutationTypeMeta(type):
         instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
         instance.__typename__ = typename or _name
-        instance.__extensions__ = extensions or {} | {undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: cls}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: cls}
         return instance
 
 
 class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     """
-    Base class for creating mutations for a Django model.
+    A class for creating a 'GraphQLInputObjectType' for a Django model.
 
     The following parameters can be passed in the class definition:
 
-    - `model`: Set the Django model this `Mutation` is for. This input is required.
+    - `model`: Set the Django model this `MutationType` is for. This input is required.
     - `mutation_kind`: Kind of mutation this is. Can be "create", "update", or "delete" or "custom".
                        If not given, it will be guessed based on the name of the class.
-    - `auto_inputs`: Whether to add inputs for all model fields automatically. Defaults to `True`.
+    - `auto`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Use "pk" by default.
     - `typename`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
@@ -124,7 +126,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     >>> class MyMutation(MutationType, model=...): ...
     """
 
-    # Members should use `__dunder__` names to avoid name collisions with possible ordering field names.
+    # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.
 
     @classmethod
     def __mutate__(cls, root: Root, info: GQLInfo, input_data: dict[str, Any]) -> Any:
@@ -189,7 +191,8 @@ class Input:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a GraphQL input type.
+        A class representing a `GraphQLInputField` in the `GraphQLInputObjectType` of a `MutationType`.
+        In other words, it's an input used in the mutation of the `MutationType` it belongs to.
 
         :param ref: Reference to build the input from. Can be anything that `convert_to_input_ref` can convert,
                     e.g., a string referencing a model field name, a model field, a `Mutation`, etc.

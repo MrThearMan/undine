@@ -128,6 +128,12 @@ def test_filterset__default():
     assert isinstance(fields["XOR"], GraphQLInputField)
 
 
+def test_filterset__no_model():
+    with pytest.raises(MissingModelError):
+
+        class MyFilterSet(FilterSet): ...
+
+
 def test_filterset__one_field():
     class MyFilterSet(FilterSet, model=Task): ...
 
@@ -272,25 +278,28 @@ def test_filterset__nested_blocks__complex():
     assert results.aliases == {}
 
 
-def test_filterset__no_model():
-    with pytest.raises(MissingModelError):
-
-        class MyFilterSet(FilterSet): ...
-
-
-def test_filterset__no_auto_filters():
-    class MyFilterSet(FilterSet, model=Task, auto_filters=False): ...
-
-    assert MyFilterSet.__filter_map__ == {}
-
-
-def test_filterset__set_typename():
+def test_filterset__typename():
     class MyFilterSet(FilterSet, model=Task, typename="CustomName"): ...
 
     assert MyFilterSet.__typename__ == "CustomName"
 
     input_type = MyFilterSet.__input_type__()
     assert input_type.name == "CustomName"
+
+
+def test_filterset__extensions():
+    class MyFilterSet(FilterSet, model=Task, extensions={"foo": "bar"}): ...
+
+    assert MyFilterSet.__extensions__ == {"foo": "bar", "undine_filter_input": MyFilterSet}
+
+    input_type = MyFilterSet.__input_type__()
+    assert input_type.extensions == {"foo": "bar", "undine_filter_input": MyFilterSet}
+
+
+def test_filterset__no_auto():
+    class MyFilterSet(FilterSet, model=Task, auto=False): ...
+
+    assert MyFilterSet.__filter_map__ == {}
 
 
 def test_filterset__exclude_fields():
@@ -312,7 +321,7 @@ def test_filterset__exclude_fields__multiple():
 
 
 def test_filterset__expression():
-    class MyFilterSet(FilterSet, model=Task, auto_filters=False):
+    class MyFilterSet(FilterSet, model=Task, auto=False):
         assignee_count_lt = Filter(models.Count("assignees"), lookup_expr="lt")
 
     data = {
@@ -329,7 +338,7 @@ def test_filterset__expression():
 def test_filterset__subquery():
     sq = models.Subquery(Person.objects.values("name")[:1])
 
-    class MyFilterSet(FilterSet, model=Task, auto_filters=False):
+    class MyFilterSet(FilterSet, model=Task, auto=False):
         primary_assignee_name_in = Filter(sq, lookup_expr="in")
 
     data = {

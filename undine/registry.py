@@ -44,5 +44,11 @@ class _TypeRegistry:
             raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
         self.__registry[model] = graphql_type
 
+    def __contains__(self, model: type[models.Model]) -> bool:
+        return model in self.__registry
+
+    def clear(self) -> None:
+        self.__registry.clear()
+
 
 TYPE_REGISTRY = _TypeRegistry()
