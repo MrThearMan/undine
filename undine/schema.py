@@ -1,4 +1,4 @@
-"""Functions for creating a GraphQL schema and executing queries against it."""
+"""Code for creating a GraphQL schema and executing queries against it."""
 
 from __future__ import annotations
 

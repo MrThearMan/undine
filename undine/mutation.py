@@ -58,7 +58,7 @@ class MutationTypeMeta(type):
         auto_inputs: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
-        name: str | None = None,
+        typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> MutationTypeMeta:
         """See `Mutation` for documentation of arguments."""
@@ -82,7 +82,7 @@ class MutationTypeMeta(type):
 
         if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
             field = get_model_field(model=model, lookup=lookup_field)
-            _attrs[get_schema_name(lookup_field)] = Input(field, required=True)
+            _attrs[lookup_field] = Input(field, required=True)
 
         if auto_inputs:
             exclude = set(exclude) | set(_attrs)
@@ -101,7 +101,7 @@ class MutationTypeMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
-        instance.__typename__ = name or _name
+        instance.__typename__ = typename or _name
         instance.__extensions__ = extensions or {} | {undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: cls}
         return instance
 
@@ -118,7 +118,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     - `auto_inputs`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Use "pk" by default.
-    - `name`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
+    - `typename`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
 
     >>> class MyMutation(MutationType, model=...): ...

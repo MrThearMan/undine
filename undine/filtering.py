@@ -1,3 +1,5 @@
+"""Code creating filters for a `QueryType`."""
+
 from __future__ import annotations
 
 import operator as op
@@ -43,7 +45,7 @@ class FilterSetMeta(type):
         model: type[models.Model] | None = None,
         auto_filters: bool = True,
         exclude: Iterable[str] = (),
-        name: str | None = None,
+        typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> FilterSetMeta:
         """See `FilterSet` for documentation of arguments."""
@@ -63,15 +65,15 @@ class FilterSetMeta(type):
         # Members should use '__dunder__' names to avoid name collisions with possible filter names.
         instance.__model__ = model
         instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
-        instance.__typename__ = name or _name
+        instance.__typename__ = typename or _name
         instance.__extensions__ = extensions or {} | {undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance}
         return instance
 
 
 class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     """
-    Base class for creating filters for a `QueryType`.
-    Creates a single GraphQL InputObjectType from filters defined in the class,
+    Base class for creating a set of filters for a `QueryType`.
+    Creates a single GraphQL InputObjectType from undine.Filters defined in the class,
     which can then be combined using logical operators.
 
     The following parameters can be passed in the class definition:
@@ -80,7 +82,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
                Must match the model of the `QueryType` this `FilterSet` is for.
     - `auto_filters`: Whether to add filters for all model fields and their lookups automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added filters. No excludes by default.
-    - `name`: Override name for the input object type in the GraphQL schema. Use class name by default.
+    - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
 
     >>> class MyFilters(FilterSet, model=...): ...
@@ -184,7 +186,7 @@ class Filter:
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.lookup_expr = lookup_expr.lower()
-        self.many = many or self.lookup_expr in ("in", "range")
+        self.many = many or self.lookup_expr in undine_settings.LOOKUP_EXPRESSIONS_MANY
         self.distinct = distinct
         self.required = required
         self.description = description

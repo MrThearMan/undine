@@ -59,7 +59,7 @@ class QueryTypeMeta(type):
         auto_fields: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str | None = "pk",
-        name: str | None = None,
+        typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,
     ) -> QueryTypeMeta:
@@ -112,7 +112,7 @@ class QueryTypeMeta(type):
         instance.__orderset__ = orderset
         instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
         instance.__lookup_field__ = lookup_field
-        instance.__typename__ = name or _name
+        instance.__typename__ = typename or _name
         instance.__extensions__ = extensions or {} | {undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance}
         return instance
 
@@ -131,7 +131,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     - `auto_fields`: Whether to add fields for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added fields. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Defaults to `"pk"`.
-    - `name`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
+    - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
     - `register`: Whether to register the `QueryType` in `TYPE_REGISTRY`. Defaults to `True`.
     - `extensions`: GraphQL extensions for the created ObjectType. Defaults to `None`.
 

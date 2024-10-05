@@ -31,7 +31,7 @@ class OrderSetMeta(type):
         model: type[models.Model] | None = None,
         auto_ordering: bool = True,
         exclude: Iterable[str] = (),
-        name: str | None = None,
+        typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> OrderSetMeta:
         """See `OrderSet` for documentation of arguments."""
@@ -51,7 +51,7 @@ class OrderSetMeta(type):
         # Members should use '__dunder__' names to avoid name collisions with possible ordering names.
         instance.__model__ = model
         instance.__ordering_map__ = {get_schema_name(n): o for n, o in get_members(instance, Order)}
-        instance.__typename__ = name or _name
+        instance.__typename__ = typename or _name
         instance.__extensions__ = extensions or {} | {undine_settings.ORDER_BY_EXTENSIONS_KEY: instance}
         return instance
 
@@ -68,7 +68,7 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
                Must match the model of the `QueryType` this `OrderSet` is for.
     - `auto_ordering`: Whether to add ordering fields for all given model's fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added ordering fields. No excludes by default.
-    - `name`: Override name for the input object type in the GraphQL schema. Use class name by default.
+    - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created GraphQLEnum. Defaults to `None`.
 
     >>> class MyOrder(OrderSet, model=...): ...

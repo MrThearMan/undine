@@ -1,4 +1,4 @@
-"""Contains utilities for  API pagination."""
+"""Contains utilities for API pagination."""
 
 from __future__ import annotations
 

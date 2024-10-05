@@ -65,7 +65,7 @@ class TaskFilterSet(FilterSet, model=Task):
 
     @Filter
     def in_the_past(self, info: GQLInfo, *, value: bool) -> models.Q:
-        """FIlter tasks created in the past."""
+        """Filter tasks created in the past."""
         return models.Q(created_at__lt=Now()) if value else models.Q(created_at__gte=Now())
 
 

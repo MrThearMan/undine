@@ -56,6 +56,9 @@ class DefaultSettings(NamedTuple):
     GRAPHIQL_VERSION: str = "3.2.3"
     """The version of GraphiQL to use."""
 
+    LOOKUP_EXPRESSIONS_MANY: tuple[str, ...] = ("in", "range")
+    """Lookup expressions that should be assumed to require a list of values."""
+
     MAX_ERRORS: int = 100
     """The maximum number of validation errors allowed in a GraphQL request before it is rejected."""
 
