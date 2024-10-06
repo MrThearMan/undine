@@ -232,6 +232,7 @@ class lazy:  # noqa: N801
 
     def __rdivmod__(self, other: object) -> Any:
         self.__check_result()
+        return other.__rdivmod__(self.__result)
 
     def __neg__(self) -> Any:
         self.__check_result()

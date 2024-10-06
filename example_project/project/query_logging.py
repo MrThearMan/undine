@@ -54,7 +54,7 @@ class QueryData:
         return message
 
 
-def db_query_logger(  # noqa: PLR0913
+def db_query_logger(
     execute: Callable[..., Any],
     sql: str,
     params: tuple[Any, ...],

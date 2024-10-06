@@ -1,17 +1,8 @@
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db import models
 
-from example_project.app.models import Comment, Task
-from example_project.app.types import (
-    CommentType,
-    PersonType,
-    ProjectType,
-    ReportType,
-    ServiceRequestType,
-    TaskNode,
-    TaskResultType,
-    TaskStepType,
-)
+from example_project.app.models import Comment, Person, Project, Report, ServiceRequest, Task, TaskResult, TaskStep
+from undine import QueryType
 from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion, lazy
 
 
@@ -39,6 +30,8 @@ def test_lazy():
 
 
 def test_lazy_model_gql_type__forward_one_to_one():
+    class ServiceRequestType(QueryType, model=ServiceRequest): ...
+
     field = Task._meta.get_field("request")
     assert isinstance(field, models.OneToOneField)
 
@@ -48,6 +41,8 @@ def test_lazy_model_gql_type__forward_one_to_one():
 
 
 def test_lazy_model_gql_type__forward_many_to_one():
+    class ProjectType(QueryType, model=Project): ...
+
     field = Task._meta.get_field("project")
     assert isinstance(field, models.ForeignKey)
 
@@ -57,6 +52,8 @@ def test_lazy_model_gql_type__forward_many_to_one():
 
 
 def test_lazy_model_gql_type__forward_many_to_many():
+    class PersonType(QueryType, model=Person): ...
+
     field = Task._meta.get_field("assignees")
     assert isinstance(field, models.ManyToManyField)
 
@@ -66,15 +63,19 @@ def test_lazy_model_gql_type__forward_many_to_many():
 
 
 def test_lazy_model_gql_type__forward_many_to_many__self():
+    class TaskType(QueryType, model=Task): ...
+
     field = Task._meta.get_field("related_tasks")
     assert isinstance(field, models.ManyToManyField)
 
     lazy_type = LazyQueryType(field=field)
     gql_type = lazy_type.get_type()
-    assert gql_type == TaskNode
+    assert gql_type == TaskType
 
 
 def test_lazy_model_gql_type__reverse_one_to_one():
+    class TaskResultType(QueryType, model=TaskResult): ...
+
     field = Task._meta.get_field("result")
     assert isinstance(field, models.OneToOneRel)
 
@@ -84,6 +85,8 @@ def test_lazy_model_gql_type__reverse_one_to_one():
 
 
 def test_lazy_model_gql_type__reverse_one_to_many():
+    class TaskStepType(QueryType, model=TaskStep): ...
+
     field = Task._meta.get_field("steps")
     assert isinstance(field, models.ManyToOneRel)
 
@@ -93,6 +96,8 @@ def test_lazy_model_gql_type__reverse_one_to_many():
 
 
 def test_lazy_model_gql_type__reverse_many_to_many():
+    class ReportType(QueryType, model=Report): ...
+
     field = Task._meta.get_field("reports")
     assert isinstance(field, models.ManyToManyRel)
 
@@ -102,6 +107,8 @@ def test_lazy_model_gql_type__reverse_many_to_many():
 
 
 def test_lazy_model_gql_type__generic_relation():
+    class CommentType(QueryType, model=Comment): ...
+
     field = Task._meta.get_field("comments")
     assert isinstance(field, GenericRelation)
 
@@ -111,6 +118,10 @@ def test_lazy_model_gql_type__generic_relation():
 
 
 def test_lazy_model_gql_type_union__generic_foreign_key():
+    class ProjectType(QueryType, model=Project): ...
+
+    class TaskType(QueryType, model=Task): ...
+
     field = Comment._meta.get_field("target")
     assert isinstance(field, GenericForeignKey)
 
@@ -119,4 +130,4 @@ def test_lazy_model_gql_type_union__generic_foreign_key():
     assert isinstance(gql_type, list)
     assert len(gql_type) == 2
     assert gql_type[0] == ProjectType
-    assert gql_type[1] == TaskNode
+    assert gql_type[1] == TaskType
