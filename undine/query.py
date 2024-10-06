@@ -25,7 +25,7 @@ from undine.converters import (
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
-from undine.registry import REGISTRY
+from undine.registry import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
@@ -109,7 +109,7 @@ class QueryTypeMeta(type):
         instance: type[QueryType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
         if register:
-            REGISTRY[model] = instance
+            QUERY_TYPE_REGISTRY[model] = instance
 
         # Members should use '__dunder__' names to avoid name collisions with possible field names.
         instance.__model__ = model
@@ -118,7 +118,7 @@ class QueryTypeMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
         instance.__typename__ = typename or _name
-        instance.__extensions__ = (extensions or {}) | {undine_settings.MODEL_TYPE_EXTENSIONS_KEY: instance}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
         return instance
 
 

@@ -66,7 +66,7 @@ class FilterSetMeta(type):
         instance.__model__ = model
         instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
         instance.__typename__ = typename or _name
-        instance.__extensions__ = (extensions or {}) | {undine_settings.FILTER_INPUT_EXTENSIONS_KEY: instance}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.FILTERSET_EXTENSIONS_KEY: instance}
         return instance
 
 

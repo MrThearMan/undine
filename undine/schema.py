@@ -174,7 +174,7 @@ def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], conte
     try:
         document = parse(
             source=params.query,
-            no_location=not undine_settings.ADD_ERROR_LOCATION,
+            no_location=undine_settings.NO_ERROR_LOCATION,
             max_tokens=undine_settings.MAX_TOKENS,
         )
     except GraphQLError as parse_error:

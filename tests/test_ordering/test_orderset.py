@@ -13,7 +13,7 @@ def test_orderset__default():
 
     assert MyOrderSet.__model__ == Task
     assert MyOrderSet.__typename__ == "MyOrderSet"
-    assert MyOrderSet.__extensions__ == {"undine_order_by": MyOrderSet}
+    assert MyOrderSet.__extensions__ == {"undine_orderset": MyOrderSet}
 
     order_map = MyOrderSet.__order_map__
 
@@ -32,7 +32,7 @@ def test_orderset__default():
         "typeDesc",
     ]
     assert enum_type.description == "Description."
-    assert enum_type.extensions == {"undine_order_by": MyOrderSet}
+    assert enum_type.extensions == {"undine_orderset": MyOrderSet}
 
 
 def test_filterset__no_model():
@@ -93,10 +93,10 @@ def test_orderset__typename():
 def test_orderset__extensions():
     class MyOrderSet(OrderSet, model=Task, extensions={"foo": "bar"}): ...
 
-    assert MyOrderSet.__extensions__ == {"foo": "bar", "undine_order_by": MyOrderSet}
+    assert MyOrderSet.__extensions__ == {"foo": "bar", "undine_orderset": MyOrderSet}
 
     enum_type = MyOrderSet.__enum_type__()
-    assert enum_type.extensions == {"foo": "bar", "undine_order_by": MyOrderSet}
+    assert enum_type.extensions == {"foo": "bar", "undine_orderset": MyOrderSet}
 
 
 def test_filterset__no_auto():

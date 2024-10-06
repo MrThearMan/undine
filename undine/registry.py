@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from undine.query import QueryType
 
 __all__ = [
-    "REGISTRY",
+    "QUERY_TYPE_REGISTRY",
 ]
 
 
@@ -41,7 +41,7 @@ class _Registry:
 
     def __setitem__(self, model: type[models.Model], graphql_type: type[QueryType]) -> None:
         if model in self.__registry:
-            raise TypeRegistryDuplicateError(model=model, graphql_type=REGISTRY[model])
+            raise TypeRegistryDuplicateError(model=model, graphql_type=QUERY_TYPE_REGISTRY[model])
         self.__registry[model] = graphql_type
 
     def __contains__(self, model: type[models.Model]) -> bool:
@@ -51,4 +51,4 @@ class _Registry:
         self.__registry.clear()
 
 
-REGISTRY = _Registry()
+QUERY_TYPE_REGISTRY = _Registry()

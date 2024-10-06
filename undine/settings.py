@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple, Sequence
+from typing import Any, Iterable, NamedTuple, Sequence
 
 from django.test.signals import setting_changed
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -17,10 +17,7 @@ SETTING_NAME: str = "UNDINE"
 
 
 class DefaultSettings(NamedTuple):
-    ADD_ERROR_LOCATION: bool = True
-    """Whether to add the location information to GraphQL errors."""
-
-    ADDITIONAL_VALIDATION_RULES: Sequence[str] = ()
+    ADDITIONAL_VALIDATION_RULES: Iterable[str] = ()
     """Additional validation rules to use for validating the GraphQL schema."""
 
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
@@ -41,11 +38,11 @@ class DefaultSettings(NamedTuple):
     FILTER_EXTENSIONS_KEY: str = "undine_filter"
     """The key used to store a Filter in the argument GraphQL extensions."""
 
-    FILTER_INPUT_EXTENSIONS_KEY: str = "undine_filter_input"
-    """The key used to store a FilterSet in the argument GraphQL extensions."""
-
     FILTER_INPUT_TYPE_KEY: str = "filter"
     """The key used for the filter input type of a QueryType."""
+
+    FILTERSET_EXTENSIONS_KEY: str = "undine_filterset"
+    """The key used to store a FilterSet in the argument GraphQL extensions."""
 
     INPUT_EXTENSIONS_KEY: str = "undine_input"
     """The key used to store a Input in the argument GraphQL extensions."""
@@ -68,41 +65,32 @@ class DefaultSettings(NamedTuple):
     MIDDLEWARE: Sequence[str] = ()
     """Middleware to use for in the GraphQL execution."""
 
-    MODEL_TYPE_EXTENSIONS_KEY: str = "undine_type"
-    """The key used to store a QueryType in the object type GraphQL extensions."""
-
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
-    """The key used to store a Input in the argument GraphQL extensions."""
-
-    MUTATION_INPUT_EXTENSIONS_KEY: str = "undine_mutation_input"
     """The key used to store a Mutation in the argument GraphQL extensions."""
 
     MUTATION_INPUT_TYPE_KEY: str = "input"
     """The key used for the input argument of a Mutation."""
 
+    NO_ERROR_LOCATION: bool = False
+    """Whether to add the location information to GraphQL errors."""
+
     OPTIMIZER_MAX_COMPLEXITY: int = 10
     """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
 
-    ORDER_BY_EXTENSIONS_KEY: str = "undine_order_by"
+    ORDER_EXTENSIONS_KEY: str = "undine_order"
     """The key used to store a Order in the argument GraphQL extensions."""
 
     ORDER_BY_INPUT_TYPE_KEY: str = "orderBy"
     """The key used for the order by argument of a QueryType."""
 
+    ORDERSET_EXTENSIONS_KEY: str = "undine_orderset"
+    """The key used to store a OrderSet in the argument GraphQL extensions."""
+
     PLUGIN_EXPLORER_VERSION: str = "3.0.2"
     """The version of the plugin explorer to use for GraphiQL."""
 
-    PREFETCH_COUNT_KEY: str = "_optimizer_count"
-    """Name used for annotating the prefetched queryset total count."""
-
-    PREFETCH_PARTITION_INDEX: str = "_optimizer_partition_index"
-    """Name used for aliasing the prefetched queryset partition index."""
-
-    PREFETCH_SLICE_START: str = "_optimizer_slice_start"
-    """Name used for aliasing the prefetched queryset slice start."""
-
-    PREFETCH_SLICE_STOP: str = "_optimizer_slice_stop"
-    """Name used for aliasing the prefetched queryset slice end."""
+    QUERY_TYPE_EXTENSIONS_KEY: str = "undine_type"
+    """The key used to store a QueryType in the object type GraphQL extensions."""
 
     REACT_VERSION: str = "18.3.1"
     """The version of React to use for GraphiQL."""

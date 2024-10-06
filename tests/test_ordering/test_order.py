@@ -20,7 +20,7 @@ def test_order__simple():
     assert order.single_direction is False
     assert order.description is None
     assert order.deprecation_reason is None
-    assert order.extensions == {"undine_order_by": order}
+    assert order.extensions == {"undine_order": order}
 
     assert order.owner == MyOrderSet
     assert order.name == "name"
@@ -32,7 +32,7 @@ def test_order__simple():
     assert enum_value.value == "name"
     assert enum_value.description is None
     assert enum_value.deprecation_reason is None
-    assert enum_value.extensions == {"undine_order_by": order}
+    assert enum_value.extensions == {"undine_order": order}
 
 
 def test_order__expression():
@@ -129,11 +129,11 @@ def test_order__extensions():
 
     order = MyOrderSet.name
 
-    assert order.extensions == {"foo": "bar", "undine_order_by": order}
+    assert order.extensions == {"foo": "bar", "undine_order": order}
 
     enum_value = order.get_graphql_enum_value()
-    assert enum_value.extensions == {"foo": "bar", "undine_order_by": order}
+    assert enum_value.extensions == {"foo": "bar", "undine_order": order}
 
     enum_type = MyOrderSet.__enum_type__()
-    assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order_by": order}
-    assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order_by": order}
+    assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order": order}
+    assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order": order}

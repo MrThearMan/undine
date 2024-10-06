@@ -1,8 +1,8 @@
 import pytest
 
-from undine.registry import REGISTRY
+from undine.registry import QUERY_TYPE_REGISTRY
 
 
 @pytest.fixture(autouse=True)
 def _clear_registry() -> None:
-    REGISTRY.clear()
+    QUERY_TYPE_REGISTRY.clear()

@@ -24,39 +24,39 @@ pip install undine
 ---
 
 # Before initial release:
-- Add tests for MutationTypes
-- Add tests for Inputs
-- Add tests for resolvers
-- Add tests for optimization
-- Add tests for creating schema
-- Add tests for entrypoints
-- Add tests for settings
-- Add tests for registry
-- Add tests for middleware
-- Add tests for errors
-- Add tests for converters
-- Add tests for GenericForeignKeys and GenericRelations
-- Refactor MutationHandler to be less coupled to MutationTypes
-- Add support for non-model mutations
-- Add support for permission checks
-- Add support for pagination
-- Add support for Relay
-- Add support for Enums / Django Choices
-- Add utilities for unit testing
-- Sync with graphene-django-query-optimizer (pagination, etc.)
-- Add field for TestChoices (needed for better enum support)
-- Add documentation for everything!!! (specify later)
+- [x] Add tests for MutationTypes
+- [x] Add tests for Inputs
+- [ ] Add tests for resolvers
+- [ ] Add tests for optimization
+- [ ] Add tests for creating schema
+- [ ] Add tests for entrypoints
+- [ ] Add tests for settings
+- [ ] Add tests for registry
+- [ ] Add tests for middleware
+- [ ] Add tests for errors
+- [ ] Add tests for converters
+- [ ] Add tests for GenericForeignKeys and GenericRelations
+- [ ] Refactor MutationHandler to be less coupled to MutationTypes
+- [ ] Add support for non-model mutations
+- [ ] Add support for permission checks
+- [ ] Add support for pagination
+- [ ] Add support for Relay
+- [ ] Add support for Enums / Django Choices
+- [ ] Add utilities for unit testing
+- [ ] Sync with graphene-django-query-optimizer (pagination, etc.)
+- [ ] Add field for TestChoices (needed for better enum support)
+- [ ] Add documentation for everything!!! (specify later)
 
 # Later:
-- Refactor MutationHandler to make less queries when updating nested objects
-- Add support for caching
-- Add support for subscriptions
-- Add support for union types
-- Add support for dataloaders
-- Add support for directives
-- Add support for schema export
-- Add debug toolbar integration
-- Add sentry integration
+- [ ] Refactor MutationHandler to make less queries when updating nested objects
+- [ ] Add support for caching
+- [ ] Add support for subscriptions
+- [ ] Add support for union types
+- [ ] Add support for dataloaders
+- [ ] Add support for directives
+- [ ] Add support for schema export
+- [ ] Add debug toolbar integration
+- [ ] Add sentry integration
 
 
 [coverage-badge]: https://coveralls.io/repos/github/MrThearMan/undine/badge.svg?branch=main

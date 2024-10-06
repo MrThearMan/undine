@@ -54,7 +54,7 @@ class OrderSetMeta(type):
         instance.__model__ = model
         instance.__order_map__ = {get_schema_name(n): o for n, o in get_members(instance, Order)}
         instance.__typename__ = typename or _name
-        instance.__extensions__ = (extensions or {}) | {undine_settings.ORDER_BY_EXTENSIONS_KEY: instance}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.ORDERSET_EXTENSIONS_KEY: instance}
         return instance
 
 
@@ -159,7 +159,7 @@ class Order:
         self.single_direction = single_direction
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
-        self.extensions[undine_settings.ORDER_BY_EXTENSIONS_KEY] = self
+        self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type[OrderSet], name: str) -> None:
         self.owner = owner

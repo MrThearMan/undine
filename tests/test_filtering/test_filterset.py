@@ -103,7 +103,7 @@ def test_filterset__default():
 
     assert MyFilterSet.__model__ == Task
     assert MyFilterSet.__typename__ == "MyFilterSet"
-    assert MyFilterSet.__extensions__ == {"undine_filter_input": MyFilterSet}
+    assert MyFilterSet.__extensions__ == {"undine_filterset": MyFilterSet}
 
     filter_map = MyFilterSet.__filter_map__
 
@@ -114,7 +114,7 @@ def test_filterset__default():
     input_type = MyFilterSet.__input_type__()
 
     assert input_type.name == "MyFilterSet"
-    assert input_type.extensions == {"undine_filter_input": MyFilterSet}
+    assert input_type.extensions == {"undine_filterset": MyFilterSet}
     assert input_type.description == "Decription."
 
     assert callable(input_type._fields)
@@ -290,10 +290,10 @@ def test_filterset__typename():
 def test_filterset__extensions():
     class MyFilterSet(FilterSet, model=Task, extensions={"foo": "bar"}): ...
 
-    assert MyFilterSet.__extensions__ == {"foo": "bar", "undine_filter_input": MyFilterSet}
+    assert MyFilterSet.__extensions__ == {"foo": "bar", "undine_filterset": MyFilterSet}
 
     input_type = MyFilterSet.__input_type__()
-    assert input_type.extensions == {"foo": "bar", "undine_filter_input": MyFilterSet}
+    assert input_type.extensions == {"foo": "bar", "undine_filterset": MyFilterSet}
 
 
 def test_filterset__no_auto():
@@ -302,7 +302,7 @@ def test_filterset__no_auto():
     assert MyFilterSet.__filter_map__ == {}
 
 
-def test_filterset__exclude_fields():
+def test_filterset__exclude():
     class MyFilterSet(FilterSet, model=Task, exclude=["pk"]): ...
 
     assert all(field in MyFilterSet.__filter_map__ for field in CREATED_AT_FIELDS)
@@ -311,7 +311,7 @@ def test_filterset__exclude_fields():
     assert all(field in MyFilterSet.__filter_map__ for field in TYPE_FIELDS)
 
 
-def test_filterset__exclude_fields__multiple():
+def test_filterset__exclude__multiple():
     class MyFilterSet(FilterSet, model=Task, exclude=["pk", "name"]): ...
 
     assert all(field in MyFilterSet.__filter_map__ for field in CREATED_AT_FIELDS)

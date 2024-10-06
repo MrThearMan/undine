@@ -24,7 +24,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
-from undine.registry import REGISTRY
+from undine.registry import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
@@ -104,7 +104,7 @@ class MutationTypeMeta(type):
         instance.__mutation_kind__ = mutation_kind
         instance.__mutation_handler__ = MutationHandler(instance)
         instance.__typename__ = typename or _name
-        instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_INPUT_EXTENSIONS_KEY: cls}
+        instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_EXTENSIONS_KEY: instance}
         return instance
 
 
@@ -161,7 +161,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
         # Defer creating fields so that self-referential related fields can be created.
         def fields() -> dict[str, GraphQLInputField]:
-            return {input_name: input_.as_graphql_input() for input_name, input_ in cls.__input_map__.items()}
+            return {input_name: input_.as_graphql_input_field() for input_name, input_ in cls.__input_map__.items()}
 
         return GraphQLInputObjectType(
             name=cls.__typename__,
@@ -175,7 +175,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":
             return DeleteMutationOutputType
-        return REGISTRY[cls.__model__].__output_type__()
+        return QUERY_TYPE_REGISTRY[cls.__model__].__output_type__()
 
 
 class Input:
@@ -237,7 +237,7 @@ class Input:
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
-    def as_graphql_input(self) -> GraphQLInputField:
+    def as_graphql_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
             type_=self.get_field_type(),
             description=self.description,

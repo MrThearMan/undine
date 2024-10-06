@@ -155,7 +155,7 @@ class GraphQLASTWalker:
         return self.handle_selections(fragment_type, selections)
 
     def get_model_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
-        return field_type.extensions.get(undine_settings.MODEL_TYPE_EXTENSIONS_KEY)
+        return field_type.extensions.get(undine_settings.QUERY_TYPE_EXTENSIONS_KEY)
 
     def get_model(self, field_type: GraphQLOutputType) -> type[Model] | None:
         return getattr(self.get_model_type(field_type), "__model__", None)
