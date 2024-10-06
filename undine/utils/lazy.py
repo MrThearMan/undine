@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, TypeVar
 
-from undine.registry import TYPE_REGISTRY
+from undine.registry import REGISTRY
 from undine.typing import RelatedField, empty
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key
 
@@ -32,7 +32,7 @@ class LazyQueryType:
     field: RelatedField
 
     def get_type(self) -> type[QueryType]:
-        return TYPE_REGISTRY[self.field.related_model]
+        return REGISTRY[self.field.related_model]
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +43,7 @@ class LazyQueryTypeUnion:
 
     def get_types(self) -> list[type[QueryType]]:
         return [
-            TYPE_REGISTRY[field.remote_field.related_model]
+            REGISTRY[field.remote_field.related_model]
             for field in generic_relations_for_generic_foreign_key(self.field)
         ]
 

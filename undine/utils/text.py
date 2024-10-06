@@ -46,28 +46,32 @@ def validate_name(name: str) -> str:
     return name
 
 
-def to_camel_case(name: str) -> str:
+def to_camel_case(name: str, *, validate: bool = True) -> str:
     """
     Convert from snake_case to camelCase.
     By default, validates that 'name' can be converted back to snake_case unambigously.
     """
-    if undine_settings.VALIDATE_NAMES_REVERSABLE:
+    if validate and undine_settings.VALIDATE_NAMES_REVERSABLE:
         validate_name(name)
-    words = iter(name.split("_"))
-    text = next(words)
-    for word in words:
+    words = name.split("_")
+    if len(words) == 1:
+        return name
+    text = words[0]
+    for word in words[1:]:
         text += word.capitalize()
     return text
 
 
-def to_pascal_case(name: str) -> str:
+def to_pascal_case(name: str, *, validate: bool = True) -> str:
     """
     Convert from snake_caseto PascalCase.
     By default, validates that 'name' can be converted back to snake_case unambigously.
     """
-    if undine_settings.VALIDATE_NAMES_REVERSABLE:
+    if validate and undine_settings.VALIDATE_NAMES_REVERSABLE:
         validate_name(name)
-    words = iter(name.split("_"))
+    words = name.split("_")
+    if len(words) == 1:
+        return name
     text = ""
     for word in words:
         text += word.capitalize()

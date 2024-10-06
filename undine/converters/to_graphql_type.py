@@ -6,9 +6,11 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, get_args
 
+from django.db.models import TextChoices
 from graphql import (
     GraphQLBoolean,
     GraphQLEnumType,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
@@ -98,7 +100,20 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLScalarType:
 
 @convert_type_to_graphql_type.register
 def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
-    return GraphQLEnumType(name=ref.__name__, values=ref, description=get_docstring(ref))
+    return GraphQLEnumType(
+        name=ref.__name__,
+        values=ref,
+        description=get_docstring(ref),
+    )
+
+
+@convert_type_to_graphql_type.register
+def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLEnumType:
+    return GraphQLEnumType(
+        name=ref.__name__,
+        values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
+        description=get_docstring(ref),
+    )
 
 
 @convert_type_to_graphql_type.register

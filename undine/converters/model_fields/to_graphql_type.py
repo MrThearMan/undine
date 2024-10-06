@@ -3,6 +3,8 @@ from __future__ import annotations
 from django.db import models
 from graphql import (
     GraphQLBoolean,
+    GraphQLEnumType,
+    GraphQLEnumValue,
     GraphQLFloat,
     GraphQLInputType,
     GraphQLInt,
@@ -27,20 +29,43 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.model_fields import TextChoicesField
 
 __all__ = [
     "convert_model_field_to_graphql_type",
 ]
 
+from undine.utils.text import get_docstring, to_pascal_case
 
 convert_model_field_to_graphql_type = FunctionDispatcher[models.Field, GraphQLOutputType | GraphQLInputType]()
 """Convert the given model field to a GraphQL type."""
 
 
 @convert_model_field_to_graphql_type.register
-def _(_: models.CharField | models.TextField) -> GraphQLScalarType:
-    # TODO: enums
+def _(ref: models.CharField) -> GraphQLEnumType | GraphQLScalarType:
+    if ref.choices is not None:
+        return GraphQLEnumType(
+            # TODO: Can we get better name for the enum?
+            name=to_pascal_case(ref.name, validate=False) + "Choices",
+            values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
+            description=get_docstring(ref),
+        )
+
     return GraphQLString
+
+
+@convert_model_field_to_graphql_type.register
+def _(_: models.TextField) -> GraphQLEnumType | GraphQLScalarType:
+    return GraphQLString
+
+
+@convert_model_field_to_graphql_type.register
+def _(ref: TextChoicesField) -> GraphQLEnumType:
+    return GraphQLEnumType(
+        name=ref.choices_enum.__name__,
+        values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
+        description=get_docstring(ref),
+    )
 
 
 @convert_model_field_to_graphql_type.register

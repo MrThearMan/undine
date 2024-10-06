@@ -24,7 +24,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
-from undine.registry import TYPE_REGISTRY
+from undine.registry import REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
@@ -175,7 +175,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":
             return DeleteMutationOutputType
-        return TYPE_REGISTRY[cls.__model__].__output_type__()
+        return REGISTRY[cls.__model__].__output_type__()
 
 
 class Input:

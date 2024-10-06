@@ -52,10 +52,14 @@ def test_comma_sep_str(values, result):
     assert comma_sep_str(values) == result
 
 
+class Example: ...
+
+
 def test_dotpath():
     class Foo: ...
 
     assert dotpath(Foo) == "tests.test_utils.test_text.test_dotpath.<locals>.Foo"
+    assert dotpath(Example) == "tests.test_utils.test_text.Example"
 
 
 def test_get_docstring():

@@ -12,18 +12,18 @@ if TYPE_CHECKING:
     from undine.query import QueryType
 
 __all__ = [
-    "TYPE_REGISTRY",
+    "REGISTRY",
 ]
 
 
-class _TypeRegistry:
+class _Registry:
     """
     Maps Django model classes to their corresponding `QueryTypes`.
     This allows deferring the creation of field resolvers for related fields,
     which would use a `QueryType` that is not created when the field is defined.
     """
 
-    _singleton: _TypeRegistry
+    _singleton: _Registry
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         if not hasattr(cls, "_singleton"):
@@ -41,7 +41,7 @@ class _TypeRegistry:
 
     def __setitem__(self, model: type[models.Model], graphql_type: type[QueryType]) -> None:
         if model in self.__registry:
-            raise TypeRegistryDuplicateError(model=model, graphql_type=TYPE_REGISTRY[model])
+            raise TypeRegistryDuplicateError(model=model, graphql_type=REGISTRY[model])
         self.__registry[model] = graphql_type
 
     def __contains__(self, model: type[models.Model]) -> bool:
@@ -51,4 +51,4 @@ class _TypeRegistry:
         self.__registry.clear()
 
 
-TYPE_REGISTRY = _TypeRegistry()
+REGISTRY = _Registry()

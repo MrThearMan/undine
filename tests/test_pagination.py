@@ -170,101 +170,102 @@ def test_validate_pagination_args(pagination_input, output, errors):
         assert args == output
 
 
-TEST_CASES = {
-    "default": DataParams(
-        pagination_input=PaginationData(),
-        start=0,
-        stop=100,
-    ),
-    "after": DataParams(
-        pagination_input=PaginationData(after=1),
-        start=1,
-        stop=100,
-    ),
-    "before": DataParams(
-        pagination_input=PaginationData(before=99),
-        start=0,
-        stop=99,
-    ),
-    "first": DataParams(
-        pagination_input=PaginationData(first=10),
-        start=0,
-        stop=10,
-    ),
-    "last": DataParams(
-        pagination_input=PaginationData(last=10),
-        start=90,
-        stop=100,
-    ),
-    "after_before": DataParams(
-        pagination_input=PaginationData(after=1, before=99),
-        start=1,
-        stop=99,
-    ),
-    "first_last": DataParams(
-        pagination_input=PaginationData(first=10, last=8),
-        start=2,
-        stop=10,
-    ),
-    "after_before_first_last": DataParams(
-        pagination_input=PaginationData(after=1, before=99, first=10, last=8),
-        start=3,
-        stop=11,
-    ),
-    "after_bigger_than_size": DataParams(
-        pagination_input=PaginationData(after=101),
-        start=100,
-        stop=100,
-    ),
-    "before_bigger_than_size": DataParams(
-        pagination_input=PaginationData(before=101),
-        start=0,
-        stop=100,
-    ),
-    "first_bigger_than_size": DataParams(
-        pagination_input=PaginationData(first=101),
-        start=0,
-        stop=100,
-    ),
-    "last_bigger_than_size": DataParams(
-        pagination_input=PaginationData(last=101),
-        start=0,
-        stop=100,
-    ),
-    "after_is_size": DataParams(
-        pagination_input=PaginationData(after=100),
-        start=100,
-        stop=100,
-    ),
-    "before_is_size": DataParams(
-        pagination_input=PaginationData(before=100),
-        start=0,
-        stop=100,
-    ),
-    "first_is_size": DataParams(
-        pagination_input=PaginationData(first=100),
-        start=0,
-        stop=100,
-    ),
-    "last_is_size": DataParams(
-        pagination_input=PaginationData(last=100),
-        start=0,
-        stop=100,
-    ),
-    "first_bigger_than_after_before": DataParams(
-        pagination_input=PaginationData(after=10, before=20, first=20),
-        start=10,
-        stop=20,
-    ),
-    "last_bigger_than_after_before": DataParams(
-        pagination_input=PaginationData(after=10, before=20, last=20),
-        start=10,
-        stop=20,
-    ),
-}
-
-
-@pytest.mark.parametrize(**parametrize_helper(TEST_CASES))
+@pytest.mark.parametrize(
+    **parametrize_helper(
+        {
+            "default": DataParams(
+                pagination_input=PaginationData(),
+                start=0,
+                stop=100,
+            ),
+            "after": DataParams(
+                pagination_input=PaginationData(after=1),
+                start=1,
+                stop=100,
+            ),
+            "before": DataParams(
+                pagination_input=PaginationData(before=99),
+                start=0,
+                stop=99,
+            ),
+            "first": DataParams(
+                pagination_input=PaginationData(first=10),
+                start=0,
+                stop=10,
+            ),
+            "last": DataParams(
+                pagination_input=PaginationData(last=10),
+                start=90,
+                stop=100,
+            ),
+            "after_before": DataParams(
+                pagination_input=PaginationData(after=1, before=99),
+                start=1,
+                stop=99,
+            ),
+            "first_last": DataParams(
+                pagination_input=PaginationData(first=10, last=8),
+                start=2,
+                stop=10,
+            ),
+            "after_before_first_last": DataParams(
+                pagination_input=PaginationData(after=1, before=99, first=10, last=8),
+                start=3,
+                stop=11,
+            ),
+            "after_bigger_than_size": DataParams(
+                pagination_input=PaginationData(after=101),
+                start=100,
+                stop=100,
+            ),
+            "before_bigger_than_size": DataParams(
+                pagination_input=PaginationData(before=101),
+                start=0,
+                stop=100,
+            ),
+            "first_bigger_than_size": DataParams(
+                pagination_input=PaginationData(first=101),
+                start=0,
+                stop=100,
+            ),
+            "last_bigger_than_size": DataParams(
+                pagination_input=PaginationData(last=101),
+                start=0,
+                stop=100,
+            ),
+            "after_is_size": DataParams(
+                pagination_input=PaginationData(after=100),
+                start=100,
+                stop=100,
+            ),
+            "before_is_size": DataParams(
+                pagination_input=PaginationData(before=100),
+                start=0,
+                stop=100,
+            ),
+            "first_is_size": DataParams(
+                pagination_input=PaginationData(first=100),
+                start=0,
+                stop=100,
+            ),
+            "last_is_size": DataParams(
+                pagination_input=PaginationData(last=100),
+                start=0,
+                stop=100,
+            ),
+            "first_bigger_than_after_before": DataParams(
+                pagination_input=PaginationData(after=10, before=20, first=20),
+                start=10,
+                stop=20,
+            ),
+            "last_bigger_than_after_before": DataParams(
+                pagination_input=PaginationData(after=10, before=20, last=20),
+                start=10,
+                stop=20,
+            ),
+        }
+    )
+)
 def test_calculate_queryset_slice(pagination_input: PaginationData, start: int, stop: int) -> None:
     cut = calculate_queryset_slice(**pagination_input._asdict())
     assert cut.start == start

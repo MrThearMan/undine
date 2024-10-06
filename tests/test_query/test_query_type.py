@@ -4,17 +4,17 @@ from example_project.app.models import Project, Task
 from tests.helpers import MockGQLInfo
 from undine import FilterSet, OrderSet, QueryType
 from undine.errors.exceptions import MissingModelError
-from undine.registry import TYPE_REGISTRY
+from undine.registry import REGISTRY
 
 
 def test_query_type__simple():
-    assert Task not in TYPE_REGISTRY
+    assert Task not in REGISTRY
 
     class MyQueryType(QueryType, model=Task):
         """Description."""
 
-    assert Task in TYPE_REGISTRY
-    assert TYPE_REGISTRY[Task] == MyQueryType
+    assert Task in REGISTRY
+    assert REGISTRY[Task] == MyQueryType
 
     assert MyQueryType.__model__ == Task
     assert MyQueryType.__filterset__ is None
@@ -120,11 +120,11 @@ def test_query_type__exclude__multiple():
 
 
 def test_query_type__dont_register():
-    assert Task not in TYPE_REGISTRY
+    assert Task not in REGISTRY
 
     class MyQueryType(QueryType, model=Task, register=False): ...
 
-    assert Task not in TYPE_REGISTRY
+    assert Task not in REGISTRY
 
 
 def test_query_type__typename():
