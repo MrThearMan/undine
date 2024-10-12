@@ -6,7 +6,6 @@ based on those registered function's first argument's type.
 from __future__ import annotations
 
 import inspect
-import sys
 from types import FunctionType, NoneType, UnionType
 from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
 
@@ -16,7 +15,7 @@ from undine.errors.exceptions import FunctionDispatcherError
 from undine.parsers import parse_return_annotation
 from undine.typing import DispatchWrapper, From, To
 
-from .reflection import get_signature
+from .reflection import get_instance_name, get_signature
 
 __all__ = [
     "FunctionDispatcher",
@@ -51,7 +50,7 @@ class FunctionDispatcher(Generic[From, To]):
         :param wrapper: A function that wraps all implementated functions for
                         performing additional logic.
         """
-        self.name = self._get_name()
+        self.name = get_instance_name()
         self.wrapper = wrapper
         self.union_default = union_default
         self.default = Undefined
@@ -189,19 +188,3 @@ class FunctionDispatcher(Generic[From, To]):
             msg = "Registered function's first argument must have a type annotation."
             raise FunctionDispatcherError(msg)
         return type_
-
-    def _get_name(self) -> str:
-        """
-        Perform some python black magic to find the name of the variable
-        to which the FunctionDispatcher is begin assigned to.
-
-        Note: This only works if the FunctionDispatcher initializer is called on the
-        same line as the variable for it's instance is defined on.
-        """
-        if hasattr(self, "name"):
-            return self.name
-        frame = sys._getframe(2)
-        source = inspect.findsource(frame)[0]
-        line = source[frame.f_lineno - 1]
-        definition = line.split("=", maxsplit=1)[0]
-        return definition.split(":", maxsplit=1)[0].strip()

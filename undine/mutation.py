@@ -24,7 +24,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
-from undine.registry import QUERY_TYPE_REGISTRY
+from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
@@ -59,7 +59,6 @@ class MutationTypeMeta(type):
         mutation_kind: MutationKind | None = None,
         auto: bool = True,
         exclude: Iterable[str] = (),
-        lookup_field: str = "pk",
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> MutationTypeMeta:
@@ -82,6 +81,8 @@ class MutationTypeMeta(type):
             else:
                 mutation_kind: MutationKind = "custom"
 
+        lookup_field = "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name
+
         if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
             field = get_model_field(model=model, lookup=lookup_field)
             _attrs[lookup_field] = Input(field, required=True)
@@ -97,12 +98,12 @@ class MutationTypeMeta(type):
         _attrs["__mutation_kind__"] = mutation_kind
         instance: type[MutationType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
-        # Members should use '__dunder__' names to avoid name collisions with possible filter names.
+        # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.
         instance.__model__ = model
         instance.__input_map__ = {get_schema_name(name): input_ for name, input_ in get_members(instance, Input)}
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
-        instance.__mutation_handler__ = MutationHandler(instance)
+        instance.__mutation_handler__ = MutationHandler(model=model)
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_EXTENSIONS_KEY: instance}
         return instance
@@ -119,11 +120,10 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
                        If not given, it will be guessed based on the name of the class.
     - `auto`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
-    - `lookup_field`: Name of the field to use for looking up single objects. Use "pk" by default.
     - `typename`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
 
-    >>> class MyMutation(MutationType, model=...): ...
+    >>> class MyMutationType(MutationType, model=...): ...
     """
 
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.

@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, TypeVar
 
-from undine.registry import QUERY_TYPE_REGISTRY
+from undine.registies import QUERY_TYPE_REGISTRY
 from undine.typing import RelatedField, empty
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key
 

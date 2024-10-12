@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
+import dataclasses
 from functools import partial
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any, Generic, Self
 
-from django.db import models
+from django.db.models import Manager, Model
 from graphql import Undefined
 
-from undine.errors.exceptions import GraphQLInvalidInputDataError
+from undine.errors.exceptions import GraphQLBadInputDataError, GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelationType
-from undine.typing import ManyToManyManager, MutationInputType, OneToManyManager, PostSaveData, PostSaveHandler, TModel
+from undine.settings import undine_settings
+from undine.typing import (
+    JsonType,
+    ManyToManyManager,
+    MutationInputType,
+    OneToManyManager,
+    PostSaveData,
+    PostSaveHandler,
+    TModel,
+)
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_instance_or_raise
+from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine.mutation import MutationType
+    from undine import MutationType
     from undine.parsers.parse_model_relation_info import RelatedFieldInfo
 
 
@@ -26,23 +37,19 @@ __all__ = [
 ]
 
 
-# TODO: Reduce coupling to MutationType
 class MutationHandler(Generic[TModel]):
     """A class for creating or updating model instances while also handling related model instances."""
 
-    def __init__(self, mutation_type: type[MutationType]) -> None:
-        self.mutation_type = mutation_type
-        self.related_info = parse_model_relation_info(self.model)
-
-    def __class_getitem__(cls, item: type[TModel]) -> type[MutationHandler[TModel]]:  # type: ignore[override]
-        return cls
+    def __init__(self, *, model: type[TModel]) -> None:
+        self.model = model
+        self.related_info = parse_model_relation_info(model)
 
     @property
-    def model(self) -> type[models.Model]:
-        return self.mutation_type.__model__
+    def manager(self) -> Manager:
+        return self.model._default_manager  # type: ignore[return-value]
 
-    def get_update_or_create(self, data: dict[str, Any]) -> models.Model | None:
-        key = self.mutation_type.__lookup_field__
+    def get_update_or_create(self, data: dict[str, Any]) -> TModel | None:
+        key = "pk" if undine_settings.USE_PK_FIELD_NAME else self.model._meta.pk.name
         value = data.pop(key, None)
 
         if value is None:
@@ -57,19 +64,18 @@ class MutationHandler(Generic[TModel]):
     def create(self, input_data: dict[str, Any]) -> TModel:
         """Create a new instance of the model, while also handling model relations."""
         post_save_data = self.pre_save(input_data)
-        instance = self.model._default_manager.create(**input_data)
-        input_data.update(post_save_data.input_only_data)
+        instance = self.manager.create(**input_data)
+
         for handler in post_save_data.post_save_handlers:
             handler(instance)
         return instance
 
-    def update(self, instance: models.Model, input_data: dict[str, Any]) -> TModel:
+    def update(self, instance: TModel, input_data: dict[str, Any]) -> TModel:
         """Update an existing instance of the model, while also handling model relations."""
         post_save_data = self.pre_save(input_data)
         for attr, value in input_data.items():
             setattr(instance, attr, value)
         instance.save(update_fields=list(input_data.keys()))
-        input_data.update(post_save_data.input_only_data)
         for handler in post_save_data.post_save_handlers:
             handler(instance)
         return instance
@@ -83,13 +89,6 @@ class MutationHandler(Generic[TModel]):
         post_save_data = PostSaveData()
 
         for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
-            # Input-only fields should be removed from the input data.
-            input_field = self.mutation_type.__input_map__.get(field_name, None)
-            if input_field is not None and input_field.input_only:
-                if field_name in input_data:
-                    post_save_data.input_only_data[field_name] = input_data.pop(field_name)
-                continue
-
             # Only related fields need special handling.
             field_info = self.related_info.get(field_name, None)
             if field_info is None:
@@ -101,18 +100,18 @@ class MutationHandler(Generic[TModel]):
             if related_data is Undefined:
                 continue
 
-            if isinstance(related_data, models.Model):
+            if isinstance(related_data, Model):
                 input_data[field_name] = related_data
 
             elif field_info.relation_type.created_after:
-                post_handler = self.get_post_save_handler(field_info, field_name, related_data)
+                post_handler = self.get_post_save_handler(field_info, related_data)
                 post_save_data.post_save_handlers.append(post_handler)
 
             elif field_info.relation_type.created_before:
-                input_data[field_name] = self.handle_before_relation(field_info, field_name, related_data)
+                input_data[field_name] = self.handle_before_relation(field_info, related_data)
 
             elif field_info.relation_type.is_generic_foreign_key:
-                input_data[field_name] = self.handle_generic_fk(field_info, field_name, related_data)
+                input_data[field_name] = self.handle_generic_fk(field_info, related_data)
 
             else:
                 msg = f"Unhandled relation type: {field_info.relation_type}"
@@ -120,55 +119,34 @@ class MutationHandler(Generic[TModel]):
 
         return post_save_data
 
-    def get_related_handler(self, field_name: str) -> MutationHandler:
-        """Get the related handler for the given field name."""
-        from undine.mutation import MutationTypeMeta
-
-        input_field = self.mutation_type.__input_map__.get(field_name, None)
-        if input_field is None:
-            msg = (
-                f"Mutation input contains data for a field '{field_name}', "
-                f"which is not defined in the mutation class '{self.mutation_type.__name__}'."
-            )
-            raise GraphQLInvalidInputDataError(msg)
-
-        if not isinstance(input_field.ref, MutationTypeMeta):
-            msg = (
-                f"Mutation input contains data for a field '{field_name}', which is not a Mutation. "
-                "Cannot perform related mutations."
-            )
-            raise GraphQLInvalidInputDataError(msg)
-
-        return input_field.ref.__mutation_handler__
-
-    def handle_before_relation(self, field_info: RelatedFieldInfo, field_name: str, data: Any) -> Any:
+    def handle_before_relation(self, field_info: RelatedFieldInfo, data: Any) -> Any:
         if (data is None and field_info.nullable) or isinstance(data, field_info.related_model_pk_type):
             return data
 
         if isinstance(data, dict):
-            related_handler = self.get_related_handler(field_name)
+            related_handler = MutationHandler(model=field_info.model)
             return related_handler.get_update_or_create(data)
 
-        msg = f"Invalid input data for field '{field_name}': {data!r}"
+        msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
         raise GraphQLInvalidInputDataError(msg)
 
-    def handle_generic_fk(self, field_info: RelatedFieldInfo, field_name: str, data: Any) -> models.Model:
+    def handle_generic_fk(self, field_info: RelatedFieldInfo, data: Any) -> Model:
         if not isinstance(data, dict):
-            msg = f"Invalid input data for field '{field_name}': {data!r}"
+            msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
             raise GraphQLInvalidInputDataError(msg)
 
         typename = data.get("typename")
         if typename is None:
-            msg = f"Missing 'typename' field in input data for field '{field_name}': {data!r}"
+            msg = f"Missing 'typename' field in input data for field '{field_info.field_name}': {data!r}"
             raise GraphQLInvalidInputDataError(msg)
 
         pk = data.get("pk")
         if pk is None:
-            msg = f"Missing 'pk' field in input data for field '{field_name}': {data!r}"
+            msg = f"Missing 'pk' field in input data for field '{field_info.field_name}': {data!r}"
             raise GraphQLInvalidInputDataError(msg)
 
         generic_fk_field: GenericForeignKey = self.model._meta.get_field(field_info.field_name)
-        related_model: type[models.Model] | None = next(
+        related_model: type[Model] | None = next(
             (
                 field.model
                 for field in generic_relations_for_generic_foreign_key(generic_fk_field)
@@ -182,29 +160,29 @@ class MutationHandler(Generic[TModel]):
 
         return get_instance_or_raise(model=related_model, key="pk", value=pk)
 
-    def get_post_save_handler(self, field_info: RelatedFieldInfo, field_name: str, data: Any) -> PostSaveHandler:
+    def get_post_save_handler(self, field_info: RelatedFieldInfo, data: Any) -> PostSaveHandler:
         """Get a post-save handler based on the relation type."""
-        mutation_handler = self.get_related_handler(field_name)
+        related_handler = MutationHandler(model=field_info.model)
 
         if field_info.relation_type == RelationType.REVERSE_ONE_TO_ONE:
-            return partial(mutation_handler.post_handle_one_to_one, field_info=field_info, data=data)
+            return partial(related_handler.post_handle_one_to_one, field_info=field_info, data=data)
 
         if field_info.relation_type == RelationType.REVERSE_ONE_TO_MANY:
-            return partial(mutation_handler.post_handle_one_to_many, field_info=field_info, data=data)
+            return partial(related_handler.post_handle_one_to_many, field_info=field_info, data=data)
 
         if field_info.relation_type == RelationType.GENERIC_ONE_TO_MANY:
-            return partial(mutation_handler.post_handle_one_to_many, field_info=field_info, data=data)
+            return partial(related_handler.post_handle_one_to_many, field_info=field_info, data=data)
 
-        return partial(mutation_handler.post_handle_many_to_many, field_info=field_info, data=data)
+        return partial(related_handler.post_handle_many_to_many, field_info=field_info, data=data)
 
-    def post_handle_one_to_one(self, related_instance: models.Model, field_info: RelatedFieldInfo, data: Any) -> None:
+    def post_handle_one_to_one(self, related_instance: Model, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a reverse one-to-one relation after the related instance has been created."""
         if data is None:
             if not field_info.nullable:
                 msg = f"Field '{field_info.field_name}' cannot be null."
                 raise GraphQLInvalidInputDataError(msg)
 
-            instance: models.Model | None = getattr(related_instance, field_info.field_name, None)
+            instance: Model | None = getattr(related_instance, field_info.field_name, None)
             if instance is not None:
                 instance.delete()
             return
@@ -224,7 +202,7 @@ class MutationHandler(Generic[TModel]):
         msg = f"Invalid input data for field '{field_info.field_name}': {data!r}"
         raise GraphQLInvalidInputDataError(msg)
 
-    def post_handle_one_to_many(self, related_instance: TModel, field_info: RelatedFieldInfo, data: Any) -> None:
+    def post_handle_one_to_many(self, related_instance: Model, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a reverse one-to-many relation after the related instance has been created."""
         manager: OneToManyManager = getattr(related_instance, field_info.field_name)
 
@@ -245,7 +223,7 @@ class MutationHandler(Generic[TModel]):
         if not data:
             # Delete related objects pointing to this model.
             selector = {field_info.related_name: related_instance}
-            self.model._default_manager.filter(**selector).delete()
+            self.manager.filter(**selector).delete()
             return
 
         pks: list[Any] = []
@@ -267,9 +245,9 @@ class MutationHandler(Generic[TModel]):
         # TODO: Handle GenericRelation?
         if not field_info.relation_type.is_generic_relation:
             selector = {field_info.related_name: related_instance}
-            self.model._default_manager.filter(**selector).exclude(pk__in=pks).delete()
+            self.manager.filter(**selector).exclude(pk__in=pks).delete()
 
-    def post_handle_many_to_many(self, related_instance: TModel, field_info: RelatedFieldInfo, data: Any) -> None:
+    def post_handle_many_to_many(self, related_instance: Model, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a many-to-many relation after the related instance has been created."""
         manager: ManyToManyManager = getattr(related_instance, field_info.field_name)
 
@@ -285,7 +263,7 @@ class MutationHandler(Generic[TModel]):
             manager.clear()
             return
 
-        instances: list[models.Model] = []
+        instances: list[Model] = []
         for item in data:
             if isinstance(item, dict):
                 nested_instance = self.get_update_or_create(item)
@@ -301,3 +279,74 @@ class MutationHandler(Generic[TModel]):
 
         # Add related objects that were not previously linked to the main model.
         manager.set(instances)
+
+
+@dataclasses.dataclass
+class MutationPreHandler:
+    mutation_type: type[MutationType]
+    input_data: dict[str, Any]
+
+    input_only_data: dict[str, Any] = dataclasses.field(default_factory=dict, init=False)
+
+    def __enter__(self) -> Self:
+        self.input_only_data = extract_input_only_data(mutation_type=self.mutation_type, input_data=self.input_data)
+        return self
+
+    def __exit__(self, *args: object, **kwargs: Any) -> None:
+        extend(target=self.input_data, to_merge=self.input_only_data)
+
+
+def extract_input_only_data(mutation_type: type[MutationType], input_data: dict[str, Any]) -> JsonType:
+    """
+    Extracts all input-only field data from the given 'input_data'
+    based on the undine.Inputs in the given MutationType.
+    """
+    from undine import MutationType
+
+    input_only_data: JsonType = {}
+
+    for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
+        input_type = mutation_type.__input_map__.get(field_name)
+        if input_type is None:
+            raise GraphQLBadInputDataError(field_name=field_name)
+
+        if input_type.input_only:
+            input_only_data[field_name] = input_data.pop(field_name)
+            continue
+
+        value = input_data[field_name]
+
+        if isinstance(value, dict) and is_subclass(input_type.ref, MutationType):
+            data = extract_input_only_data(mutation_type=input_type.ref, input_data=value)
+            if data:
+                input_only_data[field_name] = data
+
+        elif isinstance(value, list) and is_subclass(input_type.ref, MutationType):
+            nested_data: list[JsonType] = []
+            for item in value:
+                data = extract_input_only_data(mutation_type=input_type.ref, input_data=item)
+                if data:
+                    nested_data.append(data)
+
+            if nested_data:
+                input_only_data[field_name] = nested_data
+
+    return input_only_data
+
+
+def extend(*, target: JsonType, to_merge: JsonType) -> JsonType:
+    """
+    Recursively extend 'other' JSON object into 'target' JSON object.
+    If there is a conflict, the 'other' dictionary's value is used.
+    """
+    for key, value in to_merge.items():
+        if key not in target:
+            target[key] = value
+        elif isinstance(target[key], dict) and isinstance(value, dict):
+            extend(target=target[key], to_merge=value)
+        elif isinstance(target[key], list) and isinstance(value, list):
+            value.extend(value)
+        else:
+            target[key] = value
+
+    return target

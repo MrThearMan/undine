@@ -33,6 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Framework :: Django",
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
@@ -293,7 +294,7 @@ max-complexity = 12
 max-args = 9
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 warn_return_any = "True"
 warn_unused_configs = "True"
 ignore_missing_imports = "True"
@@ -329,13 +330,14 @@ addopts = "-vv -s --disable-warnings"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py{311, 312}-django{42, 50, 51}
+envlist = py{311, 312, 313}-django{42, 50, 51}
 isolated_build = true
 
 [gh-actions]
 python =
     3.11: py311
     3.12: py312
+    3.13: py313
 
 [testenv]
 allowlist_externals =
@@ -365,5 +367,5 @@ commands =
 """
 
 [build-system]
-requires = ["poetry-core>=1.7.0"]
+requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"

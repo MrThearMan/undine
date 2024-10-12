@@ -43,10 +43,12 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
             related_name = field.remote_field.get_accessor_name()
             if related_name is None:  # Self-referential relation
                 related_name = field_name
+            related_model = field.related_model
 
         elif relation_type.is_reverse:
             field_name = field.get_accessor_name()
             related_name = field.remote_field.name
+            related_model = field.related_model
 
         elif relation_type.is_generic_relation:
             field_name = field.name
@@ -56,12 +58,14 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
                 for related_field in field.related_model._meta.get_fields()
                 if getattr(related_field, "fk_field", Undefined) == field.object_id_field_name
             )
+            related_model = field.related_model
 
         elif relation_type.is_generic_foreign_key:
             field_name = field.name
             # For GenericForeignKey, there are multiple related models,
-            # so we don't have a single related name.
+            # so we don't have a single related name or model.
             related_name = None
+            related_model = None
 
         else:
             msg = f"Unhandled relation type: {relation_type}"
@@ -73,6 +77,7 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
             relation_type=relation_type,
             nullable=nullable,
             related_model_pk_type=related_model_pk_type,
+            model=related_model,
         )
 
     return relation_info
@@ -166,3 +171,4 @@ class RelatedFieldInfo:
     relation_type: RelationType
     nullable: bool
     related_model_pk_type: type | None
+    model: type[models.Model] | None

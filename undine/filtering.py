@@ -62,7 +62,7 @@ class FilterSetMeta(type):
         _attrs["__model__"] = model
         instance: type[FilterSet] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
-        # Members should use '__dunder__' names to avoid name collisions with possible filter names.
+        # Members should use `__dunder__` names to avoid name collisions with possible `undine.Filter` names.
         instance.__model__ = model
         instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
         instance.__typename__ = typename or _name

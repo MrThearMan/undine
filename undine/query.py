@@ -25,7 +25,7 @@ from undine.converters import (
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
-from undine.registry import QUERY_TYPE_REGISTRY
+from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
@@ -111,7 +111,7 @@ class QueryTypeMeta(type):
         if register:
             QUERY_TYPE_REGISTRY[model] = instance
 
-        # Members should use '__dunder__' names to avoid name collisions with possible field names.
+        # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.
         instance.__model__ = model
         instance.__filterset__ = filterset
         instance.__orderset__ = orderset
@@ -141,7 +141,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
                  their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
     - `extensions`: GraphQL extensions for the created ObjectType. Defaults to `None`.
 
-    >>> class MyType(QueryType, model=...): ...
+    >>> class MyQueryType(QueryType, model=...): ...
     """
 
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.

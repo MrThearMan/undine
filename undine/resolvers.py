@@ -17,6 +17,7 @@ from undine.errors.error_handlers import handle_integrity_errors
 from undine.errors.exceptions import GraphQLMissingLookupFieldError
 from undine.settings import undine_settings
 from undine.utils.model_utils import get_instance_or_raise
+from undine.utils.mutation_handler import MutationPreHandler
 from undine.utils.reflection import get_signature, is_subclass
 
 if TYPE_CHECKING:
@@ -114,16 +115,18 @@ class CreateResolver:
     defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[MutationType]
+    mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
-        self.model_mutation.__pre_mutation__(None, info, input_data)
+        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
+        self.mutation_type.__pre_mutation__(None, info, input_data)
 
-        with transaction.atomic(), handle_integrity_errors():
-            instance = self.model_mutation.__mutation_handler__.create(input_data)
+        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
 
-        self.model_mutation.__post_mutation__(instance, info, input_data)
+        with transaction.atomic(), handle_integrity_errors(), handler:
+            instance = self.mutation_type.__mutation_handler__.create(input_data)
+
+        self.mutation_type.__post_mutation__(instance, info, input_data)
         return instance
 
 
@@ -136,15 +139,15 @@ class UpdateResolver:
     defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[MutationType]
+    mutation_type: type[MutationType]
 
     @property
     def model(self) -> type[models.Model]:
-        return self.model_mutation.__model__
+        return self.mutation_type.__model__
 
     @property
     def lookup_field(self) -> str:
-        return self.model_mutation.__lookup_field__
+        return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
@@ -153,12 +156,14 @@ class UpdateResolver:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
-        self.model_mutation.__pre_mutation__(instance, info, input_data)
+        self.mutation_type.__pre_mutation__(instance, info, input_data)
 
-        with transaction.atomic(), handle_integrity_errors():
-            instance = self.model_mutation.__mutation_handler__.create(input_data)
+        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
 
-        self.model_mutation.__post_mutation__(instance, info, input_data)
+        with transaction.atomic(), handle_integrity_errors(), handler:
+            instance = self.mutation_type.__mutation_handler__.create(input_data)
+
+        self.mutation_type.__post_mutation__(instance, info, input_data)
         return instance
 
 
@@ -170,15 +175,15 @@ class DeleteResolver:
     hooks defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[MutationType]
+    mutation_type: type[MutationType]
 
     @property
     def model(self) -> type[models.Model]:
-        return self.model_mutation.__model__
+        return self.mutation_type.__model__
 
     @property
     def lookup_field(self) -> str:
-        return self.model_mutation.__lookup_field__
+        return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
         input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
@@ -187,12 +192,14 @@ class DeleteResolver:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
-        self.model_mutation.__pre_mutation__(instance, info, input_data)
+        self.mutation_type.__pre_mutation__(instance, info, input_data)
 
-        with transaction.atomic(), handle_integrity_errors():
+        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
+
+        with transaction.atomic(), handle_integrity_errors(), handler:
             instance.delete()
 
-        self.model_mutation.__post_mutation__(None, info, input_data)
+        self.mutation_type.__post_mutation__(None, info, input_data)
         return {"success": True}
 
 
@@ -204,14 +211,16 @@ class CustomResolver:
     hooks defined in the ModelGraphQLMutation.
     """
 
-    model_mutation: type[MutationType]
+    mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
         input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
-        self.model_mutation.__pre_mutation__(None, info, input_data)
+        self.mutation_type.__pre_mutation__(None, info, input_data)
 
-        with transaction.atomic(), handle_integrity_errors():
-            return_value = self.model_mutation.__mutate__(root, info, input_data)
+        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
 
-        self.model_mutation.__post_mutation__(return_value, info, input_data)
+        with transaction.atomic(), handle_integrity_errors(), handler:
+            return_value = self.mutation_type.__mutate__(root, info, input_data)
+
+        self.mutation_type.__post_mutation__(return_value, info, input_data)
         return return_value

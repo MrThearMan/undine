@@ -201,7 +201,6 @@ class GraphQLParams:
 @dataclass(slots=True)
 class PostSaveData:
     post_save_handlers: list[Callable[[models.Model], Any]] = dataclasses.field(default_factory=list)
-    input_only_data: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,7 +235,7 @@ FilterResolverFunc: TypeAlias = Callable[..., models.Q]
 QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
-JsonType: TypeAlias = dict[str, Any] | list[dict[str, Any]]
+JsonType: TypeAlias = dict[str, Any] | list["JsonType"]
 DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
 MutationInputType: TypeAlias = JsonType | models.Model | list[models.Model] | None
 PostSaveHandler: TypeAlias = Callable[[models.Model], Any]

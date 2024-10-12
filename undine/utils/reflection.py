@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "cache_signature_if_function",
+    "get_instance_name",
     "get_members",
     "get_signature",
     "get_wrapped_func",
@@ -146,3 +147,19 @@ def has_callable_attribute(obj: object, name: str) -> bool:
 def is_subclass(obj: object, cls: type) -> bool:
     """Check if the given object is a subclass of the given class."""
     return isinstance(obj, type) and issubclass(obj, cls)
+
+
+def get_instance_name() -> str:
+    """
+    Perform some python black magic to find the name of the variable
+    to which the an instance of a class is begin assigned to.
+    Should be used in the '__init__' method.
+
+    Note: This only works if the instance initializer is called on the
+    same line as the variable for it's is defined to.
+    """
+    frame = sys._getframe(2)
+    source = inspect.findsource(frame)[0]
+    line = source[frame.f_lineno - 1]
+    definition = line.split("=", maxsplit=1)[0]
+    return definition.split(":", maxsplit=1)[0].strip()

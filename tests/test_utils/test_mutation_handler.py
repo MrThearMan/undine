@@ -3,7 +3,6 @@ import datetime
 import pytest
 
 from example_project.app.models import Comment, Task, TaskType
-from example_project.app.mutations import CommentMutationTypeInput, TaskCreateMutationType
 from tests.factories import TaskFactory
 from undine.utils.mutation_handler import MutationHandler
 
@@ -13,7 +12,7 @@ pytestmark = [
 
 
 def test_mutation_handler__task():
-    handler = MutationHandler[Task](mutation_type=TaskCreateMutationType)
+    handler = MutationHandler[Task](model=Task)
 
     data = {
         "name": "Test task",
@@ -73,7 +72,7 @@ def test_mutation_handler__task():
         ],
     }
 
-    instance = handler.create(data)
+    instance: Task = handler.create(data)
 
     assert instance.name == "Test task"
     assert instance.type == TaskType.TASK
@@ -108,7 +107,7 @@ def test_mutation_handler__task():
 
 
 def test_mutation_handler__comment():
-    handler = MutationHandler[Comment](mutation_type=CommentMutationTypeInput)
+    handler = MutationHandler[Comment](model=Comment)
 
     task = TaskFactory.create(name="Test task")
 

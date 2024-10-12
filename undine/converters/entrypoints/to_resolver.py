@@ -38,7 +38,7 @@ def load_deferred_converters() -> None:
         if ref.__mutation_kind__ == "create":
             return CreateResolver(model_mutation=ref)
         if ref.__mutation_kind__ == "update":
-            return UpdateResolver(model_mutation=ref)
+            return UpdateResolver(mutation_type=ref)
         if ref.__mutation_kind__ == "delete":
-            return DeleteResolver(model_mutation=ref)
-        return CustomResolver(model_mutation=ref)
+            return DeleteResolver(mutation_type=ref)
+        return CustomResolver(mutation_type=ref)

@@ -26,8 +26,8 @@ __all__ = [
     "ModelFieldNotARelationError",
     "NoFunctionParametersError",
     "OptimizerError",
+    "RegistryDuplicateError",
     "SchemaNameValidationError",
-    "TypeRegistryDuplicateError",
     "TypeRegistryMissingTypeError",
     "UndineError",
 ]
@@ -153,17 +153,10 @@ class FunctionDispatcherError(UndineError):
     """Error raised for `FunctionDispatcher` errors."""
 
 
-class TypeRegistryDuplicateError(UndineError):
-    """Error raised if trying to register a QueryType for the same model twice."""
+class RegistryDuplicateError(UndineError):
+    """Error raised if trying to register a value for the same key twice."""
 
-    msg = (
-        "A 'QueryType' for model '{model:dotpath}' "
-        "has already been registered: '{graphql_type:dotpath}'. "
-        "Use a proxy model or disable registration with "
-        "`class MyType(QueryType, model=MyModel, register=False)`. "
-        "Note that the registered 'QueryType' will be used when creating "
-        "resolvers for related fields automatically."
-    )
+    msg = "A value for '{key:dotpath}' has already been registered: '{value:dotpath}' in '{registry_name}'."
 
 
 class TypeRegistryMissingTypeError(UndineError):
@@ -270,6 +263,14 @@ class GraphQLFileParsingError(GraphQLStatusError):
 class GraphQLInvalidInputDataError(GraphQLStatusError):
     """Error raised when a request content cannot be decoded to python data."""
 
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBadInputDataError(GraphQLStatusError):
+    """Error raised when a request content is not correct according to the GraphQL schema."""
+
+    msg = "Mutation input contains data for a field '{field_name}', which is not a MutationType."
     status = 400
     code = error_codes.INVALID_INPUT_DATA
 

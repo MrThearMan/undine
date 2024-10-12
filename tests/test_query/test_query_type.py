@@ -4,7 +4,7 @@ from example_project.app.models import Project, Task
 from tests.helpers import MockGQLInfo
 from undine import FilterSet, OrderSet, QueryType
 from undine.errors.exceptions import MissingModelError
-from undine.registry import QUERY_TYPE_REGISTRY
+from undine.registies import QUERY_TYPE_REGISTRY
 
 
 def test_query_type__simple():

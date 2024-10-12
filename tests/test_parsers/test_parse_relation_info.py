@@ -1,4 +1,16 @@
-from example_project.app.models import Comment, Task
+from django.contrib.contenttypes.models import ContentType
+
+from example_project.app.models import (
+    AcceptanceCriteria,
+    Comment,
+    Person,
+    Project,
+    Report,
+    ServiceRequest,
+    Task,
+    TaskResult,
+    TaskStep,
+)
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelatedFieldInfo, RelationType
 
@@ -12,6 +24,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
             nullable=True,
             related_model_pk_type=int,
+            model=AcceptanceCriteria,
         ),
         "assignees": RelatedFieldInfo(
             field_name="assignees",
@@ -19,6 +32,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.FORWARD_MANY_TO_MANY,
             nullable=False,
             related_model_pk_type=int,
+            model=Person,
         ),
         "comments": RelatedFieldInfo(
             field_name="comments",
@@ -26,6 +40,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.GENERIC_ONE_TO_MANY,
             nullable=True,
             related_model_pk_type=int,
+            model=Comment,
         ),
         "project": RelatedFieldInfo(
             field_name="project",
@@ -33,6 +48,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
             nullable=False,
             related_model_pk_type=int,
+            model=Project,
         ),
         "relatedTasks": RelatedFieldInfo(
             field_name="related_tasks",
@@ -40,6 +56,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.FORWARD_MANY_TO_MANY,
             nullable=False,
             related_model_pk_type=int,
+            model=Task,
         ),
         "reports": RelatedFieldInfo(
             field_name="reports",
@@ -47,6 +64,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.REVERSE_MANY_TO_MANY,
             nullable=True,
             related_model_pk_type=int,
+            model=Report,
         ),
         "request": RelatedFieldInfo(
             field_name="request",
@@ -54,6 +72,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.FORWARD_ONE_TO_ONE,
             nullable=True,
             related_model_pk_type=int,
+            model=ServiceRequest,
         ),
         "result": RelatedFieldInfo(
             field_name="result",
@@ -61,6 +80,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.REVERSE_ONE_TO_ONE,
             nullable=True,
             related_model_pk_type=int,
+            model=TaskResult,
         ),
         "steps": RelatedFieldInfo(
             field_name="steps",
@@ -68,6 +88,7 @@ def test_parse_relation_info__task():
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
             nullable=True,
             related_model_pk_type=int,
+            model=TaskStep,
         ),
     }
 
@@ -81,6 +102,7 @@ def test_parse_relation_info__comment():
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
             nullable=False,
             related_model_pk_type=int,
+            model=Person,
         ),
         "contentType": RelatedFieldInfo(
             field_name="content_type",
@@ -88,6 +110,7 @@ def test_parse_relation_info__comment():
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
             nullable=False,
             related_model_pk_type=int,
+            model=ContentType,
         ),
         "target": RelatedFieldInfo(
             field_name="target",
@@ -95,5 +118,6 @@ def test_parse_relation_info__comment():
             relation_type=RelationType.GENERIC_MANY_TO_ONE,
             nullable=False,
             related_model_pk_type=None,
+            model=None,
         ),
     }

@@ -50,7 +50,7 @@ class OrderSetMeta(type):
         _attrs["__model__"] = model
         instance: type[OrderSet] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
-        # Members should use '__dunder__' names to avoid name collisions with possible ordering names.
+        # Members should use `__dunder__` names to avoid name collisions with possible `undine.Order` names.
         instance.__model__ = model
         instance.__order_map__ = {get_schema_name(n): o for n, o in get_members(instance, Order)}
         instance.__typename__ = typename or _name
