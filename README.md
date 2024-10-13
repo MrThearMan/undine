@@ -36,7 +36,7 @@ pip install undine
 - [ ] Add tests for errors
 - [ ] Add tests for converters
 - [ ] Add tests for GenericForeignKeys and GenericRelations
-- [ ] Refactor MutationHandler to be less coupled to MutationTypes
+- [x] Refactor MutationHandler to be less coupled to MutationTypes
 - [ ] Add support for non-model mutations
 - [ ] Add support for permission checks
 - [ ] Add support for pagination
@@ -44,7 +44,8 @@ pip install undine
 - [ ] Add support for Enums / Django Choices
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer (pagination, etc.)
-- [ ] Add field for TestChoices (needed for better enum support)
+- [x] Add field for TestChoices (needed for better enum support)
+- [ ] Add support for bulk mutations
 - [ ] Add documentation for everything!!! (specify later)
 
 # Later:
