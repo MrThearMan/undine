@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import re
-
 import pytest
 from graphql import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
+from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.any import parse_any
 
@@ -34,13 +33,13 @@ def test_scalar__any__parse__int(value):
 
 def test_scalar__any__parse__too_high():
     msg = "Any cannot represent value 2147483648: GraphQL integers cannot represent non 32-bit signed integer value."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any(GRAPHQL_MAX_INT + 1)
 
 
 def test_scalar__any__parse__too_low():
     msg = "Any cannot represent value -2147483649: GraphQL integers cannot represent non 32-bit signed integer value."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any(GRAPHQL_MIN_INT - 1)
 
 
@@ -51,13 +50,13 @@ def test_scalar__any__parse__float(value):
 
 def test_scalar__any__parse__float__inf():
     msg = "Any cannot represent value inf: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any(float("inf"))
 
 
 def test_scalar__any__parse__float__nan():
     msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any(float("nan"))
 
 
@@ -76,8 +75,11 @@ def test_scalar__any__parse__list(value):
 
 
 def test_scalar__any__parse__list__value_error():
-    msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    msg = (
+        "Any cannot represent value [nan]: "
+        "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
+    )
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any([float("nan")])
 
 
@@ -98,12 +100,15 @@ def test_scalar__any__parse__dict(value):
 
 
 def test_scalar__any__parse__dict__value_error():
-    msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    msg = (
+        "Any cannot represent value {'foo': nan}: "
+        "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
+    )
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any({"foo": float("nan")})
 
 
 def test_scalar__any__parse__unsupported_type():
     msg = "Any cannot represent value <object instance>: Type 'builtins.object' is not supported"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_any(object())

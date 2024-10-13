@@ -1,8 +1,8 @@
-import re
 from decimal import Decimal
 
 import pytest
 
+from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.decimal import parse_decimal
 
@@ -21,11 +21,11 @@ def test_scalar__decimal__parse__str():
 
 def test_scalar__decimal__parse__conversion_error():
     msg = "Decimal cannot represent value 'hello world': invalid string literal"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_decimal("hello world")
 
 
 def test_scalar__decimal__parse__unsupported_type():
     msg = "Decimal cannot represent value 1.2: Type 'builtins.float' is not supported"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_decimal(1.2)

@@ -29,7 +29,6 @@ from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
 from undine.utils.model_utils import get_model_field
-from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -37,7 +36,7 @@ if TYPE_CHECKING:
     from django.db import models
     from django.db.models import Model
 
-    from undine.typing import GQLInfo, MutationKind, Root
+    from undine.typing import GQLInfo, MutationKind, MutationMiddlewareType, Root
 
 
 __all__ = [
@@ -81,6 +80,7 @@ class MutationTypeMeta(type):
             else:
                 mutation_kind: MutationKind = "custom"
 
+        # TODO: Make a global getter of this instead?
         lookup_field = "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name
 
         if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
@@ -103,7 +103,6 @@ class MutationTypeMeta(type):
         instance.__input_map__ = {get_schema_name(name): input_ for name, input_ in get_members(instance, Input)}
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
-        instance.__mutation_handler__ = MutationHandler(model=model)
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_EXTENSIONS_KEY: instance}
         return instance
@@ -176,6 +175,11 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         if cls.__mutation_kind__ == "delete":
             return DeleteMutationOutputType
         return QUERY_TYPE_REGISTRY[cls.__model__].__output_type__()
+
+    @classmethod
+    def __middleware__(cls) -> list[MutationMiddlewareType]:
+        """Additional middleware to use for this MutationType. See. `MutationMiddlewareContext`."""
+        return []
 
 
 class Input:

@@ -5,6 +5,7 @@ from .project import ProjectFactory
 from .report import ReportFactory
 from .service_request import ServiceRequestFactory
 from .task import TaskFactory
+from .task_objective import TaskObjectiveFactory
 from .task_result import TaskResultFactory
 from .task_step import TaskStepFactory
 from .team import TeamFactory
@@ -18,6 +19,7 @@ __all__ = [
     "ReportFactory",
     "ServiceRequestFactory",
     "TaskFactory",
+    "TaskObjectiveFactory",
     "TaskResultFactory",
     "TaskStepFactory",
     "TeamFactory",

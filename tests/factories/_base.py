@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar, Union
 
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Model
 from factory import FactoryError, PostGeneration
 from factory.base import BaseFactory
@@ -69,7 +70,7 @@ class CustomFactoryWrapper:
 
         self.callable = lambda: import_object(*factory_.rsplit(".", 1))
 
-    def get(self):
+    def get(self) -> FactoryType:
         if self.factory is None:
             self.factory = self.callable()
         return self.factory
@@ -109,7 +110,21 @@ class OneToManyFactory(PostFactory[TModel]):
     def generate(self, instance: Model, create: bool, models: Iterable[TModel] | None, **kwargs: Any) -> None:
         if not models and kwargs:
             factory = self.get_factory()
-            field_name = self.manager(instance).field.name
+            manager = self.manager(instance)
+            try:
+                field_name = manager.field.name
+            except AttributeError:
+                # GenericForeignKey
+                field = next(
+                    field
+                    for field in manager.model._meta.get_fields()
+                    if (
+                        isinstance(field, GenericForeignKey)
+                        and field.fk_field == manager.object_id_field_name
+                        and field.ct_field == manager.content_type_field_name
+                    )
+                )
+                field_name = field.name
             kwargs.setdefault(field_name, instance)
             factory.create(**kwargs) if create else factory.build(**kwargs)
 
@@ -124,7 +139,7 @@ class ReverseSubFactory(PostFactory[TModel]):
 
 
 class NullableSubFactory(SubFactory, Generic[TModel]):
-    def __init__(self, factory: FactoryType, null: bool = False, **kwargs) -> None:
+    def __init__(self, factory: FactoryType, null: bool = False, **kwargs: Any) -> None:
         # Skip SubFactory.__init__ to replace its factory wrapper with ours
         self.null = null
         super(SubFactory, self).__init__(**kwargs)

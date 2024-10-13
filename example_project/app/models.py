@@ -12,6 +12,7 @@ __all__ = [
     "Report",
     "ServiceRequest",
     "Task",
+    "TaskObjective",
     "TaskResult",
     "TaskStep",
     "TaskType",
@@ -85,7 +86,7 @@ class Task(models.Model):
     related_tasks = models.ManyToManyField("self")
 
     request = models.OneToOneField(ServiceRequest, null=True, default=None, on_delete=models.SET_NULL)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
+    project = models.ForeignKey(Project, null=True, on_delete=models.CASCADE, related_name="tasks")
     assignees = models.ManyToManyField(Person, related_name="tasks")
 
     comments = GenericRelation(Comment)
@@ -103,6 +104,15 @@ class TaskResult(models.Model):
 
     def __str__(self) -> str:
         return f"TaskResult {self.id}"
+
+
+class TaskObjective(models.Model):
+    details = models.TextField()
+
+    task = models.OneToOneField(Task, null=True, on_delete=models.CASCADE, related_name="objective")
+
+    def __str__(self) -> str:
+        return f"TaskObjective {self.id}"
 
 
 class TaskStep(models.Model):

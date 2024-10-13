@@ -8,6 +8,7 @@ from example_project.app.models import (
     Report,
     ServiceRequest,
     Task,
+    TaskObjective,
     TaskResult,
     TaskStep,
 )
@@ -16,13 +17,13 @@ from undine.parsers.parse_model_relation_info import RelatedFieldInfo, RelationT
 
 
 def test_parse_relation_info__task():
-    info = parse_model_relation_info(Task)
+    info = parse_model_relation_info(model=Task)
     assert info == {
         "acceptanceCriteria": RelatedFieldInfo(
             field_name="acceptance_criteria",
             related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
-            nullable=True,
+            nullable=False,
             related_model_pk_type=int,
             model=AcceptanceCriteria,
         ),
@@ -42,11 +43,19 @@ def test_parse_relation_info__task():
             related_model_pk_type=int,
             model=Comment,
         ),
+        "objective": RelatedFieldInfo(
+            field_name="objective",
+            related_name="task",
+            relation_type=RelationType.REVERSE_ONE_TO_ONE,
+            nullable=True,
+            related_model_pk_type=int,
+            model=TaskObjective,
+        ),
         "project": RelatedFieldInfo(
             field_name="project",
             related_name="tasks",
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
-            nullable=False,
+            nullable=True,
             related_model_pk_type=int,
             model=Project,
         ),
@@ -62,7 +71,7 @@ def test_parse_relation_info__task():
             field_name="reports",
             related_name="tasks",
             relation_type=RelationType.REVERSE_MANY_TO_MANY,
-            nullable=True,
+            nullable=False,
             related_model_pk_type=int,
             model=Report,
         ),
@@ -78,7 +87,7 @@ def test_parse_relation_info__task():
             field_name="result",
             related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_ONE,
-            nullable=True,
+            nullable=False,
             related_model_pk_type=int,
             model=TaskResult,
         ),
@@ -86,7 +95,7 @@ def test_parse_relation_info__task():
             field_name="steps",
             related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
-            nullable=True,
+            nullable=False,
             related_model_pk_type=int,
             model=TaskStep,
         ),
@@ -94,7 +103,7 @@ def test_parse_relation_info__task():
 
 
 def test_parse_relation_info__comment():
-    info = parse_model_relation_info(Comment)
+    info = parse_model_relation_info(model=Comment)
     assert info == {
         "commenter": RelatedFieldInfo(
             field_name="commenter",

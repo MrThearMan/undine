@@ -1,8 +1,8 @@
 import datetime
-import re
 
 import pytest
 
+from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.date import parse_date
 
@@ -25,11 +25,11 @@ def test_scalar__date__parse__str__datetime():
 
 def test_scalar__date__parse__conversion_error():
     msg = "Date cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_date("hello world")
 
 
 def test_scalar__date__parse__unsupported_type():
     msg = "Date cannot represent value 1: Type 'builtins.int' is not supported"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_date(1)

@@ -1,8 +1,8 @@
 import datetime
-import re
 
 import pytest
 
+from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.time import parse_time
 
@@ -22,11 +22,11 @@ def test_scalar__time__parse__str__tzinfo():
 
 def test_scalar__time__parse__conversion_error():
     msg = "Time cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_time("hello world")
 
 
 def test_scalar__time__parse__unsupported_type():
     msg = "Time cannot represent value 1.2: Type 'builtins.float' is not supported"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_time(1.2)

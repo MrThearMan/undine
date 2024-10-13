@@ -63,13 +63,16 @@ class DefaultSettings(NamedTuple):
     """Maximum number of tokens the GraphQL parser will parse before it rejects a request"""
 
     MIDDLEWARE: Sequence[str] = ()
-    """Middleware to use for in the GraphQL execution."""
+    """Middleware to use in GraphQL field resolving."""
 
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
     """The key used to store a Mutation in the argument GraphQL extensions."""
 
-    MUTATION_INPUT_TYPE_KEY: str = "input"
-    """The key used for the input argument of a Mutation."""
+    MUTATION_INPUT_KEY: str = "input"
+    """The key used for the input argument of a MutationType."""
+
+    MUTATION_MIDDLEWARE: Sequence[str] = ()
+    """Middleware to execute for all mutations. See. `MutationMiddlewareContext`."""
 
     NO_ERROR_LOCATION: bool = False
     """Whether to add the location information to GraphQL errors."""
@@ -120,10 +123,11 @@ class DefaultSettings(NamedTuple):
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()
 
 IMPORT_STRINGS: set[str] = {
-    "SCHEMA",
+    "ADDITIONAL_VALIDATION_RULES",
     "DOCSTRING_PARSER",
     "MIDDLEWARE",
-    "ADDITIONAL_VALIDATION_RULES",
+    "MUTATION_MIDDLEWARE",
+    "SCHEMA",
 }
 
 undine_settings = SettingsHolder(

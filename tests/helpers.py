@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 __all__ = [
     "MockGQLInfo",
     "MockRequest",
+    "exact",
     "get_graphql_multipart_spec_request",
     "has",
     "like",
@@ -86,6 +87,11 @@ class has:  # noqa: N801
             pattern.decode() not in other if isinstance(pattern, bytes) else pattern in other
             for pattern in self.patterns
         )
+
+
+def exact(msg: str) -> str:
+    """Use in `with pytest.raises(..., match=<here>)` to match the 'msg' string exactly."""
+    return f"^{re.escape(msg)}$"
 
 
 @contextmanager

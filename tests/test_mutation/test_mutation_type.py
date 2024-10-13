@@ -1,7 +1,6 @@
 from example_project.app.models import Task
 from undine import MutationType, QueryType
 from undine.mutation import DeleteMutationOutputType
-from undine.utils.mutation_handler import MutationHandler
 
 
 def test_mutation_type__default():
@@ -15,8 +14,6 @@ def test_mutation_type__default():
     assert MyCreateMutation.__mutation_kind__ == "create"
     assert MyCreateMutation.__typename__ == "MyCreateMutation"
     assert MyCreateMutation.__extensions__ == {"undine_mutation": MyCreateMutation}
-
-    assert isinstance(MyCreateMutation.__mutation_handler__, MutationHandler)
 
     assert sorted(MyCreateMutation.__input_map__) == [
         "assignees",

@@ -22,9 +22,10 @@ class TaskFactory(GenericDjangoModelFactory[Task]):
     project = SubFactory("tests.factories.project.ProjectFactory")
     assignees = ManyToManyFactory("tests.factories.person.PersonFactory")
 
-    result = ReverseSubFactory("tests.factories.task.TaskResultFactory")
-    steps = OneToManyFactory("tests.factories.task.TaskStepFactory")
-    acceptance_criteria = OneToManyFactory("tests.factories.task.AcceptanceCriteriaFactory")
+    result = ReverseSubFactory("tests.factories.task_result.TaskResultFactory")
+    objective = ReverseSubFactory("tests.factories.task_objective.TaskObjectiveFactory")
+    steps = OneToManyFactory("tests.factories.task_step.TaskStepFactory")
+    acceptance_criteria = OneToManyFactory("tests.factories.acceptance_criteria.AcceptanceCriteriaFactory")
     reports = ManyToManyFactory("tests.factories.report.ReportFactory")
 
     comments = OneToManyFactory("tests.factories.comment.CommentFactory")

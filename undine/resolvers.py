@@ -15,9 +15,10 @@ from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors.error_handlers import handle_integrity_errors
 from undine.errors.exceptions import GraphQLMissingLookupFieldError
+from undine.middleware import MutationMiddlewareContext
 from undine.settings import undine_settings
 from undine.utils.model_utils import get_instance_or_raise
-from undine.utils.mutation_handler import MutationPreHandler
+from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_signature, is_subclass
 
 if TYPE_CHECKING:
@@ -109,22 +110,24 @@ class FieldResolver:
 @dataclass(frozen=True, slots=True)
 class CreateResolver:
     """
-    Resolves a mutation for creating a model instance through an adapter layer
-    from the 'GraphQLFieldResolver' signature into the given ModelGraphQLMutation's
-    MutationHandler's 'create' method signature. Also allows for pre- and post-save hooks
-    defined in the ModelGraphQLMutation.
+    Resolves a mutation for creating a model instance using 'MutationHandler.create'.
+    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
+    as well as any defined mutation middlewares.
+    Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
+        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         self.mutation_type.__pre_mutation__(None, info, input_data)
 
-        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
-
-        with transaction.atomic(), handle_integrity_errors(), handler:
-            instance = self.mutation_type.__mutation_handler__.create(input_data)
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            MutationMiddlewareContext(self.mutation_type, info, input_data),
+        ):
+            instance = MutationHandler(model=self.mutation_type.__model__).create(input_data)
 
         self.mutation_type.__post_mutation__(instance, info, input_data)
         return instance
@@ -133,10 +136,10 @@ class CreateResolver:
 @dataclass(frozen=True, slots=True)
 class UpdateResolver:
     """
-    Resolves a mutation for updating a model instance through an adapter layer
-    from the 'GraphQLFieldResolver' signature into the given ModelGraphQLMutation's
-    MutationHandler's 'update' method signature. Also allows for pre- and post-save hooks
-    defined in the ModelGraphQLMutation.
+    Resolves a mutation for updating a model instance using 'MutationHandler.update'.
+    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
+    as well as any defined mutation middlewares.
+    Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -150,18 +153,20 @@ class UpdateResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
-        value = input_data.get(self.lookup_field, Undefined)
+        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        value = input_data.pop(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
         self.mutation_type.__pre_mutation__(instance, info, input_data)
 
-        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
-
-        with transaction.atomic(), handle_integrity_errors(), handler:
-            instance = self.mutation_type.__mutation_handler__.create(input_data)
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            MutationMiddlewareContext(self.mutation_type, info, input_data),
+        ):
+            instance = MutationHandler(model=self.mutation_type.__model__).update(instance, input_data)
 
         self.mutation_type.__post_mutation__(instance, info, input_data)
         return instance
@@ -170,9 +175,10 @@ class UpdateResolver:
 @dataclass(frozen=True, slots=True)
 class DeleteResolver:
     """
-    Resolves a mutation for deleting a model instance through an adapter layer
-    from the 'GraphQLFieldResolver' signature. Also allows for pre- and post-save
-    hooks defined in the ModelGraphQLMutation.
+    Resolves a mutation for deleting a model instance using 'model.delete'.
+    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
+    as well as any defined mutation middlewares.
+    Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -186,7 +192,7 @@ class DeleteResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
+        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
         value = input_data.get(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
@@ -194,9 +200,11 @@ class DeleteResolver:
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
         self.mutation_type.__pre_mutation__(instance, info, input_data)
 
-        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
-
-        with transaction.atomic(), handle_integrity_errors(), handler:
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            MutationMiddlewareContext(self.mutation_type, info, input_data),
+        ):
             instance.delete()
 
         self.mutation_type.__post_mutation__(None, info, input_data)
@@ -206,20 +214,23 @@ class DeleteResolver:
 @dataclass(frozen=True, slots=True)
 class CustomResolver:
     """
-    Resolves a mutation for custom mutations on a model instance through an adapter layer
-    from the 'GraphQLFieldResolver' signature. Also allows for pre- and post-save
-    hooks defined in the ModelGraphQLMutation.
+    Resolves a custom mutation a model instance using 'mutation_type.__mutate__'.
+    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
+    as well as any defined mutation middlewares.
+    Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_TYPE_KEY]
+        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
         self.mutation_type.__pre_mutation__(None, info, input_data)
 
-        handler = MutationPreHandler(mutation_type=self.mutation_type, input_data=input_data)
-
-        with transaction.atomic(), handle_integrity_errors(), handler:
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            MutationMiddlewareContext(self.mutation_type, info, input_data),
+        ):
             return_value = self.mutation_type.__mutate__(root, info, input_data)
 
         self.mutation_type.__post_mutation__(return_value, info, input_data)

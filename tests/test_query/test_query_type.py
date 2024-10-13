@@ -29,6 +29,7 @@ def test_query_type__simple():
         "comments",
         "createdAt",
         "name",
+        "objective",
         "pk",
         "project",
         "relatedTasks",

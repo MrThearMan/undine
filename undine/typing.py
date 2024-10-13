@@ -10,6 +10,7 @@ from typing import (
     Any,
     Callable,
     Iterable,
+    Iterator,
     Literal,
     MutableMapping,
     Protocol,
@@ -22,7 +23,6 @@ from typing import (
 
 # Sort separately due to being a private import
 from typing import _eval_type  # isort: skip
-
 
 try:
     from typing import Self
@@ -72,6 +72,7 @@ __all__ = [
     "ModelField",
     "MutationInputType",
     "MutationKind",
+    "MutationMiddlewareType",
     "OneToManyManager",
     "OrderRef",
     "OrderResults",
@@ -134,6 +135,15 @@ class ExpressionKind(Protocol):
 
 class DispatchProtocol(Protocol[From, To]):
     def __call__(self, key: From, **kwargs: Any) -> To: ...
+
+
+class MutationMiddlewareType(Protocol):
+    def __call__(
+        self,
+        mutation_type: type[MutationType],
+        info: GQLInfo,
+        input_data: dict[str, Any],
+    ) -> Iterable[None] | Iterator[None]: ...
 
 
 # Classes purely for type-hinting.

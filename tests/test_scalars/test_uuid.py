@@ -1,8 +1,8 @@
-import re
 import uuid
 
 import pytest
 
+from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
 from undine.scalars.uuid import parse_uuid, serialize
 
@@ -29,13 +29,13 @@ def test_scalar__uuid__parse__int():
 
 def test_scalar__uuid__parse__conversion_error():
     msg = "UUID cannot represent value 'hello world': badly formed hexadecimal UUID string"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_uuid("hello world")
 
 
 def test_scalar__uuid__parse__unsupported_type():
     msg = "UUID cannot represent value 1.2: Type 'builtins.float' is not supported"
-    with pytest.raises(GraphQLConversionError, match=re.escape(msg)):
+    with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_uuid(1.2)
 
 

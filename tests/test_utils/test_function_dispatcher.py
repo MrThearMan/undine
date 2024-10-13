@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import re
 from functools import wraps
 from typing import Any, Callable, Literal
 
 import pytest
 from graphql import Undefined
 
+from tests.helpers import exact
 from undine.errors.exceptions import FunctionDispatcherError
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -19,7 +19,7 @@ def test_function_dispatcher__name() -> None:
 def test_function_dispatcher__no_registered_implementation() -> None:
     func = FunctionDispatcher()
     msg = "'func' doesn't contain an implementation for '<class 'str'>' (test)."
-    with pytest.raises(FunctionDispatcherError, match=re.escape(msg)):
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         func("test")
 
 
@@ -41,7 +41,7 @@ def test_function_dispatcher__wrong_implementation() -> None:
         return key
 
     msg = "'func' doesn't contain an implementation for '<class 'int'>' (1)."
-    with pytest.raises(FunctionDispatcherError, match=re.escape(msg)):
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         func(1)
 
 
@@ -154,7 +154,7 @@ def test_function_dispatcher__undefined() -> None:
         return key
 
     msg = "FunctionDispatcher key must be a type or value."
-    with pytest.raises(FunctionDispatcherError, match=re.escape(msg)):
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         func(Undefined)
 
 

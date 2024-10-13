@@ -207,10 +207,14 @@ lint.ignore = [
     "SLF",      # Allow accessing private members in tests
     "UP",       # No upgrade rules
 ]
-"conftest.py" = [
+"**/*/conftest.py" = [
     "ARG",      # Fixtures can be unused
     "ANN",      # No need to annotate tests
     "UP",       # No upgrade rules
+]
+"**/*/factories/_base.py" = [
+    "FBT001",    # Allow boolean traps in factories
+    "FBT002",    # Allow boolean traps in factories
 ]
 "undine/converters/*.py" = [
     # No typing-only imports for converters due to FunctionDispatcher
@@ -274,6 +278,7 @@ extend-ignore-names = [
     "_relation_tree",
     "_getframe",
     "_get_pk_val",
+    "_non_pk_concrete_field_names",
 ]
 
 [tool.ruff.lint.pep8-naming]

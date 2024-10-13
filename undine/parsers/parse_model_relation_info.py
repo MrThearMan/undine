@@ -21,7 +21,7 @@ __all__ = [
 
 
 @cache
-def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFieldInfo]:
+def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, RelatedFieldInfo]:
     from undine.converters import convert_model_field_to_type
 
     relation_info: dict[str, RelatedFieldInfo] = {}
@@ -31,7 +31,6 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
         if field.is_relation is False:
             continue
 
-        nullable: bool = getattr(field, "null", False)
         relation_type = RelationType.for_related_field(field)
 
         related_model_pk_type = None  # Unknown for GenericForeignKey since there can be many relations.
@@ -44,11 +43,13 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
             if related_name is None:  # Self-referential relation
                 related_name = field_name
             related_model = field.related_model
+            nullable: bool = getattr(field, "null", False)
 
         elif relation_type.is_reverse:
             field_name = field.get_accessor_name()
             related_name = field.remote_field.name
             related_model = field.related_model
+            nullable: bool = getattr(field.remote_field, "null", False)
 
         elif relation_type.is_generic_relation:
             field_name = field.name
@@ -59,13 +60,15 @@ def parse_model_relation_info(model: type[models.Model]) -> dict[str, RelatedFie
                 if getattr(related_field, "fk_field", Undefined) == field.object_id_field_name
             )
             related_model = field.related_model
+            nullable: bool = getattr(field, "null", False)
 
         elif relation_type.is_generic_foreign_key:
             field_name = field.name
             # For GenericForeignKey, there are multiple related models,
-            # so we don't have a single related name or model.
+            # so we don't have a single model or related name.
             related_name = None
             related_model = None
+            nullable: bool = getattr(field, "null", False)
 
         else:
             msg = f"Unhandled relation type: {relation_type}"

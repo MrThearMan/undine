@@ -263,6 +263,7 @@ class GraphQLFileParsingError(GraphQLStatusError):
 class GraphQLInvalidInputDataError(GraphQLStatusError):
     """Error raised when a request content cannot be decoded to python data."""
 
+    msg = "Invalid input data for field '{field_name}': {data!r}"
     status = 400
     code = error_codes.INVALID_INPUT_DATA
 
@@ -314,7 +315,7 @@ class GraphQLModelConstaintViolationError(GraphQLStatusError):
     """Error raised when a request is made with an unsupported content type."""
 
     status = 400
-    code = error_codes.MODEL_UNIQUE_CONSTRAINT_VIOLATION
+    code = error_codes.MODEL_CONSTRAINT_VIOLATION
 
 
 class GraphQLModelNotFoundError(GraphQLStatusError):
