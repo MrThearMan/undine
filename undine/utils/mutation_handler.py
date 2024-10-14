@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any, Generic, Iterable
 
 from django.db.models import Manager, Model
 
 from undine.errors.exceptions import GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelationType
-from undine.settings import undine_settings
 from undine.typing import ManyToManyManager, MutationInputType, OneToManyManager, PostSaveData, PostSaveHandler, TModel
-from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_instance_or_raise
+from undine.utils.model_utils import (
+    generic_relations_for_generic_foreign_key,
+    get_instance_or_raise,
+    get_lookup_field_name,
+)
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -36,12 +39,8 @@ class MutationHandler(Generic[TModel]):
     def manager(self) -> Manager:
         return self.model._default_manager  # type: ignore[return-value]
 
-    @property
-    def lookup_field(self) -> str:
-        return "pk" if undine_settings.USE_PK_FIELD_NAME else self.model._meta.pk.name
-
     def get_update_or_create(self, data: dict[str, Any]) -> TModel | None:
-        key = self.lookup_field
+        key = get_lookup_field_name(self.model)
         value = data.pop(key, None)
 
         if value is None:
@@ -69,9 +68,7 @@ class MutationHandler(Generic[TModel]):
 
         for attr, value in input_data.items():
             setattr(instance, attr, value)
-        # 'GenericForeignKey' field or 'pk' property cannot be in the 'update_fields' set.
-        update_fields = set(self.model._meta._non_pk_concrete_field_names) & set(input_data)
-        instance.save(update_fields=update_fields or None)
+        instance.save(update_fields=self.get_update_fields(*input_data))
 
         for handler in post_save_data.post_save_handlers:
             handler(instance)
@@ -189,7 +186,7 @@ class MutationHandler(Generic[TModel]):
             return
 
         if isinstance(data, dict):
-            if existing_instance is not None and existing_instance.pk != data.get(self.lookup_field):
+            if existing_instance is not None and existing_instance.pk != data.get(get_lookup_field_name(self.model)):
                 if field_info.nullable:
                     setattr(existing_instance, field_info.related_name, None)
                     existing_instance.save(update_fields=[field_info.related_name])
@@ -210,8 +207,7 @@ class MutationHandler(Generic[TModel]):
                     existing_instance.delete()
 
             setattr(instance, field_info.related_name, related_instance)
-            update_fields = set(self.model._meta._non_pk_concrete_field_names) & {field_info.related_name}
-            instance.save(update_fields=update_fields or None)
+            instance.save(update_fields=self.get_update_fields(field_info.related_name))
             return
 
         raise GraphQLInvalidInputDataError(field_name=field_info.field_name, data=data)
@@ -245,9 +241,7 @@ class MutationHandler(Generic[TModel]):
             existing_instance = getattr(nested_instance, field_info.related_name)
             if existing_instance != related_instance:
                 setattr(nested_instance, field_info.related_name, related_instance)
-                # 'GenericForeignKey' field cannot be in the 'update_fields' set.
-                update_fields = set(self.model._meta._non_pk_concrete_field_names) & {field_info.related_name}
-                nested_instance.save(update_fields=update_fields or None)
+                nested_instance.save(update_fields=self.get_update_fields(field_info.related_name))
 
             pks.append(nested_instance.pk)
 
@@ -280,3 +274,10 @@ class MutationHandler(Generic[TModel]):
 
         # Add related objects that were not previously linked to the main model.
         manager.set(instances)
+
+    def get_update_fields(self, *fields: str) -> Iterable[str] | None:
+        # 'GenericForeignKey' fields or 'pk' properties cannot be in the 'update_fields' set.
+        # If they are, we cannot optimize the update to only the fields actually updated.
+        if set(fields).issubset(self.model._meta._non_pk_concrete_field_names):
+            return fields
+        return None

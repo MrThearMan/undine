@@ -38,12 +38,8 @@ def load_deferred_converters() -> None:
             return convert_field_ref_to_graphql_argument_map(ref, many=True)
 
         field = get_model_field(model=ref.__model__, lookup=ref.__lookup_field__)
-        field_name = field.name
-        if field.primary_key and undine_settings.USE_PK_FIELD_NAME:
-            field_name = "pk"
-
         input_type = convert_model_field_to_graphql_type(field)
-        return {get_schema_name(field_name): GraphQLArgument(input_type)}
+        return {get_schema_name(ref.__lookup_field__): GraphQLArgument(input_type)}
 
     @convert_entrypoint_ref_to_graphql_argument_map.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:

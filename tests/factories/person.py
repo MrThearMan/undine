@@ -2,7 +2,7 @@ from factory import faker
 
 from example_project.app.models import Person
 
-from ._base import GenericDjangoModelFactory, OneToManyFactory
+from ._base import GenericDjangoModelFactory, ManyToManyFactory, OneToManyFactory
 
 
 class PersonFactory(GenericDjangoModelFactory[Person]):
@@ -13,5 +13,5 @@ class PersonFactory(GenericDjangoModelFactory[Person]):
     email = faker.Faker("email")
 
     comments = OneToManyFactory("tests.factories.comment.CommentFactory")
-    teams = OneToManyFactory("tests.factories.team.TeamFactory")
-    tasks = OneToManyFactory("tests.factories.task.TaskFactory")
+    teams = ManyToManyFactory("tests.factories.team.TeamFactory")
+    tasks = ManyToManyFactory("tests.factories.task.TaskFactory")

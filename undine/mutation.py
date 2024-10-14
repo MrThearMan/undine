@@ -28,7 +28,7 @@ from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
-from undine.utils.model_utils import get_model_field
+from undine.utils.model_utils import get_lookup_field_name, get_model_field
 from undine.utils.reflection import get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -80,8 +80,7 @@ class MutationTypeMeta(type):
             else:
                 mutation_kind: MutationKind = "custom"
 
-        # TODO: Make a global getter of this instead?
-        lookup_field = "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name
+        lookup_field = get_lookup_field_name(model)
 
         if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
             field = get_model_field(model=model, lookup=lookup_field)
@@ -265,8 +264,8 @@ def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) 
         if not editable:
             continue
 
-        if is_primary_key and undine_settings.USE_PK_FIELD_NAME:
-            field_name = "pk"
+        if is_primary_key:
+            field_name = get_lookup_field_name(model)
 
         if field_name in exclude:
             continue

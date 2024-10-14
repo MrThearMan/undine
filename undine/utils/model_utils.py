@@ -13,6 +13,7 @@ from undine.errors.exceptions import (
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
 )
+from undine.settings import undine_settings
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -93,3 +94,7 @@ def get_model_field(*, model: type[models.Model], lookup: str) -> models.Field:
         raise ModelFieldDoesNotExistError(field=lookup, model=model) from None
 
     return field
+
+
+def get_lookup_field_name(model: type[models.Model]) -> str:
+    return "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name

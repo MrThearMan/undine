@@ -763,6 +763,195 @@ def test_mutation_handler__update__no_related_input_data():
     assert instance.related_tasks.first().project.team.pk == related_team.pk
 
 
+def test_mutation_handler__update__reverse_one_to_one__added_when_null():
+    task = TaskFactory.create(name="Task 1")
+    objective = TaskObjectiveFactory.create(details="Objective")
+
+    assert getattr(task, "objective", None) is None
+
+    data = {
+        "objective": {
+            "pk": objective.pk,
+        },
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert getattr(task, "objective", None) == objective
+
+
+def test_mutation_handler__update__reverse_one_to_one__remove_existing__nullable():
+    task = TaskFactory.create(
+        name="Task 1",
+        objective__details="Objective",
+    )
+
+    assert getattr(task, "objective", None) is not None
+
+    data = {
+        "objective": None,
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert getattr(task, "objective", None) is None
+
+    assert TaskObjective.objects.count() == 1
+
+
+def test_mutation_handler__update__reverse_one_to_one__remove_existing__non_nullable():
+    task = TaskFactory.create(
+        name="Task 1",
+        result__details="Result",
+    )
+
+    assert getattr(task, "result", None) is not None
+
+    data = {
+        "result": None,
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert getattr(task, "objective", None) is None
+
+    assert TaskResult.objects.count() == 0
+
+
+def test_mutation_handler__update__reverse_one_to_one__replace_with_another_instance__nullable():
+    task = TaskFactory.create(
+        name="Task 1",
+        objective__details="Objective 1",
+    )
+
+    new_objective = TaskObjectiveFactory.create(details="Objective 2")
+    old_objective = task.objective
+
+    data = {
+        "objective": {
+            "pk": new_objective.pk,
+        },
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert task.objective == new_objective
+
+    assert TaskObjective.objects.filter(pk=old_objective.pk).exists() is True
+
+
+def test_mutation_handler__update__reverse_one_to_one__replace_with_another_instance__non_nullable():
+    task = TaskFactory.create(
+        name="Task 1",
+        result__details="Result",
+    )
+
+    old_result = task.result
+
+    data = {
+        "result": {
+            "details": "Objective 2",
+            "time_used": old_result.time_used,
+        },
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert task.result.pk != old_result.pk
+    assert task.result.details == "Objective 2"
+
+    assert TaskResult.objects.filter(pk=old_result.pk).exists() is False
+
+
+def test_mutation_handler__update__reverse_one_to_one__replace_with_another_instance__integer():
+    task = TaskFactory.create(
+        name="Task 1",
+        objective__details="Objective 1",
+    )
+
+    new_objective = TaskObjectiveFactory.create(details="Objective 2")
+    old_objective = task.objective
+
+    data = {
+        "objective": new_objective.pk,
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert task.objective == new_objective
+
+    assert TaskObjective.objects.filter(pk=old_objective.pk).exists()
+
+
+def test_mutation_handler__update__reverse_one_to_one__set_null_when_null_already():
+    task = TaskFactory.create(name="Task 1")
+
+    assert getattr(task, "objective", None) is None
+
+    data = {
+        "objective": None,
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task, data)
+
+    task.refresh_from_db()
+
+    assert getattr(task, "objective", None) is None
+
+
+def test_mutation_handler__update__many_to_many__added_to_another_instance():
+    task_1 = TaskFactory.create(name="Task 1")
+    task_2 = TaskFactory.create(name="Task 2")
+    assignee = PersonFactory.create(name="Assignee", tasks=[task_2])
+
+    task_1.refresh_from_db()
+    task_2.refresh_from_db()
+    assignee.refresh_from_db()
+
+    assert task_1.assignees.count() == 0
+    assert task_2.assignees.count() == 1
+    assert assignee.tasks.count() == 1
+
+    data = {
+        "assignees": [
+            {"pk": assignee.pk},
+        ],
+    }
+
+    handler = MutationHandler[Task](model=Task)
+    handler.update(task_1, data)
+
+    task_1.refresh_from_db()
+    task_2.refresh_from_db()
+    assignee.refresh_from_db()
+
+    assert task_1.assignees.count() == 1
+    assert task_2.assignees.count() == 1
+    assert assignee.tasks.count() == 2
+
+    assert task_1.assignees.first().pk == assignee.pk
+    assert task_2.assignees.first().pk == assignee.pk
+
+
 def test_mutation_handler__generic_foreign_key():
     task = TaskFactory.create(name="Test task")
 
@@ -900,6 +1089,23 @@ def test_mutation_handler__invalid_type__one_to_many():
         handler.update(task, data)
 
 
+def test_mutation_handler__invalid_type__one_to_many__nested():
+    task = TaskFactory.create(
+        name="Task",
+        steps__name="Step",
+    )
+
+    data = {
+        "steps": ["foo"],
+    }
+
+    handler = MutationHandler[Task](model=Task)
+
+    msg = "Invalid input data for field 'steps': ['foo']"
+    with pytest.raises(GraphQLInvalidInputDataError, match=exact(msg)):
+        handler.update(task, data)
+
+
 def test_mutation_handler__invalid_type__many_to_many():
     task = TaskFactory.create(
         name="Task",
@@ -934,8 +1140,46 @@ def test_mutation_handler__invalid_type__many_to_many__reverse():
         handler.update(task, data)
 
 
-# TODO: Incorrect to-many nested data.
-# TODO: Many-to-many relations are added to new instance, still in old
-# TODO: Reverse one-to-one. No exising instance, null given.
-# TODO: Reverse one-to-one. No exising instance, instance given.
-# TODO: Forwarg to-one relations invalid data.
+def test_mutation_handler__invalid_type__many_to_many__item():
+    task = TaskFactory.create(
+        name="Task",
+        assignees__name="Assignee",
+    )
+
+    data = {
+        "assignees": ["foo"],
+    }
+
+    handler = MutationHandler[Task](model=Task)
+
+    msg = "Invalid input data for field 'assignees': ['foo']"
+    with pytest.raises(GraphQLInvalidInputDataError, match=exact(msg)):
+        handler.update(task, data)
+
+
+def test_mutation_handler__invalid_data__forward_one_to_one():
+    task = TaskFactory.create()
+
+    data = {
+        "request": "foo",
+    }
+
+    handler = MutationHandler[Task](model=Task)
+
+    msg = "Invalid input data for field 'request': 'foo'"
+    with pytest.raises(GraphQLInvalidInputDataError, match=exact(msg)):
+        handler.update(task, data)
+
+
+def test_mutation_handler__invalid_data__forward_many_to_one():
+    task = TaskFactory.create()
+
+    data = {
+        "project": "foo",
+    }
+
+    handler = MutationHandler[Task](model=Task)
+
+    msg = "Invalid input data for field 'project': 'foo'"
+    with pytest.raises(GraphQLInvalidInputDataError, match=exact(msg)):
+        handler.update(task, data)

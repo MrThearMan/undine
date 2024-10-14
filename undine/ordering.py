@@ -12,6 +12,7 @@ from undine.errors.exceptions import MissingModelError
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, OrderResults
 from undine.utils.decorators import cached_class_method
+from undine.utils.model_utils import get_lookup_field_name
 from undine.utils.reflection import get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -193,8 +194,8 @@ def get_orders_for_model(model: type[models.Model], *, exclude: Container[str]) 
 
         field_name = model_field.name
         is_primary_key = bool(getattr(model_field, "primary_key", False))
-        if undine_settings.USE_PK_FIELD_NAME and is_primary_key:
-            field_name = "pk"
+        if is_primary_key:
+            field_name = get_lookup_field_name(model)
 
         if field_name in exclude:
             continue

@@ -29,6 +29,7 @@ from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
+from undine.utils.model_utils import get_lookup_field_name
 from undine.utils.reflection import cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -309,8 +310,8 @@ def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) 
     for model_field in model._meta._get_fields():
         field_name = model_field.name
         is_primary_key = bool(getattr(model_field, "primary_key", False))
-        if undine_settings.USE_PK_FIELD_NAME and is_primary_key:
-            field_name = "pk"
+        if is_primary_key:
+            field_name = get_lookup_field_name(model)
 
         if field_name in exclude:
             continue
