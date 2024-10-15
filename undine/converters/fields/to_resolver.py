@@ -46,6 +46,8 @@ def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLFieldResolver:
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.ready()` for explanation.
+    from django.contrib.contenttypes.fields import GenericForeignKey
+
     from undine.query import QueryType
 
     @convert_field_ref_to_resolver.register
@@ -53,3 +55,7 @@ def load_deferred_converters() -> None:
         if kwargs["many"]:
             return ModelManyRelatedResolver(name=kwargs["name"])
         return ModelFieldResolver(name=kwargs["name"])
+
+    @convert_field_ref_to_resolver.register
+    def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLFieldResolver:
+        return ModelFieldResolver(name=ref.name)

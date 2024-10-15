@@ -3,7 +3,7 @@ import datetime
 import factory
 from factory import SubFactory, faker, fuzzy
 
-from example_project.app.models import Task, TaskType
+from example_project.app.models import Task, TaskTypeChoices
 
 from ._base import GenericDjangoModelFactory, ManyToManyFactory, NullableSubFactory, OneToManyFactory, ReverseSubFactory
 
@@ -13,7 +13,7 @@ class TaskFactory(GenericDjangoModelFactory[Task]):
         model = Task
 
     name = faker.Faker("name")
-    type = fuzzy.FuzzyChoice(TaskType.values)
+    type = fuzzy.FuzzyChoice(TaskTypeChoices.values)
     created_at = factory.LazyFunction(datetime.datetime.now)
 
     related_tasks = ManyToManyFactory("tests.factories.task.TaskFactory")

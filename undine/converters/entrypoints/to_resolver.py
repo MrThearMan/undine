@@ -36,7 +36,7 @@ def load_deferred_converters() -> None:
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
         if ref.__mutation_kind__ == "create":
-            return CreateResolver(model_mutation=ref)
+            return CreateResolver(mutation_type=ref)
         if ref.__mutation_kind__ == "update":
             return UpdateResolver(mutation_type=ref)
         if ref.__mutation_kind__ == "delete":

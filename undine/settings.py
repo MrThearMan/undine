@@ -113,7 +113,7 @@ class DefaultSettings(NamedTuple):
     USE_PK_FIELD_NAME: bool = True
     """Should we use pk as the field name for primary keys?"""
 
-    VALIDATE_NAMES_REVERSABLE: bool = True
+    VALIDATE_NAMES_REVERSIBLE: bool = True
     """
     When converting names to camels case, should we validate that they can be converted back to snake case?
     This is required for the optimizer to work correctly.

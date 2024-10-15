@@ -15,12 +15,12 @@ __all__ = [
     "TaskObjective",
     "TaskResult",
     "TaskStep",
-    "TaskType",
+    "TaskTypeChoices",
     "Team",
 ]
 
 
-class TaskType(models.TextChoices):
+class TaskTypeChoices(models.TextChoices):
     BUG_FIX = "BUG_FIX"
     TASK = "TASK"
     STORY = "STORY"
@@ -80,7 +80,7 @@ class Project(models.Model):
 
 class Task(models.Model):
     name = models.CharField(max_length=255)
-    type = models.CharField(choices=TaskType.choices, max_length=255)
+    type = models.CharField(choices=TaskTypeChoices.choices, max_length=255)
     created_at = models.DateField(auto_now_add=True)
 
     related_tasks = models.ManyToManyField("self")

@@ -39,7 +39,7 @@ ALLOWED_NAME = re.compile(
 def validate_name(name: str) -> str:
     """
     Check whether the name is valid.
-    Valid names can be converted to 'camelCase' and back to 'snake_case' unambigously.
+    Valid names can be converted to 'camelCase' and back to 'snake_case' unambiguously.
     """
     if re.match(ALLOWED_NAME, name) is None:
         raise SchemaNameValidationError(name=name)
@@ -49,9 +49,9 @@ def validate_name(name: str) -> str:
 def to_camel_case(name: str, *, validate: bool = True) -> str:
     """
     Convert from snake_case to camelCase.
-    By default, validates that 'name' can be converted back to snake_case unambigously.
+    By default, validates that 'name' can be converted back to snake_case unambiguously.
     """
-    if validate and undine_settings.VALIDATE_NAMES_REVERSABLE:
+    if validate and undine_settings.VALIDATE_NAMES_REVERSIBLE:
         validate_name(name)
     words = name.split("_")
     if len(words) == 1:
@@ -64,14 +64,14 @@ def to_camel_case(name: str, *, validate: bool = True) -> str:
 
 def to_pascal_case(name: str, *, validate: bool = True) -> str:
     """
-    Convert from snake_caseto PascalCase.
-    By default, validates that 'name' can be converted back to snake_case unambigously.
+    Convert from snake_case to PascalCase.
+    By default, validates that 'name' can be converted back to snake_case unambiguously.
     """
-    if validate and undine_settings.VALIDATE_NAMES_REVERSABLE:
+    if validate and undine_settings.VALIDATE_NAMES_REVERSIBLE:
         validate_name(name)
     words = name.split("_")
     if len(words) == 1:
-        return name
+        return name.capitalize()
     text = ""
     for word in words:
         text += word.capitalize()
@@ -82,7 +82,7 @@ def to_snake_case(string: str) -> str:
     """
     Converts a camelCase string to snake case.
     It's expected that the input string was created
-    by 'name_to_camel_case' with 'VALIDATE_NAMES_REVERSABLE=True'.
+    by 'name_to_camel_case' with 'VALIDATE_NAMES_REVERSIBLE=True'.
     """
     text: str = ""
     for char in string:

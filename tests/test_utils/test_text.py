@@ -3,7 +3,6 @@ import re
 import pytest
 from hypothesis import given, strategies
 
-from tests.helpers import override_undine_settings
 from undine.utils.text import (
     ALLOWED_NAME,
     comma_sep_str,
@@ -27,10 +26,9 @@ def test_to_pascal_case_and_back(value: str):
     assert to_snake_case(n) == value
 
 
-@override_undine_settings(VALIDATE_NAMES_REVERSABLE=False)
 @given(strategies.from_regex(re.compile(r"^[a-z][a-zA-Z0-9]*$")))
 def test_camel_case_still_camel_case(value: str):
-    assert to_camel_case(value) == value
+    assert to_camel_case(value, validate=False) == value
 
 
 @pytest.mark.parametrize(

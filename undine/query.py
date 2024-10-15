@@ -51,7 +51,7 @@ __all__ = [
 class QueryTypeMeta(type):
     """A metaclass that modifies how a `QueryType` is created."""
 
-    def __new__(  # noqa: PLR0913
+    def __new__(
         cls,
         _name: str,
         _bases: tuple[type, ...],
@@ -62,7 +62,7 @@ class QueryTypeMeta(type):
         orderset: type[OrderSet] | Literal[True] | None = None,
         auto: bool = True,
         exclude: Iterable[str] = (),
-        lookup_field: str | None = "pk",
+        lookup_field: str = "pk",
         typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,

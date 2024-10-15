@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from example_project.app.models import Comment, Task, TaskObjective, TaskResult, TaskType
+from example_project.app.models import Comment, Task, TaskObjective, TaskResult, TaskTypeChoices
 from tests.factories import (
     CommentFactory,
     PersonFactory,
@@ -26,7 +26,7 @@ pytestmark = [
 def test_mutation_handler__create():
     data = {
         "name": "Test task",
-        "type": TaskType.TASK.value,
+        "type": TaskTypeChoices.TASK.value,
         "request": {
             "details": "Test request",
         },
@@ -86,7 +86,7 @@ def test_mutation_handler__create():
     instance = handler.create(data)
 
     assert instance.name == "Test task"
-    assert instance.type == TaskType.TASK
+    assert instance.type == TaskTypeChoices.TASK
 
     assert instance.request.details == "Test request"
 

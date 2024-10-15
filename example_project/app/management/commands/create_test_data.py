@@ -15,7 +15,7 @@ from example_project.app.models import (
     Task,
     TaskResult,
     TaskStep,
-    TaskType,
+    TaskTypeChoices,
     Team,
 )
 
@@ -58,16 +58,20 @@ def create_test_data() -> None:
     project_3 = Project.objects.create(name=faker.name(), team=team_1)
 
     print("Creating tasks...")
-    task_1 = Task.objects.create(name=faker.name(), type=TaskType.STORY, request=service_request_1, project=project_1)
+    task_1 = Task.objects.create(
+        name=faker.name(), type=TaskTypeChoices.STORY, request=service_request_1, project=project_1
+    )
     task_1.assignees.add(person_1, person_4)
 
-    task_2 = Task.objects.create(name=faker.name(), type=TaskType.BUG_FIX, project=project_2)
+    task_2 = Task.objects.create(name=faker.name(), type=TaskTypeChoices.BUG_FIX, project=project_2)
     task_2.assignees.add(person_3)
 
-    task_3 = Task.objects.create(name=faker.name(), type=TaskType.TASK, request=service_request_2, project=project_3)
+    task_3 = Task.objects.create(
+        name=faker.name(), type=TaskTypeChoices.TASK, request=service_request_2, project=project_3
+    )
     task_3.assignees.add(person_2, person_5)
 
-    task_4 = Task.objects.create(name=faker.name(), type=TaskType.STORY, project=project_1)
+    task_4 = Task.objects.create(name=faker.name(), type=TaskTypeChoices.STORY, project=project_1)
     task_4.assignees.add(person_1, person_2, person_5)
 
     print("Creating task results...")

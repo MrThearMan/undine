@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from example_project.app.mutations import TaskCreateMutationType
-from example_project.app.types import ReportType, TaskNode
+from example_project.app.types import ReportType, TaskType
 from undine import Entrypoint, create_schema
 
 
 class Query:
-    task = Entrypoint(TaskNode)
-    tasks = Entrypoint(TaskNode, many=True)
+    task = Entrypoint(TaskType)
+    tasks = Entrypoint(TaskType, many=True)
     reports = Entrypoint(ReportType, many=True)
 
     @Entrypoint

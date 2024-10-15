@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 from graphql import GraphQLInputField
 
-from example_project.app.models import Person, Task, TaskType
+from example_project.app.models import Person, Task, TaskTypeChoices
 from tests.helpers import MockGQLInfo
 from undine.errors.exceptions import MissingModelError
 from undine.filtering import Filter, FilterSet
@@ -153,12 +153,12 @@ def test_filterset__two_fields():
 
     data = {
         "nameExact": "foo",
-        "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+        "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [Q(name__exact="foo"), Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [Q(name__exact="foo"), Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -169,13 +169,13 @@ def test_filterset__and_block():
     data = {
         "AND": {
             "nameExact": "foo",
-            "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [Q(name__exact="foo") & Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [Q(name__exact="foo") & Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -186,13 +186,13 @@ def test_filterset__or_block():
     data = {
         "OR": {
             "nameExact": "foo",
-            "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [Q(name__exact="foo") | Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [Q(name__exact="foo") | Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -203,13 +203,13 @@ def test_filterset__xor_block():
     data = {
         "XOR": {
             "nameExact": "foo",
-            "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [Q(name__exact="foo") ^ Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [Q(name__exact="foo") ^ Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -220,13 +220,13 @@ def test_filterset__not_block():
     data = {
         "NOT": {
             "nameExact": "foo",
-            "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [~Q(name__exact="foo"), ~Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [~Q(name__exact="foo"), ~Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -238,14 +238,14 @@ def test_filterset__nested_blocks():
         "OR": {
             "NOT": {
                 "nameExact": "foo",
-                "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+                "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
             },
         },
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
 
-    assert results.filters == [~Q(name__exact="foo") | ~Q(type__in=[TaskType.BUG_FIX, TaskType.STORY])]
+    assert results.filters == [~Q(name__exact="foo") | ~Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])]
     assert results.distinct is False
     assert results.aliases == {}
 
@@ -260,9 +260,9 @@ def test_filterset__nested_blocks__complex():
             },
             "AND": {
                 "nameContains": "foo",
-                "typeIn": [TaskType.BUG_FIX.value, TaskType.STORY.value],
+                "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
                 "NOT": {
-                    "typeExact": TaskType.TASK.value,
+                    "typeExact": TaskTypeChoices.TASK.value,
                 },
             },
         },
@@ -272,7 +272,11 @@ def test_filterset__nested_blocks__complex():
 
     assert results.filters == [
         ~Q(name__exact="foo")
-        | (Q(name__contains="foo") & Q(type__in=[TaskType.BUG_FIX, TaskType.STORY]) & ~Q(type__exact=TaskType.TASK)),
+        | (
+            Q(name__contains="foo")
+            & Q(type__in=[TaskTypeChoices.BUG_FIX, TaskTypeChoices.STORY])
+            & ~Q(type__exact=TaskTypeChoices.TASK)
+        ),
     ]
     assert results.distinct is False
     assert results.aliases == {}

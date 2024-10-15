@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from django.db import models
+from graphql import GraphQLEnumType
 
 from undine.errors.exceptions import RegistryDuplicateError, TypeRegistryMissingTypeError
 from undine.utils.reflection import get_instance_name
@@ -60,4 +61,10 @@ QUERY_TYPE_REGISTRY = Registry[type[models.Model], type["QueryType"]]()
 Maps Django model classes to their corresponding `QueryTypes`.
 This allows deferring the creation of field resolvers for related fields,
 which would use a `QueryType` that is not created when the field is defined.
+"""
+
+GRAPHQL_ENUM_REGISTRY = Registry[tuple[type[models.Model], str], GraphQLEnumType]()
+"""
+Caches created GraphQL Enums by Django models and field names, so that
+they can be reused when converting the same field multiple times.
 """

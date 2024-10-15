@@ -14,6 +14,7 @@ from example_project.app.models import (
     Report,
     ServiceRequest,
     Task,
+    TaskObjective,
     TaskResult,
     TaskStep,
     Team,
@@ -46,6 +47,9 @@ class ProjectType(QueryType, model=Project): ...
 
 
 class TaskResultType(QueryType, model=TaskResult): ...
+
+
+class TaskObjectiveType(QueryType, model=TaskObjective): ...
 
 
 class TaskStepType(QueryType, model=TaskStep): ...
@@ -82,7 +86,7 @@ class CustomerDetails(TypedDict):
     age: int
 
 
-class TaskNode(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet):
+class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet):
     """Task Node description."""
 
     assignee_count = Field(Coalesce(models.Count("assignees"), 0))
