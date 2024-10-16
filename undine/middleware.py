@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import traceback
+from dataclasses import dataclass
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Generator, Iterable, Iterator, Self
 
@@ -28,12 +29,18 @@ __all__ = [
 def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
     try:
         return resolver(root, info, **kwargs)
-    except Exception as err:  # noqa: BLE001
+    except Exception:
         undine_logger.error(traceback.format_exc())
-        return err
+        raise
 
 
 # --- Mutation middleware -----------------------------------------------------------------------------------------
+
+
+@dataclass
+class ListItem:
+    place: int
+    data: dict[str, Any]
 
 
 class RemoveInputOnlyFieldsMiddleware:
@@ -78,11 +85,11 @@ class RemoveInputOnlyFieldsMiddleware:
                     input_only_data[field_name] = data
 
             elif isinstance(value, list) and is_subclass(input_type.ref, MutationType):
-                nested_data: list[JsonType] = []
-                for item in value:
+                nested_data: list[ListItem] = []
+                for place, item in enumerate(value):
                     data = self.extract_input_only_data(mutation_type=input_type.ref, input_data=item)
                     if data:
-                        nested_data.append(data)
+                        nested_data.append(ListItem(place=place, data=data))
 
                 if nested_data:
                     input_only_data[field_name] = nested_data
@@ -100,7 +107,9 @@ class RemoveInputOnlyFieldsMiddleware:
             elif isinstance(target[key], dict) and isinstance(value, dict):
                 self.extend(target=target[key], to_merge=value)
             elif isinstance(target[key], list) and isinstance(value, list):
-                value.extend(value)
+                list_item: ListItem
+                for list_item in value:
+                    target[key][list_item.place].update(list_item.data)
             else:
                 target[key] = value
 
@@ -122,7 +131,7 @@ class MutationMiddlewareContext:
     ...     # Do stuff after mutation is executed.
     ...
     >>> # Class middleware
-    >>> class RemoveInputOnlyFieldsMiddleware:
+    >>> class MyMiddleware:
     ...     def __init__(self, mutation_type: type[MutationType], info: GQLInfo, input_data: dict[str, Any]) -> None:
     ...         ...
     ...
