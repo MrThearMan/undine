@@ -26,6 +26,7 @@ __all__ = [
     "generic_foreign_key_for_generic_relation",
     "generic_relations_for_generic_foreign_key",
     "get_instance_or_raise",
+    "get_lookup_field_name",
     "get_model_field",
 ]
 

@@ -1,6 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
 from example_project.app.models import Task
 from undine import MutationType, QueryType
+from undine.errors.exceptions import MissingModelError
 from undine.mutation import DeleteMutationOutputType
+
+if TYPE_CHECKING:
+    from undine.typing import GQLInfo, Root
 
 
 def test_mutation_type__default():
@@ -14,6 +24,8 @@ def test_mutation_type__default():
     assert MyCreateMutation.__mutation_kind__ == "create"
     assert MyCreateMutation.__typename__ == "MyCreateMutation"
     assert MyCreateMutation.__extensions__ == {"undine_mutation": MyCreateMutation}
+
+    assert MyCreateMutation.__middleware__() == []
 
     assert sorted(MyCreateMutation.__input_map__) == [
         "assignees",
@@ -38,8 +50,13 @@ def test_mutation_type__default():
         "type",
     ]
 
-    output_type = MyCreateMutation.__output_type__()
-    assert output_type == MyQueryType.__output_type__()
+    assert MyCreateMutation.__output_type__() == MyQueryType.__output_type__()
+
+
+def test_mutation_type__no_model():
+    with pytest.raises(MissingModelError):
+
+        class MyCreateMutation(MutationType): ...
 
 
 def test_mutation_type__mutation_kind__create():
@@ -58,8 +75,7 @@ def test_mutation_type__mutation_kind__create():
     # Primary key not included in create mutations.
     assert MyMutation.__lookup_field__ not in MyMutation.__input_map__
 
-    output_type = MyMutation.__output_type__()
-    assert output_type == MyQueryType.__output_type__()
+    assert MyMutation.__output_type__() == MyQueryType.__output_type__()
 
 
 def test_mutation_type__mutation_kind__update():
@@ -78,8 +94,7 @@ def test_mutation_type__mutation_kind__update():
     # Primary key included in create mutations.
     assert MyMutation.__lookup_field__ in MyMutation.__input_map__
 
-    output_type = MyMutation.__output_type__()
-    assert output_type == MyQueryType.__output_type__()
+    assert MyMutation.__output_type__() == MyQueryType.__output_type__()
 
 
 def test_mutation_type__mutation_kind__delete():
@@ -98,8 +113,7 @@ def test_mutation_type__mutation_kind__delete():
     # Primary key included in create mutations.
     assert MyMutation.__lookup_field__ in MyMutation.__input_map__
 
-    output_type = MyMutation.__output_type__()
-    assert output_type == DeleteMutationOutputType
+    assert MyMutation.__output_type__() == DeleteMutationOutputType
 
 
 def test_mutation_type__mutation_kind__custom():
@@ -115,11 +129,21 @@ def test_mutation_type__mutation_kind__custom():
 
     assert MyCreateMutation.__mutation_kind__ == "custom"
 
-    # Primary key included not in create mutations.
-    assert MyCreateMutation.__lookup_field__ in MyCreateMutation.__input_map__
+    # Set explicitly (even if name contains "create", "update", or "delete").
+    class MyOwnMutation(MutationType, model=Task):
+        def __mutate__(self, root: Root, info: GQLInfo, input_data: dict[str, Any]) -> Any: ...
 
-    output_type = MyCreateMutation.__output_type__()
-    assert output_type == MyQueryType.__output_type__()
+    assert MyOwnMutation.__mutation_kind__ == "custom"
+
+    # Primary key included not in create mutations.
+    assert MyOtherMutation.__lookup_field__ in MyOtherMutation.__input_map__
+    assert MyCreateMutation.__lookup_field__ in MyCreateMutation.__input_map__
+    assert MyOwnMutation.__lookup_field__ in MyOwnMutation.__input_map__
+
+    # Output type is the query type with the same model.
+    assert MyOtherMutation.__output_type__() == MyQueryType.__output_type__()
+    assert MyCreateMutation.__output_type__() == MyQueryType.__output_type__()
+    assert MyOwnMutation.__output_type__() == MyQueryType.__output_type__()
 
 
 def test_mutation_type__auto():

@@ -1,10 +1,16 @@
+from unittest.mock import patch
+
 import pytest
+from graphql import GraphQLEnumType, GraphQLField, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task
+from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo
-from undine import FilterSet, OrderSet, QueryType
-from undine.errors.exceptions import MissingModelError
+from undine import Field, FilterSet, OrderSet, QueryType
+from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.registies import QUERY_TYPE_REGISTRY
+from undine.scalars import GraphQLDate
+from undine.typing import GraphQLFilterInfo
 
 
 def test_query_type__simple():
@@ -78,6 +84,14 @@ def test_query_type__filterset__default():
     assert MyQueryType.__filterset__.__model__ == Task
 
 
+def test_query_type__filterset__different_model():
+    class MyFilterSet(FilterSet, model=Project): ...
+
+    with pytest.raises(MismatchingModelError):
+
+        class MyQueryType(QueryType, model=Task, filterset=MyFilterSet): ...
+
+
 def test_query_type__orderset():
     class MyOrderSet(OrderSet, model=Task): ...
 
@@ -92,6 +106,14 @@ def test_query_type__orderset__default():
     assert MyQueryType.__orderset__ is not None
     assert MyQueryType.__orderset__.__name__ == "TaskOrderSet"
     assert MyQueryType.__orderset__.__model__ == Task
+
+
+def test_query_type__orderset__different_model():
+    class MyOrderSet(OrderSet, model=Project): ...
+
+    with pytest.raises(MismatchingModelError):
+
+        class MyQueryType(QueryType, model=Task, orderset=MyOrderSet): ...
 
 
 def test_query_type__lookup_field():
@@ -137,6 +159,87 @@ def test_query_type__typename():
     assert output_type.name == "CustomName"
 
 
-# TODO: Resolve one
-# TODO: Resolve many
-# TODO: Optimization
+@pytest.mark.django_db
+def test_query_type__get_queryset():
+    task = TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    qs = MyQueryType.__get_queryset__(info=MockGQLInfo())
+    assert list(qs) == [task]
+
+
+@pytest.mark.django_db
+def test_query_type__optimize_queryset():
+    task = TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    qs = Task.objects.all()
+
+    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
+
+    with (
+        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
+        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
+    ):
+        qs = MyQueryType.__optimize_queryset__(queryset=qs, info=MockGQLInfo())
+
+    assert list(qs) == [task]
+
+
+@pytest.mark.django_db
+def test_query_type__resolve_one():
+    task = TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
+
+    with (
+        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
+        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
+    ):
+        result = MyQueryType.__resolve_one__(root=None, info=MockGQLInfo(), pk=task.pk)
+
+    assert result == task
+
+
+@pytest.mark.django_db
+def test_query_type__resolve_many():
+    task = TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
+
+    with (
+        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
+        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
+    ):
+        qs = MyQueryType.__resolve_many__(root=None, info=MockGQLInfo())
+
+    assert list(qs) == [task]
+
+
+def test_query_type__output_type_field():
+    class MyQueryType(QueryType, model=Task, auto=False):
+        name = Field()
+        type = Field()
+        created_at = Field()
+
+    output_type = MyQueryType.__output_type__()
+    assert sorted(output_type.fields) == ["createdAt", "name", "type"]
+
+    assert isinstance(output_type.fields["createdAt"], GraphQLField)
+    assert isinstance(output_type.fields["createdAt"].type, GraphQLNonNull)
+    assert output_type.fields["createdAt"].type.of_type == GraphQLDate
+
+    assert isinstance(output_type.fields["name"], GraphQLField)
+    assert isinstance(output_type.fields["name"].type, GraphQLNonNull)
+    assert output_type.fields["name"].type.of_type == GraphQLString
+
+    assert isinstance(output_type.fields["type"], GraphQLField)
+    assert isinstance(output_type.fields["type"].type, GraphQLNonNull)
+    assert isinstance(output_type.fields["type"].type.of_type, GraphQLEnumType)
+    assert sorted(output_type.fields["type"].type.of_type.values) == ["BUG_FIX", "STORY", "TASK"]

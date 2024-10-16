@@ -51,7 +51,7 @@ __all__ = [
 class QueryTypeMeta(type):
     """A metaclass that modifies how a `QueryType` is created."""
 
-    def __new__(
+    def __new__(  # noqa: PLR0913
         cls,
         _name: str,
         _bases: tuple[type, ...],
@@ -156,7 +156,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return cls.__model__._default_manager.get_queryset()
 
     @classmethod
-    def __optimize_queryset__(cls, info: GQLInfo, queryset: models.QuerySet) -> models.QuerySet:
+    def __optimize_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """Optimize a queryset according to the given resolve info."""
         optimizer = OptimizationCompiler(info).compile(queryset)
         optimized_queryset = optimizer.optimize_queryset(queryset)
@@ -175,7 +175,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     def __resolve_one__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.Model | None:
         """Top-level resolver for fetching a single model object."""
         queryset = cls.__get_queryset__(info)
-        optimized_queryset = cls.__optimize_queryset__(info, queryset.filter(**kwargs))
+        optimized_queryset = cls.__optimize_queryset__(queryset.filter(**kwargs), info)
         # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
         # The queryset should have the right model instance, since we started by filtering by its pk,
         # so we can just pick that out of the result cache (if it hasn't been filtered out).
@@ -185,12 +185,12 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     def __resolve_many__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         """Top-level resolver for fetching multiple model objects."""
         queryset = cls.__get_queryset__(info)
-        return cls.__optimize_queryset__(info, queryset)
+        return cls.__optimize_queryset__(queryset, info)
 
     @classmethod
     def __pre_optimization_hook__(cls, queryset: models.QuerySet, optimizer: QueryOptimizer) -> models.QuerySet:
         """
-        Hook for modifying the qeuryset and optimizer data before the optimization process.
+        Hook for modifying the queryset and optimizer data before the optimization process.
         Used to add information about required data for the model outside of the GraphQL query.
         """
         return queryset
@@ -272,9 +272,9 @@ class Field:
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
 
-    def __call__(self, _ref: FunctionType, /) -> Self:
+    def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Field()"""
-        self.ref = cache_signature_if_function(_ref, depth=1)
+        self.ref = cache_signature_if_function(ref, depth=1)
         return self
 
     def __repr__(self) -> str:

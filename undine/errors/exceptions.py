@@ -340,3 +340,14 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     msg = "'{content_type}' is not a supported content type."
     status = 415
     code = error_codes.UNSUPPORTED_CONTENT_TYPE
+
+
+class GraphQLDuplicateEnumError(GraphQLStatusError):
+    """Error raised when a request is made with an unsupported content type."""
+
+    msg = (
+        "Enum '{enum_name}' exists with a different set of values: "
+        "{values_1!comma_sep_and} vs. {values_2!comma_sep_and}"
+    )
+    status = 400
+    code = error_codes.GRAPHQL_DUPLICATE_ENUM

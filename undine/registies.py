@@ -63,8 +63,9 @@ This allows deferring the creation of field resolvers for related fields,
 which would use a `QueryType` that is not created when the field is defined.
 """
 
-GRAPHQL_ENUM_REGISTRY = Registry[tuple[type[models.Model], str], GraphQLEnumType]()
+GRAPHQL_ENUM_REGISTRY = Registry[str, GraphQLEnumType]()
 """
-Caches created GraphQL Enums by Django models and field names, so that
-they can be reused when converting the same field multiple times.
+Caches created GraphQL Enums by their names, so that
+they can be reused when converting the same field multiple times, since
+a GraphQL Schema cannot contain multiple types with the same name.
 """

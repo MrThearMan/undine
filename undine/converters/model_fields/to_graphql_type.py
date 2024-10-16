@@ -4,7 +4,6 @@ from django.db import models
 from graphql import (
     GraphQLBoolean,
     GraphQLEnumType,
-    GraphQLEnumValue,
     GraphQLFloat,
     GraphQLInputType,
     GraphQLInt,
@@ -15,7 +14,6 @@ from graphql import (
     GraphQLString,
 )
 
-from undine.registies import GRAPHQL_ENUM_REGISTRY
 from undine.scalars import (
     GraphQLBase64,
     GraphQLDate,
@@ -30,8 +28,8 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.graphql import create_graphql_enum
 from undine.utils.model_fields import TextChoicesField
-from undine.utils.text import get_docstring, to_pascal_case
 
 __all__ = [
     "convert_model_field_to_graphql_type",
@@ -45,19 +43,7 @@ convert_model_field_to_graphql_type = FunctionDispatcher[models.Field, GraphQLOu
 @convert_model_field_to_graphql_type.register
 def _(ref: models.CharField) -> GraphQLEnumType | GraphQLScalarType:
     if ref.choices is not None:
-        if (ref.model, ref.name) in GRAPHQL_ENUM_REGISTRY:
-            return GRAPHQL_ENUM_REGISTRY[ref.model, ref.name]
-
-        # TODO: Can we get better name for the enum?
-        name = ref.model.__name__ + to_pascal_case(ref.name, validate=False) + "Choices"
-        enum = GraphQLEnumType(
-            name=name,
-            values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
-            description=get_docstring(ref),
-        )
-        GRAPHQL_ENUM_REGISTRY[ref.model, ref.name] = enum
-        return enum
-
+        return create_graphql_enum(ref)
     return GraphQLString
 
 
@@ -68,15 +54,7 @@ def _(_: models.TextField) -> GraphQLEnumType | GraphQLScalarType:
 
 @convert_model_field_to_graphql_type.register
 def _(ref: TextChoicesField) -> GraphQLEnumType:
-    if (ref.model, ref.name) in GRAPHQL_ENUM_REGISTRY:
-        return GRAPHQL_ENUM_REGISTRY[ref.model, ref.name]
-    enum = GraphQLEnumType(
-        name=ref.choices_enum.__name__,
-        values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
-        description=get_docstring(ref),
-    )
-    GRAPHQL_ENUM_REGISTRY[ref.model, ref.name] = enum
-    return enum
+    return create_graphql_enum(ref, name=ref.choices_enum.__name__)
 
 
 @convert_model_field_to_graphql_type.register

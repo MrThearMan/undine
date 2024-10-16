@@ -181,7 +181,7 @@ class Parameter:
 @dataclass(slots=True)
 class GraphQLFilterInfo:
     model_type: type[QueryType]
-    filters: list[models.Q] | None = None
+    filters: list[models.Q] = dataclasses.field(default_factory=list)
     distinct: bool = False
     aliases: dict[str, CombinableExpression] = dataclasses.field(default_factory=dict)
     order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)

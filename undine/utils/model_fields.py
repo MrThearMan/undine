@@ -13,8 +13,10 @@ __all__ = [
 
 
 class TextChoicesField(models.CharField):
+    """Choice field that offers more consistent naming for enums in the GraphQL Schema."""
+
     default_error_messages: ClassVar[dict[str, str]] = {
-        "invalid": "`%(value)s` must be a subclass of `%(choices_enum)s.`",
+        "invalid": "`%(value)s` is not a member of the `%(enum_name)s` enum. Choices are: %(choices)s.",
     }
 
     def __init__(self, choices_enum: type[models.TextChoices], **kwargs: Any) -> None:
@@ -48,7 +50,11 @@ class TextChoicesField(models.CharField):
             raise ValidationError(
                 self.error_messages["invalid"],
                 code="invalid",
-                params={"value": value, "choices_enum": self.choices_enum},
+                params={
+                    "value": value,
+                    "enum_name": self.choices_enum.__name__,
+                    "choices": self.choices_enum.names,
+                },
             ) from error
 
     def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:

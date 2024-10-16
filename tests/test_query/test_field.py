@@ -13,6 +13,8 @@ def test_field__simple():
 
     field = MyQueryType.name
 
+    assert repr(field) == "<undine.query.Field(ref=app.Task.name)>"
+
     assert field.ref == Task.name.field  # type: ignore[attr-defined]
     assert field.many is False
     assert field.nullable is False
@@ -75,6 +77,16 @@ def test_field__function():
     assert isinstance(field_type.of_type, GraphQLList)
     assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
     assert field_type.of_type.of_type.of_type == GraphQLString
+
+
+def test_field__function__arguments():
+    class MyQueryType(QueryType, model=Task):
+        @Field(description="Description.")
+        def custom(self, argument: str) -> list[str]:
+            return [argument]
+
+    field = MyQueryType.custom
+    assert field.description == "Description."
 
 
 def test_field__many():

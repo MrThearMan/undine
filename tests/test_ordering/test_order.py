@@ -137,3 +137,15 @@ def test_order__extensions():
     enum_type = MyOrderSet.__enum_type__()
     assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order": order}
     assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order": order}
+
+
+def test_order__single_direction():
+    class MyOrderSet(OrderSet, model=Task, auto=False):
+        name = Order(single_direction=True)
+
+    order = MyOrderSet.name
+
+    assert order.single_direction is True
+
+    enum_type = MyOrderSet.__enum_type__()
+    assert enum_type.values["name"] == order.get_graphql_enum_value()
