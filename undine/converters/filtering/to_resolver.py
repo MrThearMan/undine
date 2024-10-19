@@ -6,7 +6,7 @@ from typing import Any
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
 
-from undine.resolvers import FieldResolver
+from undine.resolvers import FunctionResolver
 from undine.typing import CombinableExpression, FilterRef, FilterResolverFunc, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -21,19 +21,19 @@ convert_filter_ref_to_filter_resolver = FunctionDispatcher[FilterRef, FilterReso
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> FilterResolverFunc:
-    return FieldResolver.from_func(ref)
+    return FunctionResolver.adapt(ref)
 
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: ModelField, **kwargs: Any) -> FilterResolverFunc:
     lookup_expr: str = kwargs["lookup_expr"]
     lookup = f"{ref.name}{LOOKUP_SEP}{lookup_expr}"
-    return FieldResolver(lambda value: models.Q(**{lookup: value}))
+    return FunctionResolver(lambda value: models.Q(**{lookup: value}))
 
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: models.Q, **kwargs: Any) -> FilterResolverFunc:
-    return FieldResolver(lambda value: ref if value else ~ref)
+    return FunctionResolver(lambda value: ref if value else ~ref)
 
 
 @convert_filter_ref_to_filter_resolver.register
@@ -42,4 +42,4 @@ def _(_: CombinableExpression, **kwargs: Any) -> FilterResolverFunc:
     lookup_expr: str = kwargs["lookup_expr"]
     name: str = kwargs["name"]
     lookup = f"{name}{LOOKUP_SEP}{lookup_expr}"
-    return FieldResolver(lambda value: models.Q(**{lookup: value}))
+    return FunctionResolver(lambda value: models.Q(**{lookup: value}))

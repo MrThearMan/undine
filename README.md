@@ -31,8 +31,8 @@ pip install undine
 - [ ] Add tests for creating schema
 - [ ] Add tests for entrypoints
 - [ ] Add tests for settings
-- [ ] Add tests for registry
-- [ ] Add tests for middleware
+- [x] Add tests for registry
+- [x] Add tests for middleware
 - [ ] Add tests for errors
 - [ ] Add tests for converters
 - [ ] Add tests for GenericForeignKeys and GenericRelations

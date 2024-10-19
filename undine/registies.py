@@ -42,7 +42,7 @@ class Registry(Generic[From, To]):
         try:
             return self.__registry[key]
         except KeyError as error:
-            raise TypeRegistryMissingTypeError(model=key) from error
+            raise TypeRegistryMissingTypeError(registry_name=self.__name, key=key) from error
 
     def __setitem__(self, key: From, value: To) -> None:
         if key in self.__registry:

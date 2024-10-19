@@ -6,7 +6,7 @@ from graphql import GraphQLBoolean, GraphQLList, GraphQLNonNull, GraphQLString
 from example_project.app.models import Task
 from tests.helpers import MockGQLInfo
 from undine import Filter, FilterSet
-from undine.resolvers import FieldResolver
+from undine.resolvers import FunctionResolver
 
 
 def test_filter__simple():
@@ -28,7 +28,7 @@ def test_filter__simple():
 
     assert frt.owner == MyFilter
     assert frt.name == "name"
-    assert isinstance(frt.resolver, FieldResolver)
+    assert isinstance(frt.resolver, FunctionResolver)
 
     expr = frt.get_expression(value="foo", info=MockGQLInfo())
     assert expr == models.Q(name__exact="foo")
@@ -60,7 +60,7 @@ def test_filter__q_expession():
 
     assert frt.owner == MyFilter
     assert frt.name == "has_project"
-    assert isinstance(frt.resolver, FieldResolver)
+    assert isinstance(frt.resolver, FunctionResolver)
 
     expr = frt.get_expression(value="foo", info=MockGQLInfo())
     assert expr == models.Q(project__isnull=False)
@@ -95,7 +95,7 @@ def test_filter__function():
 
     assert frt.owner == MyFilter
     assert frt.name == "in_the_past"
-    assert isinstance(frt.resolver, FieldResolver)
+    assert isinstance(frt.resolver, FunctionResolver)
 
     expr_1 = frt.get_expression(value=True, info=MockGQLInfo())
     assert expr_1 == models.Q(created_at__lt=Now())

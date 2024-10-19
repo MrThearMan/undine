@@ -10,31 +10,31 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Self
 
-from django.db import transaction
+from django.db import models, transaction
 from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors.error_handlers import handle_integrity_errors
-from undine.errors.exceptions import GraphQLMissingLookupFieldError
+from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
 from undine.middleware import MutationMiddlewareContext
 from undine.settings import undine_settings
+from undine.typing import GQLInfo
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handler import MutationHandler
-from undine.utils.reflection import get_signature, is_subclass
+from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
     from types import FunctionType
 
-    from django.db import models
     from django.db.models import Model
 
     from undine.mutation import MutationType
-    from undine.typing import GQLInfo, RelatedManager, Root
+    from undine.typing import RelatedManager, Root
 
 __all__ = [
     "CreateResolver",
     "CustomResolver",
     "DeleteResolver",
-    "FieldResolver",
+    "FunctionResolver",
     "ModelFieldResolver",
     "ModelManyRelatedResolver",
     "UpdateResolver",
@@ -53,30 +53,30 @@ class ModelFieldResolver:
 
 @dataclass(frozen=True, slots=True)
 class ModelManyRelatedResolver:
-    """Resolves a many-related model field as its queryset."""
+    """Resolves a many-related model field to its queryset."""
 
     name: str
 
-    def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
-        related_manager: RelatedManager = getattr(model, self.name)
-        return related_manager.get_queryset()
+    def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+        value: RelatedManager | None = getattr(model, self.name, None)
+        try:
+            return value.get_queryset()
+        except Exception as error:
+            raise GraphQLInvalidManyRelatedFieldError(model=type(model), field_name=self.name, value=value) from error
 
 
 @dataclass(frozen=True, slots=True)
-class FieldResolver:
-    """
-    Resolves a GraphQL fields through an adapter layer from the 'GraphQLFieldResolver' signature
-    into the given functions signature.
-    """
+class FunctionResolver:
+    """Resolves a GraphQL field using the given function."""
 
     func: FunctionType | Callable[..., Any]
     root_param: str | None = None
     info_param: str | None = None
 
     @classmethod
-    def from_func(cls, func: FunctionType, *, depth: int = 0) -> Self:
+    def adapt(cls, func: FunctionType | Callable[..., Any], *, depth: int = 0) -> Self:
         """
-        Create the appropriate FieldResolver for a function based on its signature.
+        Create the appropriate resolver for a function based on its signature.
         Leave out the `root` parameter from static functions, and only include the
         `info` parameter if the function has a parameter of the `GraphQLResolveInfo` type.
 
@@ -93,7 +93,7 @@ class FieldResolver:
             if i == 0 and param.name in ("self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME):
                 root_param = param.name
 
-            elif is_subclass(param.annotation, GraphQLResolveInfo):
+            elif param.annotation in (GQLInfo, GraphQLResolveInfo):
                 info_param = param.name
                 break
 

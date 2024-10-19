@@ -156,19 +156,13 @@ class FunctionDispatcherError(UndineError):
 class RegistryDuplicateError(UndineError):
     """Error raised if trying to register a value for the same key twice."""
 
-    msg = "A value for '{key:dotpath}' has already been registered: '{value:dotpath}' in '{registry_name}'."
+    msg = "'{registry_name}' alrady contains a value for '{key}': '{value}'"
 
 
 class TypeRegistryMissingTypeError(UndineError):
-    """Error raised when a QueryType for a model is not registered in the TypeRegistry."""
+    """Error raised when a Regsitry doesn't contain an entry for a given key."""
 
-    msg = (
-        "A 'QueryType' for model '{model:dotpath}' has not been registered. "
-        "Make sure one has been created and registered with "
-        "`class MyType(QueryType, model=MyModel, register=True)` [default]. "
-        "For Mutation, you can also provide the output type with the "
-        "`output_type` keyword argument."
-    )
+    msg = "'{registry_name}' doesn't contain an entry for '{key}'"
 
 
 # GraphQL Errors
@@ -266,6 +260,17 @@ class GraphQLInvalidInputDataError(GraphQLStatusError):
     msg = "Invalid input data for field '{field_name}': {data!r}"
     status = 400
     code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLInvalidManyRelatedFieldError(GraphQLStatusError):
+    """Error raised when trying to resolve a many-related field that doesn't resolve to a related manager."""
+
+    msg = (
+        "Trying to resolve field '{field_name}' on model '{model:dotpath}' as a many-related field, "
+        "but field doesn't resolve into a related manager. Got '{value}' instead."
+    )
+    status = 400
+    code = error_codes.INVALID_MANY_RELATED_FIELD
 
 
 class GraphQLBadInputDataError(GraphQLStatusError):

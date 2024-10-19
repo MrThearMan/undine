@@ -5,7 +5,7 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver
 
-from undine.resolvers import FieldResolver, ModelFieldResolver, ModelManyRelatedResolver
+from undine.resolvers import FunctionResolver, ModelFieldResolver, ModelManyRelatedResolver
 from undine.typing import CombinableExpression, FieldRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
@@ -21,7 +21,7 @@ convert_field_ref_to_resolver = FunctionDispatcher[FieldRef, GraphQLFieldResolve
 
 @convert_field_ref_to_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
-    return FieldResolver.from_func(ref)
+    return FunctionResolver.adapt(ref)
 
 
 @convert_field_ref_to_resolver.register

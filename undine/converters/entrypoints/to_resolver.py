@@ -5,7 +5,7 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver
 
-from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FieldResolver, UpdateResolver
+from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FunctionResolver, UpdateResolver
 from undine.typing import EntrypointRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -20,7 +20,7 @@ convert_entrypoint_ref_to_resolver = FunctionDispatcher[EntrypointRef, GraphQLFi
 
 @convert_entrypoint_ref_to_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
-    return FieldResolver.from_func(ref)
+    return FunctionResolver.adapt(ref)
 
 
 def load_deferred_converters() -> None:

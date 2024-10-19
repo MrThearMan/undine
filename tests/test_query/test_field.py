@@ -4,7 +4,7 @@ from graphql import GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from undine import Field, QueryType
-from undine.resolvers import FieldResolver, ModelFieldResolver
+from undine.resolvers import FunctionResolver, ModelFieldResolver
 
 
 def test_field__simple():
@@ -64,7 +64,7 @@ def test_field__function():
     assert field.name == "custom"
 
     resolver = field.get_resolver()
-    assert isinstance(resolver, FieldResolver)
+    assert isinstance(resolver, FunctionResolver)
 
     arguments = field.get_field_arguments()
     assert sorted(arguments) == ["argument"]
