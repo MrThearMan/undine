@@ -11,6 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import HttpHeaders, HttpRequest, QueryDict
 from django.test.client import BOUNDARY
 from django.utils.datastructures import MultiValueDict
+from graphql import OperationType
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
@@ -209,8 +210,10 @@ class MockGQLInfo:
         self,
         *,
         context: MockRequest | None = None,
+        operation: OperationType = OperationType.QUERY,
     ) -> None:
         self._context = context or MockRequest()
+        self.operation = operation
 
     @property
     def context(self) -> MockRequest:

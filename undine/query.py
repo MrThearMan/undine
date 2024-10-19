@@ -160,7 +160,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         """Optimize a queryset according to the given resolve info."""
         optimizer = OptimizationCompiler(info).compile(queryset)
         optimized_queryset = optimizer.optimize_queryset(queryset)
-        evaluate_in_context(optimized_queryset)
+        evaluate_in_context(optimized_queryset, info)
         return optimized_queryset
 
     @classmethod
