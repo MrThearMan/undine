@@ -96,6 +96,12 @@ class MismatchingModelError(UndineError):
     msg = "'{cls}' model '{given_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
 
 
+class MissingEntrypointRefError(UndineError):
+    """Error raised when an entrypoint is missing a reference."""
+
+    msg = "Entrypoint '{name}' in class '{cls}' must have a reference."
+
+
 class MissingFunctionAnnotationsError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 

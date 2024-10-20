@@ -35,6 +35,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.error_handlers import raised_exceptions_as_execution_results
+from undine.errors.exceptions import MissingEntrypointRefError
 from undine.settings import undine_settings
 from undine.utils.graphql import maybe_list_or_non_null
 from undine.utils.reflection import cache_signature_if_function, get_members
@@ -54,7 +55,7 @@ __all__ = [
 class Entrypoint:
     def __init__(
         self,
-        ref: EntrypointRef,
+        ref: EntrypointRef = Undefined,
         *,
         many: bool = False,
         description: str | None = Undefined,
@@ -83,14 +84,17 @@ class Entrypoint:
         self.owner = owner
         self.name = name
 
+        if self.ref is Undefined:
+            raise MissingEntrypointRefError(name=name, cls=owner)
+
         if isinstance(self.ref, FunctionType):
             self.many = is_many(self.ref)
         if self.description is Undefined:
             self.description = convert_to_description(self.ref)
 
-    def __call__(self, _ref: FunctionType, /) -> Self:
+    def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Entrypoint()"""
-        self.ref = cache_signature_if_function(_ref, depth=1)
+        self.ref = cache_signature_if_function(ref, depth=1)
         return self
 
     def __repr__(self) -> str:
