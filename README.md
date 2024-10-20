@@ -26,10 +26,10 @@ pip install undine
 # Before initial release:
 - [x] Add tests for MutationTypes
 - [x] Add tests for Inputs
-- [ ] Add tests for resolvers
+- [x] Add tests for resolvers
 - [ ] Add tests for optimization
-- [ ] Add tests for creating schema
-- [ ] Add tests for entrypoints
+- [x] Add tests for creating schema
+- [x] Add tests for entrypoints
 - [ ] Add tests for settings
 - [x] Add tests for registry
 - [x] Add tests for middleware
@@ -37,16 +37,17 @@ pip install undine
 - [ ] Add tests for converters
 - [ ] Add tests for GenericForeignKeys and GenericRelations
 - [x] Refactor MutationHandler to be less coupled to MutationTypes
-- [ ] Add support for non-model mutations
+- [x] Add support for non-model mutations
 - [ ] Add support for permission checks
 - [ ] Add support for pagination
 - [ ] Add support for Relay
-- [ ] Add support for Enums / Django Choices
+- [x] Add support for Enums / Django Choices
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer (pagination, etc.)
 - [x] Add field for TestChoices (needed for better enum support)
 - [ ] Add support for bulk mutations
 - [ ] Add documentation for everything!!! (specify later)
+- [ ] "mutation_only" inputs, e.g. "CurrentUserDefault"
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects
