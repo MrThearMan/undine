@@ -283,8 +283,11 @@ extend-ignore-names = [
 
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = [
-    "cached_class_property",
-    "cached_class_method",
+    "undine.utils.decorators.cached_class_property",
+    "undine.utils.decorators.cached_class_method",
+]
+staticmethod-decorators = [
+    "undine.mutation.Input.validator",
 ]
 
 [tool.ruff.lint.pydocstyle]

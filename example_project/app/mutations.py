@@ -80,3 +80,10 @@ class TaskCreateMutationType(MutationType, model=Task):
     comments = Input(CommentMutationTypeInput)
 
     related_tasks = Input(TaskMutationTypeInput)
+
+    @input_only.validator
+    @staticmethod
+    def _(value: bool) -> None:  # noqa: FBT001
+        if value == "foo":
+            msg = "Name must not be 'foo'"
+            raise ValueError(msg)

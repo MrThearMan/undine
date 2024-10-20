@@ -29,15 +29,13 @@ from undine.settings import undine_settings
 from undine.utils.decorators import cached_class_method
 from undine.utils.graphql import maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_field
-from undine.utils.reflection import get_members
+from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
     from django.db import models
-    from django.db.models import Model
 
-    from undine.typing import GQLInfo, MutationKind, MutationMiddlewareType, Root
-
+    from undine.typing import GQLInfo, MutationKind, MutationMiddlewareType, Root, ValidatorFunc
 
 __all__ = [
     "Input",
@@ -92,7 +90,7 @@ class MutationTypeMeta(type):
                 exclude.add(lookup_field)
             _attrs |= get_inputs_for_model(model, exclude=exclude)
 
-        # Add to attrs before class creation so that these are available during `Input.__set_name__`
+        # Add to attrs things that need to be available during `Input.__set_name__`.
         _attrs["__model__"] = model
         _attrs["__mutation_kind__"] = mutation_kind
         instance: type[MutationType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
@@ -131,24 +129,8 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Override this method for custom mutations."""
 
     @classmethod
-    def __pre_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """
-        Implement to perform additional actions before mutation happens.
-
-        :param instance: The instance to be mutated. For create mutations, this will be `None`.
-        :param info: The GraphQL resolve info.
-        :param input_data: The input data for the mutation.
-        """
-
-    @classmethod
-    def __post_mutation__(cls, instance: Model | None, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """
-        Implement to perform additional actions after mutation has happened.
-
-        :param instance: The instance that was mutated. For delete mutations, this will be `None`.
-        :param info: The GraphQL resolve info.
-        :param input_data: The input data for the mutation.
-        """
+    def __validate__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        """Validate all input data given to this MutationType."""
 
     @cached_class_method
     def __input_type__(cls) -> GraphQLInputObjectType:
@@ -191,6 +173,7 @@ class Input:
         input_only: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
+        validators: list[ValidatorFunc] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
@@ -211,6 +194,7 @@ class Input:
                            this field will be considered input-only.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
+        :param validators: Validators for the input. Can also be added with the `@<input_name>.validator` decorator.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the input.
         """
@@ -220,6 +204,7 @@ class Input:
         self.input_only = input_only
         self.description = description
         self.deprecation_reason = deprecation_reason
+        self.validators = validators or []
         self.extensions = extensions or {}
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
 
@@ -239,6 +224,11 @@ class Input:
 
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
+
+    def validator(self, func: ValidatorFunc) -> ValidatorFunc:
+        """Register a function to be called before the input is validated."""
+        self.validators.append(get_wrapped_func(func))
+        return func
 
     def as_graphql_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
@@ -277,5 +267,5 @@ def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) 
 
 DeleteMutationOutputType = GraphQLObjectType(
     name="DeleteMutationOutput",
-    fields={"success": GraphQLField(GraphQLNonNull(GraphQLBoolean))},
+    fields={undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: GraphQLField(GraphQLNonNull(GraphQLBoolean))},
 )

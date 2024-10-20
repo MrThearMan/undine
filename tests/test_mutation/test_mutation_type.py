@@ -212,3 +212,6 @@ def test_mutation_type__extensions():
 
     input_type = MyMutation.__input_type__()
     assert input_type.extensions == {"foo": "bar", "undine_mutation": MyMutation}
+
+
+# TODO: '__validate__'

@@ -105,7 +105,7 @@ class QueryTypeMeta(type):
                 expected_model=orderset.__model__,
             )
 
-        # Add model to attrs before class creation so that it's available during `Field.__set_name__`.
+        # Add to attrs things that need to be available during `Field.__set_name__`.
         _attrs["__model__"] = model
         instance: type[QueryType] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 
@@ -260,7 +260,7 @@ class Field:
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
-    def __set_name__(self, owner: type | type[QueryType], name: str) -> None:
+    def __set_name__(self, owner: type[QueryType], name: str) -> None:
         self.owner = owner
         self.name = name
         self.ref = convert_to_field_ref(self.ref, caller=self)

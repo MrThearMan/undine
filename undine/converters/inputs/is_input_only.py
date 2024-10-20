@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db import models
-
-from undine.typing import InputRef, TypeRef
+from undine.typing import InputRef, ModelField, TypeRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
@@ -17,7 +15,7 @@ is_input_only = FunctionDispatcher[InputRef, bool]()
 
 
 @is_input_only.register
-def _(_: models.Field, **kwargs: Any) -> bool:
+def _(_: ModelField, **kwargs: Any) -> bool:
     return False
 
 

@@ -87,6 +87,7 @@ __all__ = [
     "T",
     "ToManyField",
     "ToOneField",
+    "ValidatorFunc",
 ]
 
 
@@ -138,12 +139,7 @@ class DispatchProtocol(Protocol[From, To]):
 
 
 class MutationMiddlewareType(Protocol):
-    def __call__(
-        self,
-        mutation_type: type[MutationType],
-        info: GQLInfo,
-        input_data: dict[str, Any],
-    ) -> Iterable[None] | Iterator[None]: ...
+    def __call__(self, params: MutationMiddlewareParams) -> Iterable[None] | Iterator[None] | None: ...
 
 
 # Classes purely for type-hinting.
@@ -218,6 +214,14 @@ class TypeRef:
     ref: type
 
 
+@dataclass(slots=True)
+class MutationMiddlewareParams:
+    mutation_type: type[MutationType]
+    info: GQLInfo
+    input_data: dict[str, Any]
+    instance: models.Model | None = None
+
+
 class PaginationArgs(TypedDict):
     after: int | None
     before: int | None
@@ -251,6 +255,7 @@ MutationInputType: TypeAlias = JsonType | models.Model | list[models.Model] | No
 PostSaveHandler: TypeAlias = Callable[[models.Model], Any]
 TypedDictType: TypeAlias = type(TypedDict(""))
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
+ValidatorFunc: TypeAlias = Callable[[Any], None]
 
 # Refs
 

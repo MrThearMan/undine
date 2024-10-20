@@ -45,6 +45,8 @@ class ErrorMessageFormatter(Formatter):
             return dotpath(value)
         if format_spec == "module":
             return value.__module__
+        if format_spec == "name":
+            return value.__name__
         if format_spec == "qualname":
             return value.__qualname__
         if format_spec == "comma_sep_or":
@@ -239,6 +241,17 @@ class GraphQLDecodeError(GraphQLStatusError):
     code = error_codes.DECODING_ERROR
 
 
+class GraphQLDuplicateEnumError(GraphQLStatusError):
+    """Error raised when a request is made with an unsupported content type."""
+
+    msg = (
+        "Enum '{enum_name}' exists with a different set of values: "
+        "{values_1!comma_sep_and} vs. {values_2!comma_sep_and}"
+    )
+    status = 400
+    code = error_codes.GRAPHQL_DUPLICATE_ENUM
+
+
 class GraphQLEmptyQueryError(GraphQLStatusError):
     """Error raised when parsing file upload data doesn't contain a `map` files mapping."""
 
@@ -276,7 +289,10 @@ class GraphQLInvalidManyRelatedFieldError(GraphQLStatusError):
 class GraphQLBadInputDataError(GraphQLStatusError):
     """Error raised when a request content is not correct according to the GraphQL schema."""
 
-    msg = "Mutation input contains data for a field '{field_name}', which is not a MutationType."
+    msg = (
+        "Input data contains data for field '{field_name}' but MutationType '{mutation_type:dotpath}' "
+        "doesn't have an input with that name."
+    )
     status = 400
     code = error_codes.INVALID_INPUT_DATA
 
@@ -345,14 +361,3 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     msg = "'{content_type}' is not a supported content type."
     status = 415
     code = error_codes.UNSUPPORTED_CONTENT_TYPE
-
-
-class GraphQLDuplicateEnumError(GraphQLStatusError):
-    """Error raised when a request is made with an unsupported content type."""
-
-    msg = (
-        "Enum '{enum_name}' exists with a different set of values: "
-        "{values_1!comma_sep_and} vs. {values_2!comma_sep_and}"
-    )
-    status = 400
-    code = error_codes.GRAPHQL_DUPLICATE_ENUM

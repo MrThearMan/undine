@@ -111,35 +111,29 @@ class FunctionResolver:
 class CreateResolver:
     """
     Resolves a mutation for creating a model instance using 'MutationHandler.create'.
-    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
-    as well as any defined mutation middlewares.
-    Mutation is run in a transaction.
+    Runs MutationType's '__validate__' method, Input validators, as well as
+    any defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        self.mutation_type.__pre_mutation__(None, info, input_data)
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
             MutationMiddlewareContext(self.mutation_type, info, input_data),
         ):
-            instance = MutationHandler(model=self.mutation_type.__model__).create(input_data)
-
-        self.mutation_type.__post_mutation__(instance, info, input_data)
-        return instance
+            return MutationHandler(model=self.mutation_type.__model__).create(input_data)
 
 
 @dataclass(frozen=True, slots=True)
 class UpdateResolver:
     """
     Resolves a mutation for updating a model instance using 'MutationHandler.update'.
-    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
-    as well as any defined mutation middlewares.
-    Mutation is run in a transaction.
+    Runs MutationType's '__validate__' method, Input validators, as well as
+    any defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -153,32 +147,27 @@ class UpdateResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         value = input_data.pop(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
-        self.mutation_type.__pre_mutation__(instance, info, input_data)
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data),
+            MutationMiddlewareContext(self.mutation_type, info, input_data, instance),
         ):
-            instance = MutationHandler(model=self.mutation_type.__model__).update(instance, input_data)
-
-        self.mutation_type.__post_mutation__(instance, info, input_data)
-        return instance
+            return MutationHandler(model=self.mutation_type.__model__).update(instance, input_data)
 
 
 @dataclass(frozen=True, slots=True)
 class DeleteResolver:
     """
     Resolves a mutation for deleting a model instance using 'model.delete'.
-    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
-    as well as any defined mutation middlewares.
-    Mutation is run in a transaction.
+    Runs MutationType's '__validate__' method, Input validators, as well as
+    any defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -192,46 +181,39 @@ class DeleteResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         value = input_data.get(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
-        self.mutation_type.__pre_mutation__(instance, info, input_data)
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data),
+            MutationMiddlewareContext(self.mutation_type, info, input_data, instance),
         ):
             instance.delete()
 
-        self.mutation_type.__post_mutation__(None, info, input_data)
-        return {"success": True}
+        return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
 
 @dataclass(frozen=True, slots=True)
 class CustomResolver:
     """
     Resolves a custom mutation a model instance using 'mutation_type.__mutate__'.
-    Runs MutationType's '__pre_mutation__' and '__post_mutation__' hooks,
-    as well as any defined mutation middlewares.
-    Mutation is run in a transaction.
+    Runs MutationType's '__validate__' method, Input validators, as well as
+    any defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
-        input_data = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        self.mutation_type.__pre_mutation__(None, info, input_data)
+        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
             MutationMiddlewareContext(self.mutation_type, info, input_data),
         ):
-            return_value = self.mutation_type.__mutate__(root, info, input_data)
-
-        self.mutation_type.__post_mutation__(return_value, info, input_data)
-        return return_value
+            return self.mutation_type.__mutate__(root, info, input_data)

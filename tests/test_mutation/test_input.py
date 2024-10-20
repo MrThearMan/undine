@@ -118,3 +118,6 @@ def test_input__extensions():
 
     graphql_input_field = inpt.as_graphql_input_field()
     assert graphql_input_field.extensions == {"foo": "bar", "undine_input": inpt}
+
+
+# TODO: validators

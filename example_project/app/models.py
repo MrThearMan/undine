@@ -52,7 +52,7 @@ class Comment(models.Model):
 class ServiceRequest(models.Model):
     details = models.TextField()
     created_at = models.DateField(auto_now_add=True)
-    submitted_at = models.DateField(null=True)
+    submitted_at = models.DateField(null=True, blank=True)
 
     def __str__(self) -> str:
         return f"ServiceRequest {self.id}"
@@ -85,8 +85,8 @@ class Task(models.Model):
 
     related_tasks = models.ManyToManyField("self")
 
-    request = models.OneToOneField(ServiceRequest, null=True, default=None, on_delete=models.SET_NULL)
-    project = models.ForeignKey(Project, null=True, on_delete=models.CASCADE, related_name="tasks")
+    request = models.OneToOneField(ServiceRequest, null=True, blank=True, default=None, on_delete=models.SET_NULL)
+    project = models.ForeignKey(Project, null=True, blank=True, on_delete=models.CASCADE, related_name="tasks")
     assignees = models.ManyToManyField(Person, related_name="tasks")
 
     comments = GenericRelation(Comment)
@@ -100,7 +100,7 @@ class TaskResult(models.Model):
     time_used = models.DurationField()
     created_at = models.DateField(auto_now_add=True)
 
-    task = models.OneToOneField(Task, on_delete=models.CASCADE, related_name="result")
+    task = models.OneToOneField(Task, on_delete=models.RESTRICT, related_name="result")
 
     def __str__(self) -> str:
         return f"TaskResult {self.id}"
@@ -109,7 +109,7 @@ class TaskResult(models.Model):
 class TaskObjective(models.Model):
     details = models.TextField()
 
-    task = models.OneToOneField(Task, null=True, on_delete=models.CASCADE, related_name="objective")
+    task = models.OneToOneField(Task, null=True, blank=True, on_delete=models.CASCADE, related_name="objective")
 
     def __str__(self) -> str:
         return f"TaskObjective {self.id}"

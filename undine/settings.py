@@ -23,6 +23,9 @@ class DefaultSettings(NamedTuple):
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from snake case to camel case for the GraphQL schema?"""
 
+    DELETE_MUTATION_OUTPUT_FIELD_NAME: str = "success"
+    """The name of the field in the output of a delete mutation."""
+
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
     """Disable optimizing fetched fields with `queryset.only()`."""
 

@@ -47,7 +47,7 @@ class OrderSetMeta(type):
         if auto:
             _attrs |= get_orders_for_model(model, exclude=set(exclude) | set(_attrs))
 
-        # Add model to attrs before class creation so that it's available during `Order.__set_name__`.
+        # Add to attrs things that need to be available during `Order.__set_name__`.
         _attrs["__model__"] = model
         instance: type[OrderSet] = super().__new__(cls, _name, _bases, _attrs)  # type: ignore[assignment]
 

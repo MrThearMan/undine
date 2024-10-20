@@ -35,7 +35,7 @@ def get_members(obj: object, type_: type[T]) -> list[tuple[str, T]]:
     return inspect.getmembers(obj, lambda x: isinstance(x, type_))
 
 
-def get_wrapped_func(func: partial | classmethod | staticmethod | property | FunctionType) -> FunctionType:
+def get_wrapped_func(func: T) -> T:
     """
     Get the inner function of a partial function, classmethod, staticmethod, property,
     or a function wrapped with `functools.wraps`.

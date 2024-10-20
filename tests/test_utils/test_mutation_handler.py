@@ -29,6 +29,7 @@ def test_mutation_handler__create():
         "type": TaskTypeChoices.TASK.value,
         "request": {
             "details": "Test request",
+            "submitted_at": "2024-01-01",
         },
         "project": {
             "name": "Test project",
@@ -69,8 +70,10 @@ def test_mutation_handler__create():
         "relatedTasks": [
             {
                 "name": "Related task",
+                "type": TaskTypeChoices.BUG_FIX.value,
                 "request": {
                     "details": "Related request",
+                    "submitted_at": "2024-01-02",
                 },
                 "project": {
                     "name": "Related project",
@@ -157,6 +160,7 @@ def test_mutation_handler__update__retain_relations():
         "request": {
             "pk": request.pk,
             "details": "New Request",
+            "submitted_at": "2024-01-01",
         },
         "project": {
             "pk": project.pk,
@@ -209,6 +213,7 @@ def test_mutation_handler__update__retain_relations():
                 "request": {
                     "pk": related_request.pk,
                     "details": "New Related Request",
+                    "submitted_at": "2024-01-02",
                 },
                 "project": {
                     "pk": related_project.pk,
@@ -414,6 +419,7 @@ def test_mutation_handler__update__new_relations():
         "name": "New Task",
         "request": {
             "details": "New Request",
+            "submitted_at": "2024-01-01",
         },
         "project": {
             "name": "New Project",
@@ -454,8 +460,10 @@ def test_mutation_handler__update__new_relations():
         "relatedTasks": [
             {
                 "name": "New Related Task",
+                "type": TaskTypeChoices.BUG_FIX.value,
                 "request": {
                     "details": "New Related Request",
+                    "submitted_at": "2024-01-02",
                 },
                 "project": {
                     "name": "New Related Project",

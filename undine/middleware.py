@@ -3,20 +3,24 @@
 from __future__ import annotations
 
 import traceback
+from contextlib import suppress
+from copy import deepcopy
 from dataclasses import dataclass
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Generator, Iterable, Iterator, Self
 
 from undine.errors.exceptions import GraphQLBadInputDataError
 from undine.settings import undine_settings
+from undine.typing import MutationMiddlewareParams
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
+    from django.db import models
     from graphql import GraphQLFieldResolver
 
     from undine import MutationType
-    from undine.typing import GQLInfo, JsonType, MutationMiddlewareType
+    from undine.typing import GQLInfo, MutationMiddlewareType
 
 __all__ = [
     "MutationMiddlewareContext",
@@ -43,77 +47,50 @@ class ListItem:
     data: dict[str, Any]
 
 
-class RemoveInputOnlyFieldsMiddleware:
+class InputDataValidationMiddleware:
     """
-    Removes any input-only fields from the input data before mutation
-    and adds them back after the mutation is done.
+    Calls registered validators for each input field reachable from the mutation type.
+    Also removes any input-only fields from the input data and adds them back after the mutation is done.
     """
 
-    def __init__(self, mutation_type: type[MutationType], info: GQLInfo, input_data: dict[str, Any]) -> None:
-        self.mutation_type = mutation_type
-        self.info = info
-        self.input_data = input_data
+    def __init__(self, params: MutationMiddlewareParams) -> None:
+        self.params = params
 
     def __iter__(self) -> Generator:
-        input_only_data = self.extract_input_only_data(mutation_type=self.mutation_type, input_data=self.input_data)
+        original_input_data = deepcopy(self.params.input_data)
+        self.pre_mutation(self.params.mutation_type, self.params.input_data)
         yield
-        self.extend(target=self.input_data, to_merge=input_only_data)
+        self.params.input_data = original_input_data
 
-    def extract_input_only_data(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> JsonType:
+    def pre_mutation(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         """
-        Extracts all input-only field data from the given 'input_data'
-        based on the undine.Inputs in the given MutationType.
+        Run all MutationType and Input validators for the fields in the given input data.
+        Remove any input-only fields after validation.
         """
         from undine import MutationType
 
-        input_only_data: JsonType = {}
+        mutation_type.__validate__(info=self.params.info, input_data=input_data)
 
         for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
-            input_type = mutation_type.__input_map__.get(field_name)
-            if input_type is None:
-                raise GraphQLBadInputDataError(field_name=field_name)
+            input_ = mutation_type.__input_map__.get(field_name)
+            if input_ is None:
+                raise GraphQLBadInputDataError(mutation_type=mutation_type, field_name=field_name)
 
-            if input_type.input_only:
-                input_only_data[field_name] = input_data.pop(field_name)
-                continue
+            value = input_data.pop(field_name)
 
-            value = input_data[field_name]
+            for validator in input_.validators:
+                validator(value)
 
-            if isinstance(value, dict) and is_subclass(input_type.ref, MutationType):
-                data = self.extract_input_only_data(mutation_type=input_type.ref, input_data=value)
-                if data:
-                    input_only_data[field_name] = data
+            if isinstance(value, dict) and is_subclass(input_.ref, MutationType):
+                self.pre_mutation(mutation_type=input_.ref, input_data=value)
 
-            elif isinstance(value, list) and is_subclass(input_type.ref, MutationType):
-                nested_data: list[ListItem] = []
-                for place, item in enumerate(value):
-                    data = self.extract_input_only_data(mutation_type=input_type.ref, input_data=item)
-                    if data:
-                        nested_data.append(ListItem(place=place, data=data))
+            elif isinstance(value, list) and is_subclass(input_.ref, MutationType):
+                for item in value:
+                    self.pre_mutation(mutation_type=input_.ref, input_data=item)
 
-                if nested_data:
-                    input_only_data[field_name] = nested_data
-
-        return input_only_data
-
-    def extend(self, *, target: JsonType, to_merge: JsonType) -> JsonType:
-        """
-        Recursively extend 'other' JSON object into 'target' JSON object.
-        If there is a conflict, the 'other' dictionary's value is used.
-        """
-        for key, value in to_merge.items():
-            if key not in target:
-                target[key] = value
-            elif isinstance(target[key], dict) and isinstance(value, dict):
-                self.extend(target=target[key], to_merge=value)
-            elif isinstance(target[key], list) and isinstance(value, list):
-                list_item: ListItem
-                for list_item in value:
-                    target[key][list_item.place].update(list_item.data)
-            else:
-                target[key] = value
-
-        return target
+            if not input_.input_only:
+                # Use field 'snake_case' name.
+                input_data[input_.name] = value
 
 
 class MutationMiddlewareContext:
@@ -125,15 +102,15 @@ class MutationMiddlewareContext:
     The second iteration should modify the data after the mutation is executed.
 
     >>> # Function middleware
-    >>> def my_middleware(mutation_type: type[MutationType], info: GQLInfo, input_data: dict[str, Any]) -> Generator:
+    >>> def my_middleware(params: MutationMiddlewareParams) -> Generator:
     ...     # Do stuff before mutation is executed.
     ...     yield
     ...     # Do stuff after mutation is executed.
     ...
     >>> # Class middleware
     >>> class MyMiddleware:
-    ...     def __init__(self, mutation_type: type[MutationType], info: GQLInfo, input_data: dict[str, Any]) -> None:
-    ...         ...
+    ...     def __init__(self, params: MutationMiddlewareParams) -> None:
+    ...         self.params = params
     ...
     ...     def __iter__(self) -> Generator:
     ...         # Do stuff before mutation is executed.
@@ -142,26 +119,40 @@ class MutationMiddlewareContext:
     """
 
     default_middleware: list[MutationMiddlewareType] = [
-        RemoveInputOnlyFieldsMiddleware,
+        InputDataValidationMiddleware,
         *undine_settings.MUTATION_MIDDLEWARE,
     ]
 
-    def __init__(self, mutation_type: type[MutationType], info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        mutation_type: type[MutationType],
+        info: GQLInfo,
+        input_data: dict[str, Any],
+        instance: models.Model | None = None,
+    ) -> None:
         self.middleware: list[Iterator] = []
 
+        self.params = MutationMiddlewareParams(
+            mutation_type=mutation_type,
+            info=info,
+            input_data=input_data,
+            instance=instance,
+        )
+
         for middleware in chain(self.default_middleware, mutation_type.__middleware__()):
-            result = middleware(mutation_type=mutation_type, info=info, input_data=input_data)
+            result = middleware(self.params)
             if isinstance(result, Iterator):
                 self.middleware.append(result)
-            if isinstance(result, Iterable):
+            elif isinstance(result, Iterable):
                 self.middleware.append(iter(result))
 
     def __enter__(self) -> Self:
         for middleware in self.middleware:
-            next(middleware)
+            with suppress(StopIteration):
+                next(middleware)
         return self
 
     def __exit__(self, *args: object, **kwargs: Any) -> None:
-        for middleware in self.middleware:
-            for _ in middleware:
-                ...
+        for middleware in reversed(self.middleware):
+            with suppress(StopIteration):
+                next(middleware)

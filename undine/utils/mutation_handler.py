@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING, Any, Generic, Iterable
 
-from django.db.models import Manager, Model
+from django.db.models import Model
 
 from undine.errors.exceptions import GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
@@ -35,10 +35,6 @@ class MutationHandler(Generic[TModel]):
         self.model = model
         self.related_info = parse_model_relation_info(model=model)
 
-    @property
-    def manager(self) -> Manager:
-        return self.model._default_manager  # type: ignore[return-value]
-
     def get_update_or_create(self, data: dict[str, Any]) -> TModel | None:
         key = get_lookup_field_name(self.model)
         value = data.pop(key, None)
@@ -56,7 +52,9 @@ class MutationHandler(Generic[TModel]):
         """Create a new instance of the model, while also handling model relations."""
         post_save_data = self.pre_save(input_data)
 
-        instance = self.manager.create(**input_data)
+        instance = self.model(**input_data)
+        instance.full_clean()
+        instance.save(force_insert=True)
 
         for handler in post_save_data.post_save_handlers:
             handler(instance)
@@ -68,6 +66,7 @@ class MutationHandler(Generic[TModel]):
 
         for attr, value in input_data.items():
             setattr(instance, attr, value)
+        instance.full_clean()
         instance.save(update_fields=self.get_update_fields(*input_data))
 
         for handler in post_save_data.post_save_handlers:
