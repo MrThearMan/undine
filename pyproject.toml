@@ -58,10 +58,10 @@ requests = {version = ">=2.32.3", optional = true}
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.3"
 pytest-django = "4.9.0"
-coverage = "7.6.3"
-hypothesis = "6.115.0"
+coverage = "7.6.4"
+hypothesis = "6.115.3"
 factory-boy = "3.3.1"
-tox = "4.21.2"
+tox = "4.23.0"
 tox-gh-actions = "3.2.0"
 urllib3 = "2.2.3"
 
@@ -72,7 +72,7 @@ mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.0.1"
-mypy = "1.11.2"
+mypy = "1.12.1"
 grimp = "3.5"
 
 [tool.poetry.extras]
