@@ -35,6 +35,9 @@ class DefaultSettings(NamedTuple):
     ENTRYPOINT_EXTENSIONS_KEY: str = "undine_entrypoint"
     """The key used to store a Entrypoint in the field GraphQL extensions."""
 
+    EXECUTION_CONTEXT_CLASS: str = "undine.schema.UndineExecutionContext"
+    """GraphQL execution context class used by the schema."""
+
     FIELD_EXTENSIONS_KEY: str = "undine_field"
     """The key used to store a Field in the field GraphQL extensions."""
 
@@ -128,6 +131,7 @@ DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()
 IMPORT_STRINGS: set[str] = {
     "ADDITIONAL_VALIDATION_RULES",
     "DOCSTRING_PARSER",
+    "EXECUTION_CONTEXT_CLASS",
     "MIDDLEWARE",
     "MUTATION_MIDDLEWARE",
     "SCHEMA",

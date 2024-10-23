@@ -50,7 +50,7 @@ class FunctionDispatcher(Generic[From, To]):
         :param wrapper: A function that wraps all implementated functions for
                         performing additional logic.
         """
-        self.name = get_instance_name()
+        self.__name__ = get_instance_name()
         self.wrapper = wrapper
         self.union_default = union_default
         self.default = Undefined
@@ -88,7 +88,7 @@ class FunctionDispatcher(Generic[From, To]):
         registered as the implementation for all the types in the Union.
         """
         if not isinstance(func, FunctionType):
-            msg = f"Can only register functions with '{self.name}'."
+            msg = f"Can only register functions with '{self.__name__}'. Got {func}."
             raise FunctionDispatcherError(msg)
 
         type_ = self._first_param_type(func, depth=1)
@@ -112,12 +112,15 @@ class FunctionDispatcher(Generic[From, To]):
 
         for key in keys:
             if key is Undefined:
-                msg = f"'{self.name}' cannot register an implmentation for 'Undefined'."
+                msg = (
+                    f"Cannot register function '{func.__name__}' for '{self.__name__}': "
+                    f"First argument type cannot be 'Undefined'."
+                )
                 raise FunctionDispatcherError(msg)
 
             key_ = self._get_key(key)
             if key_ is UnionType:
-                msg = f"'{self.name}' cannot register an implementation for a Union member: {key}."
+                msg = f"'{self.__name__}' cannot register an implementation for type '{type_}'."
                 raise FunctionDispatcherError(msg)
 
             self.implementations[key_] = self.wrapper(func) if self.wrapper is not None else func
@@ -142,7 +145,7 @@ class FunctionDispatcher(Generic[From, To]):
         if self.default is not Undefined:
             return self.default
 
-        msg = f"'{self.name}' doesn't contain an implementation for '{type_}' ({key})."
+        msg = f"'{self.__name__}' doesn't contain an implementation for '{type_}' ({key})."
         raise FunctionDispatcherError(msg)
 
     def _get_key(self, key: Any) -> type:
@@ -180,11 +183,19 @@ class FunctionDispatcher(Generic[From, To]):
         """Get the type of the first parameter of the given function."""
         sig = get_signature(func, depth=depth + 1)
 
-        type_ = next((param.annotation for param in sig.parameters.values()), Undefined)
-        if type_ is Undefined:
-            msg = "Registered function must have at least one argument."
-            raise FunctionDispatcherError(msg)
+        try:
+            type_ = next(param.annotation for param in sig.parameters.values())
+        except StopIteration as error:
+            msg = (
+                f"Function '{func.__name__}' must have at least one argument "
+                f"so that it can be registered for '{self.__name__}'."
+            )
+            raise FunctionDispatcherError(msg) from error
+
         if type_ is inspect.Parameter.empty:
-            msg = "Registered function's first argument must have a type annotation."
+            msg = (
+                f"Function '{func.__name__}' must have a type hint for its first argument "
+                f"so that it can be registered for '{self.__name__}'."
+            )
             raise FunctionDispatcherError(msg)
         return type_

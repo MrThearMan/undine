@@ -30,6 +30,8 @@ def handle_conversion_errors(typename: str):  # noqa: ANN201
         def wrapper(value: Any) -> Any:
             try:
                 return func(value)
+            except GraphQLConversionError:
+                raise
             except Exception as error:
                 raise GraphQLConversionError(typename=typename, value=inspect(value), error=str(error)) from error
 
@@ -70,11 +72,8 @@ def raised_exceptions_as_execution_results(func: Callable[P, ExecutionResult]) -
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
         try:
             return func(*args, **kwargs)
-        except GraphQLError as error:
-            undine_logger.info("Expected error in GraphQL execution", exc_info=error)
-            return ExecutionResult(errors=[error], extensions=error.extensions)
         except Exception as error:  # noqa: BLE001
             undine_logger.error("Unexpected error in GraphQL execution", exc_info=error)
-            return ExecutionResult(errors=[GraphQLError(message=str(error))], extensions={"status_code": 500})
+            return ExecutionResult(errors=[GraphQLError(message=str(error), extensions={"status_code": 500})])
 
     return wrapper

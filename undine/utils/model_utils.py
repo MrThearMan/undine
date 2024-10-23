@@ -91,7 +91,7 @@ def get_model_field(*, model: type[models.Model], lookup: str) -> models.Field:
 
         model = field.related_model
 
-    if field is None:
+    if field is None:  # pragma: no cover
         raise ModelFieldDoesNotExistError(field=lookup, model=model) from None
 
     return field

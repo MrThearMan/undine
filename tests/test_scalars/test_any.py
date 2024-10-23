@@ -5,61 +5,72 @@ from graphql import GRAPHQL_MAX_INT, GRAPHQL_MIN_INT
 
 from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
-from undine.scalars.any import parse_any
+from undine.scalars.any import parse_any, serialize
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize("value", ["foo", ""])
-def test_scalar__any__parse__str(value):
-    assert parse_any(value) == value
+def test_scalar__any__parse__str(func, value):
+    assert func(value) == value
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize("value", [True, False])
-def test_scalar__any__parse__bool(value):
-    assert parse_any(value) is value
+def test_scalar__any__parse__bool(func, value):
+    assert func(value) is value
 
 
-def test_scalar__any__parse__none():
-    assert parse_any(None) is None
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__none(func):
+    assert func(None) is None
 
 
-def test_scalar__any__parse__bytes():
-    assert parse_any(b"hello world") == "hello world"
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__bytes(func):
+    assert func(b"hello world") == "hello world"
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize("value", [1, 2, -1, 0])
-def test_scalar__any__parse__int(value):
-    assert parse_any(value) is value
+def test_scalar__any__parse__int(func, value):
+    assert func(value) is value
 
 
-def test_scalar__any__parse__too_high():
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__too_high(func):
     msg = "Any cannot represent value 2147483648: GraphQL integers cannot represent non 32-bit signed integer value."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any(GRAPHQL_MAX_INT + 1)
+        func(GRAPHQL_MAX_INT + 1)
 
 
-def test_scalar__any__parse__too_low():
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__too_low(func):
     msg = "Any cannot represent value -2147483649: GraphQL integers cannot represent non 32-bit signed integer value."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any(GRAPHQL_MIN_INT - 1)
+        func(GRAPHQL_MIN_INT - 1)
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize("value", [1.0, -1.0, 0.3, 1.3e-3, 1.3e3, -1.3e3])
-def test_scalar__any__parse__float(value):
-    assert parse_any(value) is value
+def test_scalar__any__parse__float(func, value):
+    assert func(value) is value
 
 
-def test_scalar__any__parse__float__inf():
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__float__inf(func):
     msg = "Any cannot represent value inf: GraphQL floats cannot represent 'inf' or 'NaN' values."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any(float("inf"))
+        func(float("inf"))
 
 
-def test_scalar__any__parse__float__nan():
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__float__nan(func):
     msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any(float("nan"))
+        func(float("nan"))
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize(
     "value",
     [
@@ -70,19 +81,18 @@ def test_scalar__any__parse__float__nan():
         [{"foo": "bar"}],
     ],
 )
-def test_scalar__any__parse__list(value):
-    assert parse_any(value) is value
+def test_scalar__any__parse__list(func, value):
+    assert func(value) is value
 
 
-def test_scalar__any__parse__list__value_error():
-    msg = (
-        "Any cannot represent value [nan]: "
-        "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    )
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__list__value_error(func):
+    msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any([float("nan")])
+        func([float("nan")])
 
 
+@pytest.mark.parametrize("func", [parse_any, serialize])
 @pytest.mark.parametrize(
     "value",
     [
@@ -95,20 +105,19 @@ def test_scalar__any__parse__list__value_error():
         {"foo": {"bar": 1}},
     ],
 )
-def test_scalar__any__parse__dict(value):
-    assert parse_any(value) is value
+def test_scalar__any__parse__dict(func, value):
+    assert func(value) is value
 
 
-def test_scalar__any__parse__dict__value_error():
-    msg = (
-        "Any cannot represent value {'foo': nan}: "
-        "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
-    )
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__dict__value_error(func):
+    msg = "Any cannot represent value nan: GraphQL floats cannot represent 'inf' or 'NaN' values."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any({"foo": float("nan")})
+        func({"foo": float("nan")})
 
 
-def test_scalar__any__parse__unsupported_type():
+@pytest.mark.parametrize("func", [parse_any, serialize])
+def test_scalar__any__parse__unsupported_type(func):
     msg = "Any cannot represent value <object instance>: Type 'builtins.object' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_any(object())
+        func(object())

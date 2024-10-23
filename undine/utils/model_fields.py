@@ -42,6 +42,8 @@ class TextChoicesField(models.CharField):
     def to_python(self, value: Any) -> Any:
         """Converts the given value into the correct Python object for this field."""
         if value is None:
+            if not self.null:
+                raise ValidationError(self.error_messages["null"], code="null")
             return None
 
         try:
@@ -53,7 +55,7 @@ class TextChoicesField(models.CharField):
                 params={
                     "value": value,
                     "enum_name": self.choices_enum.__name__,
-                    "choices": self.choices_enum.names,
+                    "choices": self.choices_enum.values,
                 },
             ) from error
 

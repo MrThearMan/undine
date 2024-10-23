@@ -91,7 +91,7 @@ class has:  # noqa: N801
 
 
 def exact(msg: str) -> str:
-    """Use in `with pytest.raises(..., match=<here>)` to match the 'msg' string exactly."""
+    """Use in `with pytest.raises(..., match=exact(msg))` to match the 'msg' string exactly."""
     return f"^{re.escape(msg)}$"
 
 

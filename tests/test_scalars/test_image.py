@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from django.core.files.images import ImageFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import ImageFieldFile
 
@@ -33,6 +35,11 @@ def test_scalar__image__serialize__image_field_file():
     storage = SimpleNamespace(url=lambda name: f"https://example.com/{name}")
     file = ImageFieldFile(None, SimpleNamespace(storage=storage), "hello.png")
     assert serialize(file) == file.url
+
+
+def test_scalar__image__serialize__image_file():
+    file = ImageFile(file=io.BytesIO(), name="hello.png")
+    assert serialize(file) == file.name
 
 
 def test_scalar__image__serialize__str():

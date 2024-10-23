@@ -1,19 +1,6 @@
-from example_project.app.models import Comment, Project, Task
-from undine.utils.model_utils import generic_foreign_key_for_generic_relation, generic_relations_for_generic_foreign_key
-from undine.utils.reflection import swappable_by_subclassing
+from functools import partial, wraps
 
-
-def test_generic_relations_for_generic_foreign_key():
-    gfk = Comment._meta.get_field("target")
-    result_1 = Project._meta.get_field("comments")
-    result_2 = Task._meta.get_field("comments")
-    assert list(generic_relations_for_generic_foreign_key(gfk)) == [result_1, result_2]
-
-
-def test_generic_foreign_key_for_generic_relation():
-    gr = Task._meta.get_field("comments")
-    result = Comment._meta.get_field("target")
-    assert generic_foreign_key_for_generic_relation(gr) == result
+from undine.utils.reflection import get_wrapped_func, swappable_by_subclassing
 
 
 def test_swappable_by_subclassing():
@@ -51,3 +38,41 @@ def test_swappable_by_subclassing():
 
     d = A()
     assert type(d) is C  # Only direct subclasses are swapped.
+
+
+def test_get_wrapped_func():
+    def func(): ...
+
+    assert get_wrapped_func(func) == func
+
+
+def test_get_wrapped_func__method():
+    class Foo:
+        def func(self): ...
+
+    assert get_wrapped_func(Foo.func) == Foo.func
+
+
+def test_get_wrapped_func__property():
+    class Foo:
+        @property
+        def func(self): ...
+
+    assert get_wrapped_func(Foo.func) == Foo.func.fget
+
+
+def test_get_wrapped_func__partial():
+    def func(x: int): ...
+
+    foo = partial(func, 1)
+
+    assert get_wrapped_func(foo) == func
+
+
+def test_get_wrapped_func__wrapped():
+    def inner(): ...
+    def func(): ...
+
+    foo = wraps(func)(inner)
+
+    assert get_wrapped_func(foo) == func

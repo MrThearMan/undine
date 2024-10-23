@@ -12,67 +12,67 @@ from undine.utils.function_dispatcher import FunctionDispatcher
 
 
 def test_function_dispatcher__name() -> None:
-    func = FunctionDispatcher()
-    assert func.name == "func"
+    dispatcher = FunctionDispatcher()
+    assert dispatcher.__name__ == "dispatcher"
 
 
 def test_function_dispatcher__no_registered_implementation() -> None:
-    func = FunctionDispatcher()
-    msg = "'func' doesn't contain an implementation for '<class 'str'>' (test)."
+    dispatcher = FunctionDispatcher()
+    msg = "'dispatcher' doesn't contain an implementation for '<class 'str'>' (test)."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        func("test")
+        dispatcher("test")
 
 
 def test_function_dispatcher__use_implementation() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: str) -> str:
         return key
 
-    assert func("test") == "test"
+    assert dispatcher("test") == "test"
 
 
 def test_function_dispatcher__wrong_implementation() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: str) -> str:
         return key
 
-    msg = "'func' doesn't contain an implementation for '<class 'int'>' (1)."
+    msg = "'dispatcher' doesn't contain an implementation for '<class 'int'>' (1)."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        func(1)
+        dispatcher(1)
 
 
 def test_function_dispatcher__any_implementation() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: Any) -> Any:
         return key
 
-    assert func("test") == "test"
-    assert func(1) == 1
+    assert dispatcher("test") == "test"
+    assert dispatcher(1) == 1
 
 
 def test_function_dispatcher__different_implementations() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: int) -> int:
         return -key
 
-    @func.register
+    @dispatcher.register
     def _(key: str) -> str:
         return f"{key}-"
 
-    assert func("test") == "test-"
-    assert func(1) == -1
+    assert dispatcher("test") == "test-"
+    assert dispatcher(1) == -1
 
 
 def test_function_dispatcher__use_parent_implementation() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
     class Parent:
         foo = 1
@@ -80,35 +80,35 @@ def test_function_dispatcher__use_parent_implementation() -> None:
     class Child(Parent):
         bar = 2
 
-    @func.register
+    @dispatcher.register
     def _(key: Parent) -> int:
         return key.foo
 
-    assert func(Child) == 1
+    assert dispatcher(Child) == 1
 
 
-def test_function_dispatcher__nullable() -> None:
-    func = FunctionDispatcher()
+def test_function_dispatcher__nullable():
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: type[int]) -> type[int]:
         return key
 
-    assert func(int | None) == int
+    assert dispatcher(int | None) == int
 
 
-def test_function_dispatcher__return_nullable() -> None:
-    func = FunctionDispatcher()
+def test_function_dispatcher__return_nullable():
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: type[int]) -> type[int]:
         return key
 
-    assert func(int | None, return_nullable=True) == (int, True)
-    assert func(int, return_nullable=True) == (int, False)
+    assert dispatcher(int | None, return_nullable=True) == (int, True)
+    assert dispatcher(int, return_nullable=True) == (int, False)
 
 
-def test_function_dispatcher__wrapper() -> None:
+def test_function_dispatcher__wrapper():
     def wrapper(func: Callable) -> Callable:
         @wraps(func)
         def inner(value, **kwargs) -> int:
@@ -116,69 +116,136 @@ def test_function_dispatcher__wrapper() -> None:
 
         return inner
 
-    func = FunctionDispatcher(wrapper=wrapper)
+    dispatcher = FunctionDispatcher(wrapper=wrapper)
 
-    @func.register
+    @dispatcher.register
     def _(key: int) -> int:
         return key
 
-    assert func(2) == 1
-    assert func(3) == 1
+    assert dispatcher(2) == 1
+    assert dispatcher(3) == 1
 
 
-def test_function_dispatcher__union_default() -> None:
-    func = FunctionDispatcher(union_default=type)
+def test_function_dispatcher__union_default():
+    dispatcher = FunctionDispatcher(union_default=type)
 
-    @func.register
+    @dispatcher.register
     def _(key: type[int]) -> type[int]:
         return key
 
-    @func.register
+    @dispatcher.register
     def _(key: type[str]) -> type[str]:
         return key
 
-    @func.register
+    @dispatcher.register
     def _(key: type) -> type:
         return Any
 
-    assert func(int) == int
-    assert func(str) == str
-    assert func(str | int) == Any
+    assert dispatcher(int) == int
+    assert dispatcher(str) == str
+    assert dispatcher(str | int) == Any
 
 
 def test_function_dispatcher__undefined() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(key: Any) -> Any:
         return key
 
     msg = "FunctionDispatcher key must be a type or value."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        func(Undefined)
+        dispatcher(Undefined)
 
 
 def test_function_dispatcher__literal() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(_: Literal["foo"]) -> str:
         return "1"
 
-    @func.register
+    @dispatcher.register
     def _(_: Literal["bar"]) -> str:
         return "2"
 
-    assert func("foo") == "1"
-    assert func("bar") == "2"
+    assert dispatcher("foo") == "1"
+    assert dispatcher("bar") == "2"
 
 
 def test_function_dispatcher__literal__union() -> None:
-    func = FunctionDispatcher()
+    dispatcher = FunctionDispatcher()
 
-    @func.register
+    @dispatcher.register
     def _(_: Literal["foo", "bar"]) -> str:
         return "1"
 
-    assert func("foo") == "1"
-    assert func("bar") == "1"
+    assert dispatcher("foo") == "1"
+    assert dispatcher("bar") == "1"
+
+
+def test_function_dispatcher__must_register_a_function():
+    dispatcher = FunctionDispatcher()
+
+    msg = "Can only register functions with 'dispatcher'. Got None."
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+        dispatcher.register(None)
+
+
+def test_function_dispatcher__cannot_register_implementation_for_undefined():
+    dispatcher = FunctionDispatcher()
+
+    msg = "Cannot register function 'my_impl' for 'dispatcher': First argument type cannot be 'Undefined'."
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+
+        @dispatcher.register
+        def my_impl(key: Undefined) -> str:
+            return key
+
+
+def test_function_dispatcher__no_arguments():
+    dispatcher = FunctionDispatcher()
+
+    msg = "Function 'my_impl' must have at least one argument so that it can be registered for 'dispatcher'."
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+
+        @dispatcher.register
+        def my_impl() -> str:
+            return ""
+
+
+def test_function_dispatcher__first_argument_missing_type():
+    dispatcher = FunctionDispatcher()
+
+    msg = (
+        "Function 'my_impl' must have a type hint for its first argument "
+        "so that it can be registered for 'dispatcher'."
+    )
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+
+        @dispatcher.register
+        def my_impl(key) -> str:
+            return ""
+
+
+def test_function_dispatcher__cannot_register_union_generic():
+    dispatcher = FunctionDispatcher()
+
+    msg = "'dispatcher' cannot register an implementation for type 'type[str | int]'."
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+
+        @dispatcher.register
+        def my_impl(key: type[str | int]) -> str:
+            return ""
+
+
+def test_function_dispatcher__multiple_union_types():
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def my_impl(key: str) -> str:
+        return ""
+
+    msg = "Union type must have a single non-null type argument, got (<class 'str'>, <class 'int'>)."
+    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+        dispatcher(str | int | None)

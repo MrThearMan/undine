@@ -6,6 +6,7 @@ from types import FunctionType
 from typing import TYPE_CHECKING, Any, Collection, Literal, Self
 
 from graphql import (
+    ExecutionContext,
     ExecutionResult,
     GraphQLArgumentMap,
     GraphQLDirective,
@@ -35,9 +36,9 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.error_handlers import raised_exceptions_as_execution_results
-from undine.errors.exceptions import MissingEntrypointRefError
+from undine.errors.exceptions import GraphQLInvalidOperationError, MissingEntrypointRefError
 from undine.settings import undine_settings
-from undine.utils.graphql import maybe_list_or_non_null
+from undine.utils.graphql import add_default_status_codes, maybe_list_or_non_null
 from undine.utils.reflection import cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -162,6 +163,14 @@ def create_object_type(cls: type | None, extensions: dict[str, Any] | None = Non
     )
 
 
+class UndineExecutionContext(ExecutionContext):
+    """Custom GraphQL execution context class."""
+
+    @staticmethod
+    def build_response(data: dict[str, Any] | None, errors: list[GraphQLError]) -> ExecutionResult:
+        return ExecutionContext.build_response(data, add_default_status_codes(errors))
+
+
 @raised_exceptions_as_execution_results
 def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], context_value: Any) -> ExecutionResult:
     """
@@ -173,7 +182,7 @@ def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], conte
     """
     schema_validation_errors = validate_schema(undine_settings.SCHEMA)
     if schema_validation_errors:
-        return ExecutionResult(errors=schema_validation_errors, extensions={"status_code": 400})
+        return ExecutionResult(errors=add_default_status_codes(schema_validation_errors))
 
     try:
         document = parse(
@@ -182,13 +191,12 @@ def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], conte
             max_tokens=undine_settings.MAX_TOKENS,
         )
     except GraphQLError as parse_error:
-        return ExecutionResult(errors=[parse_error], extensions={"status_code": 400})
+        return ExecutionResult(errors=add_default_status_codes([parse_error]))
 
     if method == "GET":
         operation_node = get_operation_ast(document, params.operation_name)
         if getattr(operation_node, "operation", None) != OperationType.QUERY:
-            msg = "Only query operations are allowed on GET requests."
-            return ExecutionResult(errors=[GraphQLError(message=msg)], extensions={"status_code": 405})
+            return ExecutionResult(errors=[GraphQLInvalidOperationError()])
 
     validation_errors = validate(
         schema=undine_settings.SCHEMA,
@@ -197,7 +205,7 @@ def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], conte
         max_errors=undine_settings.MAX_ERRORS,
     )
     if validation_errors:
-        return ExecutionResult(errors=validation_errors, extensions={"status_code": 400})
+        return ExecutionResult(errors=add_default_status_codes(validation_errors))
 
     return execute(
         schema=undine_settings.SCHEMA,
@@ -207,4 +215,5 @@ def execute_graphql(params: GraphQLParams, method: Literal["GET", "POST"], conte
         variable_values=params.variables,
         operation_name=params.operation_name,
         middleware=undine_settings.MIDDLEWARE,
+        execution_context_class=undine_settings.EXECUTION_CONTEXT_CLASS,
     )

@@ -232,6 +232,14 @@ class GraphQLStatusError(GraphQLError):
         )
 
 
+class GraphQLCantCreateEnumError(GraphQLStatusError):
+    """Error raised when trying to create an enum with no choices."""
+
+    msg = "Cannot create GraphQL Enum from CharField {field} since it has no 'choices' set."
+    status = 400
+    code = error_codes.GRAPHQL_CANT_CREATE_ENUM
+
+
 class GraphQLConversionError(GraphQLStatusError):
     """Error raised when a value cannot be converted to a GraphQL type."""
 
@@ -250,10 +258,7 @@ class GraphQLDecodeError(GraphQLStatusError):
 class GraphQLDuplicateEnumError(GraphQLStatusError):
     """Error raised when a request is made with an unsupported content type."""
 
-    msg = (
-        "Enum '{enum_name}' exists with a different set of values: "
-        "{values_1!comma_sep_and} vs. {values_2!comma_sep_and}"
-    )
+    msg = "Enum '{enum_name}' exists with a different set of values: {values_1} vs. {values_2}"
     status = 400
     code = error_codes.GRAPHQL_DUPLICATE_ENUM
 
@@ -290,6 +295,13 @@ class GraphQLInvalidManyRelatedFieldError(GraphQLStatusError):
     )
     status = 400
     code = error_codes.INVALID_MANY_RELATED_FIELD
+
+
+class GraphQLInvalidOperationError(GraphQLStatusError):
+    """Error raised when user tries to execute non-query operations on a GET request."""
+
+    msg = "Only query operations are allowed on GET requests."
+    status = 405
 
 
 class GraphQLBadInputDataError(GraphQLStatusError):

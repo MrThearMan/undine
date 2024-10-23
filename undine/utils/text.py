@@ -100,7 +100,7 @@ def dotpath(obj: type | FunctionType | Callable) -> str:
 def get_schema_name(name: str) -> str:
     if undine_settings.CAMEL_CASE_SCHEMA_FIELDS:
         return to_camel_case(name)
-    return name
+    return name  # pragma: no cover
 
 
 def get_docstring(ref: Any) -> str | None:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from inspect import cleandoc
+
 from django.db import models
 from graphql import (
     GraphQLBoolean,
@@ -54,7 +56,7 @@ def _(_: models.TextField) -> GraphQLEnumType | GraphQLScalarType:
 
 @convert_model_field_to_graphql_type.register
 def _(ref: TextChoicesField) -> GraphQLEnumType:
-    return create_graphql_enum(ref, name=ref.choices_enum.__name__)
+    return create_graphql_enum(ref, name=ref.choices_enum.__name__, description=cleandoc(ref.choices_enum.__doc__))
 
 
 @convert_model_field_to_graphql_type.register

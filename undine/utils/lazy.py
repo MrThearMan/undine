@@ -158,7 +158,7 @@ class lazy:  # noqa: N801
         self.__check_result()
         return self.__result * other
 
-    def __matmul__(self, other: Any) -> Any:
+    def __matmul__(self, other: Any) -> Any:  # pragma: no cover
         self.__check_result()
         return self.__result @ other
 
@@ -214,7 +214,7 @@ class lazy:  # noqa: N801
         self.__check_result()
         return other * self.__result
 
-    def __rmatmul__(self, other: Any) -> Any:
+    def __rmatmul__(self, other: Any) -> Any:  # pragma: no cover
         self.__check_result()
         return other @ self.__result
 
@@ -232,7 +232,7 @@ class lazy:  # noqa: N801
 
     def __rdivmod__(self, other: object) -> Any:
         self.__check_result()
-        return other.__rdivmod__(self.__result)
+        return other.__divmod__(self.__result)  # type: ignore[attr-defined]
 
     def __neg__(self) -> Any:
         self.__check_result()
@@ -322,23 +322,23 @@ class lazy:  # noqa: N801
         self.__check_result()
         return self.__result.__exit__(*args, **kwargs)
 
-    def __await__(self) -> Any:
+    def __await__(self) -> Any:  # pragma: no cover
         self.__check_result()
         return self.__result.__await__()
 
-    def __aiter__(self) -> AsyncIterator[Any]:
+    def __aiter__(self) -> AsyncIterator[Any]:  # pragma: no cover
         self.__check_result()
         return self.__result.__aiter__()
 
-    def __anext__(self) -> Any:
+    def __anext__(self) -> Any:  # pragma: no cover
         self.__check_result()
         return self.__result.__anext__()
 
-    def __aenter__(self) -> Any:
+    def __aenter__(self) -> Any:  # pragma: no cover
         self.__check_result()
         return self.__result.__aenter__()
 
-    def __aexit__(self, *args: object, **kwargs: Any) -> bool:
+    def __aexit__(self, *args: object, **kwargs: Any) -> bool:  # pragma: no cover
         self.__check_result()
         return self.__result.__aexit__(*args, **kwargs)
 
@@ -356,7 +356,7 @@ class lazy:  # noqa: N801
 
     def __setstate__(self, state: Any) -> None:
         self.__check_result()
-        self.__result = state.__setstate__(state)
+        return self.__result.__setstate__(state)
 
     def __reduce__(self) -> Any:
         self.__check_result()

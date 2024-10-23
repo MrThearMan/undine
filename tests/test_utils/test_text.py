@@ -3,6 +3,7 @@ import re
 import pytest
 from hypothesis import given, strategies
 
+from undine.errors.exceptions import SchemaNameValidationError
 from undine.utils.text import (
     ALLOWED_NAME,
     comma_sep_str,
@@ -11,6 +12,7 @@ from undine.utils.text import (
     to_camel_case,
     to_pascal_case,
     to_snake_case,
+    validate_name,
 )
 
 
@@ -65,3 +67,13 @@ def test_get_docstring():
         """Foo docstring"""
 
     assert get_docstring(Foo) == "Foo docstring"
+
+
+def test_validate_name():
+    assert validate_name("foo") == "foo"
+    assert validate_name("foo_bar") == "foo_bar"
+
+
+def test_validate_name__raises():
+    with pytest.raises(SchemaNameValidationError):
+        validate_name("foo-bar")

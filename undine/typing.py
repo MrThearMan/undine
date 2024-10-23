@@ -199,9 +199,9 @@ class OrderResults:
 @dataclass(frozen=True, slots=True)
 class GraphQLParams:
     query: str
-    variables: dict[str, Any] | None
-    operation_name: str | None
-    extensions: dict[str, Any] | None
+    variables: dict[str, Any] | None = None
+    operation_name: str | None = None
+    extensions: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -300,4 +300,4 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
 
     This is a proxy of the 'typing._eval_type' function.
     """
-    return _eval_type(type_, globals_ or {}, locals_ or {})
+    return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover

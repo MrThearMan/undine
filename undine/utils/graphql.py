@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from graphql import GraphQLEnumType, GraphQLEnumValue, GraphQLList, GraphQLNonNull
+from graphql import GraphQLEnumType, GraphQLEnumValue, GraphQLError, GraphQLList, GraphQLNonNull
 
-from undine.errors.exceptions import GraphQLDuplicateEnumError
+from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicateEnumError
 from undine.registies import GRAPHQL_ENUM_REGISTRY
-from undine.utils.text import get_docstring, to_pascal_case
+from undine.utils.text import to_pascal_case
 
 if TYPE_CHECKING:
     from django.db import models
@@ -33,12 +33,20 @@ def maybe_list_or_non_null(graphql_type: TGraphQLType, *, many: bool, required: 
     return graphql_type
 
 
-def create_graphql_enum(field: models.CharField, *, name: str | None = None) -> GraphQLEnumType:
+def create_graphql_enum(
+    field: models.CharField,
+    *,
+    name: str | None = None,
+    description: str | None = None,
+) -> GraphQLEnumType:
     """
     Creates a GraphQL enum for the given field.
     If a field with the same name already exists, the already created enum is returned,
     unless that enum's values are different than the new enum's, in which case an error is raised.
     """
+    if not field.choices:
+        raise GraphQLCantCreateEnumError(field=field)
+
     if name is None:
         # Generate a name for an enum based on the field it is used in.
         # This is required, since CharField doesn't know the name of the enum it is used in.
@@ -48,14 +56,22 @@ def create_graphql_enum(field: models.CharField, *, name: str | None = None) -> 
     enum = GraphQLEnumType(
         name=name,
         values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in field.choices},
-        description=get_docstring(field),
+        description=description or getattr(field, "help_text", None) or None,
     )
 
     if name in GRAPHQL_ENUM_REGISTRY:
-        if enum.values != GRAPHQL_ENUM_REGISTRY[name].values:
-            raise GraphQLDuplicateEnumError
+        new_values = enum.values
+        exisisting_values = GRAPHQL_ENUM_REGISTRY[name].values
+        if new_values != exisisting_values:
+            raise GraphQLDuplicateEnumError(enum_name=name, values_1=list(new_values), values_2=list(exisisting_values))
 
         return GRAPHQL_ENUM_REGISTRY[name]
 
     GRAPHQL_ENUM_REGISTRY[name] = enum
     return enum
+
+
+def add_default_status_codes(errors: list[GraphQLError]) -> list[GraphQLError]:
+    for error in errors:
+        error.extensions.setdefault("status_code", 400)
+    return errors

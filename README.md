@@ -25,7 +25,6 @@ pip install undine
 
 # Before initial release:
 - [ ] Add tests for optimization
-- [ ] Add tests for settings
 - [ ] Add tests for errors
 - [ ] Add tests for converters
 - [ ] Add tests for GenericForeignKeys and GenericRelations

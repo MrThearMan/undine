@@ -2,20 +2,23 @@ import pytest
 
 from tests.helpers import exact
 from undine.errors.exceptions import GraphQLConversionError
-from undine.scalars.url import parse_url
+from undine.scalars.url import parse_url, serialize
 
 
-def test_scalar__url__parse__str():
-    assert parse_url("https://example.com/hello") == "https://example.com/hello"
+@pytest.mark.parametrize("func", [parse_url, serialize])
+def test_scalar__url__parse__str(func):
+    assert func("https://example.com/hello") == "https://example.com/hello"
 
 
-def test_scalar__url__parse__str__not_valid():
+@pytest.mark.parametrize("func", [parse_url, serialize])
+def test_scalar__url__parse__str__not_valid(func):
     msg = "URL cannot represent value 'hello world': Enter a valid URL."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_url("hello world")
+        func("hello world")
 
 
-def test_scalar__url__parse__unsupported_type():
+@pytest.mark.parametrize("func", [parse_url, serialize])
+def test_scalar__url__parse__unsupported_type(func):
     msg = "URL cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
-        parse_url(1.2)
+        func(1.2)
