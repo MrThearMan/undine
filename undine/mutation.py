@@ -26,10 +26,9 @@ from undine.converters import (
 from undine.errors.exceptions import MissingModelError
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.utils.decorators import cached_class_method
-from undine.utils.graphql import maybe_list_or_non_null
+from undine.utils.graphql import get_or_create_input_object_type, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_field
-from undine.utils.reflection import get_members, get_wrapped_func
+from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
@@ -132,25 +131,25 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     def __validate__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """Validate all input data given to this MutationType."""
 
-    @cached_class_method
+    @classmethod
     def __input_type__(cls) -> GraphQLInputObjectType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
 
-        # Defer creating fields so that self-referential related fields can be created.
+        # Defer creating fields so that self-referential related inputs can be created.
         def fields() -> dict[str, GraphQLInputField]:
             return {input_name: input_.as_graphql_input_field() for input_name, input_ in cls.__input_map__.items()}
 
-        return GraphQLInputObjectType(
+        return get_or_create_input_object_type(
             name=cls.__typename__,
-            fields=fields,
+            fields=FunctionEqualityWrapper(fields, context=cls),
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
 
-    @cached_class_method
+    @classmethod
     def __output_type__(cls) -> GraphQLObjectType:
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":
@@ -265,7 +264,7 @@ def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) 
     return result
 
 
-DeleteMutationOutputType = GraphQLObjectType(
+DeleteMutationOutputType = get_or_create_object_type(
     name="DeleteMutationOutput",
     fields={undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: GraphQLField(GraphQLNonNull(GraphQLBoolean))},
 )

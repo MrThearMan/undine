@@ -18,10 +18,9 @@ from undine.converters import (
 from undine.errors.exceptions import MissingModelError
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, FilterResults, GQLInfo
-from undine.utils.decorators import cached_class_method
-from undine.utils.graphql import maybe_list_or_non_null
+from undine.utils.graphql import get_or_create_input_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name
-from undine.utils.reflection import cache_signature_if_function, get_members
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
@@ -128,21 +127,16 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
 
         return FilterResults(filters=filters, distinct=distinct, aliases=aliases)
 
-    @cached_class_method
+    @classmethod
     def __input_type__(cls) -> GraphQLInputObjectType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
-        input_object_type = GraphQLInputObjectType(
-            name=cls.__typename__,
-            description=get_docstring(cls),
-            fields={},
-            extensions=cls.__extensions__,
-        )
 
+        # Defer creating fields so that logical filters can be added.
         def fields() -> dict[str, GraphQLInputField]:
-            fields = {name: filter_.as_graphql_input() for name, filter_ in cls.__filter_map__.items()}
+            fields = {name: frt.as_graphql_input() for name, frt in cls.__filter_map__.items()}
             input_field = GraphQLInputField(type_=input_object_type)
             fields["NOT"] = input_field
             fields["AND"] = input_field
@@ -150,8 +144,14 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
             fields["XOR"] = input_field
             return fields
 
-        input_object_type._fields = fields
-        return input_object_type
+        # Assign to a variable so that `fields()` above can access it.
+        input_object_type = get_or_create_input_object_type(
+            name=cls.__typename__,
+            description=get_docstring(cls),
+            fields=FunctionEqualityWrapper(fields, context=cls),
+            extensions=cls.__extensions__,
+        )
+        return input_object_type  # noqa: RET504
 
 
 class Filter:

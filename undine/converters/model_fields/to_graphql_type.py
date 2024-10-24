@@ -30,13 +30,14 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.graphql import create_graphql_enum
+from undine.utils.graphql import get_or_create_graphql_enum
 from undine.utils.model_fields import TextChoicesField
 
 __all__ = [
     "convert_model_field_to_graphql_type",
 ]
 
+from undine.utils.text import to_pascal_case
 
 convert_model_field_to_graphql_type = FunctionDispatcher[models.Field, GraphQLOutputType | GraphQLInputType]()
 """Convert the given model field to a GraphQL type."""
@@ -45,7 +46,16 @@ convert_model_field_to_graphql_type = FunctionDispatcher[models.Field, GraphQLOu
 @convert_model_field_to_graphql_type.register
 def _(ref: models.CharField) -> GraphQLEnumType | GraphQLScalarType:
     if ref.choices is not None:
-        return create_graphql_enum(ref)
+        # Generate a name for an enum based on the field it is used in.
+        # This is required, since CharField doesn't know the name of the enum it is used in.
+        # Use `TextChoicesField` instead to get more consistent naming.
+        name = ref.model.__name__ + to_pascal_case(ref.name, validate=False) + "Choices"
+
+        return get_or_create_graphql_enum(
+            name=name,
+            values=dict(ref.choices),
+            description=getattr(ref, "help_text", None) or None,
+        )
     return GraphQLString
 
 
@@ -56,7 +66,11 @@ def _(_: models.TextField) -> GraphQLEnumType | GraphQLScalarType:
 
 @convert_model_field_to_graphql_type.register
 def _(ref: TextChoicesField) -> GraphQLEnumType:
-    return create_graphql_enum(ref, name=ref.choices_enum.__name__, description=cleandoc(ref.choices_enum.__doc__))
+    return get_or_create_graphql_enum(
+        name=ref.choices_enum.__name__,
+        values=dict(ref.choices),
+        description=cleandoc(ref.choices_enum.__doc__ or "") or None,
+    )
 
 
 @convert_model_field_to_graphql_type.register

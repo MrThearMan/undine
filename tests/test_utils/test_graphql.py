@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from copy import deepcopy
-
 import pytest
 from django.db import models
 from graphql import GraphQLEnumValue, GraphQLError, GraphQLList, GraphQLNonNull, GraphQLString
 
-from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicateEnumError
-from undine.utils.graphql import add_default_status_codes, create_graphql_enum, maybe_list_or_non_null
+from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicateTypeError
+from undine.utils.graphql import add_default_status_codes, get_or_create_graphql_enum, maybe_list_or_non_null
 
 
 class Role(models.TextChoices):
@@ -15,63 +13,32 @@ class Role(models.TextChoices):
     USER = "user", "User"
 
 
-class MyCharFieldChoicesModel(models.Model):  # noqa: DJ008
-    role: Role = models.CharField(
-        choices=Role.choices,
-        max_length=5,
-        help_text="Role of the user.",
-    )
-
-    class Meta:
-        managed = False
-        app_label = "tests"
-
-
-FIELD = MyCharFieldChoicesModel._meta.get_field("role")
-
-
 def test_create_graphql_enum():
-    enum = create_graphql_enum(FIELD)
+    enum = get_or_create_graphql_enum(values=dict(Role.choices), name="Role", description="Role of the user.")
 
-    assert enum.name == "MyCharFieldChoicesModelRoleChoices"
+    assert enum.name == "Role"
     assert enum.values == {
-        "ADMIN": GraphQLEnumValue(value="admin", description="Admin"),
-        "USER": GraphQLEnumValue(value="user", description="User"),
+        "admin": GraphQLEnumValue(value="admin", description="Admin"),
+        "user": GraphQLEnumValue(value="user", description="User"),
     }
     assert enum.description == "Role of the user."
 
 
 def test_create_graphql_enum__get_same():
-    enum = create_graphql_enum(FIELD)
-    assert create_graphql_enum(FIELD) == enum
+    enum = get_or_create_graphql_enum(values=dict(Role.choices), name="Role")
+    assert get_or_create_graphql_enum(values=dict(Role.choices), name="Role") == enum
 
 
 def test_create_graphql_enum__duplicate():
-    create_graphql_enum(FIELD)
+    get_or_create_graphql_enum(values=dict(Role.choices), name="Role")
 
-    field = deepcopy(FIELD)
-    field.choices = [("foo", "Foo")]
-
-    with pytest.raises(GraphQLDuplicateEnumError):
-        create_graphql_enum(field)
-
-
-def test_create_graphql_enum__custom_name():
-    enum = create_graphql_enum(FIELD, name="foo")
-    assert enum.name == "foo"
-
-
-def test_create_graphql_enum__custom_description():
-    enum = create_graphql_enum(FIELD, description="foo")
-    assert enum.description == "foo"
+    with pytest.raises(GraphQLDuplicateTypeError):
+        get_or_create_graphql_enum(values={"foo": "Foo"}, name="Role")
 
 
 def test_create_graphql_enum__no_choices():
-    field = deepcopy(FIELD)
-    field.choices = None
-
     with pytest.raises(GraphQLCantCreateEnumError):
-        create_graphql_enum(field)
+        get_or_create_graphql_enum(values={}, name="Role")
 
 
 def test_maybe_list_or_non_null():

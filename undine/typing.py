@@ -84,14 +84,12 @@ __all__ = [
     "Root",
     "Selections",
     "Self",
-    "T",
     "ToManyField",
     "ToOneField",
     "ValidatorFunc",
 ]
 
 
-T = TypeVar("T")
 From = TypeVar("From")
 To = TypeVar("To")
 TModel = TypeVar("TModel", bound=models.Model)

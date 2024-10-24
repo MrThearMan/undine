@@ -27,10 +27,9 @@ from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.utils.decorators import cached_class_method
-from undine.utils.graphql import maybe_list_or_non_null
+from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name
-from undine.utils.reflection import cache_signature_if_function, get_members
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
@@ -204,20 +203,20 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         # Purposely not using `isinstance` here to prevent errors from model inheritance.
         return type(value) is cls.__model__
 
-    @cached_class_method
+    @classmethod
     def __output_type__(cls) -> GraphQLObjectType:
         """
         Creates a `GraphQLObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
 
-        # Defer creating fields until QueryTypes have been registered.
+        # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
             return {name: field.as_graphql_field() for name, field in cls.__field_map__.items()}
 
-        return GraphQLObjectType(
+        return get_or_create_object_type(
             name=cls.__typename__,
-            fields=fields,
+            fields=FunctionEqualityWrapper(fields, context=cls),
             description=get_docstring(cls),
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,

@@ -6,7 +6,7 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, Generic, ParamSpec, TypeVar
 
 from graphql import GraphQLResolveInfo
 
@@ -16,9 +16,9 @@ from undine.typing import GQLInfo
 if TYPE_CHECKING:
     from types import FrameType
 
-    from undine.typing import T
 
 __all__ = [
+    "FunctionEqualityWrapper",
     "cache_signature_if_function",
     "get_instance_name",
     "get_members",
@@ -28,6 +28,10 @@ __all__ = [
     "is_subclass",
     "swappable_by_subclassing",
 ]
+
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def get_members(obj: object, type_: type[T]) -> list[tuple[str, T]]:
@@ -163,3 +167,23 @@ def get_instance_name() -> str:
     line = source[frame.f_lineno - 1]
     definition = line.split("=", maxsplit=1)[0]
     return definition.split(":", maxsplit=1)[0].strip()
+
+
+class FunctionEqualityWrapper(Generic[T]):
+    """
+    Adds equality checks for a function based on the provided context.
+    Function is equal to another function if it's also wrapped with this class
+    and the provided contexts are equal.
+    """
+
+    def __init__(self, func: Callable[[], T], context: Any) -> None:
+        self.func = func
+        self.context = context
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.context == other.context
+
+    def __call__(self) -> T:
+        return self.func()

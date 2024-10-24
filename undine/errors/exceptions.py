@@ -235,7 +235,7 @@ class GraphQLStatusError(GraphQLError):
 class GraphQLCantCreateEnumError(GraphQLStatusError):
     """Error raised when trying to create an enum with no choices."""
 
-    msg = "Cannot create GraphQL Enum from CharField {field} since it has no 'choices' set."
+    msg = "Cannot create GraphQL Enum '{name}' with zero values."
     status = 400
     code = error_codes.GRAPHQL_CANT_CREATE_ENUM
 
@@ -255,10 +255,13 @@ class GraphQLDecodeError(GraphQLStatusError):
     code = error_codes.DECODING_ERROR
 
 
-class GraphQLDuplicateEnumError(GraphQLStatusError):
-    """Error raised when a request is made with an unsupported content type."""
+class GraphQLDuplicateTypeError(GraphQLStatusError):
+    """Error raised when trying to create a type in the GraphQL schema with the same name as an existing type."""
 
-    msg = "Enum '{enum_name}' exists with a different set of values: {values_1} vs. {values_2}"
+    msg = (
+        "GraphQL schema already has a known type with the name '{name}': '{type_existing:dotpath}'. "
+        "Cannot add a new type '{type_new:dotpath}'."
+    )
     status = 400
     code = error_codes.GRAPHQL_DUPLICATE_ENUM
 

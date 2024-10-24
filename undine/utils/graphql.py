@@ -2,22 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
-from graphql import GraphQLEnumType, GraphQLEnumValue, GraphQLError, GraphQLList, GraphQLNonNull
+from graphql import (
+    GraphQLEnumType,
+    GraphQLEnumValue,
+    GraphQLError,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+)
 
-from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicateEnumError
-from undine.registies import GRAPHQL_ENUM_REGISTRY
-from undine.utils.text import to_pascal_case
+from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicateTypeError
+from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from django.db import models
-
-    from undine.typing import TGraphQLType
+    from undine.typing import GQLInfo, TGraphQLType
+    from undine.utils.reflection import FunctionEqualityWrapper
 
 
 __all__ = [
-    "create_graphql_enum",
+    "get_or_create_graphql_enum",
     "maybe_list_or_non_null",
 ]
 
@@ -33,45 +41,134 @@ def maybe_list_or_non_null(graphql_type: TGraphQLType, *, many: bool, required: 
     return graphql_type
 
 
-def create_graphql_enum(
-    field: models.CharField,
-    *,
-    name: str | None = None,
-    description: str | None = None,
-) -> GraphQLEnumType:
-    """
-    Creates a GraphQL enum for the given field.
-    If a field with the same name already exists, the already created enum is returned,
-    unless that enum's values are different than the new enum's, in which case an error is raised.
-    """
-    if not field.choices:
-        raise GraphQLCantCreateEnumError(field=field)
-
-    if name is None:
-        # Generate a name for an enum based on the field it is used in.
-        # This is required, since CharField doesn't know the name of the enum it is used in.
-        # Use `TextChoicesField` instead to get more consistent naming.
-        name = field.model.__name__ + to_pascal_case(field.name, validate=False) + "Choices"
-
-    enum = GraphQLEnumType(
-        name=name,
-        values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in field.choices},
-        description=description or getattr(field, "help_text", None) or None,
-    )
-
-    if name in GRAPHQL_ENUM_REGISTRY:
-        new_values = enum.values
-        exisisting_values = GRAPHQL_ENUM_REGISTRY[name].values
-        if new_values != exisisting_values:
-            raise GraphQLDuplicateEnumError(enum_name=name, values_1=list(new_values), values_2=list(exisisting_values))
-
-        return GRAPHQL_ENUM_REGISTRY[name]
-
-    GRAPHQL_ENUM_REGISTRY[name] = enum
-    return enum
-
-
 def add_default_status_codes(errors: list[GraphQLError]) -> list[GraphQLError]:
     for error in errors:
         error.extensions.setdefault("status_code", 400)
     return errors
+
+
+def compare_graphql_types(
+    *,
+    new_type: GraphQLEnumType | GraphQLObjectType | GraphQLInputObjectType,
+    exisisting_type: GraphQLEnumType | GraphQLObjectType | GraphQLInputObjectType,
+) -> None:
+    """Raises a 'GraphQLDuplicateTypeError' if the exisisting type is different from the new type."""
+    if (
+        isinstance(new_type, GraphQLEnumType)
+        and isinstance(exisisting_type, GraphQLEnumType)
+        and new_type.values == exisisting_type.values
+    ):
+        return
+
+    if (
+        isinstance(new_type, GraphQLObjectType)
+        and isinstance(exisisting_type, GraphQLObjectType)
+        and new_type._fields == exisisting_type._fields
+    ):
+        return
+
+    if (
+        isinstance(new_type, GraphQLInputObjectType)
+        and isinstance(exisisting_type, GraphQLInputObjectType)
+        and new_type._fields == exisisting_type._fields
+    ):
+        return
+
+    raise GraphQLDuplicateTypeError(
+        name=new_type.name,
+        type_new=type(new_type),
+        type_existing=type(exisisting_type),
+    )
+
+
+def get_or_create_graphql_enum(
+    *,
+    name: str,
+    values: dict[str, str | GraphQLEnumValue],
+    description: str | None = None,
+    extensions: dict[str, Any] | None = None,
+) -> GraphQLEnumType:
+    """
+    If an 'GraphQLEnumType' with the same name already exists,
+    check if the GraphQLEnumType's values are the same.
+    If yes, return the existing 'GraphQLEnumType'. If not, raise an error.
+    Otherwise, create a new 'GraphQLEnumType'.
+    """
+    for key, value in values.items():
+        if isinstance(value, str):
+            values[key] = GraphQLEnumValue(value=key, description=value)
+
+    if not values:
+        raise GraphQLCantCreateEnumError(name=name)
+
+    enum = GraphQLEnumType(
+        name=name,
+        values=values,
+        description=description,
+        extensions=extensions,
+    )
+
+    if name in GRAPHQL_TYPE_REGISTRY:
+        compare_graphql_types(new_type=enum, exisisting_type=GRAPHQL_TYPE_REGISTRY[name])
+        return GRAPHQL_TYPE_REGISTRY[name]
+
+    GRAPHQL_TYPE_REGISTRY[name] = enum
+    return enum
+
+
+def get_or_create_object_type(
+    *,
+    name: str,
+    fields: dict[str, GraphQLField] | FunctionEqualityWrapper[dict[str, GraphQLField]],
+    description: str | None = None,
+    is_type_of: Callable[[Any, GQLInfo], bool] | None = None,
+    extensions: dict[str, Any] | None = None,
+) -> GraphQLObjectType:
+    """
+    If an 'GraphQLObjectType' with the same name already exists,
+    check if the GraphQLObjectType's fields are the same.
+    If yes, return the existing 'GraphQLObjectType'. If not, raise an error.
+    Otherwise, create a new 'GraphQLObjectType'.
+    """
+    object_type = GraphQLObjectType(
+        name=name,
+        fields=fields,
+        description=description,
+        is_type_of=is_type_of,
+        extensions=extensions,
+    )
+
+    if name in GRAPHQL_TYPE_REGISTRY:
+        compare_graphql_types(new_type=object_type, exisisting_type=GRAPHQL_TYPE_REGISTRY[name])
+        return GRAPHQL_TYPE_REGISTRY[name]
+
+    GRAPHQL_TYPE_REGISTRY[name] = object_type
+    return object_type
+
+
+def get_or_create_input_object_type(
+    *,
+    name: str,
+    fields: dict[str, GraphQLInputField] | FunctionEqualityWrapper[dict[str, GraphQLInputField]],
+    description: str | None = None,
+    extensions: dict[str, Any] | None = None,
+) -> GraphQLInputObjectType:
+    """
+    If a 'GraphQLInputObjectType' with the same name already exists,
+    check if the GraphQLInputObjectType's fields are the same.
+    If yes, return the existing 'GraphQLInputObjectType'. If not, raise an error.
+    Otherwise, create a new 'GraphQLInputObjectType'.
+    """
+    input_object_type = GraphQLInputObjectType(
+        name=name,
+        fields=fields,
+        description=description,
+        extensions=extensions,
+    )
+
+    if name in GRAPHQL_TYPE_REGISTRY:
+        compare_graphql_types(new_type=input_object_type, exisisting_type=GRAPHQL_TYPE_REGISTRY[name])
+        return GRAPHQL_TYPE_REGISTRY[name]
+
+    GRAPHQL_TYPE_REGISTRY[name] = input_object_type
+    return input_object_type

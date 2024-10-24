@@ -10,7 +10,6 @@ from django.db.models import TextChoices
 from graphql import (
     GraphQLBoolean,
     GraphQLEnumType,
-    GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
@@ -37,6 +36,7 @@ from undine.scalars import (
 )
 from undine.typing import TypedDictType, eval_type
 from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type, get_or_create_object_type
 from undine.utils.text import get_docstring
 
 __all__ = [
@@ -100,18 +100,18 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLScalarType:
 
 @convert_type_to_graphql_type.register
 def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
-    return GraphQLEnumType(
+    return get_or_create_graphql_enum(
         name=ref.__name__,
-        values=ref,
+        chocies={name: value.value for name, value in ref.__members__.items()},
         description=get_docstring(ref),
     )
 
 
 @convert_type_to_graphql_type.register
 def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLEnumType:
-    return GraphQLEnumType(
+    return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={value.upper(): GraphQLEnumValue(value=value, description=label) for value, label in ref.choices},
+        chocies=dict(ref.choices),
         description=get_docstring(ref),
     )
 
@@ -156,5 +156,6 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLObjectType | GraphQLInputObjectT
             fields[key] = GraphQLField(graphql_type)
 
     if is_input:
-        return GraphQLInputObjectType(name=ref.__name__, fields=fields)
-    return GraphQLObjectType(name=ref.__name__, fields=fields)
+        return get_or_create_input_object_type(name=ref.__name__, fields=fields)
+
+    return get_or_create_object_type(name=ref.__name__, fields=fields)

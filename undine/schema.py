@@ -38,7 +38,7 @@ from undine.converters import (
 from undine.errors.error_handlers import raised_exceptions_as_execution_results
 from undine.errors.exceptions import GraphQLInvalidOperationError, MissingEntrypointRefError
 from undine.settings import undine_settings
-from undine.utils.graphql import add_default_status_codes, maybe_list_or_non_null
+from undine.utils.graphql import add_default_status_codes, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.reflection import cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -136,9 +136,21 @@ def create_schema(  # noqa: PLR0913
     schema_extensions: dict[str, Any] | None = None,
 ) -> GraphQLSchema:
     """Creates the GraphQL schema."""
-    query_object_type = create_object_type(query_class, query_extensions)
-    mutation_object_type = create_object_type(mutation_class, mutation_extensions)
-    subscription_object_type = create_object_type(subscription_class, subscription_extensions)
+
+    def create_type(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
+        if cls is None:
+            return None
+
+        return get_or_create_object_type(
+            name=cls.__name__,
+            fields={get_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
+            description=get_docstring(cls),
+            extensions=extensions,
+        )
+
+    query_object_type = create_type(query_class, query_extensions)
+    mutation_object_type = create_type(mutation_class, mutation_extensions)
+    subscription_object_type = create_type(subscription_class, subscription_extensions)
 
     return GraphQLSchema(
         query=query_object_type,
@@ -148,18 +160,6 @@ def create_schema(  # noqa: PLR0913
         directives=(*specified_directives, *additional_directives) if additional_directives else None,
         description=schema_description,
         extensions=schema_extensions,
-    )
-
-
-def create_object_type(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
-    if cls is None:
-        return None
-
-    return GraphQLObjectType(
-        cls.__name__,
-        fields={get_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
-        extensions=extensions,
-        description=get_docstring(cls),
     )
 
 

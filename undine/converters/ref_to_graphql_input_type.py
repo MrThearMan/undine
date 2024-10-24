@@ -4,16 +4,7 @@ from types import FunctionType
 from typing import Any
 
 from django.db import models
-from graphql import (
-    GraphQLBoolean,
-    GraphQLEnumType,
-    GraphQLEnumValue,
-    GraphQLInputField,
-    GraphQLInputObjectType,
-    GraphQLInputType,
-    GraphQLList,
-    GraphQLNonNull,
-)
+from graphql import GraphQLBoolean, GraphQLInputField, GraphQLInputType, GraphQLList, GraphQLNonNull
 
 from undine.parsers import parse_first_param_type
 from undine.typing import CombinableExpression, FilterRef, InputRef, ModelField, TypeRef
@@ -30,6 +21,7 @@ __all__ = [
     "convert_ref_to_graphql_input_type",
 ]
 
+from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type
 
 convert_ref_to_graphql_input_type = FunctionDispatcher[FilterRef | InputRef, GraphQLInputType]()
 """Convert the given reference to a GraphQL input type."""
@@ -100,19 +92,22 @@ def load_deferred_converters() -> None:
 
     @convert_ref_to_graphql_input_type.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLInputType:
-        model: type[models.Model] = kwargs["model"]
         field = ref.model._meta.get_field(ref.fk_field)
         graphql_type = convert_ref_to_graphql_input_type(field)
-        typename_enum = GraphQLEnumType(
-            name=f"{model.__name__}{to_pascal_case(ref.name)}Enum",
+
+        name = ref.model.__name__ + to_pascal_case(ref.name, validate=False)
+
+        typename_enum = get_or_create_graphql_enum(
+            name=f"{name}Choices",
             values={
-                field.model.__name__: GraphQLEnumValue(value=field.model.__name__)
+                field.model.__name__.upper(): field.model.__name__
                 for field in generic_relations_for_generic_foreign_key(ref)
             },
         )
-        return GraphQLInputObjectType(
-            name=f"{model.__name__}{to_pascal_case(ref.name)}Input",
-            fields=lambda: {
+
+        return get_or_create_input_object_type(
+            name=f"{name}Input",
+            fields={
                 "typename": GraphQLInputField(GraphQLNonNull(typename_enum)),
                 "pk": GraphQLInputField(GraphQLNonNull(graphql_type)),
             },

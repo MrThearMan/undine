@@ -11,7 +11,7 @@ from undine.converters import convert_to_description, convert_to_order_ref
 from undine.errors.exceptions import MissingModelError
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, OrderResults
-from undine.utils.decorators import cached_class_method
+from undine.utils.graphql import get_or_create_graphql_enum
 from undine.utils.model_utils import get_lookup_field_name
 from undine.utils.reflection import get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
@@ -105,7 +105,7 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
 
         return result
 
-    @cached_class_method
+    @classmethod
     def __enum_type__(cls) -> GraphQLEnumType:
         """
         Create a `GraphQLEnumType` for this class.
@@ -120,7 +120,7 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
             for direction in ("Asc", "Desc"):
                 enum_values[f"{name}{direction}"] = ordering.get_graphql_enum_value()
 
-        return GraphQLEnumType(
+        return get_or_create_graphql_enum(
             name=cls.__typename__,
             values=enum_values,
             description=get_docstring(cls),
