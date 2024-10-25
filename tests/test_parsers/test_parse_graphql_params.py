@@ -190,3 +190,33 @@ def test_parse_graphql_params__unsupported_content():
     msg = "'text/plain' is not a supported content type."
     with pytest.raises(GraphQLStatusError, match=exact(msg)):
         GraphQLRequestParamsParser.run(request)
+
+
+def test_parse_graphql_params__mising_query():
+    request = HttpRequest()
+    request.method = "POST"
+    request.content_type = "application/json"
+    request._body = b'{"variables": {}}'
+
+    with pytest.raises(GraphQLStatusError):
+        GraphQLRequestParamsParser.run(request)
+
+
+def test_parse_graphql_params__null_query():
+    request = HttpRequest()
+    request.method = "POST"
+    request.content_type = "application/json"
+    request._body = b'{"query": null, "variables": {}}'
+
+    with pytest.raises(GraphQLStatusError):
+        GraphQLRequestParamsParser.run(request)
+
+
+def test_parse_graphql_params__null_string_query():
+    request = HttpRequest()
+    request.method = "POST"
+    request.content_type = "application/json"
+    request._body = b'{"query": "null", "variables": {}}'
+
+    with pytest.raises(GraphQLStatusError):
+        GraphQLRequestParamsParser.run(request)

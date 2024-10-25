@@ -89,9 +89,9 @@ def get_or_create_graphql_enum(
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLEnumType:
     """
-    If an 'GraphQLEnumType' with the same name already exists,
+    If a 'GraphQLEnumType' with the same name already exists,
     check if the GraphQLEnumType's values are the same.
-    If yes, return the existing 'GraphQLEnumType'. If not, raise an error.
+    If they are, return the existing 'GraphQLEnumType'. If not, raise an error.
     Otherwise, create a new 'GraphQLEnumType'.
     """
     for key, value in values.items():
@@ -125,9 +125,9 @@ def get_or_create_object_type(
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLObjectType:
     """
-    If an 'GraphQLObjectType' with the same name already exists,
+    If a 'GraphQLObjectType' with the same name already exists,
     check if the GraphQLObjectType's fields are the same.
-    If yes, return the existing 'GraphQLObjectType'. If not, raise an error.
+    If they are, return the existing 'GraphQLObjectType'. If not, raise an error.
     Otherwise, create a new 'GraphQLObjectType'.
     """
     object_type = GraphQLObjectType(
@@ -156,7 +156,7 @@ def get_or_create_input_object_type(
     """
     If a 'GraphQLInputObjectType' with the same name already exists,
     check if the GraphQLInputObjectType's fields are the same.
-    If yes, return the existing 'GraphQLInputObjectType'. If not, raise an error.
+    If they are, return the existing 'GraphQLInputObjectType'. If not, raise an error.
     Otherwise, create a new 'GraphQLInputObjectType'.
     """
     input_object_type = GraphQLInputObjectType(

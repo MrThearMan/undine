@@ -70,7 +70,7 @@ def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, Related
             related_model = None
             nullable: bool = getattr(field, "null", False)
 
-        else:
+        else:  # pragma: no cover
             msg = f"Unhandled relation type: {relation_type}"
             raise NotImplementedError(msg)
 

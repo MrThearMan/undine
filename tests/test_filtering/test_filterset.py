@@ -97,7 +97,7 @@ TYPE_FIELDS = [
 ]
 
 
-def test_filterset__default():
+def test_filterset__attributes():
     class MyFilterSet(FilterSet, model=Task):
         """Decription."""
 
@@ -105,11 +105,13 @@ def test_filterset__default():
     assert MyFilterSet.__typename__ == "MyFilterSet"
     assert MyFilterSet.__extensions__ == {"undine_filterset": MyFilterSet}
 
-    filter_map = MyFilterSet.__filter_map__
-
     filters = CREATED_AT_FIELDS + NAME_FIELDS + PK_FIELDS + TYPE_FIELDS
+    assert sorted(MyFilterSet.__filter_map__) == filters
 
-    assert sorted(filter_map) == filters
+
+def test_filterset__input_type():
+    class MyFilterSet(FilterSet, model=Task):
+        """Decription."""
 
     input_type = MyFilterSet.__input_type__()
 
@@ -120,6 +122,7 @@ def test_filterset__default():
     assert callable(input_type._fields)
 
     fields = input_type.fields
+    filters = CREATED_AT_FIELDS + NAME_FIELDS + PK_FIELDS + TYPE_FIELDS
 
     assert all(field in fields for field in filters), set(filters) - set(fields)
     assert isinstance(fields["NOT"], GraphQLInputField)
@@ -134,7 +137,7 @@ def test_filterset__no_model():
         class MyFilterSet(FilterSet): ...
 
 
-def test_filterset__one_field():
+def test_filterset__build__one_field():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -148,7 +151,7 @@ def test_filterset__one_field():
     assert results.aliases == {}
 
 
-def test_filterset__two_fields():
+def test_filterset__build__two_fields():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -163,7 +166,7 @@ def test_filterset__two_fields():
     assert results.aliases == {}
 
 
-def test_filterset__and_block():
+def test_filterset__build__and_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -180,7 +183,7 @@ def test_filterset__and_block():
     assert results.aliases == {}
 
 
-def test_filterset__or_block():
+def test_filterset__build__or_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -197,7 +200,7 @@ def test_filterset__or_block():
     assert results.aliases == {}
 
 
-def test_filterset__xor_block():
+def test_filterset__build__xor_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -214,7 +217,7 @@ def test_filterset__xor_block():
     assert results.aliases == {}
 
 
-def test_filterset__not_block():
+def test_filterset__build__not_block():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -231,7 +234,7 @@ def test_filterset__not_block():
     assert results.aliases == {}
 
 
-def test_filterset__nested_blocks():
+def test_filterset__build__nested_blocks():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
@@ -250,7 +253,7 @@ def test_filterset__nested_blocks():
     assert results.aliases == {}
 
 
-def test_filterset__nested_blocks__complex():
+def test_filterset__build__nested_blocks__complex():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {

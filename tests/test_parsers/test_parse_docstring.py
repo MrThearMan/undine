@@ -1,4 +1,9 @@
-from undine.parsers.parse_docstring import PlainDocstringParser, RSTDocstringParser
+from __future__ import annotations
+
+import pytest
+
+from undine.errors.exceptions import InvalidParserError
+from undine.parsers.parse_docstring import PlainDocstringParser, PreProcessingDocstringParser, RSTDocstringParser
 
 
 def test_parse_docstring__rst__parse_body():
@@ -78,9 +83,40 @@ def test_parse_docstring__rst__parse_deprecations__no_docstring():
     assert RSTDocstringParser.parse_deprecations("") == {}
 
 
-def test_parse_docstring__plain__parse_body():
+def test_parse_docstring__plain():
     docstring = """
     Body.
     """
 
     assert PlainDocstringParser.parse_body(docstring) == "Body."
+    assert PlainDocstringParser.parse_arg_descriptions(docstring) == {}
+    assert PlainDocstringParser.parse_return_description(docstring) == ""
+    assert PlainDocstringParser.parse_raise_descriptions(docstring) == {}
+    assert PlainDocstringParser.parse_deprecations(docstring) == {}
+
+
+def test_pre_processing_docstring_parser__not_a_valid_parser():
+    class MyParser: ...
+
+    with pytest.raises(InvalidParserError):
+        PreProcessingDocstringParser(parser_impl=MyParser)
+
+
+def test_pre_processing_docstring_parser__none():
+    parser = PreProcessingDocstringParser(parser_impl=PlainDocstringParser)
+
+    assert parser.parse_body(None) is None
+    assert parser.parse_arg_descriptions(None) == {}
+    assert parser.parse_return_description(None) is None
+    assert parser.parse_raise_descriptions(None) == {}
+    assert parser.parse_deprecations(None) == {}
+
+
+def test_pre_processing_docstring_parser__strip():
+    parser = PreProcessingDocstringParser(parser_impl=PlainDocstringParser)
+
+    assert parser.parse_body(" foo ") == "foo"
+    assert parser.parse_arg_descriptions(" foo ") == {}
+    assert parser.parse_return_description(" foo ") == ""
+    assert parser.parse_raise_descriptions(" foo ") == {}
+    assert parser.parse_deprecations(" foo ") == {}

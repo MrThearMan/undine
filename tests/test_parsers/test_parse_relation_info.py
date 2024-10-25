@@ -1,3 +1,4 @@
+import pytest
 from django.contrib.contenttypes.models import ContentType
 
 from example_project.app.models import (
@@ -12,6 +13,7 @@ from example_project.app.models import (
     TaskResult,
     TaskStep,
 )
+from tests.helpers import exact
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelatedFieldInfo, RelationType
 
@@ -130,3 +132,17 @@ def test_parse_relation_info__comment():
             model=None,
         ),
     }
+
+
+def test_relation_type__for_related_field():
+    assert RelationType.for_related_field(Task._meta.get_field("project")) == RelationType.FORWARD_MANY_TO_ONE
+    assert RelationType.for_related_field(Task._meta.get_field("assignees")) == RelationType.FORWARD_MANY_TO_MANY
+    assert RelationType.for_related_field(Task._meta.get_field("comments")) == RelationType.GENERIC_ONE_TO_MANY
+    assert RelationType.for_related_field(Task._meta.get_field("objective")) == RelationType.REVERSE_ONE_TO_ONE
+    assert RelationType.for_related_field(Task._meta.get_field("related_tasks")) == RelationType.FORWARD_MANY_TO_MANY
+
+
+def test_relation_type__for_related_field__not_a_related_field():
+    msg = "Unknown related field: app.Task.name (of type <class 'django.db.models.fields.CharField'>)"
+    with pytest.raises(ValueError, match=exact(msg)):
+        RelationType.for_related_field(Task._meta.get_field("name"))

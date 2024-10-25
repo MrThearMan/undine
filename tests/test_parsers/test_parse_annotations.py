@@ -9,6 +9,7 @@ from undine.errors.exceptions import (
     NoFunctionParametersError,
 )
 from undine.parsers.parse_annotations import parse_first_param_type, parse_parameters, parse_return_annotation
+from undine.typing import GQLInfo
 
 
 def test_parse_parameters():
@@ -42,13 +43,24 @@ def test_parse_parameters__dont_parse_self():
 
 
 def test_parse_parameters__dont_parse_cls():
-    def func(cls, arg: bool):
+    def func(cls, arg: str):
         pass
 
     params = parse_parameters(func)
     assert len(params) == 1
     assert params[0].name == "arg"
-    assert params[0].annotation == bool
+    assert params[0].annotation == str
+    assert params[0].default_value == Undefined
+
+
+def test_parse_parameters__dont_parse_gql_info():
+    def func(info: GQLInfo, arg: str):
+        pass
+
+    params = parse_parameters(func)
+    assert len(params) == 1
+    assert params[0].name == "arg"
+    assert params[0].annotation == str
     assert params[0].default_value == Undefined
 
 

@@ -1,46 +1,58 @@
+import pytest
 from graphql import GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
+from tests.helpers import exact
 from undine import Input, MutationType
 
 
-def test_input__simple():
+def test_input__repr():
     class MyMutationType(MutationType, model=Task):
         name = Input()
 
-    inpt = MyMutationType.name
+    assert repr(MyMutationType.name) == "<undine.mutation.Input(ref=app.Task.name)>"
 
-    assert repr(inpt) == "<undine.mutation.Input(ref=app.Task.name)>"
 
-    assert inpt.ref == Task.name.field  # type: ignore[attr-defined]
-    assert inpt.many is False
-    assert inpt.required is False
-    assert inpt.description is None
-    assert inpt.deprecation_reason is None
-    assert inpt.extensions == {"undine_input": inpt}
+def test_input__attributes():
+    class MyMutationType(MutationType, model=Task):
+        name = Input()
 
-    assert inpt.owner == MyMutationType
-    assert inpt.name == "name"
+    assert MyMutationType.name.ref == Task._meta.get_field("name")
+    assert MyMutationType.name.many is False
+    assert MyMutationType.name.required is False
+    assert MyMutationType.name.description is None
+    assert MyMutationType.name.deprecation_reason is None
+    assert MyMutationType.name.extensions == {"undine_input": MyMutationType.name}
+    assert MyMutationType.name.owner == MyMutationType
+    assert MyMutationType.name.name == "name"
 
-    field_type = inpt.get_field_type()
+
+def test_input__get_field_type():
+    class MyMutationType(MutationType, model=Task):
+        name = Input()
+
+    field_type = MyMutationType.name.get_field_type()
     assert field_type == GraphQLString
 
-    graphql_input_field = inpt.as_graphql_input_field()
-    assert graphql_input_field.type == field_type
+
+def test_input__as_graphql_input_field():
+    class MyMutationType(MutationType, model=Task):
+        name = Input()
+
+    graphql_input_field = MyMutationType.name.as_graphql_input_field()
+    assert graphql_input_field.type == GraphQLString
     assert graphql_input_field.description is None
     assert graphql_input_field.deprecation_reason is None
-    assert graphql_input_field.extensions == {"undine_input": inpt}
+    assert graphql_input_field.extensions == {"undine_input": MyMutationType.name}
 
 
 def test_input__many():
     class MyMutationType(MutationType, model=Task):
         name = Input(many=True)
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.many is True
 
-    assert inpt.many is True
-
-    field_type = inpt.get_field_type()
+    field_type = MyMutationType.name.get_field_type()
     assert isinstance(field_type, GraphQLList)
     assert isinstance(field_type.of_type, GraphQLNonNull)
     assert field_type.of_type.of_type == GraphQLString
@@ -50,11 +62,9 @@ def test_input__required():
     class MyMutationType(MutationType, model=Task):
         name = Input(required=True)
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.required is True
 
-    assert inpt.required is True
-
-    field_type = inpt.get_field_type()
+    field_type = MyMutationType.name.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert field_type.of_type == GraphQLString
 
@@ -63,12 +73,10 @@ def test_input__required_and_many():
     class MyMutationType(MutationType, model=Task):
         name = Input(required=True, many=True)
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.required is True
+    assert MyMutationType.name.many is True
 
-    assert inpt.required is True
-    assert inpt.many is True
-
-    field_type = inpt.get_field_type()
+    field_type = MyMutationType.name.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLList)
     assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
@@ -79,20 +87,16 @@ def test_input__input_only():
     class MyMutationType(MutationType, model=Task):
         name = Input(input_only=True)
 
-    inpt = MyMutationType.name
-
-    assert inpt.input_only is True
+    assert MyMutationType.name.input_only is True
 
 
 def test_input__description():
     class MyMutationType(MutationType, model=Task):
         name = Input(description="Description.")
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.description == "Description."
 
-    assert inpt.description == "Description."
-
-    graphql_input_field = inpt.as_graphql_input_field()
+    graphql_input_field = MyMutationType.name.as_graphql_input_field()
     assert graphql_input_field.description == "Description."
 
 
@@ -100,11 +104,9 @@ def test_input__deprecation_reason():
     class MyMutationType(MutationType, model=Task):
         name = Input(deprecation_reason="Use something else.")
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.deprecation_reason == "Use something else."
 
-    assert inpt.deprecation_reason == "Use something else."
-
-    graphql_input_field = inpt.as_graphql_input_field()
+    graphql_input_field = MyMutationType.name.as_graphql_input_field()
     assert graphql_input_field.deprecation_reason == "Use something else."
 
 
@@ -112,12 +114,39 @@ def test_input__extensions():
     class MyMutationType(MutationType, model=Task):
         name = Input(extensions={"foo": "bar"})
 
-    inpt = MyMutationType.name
+    assert MyMutationType.name.extensions == {"foo": "bar", "undine_input": MyMutationType.name}
 
-    assert inpt.extensions == {"foo": "bar", "undine_input": inpt}
-
-    graphql_input_field = inpt.as_graphql_input_field()
-    assert graphql_input_field.extensions == {"foo": "bar", "undine_input": inpt}
+    graphql_input_field = MyMutationType.name.as_graphql_input_field()
+    assert graphql_input_field.extensions == {"foo": "bar", "undine_input": MyMutationType.name}
 
 
-# TODO: validators
+def test_input__validator():
+    class MyMutationType(MutationType, model=Task):
+        name = Input()
+
+        @name.validator
+        @staticmethod
+        def validate_name(value: str) -> None:
+            if value == "foo":
+                msg = "Name must not be 'foo'"
+                raise ValueError(msg)
+
+    assert len(MyMutationType.name.validators) == 1
+
+    with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
+        MyMutationType.validate_name("foo")
+
+
+def test_input__validator__as_argument():
+    def validate_name(value: str) -> None:
+        if value == "foo":
+            msg = "Name must not be 'foo'"
+            raise ValueError(msg)
+
+    class MyMutationType(MutationType, model=Task):
+        name = Input(validators=[validate_name])
+
+    assert len(MyMutationType.name.validators) == 1
+
+    with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
+        validate_name("foo")

@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import patch
 
 from graphql import ExecutionResult, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.type.definition import GraphQLField, GraphQLNonNull
@@ -6,6 +7,7 @@ from graphql.type.definition import GraphQLField, GraphQLNonNull
 from example_project.app.models import Task
 from tests.helpers import override_undine_settings
 from undine import Entrypoint, MutationType, QueryType, create_schema
+from undine.registies import GRAPHQL_TYPE_REGISTRY
 from undine.schema import execute_graphql
 from undine.typing import GraphQLParams
 
@@ -30,6 +32,29 @@ def test_create_schema():
     assert isinstance(schema.mutation_type, GraphQLObjectType)
     assert schema.mutation_type.name == "Mutation"
     assert sorted(schema.mutation_type.fields) == ["createTask"]
+
+
+def test_create_schema__registered():
+    assert "Query" not in GRAPHQL_TYPE_REGISTRY
+    assert "Mutation" not in GRAPHQL_TYPE_REGISTRY
+
+    class TaskType(QueryType, model=Task, auto=False): ...
+
+    class TaskCreateMutation(MutationType, model=Task): ...
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    create_schema(query_class=Query, mutation_class=Mutation)
+
+    assert "Query" in GRAPHQL_TYPE_REGISTRY
+    assert isinstance(GRAPHQL_TYPE_REGISTRY["Query"], GraphQLObjectType)
+
+    assert "Mutation" in GRAPHQL_TYPE_REGISTRY
+    assert isinstance(GRAPHQL_TYPE_REGISTRY["Mutation"], GraphQLObjectType)
 
 
 def test_create_schema__descriptions():
@@ -168,10 +193,22 @@ error_schema = GraphQLSchema(
 
 
 @override_undine_settings(SCHEMA="tests.test_schema.error_schema")
-def test_execute_graphql__unexpected():
+def test_execute_graphql__error_raised():
     params = GraphQLParams(query="query { hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
     assert result.data is None
     assert result.errors[0].message == "Error!"
     assert result.errors[0].extensions == {"status_code": 400}
+
+
+@override_undine_settings(SCHEMA="undine.settings.example_schema")
+def test_execute_graphql__unexpected_error():
+    params = GraphQLParams(query="query { hello }")
+
+    with patch("undine.schema.validate", side_effect=ValueError("Error!")):
+        result = execute_graphql(params=params, method="POST", context_value=None)
+
+    assert result.data is None
+    assert result.errors[0].message == "Error!"
+    assert result.errors[0].extensions == {"status_code": 500}

@@ -17,7 +17,7 @@ __all__ = [
 
 
 is_many = FunctionDispatcher[Any, bool]()
-"""Determine whether a the reference returns a list of objects or not."""
+"""Determine whether a reference returns a list of objects or not."""
 
 
 @is_many.register

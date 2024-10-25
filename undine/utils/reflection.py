@@ -51,7 +51,7 @@ def get_wrapped_func(func: T) -> T:
         if isinstance(func, partial):
             func = func.func
             continue
-        if isinstance(func, (classmethod, staticmethod)):
+        if isinstance(func, (classmethod, staticmethod)):  # pragma: no cover
             func = func.__func__
             continue
         if isinstance(func, property):

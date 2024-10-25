@@ -11,7 +11,7 @@ __all__ = [
 
 
 is_input_only = FunctionDispatcher[InputRef, bool]()
-"""Determine whether a the reference is input-only or not."""
+"""Determine whether a reference is input-only or not."""
 
 
 @is_input_only.register

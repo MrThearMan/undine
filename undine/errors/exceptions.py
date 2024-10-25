@@ -39,8 +39,6 @@ class ErrorMessageFormatter(Formatter):
     def format_field(self, value: Any, format_spec: str) -> str:  # noqa: PLR0911
         from undine.utils.text import comma_sep_str, dotpath
 
-        if format_spec == "repr":
-            return repr(value)
         if format_spec == "dotpath":
             return dotpath(value)
         if format_spec == "module":
@@ -363,7 +361,7 @@ class GraphQLModelConstaintViolationError(GraphQLStatusError):
 class GraphQLModelNotFoundError(GraphQLStatusError):
     """Error raised when a model lookup fails to find a matching row."""
 
-    msg = "Lookup `{key}={value:repr}` on model `{model:dotpath}` did not match any row."
+    msg = "Lookup `{key}={value!r}` on model `{model:dotpath}` did not match any row."
     status = 404
     code = error_codes.MODEL_NOT_FOUND
 

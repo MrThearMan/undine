@@ -7,96 +7,148 @@ from undine import Field, QueryType
 from undine.resolvers import FunctionResolver, ModelFieldResolver
 
 
-def test_field__simple():
+def test_field__repr():
     class MyQueryType(QueryType, model=Task):
         name = Field()
 
-    field = MyQueryType.name
+    assert repr(MyQueryType.name) == "<undine.query.Field(ref=app.Task.name)>"
 
-    assert repr(field) == "<undine.query.Field(ref=app.Task.name)>"
 
-    assert field.ref == Task.name.field  # type: ignore[attr-defined]
-    assert field.many is False
-    assert field.nullable is False
-    assert field.description is None
-    assert field.deprecation_reason is None
-    assert field.extensions == {"undine_field": field}
+def test_field__attributes():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
 
-    assert field.owner == MyQueryType
-    assert field.name == "name"
+    assert MyQueryType.name.ref == Task._meta.get_field("name")
+    assert MyQueryType.name.many is False
+    assert MyQueryType.name.nullable is False
+    assert MyQueryType.name.description is None
+    assert MyQueryType.name.deprecation_reason is None
+    assert MyQueryType.name.extensions == {"undine_field": MyQueryType.name}
+    assert MyQueryType.name.owner == MyQueryType
+    assert MyQueryType.name.name == "name"
 
-    resolver = field.get_resolver()
+
+def test_field__get_resolver():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+    resolver = MyQueryType.name.get_resolver()
     assert isinstance(resolver, ModelFieldResolver)
 
-    arguments = field.get_field_arguments()
+
+def test_field__get_field_arguments():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+    arguments = MyQueryType.name.get_field_arguments()
     assert arguments == {}
 
-    field_type = field.get_field_type()
+
+def test_field__get_field_type():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+    field_type = MyQueryType.name.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert field_type.of_type == GraphQLString
 
-    graphql_field = field.as_graphql_field()
+    graphql_field = MyQueryType.name.as_graphql_field()
     assert isinstance(graphql_field.type, GraphQLNonNull)
     assert graphql_field.type.of_type == GraphQLString
-    assert graphql_field.args == arguments
-    assert graphql_field.resolve == resolver
+    assert graphql_field.args == {}
+    assert isinstance(graphql_field.resolve, ModelFieldResolver)
     assert graphql_field.description is None
     assert graphql_field.deprecation_reason is None
-    assert graphql_field.extensions == {"undine_field": field}
+    assert graphql_field.extensions == {"undine_field": MyQueryType.name}
 
 
-def test_field__function():
+def test_field__function__repr():
     class MyQueryType(QueryType, model=Task):
         @Field
         def custom(self, argument: str) -> list[str]:
+            """Description."""
             return [argument]
 
-    field = MyQueryType.custom
+    assert repr(MyQueryType.custom) == f"<undine.query.Field(ref={MyQueryType.custom.ref})>"
 
-    assert callable(field.ref)
-    assert field.many is True
-    assert field.nullable is False
-    assert field.description is None
-    assert field.deprecation_reason is None
-    assert field.extensions == {"undine_field": field}
 
-    assert field.owner == MyQueryType
-    assert field.name == "custom"
+def test_field__function__attributes():
+    class MyQueryType(QueryType, model=Task):
+        @Field
+        def custom(self, argument: str) -> list[str]:
+            """Description."""
+            return [argument]
 
-    resolver = field.get_resolver()
+    assert callable(MyQueryType.custom.ref)
+    assert MyQueryType.custom.many is True
+    assert MyQueryType.custom.nullable is False
+    assert MyQueryType.custom.description == "Description."
+    assert MyQueryType.custom.deprecation_reason is None
+    assert MyQueryType.custom.extensions == {"undine_field": MyQueryType.custom}
+    assert MyQueryType.custom.owner == MyQueryType
+    assert MyQueryType.custom.name == "custom"
+
+
+def test_field__function__get_resolver():
+    class MyQueryType(QueryType, model=Task):
+        @Field
+        def custom(self, argument: str) -> list[str]:
+            """Description."""
+            return [argument]
+
+    resolver = MyQueryType.custom.get_resolver()
     assert isinstance(resolver, FunctionResolver)
 
-    arguments = field.get_field_arguments()
+
+def test_field__function__get_field_arguments():
+    class MyQueryType(QueryType, model=Task):
+        @Field
+        def custom(self, argument: str) -> list[str]:
+            """Description."""
+            return [argument]
+
+    arguments = MyQueryType.custom.get_field_arguments()
     assert sorted(arguments) == ["argument"]
     arg_type = arguments["argument"].type
     assert isinstance(arg_type, GraphQLNonNull)
     assert arg_type.of_type == GraphQLString
 
-    field_type = field.get_field_type()
+
+def test_field__function__get_field_type():
+    class MyQueryType(QueryType, model=Task):
+        @Field
+        def custom(self, argument: str) -> list[str]:
+            """Description."""
+            return [argument]
+
+    field_type = MyQueryType.custom.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLList)
     assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
     assert field_type.of_type.of_type.of_type == GraphQLString
 
 
-def test_field__function__arguments():
+def test_field__function__decorator_arguments():
     class MyQueryType(QueryType, model=Task):
-        @Field(description="Description.")
+        @Field(deprecation_reason="Use something else.")
         def custom(self, argument: str) -> list[str]:
             return [argument]
 
-    field = MyQueryType.custom
-    assert field.description == "Description."
+    assert MyQueryType.custom.deprecation_reason == "Use something else."
 
 
 def test_field__many():
     class MyQueryType(QueryType, model=Task):
         name = Field(many=True)
 
-    field = MyQueryType.name
-    assert field.many is True
+    assert MyQueryType.name.many is True
 
-    field_type = field.get_field_type()
+
+def test_field__many__get_field_type():
+    class MyQueryType(QueryType, model=Task):
+        name = Field(many=True)
+
+    field_type = MyQueryType.name.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLList)
     assert isinstance(field_type.of_type.of_type, GraphQLNonNull)

@@ -7,17 +7,19 @@ from undine import Order, OrderSet
 from undine.errors.exceptions import MissingModelError
 
 
-def test_orderset__default():
+def test_orderset__attributes():
     class MyOrderSet(OrderSet, model=Task):
         """Description."""
 
     assert MyOrderSet.__model__ == Task
     assert MyOrderSet.__typename__ == "MyOrderSet"
     assert MyOrderSet.__extensions__ == {"undine_orderset": MyOrderSet}
+    assert sorted(MyOrderSet.__order_map__) == ["createdAt", "name", "pk", "type"]
 
-    order_map = MyOrderSet.__order_map__
 
-    assert sorted(order_map) == ["createdAt", "name", "pk", "type"]
+def test_orderset__enum_type():
+    class MyOrderSet(OrderSet, model=Task):
+        """Description."""
 
     enum_type = MyOrderSet.__enum_type__()
     assert enum_type.name == "MyOrderSet"

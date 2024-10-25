@@ -18,36 +18,74 @@ from undine.errors.exceptions import MissingEntrypointRefError
 from undine.resolvers import CreateResolver, FunctionResolver
 
 
-def test_entrypoint__query():
-    class TaskType(QueryType, model=Task): ...
+def test_entrypoint__query__repr():
+    class TaskType(QueryType, model=Task):
+        """Description."""
 
     class Query:
         task = Entrypoint(TaskType)
 
-    task = Query.task
+    assert repr(Query.task) == f"<undine.schema.Entrypoint(ref={TaskType})>"
 
-    assert repr(task) == f"<undine.schema.Entrypoint(ref={TaskType})>"
 
-    assert task.ref == TaskType
-    assert task.many is False
-    assert task.description is None
-    assert task.deprecation_reason is None
-    assert task.extensions == {"undine_entrypoint": task}
+def test_entrypoint__query__attributes():
+    class TaskType(QueryType, model=Task):
+        """Description."""
 
-    assert task.owner == Query
-    assert task.name == "task"
+    class Query:
+        task = Entrypoint(TaskType)
 
-    field_type = task.get_field_type()
+    assert Query.task.ref == TaskType
+    assert Query.task.many is False
+    assert Query.task.description == "Description."
+    assert Query.task.deprecation_reason is None
+    assert Query.task.extensions == {"undine_entrypoint": Query.task}
+    assert Query.task.owner == Query
+    assert Query.task.name == "task"
+
+
+def test_entrypoint__query__get_field_type():
+    class TaskType(QueryType, model=Task):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    field_type = Query.task.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLObjectType)
 
-    arguments = task.get_field_arguments()
+
+def test_entrypoint__query__get_field_arguments():
+    class TaskType(QueryType, model=Task):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    arguments = Query.task.get_field_arguments()
     assert arguments == {"pk": GraphQLArgument(GraphQLInt)}
 
-    resolver = task.get_resolver()
+
+def test_entrypoint__query__get_resolver():
+    class TaskType(QueryType, model=Task):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    resolver = Query.task.get_resolver()
     assert resolver == TaskType.__resolve_one__
 
-    graphql_field = task.as_graphql_field()
+
+def test_entrypoint__query__as_graphql_field():
+    class TaskType(QueryType, model=Task):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    graphql_field = Query.task.as_graphql_field()
 
     assert isinstance(graphql_field.type, GraphQLNonNull)
     assert isinstance(graphql_field.type.of_type, GraphQLObjectType)
@@ -55,36 +93,49 @@ def test_entrypoint__query():
     assert graphql_field.args == {"pk": GraphQLArgument(GraphQLInt)}
 
     assert graphql_field.resolve == TaskType.__resolve_one__
-    assert graphql_field.description is None
+    assert graphql_field.description == "Description."
     assert graphql_field.deprecation_reason is None
-    assert graphql_field.extensions == {"undine_entrypoint": task}
+    assert graphql_field.extensions == {"undine_entrypoint": Query.task}
 
 
-def test_entrypoint__query__description():
-    class TaskType(QueryType, model=Task):
+def test_entrypoint__query__many__attributes():
+    class TaskType(QueryType, model=Task, filterset=True, orderset=True):
         """Description."""
 
     class Query:
-        foo = Entrypoint(TaskType)
+        task = Entrypoint(TaskType, many=True)
 
-    assert Query.foo.description == "Description."
+    assert Query.task.ref == TaskType
+    assert Query.task.many is True
+    assert Query.task.description == "Description."
+    assert Query.task.deprecation_reason is None
+    assert Query.task.extensions == {"undine_entrypoint": Query.task}
+    assert Query.task.owner == Query
+    assert Query.task.name == "task"
 
 
-def test_entrypoint__query__many():
-    class TaskType(QueryType, model=Task, filterset=True, orderset=True): ...
+def test_entrypoint__query__many__get_field_type():
+    class TaskType(QueryType, model=Task, filterset=True, orderset=True):
+        """Description."""
 
     class Query:
-        foo = Entrypoint(TaskType, many=True)
+        task = Entrypoint(TaskType, many=True)
 
-    assert Query.foo.many is True
-
-    field_type = Query.foo.get_field_type()
+    field_type = Query.task.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLList)
     assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
     assert isinstance(field_type.of_type.of_type.of_type, GraphQLObjectType)
 
-    arguments = Query.foo.get_field_arguments()
+
+def test_entrypoint__query__many__get_field_arguments():
+    class TaskType(QueryType, model=Task, filterset=True, orderset=True):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType, many=True)
+
+    arguments = Query.task.get_field_arguments()
     assert sorted(arguments) == ["filter", "orderBy"]
 
     assert isinstance(arguments["filter"], GraphQLArgument)
@@ -95,11 +146,43 @@ def test_entrypoint__query__many():
     assert isinstance(arguments["orderBy"].type.of_type, GraphQLNonNull)
     assert isinstance(arguments["orderBy"].type.of_type.of_type, GraphQLEnumType)
 
-    resolver = Query.foo.get_resolver()
+
+def test_entrypoint__query__many__get_resolver():
+    class TaskType(QueryType, model=Task, filterset=True, orderset=True): ...
+
+    class Query:
+        task = Entrypoint(TaskType, many=True)
+
+    resolver = Query.task.get_resolver()
     assert resolver == TaskType.__resolve_many__
 
 
-def test_entrypoint__mutation():
+def test_entrypoint__mutation__repr():
+    class TaskCreateMutation(MutationType, model=Task): ...
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    assert repr(Mutation.create_task) == f"<undine.schema.Entrypoint(ref={TaskCreateMutation})>"
+
+
+def test_entrypoint__mutation__attributes():
+    class TaskCreateMutation(MutationType, model=Task):
+        """Mutation description."""
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    assert Mutation.create_task.ref == TaskCreateMutation
+    assert Mutation.create_task.many is False
+    assert Mutation.create_task.description == "Mutation description."
+    assert Mutation.create_task.deprecation_reason is None
+    assert Mutation.create_task.extensions == {"undine_entrypoint": Mutation.create_task}
+    assert Mutation.create_task.owner == Mutation
+    assert Mutation.create_task.name == "create_task"
+
+
+def test_entrypoint__mutation__get_field_type():
     class TaskType(QueryType, model=Task): ...
 
     class TaskCreateMutation(MutationType, model=Task): ...
@@ -107,35 +190,47 @@ def test_entrypoint__mutation():
     class Mutation:
         create_task = Entrypoint(TaskCreateMutation)
 
-    task = Mutation.create_task
-
-    assert repr(task) == f"<undine.schema.Entrypoint(ref={TaskCreateMutation})>"
-
-    assert task.ref == TaskCreateMutation
-    assert task.many is False
-    assert task.description is None
-    assert task.deprecation_reason is None
-    assert task.extensions == {"undine_entrypoint": task}
-
-    assert task.owner == Mutation
-    assert task.name == "create_task"
-
-    field_type = task.get_field_type()
+    field_type = Mutation.create_task.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert isinstance(field_type.of_type, GraphQLObjectType)
     assert field_type.of_type == TaskType.__output_type__()
 
-    arguments = task.get_field_arguments()
+
+def test_entrypoint__mutation__get_field_arguments():
+    class TaskCreateMutation(MutationType, model=Task):
+        """Mutation description."""
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    arguments = Mutation.create_task.get_field_arguments()
     assert sorted(arguments) == ["input"]
     assert isinstance(arguments["input"], GraphQLArgument)
     assert isinstance(arguments["input"].type, GraphQLNonNull)
     assert isinstance(arguments["input"].type.of_type, GraphQLInputObjectType)
 
-    resolver = task.get_resolver()
+
+def test_entrypoint__mutation__get_resolver():
+    class TaskCreateMutation(MutationType, model=Task): ...
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    resolver = Mutation.create_task.get_resolver()
     assert isinstance(resolver, CreateResolver)
 
-    graphql_field = task.as_graphql_field()
 
+def test_entrypoint__mutation__as_graphql_field():
+    class TaskType(QueryType, model=Task):
+        """Query Description."""
+
+    class TaskCreateMutation(MutationType, model=Task):
+        """Mutation description."""
+
+    class Mutation:
+        create_task = Entrypoint(TaskCreateMutation)
+
+    graphql_field = Mutation.create_task.as_graphql_field()
     assert isinstance(graphql_field.type, GraphQLNonNull)
     assert isinstance(graphql_field.type.of_type, GraphQLObjectType)
     assert graphql_field.type.of_type == TaskType.__output_type__()
@@ -146,34 +241,12 @@ def test_entrypoint__mutation():
     assert isinstance(graphql_field.args["input"].type.of_type, GraphQLInputObjectType)
 
     assert isinstance(graphql_field.resolve, CreateResolver)
-    assert graphql_field.description is None
+    assert graphql_field.description == "Mutation description."
     assert graphql_field.deprecation_reason is None
-    assert graphql_field.extensions == {"undine_entrypoint": task}
+    assert graphql_field.extensions == {"undine_entrypoint": Mutation.create_task}
 
 
-def test_entrypoint__mutation__description():
-    class TaskType(QueryType, model=Task):
-        """Description."""
-
-    class TaskCreateMutation(MutationType, model=Task):
-        """Mutation description."""
-
-    class Mutation:
-        create_task = Entrypoint(TaskCreateMutation)
-
-    assert Mutation.create_task.description == "Mutation description."
-
-
-@pytest.mark.skip("Not implemented yet")
-def test_entrypoint__mutation__many():
-    class TaskType(QueryType, model=Task):
-        """Description."""
-
-    class TaskCreateMutation(MutationType, model=Task):
-        """Mutation description."""
-
-    class Mutation:
-        create_task = Entrypoint(TaskCreateMutation, many=True)
+# TODO: 'test_entrypoint__mutation__many'
 
 
 @pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.12 and newer")
@@ -216,32 +289,72 @@ def test_entrypoint__function():
     class Query:
         @Entrypoint
         def double(self, number: int) -> int:
+            """Description."""
             return number * 2
 
-    double = Query.double
+    assert repr(Query.double) == f"<undine.schema.Entrypoint(ref={Query.double.ref})>"
 
-    assert callable(double.ref)
-    assert double.many is False
-    assert double.description is None
-    assert double.deprecation_reason is None
-    assert double.extensions == {"undine_entrypoint": double}
 
-    assert double.owner == Query
-    assert double.name == "double"
+def test_entrypoint__function__attributes():
+    class Query:
+        @Entrypoint
+        def double(self, number: int) -> int:
+            """Description."""
+            return number * 2
 
-    field_type = double.get_field_type()
+    assert callable(Query.double.ref)
+    assert Query.double.many is False
+    assert Query.double.description == "Description."
+    assert Query.double.deprecation_reason is None
+    assert Query.double.extensions == {"undine_entrypoint": Query.double}
+    assert Query.double.owner == Query
+    assert Query.double.name == "double"
+
+
+def test_entrypoint__function__get_field_type():
+    class Query:
+        @Entrypoint
+        def double(self, number: int) -> int:
+            """Description."""
+            return number * 2
+
+    field_type = Query.double.get_field_type()
     assert isinstance(field_type, GraphQLNonNull)
     assert field_type.of_type == GraphQLInt
 
-    arguments = double.get_field_arguments()
+
+def test_entrypoint__function__get_field_arguments():
+    class Query:
+        @Entrypoint
+        def double(self, number: int) -> int:
+            """Description."""
+            return number * 2
+
+    arguments = Query.double.get_field_arguments()
     assert isinstance(arguments["number"], GraphQLArgument)
     assert isinstance(arguments["number"].type, GraphQLNonNull)
     assert arguments["number"].type.of_type, GraphQLInt
 
-    resolver = double.get_resolver()
+
+def test_entrypoint__function__get_resolver():
+    class Query:
+        @Entrypoint
+        def double(self, number: int) -> int:
+            """Description."""
+            return number * 2
+
+    resolver = Query.double.get_resolver()
     assert isinstance(resolver, FunctionResolver)
 
-    graphql_field = double.as_graphql_field()
+
+def test_entrypoint__function__as_graphql_field():
+    class Query:
+        @Entrypoint
+        def double(self, number: int) -> int:
+            """Description."""
+            return number * 2
+
+    graphql_field = Query.double.as_graphql_field()
 
     assert isinstance(graphql_field.type, GraphQLNonNull)
     assert graphql_field.type.of_type == GraphQLInt
@@ -251,16 +364,15 @@ def test_entrypoint__function():
     assert graphql_field.args["number"].type.of_type, GraphQLInt
 
     assert isinstance(graphql_field.resolve, FunctionResolver)
-    assert graphql_field.description is None
+    assert graphql_field.description == "Description."
     assert graphql_field.deprecation_reason is None
-    assert graphql_field.extensions == {"undine_entrypoint": double}
+    assert graphql_field.extensions == {"undine_entrypoint": Query.double}
 
 
-def test_entrypoint__function__arguments():
+def test_entrypoint__function__decorator_arguments():
     class Query:
-        @Entrypoint(description="Description.")
+        @Entrypoint(deprecation_reason="Use something else.")
         def double(self, number: int) -> int:
             return number * 2
 
-    double = Query.double
-    assert double.description == "Description."
+    assert Query.double.deprecation_reason == "Use something else."

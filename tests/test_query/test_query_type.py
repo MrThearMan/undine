@@ -8,19 +8,31 @@ from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo
 from undine import Field, FilterSet, OrderSet, QueryType
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
-from undine.registies import QUERY_TYPE_REGISTRY
+from undine.registies import GRAPHQL_TYPE_REGISTRY, QUERY_TYPE_REGISTRY
 from undine.scalars import GraphQLDate
 from undine.typing import GraphQLFilterInfo
 
 
-def test_query_type__simple():
+def test_query_type__registered():
     assert Task not in QUERY_TYPE_REGISTRY
+    assert "MyQueryType" not in GRAPHQL_TYPE_REGISTRY
 
-    class MyQueryType(QueryType, model=Task):
-        """Description."""
+    class MyQueryType(QueryType, model=Task): ...
 
     assert Task in QUERY_TYPE_REGISTRY
     assert QUERY_TYPE_REGISTRY[Task] == MyQueryType
+
+    assert "MyQueryType" not in GRAPHQL_TYPE_REGISTRY
+
+    output_type = MyQueryType.__output_type__()
+
+    assert "MyQueryType" in GRAPHQL_TYPE_REGISTRY
+    assert GRAPHQL_TYPE_REGISTRY["MyQueryType"] == output_type
+
+
+def test_query_type__attributes():
+    class MyQueryType(QueryType, model=Task):
+        """Description."""
 
     assert MyQueryType.__model__ == Task
     assert MyQueryType.__filterset__ is None
@@ -45,6 +57,11 @@ def test_query_type__simple():
         "steps",
         "type",
     ]
+
+
+def test_query_type__output_type():
+    class MyQueryType(QueryType, model=Task):
+        """Description."""
 
     output_type = MyQueryType.__output_type__()
     assert output_type.name == "MyQueryType"

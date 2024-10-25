@@ -1,6 +1,13 @@
-from functools import partial, wraps
+from __future__ import annotations
 
-from undine.utils.reflection import get_wrapped_func, swappable_by_subclassing
+from functools import partial, wraps
+from inspect import Parameter
+from typing import TYPE_CHECKING
+
+import pytest
+
+from undine.errors.exceptions import FuntionSignatureParsingError
+from undine.utils.reflection import FunctionEqualityWrapper, get_signature, get_wrapped_func, swappable_by_subclassing
 
 
 def test_swappable_by_subclassing():
@@ -76,3 +83,71 @@ def test_get_wrapped_func__wrapped():
     foo = wraps(func)(inner)
 
     assert get_wrapped_func(foo) == func
+
+
+def test_function_equality_wrapper__called():
+    def func() -> str:
+        return "foo"
+
+    wrapped = FunctionEqualityWrapper(func, context=1)
+    assert wrapped() == "foo"
+
+
+def test_function_equality_wrapper__same_context():
+    def func() -> str:
+        return "foo"
+
+    wrapped_1 = FunctionEqualityWrapper(func, context=1)
+    wrapped_2 = FunctionEqualityWrapper(func, context=1)
+
+    assert wrapped_1 == wrapped_2
+
+
+def test_function_equality_wrapper__different_context():
+    def func() -> str:
+        return "foo"
+
+    wrapped_1 = FunctionEqualityWrapper(func, context=1)
+    wrapped_2 = FunctionEqualityWrapper(func, context=2)
+
+    assert wrapped_1 != wrapped_2
+
+
+def test_function_equality_wrapper__different_object():
+    def func() -> str:
+        return "foo"
+
+    wrapped_1 = FunctionEqualityWrapper(func, context=1)
+    assert wrapped_1 != "foo"
+
+
+def test_function_equality_wrapper__unwrapped_function():
+    def func() -> str:
+        return "foo"
+
+    wrapped_1 = FunctionEqualityWrapper(func, context=1)
+    assert wrapped_1 != func
+
+
+def test_get_signature():
+    def func(arg: str) -> int: ...
+
+    sig = get_signature(func)
+
+    assert dict(sig.parameters) == {
+        "arg": Parameter(name="arg", kind=Parameter.POSITIONAL_OR_KEYWORD, annotation=str),
+    }
+
+    assert sig.return_annotation == int
+
+
+def test_get_signature__parsing_error():
+    # MockRequest is not defined during runtime since its in a 'TYPE_CHECKING' block,
+    # so function signature parsing should fail.
+    if TYPE_CHECKING:
+        from tests.helpers import MockRequest
+
+    def func(arg: MockRequest) -> int: ...
+
+    with pytest.raises(FuntionSignatureParsingError):
+        get_signature(func)
