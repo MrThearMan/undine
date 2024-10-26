@@ -31,6 +31,9 @@ if TYPE_CHECKING:
     from undine.typing import RelatedManager, Root
 
 __all__ = [
+    "BulkCreateResolver",
+    "BulkDeleteResolver",
+    "BulkUpdateResolver",
     "CreateResolver",
     "CustomResolver",
     "DeleteResolver",
@@ -129,6 +132,46 @@ class CreateResolver:
 
 
 @dataclass(frozen=True, slots=True)
+class BulkCreateResolver:
+    # TODO: Description
+
+    mutation_type: type[MutationType]
+
+    @property
+    def model(self) -> type[models.Model]:
+        return self.mutation_type.__model__
+
+    @property
+    def queryset(self) -> models.QuerySet:
+        return self.model._meta.default_manager
+
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
+        input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        batch_size: int | None = kwargs.get("batch_size")
+        ignore_conflicts: bool = kwargs.get("ignore_conflicts", False)
+        update_conflicts: bool = kwargs.get("update_conflicts", False)
+        update_fields: list[str] | None = kwargs.get("update_fields")
+        unique_fields: list[str] | None = kwargs.get("unique_fields")
+
+        objs = [self.model(**data) for data in input_data]
+
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            # TODO: Middleware
+            # TODO: Validators
+        ):
+            return self.queryset.bulk_create(
+                objs,
+                batch_size=batch_size,
+                ignore_conflicts=ignore_conflicts,
+                update_conflicts=update_conflicts,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class UpdateResolver:
     """
     Resolves a mutation for updating a model instance using 'MutationHandler.update'.
@@ -163,6 +206,40 @@ class UpdateResolver:
 
 
 @dataclass(frozen=True, slots=True)
+class BulkUpdateResolver:
+    # TODO: Description
+
+    mutation_type: type[MutationType]
+
+    @property
+    def model(self) -> type[models.Model]:
+        return self.mutation_type.__model__
+
+    @property
+    def queryset(self) -> models.QuerySet:
+        return self.model._meta.default_manager
+
+    @property
+    def lookup_field(self) -> str:
+        return self.mutation_type.__lookup_field__
+
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
+        input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        batch_size: int | None = kwargs.get("batch_size")
+
+        objs = [self.model(**data) for data in input_data]
+        fields = list({field for data in input_data for field in data if field != self.lookup_field})
+
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            # TODO: Middleware
+            # TODO: Validators
+        ):
+            return self.queryset.bulk_update(objs, fields, batch_size=batch_size)
+
+
+@dataclass(frozen=True, slots=True)
 class DeleteResolver:
     """
     Resolves a mutation for deleting a model instance using 'model.delete'.
@@ -194,6 +271,38 @@ class DeleteResolver:
             MutationMiddlewareContext(self.mutation_type, info, input_data, instance),
         ):
             instance.delete()
+
+        return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
+
+
+@dataclass(frozen=True, slots=True)
+class BulkDeleteResolver:
+    # TODO: Description
+
+    mutation_type: type[MutationType]
+
+    @property
+    def model(self) -> type[models.Model]:
+        return self.mutation_type.__model__
+
+    @property
+    def queryset(self) -> models.QuerySet:
+        return self.model._meta.default_manager
+
+    @property
+    def lookup_field(self) -> str:
+        return self.mutation_type.__lookup_field__
+
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
+        input_data: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+
+        with (
+            transaction.atomic(),
+            handle_integrity_errors(),
+            # TODO: Middleware
+            # TODO: Validators
+        ):
+            self.queryset.filter(pk__in=input_data).delete()
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 

@@ -3,7 +3,15 @@ from __future__ import annotations
 from types import FunctionType
 from typing import Any
 
-from graphql import GraphQLArgument, GraphQLArgumentMap, GraphQLList, GraphQLNonNull
+from graphql import (
+    GraphQLArgument,
+    GraphQLArgumentMap,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLString,
+)
 
 from undine.converters.to_graphql_type import convert_to_graphql_type
 from undine.parsers import docstring_parser, parse_parameters
@@ -73,16 +81,13 @@ def load_deferred_converters() -> None:
 
     @convert_to_graphql_argument_map.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
-        if kwargs.get("entrypoint", False):
-            if kwargs["many"]:
-                return convert_to_graphql_argument_map(ref, many=True)
+        if not kwargs["many"]:
+            if not kwargs.get("entrypoint", False):
+                return {}
 
             field = get_model_field(model=ref.__model__, lookup=ref.__lookup_field__)
             input_type = convert_to_graphql_type(field, model=ref.__model__)
             return {get_schema_name(ref.__lookup_field__): GraphQLArgument(input_type)}
-
-        if not kwargs["many"]:
-            return {}
 
         arguments: GraphQLArgumentMap = {}
 
@@ -99,9 +104,32 @@ def load_deferred_converters() -> None:
 
     @convert_to_graphql_argument_map.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:
-        if kwargs["many"]:
-            pass  # TODO:
-
-        input_type = ref.__input_type__()
+        entrypoint = kwargs.get("entrypoint", False)
+        input_type = ref.__input_type__(entrypoint=entrypoint)
         input_type = GraphQLNonNull(input_type)
-        return {undine_settings.MUTATION_INPUT_KEY: GraphQLArgument(input_type)}
+
+        arguments: GraphQLArgumentMap = {}
+
+        if kwargs["many"]:
+            # TODO: Add descriptions for these arguments?
+            if ref.__mutation_kind__ == "create":
+                arguments["batch_size"] = GraphQLArgument(GraphQLInt)
+                arguments["ignore_conflicts"] = GraphQLArgument(GraphQLBoolean)
+                arguments["update_conflicts"] = GraphQLArgument(GraphQLBoolean)
+                arguments["update_fields"] = GraphQLArgument(GraphQLList(GraphQLString))
+                arguments["unique_fields"] = GraphQLArgument(GraphQLList(GraphQLString))
+
+            elif ref.__mutation_kind__ == "update":
+                arguments["batch_size"] = GraphQLArgument(GraphQLInt)
+
+            elif ref.__mutation_kind__ == "delete":
+                # TODO: Get this from the 'MutationType' class.
+                lookup_field = get_schema_name(ref.__lookup_field__)
+                input_ = ref.__input_map__.get(lookup_field)
+                field_type = input_.get_field_type()
+                arguments[undine_settings.MUTATION_INPUT_KEY] = GraphQLArgument(GraphQLList(field_type))
+
+            input_type = GraphQLNonNull(GraphQLList(input_type))
+
+        arguments[undine_settings.MUTATION_INPUT_KEY] = GraphQLArgument(input_type)
+        return arguments

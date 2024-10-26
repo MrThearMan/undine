@@ -5,7 +5,16 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver
 
-from undine.resolvers import CreateResolver, CustomResolver, DeleteResolver, FunctionResolver, UpdateResolver
+from undine.resolvers import (
+    BulkCreateResolver,
+    BulkDeleteResolver,
+    BulkUpdateResolver,
+    CreateResolver,
+    CustomResolver,
+    DeleteResolver,
+    FunctionResolver,
+    UpdateResolver,
+)
 from undine.typing import EntrypointRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -39,7 +48,16 @@ def load_deferred_converters() -> None:
         return ref.__resolve_many__ if many else ref.__resolve_one__
 
     @convert_entrypoint_ref_to_resolver.register
-    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
+    def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:  # noqa: PLR0911
+        if kwargs["many"]:
+            if ref.__mutation_kind__ == "create":
+                return BulkCreateResolver(mutation_type=ref)
+            if ref.__mutation_kind__ == "update":
+                return BulkUpdateResolver(mutation_type=ref)
+            if ref.__mutation_kind__ == "delete":
+                return BulkDeleteResolver(mutation_type=ref)
+            return CustomResolver(mutation_type=ref)
+
         if ref.__mutation_kind__ == "create":
             return CreateResolver(mutation_type=ref)
         if ref.__mutation_kind__ == "update":

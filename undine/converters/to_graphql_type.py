@@ -58,7 +58,7 @@ __all__ = [
 
 convert_to_graphql_type = FunctionDispatcher[Any, GraphQLType](union_default=type)
 """
-Convert a given value to a to a 'GraphQLInputType' or 'GraphQLOutputType'.
+Convert a given value to a GraphQL input type or output type.
 
 :param ref: The reference to convert.
 :param model: The model to use for the type.

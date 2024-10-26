@@ -23,5 +23,7 @@ class Query:
 class Mutation:
     create_task = Entrypoint(TaskCreateMutationType)
 
+    bulk_create_task = Entrypoint(TaskCreateMutationType, many=True)
+
 
 schema = create_schema(query_class=Query, mutation_class=Mutation)
