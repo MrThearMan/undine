@@ -15,7 +15,6 @@ from .model_fields.to_type import convert_model_field_to_type
 from .ordering.to_order_ref import convert_to_order_ref
 from .ref_to_graphql_input_type import convert_ref_to_graphql_input_type
 from .ref_to_graphql_output_type import convert_ref_to_graphql_output_type
-from .to_description import convert_to_description
 from .to_graphql_type import convert_type_to_graphql_type
 from .to_many import is_many
 
@@ -30,7 +29,6 @@ __all__ = [
     "convert_model_field_to_type",
     "convert_ref_to_graphql_input_type",
     "convert_ref_to_graphql_output_type",
-    "convert_to_description",
     "convert_to_field_ref",
     "convert_to_filter_ref",
     "convert_to_input_ref",

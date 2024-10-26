@@ -31,7 +31,7 @@ ALLOWED_NAME = re.compile(
     r"|"          # OR
     r"(_[a-z])"   # 2) An underscore followed by a letter
     r")*"         # Zero or more of the above
-    r"$"          # End of string
+    r"$",         # End of string
 )
 # fmt: on
 

@@ -155,7 +155,7 @@ example_schema = GraphQLSchema(
             "hello": GraphQLField(
                 GraphQLString,
                 resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
-            )
+            ),
         },
     ),
 )

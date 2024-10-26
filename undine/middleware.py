@@ -67,7 +67,7 @@ class InputDataValidationMiddleware:
         Run all MutationType and Input validators for the fields in the given input data.
         Remove any input-only fields after validation.
         """
-        from undine import MutationType
+        from undine import MutationType  # noqa: PLC0415
 
         mutation_type.__validate__(info=self.params.info, input_data=input_data)
 

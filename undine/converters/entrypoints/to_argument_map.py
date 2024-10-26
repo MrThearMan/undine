@@ -43,6 +43,9 @@ def load_deferred_converters() -> None:
 
     @convert_entrypoint_ref_to_graphql_argument_map.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:
+        if kwargs["many"]:
+            pass  # TODO:
+
         input_type = ref.__input_type__()
         input_type = GraphQLNonNull(input_type)
         return {undine_settings.MUTATION_INPUT_KEY: GraphQLArgument(input_type)}

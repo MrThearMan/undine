@@ -40,11 +40,11 @@ def parse_parameters(func: FunctionType | Callable[..., Any], *, depth: int = 0)
 
     for i, param in enumerate(sig.parameters.values()):
         # 'self' and 'cls' parameters are special and thus skipped.
-        if param.name in ("self", "cls") and i == 0:
+        if param.name in {"self", "cls"} and i == 0:
             continue
 
         # Don't include '*args' and '**kwargs' parameters, as they are not supported by GraphQL.
-        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+        if param.kind in {inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD}:
             continue
 
         if param.annotation is inspect.Parameter.empty:

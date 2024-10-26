@@ -22,7 +22,7 @@ __all__ = [
 
 @cache
 def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, RelatedFieldInfo]:
-    from undine.converters import convert_model_field_to_type
+    from undine.converters import convert_model_field_to_type  # noqa: PLC0415
 
     relation_info: dict[str, RelatedFieldInfo] = {}
 
@@ -106,19 +106,19 @@ class RelationType(enum.Enum):
 
     @enum.property
     def is_reverse(self) -> bool:
-        return self in (
+        return self in {
             RelationType.REVERSE_ONE_TO_ONE,
             RelationType.REVERSE_ONE_TO_MANY,
             RelationType.REVERSE_MANY_TO_MANY,
-        )
+        }
 
     @enum.property
     def is_forward(self) -> bool:
-        return self in (
+        return self in {
             RelationType.FORWARD_ONE_TO_ONE,
             RelationType.FORWARD_MANY_TO_ONE,
             RelationType.FORWARD_MANY_TO_MANY,
-        )
+        }
 
     @enum.property
     def is_generic_relation(self) -> bool:
@@ -131,27 +131,27 @@ class RelationType(enum.Enum):
     @enum.property
     def created_before(self) -> bool:
         """These relations need to be created before the main model is created."""
-        return self in (
+        return self in {
             RelationType.FORWARD_ONE_TO_ONE,
             RelationType.FORWARD_MANY_TO_ONE,
-        )
+        }
 
     @enum.property
     def created_after(self) -> bool:
         """These relations need to be created after the main model is created."""
-        return self in (
+        return self in {
             RelationType.REVERSE_ONE_TO_ONE,
             RelationType.REVERSE_ONE_TO_MANY,
             RelationType.REVERSE_MANY_TO_MANY,
             RelationType.FORWARD_MANY_TO_MANY,
             RelationType.GENERIC_ONE_TO_MANY,
-        )
+        }
 
 
 @cache
 def _related_field_to_relation_type_map() -> dict[type[RelatedField], RelationType]:
     # Must defer creating this map, since the 'contenttypes' app needs to be loaded first.
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation  # noqa: PLC0415
 
     return {
         models.OneToOneRel: RelationType.REVERSE_ONE_TO_ONE,  # e.g. Reverse OneToOneField

@@ -90,10 +90,10 @@ class FunctionResolver:
         root_param: str | None = None
         info_param: str | None = None
         for i, param in enumerate(sig.parameters.values()):
-            if i == 0 and param.name in ("self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME):
+            if i == 0 and param.name in {"self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME}:
                 root_param = param.name
 
-            elif param.annotation in (GQLInfo, GraphQLResolveInfo):
+            elif param.annotation in {GQLInfo, GraphQLResolveInfo}:
                 info_param = param.name
                 break
 

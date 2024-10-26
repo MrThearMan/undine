@@ -43,14 +43,14 @@ def get_instance_or_raise(*, model: type[TModel], key: str, value: Any) -> TMode
 
 def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:
     """Get all GenericRelations for the given GenericForeignKey."""
-    from django.contrib.contenttypes.fields import GenericRelation
+    from django.contrib.contenttypes.fields import GenericRelation  # noqa: PLC0415
 
     return (field for field in fk.model._meta._relation_tree if isinstance(field, GenericRelation))
 
 
 def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> GenericForeignKey:
     """Get the GenericForeignKey for the given GenericRelation."""
-    from django.contrib.contenttypes.fields import GenericForeignKey
+    from django.contrib.contenttypes.fields import GenericForeignKey  # noqa: PLC0415
 
     return next(
         field

@@ -7,8 +7,9 @@ from typing import Any, Container, Iterable, Literal
 from django.db import models
 from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
 
-from undine.converters import convert_to_description, convert_to_order_ref
+from undine.converters import convert_to_order_ref
 from undine.errors.exceptions import MissingModelError
+from undine.parsers import parse_description
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, OrderResults
 from undine.utils.graphql import get_or_create_graphql_enum
@@ -168,7 +169,7 @@ class Order:
         self.ref = convert_to_order_ref(self.ref, caller=self)
 
         if self.description is Undefined:
-            self.description = convert_to_description(self.ref)
+            self.description = parse_description(self.ref)
 
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"

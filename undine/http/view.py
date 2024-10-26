@@ -28,7 +28,7 @@ class GraphQLView(View):
     """A view for GraphQL requests."""
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if request.method not in ["GET", "POST"]:
+        if request.method not in {"GET", "POST"}:
             return HttpMethodNotAllowedResponse()
 
         media_type = self.get_first_supported_media_type(request)

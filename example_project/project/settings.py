@@ -54,13 +54,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "project" / "testdb",
-    }
+    },
 }
 
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-    }
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [

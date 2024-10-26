@@ -12,10 +12,10 @@ from graphql import GraphQLInputField, GraphQLInputObjectType, GraphQLInputType,
 from undine.converters import (
     convert_filter_ref_to_filter_resolver,
     convert_ref_to_graphql_input_type,
-    convert_to_description,
     convert_to_filter_ref,
 )
 from undine.errors.exceptions import MissingModelError
+from undine.parsers import parse_description
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, FilterResults, GQLInfo
 from undine.utils.graphql import get_or_create_input_object_type, maybe_list_or_non_null
@@ -109,7 +109,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
                 aliases |= results.aliases
                 filters.extend(~frt for frt in results.filters)
 
-            elif filter_name in ("AND", "OR", "XOR"):
+            elif filter_name in {"AND", "OR", "XOR"}:
                 results = cls.__build__(filter_value, info)
                 distinct = distinct or results.distinct
                 aliases |= results.aliases
@@ -200,7 +200,7 @@ class Filter:
         self.ref = convert_to_filter_ref(self.ref, caller=self)
 
         if self.description is Undefined:
-            self.description = convert_to_description(self.ref)
+            self.description = parse_description(self.ref)
 
         self.resolver = convert_filter_ref_to_filter_resolver(self.ref, lookup_expr=self.lookup_expr, name=name)
 

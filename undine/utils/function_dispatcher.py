@@ -12,7 +12,6 @@ from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
 from graphql import Undefined
 
 from undine.errors.exceptions import FunctionDispatcherError
-from undine.parsers import parse_return_annotation
 from undine.typing import DispatchWrapper, From, To
 
 from .reflection import get_instance_name, get_signature
@@ -106,7 +105,7 @@ class FunctionDispatcher(Generic[From, To]):
 
         keys: list[type] = (
             [origin or type_]
-            if origin not in [type, UnionType, Union]
+            if origin not in {type, UnionType, Union}
             else [get_origin(arg) or arg for arg in get_args(type_)]
         )
 
@@ -154,6 +153,8 @@ class FunctionDispatcher(Generic[From, To]):
 
     def _handle_nullable(self, key: From) -> tuple[type, bool]:
         """For types like Union[str, None], return 'str, True'."""
+        from undine.parsers import parse_return_annotation  # noqa: PLC0415
+
         annotation = key
         origin = get_origin(key)
         if isinstance(key, FunctionType):

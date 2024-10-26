@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import grimp
 
 
@@ -11,8 +13,7 @@ def export_mermaid_graph(top_level_module: str) -> None:
             flowchart += f"\n    {imported} --> {module}"
 
     flowchart += "\n```"
-    with open(f"{top_level_module}_graph.md", mode="w") as f:  # noqa: PTH123
-        f.write(flowchart)
+    Path(f"{top_level_module}_graph.md").write_text(flowchart, encoding="utf-8")
 
 
 if __name__ == "__main__":

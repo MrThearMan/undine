@@ -73,7 +73,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_field: ToOneField,
         related_model: type[Model] | None,
     ) -> None:
-        from django.contrib.contenttypes.fields import GenericForeignKey
+        from django.contrib.contenttypes.fields import GenericForeignKey  # noqa: PLC0415
 
         name = self.get_related_field_name(related_field)
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name, parent=self.optimizer)
@@ -100,7 +100,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_field: ToManyField,
         related_model: type[Model] | None,
     ) -> None:
-        from django.contrib.contenttypes.fields import GenericRelation
+        from django.contrib.contenttypes.fields import GenericRelation  # noqa: PLC0415
 
         name = self.get_related_field_name(related_field)
         alias = getattr(field_node.alias, "value", None)

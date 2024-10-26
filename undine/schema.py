@@ -32,11 +32,11 @@ from undine.converters import (
     convert_entrypoint_ref_to_graphql_argument_map,
     convert_entrypoint_ref_to_resolver,
     convert_ref_to_graphql_output_type,
-    convert_to_description,
     is_many,
 )
 from undine.errors.error_handlers import raised_exceptions_as_execution_results
 from undine.errors.exceptions import GraphQLInvalidOperationError, MissingEntrypointRefError
+from undine.parsers import parse_description
 from undine.settings import undine_settings
 from undine.utils.graphql import add_default_status_codes, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.reflection import cache_signature_if_function, get_members
@@ -91,7 +91,7 @@ class Entrypoint:
         if isinstance(self.ref, FunctionType):
             self.many = is_many(self.ref)
         if self.description is Undefined:
-            self.description = convert_to_description(self.ref)
+            self.description = parse_description(self.ref)
 
     def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Entrypoint()"""

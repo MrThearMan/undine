@@ -17,13 +17,13 @@ from graphql import (
 
 from undine.converters import (
     convert_ref_to_graphql_input_type,
-    convert_to_description,
     convert_to_input_ref,
     is_input_only,
     is_input_required,
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
+from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_input_object_type, get_or_create_object_type, maybe_list_or_non_null
@@ -79,7 +79,7 @@ class MutationTypeMeta(type):
 
         lookup_field = get_lookup_field_name(model)
 
-        if lookup_field not in _attrs and mutation_kind in ["update", "delete"]:
+        if lookup_field not in _attrs and mutation_kind in {"update", "delete"}:
             field = get_model_field(model=model, lookup=lookup_field)
             _attrs[lookup_field] = Input(field, required=True)
 
@@ -219,7 +219,7 @@ class Input:
         if self.required is Undefined:
             self.required = is_input_required(self.ref, caller=self)
         if self.description is Undefined:
-            self.description = convert_to_description(self.ref)
+            self.description = parse_description(self.ref)
 
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"

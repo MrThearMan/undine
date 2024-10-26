@@ -22,7 +22,7 @@ from typing import (
 )
 
 # Sort separately due to being a private import
-from typing import _eval_type  # isort: skip
+from typing import _eval_type  # isort: skip  # noqa: PLC2701
 
 try:
     from typing import Self

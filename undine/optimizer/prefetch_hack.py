@@ -10,7 +10,7 @@ from unittest.mock import patch
 from weakref import WeakKeyDictionary
 
 from django.db import models
-from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
+from django.db.models.fields.related_descriptors import _filter_prefetch_queryset  # noqa: PLC2701
 
 if TYPE_CHECKING:
     from graphql import OperationDefinitionNode

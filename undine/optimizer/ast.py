@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 
-class GraphQLASTWalker:
+class GraphQLASTWalker:  # noqa: PLR0904
     """Class for walking the GraphQL AST and handling the different nodes."""
 
     def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:

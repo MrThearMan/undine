@@ -185,5 +185,8 @@ class FunctionEqualityWrapper(Generic[T]):
             return NotImplemented
         return self.context == other.context
 
+    def __hash__(self) -> int:
+        return hash(self.context)
+
     def __call__(self) -> T:
         return self.func()

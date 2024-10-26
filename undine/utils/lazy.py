@@ -48,7 +48,7 @@ class LazyQueryTypeUnion:
         ]
 
 
-class lazy:  # noqa: N801
+class lazy:  # noqa: N801, PLR0904
     """Object used for lazy evaluation of objects."""
 
     @classmethod
@@ -83,7 +83,7 @@ class lazy:  # noqa: N801
         return getattr(self.__result, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name in ["_lazy__target", "_lazy__args", "_lazy__kwargs", "_lazy__result"]:
+        if name in {"_lazy__target", "_lazy__args", "_lazy__kwargs", "_lazy__result"}:
             super().__setattr__(name, value)
             return
 

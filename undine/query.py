@@ -17,7 +17,6 @@ from undine.converters import (
     convert_field_ref_to_graphql_argument_map,
     convert_field_ref_to_resolver,
     convert_ref_to_graphql_output_type,
-    convert_to_description,
     convert_to_field_ref,
     is_field_nullable,
     is_many,
@@ -25,6 +24,7 @@ from undine.converters import (
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
+from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
@@ -77,7 +77,7 @@ class QueryTypeMeta(type):
             _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
 
         if filterset is True:
-            from undine import FilterSet
+            from undine import FilterSet  # noqa: PLC0415
 
             class_name = model.__name__ + FilterSet.__name__
             filterset = type(class_name, (FilterSet,), {}, model=model)
@@ -91,7 +91,7 @@ class QueryTypeMeta(type):
             )
 
         if orderset is True:
-            from undine import OrderSet
+            from undine import OrderSet  # noqa: PLC0415
 
             class_name = model.__name__ + OrderSet.__name__
             orderset = type(class_name, (OrderSet,), {}, model=model)
@@ -269,7 +269,7 @@ class Field:
         if self.nullable is Undefined:
             self.nullable = is_field_nullable(self.ref)
         if self.description is Undefined:
-            self.description = convert_to_description(self.ref)
+            self.description = parse_description(self.ref)
 
     def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Field()"""

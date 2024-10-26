@@ -29,7 +29,7 @@ class Command(BaseCommand):
         create_test_data()
 
 
-def create_test_data() -> None:
+def create_test_data() -> None:  # noqa: PLR0914
     call_command("flush", "--noinput")
 
     print("Creating users...")
@@ -59,7 +59,10 @@ def create_test_data() -> None:
 
     print("Creating tasks...")
     task_1 = Task.objects.create(
-        name=faker.name(), type=TaskTypeChoices.STORY, request=service_request_1, project=project_1
+        name=faker.name(),
+        type=TaskTypeChoices.STORY,
+        request=service_request_1,
+        project=project_1,
     )
     task_1.assignees.add(person_1, person_4)
 
@@ -67,7 +70,10 @@ def create_test_data() -> None:
     task_2.assignees.add(person_3)
 
     task_3 = Task.objects.create(
-        name=faker.name(), type=TaskTypeChoices.TASK, request=service_request_2, project=project_3
+        name=faker.name(),
+        type=TaskTypeChoices.TASK,
+        request=service_request_2,
+        project=project_3,
     )
     task_3.assignees.add(person_2, person_5)
 

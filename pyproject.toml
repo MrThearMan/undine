@@ -85,12 +85,14 @@ line-length = 120
 extend-exclude = [
     "tests/*",
 ]
-lint.typing-modules = [
+
+[tool.ruff.lint]
+typing-modules = [
     "undine.typing",
 ]
-lint.explicit-preview-rules = true
-lint.preview = true
-lint.select = [
+preview = true
+explicit-preview-rules = true
+select = [
     "A",        # flake8-builtins
     "ANN",      # flake8-annotations
     "ARG",      # flake8-unused-arguments
@@ -111,6 +113,7 @@ lint.select = [
     "F",        # pyflakes
     "FA",       # flake8-future-annotations
     "FBT",      # flake8-boolean-trap
+    "FURB",     # refurb
     "FLY",      # flynt
     "G",        # flake8-logging-format
     "I",        # isort
@@ -124,6 +127,10 @@ lint.select = [
     "PGH",      # pygrep-hooks
     "PIE",      # flake8-pie
     "PL",       # pylint
+    "PLC",      # pylint convention
+    "PLE",      # pylint error
+    "PLR",      # pylint refactor
+    "PLW",      # pylint warning
     "PT",       # flake8-pytest-style
     "PTH",      # flake8-use-pathlib
     "PYI",      # flake8-pyi
@@ -143,26 +150,63 @@ lint.select = [
     "W",        # pycodestyle warnings
 ]
 # Preview rules
-lint.extend-select = [
+extend-select = [
+    "B901",     # return-in-generator
     "B909",     # loop-iterator-mutation
+    #
+    "FURB101",  # read-whole-file
+    "FURB103",  # write-whole-file
     "FURB110",  # if-exp-instead-of-or-operator
+    "FURB113",  # repeated-append
+    "FURB116",  # f-string-number-format
+    "FURB118",  # reimplemented-operator
+    "FURB131",  # delete-full-slice
+    "FURB132",  # check-and-remove-from-set
+    "FURB140",  # reimplemented-starmap
     "FURB142",  # for-loop-set-mutations
     "FURB145",  # slice-copy
+    "FURB148",  # unnecessary-enumerate
+    "FURB152",  # math-constant
+    "FURB154",  # repeated-global
+    "FURB157",  # verbose-decimal-constructor
+    "FURB164",  # unnecessary-from-float
+    "FURB166",  # int-on-sliced-str
     "FURB171",  # single-item-membership-test
-    "FURB187",  # list-reverse-copy
-    "PLE0307",  # invalid-str-return-type
+    "FURB180",  # meta-class-abc-meta
+    "FURB192",  # sorted-min-max
+    #
+    "PLC0206",  # dict-index-missing-items
+    "PLC0415",  # import-outside-top-level
+    "PLC1901",  # compare-to-empty-string
+    "PLC2701",  # import-private-name
+    "PLC2801",  # unnecessary-dunder-call
+    #
+    "PLR0202",  # no-classmethod-decorator
+    "PLR0203",  # no-staticmethod-decorator
+    "PLR0904",  # too-many-public-methods
+    "PLR0914",  # too-many-local-variables
     "PLR0916",  # too-many-boolean-expressions
-    "PLR1730",  # if-stmt-min-max
+    "PLR0917",  # too-many-positional-arguments
+    "PLR1702",  # too-many-nested-blocks
     "PLR1733",  # unnecessary-dict-index-lookup
-    "PLR1736",  # unnecessary-list-index-lookup
     "PLR6104",  # non-augmented-assignment
-    "PLW0211",  # bad-staticmethod-argument
-    "PLW0642",  # self-or-cls-assignment
+    "PLR6201",  # literal-membership
+    #
+    "PLW0108",  # unnecessary-lambda
+    "PLW0177",  # nan-comparison
+    "PLW1514",  # unspecified-encoding
+    "PLW1641",  # eq-without-hash
+    #
     "RUF021",   # parenthesize-chained-operators
     "RUF022",   # unsorted-dunder-all
+    "RUF023",   # unsorted-dunder-slots
+    "RUF028",   # invalid-formatter-suppression-comment
+    "RUF029",   # unused-async
+    "RUF030",   # assert-with-print-message
+    #
     "UP042",    # replace-str-enum
 ]
-lint.ignore = [
+ignore = [
     "ANN101",   # Missing type annotation for `self` in method
     "ANN102",   # Missing type annotation for `cls` in method
     "ANN401",   # Any-typing allowed
@@ -172,9 +216,9 @@ lint.ignore = [
     "RUF012",   # No need for ClassVar
     "G004",     # Logging statement uses f-string
     #
-    # Conflicting with ruff-format
+    # Conflicting with ruff-format (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
     #
-    "COM812",   # missing-trailing-comma
+    # "COM812",   # missing-trailing-comma
     "COM819",   # prohibited-trailing-comma
     "D206",     # indent-with-spaces
     "D300",     # triple-single-quotes
@@ -225,6 +269,14 @@ lint.ignore = [
     "FBT001",
     # ignore "int | float"
     "PYI041",
+    # Can import outside top-level
+    "PLC0415",
+]
+"undine/parsers/parse_description.py" = [
+    # No typing-only imports for converters due to FunctionDispatcher
+    "TCH001",
+    "TCH002",
+    "TCH003",
 ]
 "example_project/app/management/commands/create_test_data.py" = [
     "T201",     # Allowing print statements for debugging here

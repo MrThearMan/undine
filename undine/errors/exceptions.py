@@ -37,7 +37,7 @@ class ErrorMessageFormatter(Formatter):
     """Formatter for error strings."""
 
     def format_field(self, value: Any, format_spec: str) -> str:  # noqa: PLR0911
-        from undine.utils.text import comma_sep_str, dotpath
+        from undine.utils.text import comma_sep_str, dotpath  # noqa: PLC0415
 
         if format_spec == "dotpath":
             return dotpath(value)

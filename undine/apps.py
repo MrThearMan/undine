@@ -14,7 +14,7 @@ class UndineConfig(AppConfig):
     verbose_name = "undine"
 
     def ready(self) -> None:
-        import undine.converters
+        import undine.converters  # noqa: PLC0415
 
         self.load_deferred(undine.converters)
 
@@ -25,7 +25,7 @@ class UndineConfig(AppConfig):
         django apps are ready. This is to avoid circular imports and
         issues importing models from other django apps.
         """
-        from undine.utils.reflection import get_members, has_callable_attribute
+        from undine.utils.reflection import get_members, has_callable_attribute  # noqa: PLC0415
 
         root_path = Path(module.__file__).parent
 
