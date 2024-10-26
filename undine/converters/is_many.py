@@ -17,7 +17,13 @@ __all__ = [
 
 
 is_many = FunctionDispatcher[Any, bool]()
-"""Determine whether a reference returns a list of objects or not."""
+"""
+Determine whether a reference returns a list of objects or not.
+
+:param ref: The reference to look at.
+:param model: The model to use for the type.
+:param name: The name of the field to check.
+"""
 
 
 @is_many.register
@@ -35,12 +41,15 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: TypeRef, **kwargs: Any) -> bool:
-    return ref.ref is list or get_origin(ref.ref) is list
+    annotation = ref.value
+    if isinstance(annotation, GenericAlias):
+        annotation = get_origin(annotation)
+    return isinstance(annotation, type) and issubclass(annotation, list)
 
 
 @is_many.register
-def _(_: CombinableExpression, **kwargs: Any) -> bool:
-    return False
+def _(ref: CombinableExpression, **kwargs: Any) -> bool:
+    return is_many(ref.output_field)
 
 
 @is_many.register
@@ -54,21 +63,21 @@ def _(_: LazyQueryTypeUnion, **kwargs: Any) -> bool:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine.mutation import MutationType
     from undine.query import QueryType
 
     @is_many.register
-    def _(_: QueryType, **kwargs: Any) -> bool:
+    def _(_: type[QueryType], **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
         field = get_model_field(model=model, lookup=name)
         return is_many(field, **kwargs)
 
     @is_many.register
-    def _(_: MutationType, **kwargs: Any) -> bool:
+    def _(_: type[MutationType], **kwargs: Any) -> bool:
         model: type[models.Model] = kwargs["model"]
         name: str = kwargs["name"]
         field = get_model_field(model=model, lookup=name)

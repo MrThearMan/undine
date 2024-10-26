@@ -6,7 +6,7 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, Callable, Generic, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Hashable, ParamSpec, TypeVar
 
 from graphql import GraphQLResolveInfo
 
@@ -176,7 +176,7 @@ class FunctionEqualityWrapper(Generic[T]):
     and the provided contexts are equal.
     """
 
-    def __init__(self, func: Callable[[], T], context: Any) -> None:
+    def __init__(self, func: Callable[[], T], context: Hashable) -> None:
         self.func = func
         self.context = context
 

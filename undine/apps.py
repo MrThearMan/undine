@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
-from types import ModuleType
 
 from django.apps import AppConfig
 
@@ -14,24 +14,24 @@ class UndineConfig(AppConfig):
     verbose_name = "undine"
 
     def ready(self) -> None:
-        import undine.converters  # noqa: PLC0415
+        self.load_deferred_converters()
 
-        self.load_deferred(undine.converters)
-
-    def load_deferred(self, module: ModuleType) -> None:
+    def load_deferred_converters(self) -> None:
         """
         Converter-modules can define a `load_deferred_converters` function,
         which is used to delay registration of some converters until
         django apps are ready. This is to avoid circular imports and
         issues importing models from other django apps.
         """
-        from undine.utils.reflection import get_members, has_callable_attribute  # noqa: PLC0415
+        import undine.converters  # noqa: PLC0415
+        from undine.utils.reflection import has_callable_attribute  # noqa: PLC0415
 
-        root_path = Path(module.__file__).parent
+        converter_dir = Path(undine.converters.__file__).resolve().parent
+        lib_root = converter_dir.parent.parent
 
-        for _, submodule in get_members(module, ModuleType):
-            if has_callable_attribute(submodule, "load_deferred_converters"):
-                submodule.load_deferred_converters()
-            # Also load from sub-modules inside `undine.converters`
-            if Path(submodule.__file__).parent.is_relative_to(root_path):
-                self.load_deferred(submodule)
+        for file in converter_dir.glob("**/*.py"):
+            import_path = file.relative_to(lib_root).as_posix().replace("/", ".").removesuffix(".py")
+            module = import_module(import_path)
+
+            if has_callable_attribute(module, "load_deferred_converters"):
+                module.load_deferred_converters()

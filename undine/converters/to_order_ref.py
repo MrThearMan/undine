@@ -18,7 +18,12 @@ __all__ = [
 
 
 convert_to_order_ref = FunctionDispatcher[Any, OrderRef]()
-"""Convert the given value to a undine.Order reference."""
+"""
+Convert the given value to a undine.Order reference.
+
+:param ref: The value to convert.
+:param caller: The 'undine.Order' instance that is calling this function.
+"""
 
 
 @convert_to_order_ref.register

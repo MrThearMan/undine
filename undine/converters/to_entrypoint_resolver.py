@@ -15,7 +15,12 @@ __all__ = [
 
 
 convert_entrypoint_ref_to_resolver = FunctionDispatcher[EntrypointRef, GraphQLFieldResolver]()
-"""Convert the Undine Entrypoint reference to a GraphQL field resolver."""
+"""
+Convert the Undine Entrypoint reference to a GraphQL field resolver.
+
+:param ref: The reference to convert.
+:param many: Whether the entrypoint is for a list field.
+"""
 
 
 @convert_entrypoint_ref_to_resolver.register
@@ -24,7 +29,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from undine.mutation import MutationType
     from undine.query import QueryType
 

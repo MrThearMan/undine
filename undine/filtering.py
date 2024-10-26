@@ -9,15 +9,11 @@ from typing import TYPE_CHECKING, Any, Container, Iterable, Self
 from django.db import models
 from graphql import GraphQLInputField, GraphQLInputObjectType, GraphQLInputType, Undefined
 
-from undine.converters import (
-    convert_filter_ref_to_filter_resolver,
-    convert_ref_to_graphql_input_type,
-    convert_to_filter_ref,
-)
+from undine.converters import convert_filter_ref_to_filter_resolver, convert_to_filter_ref, convert_to_graphql_type
 from undine.errors.exceptions import MissingModelError
 from undine.parsers import parse_description
 from undine.settings import undine_settings
-from undine.typing import CombinableExpression, FilterResults, GQLInfo
+from undine.typing import CombinableExpression, FilterResults, GQLInfo, LookupRef
 from undine.utils.graphql import get_or_create_input_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
@@ -202,7 +198,7 @@ class Filter:
         if self.description is Undefined:
             self.description = parse_description(self.ref)
 
-        self.resolver = convert_filter_ref_to_filter_resolver(self.ref, lookup_expr=self.lookup_expr, name=name)
+        self.resolver = convert_filter_ref_to_filter_resolver(self.ref, caller=self)
 
     def __call__(self, _ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Filter()"""
@@ -224,7 +220,8 @@ class Filter:
         )
 
     def get_field_type(self) -> GraphQLInputType:
-        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__, lookup=self.lookup_expr)
+        lookup = LookupRef(ref=self.ref, lookup=self.lookup_expr)
+        graphql_type = convert_to_graphql_type(lookup, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
 

@@ -14,10 +14,10 @@ from graphql import (
 )
 
 from undine.converters import (
-    convert_field_ref_to_graphql_argument_map,
     convert_field_ref_to_resolver,
-    convert_ref_to_graphql_output_type,
     convert_to_field_ref,
+    convert_to_graphql_argument_map,
+    convert_to_graphql_type,
     is_field_nullable,
     is_many,
 )
@@ -290,14 +290,14 @@ class Field:
         )
 
     def get_field_type(self) -> GraphQLOutputType:
-        graphql_type = convert_ref_to_graphql_output_type(self.ref)
+        graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=not self.nullable)
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
-        return convert_field_ref_to_graphql_argument_map(self.ref, many=self.many)
+        return convert_to_graphql_argument_map(self.ref, many=self.many)
 
     def get_resolver(self) -> GraphQLFieldResolver:
-        return convert_field_ref_to_resolver(self.ref, many=self.many, name=self.name)
+        return convert_field_ref_to_resolver(self.ref, caller=self)
 
     def optimizer_hook(self, optimizer: QueryOptimizer) -> None:
         """Hook for customizing how the field is optimized by the QueryOptimizer."""

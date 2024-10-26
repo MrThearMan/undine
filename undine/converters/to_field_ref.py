@@ -26,7 +26,12 @@ __all__ = [
 
 
 convert_to_field_ref = FunctionDispatcher[Any, FieldRef]()
-"""Convert the given value to a undine.Field reference."""
+"""
+Convert the given value to a reference that undine.Field can deal with.
+
+:param ref: The value to convert.
+:param caller: The 'undine.Field' instance that is calling this function.
+"""
 
 
 @convert_to_field_ref.register
@@ -74,7 +79,7 @@ def _(ref: ReverseOneToOneDescriptor, **kwargs: Any) -> FieldRef:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine.query import QueryType

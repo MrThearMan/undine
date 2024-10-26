@@ -18,18 +18,23 @@ __all__ = [
 
 
 convert_to_input_ref = FunctionDispatcher[Any, InputRef]()
-"""Convert the given value to a undine.Input reference."""
+"""
+Convert the given value to a reference that undine.Input can deal with.
+
+:param ref: The value to convert.
+:param caller: The 'undine.Input' instance that is calling this function.
+"""
 
 
 @convert_to_input_ref.register
 def _(ref: Any, **kwargs: Any) -> InputRef:
-    return TypeRef(ref=ref)
+    return TypeRef(value=ref)
 
 
 @convert_to_input_ref.register
 def _(ref: str | type[str], **kwargs: Any) -> InputRef:
     if ref is str:
-        return TypeRef(ref=ref)
+        return TypeRef(value=ref)
     caller: Input = kwargs["caller"]
     if ref == "self":
         return caller.owner
@@ -59,7 +64,7 @@ def _(ref: DeferredAttribute, **kwargs: Any) -> InputRef:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from undine.mutation import MutationType
 
     @convert_to_input_ref.register

@@ -175,7 +175,12 @@ class Order:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
     def get_expression(self, *, descending: bool = False) -> models.OrderBy:
-        return models.OrderBy(self.ref, nulls_first=self.nulls_first, nulls_last=self.nulls_last, descending=descending)
+        return models.OrderBy(
+            self.ref,
+            nulls_first=self.nulls_first,
+            nulls_last=self.nulls_last,
+            descending=descending,
+        )
 
     def get_graphql_enum_value(self) -> GraphQLEnumValue:
         return GraphQLEnumValue(

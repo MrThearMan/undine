@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLFieldResolver
 
@@ -10,13 +10,21 @@ from undine.typing import CombinableExpression, FieldRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 
+if TYPE_CHECKING:
+    from undine import Field
+
 __all__ = [
     "convert_field_ref_to_resolver",
 ]
 
 
 convert_field_ref_to_resolver = FunctionDispatcher[FieldRef, GraphQLFieldResolver]()
-"""Convert the Undine Field reference to a GraphQL field resolver."""
+"""
+Convert the Undine Field reference to a GraphQL field resolver.
+
+:param ref: The reference to convert.
+:param caller: The 'undine.Field' instance that is calling this function.
+"""
 
 
 @convert_field_ref_to_resolver.register
@@ -31,7 +39,8 @@ def _(ref: ModelField, **kwargs: Any) -> GraphQLFieldResolver:
 
 @convert_field_ref_to_resolver.register
 def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFieldResolver:
-    return ModelFieldResolver(name=kwargs["name"])
+    caller: Field = kwargs["caller"]
+    return ModelFieldResolver(name=caller.name)
 
 
 @convert_field_ref_to_resolver.register
@@ -45,17 +54,18 @@ def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLFieldResolver:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine.query import QueryType
 
     @convert_field_ref_to_resolver.register
-    def _(_: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
-        if kwargs["many"]:
-            return ModelManyRelatedResolver(name=kwargs["name"])
-        return ModelFieldResolver(name=kwargs["name"])
-
-    @convert_field_ref_to_resolver.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLFieldResolver:
         return ModelFieldResolver(name=ref.name)
+
+    @convert_field_ref_to_resolver.register
+    def _(_: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
+        caller: Field = kwargs["caller"]
+        if caller.many:
+            return ModelManyRelatedResolver(name=caller.name)
+        return ModelFieldResolver(name=caller.name)

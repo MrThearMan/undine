@@ -29,9 +29,9 @@ from graphql import (
 )
 
 from undine.converters import (
-    convert_entrypoint_ref_to_graphql_argument_map,
     convert_entrypoint_ref_to_resolver,
-    convert_ref_to_graphql_output_type,
+    convert_to_graphql_argument_map,
+    convert_to_graphql_type,
     is_many,
 )
 from undine.errors.error_handlers import raised_exceptions_as_execution_results
@@ -112,11 +112,11 @@ class Entrypoint:
         )
 
     def get_field_type(self) -> GraphQLOutputType:
-        graphql_type, nullable = convert_ref_to_graphql_output_type(self.ref, return_nullable=True)
+        graphql_type, nullable = convert_to_graphql_type(self.ref, return_nullable=True, entrypoint=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=not nullable)
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
-        return convert_entrypoint_ref_to_graphql_argument_map(self.ref, many=self.many)
+        return convert_to_graphql_argument_map(self.ref, many=self.many, entrypoint=True)
 
     def get_resolver(self) -> GraphQLFieldResolver:
         return convert_entrypoint_ref_to_resolver(self.ref, many=self.many)

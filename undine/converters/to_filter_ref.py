@@ -19,7 +19,12 @@ __all__ = [
 
 
 convert_to_filter_ref = FunctionDispatcher[Any, FilterRef]()
-"""Convert the given value to a undine.Filter reference."""
+"""
+Convert the given value to a reference that undine.Filter can deal with.
+
+:param ref: The value to convert.
+:param caller: The 'undine.Filter' instance that is calling this function.
+"""
 
 
 @convert_to_filter_ref.register

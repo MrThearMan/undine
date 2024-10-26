@@ -129,6 +129,14 @@ def test_function_equality_wrapper__unwrapped_function():
     assert wrapped_1 != func
 
 
+def test_function_equality_wrapper__hash():
+    def func() -> str:
+        return "foo"
+
+    wrapped_1 = FunctionEqualityWrapper(func, context=1)
+    assert hash(wrapped_1) == hash(1)
+
+
 def test_get_signature():
     def func(arg: str) -> int: ...
 

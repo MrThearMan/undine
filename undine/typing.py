@@ -209,7 +209,13 @@ class PostSaveData:
 
 @dataclass(frozen=True, slots=True)
 class TypeRef:
-    ref: type
+    value: type
+
+
+@dataclass(frozen=True, slots=True)
+class LookupRef:
+    ref: Any
+    lookup: str
 
 
 @dataclass(slots=True)
@@ -254,6 +260,7 @@ PostSaveHandler: TypeAlias = Callable[[models.Model], Any]
 TypedDictType: TypeAlias = type(TypedDict(""))
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
 ValidatorFunc: TypeAlias = Callable[[Any], None]
+GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
 
 # Refs
 

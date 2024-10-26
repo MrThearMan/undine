@@ -16,7 +16,11 @@ __all__ = [
 
 
 is_field_nullable = FunctionDispatcher[FieldRef, bool]()
-"""Determine whether the reference returns a nullable type."""
+"""
+Determine whether the undine.Field reference is considered nullable.
+
+:param ref: The reference to check.
+"""
 
 
 @is_field_nullable.register
@@ -58,7 +62,7 @@ def _(_: LazyQueryTypeUnion) -> bool:
 
 
 def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.ready()` for explanation.
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     @is_field_nullable.register

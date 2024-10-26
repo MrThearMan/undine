@@ -15,13 +15,7 @@ from graphql import (
     Undefined,
 )
 
-from undine.converters import (
-    convert_ref_to_graphql_input_type,
-    convert_to_input_ref,
-    is_input_only,
-    is_input_required,
-    is_many,
-)
+from undine.converters import convert_to_graphql_type, convert_to_input_ref, is_input_only, is_input_required, is_many
 from undine.errors.exceptions import MissingModelError
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
@@ -132,7 +126,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Validate all input data given to this MutationType."""
 
     @classmethod
-    def __input_type__(cls) -> GraphQLInputObjectType:
+    def __input_type__(cls, *, entrypoint: bool = False) -> GraphQLInputObjectType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
@@ -140,11 +134,18 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
         # Defer creating fields so that self-referential related inputs can be created.
         def fields() -> dict[str, GraphQLInputField]:
-            return {input_name: input_.as_graphql_input_field() for input_name, input_ in cls.__input_map__.items()}
+            fields_: dict[str, GraphQLInputField] = {}
+            for name, inpt in cls.__input_map__.items():
+                # If the input type is used anywhere except in the entrypoint,
+                # its fields should not be required to support partial updates.
+                if not entrypoint:
+                    inpt.required = False
+                fields_[name] = inpt.as_graphql_input_field()
+            return fields_
 
         return get_or_create_input_object_type(
             name=cls.__typename__,
-            fields=FunctionEqualityWrapper(fields, context=cls),
+            fields=FunctionEqualityWrapper(fields, context=(cls, entrypoint)),
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
@@ -238,7 +239,7 @@ class Input:
         )
 
     def get_field_type(self) -> GraphQLInputType:
-        graphql_type = convert_ref_to_graphql_input_type(self.ref, model=self.owner.__model__)
+        graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
 

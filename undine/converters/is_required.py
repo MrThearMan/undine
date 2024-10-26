@@ -15,7 +15,12 @@ __all__ = [
 
 
 is_input_required = FunctionDispatcher[InputRef, bool]()
-"""Determine whether the reference requires an input."""
+"""
+Determine whether the reference requires an input.
+
+:param ref: The reference to check.
+:param caller: The 'undine.Input' instance that is calling this function.
+"""
 
 
 @is_input_required.register
@@ -39,7 +44,7 @@ def _(_: TypeRef, **kwargs: Any) -> bool:
 
 
 def load_deferred_converters() -> None:  # pragma: no cover
-    # See. `undine.apps.UndineConfig.ready()` for explanation
+    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine.mutation import MutationType

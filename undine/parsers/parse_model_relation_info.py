@@ -22,7 +22,7 @@ __all__ = [
 
 @cache
 def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, RelatedFieldInfo]:
-    from undine.converters import convert_model_field_to_type  # noqa: PLC0415
+    from undine.converters import convert_to_python_type  # noqa: PLC0415
 
     relation_info: dict[str, RelatedFieldInfo] = {}
 
@@ -35,7 +35,7 @@ def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, Related
 
         related_model_pk_type = None  # Unknown for GenericForeignKey since there can be many relations.
         if field.related_model is not None:
-            related_model_pk_type = convert_model_field_to_type(field.related_model._meta.pk)
+            related_model_pk_type = convert_to_python_type(field.related_model._meta.pk)
 
         if relation_type.is_forward:
             field_name = field.name

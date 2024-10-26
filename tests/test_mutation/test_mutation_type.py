@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Generator
 
 import pytest
+from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import MockGQLInfo, exact
@@ -75,6 +76,20 @@ def test_mutation_type__input_type():
         "request",
         "type",
     ]
+
+
+def test_mutation_type__input_type__entrypoint():
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    input_type = MyCreateMutation.__input_type__(entrypoint=True)
+    assert isinstance(input_type.fields["name"].type, GraphQLNonNull)
+
+
+def test_mutation_type__input_type__non_entrypoint():
+    class MyCreateMutation(MutationType, model=Task): ...
+
+    input_type = MyCreateMutation.__input_type__(entrypoint=False)
+    assert input_type.fields["name"].type == GraphQLString
 
 
 def test_mutation_type__output_type():
