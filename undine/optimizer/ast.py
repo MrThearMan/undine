@@ -4,7 +4,6 @@ import contextlib
 from contextlib import suppress
 from typing import TYPE_CHECKING, TypeGuard
 
-from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field, ForeignKey, Model
 from graphql import (
     FieldNode,
@@ -16,8 +15,9 @@ from graphql import (
 )
 from graphql.execution.execute import get_field_def
 
-from undine.errors.exceptions import OptimizerError
+from undine.errors.exceptions import ModelFieldDoesNotExistError, OptimizerError
 from undine.settings import undine_settings
+from undine.utils.model_utils import get_model_field
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
@@ -89,7 +89,9 @@ class GraphQLASTWalker:  # noqa: PLR0904
         field_name: str,
         model: type[Model],
     ) -> None:
-        field = get_model_field(model, field_name)
+        field: ModelField | None = None
+        with suppress(ModelFieldDoesNotExistError):
+            field = get_model_field(model, field_name)
 
         if field is None:
             with self.use_model(model):
@@ -242,21 +244,3 @@ def get_related_model(related_field: ToOneField | ToManyField, model: type[Model
     if related_model == "self":  # pragma: no cover
         return model
     return related_model  # type: ignore[return-value]
-
-
-def get_model_field(model: type[Model], field_name: str) -> ModelField | None:
-    if field_name == "pk":
-        return model._meta.pk
-
-    with suppress(FieldDoesNotExist):
-        return model._meta.get_field(field_name)
-
-    # Field might be a reverse many-related field without `related_name`, in which case
-    # the `model._meta.fields_map` will store the relation without the "_set" suffix.
-    if field_name.endswith("_set"):
-        with suppress(FieldDoesNotExist):
-            model_field: ModelField = model._meta.get_field(field_name.removesuffix("_set"))
-            if is_to_many(model_field):
-                return model_field
-
-    return None

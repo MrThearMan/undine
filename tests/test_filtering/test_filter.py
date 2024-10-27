@@ -221,8 +221,7 @@ def test_filter__required():
     assert MyFilter.name.required is True
 
     field_type = MyFilter.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert field_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLString)
 
 
 def test_filter__many():
@@ -232,9 +231,7 @@ def test_filter__many():
     assert MyFilter.name.many is True
 
     field_type = MyFilter.name.get_field_type()
-    assert isinstance(field_type, GraphQLList)
-    assert isinstance(field_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLList(GraphQLNonNull(GraphQLString))
 
 
 def test_filter__many_and_required():
@@ -244,10 +241,7 @@ def test_filter__many_and_required():
     assert MyFilter.name.many is True
 
     field_type = MyFilter.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert isinstance(field_type.of_type, GraphQLList)
-    assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 @pytest.mark.parametrize("lookup_expr", ["in", "range", "IN", "RANGE"])

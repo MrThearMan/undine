@@ -14,7 +14,8 @@ is_input_only = FunctionDispatcher[InputRef, bool]()
 """
 Determine whether a reference is input-only or not.
 
-:param ref: The reference to check.
+Positional arguments:
+ - ref: The reference to check.
 """
 
 

@@ -20,10 +20,13 @@ __all__ = [
 
 convert_field_ref_to_resolver = FunctionDispatcher[FieldRef, GraphQLFieldResolver]()
 """
-Convert the Undine Field reference to a GraphQL field resolver.
+Convert the given 'undine.Field' reference to a field resolver function.
 
-:param ref: The reference to convert.
-:param caller: The 'undine.Field' instance that is calling this function.
+Positional arguments:
+ - ref: The reference to convert.
+
+Keyword arguments:
+ - caller: The 'undine.Field' instance that is calling this function.
 """
 
 
@@ -34,12 +37,16 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
 
 @convert_field_ref_to_resolver.register
 def _(ref: ModelField, **kwargs: Any) -> GraphQLFieldResolver:
-    return ModelFieldResolver(name=ref.name)
+    caller: Field = kwargs["caller"]
+    if caller.many:
+        return ModelManyRelatedResolver(name=caller.name)
+    return ModelFieldResolver(name=caller.name)
 
 
 @convert_field_ref_to_resolver.register
 def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Field = kwargs["caller"]
+    # Expressions and subqueries will be annotated to the queryset by the optimizer.
     return ModelFieldResolver(name=caller.name)
 
 
@@ -59,7 +66,7 @@ def load_deferred_converters() -> None:
 
     from undine.query import QueryType
 
-    @convert_field_ref_to_resolver.register
+    @convert_field_ref_to_resolver.register  # Required for Django<5.1
     def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLFieldResolver:
         return ModelFieldResolver(name=ref.name)
 

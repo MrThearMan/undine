@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from types import FunctionType, SimpleNamespace
+from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -60,10 +60,10 @@ __all__ = [
     "FieldRef",
     "FilterRef",
     "FilterRef",
-    "FilterResolverFunc",
     "FilterResults",
     "GQLInfo",
     "GraphQLFilterInfo",
+    "GraphQLFilterResolver",
     "GraphQLParams",
     "HttpMethod",
     "InputRef",
@@ -249,7 +249,7 @@ Expr: TypeAlias = CombinableExpression | models.F | models.Q
 # Misc.
 
 Root: TypeAlias = Any
-FilterResolverFunc: TypeAlias = Callable[..., models.Q]
+GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
 QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
@@ -267,7 +267,7 @@ GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
 EntrypointRef: TypeAlias = Union[
     type["QueryType"],
     type["MutationType"],
-    FunctionType,
+    Callable[..., Any],
 ]
 FieldRef: TypeAlias = Union[
     models.Field,
@@ -277,7 +277,7 @@ FieldRef: TypeAlias = Union[
     "LazyQueryTypeUnion",
     models.Expression,
     models.Subquery,
-    FunctionType,
+    Callable[..., Any],
 ]
 FilterRef: TypeAlias = Union[
     models.Field,
@@ -285,7 +285,7 @@ FilterRef: TypeAlias = Union[
     models.Q,
     models.Expression,
     models.Subquery,
-    FunctionType,
+    Callable[..., Any],
 ]
 OrderRef: TypeAlias = Union[
     models.F,

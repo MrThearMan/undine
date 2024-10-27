@@ -8,10 +8,9 @@ from graphql import (
     GraphQLBoolean,
     GraphQLField,
     GraphQLInputField,
-    GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLNonNull,
-    GraphQLObjectType,
+    GraphQLOutputType,
     Undefined,
 )
 
@@ -77,7 +76,7 @@ class MutationTypeMeta(type):
             field = get_model_field(model=model, lookup=lookup_field)
             _attrs[lookup_field] = Input(field, required=True)
 
-        if auto:
+        if auto and mutation_kind != "delete":
             exclude = set(exclude) | set(_attrs)
             if mutation_kind == "create":
                 exclude.add(lookup_field)
@@ -126,11 +125,14 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Validate all input data given to this MutationType."""
 
     @classmethod
-    def __input_type__(cls, *, entrypoint: bool = False) -> GraphQLInputObjectType:
+    def __input_type__(cls, *, entrypoint: bool = False) -> GraphQLInputType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
+        if cls.__mutation_kind__ == "delete":
+            input_field = cls.__input_map__.get(get_schema_name(cls.__lookup_field__))
+            return input_field.get_field_type()
 
         # Defer creating fields so that self-referential related inputs can be created.
         def fields() -> dict[str, GraphQLInputField]:
@@ -151,7 +153,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         )
 
     @classmethod
-    def __output_type__(cls) -> GraphQLObjectType:
+    def __output_type__(cls) -> GraphQLOutputType:
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":
             return DeleteMutationOutputType

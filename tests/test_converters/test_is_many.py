@@ -10,6 +10,7 @@ from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
 from undine import MutationType, QueryType
 from undine.converters import is_many
+from undine.typing import TypeRef
 from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
 
 
@@ -77,6 +78,18 @@ def func_3() -> str: ...
             "lazy_union": Params(
                 value=LazyQueryTypeUnion(field=Comment._meta.get_field("target")),
                 expected=False,
+            ),
+            "type ref": Params(
+                value=TypeRef(int),
+                expected=False,
+            ),
+            "type ref list": Params(
+                value=TypeRef(list),
+                expected=True,
+            ),
+            "type ref list generic": Params(
+                value=TypeRef(list[int]),
+                expected=True,
             ),
         },
     ),

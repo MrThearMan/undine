@@ -42,7 +42,7 @@ def test_query_type__attributes():
     assert MyQueryType.__extensions__ == {"undine_type": MyQueryType}
 
     assert sorted(MyQueryType.__field_map__) == [
-        "acceptanceCriteria",
+        "acceptancecriteria",
         "assignees",
         "comments",
         "createdAt",
@@ -249,12 +249,10 @@ def test_query_type__output_type_field():
     assert sorted(output_type.fields) == ["createdAt", "name", "type"]
 
     assert isinstance(output_type.fields["createdAt"], GraphQLField)
-    assert isinstance(output_type.fields["createdAt"].type, GraphQLNonNull)
-    assert output_type.fields["createdAt"].type.of_type == GraphQLDate
+    assert output_type.fields["createdAt"].type == GraphQLNonNull(GraphQLDate)
 
     assert isinstance(output_type.fields["name"], GraphQLField)
-    assert isinstance(output_type.fields["name"].type, GraphQLNonNull)
-    assert output_type.fields["name"].type.of_type == GraphQLString
+    assert output_type.fields["name"].type == GraphQLNonNull(GraphQLString)
 
     assert isinstance(output_type.fields["type"], GraphQLField)
     assert isinstance(output_type.fields["type"].type, GraphQLNonNull)

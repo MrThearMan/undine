@@ -5,12 +5,18 @@ import uuid
 from decimal import Decimal
 from enum import Enum
 from importlib import import_module
-from inspect import cleandoc
 from types import FunctionType
 from typing import Any, get_args
 
 from django.db import models
 from django.db.models import TextChoices
+from django.db.models.fields.related_descriptors import (
+    ForwardManyToOneDescriptor,
+    ManyToManyDescriptor,
+    ReverseManyToOneDescriptor,
+    ReverseOneToOneDescriptor,
+)
+from django.db.models.query_utils import DeferredAttribute
 from graphql import (
     GraphQLBoolean,
     GraphQLEnumType,
@@ -18,7 +24,6 @@ from graphql import (
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
-    GraphQLInputType,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
@@ -28,7 +33,6 @@ from graphql import (
     GraphQLUnionType,
 )
 
-from undine.parsers import parse_first_param_type, parse_return_annotation
 from undine.scalars import (
     GraphQLAny,
     GraphQLBase64,
@@ -38,6 +42,7 @@ from undine.scalars import (
     GraphQLDuration,
     GraphQLEmail,
     GraphQLFile,
+    GraphQLImage,
     GraphQLJSON,
     GraphQLTime,
     GraphQLURL,
@@ -60,10 +65,13 @@ convert_to_graphql_type = FunctionDispatcher[Any, GraphQLType](union_default=typ
 """
 Convert a given value to a GraphQL input type or output type.
 
-:param ref: The reference to convert.
-:param model: The model to use for the type.
-:param is_input: (Optional) Whether the type is for an input or output. Defaults to `False`.
-:param entrypoint. (Optional) Whether the type is for an entrypoint. Defaults to `False`.
+Positional arguments:
+ - ref: The reference to convert.
+
+Keyword arguments:
+ - model: The model to use for the type.
+ - is_input: (Optional) Whether the type is for an input or output. Defaults to `False`.
+ - entrypoint: (Optional) Whether the type is for an entrypoint. Defaults to `False`.
 """
 
 
@@ -71,12 +79,11 @@ Convert a given value to a GraphQL input type or output type.
 
 
 @convert_to_graphql_type.register
-def _(ref: type[str] | str, **kwargs: Any) -> GraphQLScalarType:
+def _(ref: str | type[str], **kwargs: Any) -> GraphQLScalarType:
     if ref is str:
         return GraphQLString
 
-    model: type[models.Model] = kwargs["model"]
-    model_field = get_model_field(model=model, lookup=ref)
+    model_field = get_model_field(model=kwargs["model"], lookup=ref)
     return convert_to_graphql_type(model_field, **kwargs)
 
 
@@ -129,7 +136,7 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLScalarType:
 def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        chocies={name: value.value for name, value in ref.__members__.items()},
+        values={name: value.value for name, value in ref.__members__.items()},
         description=get_docstring(ref),
     )
 
@@ -138,7 +145,7 @@ def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
 def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLEnumType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        chocies=dict(ref.choices),
+        values=dict(ref.choices),
         description=get_docstring(ref),
     )
 
@@ -182,10 +189,20 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLType:
         else:
             fields[key] = GraphQLField(graphql_type)
 
-    if is_input:
-        return get_or_create_input_object_type(name=ref.__name__, fields=fields)
+    description = get_docstring(ref)
 
-    return get_or_create_object_type(name=ref.__name__, fields=fields)
+    if is_input:
+        return get_or_create_input_object_type(
+            name=ref.__name__,
+            fields=fields,
+            description=description,
+        )
+
+    return get_or_create_object_type(
+        name=ref.__name__,
+        fields=fields,
+        description=description,
+    )
 
 
 # --- Model fields -------------------------------------------------------------------------------------------------
@@ -218,7 +235,7 @@ def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLEnumType:
     return get_or_create_graphql_enum(
         name=ref.choices_enum.__name__,
         values=dict(ref.choices),
-        description=cleandoc(ref.choices_enum.__doc__ or "") or None,
+        description=getattr(ref, "help_text", None) or get_docstring(ref.choices_enum),
     )
 
 
@@ -293,6 +310,11 @@ def _(_: models.FileField, **kwargs: Any) -> GraphQLScalarType:
 
 
 @convert_to_graphql_type.register
+def _(_: models.ImageField, **kwargs: Any) -> GraphQLScalarType:
+    return GraphQLImage
+
+
+@convert_to_graphql_type.register
 def _(ref: models.OneToOneField, **kwargs: Any) -> GraphQLType:
     return convert_to_graphql_type(ref.target_field, **kwargs)
 
@@ -329,7 +351,7 @@ def _(ref: models.ManyToManyRel, **kwargs: Any) -> GraphQLList:
 
 
 @convert_to_graphql_type.register
-def _(ref: models.F, **kwargs: Any) -> GraphQLInputType:
+def _(ref: models.F, **kwargs: Any) -> GraphQLType:
     model: type[models.Model] = kwargs["model"]
     model_field = get_model_field(model=model, lookup=ref.name)
     return convert_to_graphql_type(model_field, **kwargs)
@@ -341,18 +363,28 @@ def _(ref: CombinableExpression, **kwargs: Any) -> GraphQLType:
 
 
 @convert_to_graphql_type.register
-def _(_: models.Q, **kwargs: Any) -> GraphQLInputType:
+def _(_: models.Q, **kwargs: Any) -> GraphQLType:
     return GraphQLBoolean
 
 
-# --- Functions ----------------------------------------------------------------------------------------------------
+@convert_to_graphql_type.register
+def _(ref: DeferredAttribute | ForwardManyToOneDescriptor, **kwargs: Any) -> GraphQLType:
+    return convert_to_graphql_type(ref.field, **kwargs)
 
 
 @convert_to_graphql_type.register
-def _(ref: FunctionType, **kwargs: Any) -> GraphQLType:
-    is_input = kwargs.get("is_input", False)
-    annotation = parse_first_param_type(ref) if is_input else parse_return_annotation(ref)
-    return convert_to_graphql_type(annotation, **kwargs)
+def _(ref: ReverseManyToOneDescriptor, **kwargs: Any) -> GraphQLType:
+    return convert_to_graphql_type(ref.rel, **kwargs)
+
+
+@convert_to_graphql_type.register
+def _(ref: ReverseOneToOneDescriptor, **kwargs: Any) -> GraphQLType:
+    return convert_to_graphql_type(ref.related, **kwargs)
+
+
+@convert_to_graphql_type.register
+def _(ref: ManyToManyDescriptor, **kwargs: Any) -> GraphQLType:
+    return convert_to_graphql_type(ref.rel if ref.reverse else ref.field, **kwargs)
 
 
 # --- Custom types -------------------------------------------------------------------------------------------------
@@ -370,7 +402,7 @@ def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLUnionType:
 
         object_type = type_map.get(obj.__class__)
         if object_type is None:
-            msg = f"Union '{ref.field.name}' doesn't contain a type for model '{dotpath(obj.__class__)}'."
+            msg = f"Union '{name}' doesn't contain a 'GraphQLObjectType' for model '{dotpath(obj.__class__)}'."
             raise GraphQLError(msg)
 
         return object_type.name
@@ -390,24 +422,27 @@ def _(ref: TypeRef, **kwargs: Any) -> GraphQLType:
     return convert_to_graphql_type(ref.value, **kwargs)
 
 
-@convert_to_graphql_type.register
-def _(ref: LookupRef, **kwargs: Any) -> GraphQLType:
-    from .from_lookup import convert_lookup_to_graphql_type
-    from .to_python_type import convert_to_python_type
-
-    kwargs["default_type"] = convert_to_python_type(ref.ref, **kwargs)
-    return convert_lookup_to_graphql_type(ref.lookup, **kwargs)
-
-
 # --- Deferred -----------------------------------------------------------------------------------------------------
 
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
-    from undine.mutation import MutationType
-    from undine.query import QueryType
+    from undine import MutationType, QueryType
+    from undine.converters import convert_lookup_to_graphql_type, convert_to_python_type
+    from undine.parsers import parse_first_param_type, parse_return_annotation
+
+    @convert_to_graphql_type.register
+    def _(ref: FunctionType, **kwargs: Any) -> GraphQLType:
+        is_input = kwargs.get("is_input", False)
+        annotation = parse_first_param_type(ref) if is_input else parse_return_annotation(ref)
+        return convert_to_graphql_type(annotation, **kwargs)
+
+    @convert_to_graphql_type.register
+    def _(ref: LookupRef, **kwargs: Any) -> GraphQLType:
+        kwargs["default_type"] = convert_to_python_type(ref.ref, **kwargs)
+        return convert_lookup_to_graphql_type(ref.lookup, **kwargs)
 
     @convert_to_graphql_type.register
     def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLType:
@@ -440,6 +475,10 @@ def load_deferred_converters() -> None:
         object_id_field = ref.related_model._meta.get_field(ref.object_id_field_name)
         type_ = convert_to_graphql_type(object_id_field, **kwargs)
         return GraphQLList(type_)
+
+    @convert_to_graphql_type.register
+    def _(ref: GenericRel, **kwargs: Any) -> GraphQLType:
+        return convert_to_graphql_type(ref.field)
 
     @convert_to_graphql_type.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLOutputType:

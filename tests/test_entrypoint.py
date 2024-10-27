@@ -64,7 +64,8 @@ def test_entrypoint__query__get_field_arguments():
         task = Entrypoint(TaskType)
 
     arguments = Query.task.get_field_arguments()
-    assert arguments == {"pk": GraphQLArgument(GraphQLInt)}
+
+    assert arguments == {"pk": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
 
 
 def test_entrypoint__query__get_resolver():
@@ -90,8 +91,7 @@ def test_entrypoint__query__as_graphql_field():
     assert isinstance(graphql_field.type, GraphQLNonNull)
     assert isinstance(graphql_field.type.of_type, GraphQLObjectType)
 
-    assert graphql_field.args == {"pk": GraphQLArgument(GraphQLInt)}
-
+    assert graphql_field.args == {"pk": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
     assert graphql_field.resolve == TaskType.__resolve_one__
     assert graphql_field.description == "Description."
     assert graphql_field.deprecation_reason is None
@@ -319,8 +319,7 @@ def test_entrypoint__function__get_field_type():
             return number * 2
 
     field_type = Query.double.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert field_type.of_type == GraphQLInt
+    assert field_type == GraphQLNonNull(GraphQLInt)
 
 
 def test_entrypoint__function__get_field_arguments():
@@ -331,9 +330,7 @@ def test_entrypoint__function__get_field_arguments():
             return number * 2
 
     arguments = Query.double.get_field_arguments()
-    assert isinstance(arguments["number"], GraphQLArgument)
-    assert isinstance(arguments["number"].type, GraphQLNonNull)
-    assert arguments["number"].type.of_type, GraphQLInt
+    assert arguments == {"number": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
 
 
 def test_entrypoint__function__get_resolver():
@@ -356,13 +353,8 @@ def test_entrypoint__function__as_graphql_field():
 
     graphql_field = Query.double.as_graphql_field()
 
-    assert isinstance(graphql_field.type, GraphQLNonNull)
-    assert graphql_field.type.of_type == GraphQLInt
-
-    assert isinstance(graphql_field.args["number"], GraphQLArgument)
-    assert isinstance(graphql_field.args["number"].type, GraphQLNonNull)
-    assert graphql_field.args["number"].type.of_type, GraphQLInt
-
+    assert graphql_field.type == GraphQLNonNull(GraphQLInt)
+    assert graphql_field.args == {"number": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
     assert isinstance(graphql_field.resolve, FunctionResolver)
     assert graphql_field.description == "Description."
     assert graphql_field.deprecation_reason is None

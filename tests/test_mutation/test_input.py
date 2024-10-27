@@ -53,9 +53,7 @@ def test_input__many():
     assert MyMutationType.name.many is True
 
     field_type = MyMutationType.name.get_field_type()
-    assert isinstance(field_type, GraphQLList)
-    assert isinstance(field_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLList(GraphQLNonNull(GraphQLString))
 
 
 def test_input__required():
@@ -65,8 +63,7 @@ def test_input__required():
     assert MyMutationType.name.required is True
 
     field_type = MyMutationType.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert field_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLString)
 
 
 def test_input__required_and_many():
@@ -77,10 +74,7 @@ def test_input__required_and_many():
     assert MyMutationType.name.many is True
 
     field_type = MyMutationType.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert isinstance(field_type.of_type, GraphQLList)
-    assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_input__input_only():

@@ -38,23 +38,17 @@ def test_maybe_list_or_non_null():
 
 def test_maybe_list_or_non_null__required():
     field = maybe_list_or_non_null(GraphQLString, many=False, required=True)
-    assert isinstance(field, GraphQLNonNull)
-    assert field.of_type == GraphQLString
+    assert field == GraphQLNonNull(GraphQLString)
 
 
 def test_maybe_list_or_non_null__many():
     field = maybe_list_or_non_null(GraphQLString, many=True, required=False)
-    assert isinstance(field, GraphQLList)
-    assert isinstance(field.of_type, GraphQLNonNull)
-    assert field.of_type.of_type == GraphQLString
+    assert field == GraphQLList(GraphQLNonNull(GraphQLString))
 
 
 def test_maybe_list_or_non_null__many_and_required():
     field = maybe_list_or_non_null(GraphQLString, many=True, required=True)
-    assert isinstance(field, GraphQLNonNull)
-    assert isinstance(field.of_type, GraphQLList)
-    assert isinstance(field.of_type.of_type, GraphQLNonNull)
-    assert field.of_type.of_type.of_type == GraphQLString
+    assert field == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_add_default_status_codes():

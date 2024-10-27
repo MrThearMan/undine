@@ -73,9 +73,9 @@ class FuntionSignatureParsingError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 
     msg = (
-        "Name '{name}' is not defined in module '{func:module}'. "
-        "Check if it's inside a `if TYPE_CHECKING` block. '{name}' needs to be "
-        "available during runtime so that signature of '{func:qualname}' can be inspected."
+        "Type '{name}' is not defined in module '{func:module}'. "
+        "Check if it's inside a `if TYPE_CHECKING` block or another class/function. "
+        "The type needs to be available at the runtime so that the signature of '{func:qualname}' can be inspected."
     )
 
 

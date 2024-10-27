@@ -18,8 +18,11 @@ convert_lookup_to_graphql_type = FunctionDispatcher[str, GraphQLType]()
 """
 Convert the given lookup to a GraphQL input type.
 
-:param ref: The reference to convert.
-:param default_type: Default python type to use for the lookup.
+Positional arguments:
+ - ref: The reference to convert.
+
+Keyword arguments:
+ - default_type: Default python type to use for the lookup.
 """
 
 

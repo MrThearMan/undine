@@ -250,6 +250,7 @@ ignore = [
     "S311",     # Pseudo-random generators are fine here
     "SLF",      # Allow accessing private members in tests
     "UP",       # No upgrade rules
+    "PLR0914",  # Too many local variables
 ]
 "**/*/conftest.py" = [
     "ARG",      # Fixtures can be unused

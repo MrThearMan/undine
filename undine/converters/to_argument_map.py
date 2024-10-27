@@ -31,9 +31,12 @@ convert_to_graphql_argument_map = FunctionDispatcher[EntrypointRef | FieldRef, G
 """
 Parse a GraphQLArgumentMap from the given undine.Entrypoint or undine.Field reference.
 
-:param ref: The reference to convert.
-:param many: Whether the argument map is for a list field.
-:param entrypoint. (Optional) Whether the argument map is for an entrypoint. Defaults to `False`.
+Positional arguments:
+ - ref: The reference to convert.
+
+Keyword arguments:
+ - many: Whether the argument map is for a list field.
+ - entrypoint. (Optional) Whether the argument map is for an entrypoint. Defaults to `False`.
 """
 
 
@@ -45,8 +48,9 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
     deprecation_descriptions = docstring_parser.parse_deprecations(docstring)
 
     arguments: GraphQLArgumentMap = {}
+    kwargs["is_input"] = True
     for param in params:
-        graphql_type, nullable = convert_to_graphql_type(param.annotation, return_nullable=True)
+        graphql_type, nullable = convert_to_graphql_type(param.annotation, return_nullable=True, **kwargs)
         if not nullable:
             graphql_type = GraphQLNonNull(graphql_type)
 
@@ -87,6 +91,7 @@ def load_deferred_converters() -> None:
 
             field = get_model_field(model=ref.__model__, lookup=ref.__lookup_field__)
             input_type = convert_to_graphql_type(field, model=ref.__model__)
+            input_type = GraphQLNonNull(input_type)
             return {get_schema_name(ref.__lookup_field__): GraphQLArgument(input_type)}
 
         arguments: GraphQLArgumentMap = {}
@@ -106,28 +111,75 @@ def load_deferred_converters() -> None:
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:
         entrypoint = kwargs.get("entrypoint", False)
         input_type = ref.__input_type__(entrypoint=entrypoint)
-        input_type = GraphQLNonNull(input_type)
+        if not isinstance(input_type, GraphQLNonNull):
+            input_type = GraphQLNonNull(input_type)
 
         arguments: GraphQLArgumentMap = {}
 
         if kwargs["many"]:
-            # TODO: Add descriptions for these arguments?
             if ref.__mutation_kind__ == "create":
-                arguments["batch_size"] = GraphQLArgument(GraphQLInt)
-                arguments["ignore_conflicts"] = GraphQLArgument(GraphQLBoolean)
-                arguments["update_conflicts"] = GraphQLArgument(GraphQLBoolean)
-                arguments["update_fields"] = GraphQLArgument(GraphQLList(GraphQLString))
-                arguments["unique_fields"] = GraphQLArgument(GraphQLList(GraphQLString))
+                arguments["batch_size"] = GraphQLArgument(
+                    GraphQLInt,
+                    default_value=None,
+                    description=(
+                        "How many objects are created in a single query. "
+                        "The default is to create all objects in one batch, "
+                        "except for SQLite where the default is such that "
+                        "at most 999 variables per query are used."
+                    ),
+                )
+                arguments["ignore_conflicts"] = GraphQLArgument(
+                    GraphQLBoolean,
+                    default_value=False,
+                    description=(
+                        "When set to `True`, tells the database to ignore failure to insert any rows "
+                        "that fail constraints such as duplicate unique values. "
+                        "Using this parameter prevents Django from setting the primary key for created objects, "
+                        "meaning they must be queried separately afterwards. "
+                        "May not be used together with `update_conflicts`. "
+                        "Not supported on Oracle."
+                    ),
+                )
+                arguments["update_conflicts"] = GraphQLArgument(
+                    GraphQLBoolean,
+                    default_value=False,
+                    description=(
+                        "When set to `True`, tells the database to update an existing row if a row insertion "
+                        "fails due to a conflict such as duplicate unique values. "
+                        "Must also provide `update_fields` and `unique_fields` "
+                        "(latter only supported for PostgreSQL and SQLite). "
+                        "May not be used together with `ignore_conflicts`. "
+                        "Not supported on Oracle."
+                    ),
+                )
+                arguments["update_fields"] = GraphQLArgument(
+                    GraphQLList(GraphQLNonNull(GraphQLString)),
+                    default_value=None,
+                    description=(
+                        "List of fields to update when a row insertion fails due to a conflict. "
+                        "Must be provided if `update_conflicts` is `True`."
+                    ),
+                )
+                arguments["unique_fields"] = GraphQLArgument(
+                    GraphQLList(GraphQLNonNull(GraphQLString)),
+                    default_value=None,
+                    description=(
+                        "List of fields that all need to be unique for a new row to be inserted. "
+                        "Must be provided on PostgreSQL and SQLite if `update_conflicts` is `True`."
+                    ),
+                )
 
             elif ref.__mutation_kind__ == "update":
-                arguments["batch_size"] = GraphQLArgument(GraphQLInt)
-
-            elif ref.__mutation_kind__ == "delete":
-                # TODO: Get this from the 'MutationType' class.
-                lookup_field = get_schema_name(ref.__lookup_field__)
-                input_ = ref.__input_map__.get(lookup_field)
-                field_type = input_.get_field_type()
-                arguments[undine_settings.MUTATION_INPUT_KEY] = GraphQLArgument(GraphQLList(field_type))
+                arguments["batch_size"] = GraphQLArgument(
+                    GraphQLInt,
+                    default_value=None,
+                    description=(
+                        "How many objects are updated in a single query. "
+                        "The default is to update all objects in one batch, "
+                        "except for SQLite and Oracle which have restrictions "
+                        "on the number of variables used in a query."
+                    ),
+                )
 
             input_type = GraphQLNonNull(GraphQLList(input_type))
 

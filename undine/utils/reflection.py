@@ -91,7 +91,7 @@ def _cache_signatures(wrapped_func: T) -> T:
 
 
 @_cache_signatures
-def get_signature(func: FunctionType, *, depth: int = 0) -> inspect.Signature:
+def get_signature(func: FunctionType | Callable[..., Any], *, depth: int = 0) -> inspect.Signature:
     """
     Parse the signature of a function.
 

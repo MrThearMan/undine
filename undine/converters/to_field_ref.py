@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from django.db import models
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
+    ManyToManyDescriptor,
     ReverseManyToOneDescriptor,
     ReverseOneToOneDescriptor,
 )
@@ -27,10 +28,13 @@ __all__ = [
 
 convert_to_field_ref = FunctionDispatcher[Any, FieldRef]()
 """
-Convert the given value to a reference that undine.Field can deal with.
+Convert the given value to a reference that 'undine.Field' can deal with.
 
-:param ref: The value to convert.
-:param caller: The 'undine.Field' instance that is calling this function.
+Positional arguments:
+ - ref: The value to convert.
+
+Keyword arguments:
+ - caller: The 'undine.Field' instance that is calling this function.
 """
 
 
@@ -69,18 +73,28 @@ def _(ref: ToOneField | ToManyField, **kwargs: Any) -> FieldRef:
 
 
 @convert_to_field_ref.register
-def _(ref: DeferredAttribute | ForwardManyToOneDescriptor | ReverseManyToOneDescriptor, **kwargs: Any) -> FieldRef:
-    return ref.field
+def _(ref: DeferredAttribute | ForwardManyToOneDescriptor, **kwargs: Any) -> FieldRef:
+    return convert_to_field_ref(ref.field, **kwargs)
+
+
+@convert_to_field_ref.register
+def _(ref: ReverseManyToOneDescriptor, **kwargs: Any) -> FieldRef:
+    return convert_to_field_ref(ref.rel, **kwargs)
 
 
 @convert_to_field_ref.register
 def _(ref: ReverseOneToOneDescriptor, **kwargs: Any) -> FieldRef:
-    return ref.related
+    return convert_to_field_ref(ref.related, **kwargs)
+
+
+@convert_to_field_ref.register
+def _(ref: ManyToManyDescriptor, **kwargs: Any) -> FieldRef:
+    return convert_to_field_ref(ref.rel if ref.reverse else ref.field, **kwargs)
 
 
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine.query import QueryType
 
@@ -93,5 +107,9 @@ def load_deferred_converters() -> None:
         return LazyQueryType(field=ref)
 
     @convert_to_field_ref.register
+    def _(ref: GenericRel, **kwargs: Any) -> FieldRef:
+        return LazyQueryType(field=ref.field)
+
+    @convert_to_field_ref.register  # Required for Django<5.1
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
         return LazyQueryTypeUnion(field=ref)

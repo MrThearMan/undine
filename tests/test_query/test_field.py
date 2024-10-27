@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from graphql import GraphQLList, GraphQLNonNull, GraphQLString
+from graphql import GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from undine import Field, QueryType
@@ -49,12 +49,15 @@ def test_field__get_field_type():
         name = Field()
 
     field_type = MyQueryType.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert field_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLString)
+
+
+def test_field__as_graphql_field():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
 
     graphql_field = MyQueryType.name.as_graphql_field()
-    assert isinstance(graphql_field.type, GraphQLNonNull)
-    assert graphql_field.type.of_type == GraphQLString
+    assert graphql_field.type == GraphQLNonNull(GraphQLString)
     assert graphql_field.args == {}
     assert isinstance(graphql_field.resolve, ModelFieldResolver)
     assert graphql_field.description is None
@@ -108,10 +111,7 @@ def test_field__function__get_field_arguments():
             return [argument]
 
     arguments = MyQueryType.custom.get_field_arguments()
-    assert sorted(arguments) == ["argument"]
-    arg_type = arguments["argument"].type
-    assert isinstance(arg_type, GraphQLNonNull)
-    assert arg_type.of_type == GraphQLString
+    assert arguments == {"argument": GraphQLArgument(GraphQLNonNull(GraphQLString))}
 
 
 def test_field__function__get_field_type():
@@ -122,10 +122,7 @@ def test_field__function__get_field_type():
             return [argument]
 
     field_type = MyQueryType.custom.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert isinstance(field_type.of_type, GraphQLList)
-    assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_field__function__decorator_arguments():
@@ -149,10 +146,7 @@ def test_field__many__get_field_type():
         name = Field(many=True)
 
     field_type = MyQueryType.name.get_field_type()
-    assert isinstance(field_type, GraphQLNonNull)
-    assert isinstance(field_type.of_type, GraphQLList)
-    assert isinstance(field_type.of_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_field__nullable():
@@ -175,9 +169,7 @@ def test_field__nullable_and_many():
     assert field.many is True
 
     field_type = field.get_field_type()
-    assert isinstance(field_type, GraphQLList)
-    assert isinstance(field_type.of_type, GraphQLNonNull)
-    assert field_type.of_type.of_type == GraphQLString
+    assert field_type == GraphQLList(GraphQLNonNull(GraphQLString))
 
 
 def test_field__description():

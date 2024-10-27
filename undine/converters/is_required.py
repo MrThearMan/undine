@@ -16,10 +16,13 @@ __all__ = [
 
 is_input_required = FunctionDispatcher[InputRef, bool]()
 """
-Determine whether the reference requires an input.
+Determine whether the 'undine.Input' reference indicates a required input.
 
-:param ref: The reference to check.
-:param caller: The 'undine.Input' instance that is calling this function.
+Positional arguments:
+ - ref: The reference to check.
+
+Keyword arguments:
+ - caller: The 'undine.Input' instance that is calling this function.
 """
 
 

@@ -4,14 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
-from graphql import (
-    GraphQLArgumentMap,
-    GraphQLField,
-    GraphQLFieldResolver,
-    GraphQLObjectType,
-    GraphQLOutputType,
-    Undefined,
-)
+from graphql import GraphQLArgumentMap, GraphQLField, GraphQLFieldResolver, GraphQLOutputType, Undefined
 
 from undine.converters import (
     convert_field_ref_to_resolver,
@@ -204,7 +197,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return type(value) is cls.__model__
 
     @classmethod
-    def __output_type__(cls) -> GraphQLObjectType:
+    def __output_type__(cls) -> GraphQLOutputType:
         """
         Creates a `GraphQLObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
@@ -267,7 +260,7 @@ class Field:
         if self.many is Undefined:
             self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
         if self.nullable is Undefined:
-            self.nullable = is_field_nullable(self.ref)
+            self.nullable = is_field_nullable(self.ref, caller=self)
         if self.description is Undefined:
             self.description = parse_description(self.ref)
 

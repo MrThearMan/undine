@@ -1,6 +1,6 @@
 import pytest
 
-from example_project.app.models import Comment, Project, Task, Team
+from example_project.app.models import AcceptanceCriteria, Comment, Project, Task, Team
 from tests.factories import ProjectFactory
 from tests.helpers import override_undine_settings
 from undine.errors.exceptions import (
@@ -60,6 +60,19 @@ def test_get_model_field__no_lookup():
 def test_get_model_field__not_a_relation():
     with pytest.raises(ModelFieldNotARelationError):
         get_model_field(model=Project, lookup="id__name")
+
+
+def test_get_model_field__default_related_name():
+    # Default related name for reverse foreign key and many-to-many relations contains "_set" suffix,
+    # but not when asked from model meta fields.
+    field = get_model_field(model=Task, lookup="acceptancecriteria_set__details")
+    assert field == AcceptanceCriteria._meta.get_field("details")
+
+
+def test_get_model_field__not_default_related_name():
+    # If related name is overriden, then removing the "_set" suffix doesn't work.
+    with pytest.raises(ModelFieldDoesNotExistError):
+        get_model_field(model=Task, lookup="taskstep_set__name")
 
 
 @pytest.mark.django_db

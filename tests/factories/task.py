@@ -25,7 +25,7 @@ class TaskFactory(GenericDjangoModelFactory[Task]):
     result = ReverseSubFactory("tests.factories.task_result.TaskResultFactory")
     objective = ReverseSubFactory("tests.factories.task_objective.TaskObjectiveFactory")
     steps = OneToManyFactory("tests.factories.task_step.TaskStepFactory")
-    acceptance_criteria = OneToManyFactory("tests.factories.acceptance_criteria.AcceptanceCriteriaFactory")
+    acceptancecriteria_set = OneToManyFactory("tests.factories.acceptance_criteria.AcceptanceCriteriaFactory")
     reports = ManyToManyFactory("tests.factories.report.ReportFactory")
 
     comments = OneToManyFactory("tests.factories.comment.CommentFactory")

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.db import models
 
-    from undine.typing import TModel
+    from undine.typing import ModelField, TModel
 
 
 __all__ = [
@@ -63,7 +63,7 @@ def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> Gener
     )
 
 
-def get_model_field(*, model: type[models.Model], lookup: str) -> models.Field:
+def get_model_field(*, model: type[models.Model], lookup: str) -> ModelField:
     """
     Gets a model field from the given lookup string.
 
@@ -81,7 +81,15 @@ def get_model_field(*, model: type[models.Model], lookup: str) -> models.Field:
             try:
                 field = model._meta.get_field(part)
             except FieldDoesNotExist as error:
-                raise ModelFieldDoesNotExistError(field=part, model=model) from error
+                if not part.endswith("_set"):
+                    raise ModelFieldDoesNotExistError(field=part, model=model) from error
+
+                # Field might be a reverse many-related field without `related_name`, in which case
+                # the `model._meta.fields_map` will store the relation without the "_set" suffix.
+                try:
+                    field = model._meta.get_field(part.removesuffix("_set"))
+                except FieldDoesNotExist as error:
+                    raise ModelFieldDoesNotExistError(field=part, model=model) from error
 
         if part_num == last:
             break

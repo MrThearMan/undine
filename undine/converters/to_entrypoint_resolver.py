@@ -27,8 +27,11 @@ convert_entrypoint_ref_to_resolver = FunctionDispatcher[EntrypointRef, GraphQLFi
 """
 Convert the Undine Entrypoint reference to a GraphQL field resolver.
 
-:param ref: The reference to convert.
-:param many: Whether the entrypoint is for a list field.
+Positional arguments:
+ - ref: The reference to convert.
+
+Keyword arguments:
+ - many: Whether the entrypoint is for a list field.
 """
 
 
@@ -56,7 +59,7 @@ def load_deferred_converters() -> None:
                 return BulkUpdateResolver(mutation_type=ref)
             if ref.__mutation_kind__ == "delete":
                 return BulkDeleteResolver(mutation_type=ref)
-            return CustomResolver(mutation_type=ref)
+            return CustomResolver(mutation_type=ref)  # TODO: Should have another resolver?
 
         if ref.__mutation_kind__ == "create":
             return CreateResolver(mutation_type=ref)

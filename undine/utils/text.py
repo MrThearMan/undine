@@ -107,7 +107,7 @@ def get_docstring(ref: Any) -> str | None:
     docstring = getattr(ref, "__doc__", None)
     if docstring is None:
         return None
-    return cleandoc(docstring).strip()
+    return cleandoc(docstring).strip() or None
 
 
 def comma_sep_str(values: Iterable[Any], *, last_sep: str = "&", quote: bool = False) -> str:

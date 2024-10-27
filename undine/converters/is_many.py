@@ -3,9 +3,6 @@ from __future__ import annotations
 from types import FunctionType, GenericAlias
 from typing import Any, get_origin
 
-from django.db import models
-
-from undine.parsers import parse_return_annotation
 from undine.typing import CombinableExpression, ModelField, TypeRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
@@ -20,18 +17,13 @@ is_many = FunctionDispatcher[Any, bool]()
 """
 Determine whether a reference returns a list of objects or not.
 
-:param ref: The reference to look at.
-:param model: The model to use for the type.
-:param name: The name of the field to check.
+Positional arguments:
+ - ref: The reference to look at.
+
+Keyword arguments:
+ - model: The model to use for the type.
+ - name: The name of the field to check.
 """
-
-
-@is_many.register
-def _(ref: FunctionType, **kwargs: Any) -> bool:
-    annotation = parse_return_annotation(ref)
-    if isinstance(annotation, GenericAlias):
-        annotation = get_origin(annotation)
-    return isinstance(annotation, type) and issubclass(annotation, list)
 
 
 @is_many.register
@@ -67,20 +59,24 @@ def load_deferred_converters() -> None:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine.mutation import MutationType
+    from undine.parsers import parse_return_annotation
     from undine.query import QueryType
 
     @is_many.register
+    def _(ref: FunctionType, **kwargs: Any) -> bool:
+        annotation = parse_return_annotation(ref)
+        if isinstance(annotation, GenericAlias):
+            annotation = get_origin(annotation)
+        return isinstance(annotation, type) and issubclass(annotation, list)
+
+    @is_many.register
     def _(_: type[QueryType], **kwargs: Any) -> bool:
-        model: type[models.Model] = kwargs["model"]
-        name: str = kwargs["name"]
-        field = get_model_field(model=model, lookup=name)
+        field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
         return is_many(field, **kwargs)
 
     @is_many.register
     def _(_: type[MutationType], **kwargs: Any) -> bool:
-        model: type[models.Model] = kwargs["model"]
-        name: str = kwargs["name"]
-        field = get_model_field(model=model, lookup=name)
+        field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
         return is_many(field, **kwargs)
 
     @is_many.register

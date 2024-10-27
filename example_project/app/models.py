@@ -21,9 +21,11 @@ __all__ = [
 
 
 class TaskTypeChoices(models.TextChoices):
-    BUG_FIX = "BUG_FIX"
-    TASK = "TASK"
-    STORY = "STORY"
+    """Task type choices."""
+
+    BUG_FIX = "BUG_FIX", "Bug Fix"
+    TASK = "TASK", "Task"
+    STORY = "STORY", "Story"
 
 
 class Person(models.Model):
@@ -129,7 +131,7 @@ class AcceptanceCriteria(models.Model):
     details = models.TextField()
     fulfilled = models.BooleanField(default=False)
 
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="acceptance_criteria")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)  # No related_name on purpose.
 
     def __str__(self) -> str:
         return f"AcceptanceCriteria {self.id}"

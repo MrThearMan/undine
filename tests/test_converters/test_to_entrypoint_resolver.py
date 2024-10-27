@@ -1,0 +1,162 @@
+from example_project.app.models import Task
+from undine import MutationType, QueryType
+from undine.converters import convert_entrypoint_ref_to_resolver
+from undine.resolvers import (
+    BulkCreateResolver,
+    BulkDeleteResolver,
+    BulkUpdateResolver,
+    CreateResolver,
+    CustomResolver,
+    DeleteResolver,
+    FunctionResolver,
+    UpdateResolver,
+)
+from undine.typing import GQLInfo
+
+
+def test_convert_entrypoint_ref_to_resolver__function():
+    def func() -> int: ...
+
+    result = convert_entrypoint_ref_to_resolver(func)
+
+    assert isinstance(result, FunctionResolver)
+
+    assert result.func == func
+    assert result.root_param is None
+    assert result.info_param is None
+
+
+def test_convert_entrypoint_ref_to_resolver__function__info_param():
+    def func(info: GQLInfo) -> int: ...
+
+    result = convert_entrypoint_ref_to_resolver(func)
+
+    assert isinstance(result, FunctionResolver)
+
+    assert result.func == func
+    assert result.root_param is None
+    assert result.info_param == "info"
+
+
+def test_convert_entrypoint_ref_to_resolver__function__root_param():
+    def func(root) -> int: ...
+
+    result = convert_entrypoint_ref_to_resolver(func)
+
+    assert isinstance(result, FunctionResolver)
+
+    assert result.func == func
+    assert result.root_param == "root"
+    assert result.info_param is None
+
+
+def test_convert_entrypoint_ref_to_resolver__function__root_param__self():
+    def func(self) -> int: ...
+
+    result = convert_entrypoint_ref_to_resolver(func)
+
+    assert isinstance(result, FunctionResolver)
+
+    assert result.func == func
+    assert result.root_param == "self"
+    assert result.info_param is None
+
+
+def test_convert_entrypoint_ref_to_resolver__function__root_param__cls():
+    def func(cls) -> int: ...
+
+    result = convert_entrypoint_ref_to_resolver(func)
+
+    assert isinstance(result, FunctionResolver)
+
+    assert result.func == func
+    assert result.root_param == "cls"
+    assert result.info_param is None
+
+
+def test_convert_entrypoint_ref_to_resolver__query_type():
+    class TaskType(QueryType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskType, many=False)
+
+    assert result == TaskType.__resolve_one__
+
+
+def test_convert_entrypoint_ref_to_resolver__query_type__many():
+    class TaskType(QueryType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskType, many=True)
+
+    assert result == TaskType.__resolve_many__
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__create_mutation():
+    class TaskCreateMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskCreateMutation, many=False)
+
+    assert isinstance(result, CreateResolver)
+    assert result.mutation_type == TaskCreateMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__update_mutation():
+    class TaskUpdateMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskUpdateMutation, many=False)
+
+    assert isinstance(result, UpdateResolver)
+    assert result.mutation_type == TaskUpdateMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__delete_mutation():
+    class TaskDeleteMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskDeleteMutation, many=False)
+
+    assert isinstance(result, DeleteResolver)
+    assert result.mutation_type == TaskDeleteMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation():
+    class TaskMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskMutation, many=False)
+
+    assert isinstance(result, CustomResolver)
+    assert result.mutation_type == TaskMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__many__create_mutation():
+    class TaskBulkCreateMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskBulkCreateMutation, many=True)
+
+    assert isinstance(result, BulkCreateResolver)
+    assert result.mutation_type == TaskBulkCreateMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__many__update_mutation():
+    class TaskBulkUpdateMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskBulkUpdateMutation, many=True)
+
+    assert isinstance(result, BulkUpdateResolver)
+    assert result.mutation_type == TaskBulkUpdateMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__many__delete_mutation():
+    class TaskBulkDeleteMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskBulkDeleteMutation, many=True)
+
+    assert isinstance(result, BulkDeleteResolver)
+    assert result.mutation_type == TaskBulkDeleteMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__many__custom_mutation():
+    class TaskMutation(MutationType, model=Task): ...
+
+    result = convert_entrypoint_ref_to_resolver(TaskMutation, many=True)
+
+    assert isinstance(result, CustomResolver)
+    assert result.mutation_type == TaskMutation

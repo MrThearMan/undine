@@ -7,7 +7,7 @@ from functools import reduce
 from typing import TYPE_CHECKING, Any, Container, Iterable, Self
 
 from django.db import models
-from graphql import GraphQLInputField, GraphQLInputObjectType, GraphQLInputType, Undefined
+from graphql import GraphQLInputField, GraphQLInputType, Undefined
 
 from undine.converters import convert_filter_ref_to_filter_resolver, convert_to_filter_ref, convert_to_graphql_type
 from undine.errors.exceptions import MissingModelError
@@ -124,7 +124,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
         return FilterResults(filters=filters, distinct=distinct, aliases=aliases)
 
     @classmethod
-    def __input_type__(cls) -> GraphQLInputObjectType:
+    def __input_type__(cls) -> GraphQLInputType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.

@@ -76,13 +76,14 @@ def test_mutation_type__input_type():
         "request",
         "type",
     ]
+    assert input_type.fields["name"].type == GraphQLString
 
 
 def test_mutation_type__input_type__entrypoint():
     class MyCreateMutation(MutationType, model=Task): ...
 
     input_type = MyCreateMutation.__input_type__(entrypoint=True)
-    assert isinstance(input_type.fields["name"].type, GraphQLNonNull)
+    assert input_type.fields["name"].type == GraphQLNonNull(GraphQLString)
 
 
 def test_mutation_type__input_type__non_entrypoint():
