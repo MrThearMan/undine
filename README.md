@@ -30,7 +30,7 @@ pip install undine
 - [ ] Add support for pagination
 - [ ] Add support for Relay
 - [ ] Add support for bulk mutations
-- [ ] Add "mutation_only" inputs, e.g. "CurrentUserDefault"
+- [ ] Add "hidden" inputs, e.g. "CurrentUserDefault"
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer
 - [ ] Add documentation for everything!!! (specify later)
