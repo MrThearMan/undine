@@ -26,16 +26,15 @@ pip install undine
 # Before initial release:
 - [ ] Add tests for optimization
 - [ ] Add tests for errors
-- [ ] Add tests for converters
-- [ ] Add tests for GenericForeignKeys and GenericRelations
 - [ ] Add support for permission checks
 - [ ] Add support for pagination
 - [ ] Add support for Relay
+- [ ] Add support for bulk mutations
+- [ ] Add "mutation_only" inputs, e.g. "CurrentUserDefault"
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer
-- [ ] Add support for bulk mutations
 - [ ] Add documentation for everything!!! (specify later)
-- [ ] "mutation_only" inputs, e.g. "CurrentUserDefault"
+
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects
