@@ -4,7 +4,7 @@ from typing import Any
 
 from undine.typing import Expr, ModelField, TypeRef
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.text import get_docstring
 
 from .parse_docstring import docstring_parser
@@ -47,3 +47,8 @@ def _(ref: LazyQueryType) -> Any:
 @parse_description.register
 def _(ref: LazyQueryTypeUnion) -> Any:
     return parse_description(ref.field)
+
+
+@parse_description.register
+def _(_: LazyLambdaQueryType) -> Any:
+    return False

@@ -5,10 +5,10 @@ from graphql import ExecutionResult, GraphQLObjectType, GraphQLSchema, GraphQLSt
 from graphql.type.definition import GraphQLField, GraphQLNonNull
 
 from example_project.app.models import Task
-from tests.helpers import override_undine_settings
 from undine import Entrypoint, MutationType, QueryType, create_schema
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 from undine.schema import execute_graphql
+from undine.settings import example_schema
 from undine.typing import GraphQLParams
 
 
@@ -114,29 +114,30 @@ def test_create_schema__nullable():
     assert schema.mutation_type is None
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_execute_graphql():
+def test_execute_graphql(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     params = GraphQLParams(query="query { hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
     assert result == ExecutionResult(data={"hello": "Hello, World!"})
 
 
-invalid_schema = GraphQLSchema(
-    query=GraphQLObjectType(
-        "Query",
-        fields={
-            "__hello": GraphQLField(
-                GraphQLString,
-                resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
-            )
-        },
-    ),
-)
+def test_execute_graphql__schema_error(undine_settings):
+    invalid_schema = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={
+                "__hello": GraphQLField(
+                    GraphQLString,
+                    resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
+                ),
+            },
+        ),
+    )
 
+    undine_settings.SCHEMA = invalid_schema
 
-@override_undine_settings(SCHEMA="tests.test_schema.invalid_schema")
-def test_execute_graphql__schema_error():
     params = GraphQLParams(query="query { __hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
@@ -146,8 +147,9 @@ def test_execute_graphql__schema_error():
     )
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_execute_graphql__parse_error():
+def test_execute_graphql__parse_error(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     params = GraphQLParams(query="query { €hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
@@ -155,8 +157,9 @@ def test_execute_graphql__parse_error():
     assert result.errors[0].message == "Syntax Error: Unexpected character: U+20AC."
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_execute_graphql__non_query_operation_on_get_request():
+def test_execute_graphql__non_query_operation_on_get_request(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     params = GraphQLParams(query="mutation { hello }")
     result = execute_graphql(params=params, method="GET", context_value=None)
 
@@ -165,8 +168,9 @@ def test_execute_graphql__non_query_operation_on_get_request():
     assert result.errors[0].extensions == {"status_code": 405}
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_execute_graphql__validation_error():
+def test_execute_graphql__validation_error(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     params = GraphQLParams(query="query { hello } query { hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
@@ -179,21 +183,21 @@ def _raise_value_error(*args: Any, **kwargs: Any) -> Any:
     raise ValueError(msg)
 
 
-error_schema = GraphQLSchema(
-    query=GraphQLObjectType(
-        "Query",
-        fields={
-            "hello": GraphQLField(
-                GraphQLNonNull(GraphQLString),
-                resolve=_raise_value_error,
-            )
-        },
-    ),
-)
+def test_execute_graphql__error_raised(undine_settings):
+    error_schema = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={
+                "hello": GraphQLField(
+                    GraphQLNonNull(GraphQLString),
+                    resolve=_raise_value_error,
+                ),
+            },
+        ),
+    )
 
+    undine_settings.SCHEMA = error_schema
 
-@override_undine_settings(SCHEMA="tests.test_schema.error_schema")
-def test_execute_graphql__error_raised():
     params = GraphQLParams(query="query { hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)
 
@@ -202,8 +206,9 @@ def test_execute_graphql__error_raised():
     assert result.errors[0].extensions == {"status_code": 400}
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_execute_graphql__unexpected_error():
+def test_execute_graphql__unexpected_error(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     params = GraphQLParams(query="query { hello }")
 
     with patch("undine.schema.validate", side_effect=ValueError("Error!")):

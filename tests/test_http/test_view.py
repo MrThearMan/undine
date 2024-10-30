@@ -9,17 +9,19 @@ from django.http import HttpResponse
 from django.http.request import MediaType
 from django.middleware.csrf import get_token
 
-from tests.helpers import MockRequest, override_undine_settings
+from tests.helpers import MockRequest
 from undine import GraphQLView
 from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
+from undine.settings import example_schema
 
 if TYPE_CHECKING:
     from undine.typing import HttpMethod
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
 @pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"])
-def test_graphql_view__method_not_allowed(method: HttpMethod):
+def test_graphql_view__method_not_allowed(method: HttpMethod, undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -37,8 +39,9 @@ def test_graphql_view__method_not_allowed(method: HttpMethod):
     assert response["Content-Type"] == "text/plain; charset=utf-8"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_graphql_view__content_type__get_request():
+def test_graphql_view__content_type__get_request(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -55,8 +58,9 @@ def test_graphql_view__content_type__get_request():
     assert response["Content-Type"] == "application/graphql-response+json; charset=utf-8"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_graphql_view__content_type__all_types():
+def test_graphql_view__content_type__all_types(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -73,8 +77,9 @@ def test_graphql_view__content_type__all_types():
     assert response["Content-Type"] == "application/graphql-response+json; charset=utf-8"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_graphql_view__content_type__graphql_json():
+def test_graphql_view__content_type__graphql_json(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -91,8 +96,9 @@ def test_graphql_view__content_type__graphql_json():
     assert response["Content-Type"] == "application/graphql-response+json"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_graphql_view__content_type__application_json():
+def test_graphql_view__content_type__application_json(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -109,8 +115,10 @@ def test_graphql_view__content_type__application_json():
     assert response["Content-Type"] == "application/json"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema", GRAPHIQL_ENABLED=True)
-def test_graphql_view__content_type__test_html():
+def test_graphql_view__content_type__test_html(undine_settings):
+    undine_settings.SCHEMA = example_schema
+    undine_settings.GRAPHIQL_ENABLED = True
+
     view = GraphQLView.as_view()
 
     request = MockRequest(
@@ -156,14 +164,15 @@ def test_graphql_view__content_type__test_html():
             <script src="/static/undine/js/main.js" defer></script>
         </body>
         </html>
-        """
+        """,
     )
     assert response.status_code == 200
     assert response["Content-Type"] == "text/html; charset=utf-8"
 
 
-@override_undine_settings(SCHEMA="undine.settings.example_schema")
-def test_graphql_view__content_type__unsupported_type():
+def test_graphql_view__content_type__unsupported_type(undine_settings):
+    undine_settings.SCHEMA = example_schema
+
     view = GraphQLView.as_view()
 
     request = MockRequest(

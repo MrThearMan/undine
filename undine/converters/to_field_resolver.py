@@ -8,7 +8,7 @@ from graphql import GraphQLFieldResolver
 from undine.resolvers import FunctionResolver, ModelFieldResolver, ModelManyRelatedResolver
 from undine.typing import CombinableExpression, FieldRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 if TYPE_CHECKING:
     from undine import Field
@@ -58,6 +58,11 @@ def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLFieldResolver:
 @convert_field_ref_to_resolver.register
 def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLFieldResolver:
     return convert_field_ref_to_resolver(ref.field, **kwargs)
+
+
+@convert_field_ref_to_resolver.register
+def _(ref: LazyLambdaQueryType, **kwargs: Any) -> GraphQLFieldResolver:
+    return convert_field_ref_to_resolver(ref.callback(), **kwargs)
 
 
 def load_deferred_converters() -> None:

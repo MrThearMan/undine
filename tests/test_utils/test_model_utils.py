@@ -2,7 +2,6 @@ import pytest
 
 from example_project.app.models import AcceptanceCriteria, Comment, Project, Task, Team
 from tests.factories import ProjectFactory
-from tests.helpers import override_undine_settings
 from undine.errors.exceptions import (
     GraphQLModelNotFoundError,
     GraphQLMultipleObjectsFoundError,
@@ -102,8 +101,8 @@ def test_get_lookup_field_name():
     assert get_lookup_field_name(Project) == "pk"
 
 
-@override_undine_settings(USE_PK_FIELD_NAME=False)
-def test_get_lookup_field_name__no_pk():
+def test_get_lookup_field_name__no_pk(undine_settings):
+    undine_settings.USE_PK_FIELD_NAME = False
     assert get_lookup_field_name(Project) == "id"
 
 

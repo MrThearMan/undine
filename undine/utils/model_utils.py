@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Generator, TypeGuard
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models.constants import LOOKUP_SEP
@@ -19,8 +19,7 @@ if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.db import models
 
-    from undine.typing import ModelField, TModel
-
+    from undine.typing import ModelField, TModel, ToManyField, ToOneField
 
 __all__ = [
     "generic_foreign_key_for_generic_relation",
@@ -28,6 +27,8 @@ __all__ = [
     "get_instance_or_raise",
     "get_lookup_field_name",
     "get_model_field",
+    "is_to_many",
+    "is_to_one",
 ]
 
 
@@ -107,3 +108,11 @@ def get_model_field(*, model: type[models.Model], lookup: str) -> ModelField:
 
 def get_lookup_field_name(model: type[models.Model]) -> str:
     return "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name
+
+
+def is_to_many(field: models.Field) -> TypeGuard[ToManyField]:
+    return bool(field.one_to_many or field.many_to_many)
+
+
+def is_to_one(field: models.Field) -> TypeGuard[ToOneField]:
+    return bool(field.many_to_one or field.one_to_one)

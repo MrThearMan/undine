@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import wraps
+from types import FunctionType
 from typing import Any, Callable, Literal
 
 import pytest
@@ -8,6 +9,7 @@ from graphql import Undefined
 
 from tests.helpers import exact
 from undine.errors.exceptions import FunctionDispatcherError
+from undine.typing import Lambda
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 
@@ -60,7 +62,7 @@ def test_function_dispatcher__different_implementations() -> None:
     dispatcher = FunctionDispatcher()
 
     @dispatcher.register
-    def _(key: int) -> int:
+    def _(key: int) -> int:  # noqa: FURB118
         return -key
 
     @dispatcher.register
@@ -249,3 +251,46 @@ def test_function_dispatcher__multiple_union_types():
     msg = "Union type must have a single non-null type argument, got (<class 'str'>, <class 'int'>)."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         dispatcher(str | int | None)
+
+
+def test_function_dispatcher__function():
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def my_impl(ref: FunctionType) -> str:
+        return ref()
+
+    def func() -> str:
+        return "foo"
+
+    value = dispatcher(func)
+
+    assert value == "foo"
+
+
+def test_function_dispatcher__lambda():
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def my_impl(ref: Lambda) -> str:
+        return ref()
+
+    value = dispatcher(lambda: "foo")
+
+    assert value == "foo"
+
+
+def test_function_dispatcher__lambda__not_confused_with_function():
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(ref: Lambda) -> str:
+        return ref()
+
+    @dispatcher.register
+    def _(ref: FunctionType) -> str:
+        return "bar"
+
+    value = dispatcher(lambda: "foo")
+
+    assert value == "foo"

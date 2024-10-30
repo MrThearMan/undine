@@ -18,7 +18,7 @@ from undine.parsers import docstring_parser, parse_parameters
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, EntrypointRef, FieldRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 from undine.utils.text import get_docstring, get_schema_name
 
@@ -77,6 +77,11 @@ def _(ref: LazyQueryType, **kwargs: Any) -> GraphQLArgumentMap:
 @convert_to_graphql_argument_map.register
 def _(_: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
+
+
+@convert_to_graphql_argument_map.register
+def _(ref: LazyLambdaQueryType, **kwargs: Any) -> GraphQLArgumentMap:
+    return convert_to_graphql_argument_map(ref.callback(), **kwargs)
 
 
 def load_deferred_converters() -> None:

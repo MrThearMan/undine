@@ -5,7 +5,7 @@ from example_project.app.models import Comment, Person, Project, Task
 from undine import Field, QueryType
 from undine.converters import convert_field_ref_to_resolver
 from undine.resolvers import FunctionResolver, ModelFieldResolver, ModelManyRelatedResolver
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 
 def test_convert_field_ref_to_resolver__function():
@@ -144,6 +144,20 @@ def test_convert_field_ref_to_resolver__lazy_query_type():
         project = Field(ProjectType)
 
     lazy = LazyQueryType(field)
+    resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
+
+    assert isinstance(resolver, ModelFieldResolver)
+
+    assert resolver.name == "project"
+
+
+def test_convert_field_ref_to_resolver__lazy_lambda_query_type():
+    class TaskType(QueryType, model=Task):
+        project = Field(lambda: ProjectType)
+
+    class ProjectType(QueryType, model=Project): ...
+
+    lazy = LazyLambdaQueryType(callback=lambda: ProjectType)
     resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
 
     assert isinstance(resolver, ModelFieldResolver)

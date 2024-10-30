@@ -11,7 +11,7 @@ from tests.helpers import parametrize_helper
 from undine import MutationType, QueryType
 from undine.converters import is_many
 from undine.typing import TypeRef
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 
 class Params(NamedTuple):
@@ -114,6 +114,27 @@ def test_is_many__lazy_query_type__many_to_many():
     lazy = LazyQueryType(field=field)
 
     assert is_many(lazy) is True
+
+
+def test_is_many__lazy_lambda_query_type():
+    class TaskType(QueryType, model=Task): ...
+
+    lazy = LazyLambdaQueryType(callback=lambda: TaskType)
+
+    assert is_many(lazy) is False
+
+
+def test_is_many__lazy_query_type_uniony():
+    class ProjectType(QueryType, model=Project): ...
+
+    class TaskType(QueryType, model=Task): ...
+
+    class CommentType(QueryType, model=Comment): ...
+
+    field = Comment._meta.get_field("target")
+    lazy = LazyQueryTypeUnion(field=field)
+
+    assert is_many(lazy) is False
 
 
 def test_is_many__query_type__foreign_key():

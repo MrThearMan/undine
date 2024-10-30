@@ -5,13 +5,13 @@ from __future__ import annotations
 import inspect
 import sys
 from functools import partial, wraps
-from types import FunctionType
-from typing import TYPE_CHECKING, Any, Callable, Generic, Hashable, ParamSpec, TypeVar
+from types import FunctionType, LambdaType
+from typing import TYPE_CHECKING, Any, Callable, Generic, Hashable, ParamSpec, TypeGuard, TypeVar
 
 from graphql import GraphQLResolveInfo
 
 from undine.errors.exceptions import FuntionSignatureParsingError
-from undine.typing import GQLInfo
+from undine.typing import GQLInfo, Lambda
 
 if TYPE_CHECKING:
     from types import FrameType
@@ -25,6 +25,7 @@ __all__ = [
     "get_signature",
     "get_wrapped_func",
     "has_callable_attribute",
+    "is_lambda",
     "is_subclass",
     "swappable_by_subclassing",
 ]
@@ -151,6 +152,11 @@ def has_callable_attribute(obj: object, name: str) -> bool:
 def is_subclass(obj: object, cls: type) -> bool:
     """Check if the given object is a subclass of the given class."""
     return isinstance(obj, type) and issubclass(obj, cls)
+
+
+def is_lambda(func: Callable[..., Any]) -> TypeGuard[Lambda]:
+    """Check if the given function is a lambda function."""
+    return isinstance(func, LambdaType) and func.__name__ == "<lambda>"
 
 
 def get_instance_name() -> str:

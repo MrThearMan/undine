@@ -13,6 +13,7 @@ from typing import (
     Iterator,
     Literal,
     MutableMapping,
+    NewType,
     Protocol,
     TypeAlias,
     TypedDict,
@@ -45,7 +46,7 @@ if TYPE_CHECKING:
 
     from undine.mutation import MutationType
     from undine.query import QueryType
-    from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+    from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
     "CombinableExpression",
@@ -68,6 +69,7 @@ __all__ = [
     "HttpMethod",
     "InputRef",
     "JsonType",
+    "Lambda",
     "ManyToManyManager",
     "ModelField",
     "MutationInputType",
@@ -94,6 +96,9 @@ From = TypeVar("From")
 To = TypeVar("To")
 TModel = TypeVar("TModel", bound=models.Model)
 TGraphQLType = TypeVar("TGraphQLType", GraphQLInputType, GraphQLOutputType)
+
+Lambda = NewType("Lambda", Callable)
+"""Type used to regiser different implementations for lambda functions in the FunctionDispatcher."""
 
 empty = object()
 
@@ -275,6 +280,7 @@ FieldRef: TypeAlias = Union[
     type["QueryType"],
     "LazyQueryType",
     "LazyQueryTypeUnion",
+    "LazyLambdaQueryType",
     models.Expression,
     models.Subquery,
     Callable[..., Any],

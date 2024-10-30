@@ -10,7 +10,7 @@ from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
 from undine import Field, QueryType
 from undine.converters import is_field_nullable
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 
 class Params(NamedTuple):
@@ -101,3 +101,13 @@ def test_is_field_nullable__query_type__nullable():
         project = Field(ProjectType)
 
     assert is_field_nullable(TaskType, caller=TaskType.project) is True
+
+
+def test_is_field_nullable__query_type__lambda():
+    class PersonType(QueryType, model=Person): ...
+
+    class TaskType(QueryType, model=Task):
+        assignees = Field(lambda: PersonType)
+
+    lazy = LazyLambdaQueryType(callback=lambda: PersonType)
+    assert is_field_nullable(lazy, caller=TaskType.assignees) is False

@@ -19,7 +19,7 @@ from graphql import (
 from example_project.app.models import Comment, Project, Task
 from undine import Input, MutationType, QueryType
 from undine.converters import convert_to_graphql_argument_map
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.reflection import get_signature
 
 
@@ -136,7 +136,7 @@ def test_to_argument_map__subquery():
     assert convert_to_graphql_argument_map(sq, many=False) == {}
 
 
-def test_to_argument_map__lazy_query_type__no_arguments():
+def test_to_argument_map__lazy_query_type__single():
     class ProjectType(QueryType, model=Project, filterset=True, orderset=True): ...
 
     lazy = LazyQueryType(field=Task._meta.get_field("project"))
@@ -163,6 +163,15 @@ def test_to_argument_map__lazy_query_type__many():
     assert isinstance(result["orderBy"].type.of_type.of_type, GraphQLEnumType)
 
     assert result["orderBy"].type.of_type.of_type.name == "ProjectOrderSet"
+
+
+def test_to_argument_map__LazyLambdaQueryType():
+    class ProjectType(QueryType, model=Project, filterset=True, orderset=True): ...
+
+    lazy = LazyLambdaQueryType(callback=lambda: ProjectType)
+
+    result = convert_to_graphql_argument_map(lazy, many=True)
+    assert sorted(result) == ["filter", "orderBy"]
 
 
 def test_to_argument_map__lazy_query_type_union():

@@ -4,7 +4,7 @@ from django.db.models.functions import Now
 from example_project.app.models import Comment, Project, Task
 from undine import Field, QueryType
 from undine.converters import convert_to_field_ref
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 
 def test_convert_to_field_ref__str():
@@ -37,6 +37,18 @@ def test_convert_to_field_ref__function():
         custom = Field(func)
 
     assert convert_to_field_ref(func, caller=TaskType.custom) == func
+
+
+def test_convert_to_field_ref__lambda():
+    class TaskType(QueryType, model=Task):
+        custom = Field(lambda: ProjectType)
+
+    class ProjectType(QueryType, model=Project): ...
+
+    value = convert_to_field_ref(lambda: ProjectType, caller=TaskType.custom)
+
+    assert isinstance(value, LazyLambdaQueryType)
+    assert value.callback() == ProjectType
 
 
 def test_convert_to_field_ref__expression():

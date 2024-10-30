@@ -12,9 +12,9 @@ from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
 from graphql import Undefined
 
 from undine.errors.exceptions import FunctionDispatcherError
-from undine.typing import DispatchWrapper, From, To
+from undine.typing import DispatchWrapper, From, Lambda, To
 
-from .reflection import get_instance_name, get_signature
+from .reflection import get_instance_name, get_signature, is_lambda
 
 __all__ = [
     "FunctionDispatcher",
@@ -95,6 +95,10 @@ class FunctionDispatcher(Generic[From, To]):
             self.default = self.wrapper(func) if self.wrapper is not None else func
             return func
 
+        if type_ is Lambda:
+            self.implementations[Lambda] = self.wrapper(func) if self.wrapper is not None else func
+            return func
+
         origin = get_origin(type_)
 
         if origin is Literal:
@@ -148,15 +152,20 @@ class FunctionDispatcher(Generic[From, To]):
         raise FunctionDispatcherError(msg)
 
     def _get_key(self, key: Any) -> type:
+        if is_lambda(key):
+            return Lambda
         origin = get_origin(key) or key
         return type(key) if not isinstance(origin, type) else origin
 
-    def _handle_nullable(self, key: From) -> tuple[type, bool]:
+    def _handle_nullable(self, key: From) -> tuple[Any, bool]:
         """For types like Union[str, None], return 'str, True'."""
         from undine.parsers import parse_return_annotation  # noqa: PLC0415
 
         annotation = key
         origin = get_origin(key)
+        if is_lambda(key):
+            return key, False
+
         if isinstance(key, FunctionType):
             annotation = parse_return_annotation(key)
             origin = get_origin(annotation)

@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from undine.query import QueryType
 
 __all__ = [
+    "LazyLambdaQueryType",
     "LazyQueryType",
     "LazyQueryTypeUnion",
     "lazy",
@@ -33,6 +34,13 @@ class LazyQueryType:
 
     def get_type(self) -> type[QueryType]:
         return QUERY_TYPE_REGISTRY[self.field.related_model]
+
+
+@dataclass(frozen=True, slots=True)
+class LazyLambdaQueryType:
+    """Represents a lazily evaluated QueryType behind a lambda function."""
+
+    callback: Callable[[], type[QueryType]]
 
 
 @dataclass(frozen=True, slots=True)

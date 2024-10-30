@@ -12,9 +12,9 @@ from django.db.models.fields.related_descriptors import (
 )
 from django.db.models.query_utils import DeferredAttribute
 
-from undine.typing import CombinableExpression, FieldRef, ToManyField, ToOneField
+from undine.typing import CombinableExpression, FieldRef, Lambda, ToManyField, ToOneField
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -55,6 +55,11 @@ def _(_: None, **kwargs: Any) -> FieldRef:
 @convert_to_field_ref.register
 def _(ref: FunctionType, **kwargs: Any) -> FieldRef:
     return ref
+
+
+@convert_to_field_ref.register
+def _(ref: Lambda, **kwargs: Any) -> FieldRef:
+    return LazyLambdaQueryType(callback=ref)
 
 
 @convert_to_field_ref.register

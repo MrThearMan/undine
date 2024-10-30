@@ -44,7 +44,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
         object_type = get_underlying_type(graphql_field.type)
         field_name = self.get_field_name(field_node)
 
-        filters: list[models.Q] | None = None
+        filters: list[models.Q] = []
         distinct: bool = False
         aliases: dict[str, CombinableExpression] = {}
         order_by: list[models.OrderBy] = []

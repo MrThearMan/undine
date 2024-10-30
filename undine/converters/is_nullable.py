@@ -7,7 +7,7 @@ from django.db import models
 
 from undine.typing import CombinableExpression, FieldRef
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
@@ -57,6 +57,11 @@ def _(ref: LazyQueryType, **kwargs: Any) -> bool:
 
 @is_field_nullable.register
 def _(_: LazyQueryTypeUnion, **kwargs: Any) -> bool:
+    return False
+
+
+@is_field_nullable.register
+def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
     return False
 
 

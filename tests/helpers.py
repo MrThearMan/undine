@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-from contextlib import contextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, MutableMapping, NamedTuple, TypedDict, TypeVar
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpHeaders, HttpRequest, QueryDict
 from django.test.client import BOUNDARY
@@ -16,7 +14,6 @@ from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
 from undine.errors.exceptions import UndineError
-from undine.settings import SETTING_NAME, undine_settings
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
@@ -31,7 +28,6 @@ __all__ = [
     "get_graphql_multipart_spec_request",
     "has",
     "like",
-    "override_undine_settings",
     "parametrize_helper",
 ]
 
@@ -60,7 +56,7 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
         raise UndineError(msg) from error
 
 
-class like:  # noqa: N801
+class like:  # noqa: N801, PLW1641
     """Compares a string to a regular expression pattern."""
 
     def __init__(self, query: str) -> None:
@@ -72,7 +68,7 @@ class like:  # noqa: N801
         return self.pattern.match(other) is not None
 
 
-class has:  # noqa: N801
+class has:  # noqa: N801, PLW1641
     """
     Does the compared string contain the specified regular expression patterns?
     Use `str` of `like` objects for "contains" checks, and `bytes` for "excludes" checks.
@@ -83,7 +79,7 @@ class has:  # noqa: N801
 
     def __eq__(self, other: str) -> bool:
         if not isinstance(other, str):
-            return False
+            return NotImplemented
         return all(
             pattern.decode() not in other if isinstance(pattern, bytes) else pattern in other
             for pattern in self.patterns
@@ -93,19 +89,6 @@ class has:  # noqa: N801
 def exact(msg: str) -> str:
     """Use in `with pytest.raises(..., match=exact(msg))` to match the 'msg' string exactly."""
     return f"^{re.escape(msg)}$"
-
-
-@contextmanager
-def override_undine_settings(**kwargs: Any) -> None:
-    """Override the undine settings from the given kwargs."""
-    old_settings = getattr(settings, SETTING_NAME)
-    try:
-        setattr(settings, SETTING_NAME, old_settings | kwargs)
-        undine_settings.reload()
-        yield
-    finally:
-        setattr(settings, SETTING_NAME, old_settings)
-        undine_settings.reload()
 
 
 def get_graphql_multipart_spec_request(

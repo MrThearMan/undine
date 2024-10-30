@@ -51,7 +51,7 @@ from undine.scalars import (
 from undine.typing import CombinableExpression, GQLInfo, GraphQLType, LookupRef, TypedDictType, TypeRef, eval_type
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type, get_or_create_object_type
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.text import dotpath, get_docstring, to_pascal_case
@@ -415,6 +415,11 @@ def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLUnionType:
         types=list(type_map.values()),
         resolve_type=resolve_type,  # type: ignore[arg-type]
     )
+
+
+@convert_to_graphql_type.register
+def _(ref: LazyLambdaQueryType, **kwargs: Any) -> GraphQLType:
+    return convert_to_graphql_type(ref.callback(), **kwargs)
 
 
 @convert_to_graphql_type.register

@@ -46,7 +46,7 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.typing import LookupRef, TypeRef
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_fields import TextChoicesField
 
 
@@ -430,6 +430,16 @@ def test_convert_to_graphql_type__lazy_query_type():
 
     field = Task._meta.get_field("project")
     lazy = LazyQueryType(field=field)
+    result = convert_to_graphql_type(lazy)
+
+    assert isinstance(result, GraphQLObjectType)
+    assert result.name == "ProjectType"
+
+
+def test_convert_to_graphql_type__lazy_lambda_query_type():
+    class ProjectType(QueryType, model=Project): ...
+
+    lazy = LazyLambdaQueryType(callback=lambda: ProjectType)
     result = convert_to_graphql_type(lazy)
 
     assert isinstance(result, GraphQLObjectType)

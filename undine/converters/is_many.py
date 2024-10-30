@@ -5,7 +5,7 @@ from typing import Any, get_origin
 
 from undine.typing import CombinableExpression, ModelField, TypeRef
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.lazy import LazyQueryType, LazyQueryTypeUnion
+from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
 
 __all__ = [
@@ -51,6 +51,11 @@ def _(ref: LazyQueryType, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(_: LazyQueryTypeUnion, **kwargs: Any) -> bool:
+    return False
+
+
+@is_many.register
+def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
     return False
 
 

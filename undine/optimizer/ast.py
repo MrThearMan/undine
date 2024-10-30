@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from contextlib import suppress
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
 
 from django.db.models import Field, ForeignKey, Model
 from graphql import (
@@ -17,7 +16,7 @@ from graphql.execution.execute import get_field_def
 
 from undine.errors.exceptions import ModelFieldDoesNotExistError, OptimizerError
 from undine.settings import undine_settings
-from undine.utils.model_utils import get_model_field
+from undine.utils.model_utils import get_model_field, is_to_many, is_to_one
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
@@ -89,9 +88,10 @@ class GraphQLASTWalker:  # noqa: PLR0904
         field_name: str,
         model: type[Model],
     ) -> None:
-        field: ModelField | None = None
-        with suppress(ModelFieldDoesNotExistError):
-            field = get_model_field(model, field_name)
+        try:
+            field: ModelField | None = get_model_field(model=model, lookup=field_name)
+        except ModelFieldDoesNotExistError:
+            field: ModelField | None = None
 
         if field is None:
             with self.use_model(model):
@@ -102,14 +102,12 @@ class GraphQLASTWalker:  # noqa: PLR0904
                 return self.handle_normal_field(field_type, field_node, field)
 
         if is_to_one(field):
-            related_model = get_related_model(field, model)
             with self.use_model(field.model):
-                return self.handle_to_one_field(field_type, field_node, field, related_model)
+                return self.handle_to_one_field(field_type, field_node, field, field.related_model)
 
         if is_to_many(field):
-            related_model = get_related_model(field, model)
             with self.use_model(model):
-                return self.handle_to_many_field(field_type, field_node, field, related_model)
+                return self.handle_to_many_field(field_type, field_node, field, field.related_model)
 
         msg = f"Unhandled field: '{field.name}'"  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
@@ -215,14 +213,6 @@ def is_foreign_key_id(field: Field, field_node: FieldNode) -> bool:
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
-def is_to_many(field: Field) -> TypeGuard[ToManyField]:
-    return bool(field.one_to_many or field.many_to_many)
-
-
-def is_to_one(field: Field) -> TypeGuard[ToOneField]:
-    return bool(field.many_to_one or field.one_to_one)
-
-
 def get_fragment_type(field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> GraphQLOutputType:
     fragment_type_name = inline_fragment.type_condition.name.value
     gen = (t for t in field_type.types if t.name == fragment_type_name)
@@ -233,14 +223,3 @@ def get_fragment_type(field_type: GraphQLUnionType, inline_fragment: InlineFragm
         raise OptimizerError(msg)
 
     return fragment_type
-
-
-def get_related_model(related_field: ToOneField | ToManyField, model: type[Model]) -> type[Model] | None:
-    """
-    Get the related model for a field.
-    Note: For generic foreign keys, the related model is unknown (=None).
-    """
-    related_model = related_field.related_model
-    if related_model == "self":  # pragma: no cover
-        return model
-    return related_model  # type: ignore[return-value]

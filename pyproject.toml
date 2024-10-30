@@ -7,6 +7,7 @@ authors = [
 ]
 packages = [
     { include = "undine" },
+    { include = "pytest_undine" },
 ]
 license = "MIT"
 readme = "README.md"
@@ -45,6 +46,9 @@ exclude = [
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/MrThearMan/undine/issues"
+
+[tool.poetry.plugins.pytest11]
+undine = "pytest_undine.fixtures"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4"
@@ -177,7 +181,6 @@ extend-select = [
     #
     "PLC0206",  # dict-index-missing-items
     "PLC0415",  # import-outside-top-level
-    "PLC1901",  # compare-to-empty-string
     "PLC2701",  # import-private-name
     "PLC2801",  # unnecessary-dunder-call
     #
@@ -272,6 +275,12 @@ ignore = [
     "PYI041",
     # Can import outside top-level
     "PLC0415",
+]
+"tests/test_utils/test_function_dispatcher.py" = [
+    # No typing-only imports for converters due to testing the dispatcher
+    "TCH001",
+    "TCH002",
+    "TCH003",
 ]
 "undine/parsers/parse_description.py" = [
     # No typing-only imports for converters due to FunctionDispatcher

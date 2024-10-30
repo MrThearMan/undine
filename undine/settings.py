@@ -116,6 +116,9 @@ class DefaultSettings(NamedTuple):
     SCHEMA: str = "undine.settings.example_schema"
     """The schema to use for the GraphQL API."""
 
+    TESTING_ENDPOINT: str = "/graphql/"
+    """The endpoint to use for testing."""
+
     USE_PK_FIELD_NAME: bool = True
     """Should we use pk as the field name for primary keys?"""
 
