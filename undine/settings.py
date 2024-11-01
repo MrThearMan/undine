@@ -132,11 +132,11 @@ class DefaultSettings(NamedTuple):
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()
 
 IMPORT_STRINGS: set[str] = {
-    "ADDITIONAL_VALIDATION_RULES",
+    "ADDITIONAL_VALIDATION_RULES.0",
     "DOCSTRING_PARSER",
     "EXECUTION_CONTEXT_CLASS",
-    "MIDDLEWARE",
-    "MUTATION_MIDDLEWARE",
+    "MIDDLEWARE.0",
+    "MUTATION_MIDDLEWARE.0",
     "SCHEMA",
 }
 
