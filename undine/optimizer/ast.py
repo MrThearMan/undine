@@ -73,13 +73,11 @@ class GraphQLASTWalker:  # noqa: PLR0904
             return self.handle_graphql_builtin(field_type, field_node)
 
         field_model = self.get_model(field_type)
-        if field_model is None:
-            return self.handle_plain_object_type(field_type, field_node)
+        if field_model is None:  # pragma: no cover
+            return None
         return self.handle_model_field(field_type, field_node, field_name, field_model)
 
     def handle_graphql_builtin(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None: ...
-
-    def handle_plain_object_type(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None: ...
 
     def handle_model_field(
         self,
@@ -147,12 +145,15 @@ class GraphQLASTWalker:  # noqa: PLR0904
 
     def handle_inline_fragment(self, field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> None:
         fragment_type = get_fragment_type(field_type, inline_fragment)
-        fragment_model: type[Model] = self.get_model(fragment_type)
+        fragment_model = self.get_model(fragment_type)
+        if fragment_model is None:  # pragma: no cover
+            return None
         if fragment_model != self.model:
             return None
 
-        selections = get_selections(inline_fragment)
-        return self.handle_selections(fragment_type, selections)
+        # TODO: Test when unions are supported.
+        selections = get_selections(inline_fragment)  # pragma: no cover
+        return self.handle_selections(fragment_type, selections)  # pragma: no cover
 
     def get_model_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
         return field_type.extensions.get(undine_settings.QUERY_TYPE_EXTENSIONS_KEY)
@@ -170,8 +171,8 @@ class GraphQLASTWalker:  # noqa: PLR0904
 
     def get_related_field_name(self, related_field: ToManyField | ToOneField) -> str:
         if hasattr(related_field, "cache_name"):  # Django 5.1+
-            return related_field.cache_name or related_field.name
-        return related_field.get_cache_name() or related_field.name
+            return related_field.cache_name or related_field.name  # pragma: no cover
+        return related_field.get_cache_name() or related_field.name  # pragma: no cover
 
     @contextlib.contextmanager
     def use_model(self, model: type[Model]) -> GraphQLASTWalker:

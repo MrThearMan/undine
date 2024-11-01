@@ -7,7 +7,7 @@ import pytest
 if TYPE_CHECKING:
     from settings_holder import SettingsHolder
 
-    from undine.testing import GraphQLClient
+    from undine.testing.client import GraphQLClient
 
 __all__ = [
     "graphql",
@@ -17,7 +17,7 @@ __all__ = [
 
 @pytest.fixture
 def graphql() -> GraphQLClient:
-    from undine.testing import GraphQLClient  # noqa: PLC0415
+    from undine.testing.client import GraphQLClient  # noqa: PLC0415
 
     return GraphQLClient()
 

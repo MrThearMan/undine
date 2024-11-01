@@ -13,9 +13,13 @@ from django import db
 
 from undine.utils.logging import undine_logger
 
+__all__ = [
+    "capture_database_queries",
+]
+
+
 THIS_FILE = str(Path(__file__).resolve())
 BASE_PATH = str(Path(__file__).resolve().parent.parent.parent)
-MIDDLEWARE_FILE = str(Path(__file__).resolve().parent / "middleware.py")
 
 
 @dataclass
@@ -94,8 +98,6 @@ def get_stack_info() -> str:
     for frame in reversed(traceback.extract_stack()):
         if frame.filename == THIS_FILE:
             continue
-        if frame.filename == MIDDLEWARE_FILE:
-            continue
         is_own_file = frame.filename.startswith(BASE_PATH)
         if is_own_file:
             return "".join(traceback.StackSummary.from_list([frame]).format())
@@ -111,7 +113,7 @@ def capture_database_queries(*, log: bool = True) -> Generator[QueryData, None, 
 
     try:
         with db.connection.execute_wrapper(query_logger):
-            yield
+            yield query_data
     finally:
         if log:
             undine_logger.info(query_data.log)

@@ -31,7 +31,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "example_project.project.middleware.sql_log_middleware",
+    # "undine.middleware.sql_log_middleware",
 ]
 
 TEMPLATES = [

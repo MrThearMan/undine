@@ -43,13 +43,15 @@ def _(ref: str, **kwargs: Any) -> FieldRef:
     caller: Field = kwargs["caller"]
     if ref == "self":
         return caller.owner
-    return get_model_field(model=caller.owner.__model__, lookup=ref)
+    field = get_model_field(model=caller.owner.__model__, lookup=ref)
+    return convert_to_field_ref(field, **kwargs)
 
 
 @convert_to_field_ref.register
 def _(_: None, **kwargs: Any) -> FieldRef:
     caller: Field = kwargs["caller"]
-    return get_model_field(model=caller.owner.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
+    return convert_to_field_ref(field, **kwargs)
 
 
 @convert_to_field_ref.register

@@ -7,16 +7,19 @@ from contextlib import suppress
 from copy import deepcopy
 from dataclasses import dataclass
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Iterator, Self
+from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, Iterator, Self
 
 from undine.errors.exceptions import GraphQLBadInputDataError
 from undine.settings import undine_settings
+from undine.testing.query_logging import capture_database_queries
 from undine.typing import MutationMiddlewareParams
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
+    from django.core.handlers.wsgi import WSGIRequest
     from django.db import models
+    from django.http import HttpResponse
     from graphql import GraphQLFieldResolver
 
     from undine import MutationType
@@ -26,6 +29,17 @@ __all__ = [
     "MutationMiddlewareContext",
     "error_logging_middleware",
 ]
+
+# --- Django middleware  ------------------------------------------------------------------------------------------
+
+
+def sql_log_middleware(get_response: Callable[[WSGIRequest], HttpResponse]) -> Callable[[WSGIRequest], HttpResponse]:
+    def middleware(request: WSGIRequest) -> HttpResponse:
+        with capture_database_queries():
+            return get_response(request)
+
+    return middleware
+
 
 # -- Field resolver middleware ------------------------------------------------------------------------------------
 

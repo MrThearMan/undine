@@ -1,6 +1,7 @@
 import pytest
 
 from example_project.app.models import (
+    Comment,
     Example,
     ForwardManyToMany,
     ForwardManyToManyForRelated,
@@ -8,6 +9,8 @@ from example_project.app.models import (
     ForwardManyToOneForRelated,
     ForwardOneToOne,
     ForwardOneToOneForRelated,
+    Person,
+    Project,
     ReverseManyToMany,
     ReverseManyToManyToForwardManyToMany,
     ReverseManyToManyToForwardManyToOne,
@@ -29,13 +32,13 @@ from example_project.app.models import (
     ReverseOneToOneToReverseManyToMany,
     ReverseOneToOneToReverseOneToMany,
     ReverseOneToOneToReverseOneToOne,
+    Task,
+    TaskTypeChoices,
+    Team,
 )
+from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory, TeamFactory
 from tests.factories.example import ExampleFactory
-from undine import Entrypoint, QueryType, create_schema
-
-pytestmark = [
-    pytest.mark.django_db,
-]
+from undine import Entrypoint, Field, QueryType, create_schema
 
 ###############################################################################################
 
@@ -103,6 +106,7 @@ def example_schema():
     return create_schema(query_class=Query)
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -135,6 +139,7 @@ def test_relations__forward_one_to_one__forward_one_to_one(graphql, undine_setti
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -167,6 +172,7 @@ def test_relations__forward_one_to_one__forward_many_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -200,6 +206,7 @@ def test_relations__forward_one_to_one__forward_many_to_many(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -232,6 +239,7 @@ def test_relations__forward_one_to_one__reverse_one_to_one(graphql, undine_setti
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -265,6 +273,7 @@ def test_relations__forward_one_to_one__reverse_one_to_many(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_one_to_one__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -301,6 +310,7 @@ def test_relations__forward_one_to_one__reverse_many_to_many(graphql, undine_set
 ###############################################################################################
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -333,6 +343,7 @@ def test_relations__forward_many_to_one__forward_one_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -365,6 +376,7 @@ def test_relations__forward_many_to_one__forward_many_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -398,6 +410,7 @@ def test_relations__forward_many_to_one__forward_many_to_many(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -430,6 +443,7 @@ def test_relations__forward_many_to_one__reverse_one_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -463,6 +477,7 @@ def test_relations__forward_many_to_one__reverse_one_to_many(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_one__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -499,6 +514,7 @@ def test_relations__forward_many_to_one__reverse_many_to_many(graphql, undine_se
 ###############################################################################################
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -532,6 +548,7 @@ def test_relations__forward_many_to_many__forward_one_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -565,6 +582,7 @@ def test_relations__forward_many_to_many__forward_many_to_one(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -599,6 +617,7 @@ def test_relations__forward_many_to_many__forward_many_to_many(graphql, undine_s
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -632,6 +651,7 @@ def test_relations__forward_many_to_many__reverse_one_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -666,6 +686,7 @@ def test_relations__forward_many_to_many__reverse_one_to_many(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__forward_many_to_many__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -703,6 +724,7 @@ def test_relations__forward_many_to_many__reverse_many_to_many(graphql, undine_s
 ###############################################################################################
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -735,6 +757,7 @@ def test_relations__reverse_one_to_one__forward_one_to_one(graphql, undine_setti
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -767,6 +790,7 @@ def test_relations__reverse_one_to_one__forward_many_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -800,6 +824,7 @@ def test_relations__reverse_one_to_one__forward_many_to_many(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -832,6 +857,7 @@ def test_relations__reverse_one_to_one__reverse_one_to_one(graphql, undine_setti
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -865,6 +891,7 @@ def test_relations__reverse_one_to_one__reverse_one_to_many(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_one__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -901,6 +928,7 @@ def test_relations__reverse_one_to_one__reverse_many_to_many(graphql, undine_set
 ###############################################################################################
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -934,6 +962,7 @@ def test_relations__reverse_one_to_many__forward_one_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -967,6 +996,7 @@ def test_relations__reverse_one_to_many__forward_many_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1001,6 +1031,7 @@ def test_relations__reverse_one_to_many__forward_many_to_many(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1034,6 +1065,7 @@ def test_relations__reverse_one_to_many__reverse_one_to_one(graphql, undine_sett
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1068,6 +1100,7 @@ def test_relations__reverse_one_to_many__reverse_one_to_many(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_one_to_many__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1105,6 +1138,7 @@ def test_relations__reverse_one_to_many__reverse_many_to_many(graphql, undine_se
 ###############################################################################################
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__forward_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1138,6 +1172,7 @@ def test_relations__reverse_many_to_many__forward_one_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__forward_many_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1171,6 +1206,7 @@ def test_relations__reverse_many_to_many__forward_many_to_one(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__forward_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1205,6 +1241,7 @@ def test_relations__reverse_many_to_many__forward_many_to_many(graphql, undine_s
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__reverse_one_to_one(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1238,6 +1275,7 @@ def test_relations__reverse_many_to_many__reverse_one_to_one(graphql, undine_set
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__reverse_one_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1272,6 +1310,7 @@ def test_relations__reverse_many_to_many__reverse_one_to_many(graphql, undine_se
     ]
 
 
+@pytest.mark.django_db
 def test_relations__reverse_many_to_many__reverse_many_to_many(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema()
 
@@ -1304,3 +1343,399 @@ def test_relations__reverse_many_to_many__reverse_many_to_many(graphql, undine_s
         {"reverseManyToManyRels": [{"reverseManyToManyRels": [{"name": "2"}]}]},
         {"reverseManyToManyRels": [{"reverseManyToManyRels": [{"name": "3"}]}]},
     ]
+
+
+###############################################################################################
+
+
+@pytest.mark.django_db
+def test_relations__generic_relation(graphql, undine_settings):
+    class CommentType(QueryType, model=Comment, auto=False):
+        contents = Field()
+
+    class TaskType(QueryType, model=Task, auto=False):
+        comments = Field(CommentType)
+
+    class Query:
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    task = TaskFactory.create()
+    CommentFactory.create(contents="foo", target=task)
+    CommentFactory.create(contents="bar", target=task)
+
+    query = """
+        query {
+          tasks {
+            comments {
+              contents
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # 1 query for all tasks
+    # 1 query for all comments
+    response.assert_query_count(2)
+
+    assert response.data == {
+        "tasks": [
+            {
+                "comments": [
+                    {"contents": "foo"},
+                    {"contents": "bar"},
+                ],
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__generic_foreign_key(graphql, undine_settings):
+    class TaskType(QueryType, model=Task, auto=False):
+        type = Field()
+
+    class ProjectType(QueryType, model=Project, auto=False):
+        name = Field()
+
+    class CommentType(QueryType, model=Comment, auto=False):
+        target = Field()
+
+    class Query:
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.STORY.value)
+    project = ProjectFactory.create(name="project")
+    CommentFactory.create(contents="foo", target=task)
+    CommentFactory.create(contents="bar", target=project)
+
+    query = """
+        query {
+          comments {
+            target {
+              ... on ProjectType {
+                name
+              }
+              ... on TaskType {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # 1 query for all comments
+    # 1 query for all tasks related to the comments
+    # 1 query for all projects related to the comments
+    response.assert_query_count(3)
+
+    assert response.data == {
+        "comments": [
+            {
+                "target": {"type": "STORY"},
+            },
+            {
+                "target": {"name": "project"},
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__generic_foreign_key__nested_relations(graphql, undine_settings):
+    class TeamType(QueryType, model=Team, auto=False):
+        name = Field()
+
+    class ProjectType(QueryType, model=Project, auto=False):
+        name = Field()
+        team = Field(TeamType)
+
+    class TaskType(QueryType, model=Task, auto=False):
+        type = Field()
+        project = Field(ProjectType)
+
+    class CommentType(QueryType, model=Comment, auto=False):
+        target = Field()
+
+    class Query:
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    team = TeamFactory.create(name="team")
+    project = ProjectFactory.create(name="project", team=team)
+    task = TaskFactory.create(type=TaskTypeChoices.STORY.value, project=project)
+    CommentFactory.create(contents="foo", target=task)
+    CommentFactory.create(contents="bar", target=project)
+
+    query = """
+        query {
+          comments {
+            target {
+              ... on ProjectType {
+                name
+                team {
+                  name
+                }
+              }
+              ... on TaskType {
+                type
+                project {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # TODO: Add `GenericPrefetch` when Django 5.0 is the minimum supported version.
+    #  This should lower the number of queries to 3.
+    # 1 query for all comments
+    # 1 query for all tasks related to the comments
+    # 1 query for the projects related to the tasks  # TODO: can be optimized by `GenericPrefetch`
+    # 1 query for all projects related to the comments
+    # 1 query for all teams related to the projects  # TODO: can be optimized by `GenericPrefetch`
+    response.assert_query_count(5)
+
+    assert response.data == {
+        "comments": [
+            {
+                "target": {
+                    "type": "STORY",
+                    "project": {"name": "project"},
+                },
+            },
+            {
+                "target": {
+                    "name": "project",
+                    "team": {"name": "team"},
+                },
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__same_relation_multiple_times(graphql, undine_settings):
+    class PersonType(QueryType, model=Person, auto=False):
+        name = Field()
+        email = Field()
+
+    class TaskType(QueryType, model=Task, auto=False):
+        assignees = Field(PersonType)
+
+    class Query:
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    person_1 = PersonFactory.create(name="foo", email="foo@example.com")
+    person_2 = PersonFactory.create(name="bar", email="bar@example.com")
+    TaskFactory.create(assignees=[person_1, person_2])
+
+    query = """
+        query {
+          tasks {
+            assignees {
+              name
+            }
+            assignees {
+              email
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # 1 query for all tasks
+    # 1 query for all assignees
+    response.assert_query_count(2)
+
+    assert response.data == {
+        "tasks": [
+            {
+                "assignees": [
+                    {"name": "foo", "email": "foo@example.com"},
+                    {"name": "bar", "email": "bar@example.com"},
+                ],
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__same_related_object_selected_with_different_fields_in_same_query(graphql, undine_settings):
+    class ProjectType(QueryType, model=Project, auto=False):
+        name = Field()
+        tasks = Field()
+
+    class TaskType(QueryType, model=Task, auto=False):
+        name = Field()
+        type = Field()
+        project = Field()
+
+    class Query:
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    project = ProjectFactory.create(name="foo")
+    TaskFactory.create(name="bar", type=TaskTypeChoices.BUG_FIX.value, project=project)
+
+    # Test that both "type" and "name" are fetched for tasks in the same query,
+    # since they belong to the same object.
+    query = """
+        query {
+          tasks {
+            type
+            project {
+              name
+              tasks {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # 1 query for all tasks
+    # 1 query for all assignees
+    response.assert_query_count(2)
+
+    assert response.data == {
+        "tasks": [
+            {
+                "type": "BUG_FIX",
+                "project": {
+                    "name": "foo",
+                    "tasks": [
+                        {"name": "bar"},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__related_objects_shared_by_multiple_objects(graphql, undine_settings):
+    class PersonType(QueryType, model=Person, auto=False):
+        name = Field()
+
+    class ProjectType(QueryType, model=Project, auto=False):
+        name = Field()
+
+    class TaskType(QueryType, model=Task, auto=False):
+        name = Field()
+        project = Field(ProjectType)
+        assignees = Field(PersonType)
+
+    class Query:
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    person = PersonFactory.create(name="foo")
+    project = ProjectFactory.create(name="bar")
+    TaskFactory.create(name="bar", assignees=[person], project=project)
+    TaskFactory.create(name="baz", assignees=[person], project=project)
+
+    query = """
+        query {
+          tasks {
+            name
+            project {
+              name
+            }
+            assignees {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # 1 query for all tasks and related projects
+    # 1 query for all assignees
+    response.assert_query_count(2)
+
+    assert response.data == {
+        "tasks": [
+            {
+                "name": "bar",
+                "project": {"name": "bar"},
+                "assignees": [{"name": "foo"}],
+            },
+            {
+                "name": "baz",
+                "project": {"name": "bar"},
+                "assignees": [{"name": "foo"}],
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_relations__max_query_complexity(graphql, undine_settings):
+    undine_settings.OPTIMIZER_MAX_COMPLEXITY = 5
+
+    class ProjectType(QueryType, model=Project, auto=False):
+        name = Field()
+        tasks = Field()
+
+    class TaskType(QueryType, model=Task, auto=False):
+        name = Field()
+        project = Field(ProjectType)
+
+    class Query:
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query_class=Query)
+
+    project = ProjectFactory.create(name="foo")
+    TaskFactory.create(name="bar", project=project)
+    TaskFactory.create(name="baz", project=project)
+    TaskFactory.create(name="buzz", project=project)
+
+    query = """
+        query {
+          tasks {
+            project {
+              tasks {
+                project {
+                  tasks {
+                    project {
+                      tasks {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.error_message() == "Query complexity exceeds the maximum allowed of 5"

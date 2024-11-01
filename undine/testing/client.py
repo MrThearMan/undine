@@ -11,7 +11,7 @@ from django.test.client import MULTIPART_CONTENT, Client
 from undine.http.files import extract_files
 from undine.settings import undine_settings
 
-from .utils import QueryData, capture_database_queries
+from .query_logging import QueryData, capture_database_queries
 
 if TYPE_CHECKING:
     from django.core.files import File
@@ -64,7 +64,7 @@ class GQLResponse:  # noqa: PLR0904
     @property
     def queries(self) -> list[str]:
         """Return a list of the database queries that were executed."""
-        return self.query_data.queries
+        return [info.sql for info in self.query_data.query_info]
 
     @property
     def query_log(self) -> str:

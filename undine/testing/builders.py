@@ -10,13 +10,13 @@ from typing import Any, NamedTuple
 from django.db.models import lookups
 from django.db.models.constants import LOOKUP_SEP
 
+from undine.settings import undine_settings
+from undine.utils.text import to_camel_case
+
 __all__ = [
     "build_mutation",
     "build_query",
 ]
-
-from undine.settings import undine_settings
-from undine.utils.text import to_camel_case
 
 
 class FiltersAndFields(NamedTuple):

@@ -43,13 +43,15 @@ Keyword arguments:
 @convert_to_input_ref.register
 def _(_: None, **kwargs: Any) -> InputRef:
     caller: Input = kwargs["caller"]
-    return get_model_field(model=caller.owner.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
+    return convert_to_input_ref(field, **kwargs)
 
 
 @convert_to_input_ref.register
 def _(ref: models.F, **kwargs: Any) -> InputRef:
     caller: Input = kwargs["caller"]
-    return get_model_field(model=caller.owner.__model__, lookup=ref.name)
+    field = get_model_field(model=caller.owner.__model__, lookup=ref.name)
+    return convert_to_input_ref(field, **kwargs)
 
 
 @convert_to_input_ref.register
@@ -85,7 +87,8 @@ def _(ref: str | type[str], **kwargs: Any) -> InputRef:
     caller: Input = kwargs["caller"]
     if ref == "self":
         return caller.owner
-    return get_model_field(model=caller.owner.__model__, lookup=ref)
+    field = get_model_field(model=caller.owner.__model__, lookup=ref)
+    return convert_to_input_ref(field, **kwargs)
 
 
 @convert_to_input_ref.register

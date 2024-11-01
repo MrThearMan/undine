@@ -98,7 +98,10 @@ TModel = TypeVar("TModel", bound=models.Model)
 TGraphQLType = TypeVar("TGraphQLType", GraphQLInputType, GraphQLOutputType)
 
 Lambda = NewType("Lambda", Callable)
-"""Type used to regiser different implementations for lambda functions in the FunctionDispatcher."""
+"""
+Type used to regiser a different implementations for lambda functions
+as opposed to a regular function in the FunctionDispatcher.
+"""
 
 empty = object()
 
