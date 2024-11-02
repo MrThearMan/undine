@@ -1,5 +1,3 @@
-"""Contains a urility class for lazy evaluation of objects."""
-
 from __future__ import annotations
 
 import math

@@ -1,5 +1,3 @@
-"""Contains a class for registering `QueryType`s for reuse based on their Django model."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, TypeVar

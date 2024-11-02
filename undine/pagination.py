@@ -1,5 +1,3 @@
-"""Contains utilities for API pagination."""
-
 from __future__ import annotations
 
 from graphql_relay import cursor_to_offset

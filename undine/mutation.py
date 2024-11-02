@@ -1,5 +1,3 @@
-"""Contains code for creating Mutation ObjectTypes for a GraphQL schema."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable

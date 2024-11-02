@@ -1,5 +1,3 @@
-"""Contains Django fields used by Undine."""
-
 from __future__ import annotations
 
 from typing import Any, ClassVar

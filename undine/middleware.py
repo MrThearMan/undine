@@ -1,5 +1,3 @@
-"""GraphQL middleware."""
-
 from __future__ import annotations
 
 import traceback
@@ -35,7 +33,7 @@ __all__ = [
 
 def sql_log_middleware(get_response: Callable[[WSGIRequest], HttpResponse]) -> Callable[[WSGIRequest], HttpResponse]:
     def middleware(request: WSGIRequest) -> HttpResponse:
-        with capture_database_queries():
+        with capture_database_queries(log=True):
             return get_response(request)
 
     return middleware

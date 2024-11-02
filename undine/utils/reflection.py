@@ -1,5 +1,3 @@
-"""Contains utility functions for instrospecting code for achieving functionality."""
-
 from __future__ import annotations
 
 import inspect

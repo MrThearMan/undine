@@ -1,5 +1,3 @@
-"""Contains code for creating ordering options for a `QueryType`."""
-
 from __future__ import annotations
 
 from typing import Any, Container, Iterable, Literal

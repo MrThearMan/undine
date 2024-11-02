@@ -30,19 +30,19 @@ class QueryInfo:
 
 
 @dataclass
-class QueryData:
-    query_info: list[QueryInfo]
+class DBQueryData:
+    queries: list[QueryInfo]
 
     @property
     def count(self) -> int:
-        return len(self.query_info)
+        return len(self.queries)
 
     @property
     def log(self) -> str:
         message = "\n" + "-" * 75
-        message += f"\n\n>>> Queries: ({len(self.query_info)})"
+        message += f"\n\n>>> Queries: ({len(self.queries)})"
 
-        for index, info in enumerate(self.query_info):
+        for index, info in enumerate(self.queries):
             message += "\n\n"
             message += f"{index + 1}) Duration: {info.duration_ns / 1_000_000:.2f} ms"
             message += "\n\n"
@@ -66,7 +66,7 @@ def db_query_logger(
     many: bool,  # noqa: FBT001
     context: dict[str, Any],
     # Added with functools.partial()
-    query_data: QueryData,
+    query_data: DBQueryData,
 ) -> Any:
     """
     A database query logger for capturing executed database queries.
@@ -83,7 +83,7 @@ def db_query_logger(
         sql_fmt %= params
 
     info = QueryInfo(sql=sql_fmt, duration_ns=0, origin=get_stack_info())
-    query_data.query_info.append(info)
+    query_data.queries.append(info)
 
     start = time.perf_counter_ns()
     try:
@@ -106,9 +106,9 @@ def get_stack_info() -> str:
 
 
 @contextmanager
-def capture_database_queries(*, log: bool = True) -> Generator[QueryData, None, None]:
+def capture_database_queries(*, log: bool = True) -> Generator[DBQueryData, None, None]:
     """Capture results of what database queries were executed."""
-    query_data = QueryData(query_info=[])
+    query_data = DBQueryData(queries=[])
     query_logger = partial(db_query_logger, query_data=query_data)
 
     try:

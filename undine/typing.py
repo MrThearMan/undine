@@ -1,4 +1,4 @@
-"""Custom type definitions used by Undine."""
+"""Custom type definitions for the project."""
 
 from __future__ import annotations
 

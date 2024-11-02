@@ -1,5 +1,3 @@
-"""Contains utility functions for dealing with Django models and the ORM."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Generator, TypeGuard

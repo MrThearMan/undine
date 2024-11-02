@@ -29,7 +29,4 @@ def undine_settings() -> SettingsHolder:
     try:
         yield settings.undine_settings
     finally:
-        for attribute in settings.undine_settings.__dict__:
-            if attribute.isupper():
-                settings.undine_settings._cached_attrs.add(attribute)  # noqa: SLF001
         settings.undine_settings.reload()

@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 BASE_PATH = str(Path(__file__).resolve().parent.parent)
 
 

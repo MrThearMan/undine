@@ -1,5 +1,3 @@
-"""Contains utility functions for dealing with URLs."""
-
 from __future__ import annotations
 
 from pathlib import Path

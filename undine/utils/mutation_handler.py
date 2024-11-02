@@ -1,5 +1,3 @@
-"""Contains a class for creating or updating model instances while also handling related model instances."""
-
 from __future__ import annotations
 
 from functools import partial

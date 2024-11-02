@@ -1,8 +1,3 @@
-"""
-Contains a class for dispatching different registered function calls
-based on those registered function's first argument's type.
-"""
-
 from __future__ import annotations
 
 import inspect

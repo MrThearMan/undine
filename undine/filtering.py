@@ -1,5 +1,3 @@
-"""Contains code for creating filtering options for a `QueryType`."""
-
 from __future__ import annotations
 
 import operator as op

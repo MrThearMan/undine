@@ -11,7 +11,7 @@ from django.test.client import MULTIPART_CONTENT, Client
 from undine.http.files import extract_files
 from undine.settings import undine_settings
 
-from .query_logging import QueryData, capture_database_queries
+from .query_logging import DBQueryData, capture_database_queries
 
 if TYPE_CHECKING:
     from django.core.files import File
@@ -40,11 +40,13 @@ class FieldError(TypedDict):
     code: str
 
 
-class GQLResponse:  # noqa: PLR0904
-    def __init__(self, response: HttpResponse, query_data: QueryData) -> None:
+class GQLResponse:
+    def __init__(self, response: HttpResponse, database_queries: DBQueryData) -> None:
         # 'django.test.client.Client.request' sets json attribute on the response.
         self.json: dict[str, Any] = response.json()  # type: ignore[attr-defined]
-        self.query_data = query_data
+        self.status_code = response.status_code
+        self.headers = response.headers
+        self.database_queries = database_queries
 
     def __str__(self) -> str:
         return json.dumps(self.json, indent=2, sort_keys=True, default=str)
@@ -52,11 +54,8 @@ class GQLResponse:  # noqa: PLR0904
     def __repr__(self) -> str:
         return repr(self.json)
 
-    def __len__(self) -> int:
-        return len(self.edges)
-
     def __getitem__(self, item: str) -> dict[str, Any] | None:
-        return (self.data or {})[item]
+        return self.json[item]
 
     def __contains__(self, item: str) -> bool:
         return item not in self.json
@@ -64,12 +63,12 @@ class GQLResponse:  # noqa: PLR0904
     @property
     def queries(self) -> list[str]:
         """Return a list of the database queries that were executed."""
-        return [info.sql for info in self.query_data.query_info]
+        return [info.sql for info in self.database_queries.queries]
 
     @property
     def query_log(self) -> str:
         """Return a string representation of the database queries that were executed."""
-        return self.query_data.log
+        return self.database_queries.log
 
     @property
     def data(self) -> dict[str, Any] | None:
@@ -88,7 +87,7 @@ class GQLResponse:  # noqa: PLR0904
         data = self.data or {}
         try:
             return next(iter(data.values()))
-        except StopIteration:  # pragma: no cover
+        except StopIteration:
             msg = f"No query object not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
@@ -103,7 +102,7 @@ class GQLResponse:  # noqa: PLR0904
         """
         try:
             return self.first_query_object["edges"]
-        except (KeyError, TypeError):  # pragma: no cover
+        except (KeyError, TypeError):
             msg = f"Edges not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
@@ -117,12 +116,12 @@ class GQLResponse:  # noqa: PLR0904
         """
         try:
             return self.edges[index]["node"]
-        except (IndexError, TypeError):  # pragma: no cover
+        except (IndexError, TypeError):
             msg = f"Node {index!r} not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
     @property
-    def has_errors(self) -> bool:  # pragma: no cover
+    def has_errors(self) -> bool:
         """Are there any errors in the response?"""
         return "errors" in self.json and self.json.get("errors") is not None
 
@@ -137,11 +136,11 @@ class GQLResponse:  # noqa: PLR0904
         """
         try:
             return self.json["errors"]
-        except (KeyError, TypeError):  # pragma: no cover
+        except (KeyError, TypeError):
             msg = f"Errors not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
-    def error_message(self, selector: int | str = 0) -> str:  # pragma: no cover
+    def error_message(self, selector: int | str = 0) -> str:
         """
         Return the error message from the errors list...
 
@@ -202,11 +201,11 @@ class GQLResponse:  # noqa: PLR0904
         """
         try:
             return [error for item in self.errors for error in item.get("extensions", {}).get("errors", [])]
-        except (KeyError, TypeError):  # pragma: no cover
+        except (KeyError, TypeError):
             msg = f"Field errors not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
-    def field_error_messages(self, field: str = "nonFieldErrors") -> list[str]:  # pragma: no cover
+    def field_error_messages(self, field: str = "nonFieldErrors") -> list[str]:
         """
         Return field error messages for desired field.
 
@@ -245,7 +244,7 @@ class GQLResponse:  # noqa: PLR0904
 
         return messages
 
-    def error_code(self, selector: int | str = 0) -> str:  # pragma: no cover
+    def error_code(self, selector: int | str = 0) -> str:
         """
         Return the error code from the errors list.
 
@@ -277,7 +276,7 @@ class GQLResponse:  # noqa: PLR0904
                 msg = f"Field 'extensions' not found in error content: {self.json}"
                 pytest.fail(msg, pytrace=False)
 
-    def field_error_codes(self, field: str = "nonFieldErrors") -> list[str]:  # pragma: no cover
+    def field_error_codes(self, field: str = "nonFieldErrors") -> list[str]:
         """
         Return field error codes for desired field.
 
@@ -331,7 +330,7 @@ class GQLResponse:  # noqa: PLR0904
         """
         return any(any(e.match(error["message"]) is not None for e in SCHEMA_ERRORS) for error in self.errors)
 
-    def assert_query_count(self, count: int) -> None:  # pragma: no cover
+    def assert_query_count(self, count: int) -> None:
         if len(self.queries) != count:
             msg = f"Expected {count} queries, got {len(self.queries)}.\n{self.query_log}"
             pytest.fail(msg, pytrace=False)
@@ -343,7 +342,6 @@ class GraphQLClient(Client):
     def __call__(
         self,
         query: str,
-        input_data: dict[str, Any] | None = None,
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
@@ -352,15 +350,12 @@ class GraphQLClient(Client):
         Make a GraphQL query to the test client.
 
         :params query: GraphQL query string.
-        :params input_data: Set (and override) the "input" variable in the given variables.
         :params variables: Variables for the query.
         :params headers: Headers for the query.
+        :params log: Whether to log the database queries executed in the request.
         :params operation_name: Name of the operation to execute.
         """
         variables: dict[str, Any] = variables or {}
-        if input_data is not None:
-            variables.update({"input": input_data})
-
         files = extract_files(variables, prefix="variables")
 
         path_map: dict[str, list[str]] = {}
@@ -372,7 +367,7 @@ class GraphQLClient(Client):
         body: dict[str, Any] = {"query": query}
         if variables:
             body["variables"] = variables
-        if operation_name is not None:  # pragma: no cover
+        if operation_name is not None:
             body["operationName"] = operation_name
 
         data = json.dumps(body)
@@ -383,8 +378,8 @@ class GraphQLClient(Client):
                 **files_map,
             }
 
-        with capture_database_queries() as results:
-            response: HttpResponse = self.post(  # type: ignore[assignment]
+        with capture_database_queries(log=True) as results:
+            response: HttpResponse = self.post(
                 path=undine_settings.TESTING_ENDPOINT,
                 data=data,
                 content_type=MULTIPART_CONTENT if files else "application/json",

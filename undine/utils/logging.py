@@ -1,5 +1,3 @@
-"""Contains a logger for the Undine package."""
-
 import logging
 
 __all__ = [

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, NamedTuple, Sequence
+from typing import Any, NamedTuple
 
 from django.test.signals import setting_changed
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -17,7 +17,7 @@ SETTING_NAME: str = "UNDINE"
 
 
 class DefaultSettings(NamedTuple):
-    ADDITIONAL_VALIDATION_RULES: Iterable[str] = ()
+    ADDITIONAL_VALIDATION_RULES: list[str] = []
     """Additional validation rules to use for validating the GraphQL schema."""
 
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
@@ -68,7 +68,7 @@ class DefaultSettings(NamedTuple):
     MAX_TOKENS: int = None
     """Maximum number of tokens the GraphQL parser will parse before it rejects a request"""
 
-    MIDDLEWARE: Sequence[str] = ()
+    MIDDLEWARE: list[str] = []
     """Middleware to use in GraphQL field resolving."""
 
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
@@ -77,7 +77,7 @@ class DefaultSettings(NamedTuple):
     MUTATION_INPUT_KEY: str = "input"
     """The key used for the input argument of a MutationType."""
 
-    MUTATION_MIDDLEWARE: Sequence[str] = ()
+    MUTATION_MIDDLEWARE: list[str] = []
     """Middleware to execute for all mutations. See. `MutationMiddlewareContext`."""
 
     NO_ERROR_LOCATION: bool = False
