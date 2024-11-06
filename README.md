@@ -30,6 +30,7 @@ pip install undine
 - [ ] Add support for pagination
 - [ ] Add support for Relay
 - [ ] Add support for bulk mutations
+- [ ] Add @Field.optimize for defining optimizations
 - [ ] Add "hidden" inputs.
 - [ ] Add input default values, e.g. "CurrentUserDefault"
 - [ ] Add utilities for unit testing
