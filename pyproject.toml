@@ -63,7 +63,7 @@ requests = {version = ">=2.32.3", optional = true}
 pytest = "8.3.3"
 pytest-django = "4.9.0"
 coverage = "7.6.4"
-hypothesis = "6.116.0"
+hypothesis = "6.118.7"
 factory-boy = "3.3.1"
 tox = "4.23.2"
 tox-gh-actions = "3.2.0"
