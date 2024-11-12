@@ -35,6 +35,7 @@ pip install undine
 - [ ] Add input default values, e.g. "CurrentUserDefault"
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer
+- [ ] Use ‘out_name‘ for schema names
 - [ ] Add documentation for everything!!! (specify later)
 
 
