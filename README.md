@@ -30,12 +30,13 @@ pip install undine
 - [ ] Add support for pagination
 - [ ] Add support for Relay
 - [ ] Add support for bulk mutations
-- [ ] Add @Field.optimize for defining optimizations
+- [ ] Add `@Field.optimize` for defining optimizations
+- [ ] Add `@Field.resolve` for customizing resolvers 
 - [ ] Add "hidden" inputs.
 - [ ] Add input default values, e.g. "CurrentUserDefault"
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer
-- [ ] Use ‘out_name‘ for schema names
+- [ ] Use `out_name` for schema names
 - [ ] Add documentation for everything!!! (specify later)
 
 
