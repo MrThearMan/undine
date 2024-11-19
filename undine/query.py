@@ -19,8 +19,8 @@ from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
-from undine.utils.model_utils import get_lookup_field_name
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
+from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
     from undine import FilterSet, OrderSet
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import GQLInfo, Root, Self
+    from undine.typing import GQLInfo, OptimizerFunc, Root, Self
 
 __all__ = [
     "Field",
@@ -223,6 +223,7 @@ class Field:
         nullable: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
+        resolver: GraphQLFieldResolver | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
@@ -237,9 +238,12 @@ class Field:
                      If not provided, looks at the reference and tries to determine this from it.
         :param nullable: Whether the referenced type can be null. If not provided, looks at the converted
                          reference and tries to determine nullability from it.
-        :param description: Description for the field. If not provided, looks at the converted reference,
+        :param description: Description for the field. If not provided, looks at the converted reference
                             and tries to find the description from it.
         :param deprecation_reason: If the field is deprecated, describes the reason for deprecation.
+        :param resolver: Function used to resolve the field. If not provided, looks at the reference
+                         and tries to determine this from it. Can also be added with the
+                         `@<field_name>.resolve` decorator.
         :param extensions: GraphQL extensions for the field.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
@@ -247,6 +251,8 @@ class Field:
         self.nullable = nullable
         self.description = description
         self.deprecation_reason = deprecation_reason
+        self.resolver_func = resolver
+        self.optimizer_func: OptimizerFunc | None = None
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
@@ -288,18 +294,32 @@ class Field:
         return convert_to_graphql_argument_map(self.ref, many=self.many)
 
     def get_resolver(self) -> GraphQLFieldResolver:
+        if self.resolver_func is not None:
+            return convert_field_ref_to_resolver(self.resolver_func, caller=self)
         return convert_field_ref_to_resolver(self.ref, caller=self)
 
-    def optimizer_hook(self, optimizer: QueryOptimizer) -> None:
-        """Hook for customizing how the field is optimized by the QueryOptimizer."""
+    def resolve(self, func: GraphQLFieldResolver, /) -> GraphQLFieldResolver:
+        """Add a resolver from a method using `@<field_name>.resolve`."""
+        self.resolver_func = cache_signature_if_function(func, depth=1)
+        return func
+
+    def optimize(self, func: OptimizerFunc) -> OptimizerFunc:
+        """
+        Add a custom optimization from a method using `@<field_name>.optimize`.
+        Note that the custom optimization is only run for non-model fields!
+        """
+        self.optimizer_func = get_wrapped_func(func)
+        return func
 
 
 def get_fields_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Field]:
     """Add undine.Fields for all of the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Field] = {}
-    for model_field in model._meta._get_fields():
+    for model_field in get_model_fields_for_graphql(model):
         field_name = model_field.name
+
         is_primary_key = bool(getattr(model_field, "primary_key", False))
+
         if is_primary_key:
             field_name = get_lookup_field_name(model)
 

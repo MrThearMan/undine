@@ -536,12 +536,3 @@ def test_convert_to_graphql_type__mutation_type__is_input():
     class TaskCreateMutation(MutationType, model=Task): ...
 
     assert convert_to_graphql_type(TaskCreateMutation, is_input=True) == TaskCreateMutation.__input_type__()
-
-
-def test_convert_to_graphql_type__mutation_type__is_input__entrypoint():
-    class TaskType(QueryType, model=Task): ...
-
-    class TaskCreateMutation(MutationType, model=Task): ...
-
-    result = convert_to_graphql_type(TaskCreateMutation, is_input=True, entrypoint=True)
-    assert result == TaskCreateMutation.__input_type__(entrypoint=True)

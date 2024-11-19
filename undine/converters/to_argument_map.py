@@ -29,7 +29,7 @@ __all__ = [
 
 convert_to_graphql_argument_map = FunctionDispatcher[EntrypointRef | FieldRef, GraphQLArgumentMap]()
 """
-Parse a GraphQLArgumentMap from the given undine.Entrypoint or undine.Field reference.
+Parse a GraphQLArgumentMap from the given 'undine.Entrypoint' or 'undine.Field' reference.
 
 Positional arguments:
  - ref: The reference to convert.
@@ -114,8 +114,7 @@ def load_deferred_converters() -> None:
 
     @convert_to_graphql_argument_map.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLArgumentMap:
-        entrypoint = kwargs.get("entrypoint", False)
-        input_type = ref.__input_type__(entrypoint=entrypoint)
+        input_type = ref.__input_type__()
         if not isinstance(input_type, GraphQLNonNull):
             input_type = GraphQLNonNull(input_type)
 

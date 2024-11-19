@@ -11,7 +11,7 @@ from undine.parsers import parse_description
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, OrderResults
 from undine.utils.graphql import get_or_create_graphql_enum
-from undine.utils.model_utils import get_lookup_field_name
+from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
 from undine.utils.reflection import get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -192,12 +192,11 @@ class Order:
 def get_orders_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Order]:
     """Creates undine.Order for all of the given model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Order] = {}
-    for model_field in model._meta._get_fields(reverse=False):
-        if model_field.is_relation:
-            continue
-
+    for model_field in get_model_fields_for_graphql(model, include_relations=False):
         field_name = model_field.name
+
         is_primary_key = bool(getattr(model_field, "primary_key", False))
+
         if is_primary_key:
             field_name = get_lookup_field_name(model)
 

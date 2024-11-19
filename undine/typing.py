@@ -25,6 +25,7 @@ from typing import (
 # Sort separately due to being a private import
 from typing import _eval_type  # isort: skip  # noqa: PLC2701
 
+
 try:
     from typing import Self
 except ImportError:
@@ -44,8 +45,8 @@ if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
     from django.db.models.sql import Query
 
-    from undine.mutation import MutationType
-    from undine.query import QueryType
+    from undine import Field, Input, MutationType, QueryType
+    from undine.optimizer.optimizer import QueryOptimizer
     from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
@@ -76,6 +77,7 @@ __all__ = [
     "MutationKind",
     "MutationMiddlewareType",
     "OneToManyManager",
+    "OptimizerFunc",
     "OrderRef",
     "OrderResults",
     "Parameter",
@@ -267,8 +269,9 @@ MutationInputType: TypeAlias = JsonType | models.Model | list[models.Model] | No
 PostSaveHandler: TypeAlias = Callable[[models.Model], Any]
 TypedDictType: TypeAlias = type(TypedDict(""))
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
-ValidatorFunc: TypeAlias = Callable[[Any], None]
+ValidatorFunc: TypeAlias = Callable[["Input", Any], None]
 GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
+OptimizerFunc: TypeAlias = Callable[["Field", "QueryOptimizer"], None]
 
 # Refs
 

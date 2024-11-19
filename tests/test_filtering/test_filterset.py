@@ -8,7 +8,7 @@ from tests.helpers import MockGQLInfo
 from undine.errors.exceptions import MissingModelError
 from undine.filtering import Filter, FilterSet
 
-CREATED_AT_FIELDS = [
+CREATED_AT_FIELDS = (
     "createdAtContains",
     "createdAtDay",
     "createdAtEndswith",
@@ -34,9 +34,9 @@ CREATED_AT_FIELDS = [
     "createdAtWeek",
     "createdAtWeekDay",
     "createdAtYear",
-]
+)
 
-NAME_FIELDS = [
+NAME_FIELDS = (
     "nameContains",
     "nameEndswith",
     "nameExact",
@@ -54,9 +54,9 @@ NAME_FIELDS = [
     "nameRange",
     "nameRegex",
     "nameStartswith",
-]
+)
 
-PK_FIELDS = [
+PK_FIELDS = (
     "pkContains",
     "pkEndswith",
     "pkExact",
@@ -74,9 +74,9 @@ PK_FIELDS = [
     "pkRange",
     "pkRegex",
     "pkStartswith",
-]
+)
 
-TYPE_FIELDS = [
+TYPE_FIELDS = (
     "typeContains",
     "typeEndswith",
     "typeExact",
@@ -94,7 +94,7 @@ TYPE_FIELDS = [
     "typeRange",
     "typeRegex",
     "typeStartswith",
-]
+)
 
 
 def test_filterset__attributes():
@@ -106,7 +106,7 @@ def test_filterset__attributes():
     assert MyFilterSet.__extensions__ == {"undine_filterset": MyFilterSet}
 
     filters = CREATED_AT_FIELDS + NAME_FIELDS + PK_FIELDS + TYPE_FIELDS
-    assert sorted(MyFilterSet.__filter_map__) == filters
+    assert sorted(MyFilterSet.__filter_map__) == sorted(filters)
 
 
 def test_filterset__input_type():

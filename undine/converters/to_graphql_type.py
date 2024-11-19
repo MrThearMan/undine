@@ -71,7 +71,6 @@ Positional arguments:
 Keyword arguments:
  - model: The model to use for the type.
  - is_input: (Optional) Whether the type is for an input or output. Defaults to `False`.
- - entrypoint: (Optional) Whether the type is for an entrypoint. Defaults to `False`.
 """
 
 
@@ -494,5 +493,4 @@ def load_deferred_converters() -> None:
         if not kwargs.get("is_input", False):
             return ref.__output_type__()
 
-        entrypoint = kwargs.get("entrypoint", False)
-        return ref.__input_type__(entrypoint=entrypoint)
+        return ref.__input_type__()

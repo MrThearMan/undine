@@ -112,7 +112,7 @@ class Entrypoint:
         )
 
     def get_field_type(self) -> GraphQLOutputType:
-        graphql_type, nullable = convert_to_graphql_type(self.ref, return_nullable=True, entrypoint=True)
+        graphql_type, nullable = convert_to_graphql_type(self.ref, return_nullable=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=not nullable)
 
     def get_field_arguments(self) -> GraphQLArgumentMap:

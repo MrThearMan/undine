@@ -253,7 +253,7 @@ def test_to_argument_map__mutation_type__create_mutation():
 
     assert result["input"].type.of_type.name == "TaskCreateMutation"
 
-    assert result["input"].type.of_type.fields["name"].type == GraphQLString
+    assert result["input"].type.of_type.fields["name"].type == GraphQLNonNull(GraphQLString)
 
 
 def test_to_argument_map__mutation_type__create_mutation__entrypoint():

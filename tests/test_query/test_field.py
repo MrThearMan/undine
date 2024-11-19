@@ -3,7 +3,9 @@ from __future__ import annotations
 from graphql import GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
+from tests.helpers import MockGQLInfo
 from undine import Field, QueryType
+from undine.optimizer.optimizer import QueryOptimizer
 from undine.resolvers import FunctionResolver, ModelFieldResolver
 
 
@@ -22,6 +24,7 @@ def test_field__attributes():
     assert MyQueryType.name.many is False
     assert MyQueryType.name.nullable is False
     assert MyQueryType.name.description is None
+    assert MyQueryType.name.resolver_func is None
     assert MyQueryType.name.deprecation_reason is None
     assert MyQueryType.name.extensions == {"undine_field": MyQueryType.name}
     assert MyQueryType.name.owner == MyQueryType
@@ -34,6 +37,48 @@ def test_field__get_resolver():
 
     resolver = MyQueryType.name.get_resolver()
     assert isinstance(resolver, ModelFieldResolver)
+
+
+def test_field__resolver():
+    def resolver_func() -> int:
+        return 1
+
+    class MyQueryType(QueryType, model=Task):
+        name = Field(resolver=resolver_func)
+
+    resolver = MyQueryType.name.get_resolver()
+    assert isinstance(resolver, FunctionResolver)
+    assert resolver.func == resolver_func
+
+    assert resolver(root=None, info=MockGQLInfo()) == 1
+
+
+def test_field__resolver__resolve_decorator():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+        @name.resolve
+        def resolver_func(self) -> str:
+            return "foo"
+
+    resolver = MyQueryType.name.get_resolver()
+    assert isinstance(resolver, FunctionResolver)
+    assert resolver.func == MyQueryType.resolver_func
+
+    assert resolver(root=None, info=MockGQLInfo()) == "foo"
+
+
+def test_field__optimize():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+        @name.optimize
+        def optimize_name(self: Field, optimizer: QueryOptimizer) -> int:
+            return 1
+
+    field = MyQueryType.name
+    optimizer = QueryOptimizer(None, MockGQLInfo())
+    assert field.optimizer_func(field, optimizer) == 1
 
 
 def test_field__get_field_arguments():

@@ -42,14 +42,12 @@ def test_input_data_validation_middleware__validators():
         created_at = Input()
 
         @name.validator
-        @staticmethod
-        def _(value: str) -> None:  # noqa: ARG004
+        def _(self, value: str) -> None:  # noqa: ARG004
             nonlocal validator_1_called
             validator_1_called = True
 
         @name.validator
-        @staticmethod
-        def _(value: str) -> None:  # noqa: ARG004
+        def _(self, value: str) -> None:  # noqa: ARG004
             nonlocal validator_2_called
             validator_2_called = True
 

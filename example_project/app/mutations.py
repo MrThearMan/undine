@@ -17,43 +17,43 @@ from undine import Input
 from undine.mutation import MutationType
 
 
-class TeamMutationTypeInput(MutationType, model=Team): ...
+class TeamCreateMutationTypeInput(MutationType, model=Team): ...
 
 
-class ProjectMutationTypeInput(MutationType, model=Project):
-    team = Input(TeamMutationTypeInput)
+class ProjectCreateMutationTypeInput(MutationType, model=Project):
+    team = Input(TeamCreateMutationTypeInput)
 
 
-class ServiceRequestMutationTypeInput(MutationType, model=ServiceRequest): ...
+class ServiceRequestCreateMutationTypeInput(MutationType, model=ServiceRequest): ...
 
 
-class PersonMutationTypeInput(MutationType, model=Person): ...
+class PersonCreateMutationTypeInput(MutationType, model=Person): ...
 
 
-class TaskResultMutationTypeInput(MutationType, model=TaskResult): ...
+class TaskResultCreateMutationTypeInput(MutationType, model=TaskResult): ...
 
 
-class TaskStepMutationTypeInput(MutationType, model=TaskStep): ...
+class TaskStepCreateMutationTypeInput(MutationType, model=TaskStep): ...
 
 
-class ReportMutationTypeInput(MutationType, model=Report): ...
+class ReportCreateMutationTypeInput(MutationType, model=Report): ...
 
 
-class CommentMutationTypeInput(MutationType, model=Comment):
-    commenter = Input(PersonMutationTypeInput)
+class CommentCreateMutationTypeInput(MutationType, model=Comment):
+    commenter = Input(PersonCreateMutationTypeInput)
     target = Input()
 
 
-class TaskMutationTypeInput(MutationType, model=Task):
-    request = Input(ServiceRequestMutationTypeInput)
-    project = Input(ProjectMutationTypeInput)
-    assignees = Input(PersonMutationTypeInput)
+class TaskCreateMutationTypeInput(MutationType, model=Task):
+    request = Input(ServiceRequestCreateMutationTypeInput)
+    project = Input(ProjectCreateMutationTypeInput)
+    assignees = Input(PersonCreateMutationTypeInput)
 
-    result = Input(TaskResultMutationTypeInput)
-    steps = Input(TaskStepMutationTypeInput)
-    reports = Input(ReportMutationTypeInput)
+    result = Input(TaskResultCreateMutationTypeInput)
+    steps = Input(TaskStepCreateMutationTypeInput)
+    reports = Input(ReportCreateMutationTypeInput)
 
-    comments = Input(CommentMutationTypeInput)
+    comments = Input(CommentCreateMutationTypeInput)
 
     related_tasks = Input("self")
 
@@ -69,21 +69,20 @@ class TaskCreateMutationType(MutationType, model=Task):
     input_only = Input(bool)
     custom = Input(CustomInput)
 
-    request = Input(ServiceRequestMutationTypeInput)
-    project = Input(ProjectMutationTypeInput)
-    assignees = Input(PersonMutationTypeInput)
+    request = Input(ServiceRequestCreateMutationTypeInput)
+    project = Input(ProjectCreateMutationTypeInput)
+    assignees = Input(PersonCreateMutationTypeInput)
 
-    result = Input(TaskResultMutationTypeInput)
-    steps = Input(TaskStepMutationTypeInput)
-    reports = Input(ReportMutationTypeInput)
+    result = Input(TaskResultCreateMutationTypeInput)
+    steps = Input(TaskStepCreateMutationTypeInput)
+    reports = Input(ReportCreateMutationTypeInput)
 
-    comments = Input(CommentMutationTypeInput)
+    comments = Input(CommentCreateMutationTypeInput)
 
-    related_tasks = Input(TaskMutationTypeInput)
+    related_tasks = Input(TaskCreateMutationTypeInput)
 
     @input_only.validator
-    @staticmethod
-    def _(value: bool) -> None:  # noqa: FBT001
+    def validate_name(self: Input, value: bool) -> None:  # noqa: FBT001
         if value == "foo":
             msg = "Name must not be 'foo'"
             raise ValueError(msg)

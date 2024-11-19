@@ -119,8 +119,7 @@ def test_input__validator():
         name = Input()
 
         @name.validator
-        @staticmethod
-        def validate_name(value: str) -> None:
+        def validate_name(self: Input, value: str) -> None:
             if value == "foo":
                 msg = "Name must not be 'foo'"
                 raise ValueError(msg)
@@ -128,11 +127,11 @@ def test_input__validator():
     assert len(MyMutationType.name.validators) == 1
 
     with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
-        MyMutationType.validate_name("foo")
+        MyMutationType.validate_name(MyMutationType.name, "foo")
 
 
 def test_input__validator__as_argument():
-    def validate_name(value: str) -> None:
+    def validate_name(_: Input, value: str) -> None:
         if value == "foo":
             msg = "Name must not be 'foo'"
             raise ValueError(msg)
@@ -143,4 +142,4 @@ def test_input__validator__as_argument():
     assert len(MyMutationType.name.validators) == 1
 
     with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
-        validate_name("foo")
+        validate_name(MyMutationType.name, "foo")

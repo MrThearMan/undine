@@ -79,6 +79,17 @@ def test_entrypoint__query__get_resolver():
     assert resolver == TaskType.__resolve_one__
 
 
+def test_entrypoint__query__resolver():
+    class TaskType(QueryType, model=Task):
+        """Description."""
+
+    class Query:
+        task = Entrypoint(TaskType)
+
+    resolver = Query.task.get_resolver()
+    assert resolver == TaskType.__resolve_one__
+
+
 def test_entrypoint__query__as_graphql_field():
     class TaskType(QueryType, model=Task):
         """Description."""

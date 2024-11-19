@@ -12,13 +12,21 @@ from graphql import (
     Undefined,
 )
 
-from undine.converters import convert_to_graphql_type, convert_to_input_ref, is_input_only, is_input_required, is_many
+from undine.converters import (
+    convert_to_default_value,
+    convert_to_graphql_type,
+    convert_to_input_ref,
+    is_input_hidden,
+    is_input_only,
+    is_input_required,
+    is_many,
+)
 from undine.errors.exceptions import MissingModelError
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_input_object_type, get_or_create_object_type, maybe_list_or_non_null
-from undine.utils.model_utils import get_lookup_field_name, get_model_field
+from undine.utils.model_utils import get_lookup_field_name, get_model_field, get_model_fields_for_graphql
 from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
@@ -34,7 +42,7 @@ __all__ = [
 
 
 class MutationTypeMeta(type):
-    """A metaclass that modifies how a `Mutation` is created."""
+    """A metaclass that modifies how a `MutationType` is created."""
 
     def __new__(
         cls,
@@ -49,12 +57,12 @@ class MutationTypeMeta(type):
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> MutationTypeMeta:
-        """See `Mutation` for documentation of arguments."""
-        if model is Undefined:  # Early return for the `Mutation` class itself.
+        """See `MutationType` for documentation of arguments."""
+        if model is Undefined:  # Early return for the `MutationType` class itself.
             return super().__new__(cls, _name, _bases, _attrs)
 
         if model is None:
-            raise MissingModelError(name=_name, cls="Mutation")
+            raise MissingModelError(name=_name, cls="MutationType")
 
         if mutation_kind is None:
             if callable(_attrs.get("__mutate__")):
@@ -123,7 +131,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Validate all input data given to this MutationType."""
 
     @classmethod
-    def __input_type__(cls, *, entrypoint: bool = False) -> GraphQLInputType:
+    def __input_type__(cls) -> GraphQLInputType:
         """
         Create a `GraphQLInputObjectType` for this class.
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
@@ -136,16 +144,14 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         def fields() -> dict[str, GraphQLInputField]:
             fields_: dict[str, GraphQLInputField] = {}
             for name, inpt in cls.__input_map__.items():
-                # If the input type is used anywhere except in the entrypoint,
-                # its fields should not be required to support partial updates.
-                if not entrypoint:
-                    inpt.required = False
+                if inpt.hidden:
+                    continue
                 fields_[name] = inpt.as_graphql_input_field()
             return fields_
 
         return get_or_create_input_object_type(
             name=cls.__typename__,
-            fields=FunctionEqualityWrapper(fields, context=(cls, entrypoint)),
+            fields=FunctionEqualityWrapper(fields, context=cls),
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
@@ -164,13 +170,15 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
 
 class Input:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         ref: Any = None,
         *,
         many: bool = Undefined,
         required: bool = Undefined,
+        default_value: Any = Undefined,
         input_only: bool = Undefined,
+        hidden: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         validators: list[ValidatorFunc] | None = None,
@@ -183,15 +191,17 @@ class Input:
         :param ref: Reference to build the input from. Can be anything that `convert_to_input_ref` can convert,
                     e.g., a string referencing a model field name, a model field, a `Mutation`, etc.
                     If not provided, use the name of the attribute this is assigned to
-                    in the `Mutation` class.
+                    in the `MutationType` class.
         :param many: Whether the input should contain a non-null list of the referenced type.
                      If not provided, looks at the reference and tries to determine this from it.
         :param required: Whether the input should be required. If not provided, looks at the reference
-                         and the Mutation's mutation kind to determine this.
+                         and the MutationType's mutation kind to determine this.
+        :param default_value: Default value for the input.
         :param input_only: If `True`, the input's value is not included when the mutation is performed.
                            Value still exists for the pre and post mutation hooks. If not provided,
                            looks at the reference, and if it doesn't point to a field on the model,
                            this field will be considered input-only.
+        :param hidden: If `True`, the input is not included in the schema.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param validators: Validators for the input. Can also be added with the `@<input_name>.validator` decorator.
@@ -202,6 +212,8 @@ class Input:
         self.many = many
         self.required = required
         self.input_only = input_only
+        self.hidden = hidden
+        self.default_value = default_value
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.validators = validators or []
@@ -217,6 +229,10 @@ class Input:
             self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
         if self.input_only is Undefined:
             self.input_only = is_input_only(self.ref)
+        if self.hidden is Undefined:
+            self.hidden = is_input_hidden(self.ref)
+        if self.default_value is Undefined:
+            self.default_value = convert_to_default_value(self.ref)
         if self.required is Undefined:
             self.required = is_input_required(self.ref, caller=self)
         if self.description is Undefined:
@@ -225,14 +241,10 @@ class Input:
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
-    def validator(self, func: ValidatorFunc) -> ValidatorFunc:
-        """Register a function to be called before the input is validated."""
-        self.validators.append(get_wrapped_func(func))
-        return func
-
     def as_graphql_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
             type_=self.get_field_type(),
+            default_value=self.default_value,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
@@ -242,17 +254,19 @@ class Input:
         graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
+    def validator(self, func: ValidatorFunc) -> ValidatorFunc:
+        """Register a function to be called before the input is validated."""
+        self.validators.append(get_wrapped_func(func))
+        return func
+
 
 def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
     """Add undine.Inputs for all of the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Input] = {}
-    for model_field in model._meta._get_fields():
+    for model_field in get_model_fields_for_graphql(model, include_saveable=False):
         field_name = model_field.name
-        is_primary_key = bool(getattr(model_field, "primary_key", False))
-        editable = bool(getattr(model_field, "editable", True))
 
-        if not editable:
-            continue
+        is_primary_key = bool(getattr(model_field, "primary_key", False))
 
         if is_primary_key:
             field_name = get_lookup_field_name(model)

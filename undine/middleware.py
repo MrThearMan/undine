@@ -84,25 +84,25 @@ class InputDataValidationMiddleware:
         mutation_type.__validate__(info=self.params.info, input_data=input_data)
 
         for field_name in list(input_data):  # Copy keys so that we can .pop() in the loop
-            input_ = mutation_type.__input_map__.get(field_name)
-            if input_ is None:
+            inpt = mutation_type.__input_map__.get(field_name)
+            if inpt is None:
                 raise GraphQLBadInputDataError(mutation_type=mutation_type, field_name=field_name)
 
             value = input_data.pop(field_name)
 
-            for validator in input_.validators:
-                validator(value)
+            for validator in inpt.validators:
+                validator(inpt, value)
 
-            if isinstance(value, dict) and is_subclass(input_.ref, MutationType):
-                self.pre_mutation(mutation_type=input_.ref, input_data=value)
+            if isinstance(value, dict) and is_subclass(inpt.ref, MutationType):
+                self.pre_mutation(mutation_type=inpt.ref, input_data=value)
 
-            elif isinstance(value, list) and is_subclass(input_.ref, MutationType):
+            elif isinstance(value, list) and is_subclass(inpt.ref, MutationType):
                 for item in value:
-                    self.pre_mutation(mutation_type=input_.ref, input_data=item)
+                    self.pre_mutation(mutation_type=inpt.ref, input_data=item)
 
-            if not input_.input_only:
+            if not inpt.input_only:
                 # Use field 'snake_case' name.
-                input_data[input_.name] = value
+                input_data[inpt.name] = value
 
 
 class MutationMiddlewareContext:

@@ -38,11 +38,17 @@ def test_mutation_type__attributes():
     assert MyCreateMutation.__typename__ == "MyCreateMutation"
     assert MyCreateMutation.__extensions__ == {"undine_mutation": MyCreateMutation}
     assert sorted(MyCreateMutation.__input_map__) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
         "name",
+        "objective",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
 
@@ -69,28 +75,20 @@ def test_mutation_type__input_type():
     assert input_type.extensions == {"undine_mutation": MyCreateMutation}
 
     assert sorted(input_type.fields) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
         "name",
+        "objective",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
-    assert input_type.fields["name"].type == GraphQLString
-
-
-def test_mutation_type__input_type__entrypoint():
-    class MyCreateMutation(MutationType, model=Task): ...
-
-    input_type = MyCreateMutation.__input_type__(entrypoint=True)
     assert input_type.fields["name"].type == GraphQLNonNull(GraphQLString)
-
-
-def test_mutation_type__input_type__non_entrypoint():
-    class MyCreateMutation(MutationType, model=Task): ...
-
-    input_type = MyCreateMutation.__input_type__(entrypoint=False)
-    assert input_type.fields["name"].type == GraphQLString
 
 
 def test_mutation_type__output_type():
@@ -226,21 +224,33 @@ def test_mutation_type__exclude():
     class MyMutation(MutationType, model=Task, exclude=["name"]): ...
 
     assert sorted(MyMutation.__input_map__) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
+        "objective",
         "pk",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
 
     input_type = MyMutation.__input_type__()
     assert sorted(input_type.fields) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
+        "objective",
         "pk",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
 
@@ -249,19 +259,31 @@ def test_mutation_type__exclude__multiple():
     class MyMutation(MutationType, model=Task, exclude=["name", "pk"]): ...
 
     assert sorted(MyMutation.__input_map__) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
+        "objective",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
 
     input_type = MyMutation.__input_type__()
     assert sorted(input_type.fields) == [
+        "acceptancecriteria",
         "assignees",
+        "comments",
+        "objective",
         "project",
         "relatedTasks",
+        "reports",
         "request",
+        "result",
+        "steps",
         "type",
     ]
 

@@ -104,6 +104,29 @@ def get_model_field(*, model: type[models.Model], lookup: str) -> ModelField:
     return field
 
 
+def get_model_fields_for_graphql(
+    model: type[models.Model],
+    *,
+    include_relations: bool = True,
+    include_saveable: bool = True,
+) -> Generator[models.Field, None, None]:
+    """Get all model fields for the given model, except those that are hidden or not editable."""
+    for model_field in model._meta._get_fields():
+        is_relation = bool(getattr(model_field, "is_relation", False))  # Does field reference a relation?
+        editable = bool(getattr(model_field, "editable", True))  # Is field value editable by users?
+        concrete = bool(getattr(model_field, "concrete", True))  # Does field correspond to a db column?
+
+        if is_relation:
+            if include_relations:
+                yield model_field
+            continue
+
+        if not include_saveable and (not editable or not concrete):
+            continue
+
+        yield model_field
+
+
 def get_lookup_field_name(model: type[models.Model]) -> str:
     return "pk" if undine_settings.USE_PK_FIELD_NAME else model._meta.pk.name
 
