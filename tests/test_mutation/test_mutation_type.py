@@ -13,7 +13,8 @@ from undine.mutation import DeleteMutationOutputType
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from undine.typing import GQLInfo, MutationMiddlewareParams, MutationMiddlewareType, Root
+    from undine.dataclasses import MutationMiddlewareParams
+    from undine.typing import GQLInfo, MutationMiddlewareType, Root
 
 
 def test_mutation_type__registered():
@@ -44,7 +45,7 @@ def test_mutation_type__attributes():
         "name",
         "objective",
         "project",
-        "relatedTasks",
+        "related_tasks",
         "reports",
         "request",
         "result",
@@ -230,7 +231,7 @@ def test_mutation_type__exclude():
         "objective",
         "pk",
         "project",
-        "relatedTasks",
+        "related_tasks",
         "reports",
         "request",
         "result",
@@ -264,7 +265,7 @@ def test_mutation_type__exclude__multiple():
         "comments",
         "objective",
         "project",
-        "relatedTasks",
+        "related_tasks",
         "reports",
         "request",
         "result",

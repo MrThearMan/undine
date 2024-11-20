@@ -6,10 +6,10 @@ from graphql.type.definition import GraphQLField, GraphQLNonNull
 
 from example_project.app.models import Task
 from undine import Entrypoint, MutationType, QueryType, create_schema
+from undine.dataclasses import GraphQLParams
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 from undine.schema import execute_graphql
 from undine.settings import example_schema
-from undine.typing import GraphQLParams
 
 
 def test_create_schema():

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.http.request import MediaType
 
+from undine.dataclasses import GraphQLParams
 from undine.errors.exceptions import (
     GraphQLDecodeError,
     GraphQLEmptyQueryError,
@@ -14,7 +15,6 @@ from undine.errors.exceptions import (
     GraphQLUnsupportedContentTypeError,
 )
 from undine.http.files import place_files
-from undine.typing import GraphQLParams
 
 if TYPE_CHECKING:
     from django.core.files import File
@@ -91,7 +91,7 @@ class GraphQLRequestParamsParser:
         return operations
 
     @classmethod
-    def get_operations(cls, post_data: dict[str, str]) -> dict[str, Any]:  # pragma: no cover
+    def get_operations(cls, post_data: dict[str, str]) -> dict[str, Any]:
         operations: str | None = post_data.get("operations")
         if not isinstance(operations, str):
             raise GraphQLMissingOperationsError
@@ -103,7 +103,7 @@ class GraphQLRequestParamsParser:
         )
 
     @classmethod
-    def get_map(cls, post_data: dict[str, str]) -> dict[str, list[str]]:  # pragma: no cover
+    def get_map(cls, post_data: dict[str, str]) -> dict[str, list[str]]:
         files_map_str: str | None = post_data.get("map")
         if not isinstance(files_map_str, str):
             raise GraphQLMissingFileMapError

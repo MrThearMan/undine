@@ -238,7 +238,7 @@ def test_create_resolver__atomic():
         "type": TaskTypeChoices.STORY.value,
         "request": {
             "details": "Test request",
-            "submittedAt": "2024-01-01",
+            "submitted_at": "2024-01-01",
         },
         "project": project.pk,
     }
@@ -351,7 +351,7 @@ def test_update_resolver__atomic():
         "name": "1" * 300,
         "request": {
             "details": "New request",
-            "submittedAt": "2024-01-01",
+            "submitted_at": "2024-01-01",
         },
     }
 

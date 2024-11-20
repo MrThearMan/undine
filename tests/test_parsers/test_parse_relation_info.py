@@ -21,7 +21,7 @@ from undine.parsers.parse_model_relation_info import RelatedFieldInfo, RelationT
 def test_parse_relation_info__task():
     info = parse_model_relation_info(model=Task)
     assert info == {
-        "acceptancecriteriaSet": RelatedFieldInfo(
+        "acceptancecriteria_set": RelatedFieldInfo(
             field_name="acceptancecriteria_set",
             related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
@@ -61,7 +61,7 @@ def test_parse_relation_info__task():
             related_model_pk_type=int,
             model=Project,
         ),
-        "relatedTasks": RelatedFieldInfo(
+        "related_tasks": RelatedFieldInfo(
             field_name="related_tasks",
             related_name="related_tasks",
             relation_type=RelationType.FORWARD_MANY_TO_MANY,
@@ -115,7 +115,7 @@ def test_parse_relation_info__comment():
             related_model_pk_type=int,
             model=Person,
         ),
-        "contentType": RelatedFieldInfo(
+        "content_type": RelatedFieldInfo(
             field_name="content_type",
             related_name="comment_set",
             relation_type=RelationType.FORWARD_MANY_TO_ONE,

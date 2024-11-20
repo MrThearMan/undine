@@ -9,7 +9,7 @@ from example_project.app.models import Comment, Task
 from tests.helpers import parametrize_helper
 from undine import MutationType
 from undine.converters import is_input_only
-from undine.typing import TypeRef
+from undine.dataclasses import TypeRef
 
 
 class Params(NamedTuple):

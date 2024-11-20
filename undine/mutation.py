@@ -95,7 +95,7 @@ class MutationTypeMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.
         instance.__model__ = model
-        instance.__input_map__ = {get_schema_name(name): input_ for name, input_ in get_members(instance, Input)}
+        instance.__input_map__ = dict(get_members(instance, Input))
         instance.__lookup_field__ = lookup_field
         instance.__mutation_kind__ = mutation_kind
         instance.__typename__ = typename or _name
@@ -137,7 +137,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
         if cls.__mutation_kind__ == "delete":
-            input_field = cls.__input_map__.get(get_schema_name(cls.__lookup_field__))
+            input_field = cls.__input_map__.get(cls.__lookup_field__)
             return input_field.get_field_type()
 
         # Defer creating fields so that self-referential related inputs can be created.
@@ -146,7 +146,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
             for name, inpt in cls.__input_map__.items():
                 if inpt.hidden:
                     continue
-                fields_[name] = inpt.as_graphql_input_field()
+                fields_[get_schema_name(name)] = inpt.as_graphql_input_field()
             return fields_
 
         return get_or_create_input_object_type(
@@ -181,7 +181,6 @@ class Input:
         hidden: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
-        validators: list[ValidatorFunc] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
@@ -204,7 +203,6 @@ class Input:
         :param hidden: If `True`, the input is not included in the schema.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
-        :param validators: Validators for the input. Can also be added with the `@<input_name>.validator` decorator.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the input.
         """
@@ -216,7 +214,7 @@ class Input:
         self.default_value = default_value
         self.description = description
         self.deprecation_reason = deprecation_reason
-        self.validators = validators or []
+        self.validator_func: ValidatorFunc | None = None
         self.extensions = extensions or {}
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
 
@@ -247,6 +245,7 @@ class Input:
             default_value=self.default_value,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
+            out_name=self.name,
             extensions=self.extensions,
         )
 
@@ -254,9 +253,9 @@ class Input:
         graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
-    def validator(self, func: ValidatorFunc) -> ValidatorFunc:
-        """Register a function to be called before the input is validated."""
-        self.validators.append(get_wrapped_func(func))
+    def validate(self, func: ValidatorFunc) -> ValidatorFunc:
+        """Add a validator for the input using `@<input_name>.validator`"""
+        self.validator_func = get_wrapped_func(func)
         return func
 
 

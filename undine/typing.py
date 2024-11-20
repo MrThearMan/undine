@@ -1,17 +1,17 @@
+# ruff: noqa: FBT001, FBT002
 """Custom type definitions for the project."""
 
 from __future__ import annotations
 
-import dataclasses
-from dataclasses import dataclass
-from types import SimpleNamespace
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Collection,
     Iterable,
     Iterator,
     Literal,
+    Mapping,
     MutableMapping,
     NewType,
     Protocol,
@@ -26,6 +26,8 @@ from typing import (
 from typing import _eval_type  # isort: skip  # noqa: PLC2701
 
 
+from undine.dataclasses import MutationMiddlewareParams, TypeRef
+
 try:
     from typing import Self
 except ImportError:
@@ -33,15 +35,10 @@ except ImportError:
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.db import models
-from django.db.models.fields.related_descriptors import (
-    create_forward_many_to_many_manager,
-    create_reverse_many_to_one_manager,
-)
-from graphql import FieldNode, GraphQLInputType, GraphQLOutputType, GraphQLResolveInfo, SelectionNode, Undefined
+from graphql import FieldNode, GraphQLInputType, GraphQLOutputType, GraphQLResolveInfo, SelectionNode
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.contrib.sessions.backends.base import SessionBase
     from django.db.models.sql import Query
 
@@ -53,38 +50,28 @@ __all__ = [
     "CombinableExpression",
     "CombinableExpression",
     "DispatchProtocol",
-    "DispatchWrapper",
     "DjangoRequestProtocol",
     "DocstringParserProtocol",
     "EntrypointRef",
-    "Expr",
-    "ExpressionKind",
+    "ExpressionLike",
     "FieldRef",
     "FilterRef",
     "FilterRef",
-    "FilterResults",
     "GQLInfo",
-    "GraphQLFilterInfo",
     "GraphQLFilterResolver",
-    "GraphQLParams",
     "HttpMethod",
     "InputRef",
-    "JsonType",
+    "JsonObject",
     "Lambda",
-    "ManyToManyManager",
+    "ManagerProtocol",
     "ModelField",
-    "MutationInputType",
     "MutationKind",
     "MutationMiddlewareType",
-    "OneToManyManager",
     "OptimizerFunc",
     "OrderRef",
-    "OrderResults",
-    "Parameter",
-    "PostSaveHandler",
     "QuerySetResolver",
     "RelatedField",
-    "RelatedManager",
+    "RelatedManagerProtocol",
     "Root",
     "Selections",
     "Self",
@@ -106,8 +93,6 @@ as opposed to a regular function in the FunctionDispatcher.
 """
 
 empty = object()
-
-_rel_mock = SimpleNamespace(field=SimpleNamespace(null=True))
 
 
 # Protocols
@@ -131,15 +116,15 @@ class DocstringParserProtocol(Protocol):
     def parse_deprecations(cls, docstring: str) -> dict[str, str]: ...
 
 
-class ExpressionKind(Protocol):
+class ExpressionLike(Protocol):
     def resolve_expression(
         self,
         query: Query,
-        allow_joins: bool,  # noqa: FBT001
+        allow_joins: bool,
         reuse: set[str] | None,
-        summarize: bool,  # noqa: FBT001
-        for_save: bool,  # noqa: FBT001
-    ) -> ExpressionKind: ...
+        summarize: bool,
+        for_save: bool,
+    ) -> ExpressionLike: ...
 
 
 class DispatchProtocol(Protocol[From, To]):
@@ -150,9 +135,6 @@ class MutationMiddlewareType(Protocol):
     def __call__(self, params: MutationMiddlewareParams) -> Iterable[None] | Iterator[None] | None: ...
 
 
-# Classes purely for type-hinting.
-
-
 class DjangoRequestProtocol(Protocol):
     @property
     def user(self) -> User | AnonymousUser: ...
@@ -161,117 +143,153 @@ class DjangoRequestProtocol(Protocol):
     def session(self) -> SessionBase | MutableMapping[str, Any]: ...
 
 
-DjangoRequest: TypeAlias = Union[WSGIRequest, DjangoRequestProtocol]
-
-
 class GQLInfoProtocol(Protocol):
     @property
     def context(self) -> DjangoRequestProtocol: ...
 
 
-GQLInfo: TypeAlias = Union[GQLInfoProtocol, GraphQLResolveInfo]
+class ManagerProtocol(Protocol):  # noqa: PLR0904
+    """Represents a manager for a model."""
+
+    def get_queryset(self) -> models.QuerySet: ...
+
+    def iterator(self, chunk_size: int | None = None) -> Iterator[models.Model]: ...
+
+    def aggregate(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
+
+    def count(self) -> int: ...
+
+    def get(self, *args: Any, **kwargs: Any) -> models.Model: ...
+
+    def create(self, **kwargs: Any) -> models.Model: ...
+
+    def bulk_create(
+        self,
+        objs: Iterable[models.Model],
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Collection[str] | None = None,
+        unique_fields: Collection[str] | None = None,
+    ) -> list[models.Model]: ...
+
+    def bulk_update(
+        self,
+        objs: Iterable[models.Model],
+        fields: Collection[str],
+        batch_size: int | None = None,
+    ) -> int: ...
+
+    def get_or_create(
+        self,
+        defaults: Mapping[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> tuple[models.Model, bool]: ...
+
+    def update_or_create(
+        self,
+        defaults: Mapping[str, Any] | None = None,
+        create_defaults: Mapping[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> tuple[models.Model, bool]: ...
+
+    def first(self) -> models.Model | None: ...
+
+    def last(self) -> models.Model | None: ...
+
+    def delete(self) -> int: ...
+
+    def update(self, **kwargs: Any) -> int: ...
+
+    def exists(self) -> bool: ...
+
+    def contains(self, obj: models.Model) -> bool: ...
+
+    def values(self, *fields: str, **expressions: Any) -> models.QuerySet: ...
+
+    def values_list(self, *fields: str, flat: bool = False, named: bool = False) -> models.QuerySet: ...
+
+    def none(self) -> models.QuerySet: ...
+
+    def all(self) -> models.QuerySet: ...
+
+    def filter(self, *args: Any, **kwargs: Any) -> models.QuerySet: ...
+
+    def exclude(self, *args: Any, **kwargs: Any) -> models.QuerySet: ...
+
+    def union(self, *other_qs: models.QuerySet, all: bool = False) -> models.QuerySet: ...  # noqa: A002
+
+    def intersection(self, *other_qs: models.QuerySet) -> models.QuerySet: ...
+
+    def difference(self, *other_qs: models.QuerySet) -> models.QuerySet: ...
+
+    def select_related(self, *fields: Any) -> models.QuerySet: ...
+
+    def prefetch_related(self, *lookups: Any) -> models.QuerySet: ...
+
+    def annotate(self, *args: Any, **kwargs: Any) -> models.QuerySet: ...
+
+    def alias(self, *args: Any, **kwargs: Any) -> models.QuerySet: ...
+
+    def order_by(self, *field_names: Any) -> models.QuerySet: ...
+
+    def distinct(self, *field_names: Any) -> models.QuerySet: ...
+
+    def reverse(self) -> models.QuerySet: ...
+
+    def defer(self, *fields: Any) -> models.QuerySet: ...
+
+    def only(self, *fields: Any) -> models.QuerySet: ...
+
+    def using(self, alias: str | None) -> models.QuerySet: ...
 
 
-# Dataclasses
+class RelatedManagerProtocol(ManagerProtocol):
+    """Represents a manager for one-to-many and many-to-many relations."""
+
+    def add(self, *objs: Any, bulk: bool = True) -> int: ...
+
+    def set(
+        self,
+        objs: Iterable[models.Model],
+        *,
+        clear: bool = False,
+        through_defaults: Any = None,
+    ) -> models.QuerySet: ...
+
+    def clear(self) -> None: ...
+
+    def remove(self, obj: Iterable[models.Model], bulk: bool = True) -> models.Model: ...
+
+    def create(self, through_defaults: Any = None, **kwargs: Any) -> models.Model: ...
 
 
-@dataclass(frozen=True, slots=True)
-class Parameter:
-    name: str
-    annotation: type
-    default_value: Any = Undefined
-
-
-@dataclass(slots=True)
-class GraphQLFilterInfo:
-    model_type: type[QueryType]
-    filters: list[models.Q] = dataclasses.field(default_factory=list)
-    distinct: bool = False
-    aliases: dict[str, CombinableExpression] = dataclasses.field(default_factory=dict)
-    order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
-    children: dict[str, GraphQLFilterInfo] = dataclasses.field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
-class FilterResults:
-    filters: list[models.Q]
-    distinct: bool
-    aliases: dict[str, CombinableExpression]
-
-
-@dataclass(frozen=True, slots=True)
-class OrderResults:
-    order_by: list[models.OrderBy]
-
-
-@dataclass(frozen=True, slots=True)
-class GraphQLParams:
-    query: str
-    variables: dict[str, Any] | None = None
-    operation_name: str | None = None
-    extensions: dict[str, Any] | None = None
-
-
-@dataclass(slots=True)
-class PostSaveData:
-    post_save_handlers: list[Callable[[models.Model], Any]] = dataclasses.field(default_factory=list)
-
-
-@dataclass(frozen=True, slots=True)
-class TypeRef:
-    value: type
-
-
-@dataclass(frozen=True, slots=True)
-class LookupRef:
-    ref: Any
-    lookup: str
-
-
-@dataclass(slots=True)
-class MutationMiddlewareParams:
-    mutation_type: type[MutationType]
-    info: GQLInfo
-    input_data: dict[str, Any]
-    instance: models.Model | None = None
-
-
-class PaginationArgs(TypedDict):
-    after: int | None
-    before: int | None
-    first: int | None
-    last: int | None
-    size: int | None
-
-
-# Model typing
+# Model
 
 ToOneField: TypeAlias = models.OneToOneField | models.OneToOneRel | models.ForeignKey
 ToManyField: TypeAlias = models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel
-RelatedField: TypeAlias = Union[ToOneField, ToManyField, "GenericRelation", "GenericForeignKey"]
-ModelField: TypeAlias = Union[models.Field, models.ForeignObjectRel, "GenericForeignKey"]
-OneToManyManager: TypeAlias = create_reverse_many_to_one_manager(models.Manager, _rel_mock)
-ManyToManyManager: TypeAlias = create_forward_many_to_many_manager(models.Manager, _rel_mock, True)  # noqa: FBT003
-RelatedManager: TypeAlias = OneToManyManager | ManyToManyManager
+RelatedField: TypeAlias = ToOneField | ToManyField
+ModelField: TypeAlias = models.Field | models.ForeignObjectRel
 CombinableExpression: TypeAlias = models.Expression | models.Subquery
-Expr: TypeAlias = CombinableExpression | models.F | models.Q
+
+# GraphQL
+
+Root: TypeAlias = Any
+GQLInfo: TypeAlias = GQLInfoProtocol | GraphQLResolveInfo
+GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
+Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 
 # Misc.
 
-Root: TypeAlias = Any
-GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
-QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
-Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
-MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
-JsonType: TypeAlias = dict[str, Any] | list["JsonType"]
-DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
-MutationInputType: TypeAlias = JsonType | models.Model | list[models.Model] | None
-PostSaveHandler: TypeAlias = Callable[[models.Model], Any]
 TypedDictType: TypeAlias = type(TypedDict(""))
+DjangoRequest: TypeAlias = WSGIRequest | DjangoRequestProtocol
+MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
+JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
 ValidatorFunc: TypeAlias = Callable[["Input", Any], None]
-GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
 OptimizerFunc: TypeAlias = Callable[["Field", "QueryOptimizer"], None]
+QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
+GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
 
 # Refs
 

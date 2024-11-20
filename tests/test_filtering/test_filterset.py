@@ -105,9 +105,6 @@ def test_filterset__attributes():
     assert MyFilterSet.__typename__ == "MyFilterSet"
     assert MyFilterSet.__extensions__ == {"undine_filterset": MyFilterSet}
 
-    filters = CREATED_AT_FIELDS + NAME_FIELDS + PK_FIELDS + TYPE_FIELDS
-    assert sorted(MyFilterSet.__filter_map__) == sorted(filters)
-
 
 def test_filterset__input_type():
     class MyFilterSet(FilterSet, model=Task):
@@ -141,7 +138,7 @@ def test_filterset__build__one_field():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
-        "nameExact": "foo",
+        "name_exact": "foo",
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
@@ -155,8 +152,8 @@ def test_filterset__build__two_fields():
     class MyFilterSet(FilterSet, model=Task): ...
 
     data = {
-        "nameExact": "foo",
-        "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+        "name_exact": "foo",
+        "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
@@ -171,8 +168,8 @@ def test_filterset__build__and_block():
 
     data = {
         "AND": {
-            "nameExact": "foo",
-            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+            "name_exact": "foo",
+            "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
@@ -188,8 +185,8 @@ def test_filterset__build__or_block():
 
     data = {
         "OR": {
-            "nameExact": "foo",
-            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+            "name_exact": "foo",
+            "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
@@ -205,8 +202,8 @@ def test_filterset__build__xor_block():
 
     data = {
         "XOR": {
-            "nameExact": "foo",
-            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+            "name_exact": "foo",
+            "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
@@ -222,8 +219,8 @@ def test_filterset__build__not_block():
 
     data = {
         "NOT": {
-            "nameExact": "foo",
-            "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+            "name_exact": "foo",
+            "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
         },
     }
 
@@ -240,8 +237,8 @@ def test_filterset__build__nested_blocks():
     data = {
         "OR": {
             "NOT": {
-                "nameExact": "foo",
-                "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+                "name_exact": "foo",
+                "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
             },
         },
     }
@@ -259,13 +256,13 @@ def test_filterset__build__nested_blocks__complex():
     data = {
         "OR": {
             "NOT": {
-                "nameExact": "foo",
+                "name_exact": "foo",
             },
             "AND": {
-                "nameContains": "foo",
-                "typeIn": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
+                "name_contains": "foo",
+                "type_in": [TaskTypeChoices.BUG_FIX.value, TaskTypeChoices.STORY.value],
                 "NOT": {
-                    "typeExact": TaskTypeChoices.TASK.value,
+                    "type_exact": TaskTypeChoices.TASK.value,
                 },
             },
         },
@@ -312,19 +309,23 @@ def test_filterset__no_auto():
 def test_filterset__exclude():
     class MyFilterSet(FilterSet, model=Task, exclude=["pk"]): ...
 
-    assert all(field in MyFilterSet.__filter_map__ for field in CREATED_AT_FIELDS)
-    assert all(field in MyFilterSet.__filter_map__ for field in NAME_FIELDS)
-    assert all(field not in MyFilterSet.__filter_map__ for field in PK_FIELDS)
-    assert all(field in MyFilterSet.__filter_map__ for field in TYPE_FIELDS)
+    fields = MyFilterSet.__input_type__().fields
+
+    assert all(field in fields for field in CREATED_AT_FIELDS)
+    assert all(field in fields for field in NAME_FIELDS)
+    assert all(field not in fields for field in PK_FIELDS)
+    assert all(field in fields for field in TYPE_FIELDS)
 
 
 def test_filterset__exclude__multiple():
     class MyFilterSet(FilterSet, model=Task, exclude=["pk", "name"]): ...
 
-    assert all(field in MyFilterSet.__filter_map__ for field in CREATED_AT_FIELDS)
-    assert all(field not in MyFilterSet.__filter_map__ for field in NAME_FIELDS)
-    assert all(field not in MyFilterSet.__filter_map__ for field in PK_FIELDS)
-    assert all(field in MyFilterSet.__filter_map__ for field in TYPE_FIELDS)
+    fields = MyFilterSet.__input_type__().fields
+
+    assert all(field in fields for field in CREATED_AT_FIELDS)
+    assert all(field not in fields for field in NAME_FIELDS)
+    assert all(field not in fields for field in PK_FIELDS)
+    assert all(field in fields for field in TYPE_FIELDS)
 
 
 def test_filterset__expression():
@@ -332,7 +333,7 @@ def test_filterset__expression():
         assignee_count_lt = Filter(models.Count("assignees"), lookup_expr="lt")
 
     data = {
-        "assigneeCountLt": 1,
+        "assignee_count_lt": 1,
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())
@@ -349,7 +350,7 @@ def test_filterset__subquery():
         primary_assignee_name_in = Filter(sq, lookup_expr="in")
 
     data = {
-        "primaryAssigneeNameIn": ["foo", "bar"],
+        "primary_assignee_name_in": ["foo", "bar"],
     }
 
     results = MyFilterSet.__build__(filter_data=data, info=MockGQLInfo())

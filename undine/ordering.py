@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from typing import Any, Container, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
 from django.db import models
 from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
 
 from undine.converters import convert_to_order_ref
-from undine.errors.exceptions import MissingModelError
+from undine.dataclasses import OrderResults
+from undine.errors.exceptions import GraphQLBadOrderDataError, MissingModelError
 from undine.parsers import parse_description
 from undine.settings import undine_settings
-from undine.typing import GQLInfo, OrderResults
 from undine.utils.graphql import get_or_create_graphql_enum
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
 from undine.utils.reflection import get_members
-from undine.utils.text import dotpath, get_docstring, get_schema_name
+from undine.utils.text import dotpath, get_docstring, get_schema_name, to_snake_case
+
+if TYPE_CHECKING:
+    from undine.typing import GQLInfo
 
 __all__ = [
     "Order",
@@ -52,7 +55,7 @@ class OrderSetMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Order` names.
         instance.__model__ = model
-        instance.__order_map__ = {get_schema_name(n): o for n, o in get_members(instance, Order)}
+        instance.__order_map__ = dict(get_members(instance, Order))
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.ORDERSET_EXTENSIONS_KEY: instance}
         return instance
@@ -87,16 +90,17 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
         """
         result = OrderResults(order_by=[])
 
-        for name in order_data:
-            if name.endswith("Desc"):
-                order_name = name.removesuffix("Desc")
+        for enum_name in order_data:
+            name = to_snake_case(enum_name)
+
+            if name.endswith("_desc"):
+                order_name = name.removesuffix("_desc")
                 descending = True
-            elif name.endswith("Asc"):
-                order_name = name.removesuffix("Asc")
+            elif name.endswith("_asc"):
+                order_name = name.removesuffix("_asc")
                 descending = False
-            else:  # Single direction ordering.
-                order_name = name
-                descending = False
+            else:
+                raise GraphQLBadOrderDataError(orderset=cls, field_name=enum_name)
 
             order = cls.__order_map__[order_name]
             expression = order.get_expression(descending=descending)
@@ -112,12 +116,9 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
         """
         enum_values: dict[str, GraphQLEnumValue] = {}
         for name, ordering in cls.__order_map__.items():
-            if ordering.single_direction:
-                enum_values[name] = ordering.get_graphql_enum_value()
-                continue
-
-            for direction in ("Asc", "Desc"):
-                enum_values[f"{name}{direction}"] = ordering.get_graphql_enum_value()
+            for direction in ("asc", "desc"):
+                enum_name = f"{name}_{direction}"
+                enum_values[get_schema_name(enum_name, validate_reversable=True)] = ordering.get_graphql_enum_value()
 
         return get_or_create_graphql_enum(
             name=cls.__typename__,
@@ -133,7 +134,6 @@ class Order:
         ref: Any = None,
         *,
         null_placement: Literal["first", "last"] | None = None,
-        single_direction: bool = False,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -146,7 +146,6 @@ class Order:
                     If not provided, use the name of the attribute this is assigned to
                     in the `OrderSet` class.
         :param null_placement: Where should null values be placed? By default, use database default.
-        :param single_direction: Set to `True` if the Order supports only a single direction.
         :param description: Description of the Order. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If this Order is deprecated, describes the reason for deprecation.
@@ -156,7 +155,6 @@ class Order:
         self.description = description
         self.nulls_first = True if null_placement == "first" else None
         self.nulls_last = True if null_placement == "last" else None
-        self.single_direction = single_direction
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
         self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self

@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import inspect
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
+from typing import Any, Callable, Generic, Literal, TypeAlias, Union, get_args, get_origin
 
 from graphql import Undefined
 
 from undine.errors.exceptions import FunctionDispatcherError
-from undine.typing import DispatchWrapper, From, Lambda, To
+from undine.typing import DispatchProtocol, From, Lambda, To
 
 from .reflection import get_instance_name, get_signature, is_lambda
 
 __all__ = [
     "FunctionDispatcher",
 ]
+
+
+DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
 
 
 class FunctionDispatcher(Generic[From, To]):

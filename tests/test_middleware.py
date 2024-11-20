@@ -3,17 +3,20 @@ from __future__ import annotations
 import contextlib
 import logging
 from copy import deepcopy
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any, Generator
 
 import pytest
 
 from example_project.app.models import Comment, Person, Project, ServiceRequest, Task, TaskTypeChoices, Team
 from tests.helpers import MockGQLInfo, exact
 from undine import Input, MutationType
+from undine.dataclasses import MutationMiddlewareParams
 from undine.errors.exceptions import GraphQLBadInputDataError
 from undine.middleware import InputDataValidationMiddleware, MutationMiddlewareContext, error_logging_middleware
-from undine.typing import GQLInfo, MutationMiddlewareParams, MutationMiddlewareType
 from undine.utils.text import dotpath
+
+if TYPE_CHECKING:
+    from undine.typing import GQLInfo, MutationMiddlewareType
 
 
 def test_error_logging_middleware(caplog):
@@ -41,12 +44,12 @@ def test_input_data_validation_middleware__validators():
         type = Input()
         created_at = Input()
 
-        @name.validator
+        @name.validate
         def _(self, value: str) -> None:  # noqa: ARG004
             nonlocal validator_1_called
             validator_1_called = True
 
-        @name.validator
+        @type.validate
         def _(self, value: str) -> None:  # noqa: ARG004
             nonlocal validator_2_called
             validator_2_called = True
@@ -59,7 +62,7 @@ def test_input_data_validation_middleware__validators():
     input_data = {
         "name": "foo",
         "type": TaskTypeChoices.STORY.value,
-        "createdAt": "2022-01-01T00:00:00",
+        "created_at": "2022-01-01T00:00:00",
     }
 
     middleware = InputDataValidationMiddleware(
@@ -89,7 +92,7 @@ def test_input_data_validation_middleware__remove_input_only_fields():
     input_data = {
         "name": "foo",
         "type": TaskTypeChoices.STORY.value,
-        "createdAt": "2022-01-01T00:00:00",
+        "created_at": "2022-01-01T00:00:00",
     }
 
     middleware = InputDataValidationMiddleware(
@@ -222,7 +225,7 @@ def test_input_data_validation_middleware__convert_to_snake_case():
     class MyTaskType(MutationType, model=Task, auto=False):
         created_at = Input()
 
-    input_data = {"createdAt": "2022-01-01T00:00:00"}
+    input_data = {"created_at": "2022-01-01T00:00:00"}
 
     middleware = InputDataValidationMiddleware(
         params=MutationMiddlewareParams(

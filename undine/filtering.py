@@ -8,10 +8,10 @@ from django.db import models
 from graphql import GraphQLInputField, GraphQLInputType, Undefined
 
 from undine.converters import convert_filter_ref_to_filter_resolver, convert_to_filter_ref, convert_to_graphql_type
+from undine.dataclasses import FilterResults, LookupRef
 from undine.errors.exceptions import MissingModelError
 from undine.parsers import parse_description
 from undine.settings import undine_settings
-from undine.typing import CombinableExpression, FilterResults, GQLInfo, LookupRef
 from undine.utils.graphql import get_or_create_input_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
@@ -19,6 +19,8 @@ from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
     from types import FunctionType
+
+    from undine.typing import CombinableExpression, GQLInfo
 
 
 __all__ = [
@@ -58,7 +60,7 @@ class FilterSetMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Filter` names.
         instance.__model__ = model
-        instance.__filter_map__ = {get_schema_name(name): ftr for name, ftr in get_members(instance, Filter)}
+        instance.__filter_map__ = dict(get_members(instance, Filter))
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.FILTERSET_EXTENSIONS_KEY: instance}
         return instance
@@ -111,11 +113,11 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
                 filters.append(reduce(func, results.filters))
 
             else:
-                filter_ = cls.__filter_map__[filter_name]
-                distinct = distinct or filter_.distinct
-                filter_expression = filter_.get_expression(filter_value, info)
-                if isinstance(filter_.ref, (models.Expression, models.Subquery)):
-                    aliases[filter_.name] = filter_.ref
+                frt = cls.__filter_map__[filter_name]
+                distinct = distinct or frt.distinct
+                filter_expression = frt.get_expression(filter_value, info)
+                if isinstance(frt.ref, (models.Expression, models.Subquery)):
+                    aliases[frt.name] = frt.ref
 
                 filters.append(filter_expression)
 
@@ -130,7 +132,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
 
         # Defer creating fields so that logical filters can be added.
         def fields() -> dict[str, GraphQLInputField]:
-            fields = {name: frt.as_graphql_input() for name, frt in cls.__filter_map__.items()}
+            fields = {get_schema_name(name): frt.as_graphql_input() for name, frt in cls.__filter_map__.items()}
             input_field = GraphQLInputField(type_=input_object_type)
             fields["NOT"] = input_field
             fields["AND"] = input_field
@@ -214,6 +216,7 @@ class Filter:
             type_=self.get_field_type(),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
+            out_name=self.name,
             extensions=self.extensions,
         )
 

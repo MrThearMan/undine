@@ -33,6 +33,7 @@ from graphql import (
     GraphQLUnionType,
 )
 
+from undine.dataclasses import LookupRef, TypeRef
 from undine.scalars import (
     GraphQLAny,
     GraphQLBase64,
@@ -48,7 +49,7 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
-from undine.typing import CombinableExpression, GQLInfo, GraphQLType, LookupRef, TypedDictType, TypeRef, eval_type
+from undine.typing import CombinableExpression, GQLInfo, GraphQLType, TypedDictType, eval_type
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type, get_or_create_object_type
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -215,7 +216,7 @@ def _(ref: models.CharField, **kwargs: Any) -> GraphQLEnumType | GraphQLScalarTy
     # Generate a name for an enum based on the field it is used in.
     # This is required, since CharField doesn't know the name of the enum it is used in.
     # Use `TextChoicesField` instead to get more consistent naming.
-    name = ref.model.__name__ + to_pascal_case(ref.name, validate=False) + "Choices"
+    name = ref.model.__name__ + to_pascal_case(ref.name) + "Choices"
 
     return get_or_create_graphql_enum(
         name=name,
@@ -406,7 +407,7 @@ def _(ref: LazyQueryTypeUnion, **kwargs: Any) -> GraphQLUnionType:
 
         return object_type.name
 
-    name = ref.field.model.__name__ + to_pascal_case(ref.field.name, validate=False)
+    name = ref.field.model.__name__ + to_pascal_case(ref.field.name)
     type_map = {model_type.__model__: convert_to_graphql_type(model_type, **kwargs) for model_type in ref.get_types()}
 
     return GraphQLUnionType(
@@ -456,7 +457,7 @@ def load_deferred_converters() -> None:
         if not kwargs.get("is_input", False):
             return graphql_type  # TODO: Test if correct
 
-        name = ref.model.__name__ + to_pascal_case(ref.name, validate=False)
+        name = ref.model.__name__ + to_pascal_case(ref.name)
 
         typename_enum = get_or_create_graphql_enum(
             name=f"{name}Choices",

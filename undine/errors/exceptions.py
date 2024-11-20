@@ -316,6 +316,17 @@ class GraphQLBadInputDataError(GraphQLStatusError):
     code = error_codes.INVALID_INPUT_DATA
 
 
+class GraphQLBadOrderDataError(GraphQLStatusError):
+    """Error raised when a request content is not correct according to the GraphQL schema."""
+
+    msg = (
+        "Order data contains ordering value '{field_name}' but OrderSet '{orderset:dotpath}' "
+        "doesn't have support an order with that name."
+    )
+    status = 400
+    code = error_codes.INVALID_ORDER_DATA
+
+
 class GraphQLMissingContentTypeError(GraphQLStatusError):
     """Error raised when a request is made wihtout a content type."""
 

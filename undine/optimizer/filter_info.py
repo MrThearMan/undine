@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 from graphql import FieldNode, GraphQLOutputType, get_argument_values
 from graphql.execution.execute import get_field_def
 
+from undine.dataclasses import GraphQLFilterInfo
 from undine.settings import undine_settings
-from undine.typing import CombinableExpression, GQLInfo, GraphQLFilterInfo, ToManyField, ToOneField
 from undine.utils.reflection import swappable_by_subclassing
 from undine.utils.text import to_snake_case
 
@@ -15,6 +15,8 @@ from .ast import GraphQLASTWalker, get_underlying_type
 
 if TYPE_CHECKING:
     from django.db import models
+
+    from undine.typing import CombinableExpression, GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [

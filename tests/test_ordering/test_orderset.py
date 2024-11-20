@@ -14,7 +14,7 @@ def test_orderset__attributes():
     assert MyOrderSet.__model__ == Task
     assert MyOrderSet.__typename__ == "MyOrderSet"
     assert MyOrderSet.__extensions__ == {"undine_orderset": MyOrderSet}
-    assert sorted(MyOrderSet.__order_map__) == ["createdAt", "name", "pk", "type"]
+    assert sorted(MyOrderSet.__order_map__) == ["created_at", "name", "pk", "type"]
 
 
 def test_orderset__enum_type():
@@ -72,17 +72,6 @@ def test_orderset__two_fields():
     ]
 
 
-def test_orderset__single_direction():
-    class MyOrderSet(OrderSet, model=Task):
-        name = Order(single_direction=True)
-
-    data = ["name"]
-    results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
-    assert results.order_by == [
-        models.OrderBy(models.F("name")),
-    ]
-
-
 def test_orderset__typename():
     class MyOrderSet(OrderSet, model=Task, typename="CustomName"): ...
 
@@ -113,7 +102,7 @@ def test_filterset__exclude():
     assert "pk" in MyOrderSet.__order_map__
     assert "name" not in MyOrderSet.__order_map__
     assert "type" in MyOrderSet.__order_map__
-    assert "createdAt" in MyOrderSet.__order_map__
+    assert "created_at" in MyOrderSet.__order_map__
 
 
 def test_filterset__exclude__multiple():
@@ -122,4 +111,4 @@ def test_filterset__exclude__multiple():
     assert "pk" not in MyOrderSet.__order_map__
     assert "name" not in MyOrderSet.__order_map__
     assert "type" in MyOrderSet.__order_map__
-    assert "createdAt" in MyOrderSet.__order_map__
+    assert "created_at" in MyOrderSet.__order_map__

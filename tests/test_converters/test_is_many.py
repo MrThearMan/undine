@@ -10,7 +10,7 @@ from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
 from undine import MutationType, QueryType
 from undine.converters import is_many
-from undine.typing import TypeRef
+from undine.dataclasses import TypeRef
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 

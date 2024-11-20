@@ -30,6 +30,7 @@ from example_project.app.models import Comment, Project, Task
 from tests.helpers import MockGQLInfo, exact, parametrize_helper
 from undine import MutationType, QueryType
 from undine.converters import convert_to_graphql_type
+from undine.dataclasses import LookupRef, TypeRef
 from undine.scalars import (
     GraphQLAny,
     GraphQLBase64,
@@ -45,7 +46,6 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
-from undine.typing import LookupRef, TypeRef
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_fields import TextChoicesField
 

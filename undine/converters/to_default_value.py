@@ -5,7 +5,8 @@ from typing import Any
 from django.db import models
 from graphql import Undefined
 
-from undine.typing import InputRef, TypeRef
+from undine.dataclasses import TypeRef
+from undine.typing import InputRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
@@ -43,7 +44,7 @@ def _(_: TypeRef, **kwargs: Any) -> Any:
     return Undefined
 
 
-def load_deferred_converters() -> None:  # pragma: no cover
+def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 

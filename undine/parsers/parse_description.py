@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from undine.typing import Expr, ModelField, TypeRef
+from django.db import models
+
+from undine.dataclasses import TypeRef
+from undine.typing import CombinableExpression, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.text import get_docstring
@@ -30,7 +33,7 @@ def _(ref: ModelField) -> Any:
 
 
 @parse_description.register
-def _(_: Expr) -> Any:
+def _(_: CombinableExpression | models.F | models.Q) -> Any:
     return None
 
 

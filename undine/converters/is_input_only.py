@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from undine.typing import InputRef, ModelField, TypeRef
+from undine.dataclasses import TypeRef
+from undine.typing import InputRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [

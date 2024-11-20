@@ -17,7 +17,7 @@ from undine.errors.error_handlers import handle_integrity_errors
 from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
 from undine.middleware import MutationMiddlewareContext
 from undine.settings import undine_settings
-from undine.typing import GQLInfo
+from undine.typing import GQLInfo, RelatedManagerProtocol
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_signature
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
     from undine.mutation import MutationType
-    from undine.typing import RelatedManager, Root
+    from undine.typing import Root
 
 __all__ = [
     "BulkCreateResolver",
@@ -61,7 +61,7 @@ class ModelManyRelatedResolver:
     name: str
 
     def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        value: RelatedManager | None = getattr(model, self.name, None)
+        value: RelatedManagerProtocol | None = getattr(model, self.name, None)
         try:
             return value.get_queryset()
         except Exception as error:

@@ -3,18 +3,17 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
-from django.db import models
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 
 from undine.errors.exceptions import OptimizerError
 from undine.settings import undine_settings
-from undine.utils.logging import undine_logger
 from undine.utils.reflection import swappable_by_subclassing
 
 from .ast import GraphQLASTWalker
 from .optimizer import QueryOptimizer
 
 if TYPE_CHECKING:
+    from django.db import models
     from graphql import FieldNode, GraphQLOutputType
 
     from undine import Field
@@ -65,6 +64,7 @@ class OptimizationCompiler(GraphQLASTWalker):
 
     def handle_normal_field(self, field_type: GraphQLOutputType, field_node: FieldNode, field: models.Field) -> None:
         self.optimizer.only_fields.append(field.get_attname())
+        self.run_field_optimizer(field_type, field_node)
 
     def handle_to_one_field(
         self,
@@ -93,6 +93,8 @@ class OptimizationCompiler(GraphQLASTWalker):
         with self.use_optimizer(optimizer):
             super().handle_to_one_field(parent_type, field_node, related_field, related_model)
 
+        self.run_field_optimizer(parent_type, field_node)
+
     def handle_to_many_field(
         self,
         parent_type: GraphQLOutputType,
@@ -120,27 +122,21 @@ class OptimizationCompiler(GraphQLASTWalker):
         with self.use_optimizer(optimizer):
             super().handle_to_many_field(parent_type, field_node, related_field, related_model)
 
+        self.run_field_optimizer(parent_type, field_node)
+
     def handle_custom_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        field = field_type.fields.get(field_node.name.value)
-        if field is None:
-            msg = (
-                f"Field '{field_node.name.value}' not found from object type '{field_type}'. "
-                f"Cannot optimize custom field."
-            )
-            undine_logger.warning(msg)
-            return
+        self.run_field_optimizer(field_type, field_node)
 
-        undine_field: Field | None = field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
-        if undine_field is None:
-            return
-
-        if isinstance(undine_field.ref, (models.Expression, models.Subquery)):
-            self.optimizer.annotations[undine_field.name] = undine_field.ref
-
-        if undine_field.optimizer_func is not None:
+    def run_field_optimizer(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        undine_field = self.get_undine_field(field_type, field_node)
+        if undine_field is not None and undine_field.optimizer_func is not None:
             undine_field.optimizer_func(undine_field, self.optimizer)
 
-        return
+    def get_undine_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> Field | None:
+        field = field_type.fields.get(field_node.name.value)
+        if field is None:
+            return None
+        return field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
 
     @contextlib.contextmanager
     def use_optimizer(self, optimizer: QueryOptimizer) -> None:

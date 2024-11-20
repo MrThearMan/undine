@@ -3,9 +3,9 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import HttpRequest
 
 from tests.helpers import exact, get_graphql_multipart_spec_request
+from undine.dataclasses import GraphQLParams
 from undine.errors.exceptions import GraphQLStatusError
 from undine.parsers import GraphQLRequestParamsParser
-from undine.typing import GraphQLParams
 
 
 def test_parse_graphql_params__get_request():

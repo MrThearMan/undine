@@ -44,32 +44,36 @@ def validate_name(name: str) -> str:
     return name
 
 
-def to_camel_case(name: str, *, validate: bool = True) -> str:
+def to_camel_case(string: str, *, validate_reversable: bool = False) -> str:
     """
     Convert from snake_case to camelCase.
-    By default, validates that 'name' can be converted back to snake_case unambiguously.
+
+    :param string: The string to convert.
+    :param validate_reversable: If True, alidates that 'name' can be converted back to snake_case unambiguously.
     """
-    if validate and undine_settings.VALIDATE_NAMES_REVERSIBLE:
-        validate_name(name)
-    words = name.split("_")
+    if validate_reversable and undine_settings.VALIDATE_NAMES_REVERSIBLE:
+        validate_name(string)
+    words = string.split("_")
     if len(words) == 1:
-        return name
+        return string
     text = words[0]
     for word in words[1:]:
         text += word.capitalize()
     return text
 
 
-def to_pascal_case(name: str, *, validate: bool = True) -> str:
+def to_pascal_case(string: str, *, validate_reversable: bool = False) -> str:
     """
     Convert from snake_case to PascalCase.
-    By default, validates that 'name' can be converted back to snake_case unambiguously.
+
+    :param string: The string to convert.
+    :param validate_reversable: If True, alidates that 'name' can be converted back to snake_case unambiguously.
     """
-    if validate and undine_settings.VALIDATE_NAMES_REVERSIBLE:
-        validate_name(name)
-    words = name.split("_")
+    if validate_reversable and undine_settings.VALIDATE_NAMES_REVERSIBLE:
+        validate_name(string)
+    words = string.split("_")
     if len(words) == 1:
-        return name.capitalize()
+        return string.capitalize()
     text = ""
     for word in words:
         text += word.capitalize()
@@ -95,10 +99,10 @@ def dotpath(obj: type | FunctionType | Callable) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
-def get_schema_name(name: str) -> str:
+def get_schema_name(name: str, *, validate_reversable: bool = False) -> str:
     if undine_settings.CAMEL_CASE_SCHEMA_FIELDS:
-        return to_camel_case(name)
-    return name  # pragma: no cover
+        return to_camel_case(name, validate_reversable=validate_reversable)
+    return name
 
 
 def get_docstring(ref: Any) -> str | None:

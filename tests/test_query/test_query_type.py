@@ -7,10 +7,10 @@ from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo
 from undine import Field, FilterSet, OrderSet, QueryType
+from undine.dataclasses import GraphQLFilterInfo
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.registies import GRAPHQL_TYPE_REGISTRY, QUERY_TYPE_REGISTRY
 from undine.scalars import GraphQLDate
-from undine.typing import GraphQLFilterInfo
 
 
 def test_query_type__registered():
@@ -45,12 +45,12 @@ def test_query_type__attributes():
         "acceptancecriteria",
         "assignees",
         "comments",
-        "createdAt",
+        "created_at",
         "name",
         "objective",
         "pk",
         "project",
-        "relatedTasks",
+        "related_tasks",
         "reports",
         "request",
         "result",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
+from django.db import models
 from graphql import GraphQLArgumentMap, GraphQLField, GraphQLFieldResolver, GraphQLOutputType, Undefined
 
 from undine.converters import (
@@ -25,8 +26,6 @@ from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
     from types import FunctionType
-
-    from django.db import models
 
     from undine import FilterSet, OrderSet
     from undine.optimizer.optimizer import QueryOptimizer
@@ -107,7 +106,7 @@ class QueryTypeMeta(type):
         instance.__filterset__ = filterset
         instance.__orderset__ = orderset
         instance.__lookup_field__ = lookup_field
-        instance.__field_map__ = {get_schema_name(name): field for name, field in get_members(instance, Field)}
+        instance.__field_map__ = dict(get_members(instance, Field))
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
         return instance
@@ -178,12 +177,11 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return cls.__optimize_queryset__(queryset, info)
 
     @classmethod
-    def __pre_optimization_hook__(cls, queryset: models.QuerySet, optimizer: QueryOptimizer) -> models.QuerySet:
+    def __pre_optimization_hook__(cls, optimizer: QueryOptimizer) -> None:
         """
         Hook for modifying the queryset and optimizer data before the optimization process.
         Used to add information about required data for the model outside of the GraphQL query.
         """
-        return queryset
 
     @classmethod
     def __is_type_of__(cls, value: models.Model, info: GQLInfo) -> bool:
@@ -203,7 +201,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
         # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
-            return {name: field.as_graphql_field() for name, field in cls.__field_map__.items()}
+            return {get_schema_name(name): field.as_graphql_field() for name, field in cls.__field_map__.items()}
 
         return get_or_create_object_type(
             name=cls.__typename__,
@@ -223,7 +221,6 @@ class Field:
         nullable: bool = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
-        resolver: GraphQLFieldResolver | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
@@ -241,9 +238,6 @@ class Field:
         :param description: Description for the field. If not provided, looks at the converted reference
                             and tries to find the description from it.
         :param deprecation_reason: If the field is deprecated, describes the reason for deprecation.
-        :param resolver: Function used to resolve the field. If not provided, looks at the reference
-                         and tries to determine this from it. Can also be added with the
-                         `@<field_name>.resolve` decorator.
         :param extensions: GraphQL extensions for the field.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
@@ -251,7 +245,7 @@ class Field:
         self.nullable = nullable
         self.description = description
         self.deprecation_reason = deprecation_reason
-        self.resolver_func = resolver
+        self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
@@ -267,6 +261,13 @@ class Field:
             self.nullable = is_field_nullable(self.ref, caller=self)
         if self.description is Undefined:
             self.description = parse_description(self.ref)
+
+        if isinstance(self.ref, (models.Expression, models.Subquery)):
+
+            def optimizer_func(field: Field, optimizer: QueryOptimizer) -> None:
+                optimizer.annotations[field.name] = field.ref
+
+            self.optimizer_func = optimizer_func
 
     def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Field()"""
@@ -305,7 +306,7 @@ class Field:
 
     def optimize(self, func: OptimizerFunc) -> OptimizerFunc:
         """
-        Add a custom optimization from a method using `@<field_name>.optimize`.
+        Add custom optimization from a method using `@<field_name>.optimize`.
         Note that the custom optimization is only run for non-model fields!
         """
         self.optimizer_func = get_wrapped_func(func)

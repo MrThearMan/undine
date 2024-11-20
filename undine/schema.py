@@ -43,8 +43,8 @@ from undine.utils.reflection import cache_signature_if_function, get_members
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
-    from undine.typing import EntrypointRef, GraphQLParams
-
+    from undine.dataclasses import GraphQLParams
+    from undine.typing import EntrypointRef
 
 __all__ = [
     "Entrypoint",

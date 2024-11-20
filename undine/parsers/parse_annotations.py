@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from graphql import GraphQLResolveInfo, Undefined
 
+from undine.dataclasses import Parameter
 from undine.errors.exceptions import (
     MissingFunctionAnnotationsError,
     MissingFunctionReturnTypeError,
     NoFunctionParametersError,
 )
-from undine.typing import GQLInfo, Parameter
+from undine.typing import GQLInfo
 from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:

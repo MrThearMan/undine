@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any, Generic, Iterable
+from typing import TYPE_CHECKING, Any, Callable, Generic, Iterable
 
 from django.db.models import Model
 
+from undine.dataclasses import PostSaveData
 from undine.errors.exceptions import GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelationType
-from undine.typing import ManyToManyManager, MutationInputType, OneToManyManager, PostSaveData, PostSaveHandler, TModel
+from undine.typing import JsonObject, RelatedManagerProtocol, TModel
 from undine.utils.model_utils import (
     generic_relations_for_generic_foreign_key,
     get_instance_or_raise,
@@ -17,6 +18,7 @@ from undine.utils.model_utils import (
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
+    from django.db import models
 
     from undine.parsers.parse_model_relation_info import RelatedFieldInfo
 
@@ -71,7 +73,7 @@ class MutationHandler(Generic[TModel]):
             handler(instance)
         return instance
 
-    def pre_save(self, input_data: dict[str, MutationInputType]) -> PostSaveData:
+    def pre_save(self, input_data: dict[str, JsonObject | models.Model | list[models.Model] | None]) -> PostSaveData:
         """
         Make pre-save modifications to the given input data based on the model's relations.
         Forward 'one-to-one' and 'many-to-one' related entities will be fetched, updated, or created.
@@ -150,7 +152,7 @@ class MutationHandler(Generic[TModel]):
 
         return get_instance_or_raise(model=related_model, key="pk", value=pk)
 
-    def get_post_save_handler(self, field_info: RelatedFieldInfo, data: Any) -> PostSaveHandler:
+    def get_post_save_handler(self, field_info: RelatedFieldInfo, data: Any) -> Callable[[models.Model], Any]:
         """Get a post-save handler based on the relation type."""
         related_handler = MutationHandler(model=field_info.model)
 
@@ -213,7 +215,7 @@ class MutationHandler(Generic[TModel]):
         """Handle a reverse one-to-many relation after the related instance has been created."""
         # This can also be a `GenericRelatedObjectManager`, but typing that requires
         # the content type app to be loaded to create the type, so this is fine.
-        manager: OneToManyManager = getattr(related_instance, field_info.field_name)
+        manager: RelatedManagerProtocol = getattr(related_instance, field_info.field_name)
 
         if not data:
             manager.all().delete()
@@ -247,7 +249,7 @@ class MutationHandler(Generic[TModel]):
 
     def post_handle_many_to_many(self, related_instance: Model, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a many-to-many relation after the related instance has been created."""
-        manager: ManyToManyManager = getattr(related_instance, field_info.field_name)
+        manager: RelatedManagerProtocol = getattr(related_instance, field_info.field_name)
 
         if not data:
             manager.clear()

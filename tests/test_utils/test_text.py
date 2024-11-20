@@ -30,7 +30,7 @@ def test_to_pascal_case_and_back(value: str):
 
 @given(strategies.from_regex(re.compile(r"^[a-z][a-zA-Z0-9]*$")))
 def test_camel_case_still_camel_case(value: str):
-    assert to_camel_case(value, validate=False) == value
+    assert to_camel_case(value) == value
 
 
 @pytest.mark.parametrize(

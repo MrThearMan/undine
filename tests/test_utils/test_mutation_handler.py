@@ -67,7 +67,7 @@ def test_mutation_handler__create():
                 },
             },
         ],
-        "relatedTasks": [
+        "related_tasks": [
             {
                 "name": "Related task",
                 "type": TaskTypeChoices.BUG_FIX.value,
@@ -206,7 +206,7 @@ def test_mutation_handler__update__retain_relations():
                 },
             },
         ],
-        "relatedTasks": [
+        "related_tasks": [
             {
                 "pk": related_task.pk,
                 "name": "New Related Task",
@@ -457,7 +457,7 @@ def test_mutation_handler__update__new_relations():
                 },
             },
         ],
-        "relatedTasks": [
+        "related_tasks": [
             {
                 "name": "New Related Task",
                 "type": TaskTypeChoices.BUG_FIX.value,
@@ -566,7 +566,7 @@ def test_mutation_handler__update__new_relations__integers():
         "steps": [new_step.pk],
         "reports": [new_report.pk],
         "comments": [new_comment.pk],
-        "relatedTasks": [new_related_task.pk],
+        "related_tasks": [new_related_task.pk],
     }
 
     handler = MutationHandler[Task](model=Task)
@@ -628,7 +628,7 @@ def test_mutation_handler__update__empty():
         "steps": [],
         "reports": [],
         "comments": [],
-        "relatedTasks": [],
+        "related_tasks": [],
     }
 
     handler = MutationHandler[Task](model=Task)

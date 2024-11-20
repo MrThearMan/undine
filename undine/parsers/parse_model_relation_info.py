@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 from django.db import models
 from graphql import Undefined
 
-from undine.utils.text import to_camel_case
-
 if TYPE_CHECKING:
     from undine.typing import RelatedField
 
@@ -74,7 +72,7 @@ def parse_model_relation_info(*, model: type[models.Model]) -> dict[str, Related
             msg = f"Unhandled relation type: {relation_type}"
             raise NotImplementedError(msg)
 
-        relation_info[to_camel_case(field_name)] = RelatedFieldInfo(
+        relation_info[field_name] = RelatedFieldInfo(
             field_name=field_name,
             related_name=related_name,
             relation_type=relation_type,

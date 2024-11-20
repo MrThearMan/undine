@@ -1,48 +1,21 @@
 from __future__ import annotations
 
-import dataclasses
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from django.db.models import Model, Prefetch, QuerySet
-from django.db.models.constants import LOOKUP_SEP
 
+from undine.dataclasses import GraphQLFilterInfo, OptimizationResults
 from undine.settings import undine_settings
 from undine.utils.reflection import swappable_by_subclassing
 
 from .filter_info import get_filter_info
 
 if TYPE_CHECKING:
-    from undine.typing import ExpressionKind, GQLInfo, GraphQLFilterInfo, QuerySetResolver
+    from undine.typing import ExpressionLike, GQLInfo, QuerySetResolver
 
 __all__ = [
     "QueryOptimizer",
 ]
-
-
-@dataclasses.dataclass
-class OptimizationResults:
-    name: str | None = None
-    queryset: QuerySet | None = None
-    only_fields: list[str] = dataclasses.field(default_factory=list)
-    related_fields: list[str] = dataclasses.field(default_factory=list)
-    select_related: list[str] = dataclasses.field(default_factory=list)
-    prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
-
-    def __add__(self, other: OptimizationResults) -> OptimizationResults:
-        """Adding two compilation results together means extending the lookups to the other model."""
-        self.select_related.append(other.name)
-        self.only_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
-        self.related_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
-        self.select_related.extend(f"{other.name}{LOOKUP_SEP}{select}" for select in other.select_related)
-
-        for prefetch in other.prefetch_related:
-            if isinstance(prefetch, str):
-                self.prefetch_related.append(f"{other.name}{LOOKUP_SEP}{prefetch}")
-            if isinstance(prefetch, Prefetch):
-                prefetch.add_prefix(other.name)
-                self.prefetch_related.append(prefetch)
-
-        return self
 
 
 @swappable_by_subclassing
@@ -63,8 +36,8 @@ class QueryOptimizer:
 
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
-        self.aliases: dict[str, ExpressionKind] = {}
-        self.annotations: dict[str, ExpressionKind] = {}
+        self.aliases: dict[str, ExpressionLike] = {}
+        self.annotations: dict[str, ExpressionLike] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
         self.manual_optimizers: dict[str, QuerySetResolver] = {}
@@ -79,14 +52,9 @@ class QueryOptimizer:
         results = self.process(queryset, filter_info)
         return self.optimize(results, filter_info)
 
-    def pre_processing(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
-        """Run all pre-optimization hooks on the objct type mathcing the queryset's model."""
-        return filter_info.model_type.__pre_optimization_hook__(queryset, self)
-
     def process(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> OptimizationResults:
         """Process compiled optimizations to optimize the given queryset."""
-        queryset = self.pre_processing(queryset, filter_info)
-        queryset = self.run_manual_optimizers(queryset, filter_info)
+        filter_info.model_type.__pre_optimization_hook__(self)
 
         results = OptimizationResults(
             name=self.name,
@@ -156,32 +124,18 @@ class QueryOptimizer:
             queryset = queryset.distinct()
         return queryset
 
-    def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
-        for name, func in self.manual_optimizers.items():
-            # TODO: Refactor this.
-            nested_filter_info: GraphQLFilterInfo | None = filter_info.children.get(name)
-            filters = nested_filter_info.filters if nested_filter_info is not None else {}
-            queryset = func(queryset, self, filters)
-        return queryset
-
-    def has_child_optimizer(self, name: str) -> bool:  # pragma: no cover
-        return name in self.select_related or name in self.prefetch_related
-
-    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:  # pragma: no cover
-        return self.select_related.get(name) or self.prefetch_related.get(name)
-
-    def get_or_set_child_optimizer(  # pragma: no cover
-        self,
-        name: str,
-        optimizer: QueryOptimizer,
-        *,
-        set_as: Literal["select_related", "prefetch_related"] = "select_related",
-    ) -> QueryOptimizer:
+    def add_select_related(self, name: str, model: type[Model]) -> QueryOptimizer:
         maybe_optimizer = self.select_related.get(name)
         if maybe_optimizer is not None:
             return maybe_optimizer
+
+        self.select_related[name] = optimizer = QueryOptimizer(model=model, info=self.info, name=name, parent=self)
+        return optimizer
+
+    def add_prefetch_related(self, name: str, model: type[Model]) -> QueryOptimizer:
         maybe_optimizer = self.prefetch_related.get(name)
         if maybe_optimizer is not None:
             return maybe_optimizer
-        getattr(self, set_as)[name] = optimizer
+
+        self.prefetch_related[name] = optimizer = QueryOptimizer(model=model, info=self.info, name=name, parent=self)
         return optimizer

@@ -118,28 +118,13 @@ def test_input__validator():
     class MyMutationType(MutationType, model=Task):
         name = Input()
 
-        @name.validator
+        @name.validate
         def validate_name(self: Input, value: str) -> None:
             if value == "foo":
                 msg = "Name must not be 'foo'"
                 raise ValueError(msg)
 
-    assert len(MyMutationType.name.validators) == 1
+    assert MyMutationType.name.validator_func is MyMutationType.validate_name
 
     with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
         MyMutationType.validate_name(MyMutationType.name, "foo")
-
-
-def test_input__validator__as_argument():
-    def validate_name(_: Input, value: str) -> None:
-        if value == "foo":
-            msg = "Name must not be 'foo'"
-            raise ValueError(msg)
-
-    class MyMutationType(MutationType, model=Task):
-        name = Input(validators=[validate_name])
-
-    assert len(MyMutationType.name.validators) == 1
-
-    with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
-        validate_name(MyMutationType.name, "foo")

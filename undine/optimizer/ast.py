@@ -73,7 +73,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
             return self.handle_graphql_builtin(field_type, field_node)
 
         field_model = self.get_model(field_type)
-        if field_model is None:  # pragma: no cover
+        if field_model is None:
             return None
         return self.handle_model_field(field_type, field_node, field_name, field_model)
 
@@ -146,7 +146,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
     def handle_inline_fragment(self, field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> None:
         fragment_type = get_fragment_type(field_type, inline_fragment)
         fragment_model = self.get_model(fragment_type)
-        if fragment_model is None:  # pragma: no cover
+        if fragment_model is None:
             return None
         if fragment_model != self.model:
             return None
@@ -169,10 +169,10 @@ class GraphQLASTWalker:  # noqa: PLR0904
         alias = getattr(field_node.alias, "value", None)
         return alias or to_snake_case(field_node.name.value)
 
-    def get_related_field_name(self, related_field: ToManyField | ToOneField) -> str:
+    def get_related_field_name(self, related_field: ToManyField | ToOneField) -> str:  # pragma: no cover
         if hasattr(related_field, "cache_name"):  # Django 5.1+
-            return related_field.cache_name or related_field.name  # pragma: no cover
-        return related_field.get_cache_name() or related_field.name  # pragma: no cover
+            return related_field.cache_name or related_field.name
+        return related_field.get_cache_name() or related_field.name
 
     @contextlib.contextmanager
     def use_model(self, model: type[Model]) -> GraphQLASTWalker:
@@ -219,7 +219,7 @@ def get_fragment_type(field_type: GraphQLUnionType, inline_fragment: InlineFragm
     gen = (t for t in field_type.types if t.name == fragment_type_name)
     fragment_type: GraphQLOutputType | None = next(gen, None)
 
-    if fragment_type is None:  # pragma: no cover
+    if fragment_type is None:
         msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
         raise OptimizerError(msg)
 

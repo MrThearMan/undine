@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from undine.typing import InputRef, ModelField, TypeRef
+from undine.dataclasses import TypeRef
+from undine.typing import InputRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
@@ -29,7 +30,7 @@ def _(_: TypeRef, **kwargs: Any) -> bool:
     return False
 
 
-def load_deferred_converters() -> None:  # pragma: no cover
+def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 

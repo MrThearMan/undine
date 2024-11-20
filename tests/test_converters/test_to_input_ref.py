@@ -10,7 +10,7 @@ from django.db.models import TextChoices
 from example_project.app.models import Comment, Project, Task
 from undine import Input, MutationType
 from undine.converters import convert_to_input_ref
-from undine.typing import TypeRef
+from undine.dataclasses import TypeRef
 
 
 def test_convert_to_input_ref__str():

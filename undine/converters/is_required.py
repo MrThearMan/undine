@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Any
 
 from django.db.models import NOT_PROVIDED
 
-from undine.typing import InputRef, ModelField, TypeRef
+from undine.dataclasses import TypeRef
+from undine.typing import InputRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.model_utils import get_model_field
 
@@ -47,7 +48,7 @@ def _(_: TypeRef, **kwargs: Any) -> bool:
     return False
 
 
-def load_deferred_converters() -> None:  # pragma: no cover
+def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 

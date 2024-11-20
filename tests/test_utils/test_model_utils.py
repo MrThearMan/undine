@@ -121,3 +121,6 @@ def test_generic_foreign_key_for_generic_relation():
     generic = generic_foreign_key_for_generic_relation(field)
 
     assert generic == Comment._meta.get_field("target")
+
+
+# TODO: Test `get_model_fields_for_graphql

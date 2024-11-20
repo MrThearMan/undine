@@ -40,20 +40,6 @@ def test_field__get_resolver():
 
 
 def test_field__resolver():
-    def resolver_func() -> int:
-        return 1
-
-    class MyQueryType(QueryType, model=Task):
-        name = Field(resolver=resolver_func)
-
-    resolver = MyQueryType.name.get_resolver()
-    assert isinstance(resolver, FunctionResolver)
-    assert resolver.func == resolver_func
-
-    assert resolver(root=None, info=MockGQLInfo()) == 1
-
-
-def test_field__resolver__resolve_decorator():
     class MyQueryType(QueryType, model=Task):
         name = Field()
 
@@ -248,3 +234,6 @@ def test_field__extensions():
 
     graphql_field = field.as_graphql_field()
     assert graphql_field.extensions == {"foo": "bar", "undine_field": field}
+
+
+# TODO: Field with expression. Check optimizer func.

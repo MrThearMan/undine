@@ -3,7 +3,7 @@ from __future__ import annotations
 from example_project.app.models import Comment, Project, Task
 from undine import Input, MutationType
 from undine.converters import is_input_required
-from undine.typing import TypeRef
+from undine.dataclasses import TypeRef
 
 
 def test_is_required__model_field__create_mutation():

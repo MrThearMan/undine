@@ -3,7 +3,8 @@ from __future__ import annotations
 from types import FunctionType, GenericAlias
 from typing import Any, get_origin
 
-from undine.typing import CombinableExpression, ModelField, TypeRef
+from undine.dataclasses import TypeRef
+from undine.typing import CombinableExpression, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field

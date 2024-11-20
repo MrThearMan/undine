@@ -3,14 +3,13 @@ from __future__ import annotations
 import traceback
 from contextlib import suppress
 from copy import deepcopy
-from dataclasses import dataclass
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, Iterator, Self
 
+from undine.dataclasses import MutationMiddlewareParams
 from undine.errors.exceptions import GraphQLBadInputDataError
 from undine.settings import undine_settings
 from undine.testing.query_logging import capture_database_queries
-from undine.typing import MutationMiddlewareParams
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
@@ -53,12 +52,6 @@ def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQ
 # --- Mutation middleware -----------------------------------------------------------------------------------------
 
 
-@dataclass
-class ListItem:
-    place: int
-    data: dict[str, Any]
-
-
 class InputDataValidationMiddleware:
     """
     Calls registered validators for each input field reachable from the mutation type.
@@ -88,10 +81,10 @@ class InputDataValidationMiddleware:
             if inpt is None:
                 raise GraphQLBadInputDataError(mutation_type=mutation_type, field_name=field_name)
 
-            value = input_data.pop(field_name)
+            value = input_data[field_name]
 
-            for validator in inpt.validators:
-                validator(inpt, value)
+            if inpt.validator_func is not None:
+                inpt.validator_func(inpt, value)
 
             if isinstance(value, dict) and is_subclass(inpt.ref, MutationType):
                 self.pre_mutation(mutation_type=inpt.ref, input_data=value)
@@ -100,9 +93,8 @@ class InputDataValidationMiddleware:
                 for item in value:
                     self.pre_mutation(mutation_type=inpt.ref, input_data=item)
 
-            if not inpt.input_only:
-                # Use field 'snake_case' name.
-                input_data[inpt.name] = value
+            if inpt.input_only:
+                input_data.pop(field_name)
 
 
 class MutationMiddlewareContext:

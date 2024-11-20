@@ -6,9 +6,9 @@ import pytest
 from graphql_relay import offset_to_cursor
 
 from tests.helpers import parametrize_helper
+from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import PaginationArgumentValidationError
 from undine.pagination import calculate_queryset_slice, validate_pagination_args
-from undine.typing import PaginationArgs
 
 
 class PaginationInput(NamedTuple):
@@ -154,7 +154,7 @@ class DataParams(NamedTuple):
                 output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
                 errors=None,
             ),
-        }
+        },
     ),
 )
 def test_validate_pagination_args(pagination_input, output, errors):
@@ -263,8 +263,8 @@ def test_validate_pagination_args(pagination_input, output, errors):
                 start=10,
                 stop=20,
             ),
-        }
-    )
+        },
+    ),
 )
 def test_calculate_queryset_slice(pagination_input: PaginationData, start: int, stop: int) -> None:
     cut = calculate_queryset_slice(**pagination_input._asdict())

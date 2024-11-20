@@ -20,7 +20,6 @@ def test_order__attributes():
     assert MyOrderSet.name.ref == models.F("name")
     assert MyOrderSet.name.nulls_first is None
     assert MyOrderSet.name.nulls_last is None
-    assert MyOrderSet.name.single_direction is False
     assert MyOrderSet.name.description is None
     assert MyOrderSet.name.deprecation_reason is None
     assert MyOrderSet.name.extensions == {"undine_order": MyOrderSet.name}
@@ -78,7 +77,7 @@ def test_order__null_placement__first():
     assert MyOrderSet.name.nulls_first is True
     assert MyOrderSet.name.nulls_last is None
 
-    data = ["name"]
+    data = ["nameAsc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [models.OrderBy(models.F("name"), nulls_first=True)]
 
@@ -90,7 +89,7 @@ def test_order__null_placement__last():
     assert MyOrderSet.name.nulls_first is None
     assert MyOrderSet.name.nulls_last is True
 
-    data = ["name"]
+    data = ["nameAsc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [models.OrderBy(models.F("name"), nulls_last=True)]
 
@@ -135,13 +134,3 @@ def test_order__extensions():
     enum_type = MyOrderSet.__enum_type__()
     assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
     assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
-
-
-def test_order__single_direction():
-    class MyOrderSet(OrderSet, model=Task, auto=False):
-        name = Order(single_direction=True)
-
-    assert MyOrderSet.name.single_direction is True
-
-    enum_type = MyOrderSet.__enum_type__()
-    assert enum_type.values["name"] == MyOrderSet.name.get_graphql_enum_value()
