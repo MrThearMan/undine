@@ -326,6 +326,7 @@ InputRef: TypeAlias = Union[
     models.Field,
     type["MutationType"],
     TypeRef,
+    Callable[..., Any],
 ]
 
 

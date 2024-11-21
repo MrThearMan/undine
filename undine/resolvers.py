@@ -142,7 +142,7 @@ class BulkCreateResolver:
         return self.mutation_type.__model__
 
     @property
-    def queryset(self) -> models.QuerySet:
+    def manager(self) -> models.Manager:
         return self.model._meta.default_manager
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
@@ -161,7 +161,7 @@ class BulkCreateResolver:
             # TODO: Middleware
             # TODO: Validators
         ):
-            return self.queryset.bulk_create(
+            return self.manager.bulk_create(
                 objs,
                 batch_size=batch_size,
                 ignore_conflicts=ignore_conflicts,
@@ -216,7 +216,7 @@ class BulkUpdateResolver:
         return self.mutation_type.__model__
 
     @property
-    def queryset(self) -> models.QuerySet:
+    def manager(self) -> models.Manager:
         return self.model._meta.default_manager
 
     @property
@@ -236,7 +236,7 @@ class BulkUpdateResolver:
             # TODO: Middleware
             # TODO: Validators
         ):
-            return self.queryset.bulk_update(objs, fields, batch_size=batch_size)
+            return self.manager.bulk_update(objs, fields, batch_size=batch_size)
 
 
 @dataclass(frozen=True, slots=True)

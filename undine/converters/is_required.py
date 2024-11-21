@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
 from django.db.models import NOT_PROVIDED
+from graphql import Undefined
 
 from undine.dataclasses import TypeRef
 from undine.typing import InputRef, ModelField
@@ -53,6 +55,13 @@ def load_deferred_converters() -> None:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine import MutationType
+    from undine.parsers import parse_parameters
+
+    @is_input_required.register
+    def _(ref: FunctionType, **kwargs: Any) -> bool:
+        parameters = parse_parameters(ref)
+        first_param_default_value = next((param.default_value for param in parameters), Undefined)
+        return first_param_default_value is Undefined
 
     @is_input_required.register
     def _(_: type[MutationType], **kwargs: Any) -> bool:

@@ -270,7 +270,7 @@ class Field:
             self.optimizer_func = optimizer_func
 
     def __call__(self, ref: FunctionType, /) -> Self:
-        """Called when using as decorator with parenthesis: @Field()"""
+        """Called when using as decorator with parenthesis: @Field(...)"""
         self.ref = cache_signature_if_function(ref, depth=1)
         return self
 
@@ -304,7 +304,7 @@ class Field:
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
-    def optimize(self, func: OptimizerFunc) -> OptimizerFunc:
+    def optimize(self, func: OptimizerFunc, /) -> OptimizerFunc:
         """
         Add custom optimization from a method using `@<field_name>.optimize`.
         Note that the custom optimization is only run for non-model fields!

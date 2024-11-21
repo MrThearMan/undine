@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import FunctionType
 from typing import Any
 
 from django.db import models
@@ -41,6 +42,11 @@ def _(_: models.ForeignObjectRel, **kwargs: Any) -> Any:
 
 @convert_to_default_value.register
 def _(_: TypeRef, **kwargs: Any) -> Any:
+    return Undefined
+
+
+@convert_to_default_value.register
+def _(_: FunctionType, **kwargs: Any) -> Any:
     return Undefined
 
 

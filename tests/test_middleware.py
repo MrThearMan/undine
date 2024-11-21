@@ -8,12 +8,17 @@ from typing import TYPE_CHECKING, Any, Generator
 import pytest
 
 from example_project.app.models import Comment, Person, Project, ServiceRequest, Task, TaskTypeChoices, Team
-from tests.helpers import MockGQLInfo, exact
+from tests.factories import UserFactory
+from tests.helpers import MockGQLInfo, MockRequest, exact
 from undine import Input, MutationType
 from undine.dataclasses import MutationMiddlewareParams
-from undine.errors.exceptions import GraphQLBadInputDataError
-from undine.middleware import InputDataValidationMiddleware, MutationMiddlewareContext, error_logging_middleware
-from undine.utils.text import dotpath
+from undine.middleware import (
+    AlterInputDataMiddleware,
+    InputDataValidationMiddleware,
+    MutationMiddlewareContext,
+    RemoveInputOnlyFieldsMiddleware,
+    error_logging_middleware,
+)
 
 if TYPE_CHECKING:
     from undine.typing import GQLInfo, MutationMiddlewareType
@@ -34,7 +39,35 @@ def test_error_logging_middleware(caplog):
     assert "ValueError: Test" in caplog.record_tuples[0][2]
 
 
-def test_input_data_validation_middleware__validators():
+def test_alter_input_data_middleware():
+    class MyMutationType(MutationType, model=Task, auto=False):
+        name = Input(hidden=True, default_value="foo")
+
+        @Input
+        def current_user_id(self: Input, info: GQLInfo) -> int | None:
+            return info.context.user.id
+
+    input_data = {}
+
+    middleware = AlterInputDataMiddleware(
+        params=MutationMiddlewareParams(
+            mutation_type=MyMutationType,
+            info=MockGQLInfo(context=MockRequest(user=UserFactory.build(id=1))),
+            input_data=deepcopy(input_data),
+        ),
+    )
+
+    it = iter(middleware)
+    with contextlib.suppress(StopIteration):
+        next(it)
+
+    assert middleware.params.input_data == {
+        "name": "foo",
+        "current_user_id": 1,
+    }
+
+
+def test_input_data_validation_middleware():
     validate_called = False
     validator_1_called = False
     validator_2_called = False
@@ -83,7 +116,7 @@ def test_input_data_validation_middleware__validators():
     assert validator_2_called is True
 
 
-def test_input_data_validation_middleware__remove_input_only_fields():
+def test_remove_input_only_fields_middleware():
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input(input_only=True)
         type = Input()
@@ -95,7 +128,7 @@ def test_input_data_validation_middleware__remove_input_only_fields():
         "created_at": "2022-01-01T00:00:00",
     }
 
-    middleware = InputDataValidationMiddleware(
+    middleware = RemoveInputOnlyFieldsMiddleware(
         params=MutationMiddlewareParams(
             mutation_type=MyMutationType,
             info=MockGQLInfo(),
@@ -119,7 +152,7 @@ def test_input_data_validation_middleware__remove_input_only_fields():
     assert middleware.params.input_data == input_data
 
 
-def test_input_data_validation_middleware__remove_input_only_fields__nested():
+def test_remove_input_only_fields_middleware__nested():
     class MyTeamType(MutationType, model=Team, auto=False):
         pk = Input()
         name = Input()
@@ -175,7 +208,7 @@ def test_input_data_validation_middleware__remove_input_only_fields__nested():
         ],
     }
 
-    middleware = InputDataValidationMiddleware(
+    middleware = RemoveInputOnlyFieldsMiddleware(
         params=MutationMiddlewareParams(
             mutation_type=MyTaskType,
             info=MockGQLInfo(),
@@ -194,53 +227,6 @@ def test_input_data_validation_middleware__remove_input_only_fields__nested():
         "request": {},
         "assignees": [{"name": "Test user"}],
     }
-
-    with contextlib.suppress(StopIteration):
-        next(it)
-
-    assert middleware.params.input_data == input_data
-
-
-def test_input_data_validation_middleware__invalid_input():
-    class MyMutationType(MutationType, model=Task, auto=False): ...
-
-    input_data = {"name": "foo"}
-
-    middleware = InputDataValidationMiddleware(
-        params=MutationMiddlewareParams(
-            mutation_type=MyMutationType,
-            info=MockGQLInfo(),
-            input_data=deepcopy(input_data),
-        ),
-    )
-
-    it = iter(middleware)
-    name = dotpath(MyMutationType)
-    msg = f"Input data contains data for field 'name' but MutationType '{name}' doesn't have an input with that name."
-    with pytest.raises(GraphQLBadInputDataError, match=exact(msg)):
-        next(it)
-
-
-def test_input_data_validation_middleware__convert_to_snake_case():
-    class MyTaskType(MutationType, model=Task, auto=False):
-        created_at = Input()
-
-    input_data = {"created_at": "2022-01-01T00:00:00"}
-
-    middleware = InputDataValidationMiddleware(
-        params=MutationMiddlewareParams(
-            mutation_type=MyTaskType,
-            info=MockGQLInfo(),
-            input_data=deepcopy(input_data),
-        ),
-    )
-
-    it = iter(middleware)
-
-    with contextlib.suppress(StopIteration):
-        next(it)
-
-    assert middleware.params.input_data == {"created_at": "2022-01-01T00:00:00"}
 
     with contextlib.suppress(StopIteration):
         next(it)

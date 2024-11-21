@@ -10,7 +10,8 @@ class UserFactory(GenericDjangoModelFactory[User]):
     class Meta:
         model = User
 
-    name = faker.Faker("name")
+    first_name = faker.Faker("first_name")
+    last_name = faker.Faker("last_name")
     email = faker.Faker("email")
 
     @classmethod

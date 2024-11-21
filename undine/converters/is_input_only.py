@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import FunctionType
 from typing import Any
 
 from undine.dataclasses import TypeRef
@@ -30,11 +31,16 @@ def _(_: TypeRef, **kwargs: Any) -> bool:
     return True
 
 
+@is_input_only.register
+def _(_: FunctionType, **kwargs: Any) -> bool:
+    return True
+
+
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine.mutation import MutationType
+    from undine import MutationType
 
     @is_input_only.register
     def _(_: type[MutationType], **kwargs: Any) -> bool:

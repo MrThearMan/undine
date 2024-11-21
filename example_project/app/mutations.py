@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from example_project.app.models import (
     Comment,
@@ -15,6 +15,9 @@ from example_project.app.models import (
 )
 from undine import Input
 from undine.mutation import MutationType
+
+if TYPE_CHECKING:
+    from undine.typing import GQLInfo
 
 
 class TeamCreateMutationTypeInput(MutationType, model=Team): ...
@@ -66,8 +69,12 @@ class CustomInput(TypedDict):
 class TaskCreateMutationType(MutationType, model=Task):
     """Create a task."""
 
-    input_only = Input(bool)
+    input_only = Input(bool, default_value=True)
     custom = Input(CustomInput)
+
+    @Input
+    def current_user(self, info: GQLInfo) -> int | None:
+        return info.context.user.id
 
     request = Input(ServiceRequestCreateMutationTypeInput)
     project = Input(ProjectCreateMutationTypeInput)

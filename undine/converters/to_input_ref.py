@@ -4,6 +4,7 @@ import datetime
 import decimal
 import uuid
 from enum import Enum
+from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
 from django.db import models
@@ -155,6 +156,11 @@ def _(ref: type[list], **kwargs: Any) -> InputRef:
 @convert_to_input_ref.register
 def _(ref: type[dict], **kwargs: Any) -> InputRef:
     return TypeRef(value=ref)
+
+
+@convert_to_input_ref.register
+def _(ref: FunctionType, **kwargs: Any) -> InputRef:
+    return ref
 
 
 def load_deferred_converters() -> None:

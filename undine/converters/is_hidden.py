@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import FunctionType
 from typing import Any
 
 from undine.dataclasses import TypeRef
@@ -28,6 +29,11 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
 @is_input_hidden.register
 def _(_: TypeRef, **kwargs: Any) -> bool:
     return False
+
+
+@is_input_hidden.register
+def _(_: FunctionType, **kwargs: Any) -> bool:
+    return True
 
 
 def load_deferred_converters() -> None:

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Container, Iterable
+from typing import TYPE_CHECKING, Any, Container, Iterable, Self
 
 from graphql import (
     GraphQLBoolean,
     GraphQLField,
+    GraphQLFieldResolver,
     GraphQLInputField,
     GraphQLInputType,
     GraphQLNonNull,
@@ -27,7 +28,7 @@ from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_input_object_type, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_field, get_model_fields_for_graphql
-from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, get_schema_name
 
 if TYPE_CHECKING:
@@ -188,25 +189,27 @@ class Input:
         In other words, it's an input used in the mutation of the `MutationType` it belongs to.
 
         :param ref: Reference to build the input from. Can be anything that `convert_to_input_ref` can convert,
-                    e.g., a string referencing a model field name, a model field, a `Mutation`, etc.
+                    e.g., a string referencing a model field name, a model field, a `MutationType`, etc.
                     If not provided, use the name of the attribute this is assigned to
                     in the `MutationType` class.
         :param many: Whether the input should contain a non-null list of the referenced type.
                      If not provided, looks at the reference and tries to determine this from it.
         :param required: Whether the input should be required. If not provided, looks at the reference
                          and the MutationType's mutation kind to determine this.
-        :param default_value: Default value for the input.
-        :param input_only: If `True`, the input's value is not included when the mutation is performed.
-                           Value still exists for the pre and post mutation hooks. If not provided,
+        :param default_value: Value to use for the input if non is provided. Also makes the input not required,
+                              if not otherwise specified. Must be a valid GraphQL default value.
+        :param input_only: If `True`, the input's value is not included when the mutation is performed
+                           (value still exists for any mutation middlewares). If not provided,
                            looks at the reference, and if it doesn't point to a field on the model,
                            this field will be considered input-only.
-        :param hidden: If `True`, the input is not included in the schema.
+        :param hidden: If `True`, the input is not included in the schema. In most cases, should also
+                       add a `default_value` for the input.
         :param description: Description for the input. If not provided, looks at the converted reference,
                             and tries to find the description from it.
         :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the input.
         """
-        self.ref = ref
+        self.ref = cache_signature_if_function(ref, depth=1)
         self.many = many
         self.required = required
         self.input_only = input_only
@@ -236,6 +239,11 @@ class Input:
         if self.description is Undefined:
             self.description = parse_description(self.ref)
 
+    def __call__(self, ref: GraphQLFieldResolver, /) -> Self:
+        """Called when using as decorator with parenthesis: @Input(...)"""
+        self.ref = cache_signature_if_function(ref, depth=1)
+        return self
+
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
@@ -253,7 +261,7 @@ class Input:
         graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
-    def validate(self, func: ValidatorFunc) -> ValidatorFunc:
+    def validate(self, func: ValidatorFunc, /) -> ValidatorFunc:
         """Add a validator for the input using `@<input_name>.validator`"""
         self.validator_func = get_wrapped_func(func)
         return func

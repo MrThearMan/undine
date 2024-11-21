@@ -64,9 +64,8 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
-    from undine.mutation import MutationType
+    from undine import MutationType, QueryType
     from undine.parsers import parse_return_annotation
-    from undine.query import QueryType
 
     @is_many.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:

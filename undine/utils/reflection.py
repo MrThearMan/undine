@@ -30,6 +30,7 @@ __all__ = [
 
 
 T = TypeVar("T")
+TType = TypeVar("TType", bound=type)
 P = ParamSpec("P")
 
 
@@ -147,9 +148,9 @@ def has_callable_attribute(obj: object, name: str) -> bool:
     return hasattr(obj, name) and callable(getattr(obj, name))
 
 
-def is_subclass(obj: object, cls: type) -> bool:
+def is_subclass(obj: object, cls: TType) -> TypeGuard[TType]:
     """Check if the given object is a subclass of the given class."""
-    return isinstance(obj, type) and issubclass(obj, cls)
+    return isinstance(obj, type) and issubclass(obj, cls)  # type: ignore[arg-type]
 
 
 def is_lambda(func: Callable[..., Any]) -> TypeGuard[Lambda]:
