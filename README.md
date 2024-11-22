@@ -30,6 +30,7 @@ pip install undine
 - [ ] Add support for pagination
 - [ ] Add support for Relay
 - [ ] Add support for bulk mutations
+- [ ] Mutation middleware "priority" value
 - [ ] Add post mutation hook
 - [ ] Add utilities for unit testing
 - [ ] Sync with graphene-django-query-optimizer
