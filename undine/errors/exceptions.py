@@ -320,7 +320,7 @@ class GraphQLBadOrderDataError(GraphQLStatusError):
     """Error raised when a request content is not correct according to the GraphQL schema."""
 
     msg = (
-        "Order data contains ordering value '{field_name}' but OrderSet '{orderset:dotpath}' "
+        "Order data contains ordering value '{enum_value}' but OrderSet '{orderset:dotpath}' "
         "doesn't have support an order with that name."
     )
     status = 400

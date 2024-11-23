@@ -77,9 +77,6 @@ class DefaultSettings(NamedTuple):
     MUTATION_INPUT_KEY: str = "input"
     """The key used for the input argument of a MutationType."""
 
-    MUTATION_MIDDLEWARE: list[str] = []
-    """Middleware to execute for all mutations. See. `MutationMiddlewareContext`."""
-
     NO_ERROR_LOCATION: bool = False
     """Whether to add the location information to GraphQL errors."""
 

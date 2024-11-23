@@ -26,7 +26,7 @@ from typing import (
 from typing import _eval_type  # isort: skip  # noqa: PLC2701
 
 
-from undine.dataclasses import MutationMiddlewareParams, TypeRef
+from undine.dataclasses import TypeRef
 
 try:
     from typing import Self
@@ -66,7 +66,6 @@ __all__ = [
     "ManagerProtocol",
     "ModelField",
     "MutationKind",
-    "MutationMiddlewareType",
     "OptimizerFunc",
     "OrderRef",
     "QuerySetResolver",
@@ -129,10 +128,6 @@ class ExpressionLike(Protocol):
 
 class DispatchProtocol(Protocol[From, To]):
     def __call__(self, key: From, **kwargs: Any) -> To: ...
-
-
-class MutationMiddlewareType(Protocol):
-    def __call__(self, params: MutationMiddlewareParams) -> Iterable[None] | Iterator[None] | None: ...
 
 
 class DjangoRequestProtocol(Protocol):

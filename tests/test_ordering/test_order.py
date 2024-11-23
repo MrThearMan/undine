@@ -31,16 +31,25 @@ def test_order__get_expression():
     class MyOrderSet(OrderSet, model=Task, auto=False):
         name = Order()
 
-    expression = MyOrderSet.name.get_expression()
+    expression = MyOrderSet.name.get_expression(descending=False)
     assert expression == models.OrderBy(models.F("name"))
+
+    expression = MyOrderSet.name.get_expression(descending=True)
+    assert expression == models.OrderBy(models.F("name"), descending=True)
 
 
 def test_order__get_graphql_enum_value():
     class MyOrderSet(OrderSet, model=Task, auto=False):
         name = Order()
 
-    enum_value = MyOrderSet.name.get_graphql_enum_value()
-    assert enum_value.value == "name"
+    enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
+    assert enum_value.value == "name_asc"
+    assert enum_value.description is None
+    assert enum_value.deprecation_reason is None
+    assert enum_value.extensions == {"undine_order": MyOrderSet.name}
+
+    enum_value = MyOrderSet.name.get_graphql_enum_value(descending=True)
+    assert enum_value.value == "name_desc"
     assert enum_value.description is None
     assert enum_value.deprecation_reason is None
     assert enum_value.extensions == {"undine_order": MyOrderSet.name}
@@ -54,7 +63,7 @@ def test_order__expression():
 
     assert MyOrderSet.length.ref == expr
 
-    expression = MyOrderSet.length.get_expression()
+    expression = MyOrderSet.length.get_expression(descending=False)
     assert expression == models.OrderBy(expr)
 
 
@@ -66,7 +75,7 @@ def test_order__subquery():
 
     assert MyOrderSet.primary_assignee_name.ref == sq
 
-    expression = MyOrderSet.primary_assignee_name.get_expression()
+    expression = MyOrderSet.primary_assignee_name.get_expression(descending=False)
     assert expression == models.OrderBy(sq)
 
 
@@ -77,7 +86,7 @@ def test_order__null_placement__first():
     assert MyOrderSet.name.nulls_first is True
     assert MyOrderSet.name.nulls_last is None
 
-    data = ["nameAsc"]
+    data = ["name_asc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [models.OrderBy(models.F("name"), nulls_first=True)]
 
@@ -89,7 +98,7 @@ def test_order__null_placement__last():
     assert MyOrderSet.name.nulls_first is None
     assert MyOrderSet.name.nulls_last is True
 
-    data = ["nameAsc"]
+    data = ["name_asc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [models.OrderBy(models.F("name"), nulls_last=True)]
 
@@ -100,7 +109,7 @@ def test_order__description():
 
     assert MyOrderSet.name.description == "Description."
 
-    enum_value = MyOrderSet.name.get_graphql_enum_value()
+    enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.description == "Description."
 
     enum_type = MyOrderSet.__enum_type__()
@@ -114,7 +123,7 @@ def test_order__deprecation_reason():
 
     assert MyOrderSet.name.deprecation_reason == "Use something else."
 
-    enum_value = MyOrderSet.name.get_graphql_enum_value()
+    enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.deprecation_reason == "Use something else."
 
     enum_type = MyOrderSet.__enum_type__()
@@ -128,7 +137,7 @@ def test_order__extensions():
 
     assert MyOrderSet.name.extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
 
-    enum_value = MyOrderSet.name.get_graphql_enum_value()
+    enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
 
     enum_type = MyOrderSet.__enum_type__()

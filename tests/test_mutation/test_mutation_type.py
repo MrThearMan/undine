@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Iterator
 
 import pytest
 from graphql import GraphQLNonNull, GraphQLString
@@ -9,12 +9,12 @@ from example_project.app.models import Task
 from tests.helpers import MockGQLInfo, exact
 from undine import MutationType, QueryType
 from undine.errors.exceptions import MissingModelError
+from undine.middleware import MutationMiddleware
 from undine.mutation import DeleteMutationOutputType
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from undine.dataclasses import MutationMiddlewareParams
-    from undine.typing import GQLInfo, MutationMiddlewareType, Root
+    from undine.typing import GQLInfo, Root
 
 
 def test_mutation_type__registered():
@@ -55,15 +55,19 @@ def test_mutation_type__attributes():
 
 
 def test_mutation_type__middleware():
-    def my_middleware(params: MutationMiddlewareParams) -> Generator:
-        yield
+
+    class MyMiddleware(MutationMiddleware):
+        priority = 100
+
+        def __iter__(self) -> Iterator:
+            yield
 
     class MyCreateMutation(MutationType, model=Task):
         @classmethod
-        def __middleware__(cls) -> list[MutationMiddlewareType]:
-            return [my_middleware]
+        def __middleware__(cls) -> list[type[MutationMiddleware]]:
+            return [MyMiddleware]
 
-    assert MyCreateMutation.__middleware__() == [my_middleware]
+    assert MyCreateMutation.__middleware__() == [MyMiddleware]
 
 
 def test_mutation_type__input_type():

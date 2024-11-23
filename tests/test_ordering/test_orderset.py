@@ -47,13 +47,13 @@ def test_orderset__one_field():
     class MyOrderSet(OrderSet, model=Task):
         name = Order()
 
-    data = ["nameAsc"]
+    data = ["name_asc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [
         models.OrderBy(models.F("name")),
     ]
 
-    data = ["nameDesc"]
+    data = ["name_desc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [
         models.OrderBy(models.F("name"), descending=True),
@@ -64,7 +64,7 @@ def test_orderset__two_fields():
     class MyOrderSet(OrderSet, model=Task):
         name = Order()
 
-    data = ["nameAsc", "pkDesc"]
+    data = ["name_asc", "pk_desc"]
     results = MyOrderSet.__build__(order_data=data, info=MockGQLInfo())
     assert results.order_by == [
         models.OrderBy(models.F("name")),

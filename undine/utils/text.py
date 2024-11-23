@@ -13,10 +13,11 @@ if TYPE_CHECKING:
 __all__ = [
     "comma_sep_str",
     "dotpath",
+    "from_schema_name",
     "get_docstring",
-    "get_schema_name",
     "to_camel_case",
     "to_pascal_case",
+    "to_schema_name",
     "to_snake_case",
 ]
 
@@ -99,9 +100,15 @@ def dotpath(obj: type | FunctionType | Callable) -> str:
     return f"{obj.__module__}.{obj.__qualname__}"
 
 
-def get_schema_name(name: str, *, validate_reversable: bool = False) -> str:
+def to_schema_name(name: str, *, validate_reversable: bool = False) -> str:
     if undine_settings.CAMEL_CASE_SCHEMA_FIELDS:
         return to_camel_case(name, validate_reversable=validate_reversable)
+    return name
+
+
+def from_schema_name(name: str) -> str:
+    if undine_settings.CAMEL_CASE_SCHEMA_FIELDS:
+        return to_snake_case(name)
     return name
 
 

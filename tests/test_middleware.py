@@ -13,15 +13,16 @@ from tests.helpers import MockGQLInfo, MockRequest, exact
 from undine import Input, MutationType
 from undine.dataclasses import MutationMiddlewareParams
 from undine.middleware import (
-    AlterInputDataMiddleware,
+    InputDataModificationMiddleware,
     InputDataValidationMiddleware,
-    MutationMiddlewareContext,
-    RemoveInputOnlyFieldsMiddleware,
+    InputOnlyDataRemovalMiddleware,
+    MutationMiddleware,
+    MutationMiddlewareHandler,
     error_logging_middleware,
 )
 
 if TYPE_CHECKING:
-    from undine.typing import GQLInfo, MutationMiddlewareType
+    from undine.typing import GQLInfo
 
 
 def test_error_logging_middleware(caplog):
@@ -49,7 +50,7 @@ def test_alter_input_data_middleware():
 
     input_data = {}
 
-    middleware = AlterInputDataMiddleware(
+    middleware = InputDataModificationMiddleware(
         params=MutationMiddlewareParams(
             mutation_type=MyMutationType,
             info=MockGQLInfo(context=MockRequest(user=UserFactory.build(id=1))),
@@ -128,7 +129,7 @@ def test_remove_input_only_fields_middleware():
         "created_at": "2022-01-01T00:00:00",
     }
 
-    middleware = RemoveInputOnlyFieldsMiddleware(
+    middleware = InputOnlyDataRemovalMiddleware(
         params=MutationMiddlewareParams(
             mutation_type=MyMutationType,
             info=MockGQLInfo(),
@@ -208,7 +209,7 @@ def test_remove_input_only_fields_middleware__nested():
         ],
     }
 
-    middleware = RemoveInputOnlyFieldsMiddleware(
+    middleware = InputOnlyDataRemovalMiddleware(
         params=MutationMiddlewareParams(
             mutation_type=MyTaskType,
             info=MockGQLInfo(),
@@ -247,7 +248,7 @@ def test_mutation_middleware_context__default():
 
     input_data = {"name": "foo"}
 
-    with MutationMiddlewareContext(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data):
+    with MutationMiddlewareHandler(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data):
         pass
 
     assert validate_called is True
@@ -257,27 +258,30 @@ def test_mutation_middleware_context__custom_middleware():
     pre_called = False
     post_called = False
 
-    def my_middleware(params: MutationMiddlewareParams) -> Generator:
-        nonlocal pre_called, post_called
-        pre_called = True
-        yield
-        post_called = True
+    class MyMiddleware(MutationMiddleware):
+        priority = 101
+
+        def __iter__(self) -> Generator:
+            nonlocal pre_called, post_called
+            pre_called = True
+            yield
+            post_called = True
 
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input()
 
         @classmethod
-        def __middleware__(cls) -> list[MutationMiddlewareType]:
-            return [my_middleware]
+        def __middleware__(cls) -> list[type[MutationMiddleware]]:
+            return [*super().__middleware__(), MyMiddleware]
 
     input_data = {"name": "foo"}
 
-    ctx = MutationMiddlewareContext(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data)
+    handler = MutationMiddlewareHandler(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data)
 
     assert pre_called is False
     assert post_called is False
 
-    with ctx:
+    with handler:
         assert pre_called is True
         assert post_called is False
 

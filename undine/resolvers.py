@@ -15,7 +15,7 @@ from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors.error_handlers import handle_integrity_errors
 from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
-from undine.middleware import MutationMiddlewareContext
+from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManagerProtocol
 from undine.utils.model_utils import get_instance_or_raise
@@ -114,8 +114,7 @@ class FunctionResolver:
 class CreateResolver:
     """
     Resolves a mutation for creating a model instance using 'MutationHandler.create'.
-    Runs MutationType's '__validate__' method, Input validators, as well as
-    any defined mutation middlewares. Mutation is run in a transaction.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -126,14 +125,17 @@ class CreateResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data),
+            MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
             return MutationHandler(model=self.mutation_type.__model__).create(input_data)
 
 
 @dataclass(frozen=True, slots=True)
 class BulkCreateResolver:
-    # TODO: Description
+    """
+    Resolves a bulk create mutation for creating a list of model instances using `manager.bulk_create()`.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
+    """
 
     mutation_type: type[MutationType]
 
@@ -147,6 +149,7 @@ class BulkCreateResolver:
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+
         batch_size: int | None = kwargs.get("batch_size")
         ignore_conflicts: bool = kwargs.get("ignore_conflicts", False)
         update_conflicts: bool = kwargs.get("update_conflicts", False)
@@ -158,8 +161,7 @@ class BulkCreateResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            # TODO: Middleware
-            # TODO: Validators
+            MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
             return self.manager.bulk_create(
                 objs,
@@ -175,8 +177,7 @@ class BulkCreateResolver:
 class UpdateResolver:
     """
     Resolves a mutation for updating a model instance using 'MutationHandler.update'.
-    Runs MutationType's '__validate__' method, Input validators, as well as
-    any defined mutation middlewares. Mutation is run in a transaction.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -200,14 +201,17 @@ class UpdateResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data, instance),
+            MutationMiddlewareHandler(self.mutation_type, info, input_data, instance),
         ):
             return MutationHandler(model=self.mutation_type.__model__).update(instance, input_data)
 
 
 @dataclass(frozen=True, slots=True)
 class BulkUpdateResolver:
-    # TODO: Description
+    """
+    Resolves a bulk update mutation for updating a list of model instances using `manager.bulk_update()`.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
+    """
 
     mutation_type: type[MutationType]
 
@@ -228,23 +232,23 @@ class BulkUpdateResolver:
         batch_size: int | None = kwargs.get("batch_size")
 
         objs = [self.model(**data) for data in input_data]
+        # Update all fields except the lookup field.
         fields = list({field for data in input_data for field in data if field != self.lookup_field})
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            # TODO: Middleware
-            # TODO: Validators
+            MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
-            return self.manager.bulk_update(objs, fields, batch_size=batch_size)
+            self.manager.bulk_update(objs, fields, batch_size=batch_size)
+            return objs
 
 
 @dataclass(frozen=True, slots=True)
 class DeleteResolver:
     """
     Resolves a mutation for deleting a model instance using 'model.delete'.
-    Runs MutationType's '__validate__' method, Input validators, as well as
-    any defined mutation middlewares. Mutation is run in a transaction.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -268,7 +272,7 @@ class DeleteResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data, instance),
+            MutationMiddlewareHandler(self.mutation_type, info, input_data, instance),
         ):
             instance.delete()
 
@@ -277,7 +281,10 @@ class DeleteResolver:
 
 @dataclass(frozen=True, slots=True)
 class BulkDeleteResolver:
-    # TODO: Description
+    """
+    Resolves a bulk delete mutation for deleting a list of model instances using `qs.delete()`.
+    Runs MutationType's '__validate__' method. Mutation is run in a transaction.
+    """
 
     mutation_type: type[MutationType]
 
@@ -286,7 +293,7 @@ class BulkDeleteResolver:
         return self.mutation_type.__model__
 
     @property
-    def queryset(self) -> models.QuerySet:
+    def queryset(self) -> models.Manager:
         return self.model._meta.default_manager
 
     @property
@@ -299,10 +306,10 @@ class BulkDeleteResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            # TODO: Middleware
-            # TODO: Validators
         ):
+            self.mutation_type.__validate__(info=info, input_data=input_data)
             self.queryset.filter(pk__in=input_data).delete()
+            self.mutation_type.__post_handle__(info=info, input_data=input_data)
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
@@ -311,8 +318,7 @@ class BulkDeleteResolver:
 class CustomResolver:
     """
     Resolves a custom mutation a model instance using 'mutation_type.__mutate__'.
-    Runs MutationType's '__validate__' method, Input validators, as well as
-    any defined mutation middlewares. Mutation is run in a transaction.
+    Runs all defined mutation middlewares. Mutation is run in a transaction.
     """
 
     mutation_type: type[MutationType]
@@ -323,6 +329,6 @@ class CustomResolver:
         with (
             transaction.atomic(),
             handle_integrity_errors(),
-            MutationMiddlewareContext(self.mutation_type, info, input_data),
+            MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
             return self.mutation_type.__mutate__(root, info, input_data)

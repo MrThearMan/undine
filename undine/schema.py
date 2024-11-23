@@ -40,7 +40,7 @@ from undine.parsers import parse_description
 from undine.settings import undine_settings
 from undine.utils.graphql import add_default_status_codes, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.reflection import cache_signature_if_function, get_members
-from undine.utils.text import dotpath, get_docstring, get_schema_name
+from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from undine.dataclasses import GraphQLParams
@@ -143,7 +143,7 @@ def create_schema(  # noqa: PLR0913
 
         return get_or_create_object_type(
             name=cls.__name__,
-            fields={get_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
+            fields={to_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
             description=get_docstring(cls),
             extensions=extensions,
         )

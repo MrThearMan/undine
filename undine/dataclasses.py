@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from django.db import models
 
     from undine import MutationType, QueryType
-    from undine.typing import CombinableExpression, GQLInfo
+    from undine.typing import CombinableExpression, GQLInfo, JsonObject
 
 __all__ = [
     "FilterResults",
@@ -111,7 +111,7 @@ class LookupRef:
 class MutationMiddlewareParams:
     mutation_type: type[MutationType]
     info: GQLInfo
-    input_data: dict[str, Any]
+    input_data: JsonObject
     instance: models.Model | None = None
 
 

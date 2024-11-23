@@ -22,7 +22,7 @@ from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
-from undine.utils.text import dotpath, get_docstring, get_schema_name
+from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from types import FunctionType
@@ -201,7 +201,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
         # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
-            return {get_schema_name(name): field.as_graphql_field() for name, field in cls.__field_map__.items()}
+            return {to_schema_name(name): field.as_graphql_field() for name, field in cls.__field_map__.items()}
 
         return get_or_create_object_type(
             name=cls.__typename__,

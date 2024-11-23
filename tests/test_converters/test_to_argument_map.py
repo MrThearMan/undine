@@ -323,19 +323,19 @@ def test_to_argument_map__mutation_type__custom_mutation():
     assert isinstance(result["input"].type.of_type, GraphQLInputObjectType)
 
 
-def test_to_argument_map__mutation_type__many__create_mutation():
+def test_to_argument_map__mutation_type__bulk_create_mutation():
     class TaskBulkCreateMutation(MutationType, model=Task):
         name = Input()
 
     result = convert_to_graphql_argument_map(TaskBulkCreateMutation, many=True)
 
     assert sorted(result) == [
-        "batch_size",
-        "ignore_conflicts",
+        "batchSize",
+        "ignoreConflicts",
         "input",
-        "unique_fields",
-        "update_conflicts",
-        "update_fields",
+        "uniqueFields",
+        "updateConflicts",
+        "updateFields",
     ]
 
     assert isinstance(result["input"], GraphQLArgument)
@@ -346,42 +346,83 @@ def test_to_argument_map__mutation_type__many__create_mutation():
 
     assert result["input"].type.of_type.of_type.of_type.name == "TaskBulkCreateMutation"
 
-    assert isinstance(result["batch_size"], GraphQLArgument)
-    assert result["batch_size"].type == GraphQLInt
-    assert result["batch_size"].default_value is None
-    assert result["batch_size"].description is not None
+    assert isinstance(result["batchSize"], GraphQLArgument)
+    assert result["batchSize"].type == GraphQLInt
+    assert result["batchSize"].default_value is None
+    assert result["batchSize"].description is not None
+    assert result["batchSize"].out_name == "batch_size"
 
-    assert isinstance(result["ignore_conflicts"], GraphQLArgument)
-    assert result["ignore_conflicts"].type == GraphQLBoolean
-    assert result["ignore_conflicts"].default_value is False
-    assert result["ignore_conflicts"].description is not None
+    assert isinstance(result["ignoreConflicts"], GraphQLArgument)
+    assert result["ignoreConflicts"].type == GraphQLBoolean
+    assert result["ignoreConflicts"].default_value is False
+    assert result["ignoreConflicts"].description is not None
+    assert result["ignoreConflicts"].out_name == "ignore_conflicts"
 
-    assert isinstance(result["update_conflicts"], GraphQLArgument)
-    assert result["update_conflicts"].type == GraphQLBoolean
-    assert result["update_conflicts"].default_value is False
-    assert result["update_conflicts"].description is not None
+    assert isinstance(result["updateConflicts"], GraphQLArgument)
+    assert result["updateConflicts"].type == GraphQLBoolean
+    assert result["updateConflicts"].default_value is False
+    assert result["updateConflicts"].description is not None
+    assert result["updateConflicts"].out_name == "update_conflicts"
 
-    assert isinstance(result["update_fields"], GraphQLArgument)
-    assert isinstance(result["update_fields"].type, GraphQLList)
-    assert isinstance(result["update_fields"].type.of_type, GraphQLNonNull)
-    assert result["update_fields"].type.of_type.of_type == GraphQLString
-    assert result["update_fields"].default_value is None
-    assert result["update_fields"].description is not None
+    assert isinstance(result["updateFields"], GraphQLArgument)
+    assert result["updateFields"].default_value is None
+    assert result["updateFields"].description is not None
+    assert result["updateFields"].out_name == "update_fields"
 
-    assert isinstance(result["unique_fields"], GraphQLArgument)
-    assert isinstance(result["unique_fields"].type, GraphQLList)
-    assert isinstance(result["unique_fields"].type.of_type, GraphQLNonNull)
-    assert result["unique_fields"].type.of_type.of_type == GraphQLString
-    assert result["unique_fields"].default_value is None
-    assert result["unique_fields"].description is not None
+    assert isinstance(result["updateFields"].type, GraphQLList)
+    assert isinstance(result["updateFields"].type.of_type, GraphQLNonNull)
+    assert isinstance(result["updateFields"].type.of_type.of_type, GraphQLEnumType)
+
+    enum_type: GraphQLEnumType = result["updateFields"].type.of_type.of_type
+    assert enum_type.name == "TaskBulkCreateMutationBulkCreateFields"
+    assert sorted(enum_type.values) == [
+        "acceptancecriteria",
+        "assignees",
+        "comments",
+        "name",
+        "objective",
+        "project",
+        "relatedTasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+    ]
+
+    assert isinstance(result["uniqueFields"], GraphQLArgument)
+    assert result["uniqueFields"].default_value is None
+    assert result["uniqueFields"].description is not None
+    assert result["uniqueFields"].out_name == "unique_fields"
+
+    assert isinstance(result["uniqueFields"].type, GraphQLList)
+    assert isinstance(result["uniqueFields"].type.of_type, GraphQLNonNull)
+    assert isinstance(result["uniqueFields"].type.of_type.of_type, GraphQLEnumType)
+
+    enum_type: GraphQLEnumType = result["uniqueFields"].type.of_type.of_type
+    assert enum_type.name == "TaskBulkCreateMutationBulkCreateFields"
+    assert sorted(enum_type.values) == [
+        "acceptancecriteria",
+        "assignees",
+        "comments",
+        "name",
+        "objective",
+        "project",
+        "relatedTasks",
+        "reports",
+        "request",
+        "result",
+        "steps",
+        "type",
+    ]
 
 
-def test_to_argument_map__mutation_type__many__update_mutation():
+def test_to_argument_map__mutation_type__bulk_update_mutation():
     class TaskBulkUpdateMutation(MutationType, model=Task):
         name = Input()
 
     result = convert_to_graphql_argument_map(TaskBulkUpdateMutation, many=True)
-    assert sorted(result) == ["batch_size", "input"]
+    assert sorted(result) == ["batchSize", "input"]
 
     assert isinstance(result["input"], GraphQLArgument)
     assert isinstance(result["input"].type, GraphQLNonNull)
@@ -391,10 +432,11 @@ def test_to_argument_map__mutation_type__many__update_mutation():
 
     assert result["input"].type.of_type.of_type.of_type.name == "TaskBulkUpdateMutation"
 
-    assert isinstance(result["batch_size"], GraphQLArgument)
-    assert result["batch_size"].type == GraphQLInt
-    assert result["batch_size"].default_value is None
-    assert result["batch_size"].description is not None
+    assert isinstance(result["batchSize"], GraphQLArgument)
+    assert result["batchSize"].type == GraphQLInt
+    assert result["batchSize"].default_value is None
+    assert result["batchSize"].description is not None
+    assert result["batchSize"].out_name == "batch_size"
 
 
 def test_to_argument_map__mutation_type__many__delete_mutation():

@@ -7,10 +7,10 @@ from graphql import (
     GraphQLArgument,
     GraphQLArgumentMap,
     GraphQLBoolean,
+    GraphQLEnumValue,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLString,
 )
 
 from undine.converters.to_graphql_type import convert_to_graphql_type
@@ -18,9 +18,10 @@ from undine.parsers import docstring_parser, parse_parameters
 from undine.settings import undine_settings
 from undine.typing import CombinableExpression, EntrypointRef, FieldRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.graphql import get_or_create_graphql_enum
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 from undine.utils.model_utils import get_model_field
-from undine.utils.text import get_docstring, get_schema_name
+from undine.utils.text import get_docstring, to_schema_name
 
 __all__ = [
     "convert_to_graphql_argument_map",
@@ -54,7 +55,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
         if not nullable:
             graphql_type = GraphQLNonNull(graphql_type)
 
-        arguments[get_schema_name(param.name)] = GraphQLArgument(
+        arguments[to_schema_name(param.name)] = GraphQLArgument(
             type_=graphql_type,
             default_value=param.default_value,
             description=arg_descriptions.get(param.name),
@@ -97,7 +98,7 @@ def load_deferred_converters() -> None:
             field = get_model_field(model=ref.__model__, lookup=ref.__lookup_field__)
             input_type = convert_to_graphql_type(field, model=ref.__model__)
             input_type = GraphQLNonNull(input_type)
-            return {get_schema_name(ref.__lookup_field__): GraphQLArgument(input_type)}
+            return {to_schema_name(ref.__lookup_field__): GraphQLArgument(input_type)}
 
         arguments: GraphQLArgumentMap = {}
 
@@ -122,7 +123,7 @@ def load_deferred_converters() -> None:
 
         if kwargs["many"]:
             if ref.__mutation_kind__ == "create":
-                arguments["batch_size"] = GraphQLArgument(
+                arguments["batchSize"] = GraphQLArgument(
                     GraphQLInt,
                     default_value=None,
                     description=(
@@ -131,8 +132,9 @@ def load_deferred_converters() -> None:
                         "except for SQLite where the default is such that "
                         "at most 999 variables per query are used."
                     ),
+                    out_name="batch_size",
                 )
-                arguments["ignore_conflicts"] = GraphQLArgument(
+                arguments["ignoreConflicts"] = GraphQLArgument(
                     GraphQLBoolean,
                     default_value=False,
                     description=(
@@ -143,38 +145,56 @@ def load_deferred_converters() -> None:
                         "May not be used together with `update_conflicts`. "
                         "Not supported on Oracle."
                     ),
+                    out_name="ignore_conflicts",
                 )
-                arguments["update_conflicts"] = GraphQLArgument(
+                arguments["updateConflicts"] = GraphQLArgument(
                     GraphQLBoolean,
                     default_value=False,
                     description=(
                         "When set to `True`, tells the database to update an existing row if a row insertion "
                         "fails due to a conflict such as duplicate unique values. "
-                        "Must also provide `update_fields` and `unique_fields` "
+                        "Must also provide `updateFields` and `uniqueFields` "
                         "(latter only supported for PostgreSQL and SQLite). "
-                        "May not be used together with `ignore_conflicts`. "
+                        "May not be used together with `ignoreConflicts`. "
                         "Not supported on Oracle."
                     ),
+                    out_name="update_conflicts",
                 )
-                arguments["update_fields"] = GraphQLArgument(
-                    GraphQLList(GraphQLNonNull(GraphQLString)),
+
+                enum = get_or_create_graphql_enum(
+                    name=f"{ref.__typename__}BulkCreateFields",
+                    values={
+                        to_schema_name(key): GraphQLEnumValue(
+                            value=key,
+                            description=inpt.description,
+                            deprecation_reason=inpt.deprecation_reason,
+                        )
+                        for key, inpt in ref.__input_map__.items()
+                        if not inpt.input_only and not inpt.hidden
+                    },
+                )
+
+                arguments["updateFields"] = GraphQLArgument(
+                    GraphQLList(GraphQLNonNull(enum)),
                     default_value=None,
                     description=(
                         "List of fields to update when a row insertion fails due to a conflict. "
-                        "Must be provided if `update_conflicts` is `True`."
+                        "Must be provided if `updateConflicts` is `True`."
                     ),
+                    out_name="update_fields",
                 )
-                arguments["unique_fields"] = GraphQLArgument(
-                    GraphQLList(GraphQLNonNull(GraphQLString)),
+                arguments["uniqueFields"] = GraphQLArgument(
+                    GraphQLList(GraphQLNonNull(enum)),
                     default_value=None,
                     description=(
                         "List of fields that all need to be unique for a new row to be inserted. "
-                        "Must be provided on PostgreSQL and SQLite if `update_conflicts` is `True`."
+                        "Must be provided on PostgreSQL and SQLite if `updateConflicts` is `True`."
                     ),
+                    out_name="unique_fields",
                 )
 
             elif ref.__mutation_kind__ == "update":
-                arguments["batch_size"] = GraphQLArgument(
+                arguments["batchSize"] = GraphQLArgument(
                     GraphQLInt,
                     default_value=None,
                     description=(
@@ -183,6 +203,7 @@ def load_deferred_converters() -> None:
                         "except for SQLite and Oracle which have restrictions "
                         "on the number of variables used in a query."
                     ),
+                    out_name="batch_size",
                 )
 
             input_type = GraphQLNonNull(GraphQLList(input_type))

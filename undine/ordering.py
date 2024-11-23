@@ -13,7 +13,7 @@ from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_graphql_enum
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
 from undine.utils.reflection import get_members
-from undine.utils.text import dotpath, get_docstring, get_schema_name, to_snake_case
+from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from undine.typing import GQLInfo
@@ -90,17 +90,15 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
         """
         result = OrderResults(order_by=[])
 
-        for enum_name in order_data:
-            name = to_snake_case(enum_name)
-
-            if name.endswith("_desc"):
-                order_name = name.removesuffix("_desc")
+        for enum_value in order_data:
+            if enum_value.endswith("_desc"):
+                order_name = enum_value.removesuffix("_desc")
                 descending = True
-            elif name.endswith("_asc"):
-                order_name = name.removesuffix("_asc")
+            elif enum_value.endswith("_asc"):
+                order_name = enum_value.removesuffix("_asc")
                 descending = False
-            else:
-                raise GraphQLBadOrderDataError(orderset=cls, field_name=enum_name)
+            else:  # pragma: no cover
+                raise GraphQLBadOrderDataError(orderset=cls, enum_value=enum_value)
 
             order = cls.__order_map__[order_name]
             expression = order.get_expression(descending=descending)
@@ -115,10 +113,10 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
         Cache the result since a GraphQL schema cannot contain multiple types with the same name.
         """
         enum_values: dict[str, GraphQLEnumValue] = {}
-        for name, ordering in cls.__order_map__.items():
-            for direction in ("asc", "desc"):
-                enum_name = f"{name}_{direction}"
-                enum_values[get_schema_name(enum_name, validate_reversable=True)] = ordering.get_graphql_enum_value()
+        for ordering in cls.__order_map__.values():
+            for descending in (False, True):
+                enum_value = ordering.get_graphql_enum_value(descending=descending)
+                enum_values[to_schema_name(enum_value.value)] = enum_value
 
         return get_or_create_graphql_enum(
             name=cls.__typename__,
@@ -170,17 +168,17 @@ class Order:
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref})>"
 
-    def get_expression(self, *, descending: bool = False) -> models.OrderBy:
+    def get_expression(self, *, descending: bool) -> models.OrderBy:
         return models.OrderBy(
-            self.ref,
+            expression=self.ref,
             nulls_first=self.nulls_first,
             nulls_last=self.nulls_last,
             descending=descending,
         )
 
-    def get_graphql_enum_value(self) -> GraphQLEnumValue:
+    def get_graphql_enum_value(self, *, descending: bool) -> GraphQLEnumValue:
         return GraphQLEnumValue(
-            value=self.name,
+            value=self.name + ("_desc" if descending else "_asc"),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,

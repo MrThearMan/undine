@@ -23,18 +23,25 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
+from undine.middleware import (
+    InputDataModificationMiddleware,
+    InputDataValidationMiddleware,
+    InputOnlyDataRemovalMiddleware,
+    MutationMiddleware,
+    PostMutationHandlingMiddleware,
+)
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_input_object_type, get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_field, get_model_fields_for_graphql
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
-from undine.utils.text import dotpath, get_docstring, get_schema_name
+from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from django.db import models
 
-    from undine.typing import GQLInfo, MutationKind, MutationMiddlewareType, Root, ValidatorFunc
+    from undine.typing import GQLInfo, MutationKind, Root, ValidatorFunc
 
 __all__ = [
     "Input",
@@ -132,6 +139,10 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Validate all input data given to this MutationType."""
 
     @classmethod
+    def __post_handle__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        """Post handling after the mutation is done."""
+
+    @classmethod
     def __input_type__(cls) -> GraphQLInputType:
         """
         Create a `GraphQLInputObjectType` for this class.
@@ -147,7 +158,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
             for name, inpt in cls.__input_map__.items():
                 if inpt.hidden:
                     continue
-                fields_[get_schema_name(name)] = inpt.as_graphql_input_field()
+                fields_[to_schema_name(name)] = inpt.as_graphql_input_field()
             return fields_
 
         return get_or_create_input_object_type(
@@ -165,9 +176,14 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         return QUERY_TYPE_REGISTRY[cls.__model__].__output_type__()
 
     @classmethod
-    def __middleware__(cls) -> list[MutationMiddlewareType]:
-        """Additional middleware to use for this MutationType. See. `MutationMiddlewareContext`."""
-        return []
+    def __middleware__(cls) -> list[type[MutationMiddleware]]:
+        """Middleware to use for this MutationType."""
+        return [
+            InputDataModificationMiddleware,
+            InputDataValidationMiddleware,
+            PostMutationHandlingMiddleware,
+            InputOnlyDataRemovalMiddleware,
+        ]
 
 
 class Input:

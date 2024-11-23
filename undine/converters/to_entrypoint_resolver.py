@@ -59,7 +59,7 @@ def load_deferred_converters() -> None:
                 return BulkUpdateResolver(mutation_type=ref)
             if ref.__mutation_kind__ == "delete":
                 return BulkDeleteResolver(mutation_type=ref)
-            return CustomResolver(mutation_type=ref)  # TODO: Should have another resolver?
+            return CustomResolver(mutation_type=ref)
 
         if ref.__mutation_kind__ == "create":
             return CreateResolver(mutation_type=ref)
