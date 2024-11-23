@@ -19,7 +19,7 @@ from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManagerProtocol
 from undine.utils.model_utils import get_instance_or_raise
-from undine.utils.mutation_handler import MutationHandler
+from undine.utils.mutation_handler import BulkMutationHandler, MutationHandler
 from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
@@ -122,12 +122,14 @@ class CreateResolver:
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
+        handler = MutationHandler(model=self.mutation_type.__model__)
+
         with (
             transaction.atomic(),
             handle_integrity_errors(),
             MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
-            return MutationHandler(model=self.mutation_type.__model__).create(input_data)
+            return handler.create(input_data)
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,15 +158,15 @@ class BulkCreateResolver:
         update_fields: list[str] | None = kwargs.get("update_fields")
         unique_fields: list[str] | None = kwargs.get("unique_fields")
 
-        objs = [self.model(**data) for data in input_data]
+        handler = BulkMutationHandler(model=self.mutation_type.__model__)
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
             MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
-            return self.manager.bulk_create(
-                objs,
+            return handler.create_many(
+                input_data,
                 batch_size=batch_size,
                 ignore_conflicts=ignore_conflicts,
                 update_conflicts=update_conflicts,
@@ -231,17 +233,14 @@ class BulkUpdateResolver:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         batch_size: int | None = kwargs.get("batch_size")
 
-        objs = [self.model(**data) for data in input_data]
-        # Update all fields except the lookup field.
-        fields = list({field for data in input_data for field in data if field != self.lookup_field})
+        handler = BulkMutationHandler(model=self.mutation_type.__model__)
 
         with (
             transaction.atomic(),
             handle_integrity_errors(),
             MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
-            self.manager.bulk_update(objs, fields, batch_size=batch_size)
-            return objs
+            return handler.update_many(input_data, batch_size=batch_size, lookup_field=self.lookup_field)
 
 
 @dataclass(frozen=True, slots=True)
@@ -293,7 +292,7 @@ class BulkDeleteResolver:
         return self.mutation_type.__model__
 
     @property
-    def queryset(self) -> models.Manager:
+    def manager(self) -> models.Manager:
         return self.model._meta.default_manager
 
     @property
@@ -308,7 +307,7 @@ class BulkDeleteResolver:
             handle_integrity_errors(),
         ):
             self.mutation_type.__validate__(info=info, input_data=input_data)
-            self.queryset.filter(pk__in=input_data).delete()
+            self.manager.filter(pk__in=input_data).delete()
             self.mutation_type.__post_handle__(info=info, input_data=input_data)
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}

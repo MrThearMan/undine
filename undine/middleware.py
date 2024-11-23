@@ -55,7 +55,7 @@ class MutationMiddleware(ABC):
     def __iter__(self) -> Iterator:
         """
         Should be a generator that yields once.
-        Block before yield happends before the mutation is executed.
+        Block before yield happens before the mutation is executed.
         Block after yield happens after the mutation is executed.
         """
 
