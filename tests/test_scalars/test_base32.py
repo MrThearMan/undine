@@ -19,7 +19,7 @@ def test_scalar__base32__parse__str(func):
 
 @pytest.mark.parametrize("func", [parse_base32, serialize])
 def test_scalar__base32__parse__conversion_error(func):
-    msg = "Base32 cannot represent value 'hello world': Incorrect padding"
+    msg = "'Base32' cannot represent value 'hello world': Incorrect padding"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
@@ -31,6 +31,6 @@ def test_scalar__base32__parse__empty(func):
 
 @pytest.mark.parametrize("func", [parse_base32, serialize])
 def test_scalar__base32__parse__unsupported_type(func):
-    msg = "Base32 cannot represent value 1: Type 'builtins.int' is not supported"
+    msg = "'Base32' cannot represent value 1: Type 'builtins.int' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1)

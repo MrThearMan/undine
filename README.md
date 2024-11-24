@@ -25,7 +25,6 @@ pip install undine
 
 # Before initial release:
 - [ ] Add tests for optimization
-- [ ] Add tests for errors
 - [ ] Add support for permission checks
 - [ ] Add support for pagination
 - [ ] Add support for Relay

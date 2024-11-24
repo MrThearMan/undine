@@ -22,14 +22,14 @@ def test_scalar__time__parse__str__tzinfo():
 
 @pytest.mark.parametrize("func", [parse_time, serialize])
 def test_scalar__time__parse__conversion_error(func):
-    msg = "Time cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
+    msg = "'Time' cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
 
 @pytest.mark.parametrize("func", [parse_time, serialize])
 def test_scalar__time__parse__unsupported_type(func):
-    msg = "Time cannot represent value 1.2: Type 'builtins.float' is not supported"
+    msg = "'Time' cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1.2)
 

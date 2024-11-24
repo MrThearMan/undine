@@ -17,7 +17,7 @@ def test_scalar__file__parse__uploaded_file():
 
 
 def test_scalar__file__parse__unsupported_type():
-    msg = "File cannot represent value 1.2: Type 'builtins.float' is not a supported input value"
+    msg = "'File' cannot represent value 1.2: Type 'builtins.float' is not a supported input value"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_file(1.2)
 
@@ -38,18 +38,18 @@ def test_scalar__file__serialize__str():
 
 
 def test_scalar__file__serialize__str__not_an_url():
-    msg = "File cannot represent value 'hello world': Enter a valid URL."
+    msg = "'File' cannot represent value 'hello world': Enter a valid URL."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         serialize("hello world")
 
 
 def test_scalar__file__serialize__unsupported_type():
-    msg = "File cannot represent value 1.2: Type 'builtins.float' is not a supported output value"
+    msg = "'File' cannot represent value 1.2: Type 'builtins.float' is not a supported output value"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         serialize(1.2)
 
 
 def test_scalar__file__serialize__no_extension():
-    msg = "File cannot represent value 'https://www.example.com/file': File URLs must have a file extension."
+    msg = "'File' cannot represent value 'https://www.example.com/file': File URLs must have a file extension."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         serialize("https://www.example.com/file")

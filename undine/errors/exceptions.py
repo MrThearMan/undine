@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "FunctionDispatcherError",
-    "FuntionSignatureParsingError",
+    "FunctionSignatureParsingError",
     "GraphQLConversionError",
     "GraphQLConversionError",
     "GraphQLStatusError",
@@ -27,8 +27,8 @@ __all__ = [
     "NoFunctionParametersError",
     "OptimizerError",
     "RegistryDuplicateError",
+    "RegistryMissingTypeError",
     "SchemaNameValidationError",
-    "TypeRegistryMissingTypeError",
     "UndineError",
 ]
 
@@ -69,7 +69,7 @@ class UndineError(Exception):
         super().__init__(msg)
 
 
-class FuntionSignatureParsingError(UndineError):
+class FunctionSignatureParsingError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 
     msg = (
@@ -91,7 +91,7 @@ class MismatchingModelError(UndineError):
     doesn't match model of the given `QueryType`.
     """
 
-    msg = "'{cls}' model '{given_model:dotpath}' does not match '{type}' model'{expected_model:dotpath}'."
+    msg = "'{cls}' model '{given_model:dotpath}' does not match '{type}' model '{expected_model:dotpath}'."
 
 
 class MissingEntrypointRefError(UndineError):
@@ -103,7 +103,7 @@ class MissingEntrypointRefError(UndineError):
 class MissingFunctionAnnotationsError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 
-    msg = "Missing type hints for parameters {missing:comma_sep_or} in function '{func:dotpath}'."
+    msg = "Missing type hints for parameters {missing:comma_sep_and} in function '{func:dotpath}'."
 
 
 class MissingFunctionReturnTypeError(UndineError):
@@ -115,7 +115,7 @@ class MissingFunctionReturnTypeError(UndineError):
 class MissingModelError(UndineError):
     """Error raised if no model is provided to `QueryType`, `FilterSet`, or `OrderSet`."""
 
-    msg = "{name} is missing `model` keyword argument in its class definition: `class {name}({cls}, model=MyModel)`."
+    msg = "'{name}' is missing `model` keyword argument in its class definition: `class {name}({cls}, model=MyModel)`."
 
 
 class ModelFieldDoesNotExistError(UndineError):
@@ -133,7 +133,7 @@ class ModelFieldNotARelationError(UndineError):
 class NoFunctionParametersError(UndineError):
     """Error raised if a function does not contain a parameter to parse type from."""
 
-    msg = "Function {func:dotpath} must have at least one argument."
+    msg = "Function '{func:dotpath}' must have at least one argument."
 
 
 class OptimizerError(UndineError):
@@ -165,7 +165,7 @@ class RegistryDuplicateError(UndineError):
     msg = "'{registry_name}' alrady contains a value for '{key}': '{value}'"
 
 
-class TypeRegistryMissingTypeError(UndineError):
+class RegistryMissingTypeError(UndineError):
     """Error raised when a Regsitry doesn't contain an entry for a given key."""
 
     msg = "'{registry_name}' doesn't contain an entry for '{key}'"
@@ -241,7 +241,7 @@ class GraphQLCantCreateEnumError(GraphQLStatusError):
 class GraphQLConversionError(GraphQLStatusError):
     """Error raised when a value cannot be converted to a GraphQL type."""
 
-    msg = "{typename} cannot represent value {value}: {error}"
+    msg = "'{typename}' cannot represent value {value}: {error}"
     status = 400
     code = error_codes.GRAPHQL_CONVERSION_ERROR
 
@@ -303,6 +303,7 @@ class GraphQLInvalidOperationError(GraphQLStatusError):
 
     msg = "Only query operations are allowed on GET requests."
     status = 405
+    code = error_codes.INVALID_OPERATION_FOR_METHOD
 
 
 class GraphQLBadInputDataError(GraphQLStatusError):
@@ -372,7 +373,7 @@ class GraphQLModelConstaintViolationError(GraphQLStatusError):
 class GraphQLModelNotFoundError(GraphQLStatusError):
     """Error raised when a model lookup fails to find a matching row."""
 
-    msg = "Lookup `{key}={value!r}` on model `{model:dotpath}` did not match any row."
+    msg = "Lookup `{key}={value!r}` on model '{model:dotpath}' did not match any row."
     status = 404
     code = error_codes.MODEL_NOT_FOUND
 
@@ -380,7 +381,7 @@ class GraphQLModelNotFoundError(GraphQLStatusError):
 class GraphQLMultipleObjectsFoundError(GraphQLStatusError):
     """Error raised when a model lookup finds more than one matching row."""
 
-    msg = "Lookup `{key}={value!r}` on model `{model:dotpath}` matched more than one row."
+    msg = "Lookup `{key}={value!r}` on model '{model:dotpath}' matched more than one row."
     status = 500
     code = error_codes.MODEL_MULTIPLE_OBJECTS
 

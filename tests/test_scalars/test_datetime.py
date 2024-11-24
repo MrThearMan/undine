@@ -23,14 +23,14 @@ def test_scalar__datetime__parse__str__tzinfo():
 
 @pytest.mark.parametrize("func", [parse_datetime, serialize])
 def test_scalar__datetime__parse__conversion_error(func):
-    msg = "DateTime cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
+    msg = "'DateTime' cannot represent value 'hello world': Invalid isoformat string: 'hello world'"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
 
 @pytest.mark.parametrize("func", [parse_datetime, serialize])
 def test_scalar__datetime__parse__unsupported_type(func):
-    msg = "DateTime cannot represent value 1: Type 'builtins.int' is not supported"
+    msg = "'DateTime' cannot represent value 1: Type 'builtins.int' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1)
 

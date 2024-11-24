@@ -29,14 +29,14 @@ def test_scalar__uuid__parse__int():
 
 @pytest.mark.parametrize("func", [parse_uuid, serialize])
 def test_scalar__uuid__parse__conversion_error(func):
-    msg = "UUID cannot represent value 'hello world': badly formed hexadecimal UUID string"
+    msg = "'UUID' cannot represent value 'hello world': badly formed hexadecimal UUID string"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
 
 @pytest.mark.parametrize("func", [parse_uuid, serialize])
 def test_scalar__uuid__parse__unsupported_type(func):
-    msg = "UUID cannot represent value 1.2: Type 'builtins.float' is not supported"
+    msg = "'UUID' cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1.2)
 

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from undine.errors.exceptions import FuntionSignatureParsingError
+from undine.errors.exceptions import FunctionSignatureParsingError
 from undine.utils.reflection import FunctionEqualityWrapper, get_signature, get_wrapped_func, swappable_by_subclassing
 
 
@@ -157,5 +157,5 @@ def test_get_signature__parsing_error():
 
     def func(arg: MockRequest) -> int: ...
 
-    with pytest.raises(FuntionSignatureParsingError):
+    with pytest.raises(FunctionSignatureParsingError):
         get_signature(func)

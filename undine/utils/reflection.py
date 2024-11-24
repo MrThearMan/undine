@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Hashable, ParamSpec, T
 
 from graphql import GraphQLResolveInfo
 
-from undine.errors.exceptions import FuntionSignatureParsingError
+from undine.errors.exceptions import FunctionSignatureParsingError
 from undine.typing import GQLInfo, Lambda
 
 if TYPE_CHECKING:
@@ -114,7 +114,7 @@ def get_signature(func: FunctionType | Callable[..., Any], *, depth: int = 0) ->
     try:
         return inspect.signature(func, eval_str=True, globals=frame_globals, locals=frame.f_locals)
     except NameError as error:
-        raise FuntionSignatureParsingError(name=error.name, func=func) from error
+        raise FunctionSignatureParsingError(name=error.name, func=func) from error
 
 
 def swappable_by_subclassing(cls: T) -> T:

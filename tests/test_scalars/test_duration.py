@@ -21,14 +21,14 @@ def test_scalar__duration__parse__str():
 
 @pytest.mark.parametrize("func", [parse_duration, serialize])
 def test_scalar__duration__parse__conversion_error(func):
-    msg = "Duration cannot represent value 'hello world': invalid literal for int() with base 10: 'hello world'"
+    msg = "'Duration' cannot represent value 'hello world': invalid literal for int() with base 10: 'hello world'"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_duration("hello world")
 
 
 @pytest.mark.parametrize("func", [parse_duration, serialize])
 def test_scalar__duration__parse__unsupported_type(func):
-    msg = "Duration cannot represent value 1.2: Type 'builtins.float' is not supported"
+    msg = "'Duration' cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1.2)
 

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 from django.db import models
 from graphql import GraphQLEnumType, GraphQLInputObjectType, GraphQLObjectType
 
-from undine.errors.exceptions import RegistryDuplicateError, TypeRegistryMissingTypeError
+from undine.errors.exceptions import RegistryDuplicateError, RegistryMissingTypeError
 from undine.utils.reflection import get_instance_name
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class Registry(Generic[From, To]):
         try:
             return self.__registry[key]
         except KeyError as error:
-            raise TypeRegistryMissingTypeError(registry_name=self.__name, key=key) from error
+            raise RegistryMissingTypeError(registry_name=self.__name, key=key) from error
 
     def __setitem__(self, key: From, value: To) -> None:
         if key in self.__registry:

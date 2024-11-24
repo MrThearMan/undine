@@ -1,7 +1,7 @@
 import pytest
 
 from tests.helpers import exact
-from undine.errors.exceptions import RegistryDuplicateError, TypeRegistryMissingTypeError
+from undine.errors.exceptions import RegistryDuplicateError, RegistryMissingTypeError
 from undine.registies import Registry
 
 
@@ -16,7 +16,7 @@ def test_registry__doesnt_exist():
     registry = Registry()
 
     msg = "'registry' doesn't contain an entry for 'foo'"
-    with pytest.raises(TypeRegistryMissingTypeError, match=exact(msg)):
+    with pytest.raises(RegistryMissingTypeError, match=exact(msg)):
         assert registry["foo"]
 
 

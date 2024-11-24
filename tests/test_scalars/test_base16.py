@@ -19,7 +19,7 @@ def test_scalar__base16__parse__str(func):
 
 @pytest.mark.parametrize("func", [parse_base16, serialize])
 def test_scalar__base16__parse__conversion_error(func):
-    msg = "Base16 cannot represent value 'hello world': Non-base16 digit found"
+    msg = "'Base16' cannot represent value 'hello world': Non-base16 digit found"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
@@ -31,6 +31,6 @@ def test_scalar__base16__parse__empty(func):
 
 @pytest.mark.parametrize("func", [parse_base16, serialize])
 def test_scalar__base16__parse__unsupported_type(func):
-    msg = "Base16 cannot represent value 1: Type 'builtins.int' is not supported"
+    msg = "'Base16' cannot represent value 1: Type 'builtins.int' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1)

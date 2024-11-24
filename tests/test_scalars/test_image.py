@@ -26,7 +26,7 @@ def test_scalar__image__parse__uploaded_file():
 
 
 def test_scalar__image__parse__unsupported_type():
-    msg = "Image cannot represent value 1.2: Type 'builtins.float' is not a supported input value"
+    msg = "'Image' cannot represent value 1.2: Type 'builtins.float' is not a supported input value"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         parse_image(1.2)
 
@@ -47,14 +47,14 @@ def test_scalar__image__serialize__str():
 
 
 def test_scalar__image__serialize__str__not_an_url():
-    msg = "Image cannot represent value 'hello world': Enter a valid URL."
+    msg = "'Image' cannot represent value 'hello world': Enter a valid URL."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         serialize("hello world")
 
 
 def test_scalar__image__serialize__str__unallowed_extension():
     msg = (
-        "Image cannot represent value 'https://example.com/hello.txt': "
+        "'Image' cannot represent value 'https://example.com/hello.txt': "
         "File extension 'txt' is not allowed. Allowed extensions are: 'png'."
     )
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
@@ -62,6 +62,6 @@ def test_scalar__image__serialize__str__unallowed_extension():
 
 
 def test_scalar__image__serialize__unsupported_type():
-    msg = "Image cannot represent value 1.2: Type 'builtins.float' is not a supported output value"
+    msg = "'Image' cannot represent value 1.2: Type 'builtins.float' is not a supported output value"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         serialize(1.2)

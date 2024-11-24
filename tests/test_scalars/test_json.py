@@ -17,13 +17,13 @@ def test_scalar__json__parse__str(func):
 
 @pytest.mark.parametrize("func", [parse_json, serialize])
 def test_scalar__json__parse__conversion_error(func):
-    msg = "JSON cannot represent value '{\"foo\": ': Expecting value: line 1 column 9 (char 8)"
+    msg = "'JSON' cannot represent value '{\"foo\": ': Expecting value: line 1 column 9 (char 8)"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func('{"foo": ')
 
 
 @pytest.mark.parametrize("func", [parse_json, serialize])
 def test_scalar__json__parse__unsupported_type(func):
-    msg = "JSON cannot represent value 1.2: Type 'builtins.float' is not supported"
+    msg = "'JSON' cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1.2)

@@ -12,13 +12,13 @@ def test_scalar__email__parse__str(func):
 
 @pytest.mark.parametrize("func", [parse_email, serialize])
 def test_scalar__email__parse__conversion_error(func):
-    msg = "Email cannot represent value 'hello world': Enter a valid email address."
+    msg = "'Email' cannot represent value 'hello world': Enter a valid email address."
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func("hello world")
 
 
 @pytest.mark.parametrize("func", [parse_email, serialize])
 def test_scalar__email__parse__unsupported_type(func):
-    msg = "Email cannot represent value 1.2: Type 'builtins.float' is not supported"
+    msg = "'Email' cannot represent value 1.2: Type 'builtins.float' is not supported"
     with pytest.raises(GraphQLConversionError, match=exact(msg)):
         func(1.2)

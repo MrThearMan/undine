@@ -165,7 +165,7 @@ def test_execute_graphql__non_query_operation_on_get_request(undine_settings):
 
     assert result.data is None
     assert result.errors[0].message == "Only query operations are allowed on GET requests."
-    assert result.errors[0].extensions == {"status_code": 405}
+    assert result.errors[0].extensions == {"error_code": "INVALID_OPERATION_FOR_METHOD", "status_code": 405}
 
 
 def test_execute_graphql__validation_error(undine_settings):
