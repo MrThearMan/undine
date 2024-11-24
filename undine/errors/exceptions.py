@@ -230,6 +230,76 @@ class GraphQLStatusError(GraphQLError):
         )
 
 
+class GraphQLBulkMutationReverseRelationError(GraphQLStatusError):
+    """Error raised when bulk mutation resolver recieves data for a reverse relation."""
+
+    msg = "'{name}' is a reverse relation of model '{model:dotpath}'. Bulk mutations do not support reverse relations."
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBulkMutationManyRelatedError(GraphQLStatusError):
+    """Error raised when bulk mutation resolver recieves data for a forward many-related relation."""
+
+    msg = (
+        "'{name}' is a many-to-many related field on '{model:dotpath}'. "
+        "Bulk mutations do not support many-to-many relations."
+    )
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBulkMutationGenericRelationsError(GraphQLStatusError):
+    """Error raised when bulk mutation resolver recieves data for a generic relation."""
+
+    msg = "'{name}' is a generic relation on '{model:dotpath}'. " "Bulk mutations do not support generic relations."
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBulkMutationForwardRelationError(GraphQLStatusError):
+    """
+    Error raised when bulk mutation resolver recieves data for a forward one-to-one or many-to-one relation,
+    which is not of the relation's primary key type.
+    """
+
+    msg = (
+        "Bulk mutations only work when setting existing forward one-to-one and many-to-one related objects. "
+        "Creating new related objects is not supported. Please modify the MutationType by setting "
+        "`{name} = Input({model:name}.{name})` in the class definition."
+    )
+    status = 400
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBulkMutationRelatedObjectNotFoundError(GraphQLStatusError):
+    """
+    Error raised when bulk mutation resolver tries to link a model relation
+    to a related object that doesn't exist.
+    """
+
+    msg = (
+        "Tried to link related field '{name}' to related model '{model:dotpath}' "
+        "with the primary key {value!r} but no such object was found."
+    )
+    status = 404
+    code = error_codes.INVALID_INPUT_DATA
+
+
+class GraphQLBulkMutationObjectNotFoundError(GraphQLStatusError):
+    """
+    Error raised when bulk mutation resolver tries to link a model relation
+    to a related object that doesn't exist.
+    """
+
+    msg = (
+        "{model:dotpath} object with the primary key {value!r} does not exist. "
+        "Please create the object before bulk mutating it."
+    )
+    status = 404
+    code = error_codes.INVALID_INPUT_DATA
+
+
 class GraphQLCantCreateEnumError(GraphQLStatusError):
     """Error raised when trying to create an enum with no choices."""
 

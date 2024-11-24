@@ -18,8 +18,9 @@ from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQ
 from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManagerProtocol
+from undine.utils.bulk_mutation_handler import BulkMutationHandler
 from undine.utils.model_utils import get_instance_or_raise
-from undine.utils.mutation_handler import BulkMutationHandler, MutationHandler
+from undine.utils.mutation_handler import MutationHandler
 from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
@@ -240,7 +241,7 @@ class BulkUpdateResolver:
             handle_integrity_errors(),
             MutationMiddlewareHandler(self.mutation_type, info, input_data),
         ):
-            return handler.update_many(input_data, batch_size=batch_size, lookup_field=self.lookup_field)
+            return handler.update_many(input_data, lookup_field=self.lookup_field, batch_size=batch_size)
 
 
 @dataclass(frozen=True, slots=True)

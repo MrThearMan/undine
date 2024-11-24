@@ -6,6 +6,11 @@ from undine.errors.exceptions import (
     FunctionSignatureParsingError,
     GraphQLBadInputDataError,
     GraphQLBadOrderDataError,
+    GraphQLBulkMutationForwardRelationError,
+    GraphQLBulkMutationGenericRelationsError,
+    GraphQLBulkMutationManyRelatedError,
+    GraphQLBulkMutationRelatedObjectNotFoundError,
+    GraphQLBulkMutationReverseRelationError,
     GraphQLCantCreateEnumError,
     GraphQLConversionError,
     GraphQLDecodeError,
@@ -212,6 +217,57 @@ def test_error__graphql_cant_create_enum_error():
 
     assert error.message == "Cannot create GraphQL Enum 'foo' with zero values."
     assert error.extensions == {"error_code": "GRAPHQL_CANT_CREATE_ENUM", "status_code": 400}
+
+
+def test_error__graphql_bulk_mutation_reverse_relation_error():
+    error = GraphQLBulkMutationReverseRelationError(name="foo", model=Task)
+
+    assert error.message == (
+        "'foo' is a reverse relation of model 'example_project.app.models.Task'. "
+        "Bulk mutations do not support reverse relations."
+    )
+    assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 400}
+
+
+def test_error__graphql_bulk_mutation_many_related_error():
+    error = GraphQLBulkMutationManyRelatedError(name="foo", model=Task)
+
+    assert error.message == (
+        "'foo' is a many-to-many related field on 'example_project.app.models.Task'. "
+        "Bulk mutations do not support many-to-many relations."
+    )
+    assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 400}
+
+
+def test_error__graphql_bulk_mutation_generic_relations_error():
+    error = GraphQLBulkMutationGenericRelationsError(name="foo", model=Task)
+
+    assert error.message == (
+        "'foo' is a generic relation on 'example_project.app.models.Task'. "
+        "Bulk mutations do not support generic relations."
+    )
+    assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 400}
+
+
+def test_error__graphql_bulk_mutation_forward_relation_error():
+    error = GraphQLBulkMutationForwardRelationError(name="foo", model=Task)
+
+    assert error.message == (
+        "Bulk mutations only work when setting existing forward one-to-one and many-to-one related objects. "
+        "Creating new related objects is not supported. Please modify the MutationType by setting "
+        "`foo = Input(Task.foo)` in the class definition."
+    )
+    assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 400}
+
+
+def test_error__graphql_bulk_mutation_related_object_not_found_error():
+    error = GraphQLBulkMutationRelatedObjectNotFoundError(name="foo", model=Task, value=1)
+
+    assert error.message == (
+        "Tried to link related field 'foo' to related model 'example_project.app.models.Task' "
+        "with the primary key 1 but no such object was found."
+    )
+    assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 404}
 
 
 def test_error__graphql_conversion_error():

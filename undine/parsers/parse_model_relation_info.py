@@ -127,6 +127,20 @@ class RelationType(enum.Enum):
         return self == RelationType.GENERIC_MANY_TO_ONE
 
     @enum.property
+    def is_generic(self) -> bool:
+        return self in {
+            RelationType.GENERIC_ONE_TO_MANY,
+            RelationType.GENERIC_MANY_TO_ONE,
+        }
+
+    @enum.property
+    def is_many_to_many(self) -> bool:
+        return self in {
+            RelationType.FORWARD_MANY_TO_MANY,
+            RelationType.REVERSE_MANY_TO_MANY,
+        }
+
+    @enum.property
     def created_before(self) -> bool:
         """These relations need to be created before the main model is created."""
         return self in {
