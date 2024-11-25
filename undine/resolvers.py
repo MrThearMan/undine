@@ -10,10 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Self
 
-from django.db import models, transaction
 from graphql import GraphQLResolveInfo, Undefined
 
-from undine.errors.error_handlers import handle_integrity_errors
 from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
 from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
@@ -26,6 +24,7 @@ from undine.utils.reflection import get_signature
 if TYPE_CHECKING:
     from types import FunctionType
 
+    from django.db import models
     from django.db.models import Model
 
     from undine.mutation import MutationType
@@ -120,17 +119,17 @@ class CreateResolver:
 
     mutation_type: type[MutationType]
 
+    @property
+    def model(self) -> type[models.Model]:
+        return self.mutation_type.__model__
+
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        handler = MutationHandler(model=self.mutation_type.__model__)
+        handler = MutationHandler(model=self.model)
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data),
-        ):
-            return handler.create(input_data)
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
+            return handler.create(data)
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,7 +150,7 @@ class BulkCreateResolver:
         return self.model._meta.default_manager
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
-        input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         batch_size: int | None = kwargs.get("batch_size")
         ignore_conflicts: bool = kwargs.get("ignore_conflicts", False)
@@ -159,15 +158,11 @@ class BulkCreateResolver:
         update_fields: list[str] | None = kwargs.get("update_fields")
         unique_fields: list[str] | None = kwargs.get("unique_fields")
 
-        handler = BulkMutationHandler(model=self.mutation_type.__model__)
+        handler = BulkMutationHandler(model=self.model)
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data),
-        ):
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
             return handler.create_many(
-                input_data,
+                data,
                 batch_size=batch_size,
                 ignore_conflicts=ignore_conflicts,
                 update_conflicts=update_conflicts,
@@ -194,19 +189,16 @@ class UpdateResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
-        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        value = input_data.pop(self.lookup_field, Undefined)
+        data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        value = data.pop(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
+        handler = MutationHandler(model=self.model)
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data, instance),
-        ):
-            return MutationHandler(model=self.mutation_type.__model__).update(instance, input_data)
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
+            return handler.update(instance, data)
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,25 +215,17 @@ class BulkUpdateResolver:
         return self.mutation_type.__model__
 
     @property
-    def manager(self) -> models.Manager:
-        return self.model._meta.default_manager
-
-    @property
     def lookup_field(self) -> str:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
-        input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         batch_size: int | None = kwargs.get("batch_size")
 
-        handler = BulkMutationHandler(model=self.mutation_type.__model__)
+        handler = BulkMutationHandler(model=self.model)
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data),
-        ):
-            return handler.update_many(input_data, lookup_field=self.lookup_field, batch_size=batch_size)
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
+            return handler.update_many(data, lookup_field=self.lookup_field, batch_size=batch_size)
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,18 +246,14 @@ class DeleteResolver:
         return self.mutation_type.__lookup_field__
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
-        input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        value = input_data.get(self.lookup_field, Undefined)
+        data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        value = data.get(self.lookup_field, Undefined)
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
 
         instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data, instance),
-        ):
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
             instance.delete()
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
@@ -303,13 +283,8 @@ class BulkDeleteResolver:
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
         input_data: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-        ):
-            self.mutation_type.__validate__(info=info, input_data=input_data)
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data={}):
             self.manager.filter(pk__in=input_data).delete()
-            self.mutation_type.__post_handle__(info=info, input_data=input_data)
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
@@ -326,9 +301,5 @@ class CustomResolver:
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        with (
-            transaction.atomic(),
-            handle_integrity_errors(),
-            MutationMiddlewareHandler(self.mutation_type, info, input_data),
-        ):
+        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=input_data):
             return self.mutation_type.__mutate__(root, info, input_data)

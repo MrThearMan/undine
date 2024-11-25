@@ -5,15 +5,15 @@ from typing import Callable, Generic, TypeVar
 from weakref import WeakKeyDictionary
 
 __all__ = [
-    "cached_class_method",
-    "cached_class_property",
+    "cached_classmethod",
+    "cached_classproperty",
 ]
 
 
 R = TypeVar("R")
 
 
-class cached_class_property(Generic[R]):  # noqa: N801
+class cached_classproperty(Generic[R]):  # noqa: N801
     """A decorator that works like a @classmethod @property, but also caches the result per class."""
 
     def __init__(self, func: Callable[[type], R]) -> None:
@@ -26,7 +26,7 @@ class cached_class_property(Generic[R]):  # noqa: N801
         return self.values_by_class[owner]
 
 
-class cached_class_method(Generic[R]):  # noqa: N801
+class cached_classmethod(Generic[R]):  # noqa: N801
     """A decorator that works like a @classmethod, but also caches the result per class."""
 
     def __init__(self, func: Callable[[type], R]) -> None:

@@ -110,7 +110,13 @@ def get_model_fields_for_graphql(
     include_relations: bool = True,
     include_saveable: bool = True,
 ) -> Generator[models.Field, None, None]:
-    """Get all model fields for the given model, except those that are hidden or not editable."""
+    """
+    Get all fields from the model that should be included in a GraphQL schema.
+
+    :param model: The model to get fields from.
+    :param include_relations: Whether to include relation fields.
+    :param include_saveable: Whether to include fields that are not editable or not concrete.
+    """
     for model_field in model._meta._get_fields():
         is_relation = bool(getattr(model_field, "is_relation", False))  # Does field reference a relation?
         editable = bool(getattr(model_field, "editable", True))  # Is field value editable by users?

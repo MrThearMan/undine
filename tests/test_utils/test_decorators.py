@@ -1,19 +1,19 @@
 from functools import partial
 
-from undine.utils.decorators import cached_class_method, cached_class_property
+from undine.utils.decorators import cached_classmethod, cached_classproperty
 
 
-def test_cached_class_property():
+def test_cached_classproperty():
     value = 1
 
     class A:
         x = 1
 
-        @cached_class_property
-        def foo(cls):
+        @cached_classproperty
+        def foo(self):
             nonlocal value
             value += 1
-            return cls.x
+            return self.x
 
     class B(A):
         x = 2
@@ -21,8 +21,8 @@ def test_cached_class_property():
     class C(A):
         x = 3
 
-        @cached_class_property
-        def foo(cls):
+        @cached_classproperty
+        def foo(self):
             nonlocal value
             value += 1
             return super().foo + 1
@@ -52,17 +52,17 @@ def test_cached_class_property():
     assert isinstance(A.foo, int)
 
 
-def test_cached_class_method():
+def test_cached_classmethod():
     value = 1
 
     class A:
         x = 1
 
-        @cached_class_method
-        def foo(cls):
+        @cached_classmethod
+        def foo(self):
             nonlocal value
             value += 1
-            return cls.x
+            return self.x
 
     class B(A):
         x = 2
@@ -70,8 +70,8 @@ def test_cached_class_method():
     class C(A):
         x = 3
 
-        @cached_class_method
-        def foo(cls):
+        @cached_classmethod
+        def foo(self):
             nonlocal value
             value += 1
             return super().foo() + 1

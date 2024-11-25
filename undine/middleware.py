@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import traceback
-from abc import ABC, abstractmethod
-from contextlib import suppress
 from copy import deepcopy
-from types import FunctionType
-from typing import TYPE_CHECKING, Any, Generator, Iterable, Iterator, Self
+from types import FunctionType, TracebackType
+from typing import TYPE_CHECKING, Any, Self
 
-from django.utils.functional import classproperty
+from django.db import IntegrityError, transaction
 from graphql import Undefined
 
 from undine.dataclasses import MutationMiddlewareParams
+from undine.errors.constraints import get_constraint_message
+from undine.errors.exceptions import GraphQLModelConstaintViolationError
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
@@ -22,9 +22,11 @@ if TYPE_CHECKING:
     from undine.typing import GQLInfo, JsonObject
 
 __all__ = [
+    "AtomicMutationMiddleware",
     "InputDataModificationMiddleware",
     "InputDataValidationMiddleware",
     "InputOnlyDataRemovalMiddleware",
+    "IntegrityErrorHandlingMiddleware",
     "MutationMiddleware",
     "MutationMiddlewareHandler",
     "error_logging_middleware",
@@ -45,24 +47,27 @@ def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQ
 # --- Mutation middleware -----------------------------------------------------------------------------------------
 
 
-class MutationMiddleware(ABC):
+class MutationMiddleware:
     """Base class for mutation middleware."""
+
+    priority: int
+    """Middleware priority. Lower number means middleware context is entered earlier in the middleware stack."""
 
     def __init__(self, params: MutationMiddlewareParams) -> None:
         self.params = params
 
-    @abstractmethod
-    def __iter__(self) -> Iterator:
-        """
-        Should be a generator that yields once.
-        Block before yield happens before the mutation is executed.
-        Block after yield happens after the mutation is executed.
-        """
+    def __enter__(self) -> Self:
+        """Stuff that happens before the mutation is executed."""
+        return self
 
-    @abstractmethod
-    @classproperty
-    def priority(self) -> int:
-        """Middleware priority. Lower number means executed first."""
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        """Stuff that happens after the mutation is executed."""
+        return False
 
 
 class InputDataModificationMiddleware(MutationMiddleware):
@@ -77,9 +82,9 @@ class InputDataModificationMiddleware(MutationMiddleware):
 
     priority: int = 0
 
-    def __iter__(self) -> Generator:
+    def __enter__(self) -> Self:
         self.fill_input_data(self.params.mutation_type, self.params.input_data)
-        yield
+        return self
 
     def fill_input_data(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -116,9 +121,9 @@ class InputDataValidationMiddleware(MutationMiddleware):
 
     priority: int = 100
 
-    def __iter__(self) -> Generator:
+    def __enter__(self) -> Self:
         self.validate_data(self.params.mutation_type, self.params.input_data)
-        yield
+        return self
 
     def validate_data(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -151,9 +156,15 @@ class PostMutationHandlingMiddleware(MutationMiddleware):
 
     priority: int = 100
 
-    def __iter__(self) -> Generator:
-        yield
-        self.post_handling(self.params.mutation_type, self.params.input_data)
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if exc_type is None:
+            self.post_handling(self.params.mutation_type, self.params.input_data)
+        return False
 
     def post_handling(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -180,13 +191,22 @@ class InputOnlyDataRemovalMiddleware(MutationMiddleware):
     Add them back in after the mutation is executed.
     """
 
-    priority: int = 200  # Should probably run as the last middleware.
+    priority: int = 200
 
-    def __iter__(self) -> Generator:
-        original_input_data = deepcopy(self.params.input_data)
+    def __enter__(self) -> Self:
+        self.original_input_data = deepcopy(self.params.input_data)
         self.remove_input_only_fields(self.params.mutation_type, self.params.input_data)
-        yield
-        self.params.input_data = original_input_data
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if hasattr(self, "original_input_data"):
+            self.params.input_data = self.original_input_data
+        return False
 
     def remove_input_only_fields(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -206,8 +226,57 @@ class InputOnlyDataRemovalMiddleware(MutationMiddleware):
                 input_data.pop(field_name, None)
 
 
+class IntegrityErrorHandlingMiddleware(MutationMiddleware):
+    """Mutation middleware that converts raised IntegrityErrors from the database to GraphQL errors."""
+
+    # Should run before `AtomicMutationMiddleware` so that if an error occurs,
+    # the transaction has already been rolled back before this raises a different error.
+    priority: int = 900
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        """If an integrity error occurs, raise a GraphQLStatusError with the appropriate error code."""
+        if isinstance(exc_value, IntegrityError):
+            msg = get_constraint_message(exc_value.args[0])
+            raise GraphQLModelConstaintViolationError(msg) from exc_value
+        return False
+
+
+class AtomicMutationMiddleware(MutationMiddleware):
+    """Middleware that makes mutations atomic."""
+
+    # Priority should be high enough so that the transaction is always exited,
+    # meaning no other middleware raises an error before this one is exited.
+    # To be safe, make sure this this middleware runs last.
+    priority: int = 1000
+
+    def __enter__(self) -> Self:
+        self.atomic = transaction.atomic()
+        self.atomic.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if hasattr(self, "atomic"):
+            self.atomic.__exit__(exc_type, exc_value, traceback)
+        return False
+
+
 class MutationMiddlewareHandler:
-    """Executes defined middlewares for a MutationType."""
+    """
+    Executes defined middlewares for a MutationType.
+
+    Middleware are run as nested context managers, where the middleware with the highest priority
+    (lowest number) is entered first and exited last.
+    """
 
     def __init__(
         self,
@@ -216,7 +285,7 @@ class MutationMiddlewareHandler:
         input_data: JsonObject,
         instance: models.Model | None = None,
     ) -> None:
-        self.middleware: list[Iterator] = []
+        self.middleware: list[MutationMiddleware] = []
 
         self.params = MutationMiddlewareParams(
             mutation_type=mutation_type,
@@ -228,19 +297,19 @@ class MutationMiddlewareHandler:
         sorted_middleware = sorted(mutation_type.__middleware__(), key=lambda m: (m.priority, m.__name__))
 
         for middleware in sorted_middleware:
-            result = middleware(self.params)
-            if isinstance(result, Iterator):
-                self.middleware.append(result)
-            elif isinstance(result, Iterable):
-                self.middleware.append(iter(result))
+            self.middleware.append(middleware(self.params))
 
     def __enter__(self) -> Self:
         for middleware in self.middleware:
-            with suppress(StopIteration):
-                next(middleware)
+            middleware.__enter__()
         return self
 
-    def __exit__(self, *args: object, **kwargs: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
         for middleware in reversed(self.middleware):
-            with suppress(StopIteration):
-                next(middleware)
+            middleware.__exit__(exc_type, exc_value, traceback)
+        return False

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Self
 
 import pytest
 
@@ -58,9 +57,7 @@ def test_alter_input_data_middleware():
         ),
     )
 
-    it = iter(middleware)
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__enter__()  # noqa: PLC2801
 
     assert middleware.params.input_data == {
         "name": "foo",
@@ -107,10 +104,7 @@ def test_input_data_validation_middleware():
         ),
     )
 
-    it = iter(middleware)
-
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__enter__()  # noqa: PLC2801
 
     assert validate_called is True
     assert validator_1_called is True
@@ -137,18 +131,14 @@ def test_remove_input_only_fields_middleware():
         ),
     )
 
-    it = iter(middleware)
-
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__enter__()  # noqa: PLC2801
 
     assert middleware.params.input_data == {
         "type": TaskTypeChoices.STORY.value,
         "created_at": "2022-01-01T00:00:00",
     }
 
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__exit__(None, None, None)
 
     assert middleware.params.input_data == input_data
 
@@ -217,10 +207,7 @@ def test_remove_input_only_fields_middleware__nested():
         ),
     )
 
-    it = iter(middleware)
-
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__enter__()  # noqa: PLC2801
 
     assert middleware.params.input_data == {
         "type": TaskTypeChoices.STORY.value,
@@ -229,12 +216,12 @@ def test_remove_input_only_fields_middleware__nested():
         "assignees": [{"name": "Test user"}],
     }
 
-    with contextlib.suppress(StopIteration):
-        next(it)
+    middleware.__exit__(None, None, None)
 
     assert middleware.params.input_data == input_data
 
 
+@pytest.mark.django_db
 def test_mutation_middleware_context__default():
     validate_called = False
 
@@ -254,6 +241,7 @@ def test_mutation_middleware_context__default():
     assert validate_called is True
 
 
+@pytest.mark.django_db
 def test_mutation_middleware_context__custom_middleware():
     pre_called = False
     post_called = False
@@ -261,11 +249,15 @@ def test_mutation_middleware_context__custom_middleware():
     class MyMiddleware(MutationMiddleware):
         priority = 101
 
-        def __iter__(self) -> Generator:
+        def __enter__(self) -> Self:
             nonlocal pre_called, post_called
             pre_called = True
-            yield
+            return self
+
+        def __exit__(self, *args: object, **kwargs: Any) -> bool:
+            nonlocal pre_called, post_called
             post_called = True
+            return False
 
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input()

@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from functools import wraps
 from typing import Any, Callable, ParamSpec, TypeVar
 
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from graphql import ExecutionResult, GraphQLError
 from graphql.pyutils import inspect
 
-from undine.errors.constraints import get_constraint_message
-from undine.errors.exceptions import GraphQLConversionError, GraphQLModelConstaintViolationError
+from undine.errors.exceptions import GraphQLConversionError
 from undine.utils.logging import undine_logger
 
 __all__ = [
     "handle_conversion_errors",
-    "handle_integrity_errors",
     "handle_validation_errors",
     "raised_exceptions_as_execution_results",
 ]
@@ -38,16 +34,6 @@ def handle_conversion_errors(typename: str):  # noqa: ANN201
         return wrapper
 
     return decorator
-
-
-@contextmanager
-def handle_integrity_errors() -> None:
-    """If an integrity error occurs, raise a GraphQLStatusError with the appropriate error code."""
-    try:
-        yield
-    except IntegrityError as error:
-        msg = get_constraint_message(error.args[0])
-        raise GraphQLModelConstaintViolationError(msg) from error
 
 
 def handle_validation_errors(func: Callable[P, T]) -> Callable[P, T]:

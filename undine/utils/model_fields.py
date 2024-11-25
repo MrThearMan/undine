@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, Sequence
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -13,7 +13,7 @@ __all__ = [
 class TextChoicesField(models.CharField):
     """Choice field that offers more consistent naming for enums in the GraphQL Schema."""
 
-    default_error_messages: ClassVar[dict[str, str]] = {
+    default_error_messages: dict[str, str] = {
         "invalid": "`%(value)s` is not a member of the `%(enum_name)s` enum. Choices are: %(choices)s.",
     }
 
@@ -31,7 +31,7 @@ class TextChoicesField(models.CharField):
         kwargs["max_length"] = max(len(val) for val in choices_enum.values)
         super().__init__(**kwargs)
 
-    def deconstruct(self) -> tuple[str, str, tuple[Any], dict[str, Any]]:
+    def deconstruct(self) -> tuple[str, str, Sequence[str], dict[str, Any]]:
         """Returns a tuple with enough information to recreate the field."""
         name, path, args, kwargs = super().deconstruct()
         kwargs["choices_enum"] = self.choices_enum

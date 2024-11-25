@@ -24,9 +24,11 @@ from undine.converters import (
 )
 from undine.errors.exceptions import MissingModelError
 from undine.middleware import (
+    AtomicMutationMiddleware,
     InputDataModificationMiddleware,
     InputDataValidationMiddleware,
     InputOnlyDataRemovalMiddleware,
+    IntegrityErrorHandlingMiddleware,
     MutationMiddleware,
     PostMutationHandlingMiddleware,
 )
@@ -177,12 +179,14 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
     @classmethod
     def __middleware__(cls) -> list[type[MutationMiddleware]]:
-        """Middleware to use for this MutationType."""
+        """Middleware to use with mutations with using this MutationType."""
         return [
             InputDataModificationMiddleware,
             InputDataValidationMiddleware,
             PostMutationHandlingMiddleware,
             InputOnlyDataRemovalMiddleware,
+            IntegrityErrorHandlingMiddleware,
+            AtomicMutationMiddleware,
         ]
 
 
