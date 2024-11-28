@@ -108,14 +108,14 @@ def get_model_fields_for_graphql(
     model: type[models.Model],
     *,
     include_relations: bool = True,
-    include_saveable: bool = True,
+    include_nonsaveable: bool = True,
 ) -> Generator[models.Field, None, None]:
     """
     Get all fields from the model that should be included in a GraphQL schema.
 
     :param model: The model to get fields from.
     :param include_relations: Whether to include relation fields.
-    :param include_saveable: Whether to include fields that are not editable or not concrete.
+    :param include_nonsaveable: Whether to include fields that are not editable or not concrete.
     """
     for model_field in model._meta._get_fields():
         is_relation = bool(getattr(model_field, "is_relation", False))  # Does field reference a relation?
@@ -127,7 +127,7 @@ def get_model_fields_for_graphql(
                 yield model_field
             continue
 
-        if not include_saveable and (not editable or not concrete):
+        if not include_nonsaveable and (not editable or not concrete):
             continue
 
         yield model_field

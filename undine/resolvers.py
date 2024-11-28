@@ -8,14 +8,14 @@ Resolvers must be callables with the following signature:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Self
+from typing import TYPE_CHECKING, Any, Callable, Generic, Self
 
 from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
 from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
-from undine.typing import GQLInfo, RelatedManagerProtocol
+from undine.typing import GQLInfo, RelatedManager, TModel
 from undine.utils.bulk_mutation_handler import BulkMutationHandler
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handler import MutationHandler
@@ -61,7 +61,7 @@ class ModelManyRelatedResolver:
     name: str
 
     def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        value: RelatedManagerProtocol | None = getattr(model, self.name, None)
+        value: RelatedManager | None = getattr(model, self.name, None)
         try:
             return value.get_queryset()
         except Exception as error:
@@ -111,7 +111,7 @@ class FunctionResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class CreateResolver:
+class CreateResolver(Generic[TModel]):
     """
     Resolves a mutation for creating a model instance using 'MutationHandler.create'.
     Runs all defined mutation middlewares. Mutation is run in a transaction.
@@ -120,10 +120,10 @@ class CreateResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
-    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> TModel:
         data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         handler = MutationHandler(model=self.model)
@@ -133,7 +133,7 @@ class CreateResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class BulkCreateResolver:
+class BulkCreateResolver(Generic[TModel]):
     """
     Resolves a bulk create mutation for creating a list of model instances using `manager.bulk_create()`.
     Runs all defined mutation middlewares. Mutation is run in a transaction.
@@ -142,14 +142,10 @@ class BulkCreateResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
-    @property
-    def manager(self) -> models.Manager:
-        return self.model._meta.default_manager
-
-    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         batch_size: int | None = kwargs.get("batch_size")
@@ -172,7 +168,7 @@ class BulkCreateResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class UpdateResolver:
+class UpdateResolver(Generic[TModel]):
     """
     Resolves a mutation for updating a model instance using 'MutationHandler.update'.
     Runs all defined mutation middlewares. Mutation is run in a transaction.
@@ -181,7 +177,7 @@ class UpdateResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
     @property
@@ -202,7 +198,7 @@ class UpdateResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class BulkUpdateResolver:
+class BulkUpdateResolver(Generic[TModel]):
     """
     Resolves a bulk update mutation for updating a list of model instances using `manager.bulk_update()`.
     Runs all defined mutation middlewares. Mutation is run in a transaction.
@@ -211,14 +207,14 @@ class BulkUpdateResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
     @property
     def lookup_field(self) -> str:
         return self.mutation_type.__lookup_field__
 
-    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[Model]:
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         batch_size: int | None = kwargs.get("batch_size")
 
@@ -229,7 +225,7 @@ class BulkUpdateResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class DeleteResolver:
+class DeleteResolver(Generic[TModel]):
     """
     Resolves a mutation for deleting a model instance using 'model.delete'.
     Runs all defined mutation middlewares. Mutation is run in a transaction.
@@ -238,7 +234,7 @@ class DeleteResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
     @property
@@ -260,7 +256,7 @@ class DeleteResolver:
 
 
 @dataclass(frozen=True, slots=True)
-class BulkDeleteResolver:
+class BulkDeleteResolver(Generic[TModel]):
     """
     Resolves a bulk delete mutation for deleting a list of model instances using `qs.delete()`.
     Runs MutationType's '__validate__' method. Mutation is run in a transaction.
@@ -269,12 +265,12 @@ class BulkDeleteResolver:
     mutation_type: type[MutationType]
 
     @property
-    def model(self) -> type[models.Model]:
+    def model(self) -> type[TModel]:
         return self.mutation_type.__model__
 
     @property
-    def manager(self) -> models.Manager:
-        return self.model._meta.default_manager
+    def manager(self) -> RelatedManager[TModel]:
+        return self.model._meta.default_manager  # type: ignore[return-value]
 
     @property
     def lookup_field(self) -> str:

@@ -290,7 +290,7 @@ class Input:
 def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) -> dict[str, Input]:
     """Add undine.Inputs for all of the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Input] = {}
-    for model_field in get_model_fields_for_graphql(model, include_saveable=False):
+    for model_field in get_model_fields_for_graphql(model, include_nonsaveable=False):
         field_name = model_field.name
 
         is_primary_key = bool(getattr(model_field, "primary_key", False))

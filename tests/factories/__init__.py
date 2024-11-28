@@ -15,6 +15,7 @@ __all__ = [
     "AcceptanceCriteriaFactory",
     "CommentFactory",
     "PersonFactory",
+    "PersonFactory",
     "ProjectFactory",
     "ReportFactory",
     "ServiceRequestFactory",

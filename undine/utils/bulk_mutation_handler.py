@@ -131,11 +131,11 @@ class BulkMutationHandler(Generic[TModel]):
                     related_objects_to_fetch[field_info.model].add(value)
                     continue
 
-                if field_info.relation_type.is_reverse:
-                    raise GraphQLBulkMutationReverseRelationError(name=field_name, model=field_info.model)
-
                 if field_info.relation_type.is_many_to_many:
                     raise GraphQLBulkMutationManyRelatedError(name=field_name, model=field_info.model)
+
+                if field_info.relation_type.is_reverse:
+                    raise GraphQLBulkMutationReverseRelationError(name=field_name, model=field_info.model)
 
                 if field_info.relation_type.is_generic:
                     raise GraphQLBulkMutationGenericRelationsError(name=field_name, model=field_info.model)

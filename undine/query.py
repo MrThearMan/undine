@@ -145,14 +145,6 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return cls.__model__._default_manager.get_queryset()
 
     @classmethod
-    def __optimize_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
-        """Optimize a queryset according to the given resolve info."""
-        optimizer = OptimizationCompiler(info).compile(queryset)
-        optimized_queryset = optimizer.optimize_queryset(queryset)
-        evaluate_in_context(optimized_queryset, info)
-        return optimized_queryset
-
-    @classmethod
     def __filter_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """
         Filtering that should always be applied to the queryset.
@@ -177,7 +169,15 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return cls.__optimize_queryset__(queryset, info)
 
     @classmethod
-    def __pre_optimization_hook__(cls, optimizer: QueryOptimizer) -> None:
+    def __optimize_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
+        """Optimize a queryset according to the given resolve info."""
+        optimizer = OptimizationCompiler(info).compile(queryset)
+        optimized_queryset = optimizer.optimize_queryset(queryset)
+        evaluate_in_context(optimized_queryset, info)
+        return optimized_queryset
+
+    @classmethod
+    def __optimizer_hook__(cls, optimizer: QueryOptimizer) -> None:
         """
         Hook for modifying the queryset and optimizer data before the optimization process.
         Used to add information about required data for the model outside of the GraphQL query.

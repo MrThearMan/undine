@@ -76,8 +76,8 @@ class InputDataModificationMiddleware(MutationMiddleware):
     Should be executed as the first middleware.
 
     Alters input data before validation:
-    - Adds default values for hidden inputs
-    - Calls callable inputs
+     - Adds default values for hidden inputs
+     - Calls callable inputs
     """
 
     priority: int = 0

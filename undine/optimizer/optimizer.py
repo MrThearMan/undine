@@ -54,7 +54,7 @@ class QueryOptimizer:
 
     def process(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> OptimizationResults:
         """Process compiled optimizations to optimize the given queryset."""
-        filter_info.model_type.__pre_optimization_hook__(self)
+        filter_info.model_type.__optimizer_hook__(self)
 
         results = OptimizationResults(
             name=self.name,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Self
@@ -17,6 +18,7 @@ from undine.middleware import (
     InputOnlyDataRemovalMiddleware,
     MutationMiddleware,
     MutationMiddlewareHandler,
+    PostMutationHandlingMiddleware,
     error_logging_middleware,
 )
 
@@ -39,7 +41,7 @@ def test_error_logging_middleware(caplog):
     assert "ValueError: Test" in caplog.record_tuples[0][2]
 
 
-def test_alter_input_data_middleware():
+def test_input_data_modification_middleware():
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input(hidden=True, default_value="foo")
 
@@ -57,18 +59,18 @@ def test_alter_input_data_middleware():
         ),
     )
 
-    middleware.__enter__()  # noqa: PLC2801
-
-    assert middleware.params.input_data == {
-        "name": "foo",
-        "current_user_id": 1,
-    }
+    with middleware:
+        assert middleware.params.input_data == {
+            "name": "foo",
+            "current_user_id": 1,
+        }
 
 
 def test_input_data_validation_middleware():
-    validate_called = False
-    validator_1_called = False
-    validator_2_called = False
+    counter = itertools.count(1)
+    validate_called = -1
+    validator_1_called = -1
+    validator_2_called = -1
 
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input(input_only=True)
@@ -76,19 +78,19 @@ def test_input_data_validation_middleware():
         created_at = Input()
 
         @name.validate
-        def _(self, value: str) -> None:  # noqa: ARG004
+        def _(self, value: str) -> None:
             nonlocal validator_1_called
-            validator_1_called = True
+            validator_1_called = next(counter)
 
         @type.validate
-        def _(self, value: str) -> None:  # noqa: ARG004
+        def _(self, value: str) -> None:
             nonlocal validator_2_called
-            validator_2_called = True
+            validator_2_called = next(counter)
 
         @classmethod
         def __validate__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal validate_called
-            validate_called = True
+            validate_called = next(counter)
 
     input_data = {
         "name": "foo",
@@ -104,14 +106,42 @@ def test_input_data_validation_middleware():
         ),
     )
 
-    middleware.__enter__()  # noqa: PLC2801
+    with middleware:
+        assert validator_1_called == 1
+        assert validator_2_called == 2
+        assert validate_called == 3
 
-    assert validate_called is True
-    assert validator_1_called is True
-    assert validator_2_called is True
+
+def test_post_mutation_handling_middleware():
+    post_handler_called = False
+
+    class MyMutationType(MutationType, model=Task, auto=False):
+        name = Input()
+
+        @classmethod
+        def __post_handle__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal post_handler_called
+            post_handler_called = True
+
+    input_data = {
+        "name": "foo",
+    }
+
+    middleware = PostMutationHandlingMiddleware(
+        params=MutationMiddlewareParams(
+            mutation_type=MyMutationType,
+            info=MockGQLInfo(),
+            input_data=deepcopy(input_data),
+        ),
+    )
+
+    with middleware:
+        assert post_handler_called is False
+
+    assert post_handler_called is True
 
 
-def test_remove_input_only_fields_middleware():
+def test_input_only_data_removal_middleware():
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input(input_only=True)
         type = Input()
@@ -131,19 +161,16 @@ def test_remove_input_only_fields_middleware():
         ),
     )
 
-    middleware.__enter__()  # noqa: PLC2801
-
-    assert middleware.params.input_data == {
-        "type": TaskTypeChoices.STORY.value,
-        "created_at": "2022-01-01T00:00:00",
-    }
-
-    middleware.__exit__(None, None, None)
+    with middleware:
+        assert middleware.params.input_data == {
+            "type": TaskTypeChoices.STORY.value,
+            "created_at": "2022-01-01T00:00:00",
+        }
 
     assert middleware.params.input_data == input_data
 
 
-def test_remove_input_only_fields_middleware__nested():
+def test_input_only_data_removal_middleware__nested():
     class MyTeamType(MutationType, model=Team, auto=False):
         pk = Input()
         name = Input()
@@ -207,16 +234,13 @@ def test_remove_input_only_fields_middleware__nested():
         ),
     )
 
-    middleware.__enter__()  # noqa: PLC2801
-
-    assert middleware.params.input_data == {
-        "type": TaskTypeChoices.STORY.value,
-        "project": {"pk": 1, "comments": [{}]},
-        "request": {},
-        "assignees": [{"name": "Test user"}],
-    }
-
-    middleware.__exit__(None, None, None)
+    with middleware:
+        assert middleware.params.input_data == {
+            "type": TaskTypeChoices.STORY.value,
+            "project": {"pk": 1, "comments": [{}]},
+            "request": {},
+            "assignees": [{"name": "Test user"}],
+        }
 
     assert middleware.params.input_data == input_data
 

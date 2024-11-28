@@ -14,6 +14,7 @@ from undine.utils.model_utils import (
     get_instance_or_raise,
     get_lookup_field_name,
     get_model_field,
+    get_model_fields_for_graphql,
 )
 
 pytestmark = [
@@ -123,4 +124,53 @@ def test_generic_foreign_key_for_generic_relation():
     assert generic == Comment._meta.get_field("target")
 
 
-# TODO: Test `get_model_fields_for_graphql
+def test_get_model_fields_for_graphql():
+    fields = sorted(get_model_fields_for_graphql(Task), key=lambda f: f.name)
+
+    assert fields == [
+        Task._meta.get_field("acceptancecriteria"),
+        Task._meta.get_field("assignees"),
+        Task._meta.get_field("comments"),
+        Task._meta.get_field("created_at"),
+        Task._meta.get_field("id"),
+        Task._meta.get_field("name"),
+        Task._meta.get_field("objective"),
+        Task._meta.get_field("project"),
+        Task._meta.get_field("related_tasks"),
+        Task._meta.get_field("reports"),
+        Task._meta.get_field("request"),
+        Task._meta.get_field("result"),
+        Task._meta.get_field("steps"),
+        Task._meta.get_field("type"),
+    ]
+
+
+def test_get_model_fields_for_graphql__no_relations():
+    fields = sorted(get_model_fields_for_graphql(Task, include_relations=False), key=lambda f: f.name)
+
+    assert fields == [
+        Task._meta.get_field("created_at"),
+        Task._meta.get_field("id"),
+        Task._meta.get_field("name"),
+        Task._meta.get_field("type"),
+    ]
+
+
+def test_get_model_fields_for_graphql__no_unsaveable():
+    fields = sorted(get_model_fields_for_graphql(Task, include_nonsaveable=False), key=lambda f: f.name)
+
+    assert fields == [
+        Task._meta.get_field("acceptancecriteria"),
+        Task._meta.get_field("assignees"),
+        Task._meta.get_field("comments"),
+        Task._meta.get_field("id"),
+        Task._meta.get_field("name"),
+        Task._meta.get_field("objective"),
+        Task._meta.get_field("project"),
+        Task._meta.get_field("related_tasks"),
+        Task._meta.get_field("reports"),
+        Task._meta.get_field("request"),
+        Task._meta.get_field("result"),
+        Task._meta.get_field("steps"),
+        Task._meta.get_field("type"),
+    ]

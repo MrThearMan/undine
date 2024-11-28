@@ -9,7 +9,7 @@ from undine.dataclasses import PostSaveData
 from undine.errors.exceptions import GraphQLInvalidInputDataError
 from undine.parsers import parse_model_relation_info
 from undine.parsers.parse_model_relation_info import RelationType
-from undine.typing import JsonObject, RelatedManagerProtocol, TModel
+from undine.typing import JsonObject, RelatedManager, TModel
 from undine.utils.model_utils import (
     generic_relations_for_generic_foreign_key,
     get_instance_or_raise,
@@ -215,7 +215,7 @@ class MutationHandler(Generic[TModel]):
         """Handle a reverse one-to-many relation after the related instance has been created."""
         # This can also be a `GenericRelatedObjectManager`, but typing that requires
         # the content type app to be loaded to create the type, so this is fine.
-        manager: RelatedManagerProtocol = getattr(related_instance, field_info.field_name)
+        manager: RelatedManager = getattr(related_instance, field_info.field_name)
 
         if not data:
             manager.all().delete()
@@ -249,7 +249,7 @@ class MutationHandler(Generic[TModel]):
 
     def post_handle_many_to_many(self, related_instance: Model, field_info: RelatedFieldInfo, data: Any) -> None:
         """Handle a many-to-many relation after the related instance has been created."""
-        manager: RelatedManagerProtocol = getattr(related_instance, field_info.field_name)
+        manager: RelatedManager = getattr(related_instance, field_info.field_name)
 
         if not data:
             manager.clear()

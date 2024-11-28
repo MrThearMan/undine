@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+
+if TYPE_CHECKING:
+    from undine.typing import RelatedManager
 
 __all__ = [
     "AcceptanceCriteria",
@@ -85,13 +90,20 @@ class Task(models.Model):
     type = models.CharField(choices=TaskTypeChoices.choices, max_length=255)
     created_at = models.DateField(auto_now_add=True)
 
-    related_tasks = models.ManyToManyField("self")
+    related_tasks: RelatedManager[Task] = models.ManyToManyField("self")
 
     request = models.OneToOneField(ServiceRequest, null=True, blank=True, default=None, on_delete=models.SET_NULL)
     project = models.ForeignKey(Project, null=True, blank=True, on_delete=models.CASCADE, related_name="tasks")
-    assignees = models.ManyToManyField(Person, related_name="tasks")
+    assignees: RelatedManager[Person] = models.ManyToManyField(Person, related_name="tasks")
 
-    comments = GenericRelation(Comment)
+    comments: RelatedManager[Comment] = GenericRelation(Comment)
+
+    # Reverse relation hints
+    result: TaskResult | None
+    objective: TaskObjective | None
+    steps: RelatedManager[TaskStep]
+    acceptancecriteria: RelatedManager[AcceptanceCriteria]
+    reports: RelatedManager[Report]
 
     def __str__(self) -> str:
         return f"Task {self.name}"
