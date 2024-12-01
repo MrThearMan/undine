@@ -13,6 +13,8 @@ from undine.resolvers import (
     CustomResolver,
     DeleteResolver,
     FunctionResolver,
+    ModelManyResolver,
+    ModelSingleResolver,
     UpdateResolver,
 )
 from undine.typing import EntrypointRef
@@ -47,8 +49,9 @@ def load_deferred_converters() -> None:
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
-        many: bool = kwargs["many"]
-        return ref.__resolve_many__ if many else ref.__resolve_one__
+        if kwargs["many"]:
+            return ModelManyResolver(query_type=ref)
+        return ModelSingleResolver(query_type=ref)
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:  # noqa: PLR0911

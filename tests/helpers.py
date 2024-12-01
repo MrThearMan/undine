@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, MutableMapping, NamedTuple, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Generator, MutableMapping, NamedTuple, TypedDict, TypeVar
+from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpHeaders, HttpRequest, QueryDict
@@ -14,6 +16,7 @@ from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
 from undine.errors.exceptions import UndineError
+from undine.optimizer.optimizer import QueryOptimizer
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
@@ -201,3 +204,10 @@ class MockGQLInfo:
     @property
     def context(self) -> MockRequest:
         return self._context
+
+
+@contextlib.contextmanager
+def patch_optimizer() -> Generator[None, None, None]:
+    path = QueryOptimizer.__module__ + "." + QueryOptimizer.__qualname__ + "." + QueryOptimizer.optimize.__name__
+    with patch(path, side_effect=lambda qs: qs):
+        yield

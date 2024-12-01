@@ -16,21 +16,12 @@ from .ast import GraphQLASTWalker, get_underlying_type
 if TYPE_CHECKING:
     from django.db import models
 
-    from undine.typing import CombinableExpression, GQLInfo, ToManyField, ToOneField
+    from undine.typing import CombinableExpression, ToManyField, ToOneField
 
 
 __all__ = [
-    "get_filter_info",
+    "FilterInfoCompiler",
 ]
-
-
-def get_filter_info(info: GQLInfo, model: type[models.Model]) -> GraphQLFilterInfo:
-    """Compile filter information included in the GraphQL query."""
-    compiler = FilterInfoCompiler(info, model)
-    compiler.run()
-    # Return the compiled filter info, or an empty dict if there is no filter info.
-    name = getattr(info.field_nodes[0].alias, "value", None) or to_snake_case(info.field_name)
-    return compiler.filter_info.get(name, {})
 
 
 @swappable_by_subclassing
@@ -40,6 +31,12 @@ class FilterInfoCompiler(GraphQLASTWalker):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.filter_info: dict[str, GraphQLFilterInfo] = {}
         super().__init__(*args, **kwargs)
+
+    def compile(self) -> GraphQLFilterInfo:
+        self.run()
+        # Return the compiled filter info, or an empty dict if there is no filter info.
+        name = getattr(self.info.field_nodes[0].alias, "value", None) or to_snake_case(self.info.field_name)
+        return self.filter_info.get(name, {})
 
     def add_filter_info(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> None:
         graphql_field = get_field_def(self.info.schema, parent_type, field_node)

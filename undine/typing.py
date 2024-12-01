@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from django.db.models.sql import Query
 
     from undine import Field, Input, MutationType, QueryType
-    from undine.optimizer.optimizer import QueryOptimizer
+    from undine.optimizer.optimizer import OptimizationProcessor
     from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
@@ -276,7 +276,7 @@ Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 # Resolvers
 
 ValidatorFunc: TypeAlias = Callable[["Input", GQLInfo, Any], None]
-OptimizerFunc: TypeAlias = Callable[["Field", "QueryOptimizer"], None]
+OptimizerFunc: TypeAlias = Callable[["Field", "OptimizationProcessor"], None]
 PermissionFunc: TypeAlias = Callable[["Field", GQLInfo, models.Model], bool]
 GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
 

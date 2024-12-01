@@ -1,16 +1,14 @@
-from unittest.mock import patch
-
 import pytest
 from graphql import GraphQLEnumType, GraphQLField, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
-from tests.helpers import MockGQLInfo
+from tests.helpers import MockGQLInfo, patch_optimizer
 from undine import Field, FilterSet, OrderSet, QueryType
-from undine.dataclasses import GraphQLFilterInfo
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
-from undine.optimizer.optimizer import QueryOptimizer
+from undine.optimizer.optimizer import OptimizationProcessor
 from undine.registies import GRAPHQL_TYPE_REGISTRY, QUERY_TYPE_REGISTRY
+from undine.resolvers import ModelManyResolver, ModelSingleResolver
 from undine.scalars import GraphQLDate
 
 
@@ -217,31 +215,12 @@ def test_query_type__permission_many():
     assert MyQueryType.__permission_many__(queryset=queryset, info=MockGQLInfo()) is True
 
 
-@pytest.mark.django_db
-def test_query_type__optimize_queryset():
-    task = TaskFactory.create(name="Test task")
-
+def test_query_type__optimizer_hook():
     class MyQueryType(QueryType, model=Task): ...
 
-    queryset = MyQueryType.__get_queryset__(info=MockGQLInfo())
+    processor = OptimizationProcessor(model=Task, info=MockGQLInfo(), name="name")
 
-    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
-
-    with (
-        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
-        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
-    ):
-        qs = MyQueryType.__optimize_queryset__(queryset=queryset, info=MockGQLInfo())
-
-    assert list(qs) == [task]
-
-
-def test_query_type__optimize_queryset():
-    class MyQueryType(QueryType, model=Task): ...
-
-    optimizer = QueryOptimizer(model=Task, info=MockGQLInfo(), name="name")
-
-    MyQueryType.__optimizer_hook__(optimizer=optimizer)
+    MyQueryType.__optimizer_hook__(processor=processor)
 
 
 @pytest.mark.django_db
@@ -250,13 +229,10 @@ def test_query_type__resolve_one():
 
     class MyQueryType(QueryType, model=Task): ...
 
-    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
+    resolver = ModelSingleResolver(query_type=MyQueryType)
 
-    with (
-        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
-        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
-    ):
-        result = MyQueryType.__resolve_one__(root=None, info=MockGQLInfo(), pk=task.pk)
+    with patch_optimizer():
+        result = resolver(root=None, info=MockGQLInfo(), pk=task.pk)
 
     assert result == task
 
@@ -267,13 +243,10 @@ def test_query_type__resolve_many():
 
     class MyQueryType(QueryType, model=Task): ...
 
-    filter_info = GraphQLFilterInfo(model_type=MyQueryType)
+    resolver = ModelManyResolver(query_type=MyQueryType)
 
-    with (
-        patch("undine.optimizer.compiler.OptimizationCompiler.run"),
-        patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
-    ):
-        qs = MyQueryType.__resolve_many__(root=None, info=MockGQLInfo())
+    with patch_optimizer():
+        qs = resolver(root=task, info=MockGQLInfo())
 
     assert list(qs) == [task]
 

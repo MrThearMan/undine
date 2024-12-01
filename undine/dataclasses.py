@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
-from django.db.models import Prefetch, QuerySet
-from django.db.models.constants import LOOKUP_SEP
 from graphql import Undefined
 
 if TYPE_CHECKING:
@@ -19,39 +17,12 @@ __all__ = [
     "GraphQLParams",
     "LookupRef",
     "MutationMiddlewareParams",
-    "OptimizationResults",
     "OrderResults",
     "PaginationArgs",
     "Parameter",
     "PostSaveData",
     "TypeRef",
 ]
-
-
-@dataclasses.dataclass
-class OptimizationResults:
-    name: Optional[str] = None  # noqa: UP007
-    queryset: Optional[QuerySet] = None  # noqa: UP007
-    only_fields: list[str] = dataclasses.field(default_factory=list)
-    related_fields: list[str] = dataclasses.field(default_factory=list)
-    select_related: list[str] = dataclasses.field(default_factory=list)
-    prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
-
-    def __add__(self, other: OptimizationResults) -> OptimizationResults:
-        """Adding two compilation results together means extending the lookups to the other model."""
-        self.select_related.append(other.name)
-        self.only_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
-        self.related_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
-        self.select_related.extend(f"{other.name}{LOOKUP_SEP}{select}" for select in other.select_related)
-
-        for prefetch in other.prefetch_related:
-            if isinstance(prefetch, str):
-                self.prefetch_related.append(f"{other.name}{LOOKUP_SEP}{prefetch}")
-            if isinstance(prefetch, Prefetch):
-                prefetch.add_prefix(other.name)
-                self.prefetch_related.append(prefetch)
-
-        return self
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

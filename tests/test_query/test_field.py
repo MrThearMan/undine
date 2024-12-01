@@ -8,7 +8,7 @@ from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo
 from undine import Field, QueryType
-from undine.optimizer.optimizer import QueryOptimizer
+from undine.optimizer.optimizer import OptimizationProcessor
 from undine.resolvers import FunctionResolver, ModelFieldResolver
 
 if TYPE_CHECKING:
@@ -65,12 +65,12 @@ def test_field__optimize():
         name = Field()
 
         @name.optimize
-        def optimize_name(self: Field, optimizer: QueryOptimizer) -> int:
+        def optimize_name(self: Field, processor: OptimizationProcessor) -> int:
             return 1
 
     field = MyQueryType.name
-    optimizer = QueryOptimizer(None, MockGQLInfo())
-    assert field.optimizer_func(field, optimizer) == 1
+    processor = OptimizationProcessor(None, MockGQLInfo())
+    assert field.optimizer_func(field, processor) == 1
 
 
 def test_field__permissions():

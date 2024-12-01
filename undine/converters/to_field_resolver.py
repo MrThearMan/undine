@@ -10,8 +10,8 @@ from undine.resolvers import (
     ModelFieldResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
-    QueryTypeManyResolver,
-    QueryTypeSingleResolver,
+    QueryTypeManyRelatedFieldResolver,
+    QueryTypeSingleRelatedFieldResolver,
 )
 from undine.typing import CombinableExpression, FieldRef, ModelField, ToManyField, ToOneField
 from undine.utils.function_dispatcher import FunctionDispatcher
@@ -102,5 +102,5 @@ def load_deferred_converters() -> None:
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
         caller: Field = kwargs["caller"]
         if caller.many:
-            return QueryTypeManyResolver(field=caller, query_type=ref)
-        return QueryTypeSingleResolver(field=caller, query_type=ref)
+            return QueryTypeManyRelatedFieldResolver(field=caller, query_type=ref)
+        return QueryTypeSingleRelatedFieldResolver(field=caller, query_type=ref)

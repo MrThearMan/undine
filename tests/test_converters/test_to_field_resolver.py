@@ -11,7 +11,7 @@ from undine.resolvers import (
     ModelFieldResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
-    QueryTypeSingleResolver,
+    QueryTypeSingleRelatedFieldResolver,
 )
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
@@ -157,7 +157,7 @@ def test_convert_field_ref_to_resolver__lazy_query_type():
     lazy = LazyQueryType(field)
     resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
 
-    assert isinstance(resolver, QueryTypeSingleResolver)
+    assert isinstance(resolver, QueryTypeSingleRelatedFieldResolver)
 
     assert resolver.field == TaskType.project
 
@@ -171,7 +171,7 @@ def test_convert_field_ref_to_resolver__lazy_lambda_query_type():
     lazy = LazyLambdaQueryType(callback=lambda: ProjectType)
     resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
 
-    assert isinstance(resolver, QueryTypeSingleResolver)
+    assert isinstance(resolver, QueryTypeSingleRelatedFieldResolver)
 
     assert resolver.field == TaskType.project
 
@@ -224,7 +224,7 @@ def test_convert_field_ref_to_resolver__query_type():
 
     resolver = convert_field_ref_to_resolver(ProjectType, caller=TaskType.project)
 
-    assert isinstance(resolver, QueryTypeSingleResolver)
+    assert isinstance(resolver, QueryTypeSingleRelatedFieldResolver)
 
     assert resolver.field == TaskType.project
 

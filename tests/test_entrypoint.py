@@ -14,7 +14,7 @@ from graphql import (
 from example_project.app.models import Task
 from undine import Entrypoint, MutationType, QueryType
 from undine.errors.exceptions import MissingEntrypointRefError
-from undine.resolvers import CreateResolver, FunctionResolver
+from undine.resolvers import CreateResolver, FunctionResolver, ModelManyResolver, ModelSingleResolver
 
 
 def test_entrypoint__query__repr():
@@ -75,18 +75,7 @@ def test_entrypoint__query__get_resolver():
         task = Entrypoint(TaskType)
 
     resolver = Query.task.get_resolver()
-    assert resolver == TaskType.__resolve_one__
-
-
-def test_entrypoint__query__resolver():
-    class TaskType(QueryType, model=Task):
-        """Description."""
-
-    class Query:
-        task = Entrypoint(TaskType)
-
-    resolver = Query.task.get_resolver()
-    assert resolver == TaskType.__resolve_one__
+    assert isinstance(resolver, ModelSingleResolver)
 
 
 def test_entrypoint__query__as_graphql_field():
@@ -102,7 +91,7 @@ def test_entrypoint__query__as_graphql_field():
     assert isinstance(graphql_field.type.of_type, GraphQLObjectType)
 
     assert graphql_field.args == {"pk": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
-    assert graphql_field.resolve == TaskType.__resolve_one__
+    assert isinstance(graphql_field.resolve, ModelSingleResolver)
     assert graphql_field.description == "Description."
     assert graphql_field.deprecation_reason is None
     assert graphql_field.extensions == {"undine_entrypoint": Query.task}
@@ -164,7 +153,7 @@ def test_entrypoint__query__many__get_resolver():
         task = Entrypoint(TaskType, many=True)
 
     resolver = Query.task.get_resolver()
-    assert resolver == TaskType.__resolve_many__
+    assert isinstance(resolver, ModelManyResolver)
 
 
 def test_entrypoint__mutation__repr():

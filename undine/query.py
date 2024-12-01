@@ -13,9 +13,7 @@ from undine.converters import (
     is_field_nullable,
     is_many,
 )
-from undine.errors.exceptions import GraphQLPermissionDeniedError, MismatchingModelError, MissingModelError
-from undine.optimizer.compiler import OptimizationCompiler
-from undine.optimizer.prefetch_hack import evaluate_in_context
+from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
@@ -28,8 +26,8 @@ if TYPE_CHECKING:
     from types import FunctionType
 
     from undine import FilterSet, OrderSet
-    from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Root, Self
+    from undine.optimizer.optimizer import OptimizationProcessor
+    from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Self
 
 __all__ = [
     "Field",
@@ -155,37 +153,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return True
 
     @classmethod
-    def __resolve_one__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.Model | None:
-        """Top-level resolver for fetching a single model object."""
-        queryset = cls.__get_queryset__(info)
-        optimized_queryset = cls.__optimize_queryset__(queryset.filter(**kwargs), info)
-        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
-        # The queryset should have the right model instance, since we started by filtering by its pk,
-        # so we can just pick that out of the result cache (if it hasn't been filtered out).
-        instance = next(iter(optimized_queryset), None)
-        if not cls.__permission_single__(instance, info):
-            raise GraphQLPermissionDeniedError
-        return instance
-
-    @classmethod
-    def __resolve_many__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        """Top-level resolver for fetching multiple model objects."""
-        queryset = cls.__get_queryset__(info)
-        optimized_queryset = cls.__optimize_queryset__(queryset, info)
-        if not cls.__permission_many__(optimized_queryset, info):
-            raise GraphQLPermissionDeniedError
-        return optimized_queryset
-
-    @classmethod
-    def __optimize_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
-        """Optimize a queryset according to the given resolve info."""
-        optimizer = OptimizationCompiler(info).compile(queryset)
-        optimized_queryset = optimizer.optimize_queryset(queryset)
-        evaluate_in_context(optimized_queryset, info)
-        return optimized_queryset
-
-    @classmethod
-    def __optimizer_hook__(cls, optimizer: QueryOptimizer) -> None:
+    def __optimizer_hook__(cls, processor: OptimizationProcessor) -> None:
         """
         Hook for modifying the optimizer data outside of the GraphQL resolver context.
         Can be used to optimize data required e.g. for permissions checks.
@@ -193,10 +161,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __get_queryset__(cls, info: GQLInfo) -> models.QuerySet:
-        """
-        Base queryset for this QueryType.
-        Used for top-level queries and prefetches involving this QueryType.
-        """
+        """Base queryset for this QueryType."""
         return cls.__model__._default_manager.get_queryset()
 
     @classmethod
@@ -210,10 +175,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
-        """
-        Creates a `GraphQLObjectType` for this class.
-        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
-        """
+        """Creates a `GraphQLObjectType` for this class."""
 
         # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
@@ -289,7 +251,7 @@ class Field:
 
         if isinstance(self.ref, (models.Expression, models.Subquery)):
 
-            def optimizer_func(field: Field, optimizer: QueryOptimizer) -> None:
+            def optimizer_func(field: Field, optimizer: OptimizationProcessor) -> None:
                 optimizer.annotations[field.name] = field.ref
 
             self.optimizer_func = optimizer_func

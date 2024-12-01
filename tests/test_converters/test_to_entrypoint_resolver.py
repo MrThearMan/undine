@@ -9,6 +9,8 @@ from undine.resolvers import (
     CustomResolver,
     DeleteResolver,
     FunctionResolver,
+    ModelManyResolver,
+    ModelSingleResolver,
     UpdateResolver,
 )
 from undine.typing import GQLInfo
@@ -79,7 +81,7 @@ def test_convert_entrypoint_ref_to_resolver__query_type():
 
     result = convert_entrypoint_ref_to_resolver(TaskType, many=False)
 
-    assert result == TaskType.__resolve_one__
+    assert isinstance(result, ModelSingleResolver)
 
 
 def test_convert_entrypoint_ref_to_resolver__query_type__many():
@@ -87,7 +89,7 @@ def test_convert_entrypoint_ref_to_resolver__query_type__many():
 
     result = convert_entrypoint_ref_to_resolver(TaskType, many=True)
 
-    assert result == TaskType.__resolve_many__
+    assert isinstance(result, ModelManyResolver)
 
 
 def test_convert_entrypoint_ref_to_resolver__mutation_type__create_mutation():

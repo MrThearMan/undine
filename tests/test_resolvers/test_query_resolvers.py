@@ -15,8 +15,8 @@ from undine.resolvers import (
     ModelFieldResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
-    QueryTypeManyResolver,
-    QueryTypeSingleResolver,
+    QueryTypeManyRelatedFieldResolver,
+    QueryTypeSingleRelatedFieldResolver,
 )
 
 if TYPE_CHECKING:
@@ -127,7 +127,7 @@ def test_resolvers__query_type_single_resolver():
     class TaskType(QueryType, model=Task):
         project = Field(ProjectType)
 
-    resolver = QueryTypeSingleResolver(field=TaskType.project, query_type=ProjectType)
+    resolver = QueryTypeSingleRelatedFieldResolver(field=TaskType.project, query_type=ProjectType)
 
     task = TaskFactory.create(project__name="Test project")
 
@@ -145,7 +145,7 @@ def test_resolvers__query_type_single_resolver__field_permissions():
         def project_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return False
 
-    resolver = QueryTypeSingleResolver(field=TaskType.project, query_type=ProjectType)
+    resolver = QueryTypeSingleRelatedFieldResolver(field=TaskType.project, query_type=ProjectType)
 
     task = TaskFactory.create(project__name="Test project")
 
@@ -163,7 +163,7 @@ def test_resolvers__query_type_single_resolver__query_type_permissions():
     class TaskType(QueryType, model=Task):
         project = Field(ProjectType)
 
-    resolver = QueryTypeSingleResolver(field=TaskType.project, query_type=ProjectType)
+    resolver = QueryTypeSingleRelatedFieldResolver(field=TaskType.project, query_type=ProjectType)
 
     task = TaskFactory.create(project__name="Test project")
 
@@ -185,7 +185,7 @@ def test_resolvers__query_type_single_resolver__query_type_permissions__also_fie
         def project_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 
-    resolver = QueryTypeSingleResolver(field=TaskType.project, query_type=ProjectType)
+    resolver = QueryTypeSingleRelatedFieldResolver(field=TaskType.project, query_type=ProjectType)
 
     task = TaskFactory.create(project__name="Test project")
 
@@ -207,7 +207,7 @@ def test_resolvers__query_type_single_resolver__query_type_permissions__skip_obj
         def project_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 
-    resolver = QueryTypeSingleResolver(field=TaskType.project, query_type=ProjectType)
+    resolver = QueryTypeSingleRelatedFieldResolver(field=TaskType.project, query_type=ProjectType)
 
     task = TaskFactory.create(project__name="Test project")
 
@@ -223,7 +223,7 @@ def test_resolvers__query_type_many_resolver():
     class TaskType(QueryType, model=Task):
         assignees = Field(PersonType, many=True)
 
-    resolver = QueryTypeManyResolver(field=TaskType.assignees, query_type=PersonType)
+    resolver = QueryTypeManyRelatedFieldResolver(field=TaskType.assignees, query_type=PersonType)
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
@@ -244,7 +244,7 @@ def test_resolvers__query_type_many_resolver__field_permissions():
         def assignees_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return False
 
-    resolver = QueryTypeManyResolver(field=TaskType.assignees, query_type=PersonType)
+    resolver = QueryTypeManyRelatedFieldResolver(field=TaskType.assignees, query_type=PersonType)
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
@@ -262,7 +262,7 @@ def test_resolvers__query_type_many_resolver__query_type_permissions():
     class TaskType(QueryType, model=Task):
         assignees = Field(PersonType, many=True)
 
-    resolver = QueryTypeManyResolver(field=TaskType.assignees, query_type=PersonType)
+    resolver = QueryTypeManyRelatedFieldResolver(field=TaskType.assignees, query_type=PersonType)
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
@@ -284,7 +284,7 @@ def test_resolvers__query_type_many_resolver__query_type_permissions__also_field
         def assignees_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 
-    resolver = QueryTypeManyResolver(field=TaskType.assignees, query_type=PersonType)
+    resolver = QueryTypeManyRelatedFieldResolver(field=TaskType.assignees, query_type=PersonType)
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
@@ -306,7 +306,7 @@ def test_resolvers__query_type_many_resolver__query_type_permissions__skip_objec
         def assignees_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 
-    resolver = QueryTypeManyResolver(field=TaskType.assignees, query_type=PersonType)
+    resolver = QueryTypeManyRelatedFieldResolver(field=TaskType.assignees, query_type=PersonType)
 
     task = TaskFactory.create(assignees__name="Test assignee")
 

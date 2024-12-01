@@ -14,6 +14,7 @@ from graphql import GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
 from undine.middleware import MutationMiddlewareHandler
+from undine.optimizer.optimizer import QueryOptimizer
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManager, TModel
 from undine.utils.bulk_mutation_handler import BulkMutationHandler
@@ -81,14 +82,14 @@ class ModelManyRelatedFieldResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeSingleResolver(ModelSingleRelatedFieldResolver):
+class QueryTypeSingleRelatedFieldResolver(ModelSingleRelatedFieldResolver):
     """Resolves a single related field pointing to another QueryType."""
 
     query_type: type[QueryType]
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
         # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
-        rel_instance = super(QueryTypeSingleResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
+        rel_instance = super(QueryTypeSingleRelatedFieldResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
 
         if not self.field.skip_querytype_perms and not self.query_type.__permission_single__(rel_instance, info):
             raise GraphQLPermissionDeniedError
@@ -96,18 +97,50 @@ class QueryTypeSingleResolver(ModelSingleRelatedFieldResolver):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeManyResolver(ModelManyRelatedFieldResolver):
+class QueryTypeManyRelatedFieldResolver(ModelManyRelatedFieldResolver):
     """Resolves a many related field pointing to another QueryType."""
 
     query_type: type[QueryType]
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
         # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
-        queryset = super(QueryTypeManyResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
+        queryset = super(QueryTypeManyRelatedFieldResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
 
         if not self.field.skip_querytype_perms and not self.query_type.__permission_many__(queryset, info):
             raise GraphQLPermissionDeniedError
         return queryset
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelSingleResolver:
+    """Top-level resolver for fetching a single model object."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.Model | None:
+        queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
+        optimized_queryset = QueryOptimizer(info=info, model=queryset.model).optimize(queryset)
+        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
+        # The queryset should have the right model instance, since we started by filtering by its pk,
+        # so we can just pick that out of the result cache (if it hasn't been filtered out).
+        instance = next(iter(optimized_queryset), None)
+        if not self.query_type.__permission_single__(instance, info):
+            raise GraphQLPermissionDeniedError
+        return instance
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelManyResolver:
+    """Top-level resolver for fetching a set of model objects."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+        queryset = self.query_type.__get_queryset__(info)
+        optimized_queryset = QueryOptimizer(info=info, model=queryset.model).optimize(queryset)
+        if not self.query_type.__permission_many__(optimized_queryset, info):
+            raise GraphQLPermissionDeniedError
+        return optimized_queryset
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
