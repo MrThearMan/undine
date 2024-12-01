@@ -269,6 +269,7 @@ class Field:
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
         self.permissions_func: PermissionFunc | None = None
+        self.skip_querytype_perms: bool = False
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
@@ -323,18 +324,30 @@ class Field:
             return convert_field_ref_to_resolver(self.resolver_func, caller=self)
         return convert_field_ref_to_resolver(self.ref, caller=self)
 
-    def resolve(self, func: GraphQLFieldResolver, /) -> GraphQLFieldResolver:
-        """Add a resolver from a method using `@<field_name>.resolve`."""
+    def resolve(self, func: GraphQLFieldResolver = None, /) -> GraphQLFieldResolver:
+        """Decorate a function to add a custom resolver for this field."""
+        if func is None:  # Allow `@<field_name>.resolve()`
+            return self.resolve  # type: ignore[return-value]
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
-    def optimize(self, func: OptimizerFunc, /) -> OptimizerFunc:
-        """Add custom optimization from a method using `@<field_name>.optimize`."""
+    def optimize(self, func: OptimizerFunc = None, /) -> OptimizerFunc:
+        """Decorate a function to add custom optimization rules for this field."""
+        if func is None:  # Allow `@<field_name>.optimize()`
+            return self.optimize  # type: ignore[return-value]
         self.optimizer_func = get_wrapped_func(func)
         return func
 
-    def permissions(self, func: PermissionFunc, /) -> PermissionFunc:
-        """Add custom permissions for this fields using `@<field_name>.permissions`."""
+    def permissions(self, func: PermissionFunc = None, /, *, skip_querytype_perms: bool = False) -> PermissionFunc:
+        """
+        Decorate a function to add it as a permission check for this field.
+
+        Use `@<field_name>.permissions(skip_querytype_perms=True)` to skip QueryType permissions checks
+        for this field. Only affects fields referencing another QueryType.
+        """
+        if func is None:  # Allow `@<field_name>.permissions()`
+            self.skip_querytype_perms = skip_querytype_perms
+            return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func
 

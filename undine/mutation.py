@@ -286,8 +286,10 @@ class Input:
         graphql_type = convert_to_graphql_type(self.ref, model=self.owner.__model__, is_input=True)
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
-    def validate(self, func: ValidatorFunc, /) -> ValidatorFunc:
-        """Add a validator for the input using `@<input_name>.validator`"""
+    def validate(self, func: ValidatorFunc = None, /) -> ValidatorFunc:
+        """Decorate a function to add validation for this input."""
+        if func is None:  # Allow `@<input_name>.validator()`
+            return self.validate  # type: ignore[return-value]
         self.validator_func = get_wrapped_func(func)
         return func
 

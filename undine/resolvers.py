@@ -88,12 +88,11 @@ class QueryTypeSingleResolver(ModelSingleRelatedFieldResolver):
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
         # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
-        related_instance = super(QueryTypeSingleResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
+        rel_instance = super(QueryTypeSingleResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
 
-        # TODO: Allow running `__permission_single__` if `permission_func` is defined.
-        if self.field.permissions_func is None and not self.query_type.__permission_single__(related_instance, info):
+        if not self.field.skip_querytype_perms and not self.query_type.__permission_single__(rel_instance, info):
             raise GraphQLPermissionDeniedError
-        return related_instance
+        return rel_instance
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -106,8 +105,7 @@ class QueryTypeManyResolver(ModelManyRelatedFieldResolver):
         # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
         queryset = super(QueryTypeManyResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
 
-        # TODO: Allow running `__permission_many__` if `permission_func` is defined.
-        if self.field.permissions_func is None and not self.query_type.__permission_many__(queryset, info):
+        if not self.field.skip_querytype_perms and not self.query_type.__permission_many__(queryset, info):
             raise GraphQLPermissionDeniedError
         return queryset
 
