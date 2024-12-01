@@ -33,13 +33,13 @@ class OrderSetMeta(type):
         _bases: tuple[type, ...],
         _attrs: dict[str, Any],
         *,
+        # See `OrderSet` for documentation of arguments.
         model: type[models.Model] | None = None,
         auto: bool = True,
         exclude: Iterable[str] = (),
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> OrderSetMeta:
-        """See `OrderSet` for documentation of arguments."""
         if model is Undefined:  # Early return for the `OrderSet` class itself.
             return super().__new__(cls, _name, _bases, _attrs)
 

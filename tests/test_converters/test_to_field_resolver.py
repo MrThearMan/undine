@@ -1,11 +1,22 @@
+from typing import TYPE_CHECKING
+
 from django.db import models
 from django.db.models.functions import Now
 
 from example_project.app.models import Comment, Person, Project, Task
 from undine import Field, QueryType
 from undine.converters import convert_field_ref_to_resolver
-from undine.resolvers import FunctionResolver, ModelFieldResolver, ModelManyRelatedResolver
+from undine.resolvers import (
+    FunctionResolver,
+    ModelFieldResolver,
+    ModelManyRelatedFieldResolver,
+    ModelSingleRelatedFieldResolver,
+    QueryTypeSingleResolver,
+)
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
+
+if TYPE_CHECKING:
+    from undine.typing import RelatedField
 
 
 def test_convert_field_ref_to_resolver__function():
@@ -78,7 +89,7 @@ def test_convert_field_ref_to_resolver__model_field():
 
     assert isinstance(resolver, ModelFieldResolver)
 
-    assert resolver.name == "name"
+    assert resolver.field == TaskType.name
 
 
 def test_convert_field_ref_to_resolver__single_related_field():
@@ -89,9 +100,9 @@ def test_convert_field_ref_to_resolver__single_related_field():
 
     resolver = convert_field_ref_to_resolver(field, caller=TaskType.project)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, ModelSingleRelatedFieldResolver)
 
-    assert resolver.name == "project"
+    assert resolver.field == TaskType.project
 
 
 def test_convert_field_ref_to_resolver__many_related_field():
@@ -102,9 +113,9 @@ def test_convert_field_ref_to_resolver__many_related_field():
 
     resolver = convert_field_ref_to_resolver(field, caller=TaskType.assignees)
 
-    assert isinstance(resolver, ModelManyRelatedResolver)
+    assert isinstance(resolver, ModelManyRelatedFieldResolver)
 
-    assert resolver.name == "assignees"
+    assert resolver.field == TaskType.assignees
 
 
 def test_convert_field_ref_to_resolver__expression():
@@ -118,7 +129,7 @@ def test_convert_field_ref_to_resolver__expression():
     assert isinstance(resolver, ModelFieldResolver)
 
     # Optimizer will annotate the expression with the field name.
-    assert resolver.name == "custom"
+    assert resolver.field == TaskType.custom
 
 
 def test_convert_field_ref_to_resolver__subquery():
@@ -132,11 +143,11 @@ def test_convert_field_ref_to_resolver__subquery():
     assert isinstance(resolver, ModelFieldResolver)
 
     # Optimizer will annotate the subquery with the field name.
-    assert resolver.name == "custom"
+    assert resolver.field == TaskType.custom
 
 
 def test_convert_field_ref_to_resolver__lazy_query_type():
-    field = Task._meta.get_field("project")
+    field: RelatedField = Task._meta.get_field("project")  # type: ignore[attr-defined]
 
     class ProjectType(QueryType, model=Project): ...
 
@@ -146,9 +157,9 @@ def test_convert_field_ref_to_resolver__lazy_query_type():
     lazy = LazyQueryType(field)
     resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, QueryTypeSingleResolver)
 
-    assert resolver.name == "project"
+    assert resolver.field == TaskType.project
 
 
 def test_convert_field_ref_to_resolver__lazy_lambda_query_type():
@@ -160,9 +171,9 @@ def test_convert_field_ref_to_resolver__lazy_lambda_query_type():
     lazy = LazyLambdaQueryType(callback=lambda: ProjectType)
     resolver = convert_field_ref_to_resolver(lazy, caller=TaskType.project)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, QueryTypeSingleResolver)
 
-    assert resolver.name == "project"
+    assert resolver.field == TaskType.project
 
 
 def test_convert_field_ref_to_resolver__lazy_query_type_union():
@@ -174,9 +185,9 @@ def test_convert_field_ref_to_resolver__lazy_query_type_union():
     lazy = LazyQueryTypeUnion(field)
     resolver = convert_field_ref_to_resolver(lazy, caller=CommentType.target)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, ModelSingleRelatedFieldResolver)
 
-    assert resolver.name == "target"
+    assert resolver.field == CommentType.target
 
 
 def test_convert_field_ref_to_resolver__generic_relation():
@@ -187,9 +198,9 @@ def test_convert_field_ref_to_resolver__generic_relation():
 
     resolver = convert_field_ref_to_resolver(field, caller=TaskType.comments)
 
-    assert isinstance(resolver, ModelManyRelatedResolver)
+    assert isinstance(resolver, ModelManyRelatedFieldResolver)
 
-    assert resolver.name == "comments"
+    assert resolver.field == TaskType.comments
 
 
 def test_convert_field_ref_to_resolver__generic_foreign_key():
@@ -200,9 +211,9 @@ def test_convert_field_ref_to_resolver__generic_foreign_key():
 
     resolver = convert_field_ref_to_resolver(field, caller=CommentType.target)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, ModelSingleRelatedFieldResolver)
 
-    assert resolver.name == "target"
+    assert resolver.field == CommentType.target
 
 
 def test_convert_field_ref_to_resolver__query_type():
@@ -213,9 +224,9 @@ def test_convert_field_ref_to_resolver__query_type():
 
     resolver = convert_field_ref_to_resolver(ProjectType, caller=TaskType.project)
 
-    assert isinstance(resolver, ModelFieldResolver)
+    assert isinstance(resolver, QueryTypeSingleResolver)
 
-    assert resolver.name == "project"
+    assert resolver.field == TaskType.project
 
 
 def test_convert_field_ref_to_resolver__query_type__many():
@@ -226,6 +237,6 @@ def test_convert_field_ref_to_resolver__query_type__many():
 
     resolver = convert_field_ref_to_resolver(PersonType, caller=TaskType.assignees)
 
-    assert isinstance(resolver, ModelManyRelatedResolver)
+    assert isinstance(resolver, ModelManyRelatedFieldResolver)
 
-    assert resolver.name == "assignees"
+    assert resolver.field == TaskType.assignees

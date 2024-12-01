@@ -138,7 +138,7 @@ class InputDataValidationMiddleware(MutationMiddleware):
             inpt = mutation_type.__input_map__[field_name]
 
             if inpt.validator_func is not None:
-                inpt.validator_func(inpt, value)
+                inpt.validator_func(inpt, self.params.info, value)
 
             if is_subclass(inpt.ref, MutationType):
                 self.validate_data(mutation_type=inpt.ref, input_data=value)

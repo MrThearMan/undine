@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from graphql import GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
+from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo
 from undine import Field, QueryType
 from undine.optimizer.optimizer import QueryOptimizer
 from undine.resolvers import FunctionResolver, ModelFieldResolver
+
+if TYPE_CHECKING:
+    from undine.typing import GQLInfo
 
 
 def test_field__repr():
@@ -65,6 +71,20 @@ def test_field__optimize():
     field = MyQueryType.name
     optimizer = QueryOptimizer(None, MockGQLInfo())
     assert field.optimizer_func(field, optimizer) == 1
+
+
+def test_field__permissions():
+    class MyQueryType(QueryType, model=Task):
+        name = Field()
+
+        @name.permissions
+        def name_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
+            return True
+
+    task = TaskFactory.build(name="Test task")
+
+    field = MyQueryType.name
+    assert field.permissions_func(field, MockGQLInfo(), task) is True
 
 
 def test_field__get_field_arguments():

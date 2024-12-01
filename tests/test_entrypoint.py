@@ -12,7 +12,6 @@ from graphql import (
 )
 
 from example_project.app.models import Task
-from tests.helpers import exact
 from undine import Entrypoint, MutationType, QueryType
 from undine.errors.exceptions import MissingEntrypointRefError
 from undine.resolvers import CreateResolver, FunctionResolver
@@ -260,18 +259,10 @@ def test_entrypoint__mutation__as_graphql_field():
 # TODO: 'test_entrypoint__mutation__many'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.12 and newer")
 def test_entrypoint__missing_reference():
-    with pytest.raises(MissingEntrypointRefError):
+    error = MissingEntrypointRefError if sys.version_info >= (3, 12) else RuntimeError
 
-        class Query:
-            foo = Entrypoint()
-
-
-@pytest.mark.skipif(sys.version_info >= (3, 12), reason="For Python 3.11 and older")
-def test_entrypoint__missing_reference__older_python():
-    msg = "Error calling __set_name__ on 'Entrypoint' instance 'foo' in 'Query'"
-    with pytest.raises(RuntimeError, match=exact(msg)):
+    with pytest.raises(error):
 
         class Query:
             foo = Entrypoint()

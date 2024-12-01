@@ -11,7 +11,7 @@ from undine.utils.reflection import swappable_by_subclassing
 from .filter_info import get_filter_info
 
 if TYPE_CHECKING:
-    from undine.typing import ExpressionLike, GQLInfo, QuerySetResolver
+    from undine.typing import ExpressionLike, GQLInfo
 
 __all__ = [
     "QueryOptimizer",
@@ -40,7 +40,6 @@ class QueryOptimizer:
         self.annotations: dict[str, ExpressionLike] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
-        self.manual_optimizers: dict[str, QuerySetResolver] = {}
 
     def optimize_queryset(self, queryset: QuerySet) -> QuerySet:
         """

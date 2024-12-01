@@ -13,7 +13,7 @@ from undine.converters import (
     is_field_nullable,
     is_many,
 )
-from undine.errors.exceptions import MismatchingModelError, MissingModelError
+from undine.errors.exceptions import GraphQLPermissionDeniedError, MismatchingModelError, MissingModelError
 from undine.optimizer.compiler import OptimizationCompiler
 from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.parsers import parse_description
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from undine import FilterSet, OrderSet
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import GQLInfo, OptimizerFunc, Root, Self
+    from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Root, Self
 
 __all__ = [
     "Field",
@@ -46,6 +46,7 @@ class QueryTypeMeta(type):
         _bases: tuple[type, ...],
         _attrs: dict[str, Any],
         *,
+        # See `QueryType` for documentation of arguments.
         model: type[models.Model] | None = None,
         filterset: type[FilterSet] | Literal[True] | None = None,
         orderset: type[OrderSet] | Literal[True] | None = None,
@@ -56,7 +57,6 @@ class QueryTypeMeta(type):
         register: bool = True,
         extensions: dict[str, Any] | None = None,
     ) -> QueryTypeMeta:
-        """See `QueryType` for documentation of arguments."""
         if model is Undefined:  # Early return for the `QueryType` class itself.
             return super().__new__(cls, _name, _bases, _attrs)
 
@@ -137,20 +137,22 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.
 
     @classmethod
-    def __get_queryset__(cls, info: GQLInfo) -> models.QuerySet:
-        """
-        Base queryset for this QueryType.
-        Used for top-level queries and prefetches involving this QueryType.
-        """
-        return cls.__model__._default_manager.get_queryset()
-
-    @classmethod
     def __filter_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """
         Filtering that should always be applied to the queryset.
         Optimizer will call this method for all querysets involving this QueryType.
         """
         return queryset
+
+    @classmethod
+    def __permission_single__(cls, instance: models.Model, info: GQLInfo) -> bool:
+        """Check permissions for accessing the given instance through this QueryType."""
+        return True
+
+    @classmethod
+    def __permission_many__(cls, queryset: models.QuerySet, info: GQLInfo) -> bool:
+        """Check permissions for accessing the given queryset through this QueryType."""
+        return True
 
     @classmethod
     def __resolve_one__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.Model | None:
@@ -160,13 +162,19 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
         # The queryset should have the right model instance, since we started by filtering by its pk,
         # so we can just pick that out of the result cache (if it hasn't been filtered out).
-        return next(iter(optimized_queryset), None)
+        instance = next(iter(optimized_queryset), None)
+        if not cls.__permission_single__(instance, info):
+            raise GraphQLPermissionDeniedError
+        return instance
 
     @classmethod
     def __resolve_many__(cls, root: Root, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         """Top-level resolver for fetching multiple model objects."""
         queryset = cls.__get_queryset__(info)
-        return cls.__optimize_queryset__(queryset, info)
+        optimized_queryset = cls.__optimize_queryset__(queryset, info)
+        if not cls.__permission_many__(optimized_queryset, info):
+            raise GraphQLPermissionDeniedError
+        return optimized_queryset
 
     @classmethod
     def __optimize_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
@@ -179,9 +187,17 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     @classmethod
     def __optimizer_hook__(cls, optimizer: QueryOptimizer) -> None:
         """
-        Hook for modifying the queryset and optimizer data before the optimization process.
-        Used to add information about required data for the model outside of the GraphQL query.
+        Hook for modifying the optimizer data outside of the GraphQL resolver context.
+        Can be used to optimize data required e.g. for permissions checks.
         """
+
+    @classmethod
+    def __get_queryset__(cls, info: GQLInfo) -> models.QuerySet:
+        """
+        Base queryset for this QueryType.
+        Used for top-level queries and prefetches involving this QueryType.
+        """
+        return cls.__model__._default_manager.get_queryset()
 
     @classmethod
     def __is_type_of__(cls, value: models.Model, info: GQLInfo) -> bool:
@@ -220,6 +236,7 @@ class Field:
         many: bool = Undefined,
         nullable: bool = Undefined,
         description: str | None = Undefined,
+        field_name: str | None = None,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
@@ -237,6 +254,9 @@ class Field:
                          reference and tries to determine nullability from it.
         :param description: Description for the field. If not provided, looks at the converted reference
                             and tries to find the description from it.
+        :param field_name: Name of the model field this field is for. Use this if the GraphQL field name is
+                           different from the model field name. If not provided, use the name of the attribute
+                           this Field is assigned to in the `QueryType` class.
         :param deprecation_reason: If the field is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the field.
         """
@@ -244,9 +264,11 @@ class Field:
         self.many = many
         self.nullable = nullable
         self.description = description
+        self.field_name = field_name
         self.deprecation_reason = deprecation_reason
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
+        self.permissions_func: PermissionFunc | None = None
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
@@ -255,8 +277,10 @@ class Field:
         self.name = name
         self.ref = convert_to_field_ref(self.ref, caller=self)
 
+        if self.field_name is None:
+            self.field_name = self.name
         if self.many is Undefined:
-            self.many = is_many(self.ref, model=self.owner.__model__, name=self.name)
+            self.many = is_many(self.ref, model=self.owner.__model__, name=self.field_name)
         if self.nullable is Undefined:
             self.nullable = is_field_nullable(self.ref, caller=self)
         if self.description is Undefined:
@@ -305,11 +329,13 @@ class Field:
         return func
 
     def optimize(self, func: OptimizerFunc, /) -> OptimizerFunc:
-        """
-        Add custom optimization from a method using `@<field_name>.optimize`.
-        Note that the custom optimization is only run for non-model fields!
-        """
+        """Add custom optimization from a method using `@<field_name>.optimize`."""
         self.optimizer_func = get_wrapped_func(func)
+        return func
+
+    def permissions(self, func: PermissionFunc, /) -> PermissionFunc:
+        """Add custom permissions for this fields using `@<field_name>.permissions`."""
+        self.permissions_func = get_wrapped_func(func)
         return func
 
 

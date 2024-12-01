@@ -38,13 +38,13 @@ class FilterSetMeta(type):
         _bases: tuple[type, ...],
         _attrs: dict[str, Any],
         *,
+        # See `FilterSet` for documentation of arguments.
         model: type[models.Model] | None = None,
         auto: bool = True,
         exclude: Iterable[str] = (),
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> FilterSetMeta:
-        """See `FilterSet` for documentation of arguments."""
         if model is Undefined:  # Early return for the `FilterSet` class itself.
             return super().__new__(cls, _name, _bases, _attrs)
 

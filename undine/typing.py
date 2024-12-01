@@ -68,7 +68,6 @@ __all__ = [
     "MutationKind",
     "OptimizerFunc",
     "OrderRef",
-    "QuerySetResolver",
     "RelatedField",
     "RelatedManager",
     "Root",
@@ -274,6 +273,13 @@ GQLInfo: TypeAlias = GQLInfoProtocol | GraphQLResolveInfo
 GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 
+# Resolvers
+
+ValidatorFunc: TypeAlias = Callable[["Input", GQLInfo, Any], None]
+OptimizerFunc: TypeAlias = Callable[["Field", "QueryOptimizer"], None]
+PermissionFunc: TypeAlias = Callable[["Field", GQLInfo, models.Model], bool]
+GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
+
 # Misc.
 
 TypedDictType: TypeAlias = type(TypedDict(""))
@@ -281,10 +287,6 @@ DjangoRequest: TypeAlias = WSGIRequest | DjangoRequestProtocol
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
 JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
-ValidatorFunc: TypeAlias = Callable[["Input", Any], None]
-OptimizerFunc: TypeAlias = Callable[["Field", "QueryOptimizer"], None]
-QuerySetResolver: TypeAlias = Callable[..., models.QuerySet | models.Manager | None]
-GraphQLFilterResolver: TypeAlias = Callable[..., models.Q]
 
 # Refs
 

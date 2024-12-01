@@ -9,6 +9,7 @@ from tests.helpers import MockGQLInfo
 from undine import Field, FilterSet, OrderSet, QueryType
 from undine.dataclasses import GraphQLFilterInfo
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
+from undine.optimizer.optimizer import QueryOptimizer
 from undine.registies import GRAPHQL_TYPE_REGISTRY, QUERY_TYPE_REGISTRY
 from undine.scalars import GraphQLDate
 
@@ -187,12 +188,42 @@ def test_query_type__get_queryset():
 
 
 @pytest.mark.django_db
+def test_query_type__filter_queryset():
+    TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    queryset = MyQueryType.__get_queryset__(info=MockGQLInfo())
+    qs = MyQueryType.__filter_queryset__(queryset=queryset, info=MockGQLInfo())
+    assert list(qs) == list(queryset)
+
+
+@pytest.mark.django_db
+def test_query_type__permission_single():
+    task = TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    assert MyQueryType.__permission_single__(instance=task, info=MockGQLInfo()) is True
+
+
+@pytest.mark.django_db
+def test_query_type__permission_many():
+    TaskFactory.create(name="Test task")
+
+    class MyQueryType(QueryType, model=Task): ...
+
+    queryset = MyQueryType.__get_queryset__(info=MockGQLInfo())
+    assert MyQueryType.__permission_many__(queryset=queryset, info=MockGQLInfo()) is True
+
+
+@pytest.mark.django_db
 def test_query_type__optimize_queryset():
     task = TaskFactory.create(name="Test task")
 
     class MyQueryType(QueryType, model=Task): ...
 
-    qs = Task.objects.all()
+    queryset = MyQueryType.__get_queryset__(info=MockGQLInfo())
 
     filter_info = GraphQLFilterInfo(model_type=MyQueryType)
 
@@ -200,9 +231,17 @@ def test_query_type__optimize_queryset():
         patch("undine.optimizer.compiler.OptimizationCompiler.run"),
         patch("undine.optimizer.optimizer.get_filter_info", return_value=filter_info),
     ):
-        qs = MyQueryType.__optimize_queryset__(queryset=qs, info=MockGQLInfo())
+        qs = MyQueryType.__optimize_queryset__(queryset=queryset, info=MockGQLInfo())
 
     assert list(qs) == [task]
+
+
+def test_query_type__optimize_queryset():
+    class MyQueryType(QueryType, model=Task): ...
+
+    optimizer = QueryOptimizer(model=Task, info=MockGQLInfo(), name="name")
+
+    MyQueryType.__optimizer_hook__(optimizer=optimizer)
 
 
 @pytest.mark.django_db

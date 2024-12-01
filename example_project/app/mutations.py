@@ -89,7 +89,7 @@ class TaskCreateMutationType(MutationType, model=Task):
     related_tasks = Input(TaskCreateMutationTypeInput)
 
     @input_only.validate
-    def validate_name(self: Input, value: bool) -> None:  # noqa: FBT001
+    def validate_name(self: Input, info: GQLInfo, value: bool) -> None:  # noqa: FBT001
         if value == "foo":
             msg = "Name must not be 'foo'"
             raise ValueError(msg)

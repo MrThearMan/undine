@@ -18,7 +18,6 @@ from undine.errors.exceptions import (
     GraphQLEmptyQueryError,
     GraphQLFileParsingError,
     GraphQLInvalidInputDataError,
-    GraphQLInvalidManyRelatedFieldError,
     GraphQLInvalidOperationError,
     GraphQLMissingContentTypeError,
     GraphQLMissingFileMapError,
@@ -27,6 +26,7 @@ from undine.errors.exceptions import (
     GraphQLModelConstaintViolationError,
     GraphQLModelNotFoundError,
     GraphQLMultipleObjectsFoundError,
+    GraphQLPermissionDeniedError,
     GraphQLUnsupportedContentTypeError,
     InvalidParserError,
     MismatchingModelError,
@@ -315,16 +315,6 @@ def test_error__graphql_invalid_input_data_error():
     assert error.extensions == {"error_code": "INVALID_INPUT_DATA", "status_code": 400}
 
 
-def test_error__graphql_invalid_many_related_field_error():
-    error = GraphQLInvalidManyRelatedFieldError(field_name="foo", model=Task, value="bar")
-
-    assert error.message == (
-        "Trying to resolve field 'foo' on model 'example_project.app.models.Task' as a many-related field, "
-        "but field doesn't resolve into a related manager. Got 'bar' instead."
-    )
-    assert error.extensions == {"error_code": "INVALID_MANY_RELATED_FIELD", "status_code": 400}
-
-
 def test_error__graphql_invalid_operation_error():
     error = GraphQLInvalidOperationError(field_name="foo", model=Task, value="bar")
 
@@ -402,6 +392,13 @@ def test_error__graphql_multiple_objects_found_error():
 
     assert error.message == "Lookup `foo='bar'` on model 'example_project.app.models.Task' matched more than one row."
     assert error.extensions == {"error_code": "MODEL_MULTIPLE_OBJECTS", "status_code": 500}
+
+
+def test_error__graphql_permission_denied_error():
+    error = GraphQLPermissionDeniedError()
+
+    assert error.message == "Permission denied."
+    assert error.extensions == {"error_code": "PERMISSION_DENIED", "status_code": 403}
 
 
 def test_error__graphql_unsupported_content_type_error():

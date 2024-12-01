@@ -173,5 +173,4 @@ def test_fragment_spread__same_relation_in_multiple_fragments(graphql, undine_se
     }
 
 
-@pytest.mark.skip
-def test_inline_fragment(): ...  # TODO: When unions are supported
+# TODO: When unions are supported `def test_inline_fragment(): ...`

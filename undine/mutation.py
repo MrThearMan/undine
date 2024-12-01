@@ -60,6 +60,7 @@ class MutationTypeMeta(type):
         _bases: tuple[type, ...],
         _attrs: dict[str, Any],
         *,
+        # See `MutationType` for documentation of arguments.
         model: type[models.Model] | None = None,
         mutation_kind: MutationKind | None = None,
         auto: bool = True,
@@ -67,7 +68,6 @@ class MutationTypeMeta(type):
         typename: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> MutationTypeMeta:
-        """See `MutationType` for documentation of arguments."""
         if model is Undefined:  # Early return for the `MutationType` class itself.
             return super().__new__(cls, _name, _bases, _attrs)
 
@@ -174,7 +174,12 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     def __output_type__(cls) -> GraphQLOutputType:
         """Create a `GraphQLObjectType` for this class."""
         if cls.__mutation_kind__ == "delete":
-            return DeleteMutationOutputType
+            return get_or_create_object_type(
+                name="DeleteMutationOutput",
+                fields={
+                    undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: GraphQLField(GraphQLNonNull(GraphQLBoolean)),
+                },
+            )
         return QUERY_TYPE_REGISTRY[cls.__model__].__output_type__()
 
     @classmethod
@@ -304,9 +309,3 @@ def get_inputs_for_model(model: type[models.Model], *, exclude: Container[str]) 
         result[field_name] = Input(model_field)
 
     return result
-
-
-DeleteMutationOutputType = get_or_create_object_type(
-    name="DeleteMutationOutput",
-    fields={undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: GraphQLField(GraphQLNonNull(GraphQLBoolean))},
-)

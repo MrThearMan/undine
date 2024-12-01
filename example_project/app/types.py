@@ -89,6 +89,12 @@ class CustomerDetails(TypedDict):
 class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet):
     """Task Node description."""
 
+    name = Field()
+
+    @name.permissions
+    def name_permissions(self, info: GQLInfo, instance: Task) -> bool:
+        return True
+
     assignee_count = Field(Coalesce(models.Count("assignees"), 0))
 
     @Field

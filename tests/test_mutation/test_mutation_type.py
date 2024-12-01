@@ -3,14 +3,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Iterator
 
 import pytest
-from graphql import GraphQLNonNull, GraphQLString
+from graphql import GraphQLBoolean, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import MockGQLInfo, exact
 from undine import MutationType, QueryType
 from undine.errors.exceptions import MissingModelError
 from undine.middleware import MutationMiddleware
-from undine.mutation import DeleteMutationOutputType
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
@@ -55,7 +54,6 @@ def test_mutation_type__attributes():
 
 
 def test_mutation_type__middleware():
-
     class MyMiddleware(MutationMiddleware):
         priority = 100
 
@@ -183,7 +181,12 @@ def test_mutation_type__mutation_kind__delete__primary_key():
 def test_mutation_type__mutation_kind__delete__output_type():
     class MyDeleteMutation(MutationType, model=Task): ...
 
-    assert MyDeleteMutation.__output_type__() == DeleteMutationOutputType
+    output_type = MyDeleteMutation.__output_type__()
+    assert output_type.name == "DeleteMutationOutput"
+    assert sorted(output_type.fields) == ["success"]
+    assert output_type.fields["success"].type == GraphQLNonNull(GraphQLBoolean)
+    assert output_type.fields["success"].description is None
+    assert output_type.fields["success"].deprecation_reason is None
 
 
 def test_mutation_type__mutation_kind__custom__implicit():

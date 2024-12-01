@@ -2,8 +2,9 @@ import pytest
 from graphql import GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
-from tests.helpers import exact
+from tests.helpers import MockGQLInfo, exact
 from undine import Input, MutationType
+from undine.typing import GQLInfo
 
 
 def test_input__repr():
@@ -119,7 +120,7 @@ def test_input__validator():
         name = Input()
 
         @name.validate
-        def validate_name(self: Input, value: str) -> None:
+        def validate_name(self: Input, info: GQLInfo, value: str) -> None:
             if value == "foo":
                 msg = "Name must not be 'foo'"
                 raise ValueError(msg)
@@ -127,4 +128,4 @@ def test_input__validator():
     assert MyMutationType.name.validator_func is MyMutationType.validate_name
 
     with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
-        MyMutationType.validate_name(MyMutationType.name, "foo")
+        MyMutationType.validate_name(MyMutationType.name, MockGQLInfo(), "foo")

@@ -357,17 +357,6 @@ class GraphQLInvalidInputDataError(GraphQLStatusError):
     code = error_codes.INVALID_INPUT_DATA
 
 
-class GraphQLInvalidManyRelatedFieldError(GraphQLStatusError):
-    """Error raised when trying to resolve a many-related field that doesn't resolve to a related manager."""
-
-    msg = (
-        "Trying to resolve field '{field_name}' on model '{model:dotpath}' as a many-related field, "
-        "but field doesn't resolve into a related manager. Got '{value}' instead."
-    )
-    status = 400
-    code = error_codes.INVALID_MANY_RELATED_FIELD
-
-
 class GraphQLInvalidOperationError(GraphQLStatusError):
     """Error raised when user tries to execute non-query operations on a GET request."""
 
@@ -454,6 +443,14 @@ class GraphQLMultipleObjectsFoundError(GraphQLStatusError):
     msg = "Lookup `{key}={value!r}` on model '{model:dotpath}' matched more than one row."
     status = 500
     code = error_codes.MODEL_MULTIPLE_OBJECTS
+
+
+class GraphQLPermissionDeniedError(GraphQLStatusError):
+    """Error raised when a permission check fails."""
+
+    msg = "Permission denied."
+    status = 403
+    code = error_codes.PERMISSION_DENIED
 
 
 class GraphQLUnsupportedContentTypeError(GraphQLStatusError):

@@ -78,12 +78,12 @@ def test_input_data_validation_middleware():
         created_at = Input()
 
         @name.validate
-        def _(self, value: str) -> None:
+        def _(self, info: GQLInfo, value: str) -> None:
             nonlocal validator_1_called
             validator_1_called = next(counter)
 
         @type.validate
-        def _(self, value: str) -> None:
+        def _(self, info: GQLInfo, value: str) -> None:
             nonlocal validator_2_called
             validator_2_called = next(counter)
 

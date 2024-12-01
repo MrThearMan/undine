@@ -7,12 +7,12 @@ Resolvers must be callables with the following signature:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import dataclasses
 from typing import TYPE_CHECKING, Any, Callable, Generic, Self
 
 from graphql import GraphQLResolveInfo, Undefined
 
-from undine.errors.exceptions import GraphQLInvalidManyRelatedFieldError, GraphQLMissingLookupFieldError
+from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
 from undine.middleware import MutationMiddlewareHandler
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManager, TModel
@@ -25,9 +25,8 @@ if TYPE_CHECKING:
     from types import FunctionType
 
     from django.db import models
-    from django.db.models import Model
 
-    from undine.mutation import MutationType
+    from undine import Field, MutationType, QueryType
     from undine.typing import Root
 
 __all__ = [
@@ -39,36 +38,81 @@ __all__ = [
     "DeleteResolver",
     "FunctionResolver",
     "ModelFieldResolver",
-    "ModelManyRelatedResolver",
+    "ModelManyRelatedFieldResolver",
     "UpdateResolver",
 ]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class ModelFieldResolver:
     """Resolves a model field to a value by attribute access."""
 
-    name: str
+    field: Field
 
-    def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
-        return getattr(model, self.name, None)
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
+        if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
+            raise GraphQLPermissionDeniedError
+        return getattr(instance, self.field.field_name, None)
 
 
-@dataclass(frozen=True, slots=True)
-class ModelManyRelatedResolver:
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelSingleRelatedFieldResolver:
+    """Resolves single-related model field to its value."""
+
+    field: Field
+
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.Model | None:
+        if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
+            raise GraphQLPermissionDeniedError
+        return getattr(instance, self.field.field_name, None)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelManyRelatedFieldResolver:
     """Resolves a many-related model field to its queryset."""
 
-    name: str
+    field: Field
 
-    def __call__(self, model: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        value: RelatedManager | None = getattr(model, self.name, None)
-        try:
-            return value.get_queryset()
-        except Exception as error:
-            raise GraphQLInvalidManyRelatedFieldError(model=type(model), field_name=self.name, value=value) from error
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+        if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
+            raise GraphQLPermissionDeniedError
+        manager: RelatedManager = getattr(instance, self.field.field_name)
+        return manager.get_queryset()
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
+class QueryTypeSingleResolver(ModelSingleRelatedFieldResolver):
+    """Resolves a single related field pointing to another QueryType."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
+        # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
+        related_instance = super(QueryTypeSingleResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
+
+        # TODO: Allow running `__permission_single__` if `permission_func` is defined.
+        if self.field.permissions_func is None and not self.query_type.__permission_single__(related_instance, info):
+            raise GraphQLPermissionDeniedError
+        return related_instance
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class QueryTypeManyResolver(ModelManyRelatedFieldResolver):
+    """Resolves a many related field pointing to another QueryType."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
+        # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
+        queryset = super(QueryTypeManyResolver, self).__call__(instance, info, **kwargs)  # noqa: UP008
+
+        # TODO: Allow running `__permission_many__` if `permission_func` is defined.
+        if self.field.permissions_func is None and not self.query_type.__permission_many__(queryset, info):
+            raise GraphQLPermissionDeniedError
+        return queryset
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class FunctionResolver:
     """Resolves a GraphQL field using the given function."""
 
@@ -110,7 +154,7 @@ class FunctionResolver:
         return self.func(**kwargs)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class CreateResolver(Generic[TModel]):
     """
     Resolves a mutation for creating a model instance using 'MutationHandler.create'.
@@ -119,20 +163,16 @@ class CreateResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
-
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> TModel:
         data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        handler = MutationHandler(model=self.model)
+        handler = MutationHandler(model=self.mutation_type.__model__)
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
             return handler.create(data)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class BulkCreateResolver(Generic[TModel]):
     """
     Resolves a bulk create mutation for creating a list of model instances using `manager.bulk_create()`.
@@ -141,11 +181,9 @@ class BulkCreateResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
-
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        model = self.mutation_type.__model__
+
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         batch_size: int | None = kwargs.get("batch_size")
@@ -154,7 +192,7 @@ class BulkCreateResolver(Generic[TModel]):
         update_fields: list[str] | None = kwargs.get("update_fields")
         unique_fields: list[str] | None = kwargs.get("unique_fields")
 
-        handler = BulkMutationHandler(model=self.model)
+        handler = BulkMutationHandler(model=model)
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
             return handler.create_many(
@@ -167,7 +205,7 @@ class BulkCreateResolver(Generic[TModel]):
             )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class UpdateResolver(Generic[TModel]):
     """
     Resolves a mutation for updating a model instance using 'MutationHandler.update'.
@@ -176,28 +214,23 @@ class UpdateResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
+    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> models.Model:
+        model = self.mutation_type.__model__
+        lookup_field = self.mutation_type.__lookup_field__
 
-    @property
-    def lookup_field(self) -> str:
-        return self.mutation_type.__lookup_field__
-
-    def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        value = data.pop(self.lookup_field, Undefined)
+        value = data.pop(lookup_field, Undefined)
         if value is Undefined:
-            raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
+            raise GraphQLMissingLookupFieldError(model=model, key=lookup_field)
 
-        instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
-        handler = MutationHandler(model=self.model)
+        instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
+        handler = MutationHandler(model=model)
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
             return handler.update(instance, data)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class BulkUpdateResolver(Generic[TModel]):
     """
     Resolves a bulk update mutation for updating a list of model instances using `manager.bulk_update()`.
@@ -206,25 +239,19 @@ class BulkUpdateResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
-
-    @property
-    def lookup_field(self) -> str:
-        return self.mutation_type.__lookup_field__
-
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        model = self.mutation_type.__model__
+
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         batch_size: int | None = kwargs.get("batch_size")
 
-        handler = BulkMutationHandler(model=self.model)
+        handler = BulkMutationHandler(model=model)
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
-            return handler.update_many(data, lookup_field=self.lookup_field, batch_size=batch_size)
+            return handler.update_many(data, lookup_field=self.mutation_type.__lookup_field__, batch_size=batch_size)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class DeleteResolver(Generic[TModel]):
     """
     Resolves a mutation for deleting a model instance using 'model.delete'.
@@ -233,21 +260,17 @@ class DeleteResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
-
-    @property
-    def lookup_field(self) -> str:
-        return self.mutation_type.__lookup_field__
-
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
-        data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        value = data.get(self.lookup_field, Undefined)
-        if value is Undefined:
-            raise GraphQLMissingLookupFieldError(model=self.model, key=self.lookup_field)
+        model = self.mutation_type.__model__
+        lookup_field = self.mutation_type.__lookup_field__
 
-        instance = get_instance_or_raise(model=self.model, key=self.lookup_field, value=value)
+        data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        value = data.get(lookup_field, Undefined)
+
+        if value is Undefined:
+            raise GraphQLMissingLookupFieldError(model=model, key=lookup_field)
+
+        instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
             instance.delete()
@@ -255,7 +278,7 @@ class DeleteResolver(Generic[TModel]):
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class BulkDeleteResolver(Generic[TModel]):
     """
     Resolves a bulk delete mutation for deleting a list of model instances using `qs.delete()`.
@@ -264,28 +287,18 @@ class BulkDeleteResolver(Generic[TModel]):
 
     mutation_type: type[MutationType]
 
-    @property
-    def model(self) -> type[TModel]:
-        return self.mutation_type.__model__
-
-    @property
-    def manager(self) -> RelatedManager[TModel]:
-        return self.model._meta.default_manager  # type: ignore[return-value]
-
-    @property
-    def lookup_field(self) -> str:
-        return self.mutation_type.__lookup_field__
-
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
+        model = self.mutation_type.__model__
+
         input_data: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data={}):
-            self.manager.filter(pk__in=input_data).delete()
+            model._meta.default_manager.filter(pk__in=input_data).delete()
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
 
-@dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class CustomResolver:
     """
     Resolves a custom mutation a model instance using 'mutation_type.__mutate__'.
