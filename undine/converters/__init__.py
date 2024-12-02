@@ -1,3 +1,4 @@
+from .extend_lookup import extend_expression_to_joined_table
 from .from_lookup import convert_lookup_to_graphql_type
 from .is_hidden import is_input_hidden
 from .is_input_only import is_input_only
@@ -29,6 +30,7 @@ __all__ = [
     "convert_to_input_ref",
     "convert_to_order_ref",
     "convert_to_python_type",
+    "extend_expression_to_joined_table",
     "is_field_nullable",
     "is_input_hidden",
     "is_input_only",

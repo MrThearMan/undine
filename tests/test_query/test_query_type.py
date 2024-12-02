@@ -218,7 +218,7 @@ def test_query_type__permission_many():
 def test_query_type__optimizer_hook():
     class MyQueryType(QueryType, model=Task): ...
 
-    processor = OptimizationProcessor(model=Task, info=MockGQLInfo(), name="name")
+    processor = OptimizationProcessor(query_type=MyQueryType, info=MockGQLInfo())
 
     MyQueryType.__optimizer_hook__(processor=processor)
 

@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from graphql import GraphQLBoolean, GraphQLInt
 
+from undine.scalars import GraphQLDate, GraphQLTime
 from undine.typing import GraphQLType
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -83,3 +84,13 @@ def _(
     **kwargs: Any,
 ) -> GraphQLType:
     return GraphQLInt
+
+
+@convert_lookup_to_graphql_type.register
+def _(_: Literal["date"], **kwargs: Any) -> GraphQLType:
+    return GraphQLDate
+
+
+@convert_lookup_to_graphql_type.register
+def _(_: Literal["time"], **kwargs: Any) -> GraphQLType:
+    return GraphQLTime

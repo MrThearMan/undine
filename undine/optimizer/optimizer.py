@@ -4,23 +4,23 @@ import contextlib
 import dataclasses
 from typing import TYPE_CHECKING
 
-from django.db.models import ForeignKey, ManyToOneRel, Model, Prefetch
+from django.db.models import ForeignKey, ManyToOneRel, Prefetch
 from django.db.models.constants import LOOKUP_SEP
+from graphql import get_argument_values
+from graphql.execution.execute import get_field_def
 
+from undine.converters import extend_expression_to_joined_table
 from undine.errors.exceptions import OptimizerError
-from undine.optimizer.ast import GraphQLASTWalker
-from undine.optimizer.filter_info import FilterInfoCompiler
+from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type
 from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.settings import undine_settings
 from undine.utils.reflection import swappable_by_subclassing
 
 if TYPE_CHECKING:
     from django.db import models
-    from django.db.models import Model
     from graphql import FieldNode, GraphQLOutputType
 
-    from undine import Field
-    from undine.dataclasses import GraphQLFilterInfo
+    from undine import Field, QueryType
     from undine.typing import ExpressionLike, GQLInfo, ToManyField, ToOneField
 
 __all__ = [
@@ -32,7 +32,7 @@ __all__ = [
 class QueryOptimizer(GraphQLASTWalker):
     """A class for compiling query optimizations and applying them to a queryset."""
 
-    def __init__(self, info: GQLInfo, model: type[models.Model], max_complexity: int | None = None) -> None:
+    def __init__(self, query_type: type[QueryType], info: GQLInfo, max_complexity: int | None = None) -> None:
         """
         Initialize the optimization compiler with the query info.
 
@@ -40,9 +40,9 @@ class QueryOptimizer(GraphQLASTWalker):
                                Used to protect from malicious queries.
         """
         self.max_complexity = max_complexity or undine_settings.OPTIMIZER_MAX_COMPLEXITY
-        self.processor = OptimizationProcessor(model=model, info=info)
+        self.processor = OptimizationProcessor(query_type, info)
         self.to_attr: str | None = None
-        super().__init__(info=info, model=model)
+        super().__init__(info=info, model=query_type.__model__)
 
     def optimize(self, queryset: models.QuerySet) -> models.QuerySet:
         """
@@ -52,10 +52,8 @@ class QueryOptimizer(GraphQLASTWalker):
                  or None if queryset is already optimized.
         """
         self.run()
-        # TODO: Could we compile filters at the same time? Maybe too complex?
-        filter_info = FilterInfoCompiler(self.info, self.model).compile()
-        results = self.processor.run(filter_info)
-        optimized_queryset = results.apply(queryset, filter_info, self.info)
+        results = self.processor.process()
+        optimized_queryset = results.apply(queryset, self.info)
         evaluate_in_context(optimized_queryset, self.info)
         return optimized_queryset
 
@@ -64,6 +62,36 @@ class QueryOptimizer(GraphQLASTWalker):
         if self.complexity > self.max_complexity:
             msg = f"Query complexity exceeds the maximum allowed of {self.max_complexity}"
             raise OptimizerError(msg)
+
+    def parse_filter_info(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        graphql_field = get_field_def(self.info.schema, parent_type, field_node)
+        object_type = get_underlying_type(graphql_field.type)
+        model_type = self.get_model_type(object_type)
+        if model_type is None:
+            return
+
+        self.processor.model_type = model_type
+        arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)
+
+        if model_type.__filterset__:
+            filter_data = arg_values.get(undine_settings.FILTER_INPUT_TYPE_KEY, {})
+            filter_results = model_type.__filterset__.__build__(filter_data, self.info)
+
+            self.processor.filters.extend(filter_results.filters)
+            self.processor.distinct = self.processor.distinct or filter_results.distinct
+            self.processor.aliases.update(filter_results.aliases)
+
+        if model_type.__orderset__:
+            order_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
+            order_results = model_type.__orderset__.__build__(order_data, self.info)
+
+            self.processor.order_by.extend(order_results.order_by)
+
+        model_type.__optimizer_hook__(self.processor)
+
+    def handle_query_class(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        self.parse_filter_info(field_type, field_node)
+        return super().handle_query_class(field_type, field_node)
 
     def handle_normal_field(self, field_type: GraphQLOutputType, field_node: FieldNode, field: models.Field) -> None:
         self.processor.only_fields.append(field.get_attname())
@@ -74,12 +102,16 @@ class QueryOptimizer(GraphQLASTWalker):
         parent_type: GraphQLOutputType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[Model] | None,
+        related_model: type[models.Model] | None,
     ) -> None:
         from django.contrib.contenttypes.fields import GenericForeignKey  # noqa: PLC0415
 
+        graphql_field = get_field_def(self.info.schema, parent_type, field_node)
+        object_type = get_underlying_type(graphql_field.type)
+        query_type = self.get_model_type(object_type)
+
         name = self.get_related_field_name(related_field)
-        processor = OptimizationProcessor(model=related_model, info=self.info, name=name, parent=self.processor)
+        processor = OptimizationProcessor(query_type, self.info, name, self.processor)
 
         if isinstance(related_field, GenericForeignKey):
             processor = self.processor.prefetch_related.setdefault(name, processor)
@@ -93,17 +125,18 @@ class QueryOptimizer(GraphQLASTWalker):
             self.processor.related_fields.append(related_field.ct_field)
             self.processor.related_fields.append(related_field.fk_field)
 
-        with self.use_processor(processor):
-            super().handle_to_one_field(parent_type, field_node, related_field, related_model)
-
         self.run_field_optimizer(parent_type, field_node)
+
+        with self.use_processor(processor):
+            self.parse_filter_info(parent_type, field_node)
+            super().handle_to_one_field(parent_type, field_node, related_field, related_model)
 
     def handle_to_many_field(
         self,
         parent_type: GraphQLOutputType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[Model] | None,
+        related_model: type[models.Model] | None,
     ) -> None:
         from django.contrib.contenttypes.fields import GenericRelation  # noqa: PLC0415
 
@@ -112,7 +145,11 @@ class QueryOptimizer(GraphQLASTWalker):
         key = self.to_attr if self.to_attr is not None else alias if alias is not None else name
         self.to_attr = None
 
-        processor = OptimizationProcessor(model=related_model, info=self.info, name=name, parent=self.processor)
+        graphql_field = get_field_def(self.info.schema, parent_type, field_node)
+        object_type = get_underlying_type(graphql_field.type)
+        query_type = self.get_model_type(object_type)
+
+        processor = OptimizationProcessor(query_type, self.info, name, self.processor)
         processor = self.processor.prefetch_related.setdefault(key, processor)
 
         if isinstance(related_field, ManyToOneRel):
@@ -122,10 +159,11 @@ class QueryOptimizer(GraphQLASTWalker):
             processor.related_fields.append(related_field.object_id_field_name)
             processor.related_fields.append(related_field.content_type_field_name)
 
-        with self.use_processor(processor):
-            super().handle_to_many_field(parent_type, field_node, related_field, related_model)
-
         self.run_field_optimizer(parent_type, field_node)
+
+        with self.use_processor(processor):
+            self.parse_filter_info(parent_type, field_node)
+            super().handle_to_many_field(parent_type, field_node, related_field, related_model)
 
     def handle_custom_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
         self.run_field_optimizer(field_type, field_node)
@@ -157,15 +195,19 @@ class OptimizationProcessor:
 
     def __init__(
         self,
-        model: type[Model] | None,
+        query_type: type[QueryType],
         info: GQLInfo,
         name: str | None = None,
         parent: OptimizationProcessor | None = None,
     ) -> None:
-        self.model = model
         self.info = info
         self.name = name
         self.parent = parent
+        self.model_type: type[QueryType] = query_type
+
+        self.filters: list[models.Q] = []
+        self.order_by: list[models.OrderBy] = []
+        self.distinct: bool = False
 
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
@@ -174,25 +216,26 @@ class OptimizationProcessor:
         self.select_related: dict[str, OptimizationProcessor] = {}
         self.prefetch_related: dict[str, OptimizationProcessor] = {}
 
-    def run(self, filter_info: GraphQLFilterInfo) -> OptimizationResults:
+    def process(self) -> OptimizationResults:
         """Process compiled optimizations with the given filter info."""
-        filter_info.model_type.__optimizer_hook__(self)
-
         results = OptimizationResults(
             name=self.name,
+            model_type=self.model_type,
             only_fields=self.only_fields,
             related_fields=self.related_fields,
             aliases=self.aliases,
             annotations=self.annotations,
+            filters=self.filters,
+            order_by=self.order_by,
+            distinct=self.distinct,
         )
 
         for name, processor in self.select_related.items():
-            nested_filter_info = filter_info.children[name]
-            nested_results = processor.run(nested_filter_info)
+            nested_results = processor.process()
 
             # Promote `select_related` to `prefetch_related` if any annotations are needed.
             if processor.annotations:
-                prefetch = processor.process_prefetch(name, nested_results, nested_filter_info)
+                prefetch = processor.process_prefetch(name, nested_results)
                 results.prefetch_related.append(prefetch)
                 continue
 
@@ -201,39 +244,40 @@ class OptimizationProcessor:
 
         for name, processor in self.prefetch_related.items():
             # For generic foreign keys, we don't know the model, so we can't optimize the queryset.
-            if processor.model is None:
+            if processor.model_type is None:
                 results.prefetch_related.append(processor.name)
                 continue
 
-            nested_filter_info = filter_info.children[name]
-            nested_results = processor.run(nested_filter_info)
+            nested_results = processor.process()
 
-            prefetch = processor.process_prefetch(name, nested_results, nested_filter_info)
+            prefetch = processor.process_prefetch(name, nested_results)
             results.prefetch_related.append(prefetch)
 
         return results
 
-    def process_prefetch(self, to_attr: str, results: OptimizationResults, filter_info: GraphQLFilterInfo) -> Prefetch:
+    def process_prefetch(self, to_attr: str, results: OptimizationResults) -> Prefetch:
         """Process a prefetch, optimizing its queryset based on the given filter info."""
-        queryset = filter_info.model_type.__get_queryset__(self.info)
-        optimized_queryset = results.apply(queryset, filter_info, self.info)
+        queryset = self.model_type.__get_queryset__(self.info)
+        optimized_queryset = results.apply(queryset, self.info)
         # TODO: Pagination.
         return Prefetch(self.name, optimized_queryset, to_attr=to_attr if to_attr != self.name else None)
 
-    def add_select_related(self, name: str, model: type[Model]) -> OptimizationProcessor:
+    def add_select_related(self, name: str) -> OptimizationProcessor:
         maybe_optimizer = self.select_related.get(name)
         if maybe_optimizer is not None:
             return maybe_optimizer
 
-        self.select_related[name] = processor = OptimizationProcessor(model, self.info, name, self)
+        query_type = self.model_type.__field_map__[name].ref
+        self.select_related[name] = processor = OptimizationProcessor(query_type, self.info, name, self)
         return processor
 
-    def add_prefetch_related(self, name: str, model: type[Model]) -> OptimizationProcessor:
+    def add_prefetch_related(self, name: str) -> OptimizationProcessor:
         maybe_optimizer = self.prefetch_related.get(name)
         if maybe_optimizer is not None:
             return maybe_optimizer
 
-        self.prefetch_related[name] = processor = OptimizationProcessor(model, self.info, name, self)
+        query_type = self.model_type.__field_map__[name].ref
+        self.prefetch_related[name] = processor = OptimizationProcessor(query_type, self.info, name, self)
         return processor
 
 
@@ -242,6 +286,9 @@ class OptimizationResults:
     """Results of optimizations to be applied to a queryset."""
 
     name: str | None = None
+    model_type: type[QueryType] | None = None
+
+    # Optimizations
     only_fields: list[str] = dataclasses.field(default_factory=list)
     related_fields: list[str] = dataclasses.field(default_factory=list)
     aliases: dict[str, ExpressionLike] = dataclasses.field(default_factory=dict)
@@ -249,7 +296,12 @@ class OptimizationResults:
     select_related: list[str] = dataclasses.field(default_factory=list)
     prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
 
-    def apply(self, queryset: models.QuerySet, filter_info: GraphQLFilterInfo, info: GQLInfo) -> models.QuerySet:
+    # Filters
+    filters: list[models.Q] = dataclasses.field(default_factory=list)
+    order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
+    distinct: bool = False
+
+    def apply(self, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """Apply optimization results to the given queryset."""
         if self.select_related:
             queryset = queryset.select_related(*self.select_related)
@@ -257,18 +309,19 @@ class OptimizationResults:
             queryset = queryset.prefetch_related(*self.prefetch_related)
         if not undine_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (self.only_fields or self.related_fields):
             queryset = queryset.only(*self.only_fields, *self.related_fields)
-        if self.aliases or filter_info.aliases:
-            queryset = queryset.alias(**self.aliases, **filter_info.aliases)
+        if self.aliases:
+            queryset = queryset.alias(**self.aliases)
         if self.annotations:
             queryset = queryset.annotate(**self.annotations)
 
-        queryset = filter_info.model_type.__filter_queryset__(queryset, info)
+        if self.model_type is not None:
+            queryset = self.model_type.__filter_queryset__(queryset, info)
 
-        if filter_info.order_by:
-            queryset = queryset.order_by(*filter_info.order_by)
-        for ftr in filter_info.filters:
+        if self.order_by:
+            queryset = queryset.order_by(*self.order_by)
+        for ftr in self.filters:
             queryset = queryset.filter(ftr)
-        if filter_info.distinct:
+        if self.distinct:
             queryset = queryset.distinct()
         return queryset
 
@@ -285,5 +338,10 @@ class OptimizationResults:
             if isinstance(prefetch, Prefetch):
                 prefetch.add_prefix(other.name)
                 self.prefetch_related.append(prefetch)
+
+        # TODO: Should these be exteded?
+        self.order_by.extend(extend_expression_to_joined_table(order, other.name) for order in other.order_by)
+        self.filters.extend(extend_expression_to_joined_table(ftr, other.name) for ftr in other.filters)
+        self.distinct = other.distinct or self.distinct
 
         return self
