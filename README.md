@@ -26,8 +26,8 @@ pip install undine
 # Before initial release:
 - [ ] Test aliased fields
 - [ ] Test permission checks
+- [ ] Add intances to update and delete permission checks
 - [ ] Add tests for optimization
-- [ ] Add support for mutation permission checks
 - [ ] Add support for pagination
 - [ ] Add support for Relay
 - [ ] Add utilities for unit testing

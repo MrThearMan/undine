@@ -112,6 +112,93 @@ class InputDataModificationMiddleware(MutationMiddleware):
                 self.fill_input_data(mutation_type=inpt.ref, input_data=value)
 
 
+class PermissionCheckMiddleware(MutationMiddleware):
+    """
+    Mutation middleware required for permission checks to work.
+
+    Run permission checks for all QueryTypes and Input fields in the given input data.
+    """
+
+    priority: int = 100
+
+    def __enter__(self) -> Self:
+        if self.params.mutation_type.__mutation_kind__ == "create":
+            self.check_create_permissions(self.params.mutation_type, self.params.input_data)
+        elif self.params.mutation_type.__mutation_kind__ == "update":
+            self.check_update_permissions(self.params.mutation_type, self.params.input_data)
+        elif self.params.mutation_type.__mutation_kind__ == "delete":
+            self.check_delete_permissions(self.params.mutation_type, self.params.input_data)
+        else:
+            self.check_custom_permissions(self.params.mutation_type, self.params.input_data)
+        return self
+
+    def check_create_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
+        from undine import MutationType  # noqa: PLC0415
+
+        if isinstance(input_data, list):
+            for item in input_data:
+                self.check_create_permissions(mutation_type=mutation_type, input_data=item)
+            return
+
+        for field_name, value in input_data.items():
+            inpt = mutation_type.__input_map__[field_name]
+
+            if is_subclass(inpt.ref, MutationType):
+                self.check_create_permissions(mutation_type=inpt.ref, input_data=value)
+
+        mutation_type.__permission_create__(info=self.params.info, input_data=input_data)
+
+    def check_update_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
+        from undine import MutationType  # noqa: PLC0415
+
+        if isinstance(input_data, list):
+            for item in input_data:
+                self.check_update_permissions(mutation_type=mutation_type, input_data=item)
+            return
+
+        for field_name, value in input_data.items():
+            inpt = mutation_type.__input_map__[field_name]
+
+            if is_subclass(inpt.ref, MutationType):
+                self.check_update_permissions(mutation_type=inpt.ref, input_data=value)
+
+        # TODO: Add instance. Shouldn't query here and in the MutationHandler.
+        mutation_type.__permission_update__(info=self.params.info, instance=None, input_data=input_data)
+
+    def check_delete_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
+        from undine import MutationType  # noqa: PLC0415
+
+        if isinstance(input_data, list):
+            for item in input_data:
+                self.check_delete_permissions(mutation_type=mutation_type, input_data=item)
+            return
+
+        for field_name, value in input_data.items():
+            inpt = mutation_type.__input_map__[field_name]
+
+            if is_subclass(inpt.ref, MutationType):
+                self.check_delete_permissions(mutation_type=inpt.ref, input_data=value)
+
+        # TODO: Add instance. Shouldn't query here and in the MutationHandler.
+        mutation_type.__permission_delete__(info=self.params.info, instance=None, input_data=input_data)
+
+    def check_custom_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
+        from undine import MutationType  # noqa: PLC0415
+
+        if isinstance(input_data, list):
+            for item in input_data:
+                self.check_custom_permissions(mutation_type=mutation_type, input_data=item)
+            return
+
+        for field_name, value in input_data.items():
+            inpt = mutation_type.__input_map__[field_name]
+
+            if is_subclass(inpt.ref, MutationType):
+                self.check_custom_permissions(mutation_type=inpt.ref, input_data=value)
+
+        mutation_type.__permission_custom__(info=self.params.info, input_data=input_data)
+
+
 class InputDataValidationMiddleware(MutationMiddleware):
     """
     Mutation middleware required for input validation to work.
@@ -119,7 +206,7 @@ class InputDataValidationMiddleware(MutationMiddleware):
     Run validation for all fields in the given input data.
     """
 
-    priority: int = 100
+    priority: int = 200
 
     def __enter__(self) -> Self:
         self.validate_data(self.params.mutation_type, self.params.input_data)
@@ -154,7 +241,7 @@ class PostMutationHandlingMiddleware(MutationMiddleware):
     Run all `__post_handle__` methods for all MutationTypes based on the mutation input data.
     """
 
-    priority: int = 100
+    priority: int = 200
 
     def __exit__(
         self,
@@ -191,7 +278,7 @@ class InputOnlyDataRemovalMiddleware(MutationMiddleware):
     Add them back in after the mutation is executed.
     """
 
-    priority: int = 200
+    priority: int = 300
 
     def __enter__(self) -> Self:
         self.original_input_data = deepcopy(self.params.input_data)

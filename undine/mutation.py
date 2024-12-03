@@ -30,6 +30,7 @@ from undine.middleware import (
     InputOnlyDataRemovalMiddleware,
     IntegrityErrorHandlingMiddleware,
     MutationMiddleware,
+    PermissionCheckMiddleware,
     PostMutationHandlingMiddleware,
 )
 from undine.parsers import parse_description
@@ -145,6 +146,26 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """A hook that is run after a mutation using this MutationType has been executed."""
 
     @classmethod
+    def __permission_create__(cls, info: GQLInfo, input_data: dict[str, Any]) -> bool:
+        """Check whether a create mutation is allowed."""
+        return True
+
+    @classmethod
+    def __permission_update__(cls, info: GQLInfo, instance: models.Model, input_data: dict[str, Any]) -> bool:
+        """Check whether a update mutation is allowed."""
+        return True
+
+    @classmethod
+    def __permission_delete__(cls, info: GQLInfo, instance: models.Model, input_data: dict[str, Any]) -> bool:
+        """Check whether a delete mutation is allowed."""
+        return True
+
+    @classmethod
+    def __permission_custom__(cls, info: GQLInfo, input_data: dict[str, Any]) -> bool:
+        """Check whether a custom mutation is allowed."""
+        return True
+
+    @classmethod
     def __input_type__(cls) -> GraphQLInputType:
         """Create a `GraphQLInputObjectType` for this MutationType."""
         if cls.__mutation_kind__ == "delete":
@@ -184,6 +205,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Middleware to use with mutations with using this MutationType as the Entrypoint."""
         return [
             InputDataModificationMiddleware,
+            PermissionCheckMiddleware,
             InputDataValidationMiddleware,
             PostMutationHandlingMiddleware,
             InputOnlyDataRemovalMiddleware,
