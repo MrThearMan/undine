@@ -115,12 +115,12 @@ class MutationTypeMeta(type):
 
 class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     """
-    A class for creating a 'GraphQLInputObjectType' for a Django model.
+    A class representing a GraphQL Input Object Type for a Mutation based on a Django Model.
 
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django model this `MutationType` is for. This input is required.
-    - `mutation_kind`: Kind of mutation this is. Can be "create", "update", or "delete" or "custom".
+    - `mutation_kind`: Kind of mutation this is. One of "create", "update", "delete" or "custom".
                        If not given, it will be guessed based on the name of the class.
     - `auto`: Whether to add inputs for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
@@ -142,14 +142,11 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
     @classmethod
     def __post_handle__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """Post handling after the mutation is done."""
+        """A hook that is run after a mutation using this MutationType has been executed."""
 
     @classmethod
     def __input_type__(cls) -> GraphQLInputType:
-        """
-        Create a `GraphQLInputObjectType` for this class.
-        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
-        """
+        """Create a `GraphQLInputObjectType` for this MutationType."""
         if cls.__mutation_kind__ == "delete":
             input_field = cls.__input_map__.get(cls.__lookup_field__)
             return input_field.get_field_type()
@@ -172,7 +169,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
     @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
-        """Create a `GraphQLObjectType` for this class."""
+        """Fetch the `GraphQLObjectType` for this MutationType form the QueryType registry."""
         if cls.__mutation_kind__ == "delete":
             return get_or_create_object_type(
                 name="DeleteMutationOutput",
@@ -184,7 +181,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
     @classmethod
     def __middleware__(cls) -> list[type[MutationMiddleware]]:
-        """Middleware to use with mutations with using this MutationType."""
+        """Middleware to use with mutations with using this MutationType as the Entrypoint."""
         return [
             InputDataModificationMiddleware,
             InputDataValidationMiddleware,
@@ -210,8 +207,8 @@ class Input:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a `GraphQLInputField` in the `GraphQLInputObjectType` of a `MutationType`.
-        In other words, it's an input used in the mutation of the `MutationType` it belongs to.
+        A class representing an input field on a GraphQL Input Object Type used for mutations.
+        Can be added to the class body of a `MutationType` class.
 
         :param ref: Reference to build the input from. Can be anything that `convert_to_input_ref` can convert,
                     e.g., a string referencing a model field name, a model field, a `MutationType`, etc.

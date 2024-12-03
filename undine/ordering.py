@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
 
 from django.db import models
-from graphql import GraphQLEnumType, GraphQLEnumValue, Undefined
+from graphql import GraphQLEnumValue, GraphQLList, GraphQLNonNull, Undefined
 
 from undine.converters import convert_to_order_ref
 from undine.dataclasses import OrderResults
@@ -63,7 +63,8 @@ class OrderSetMeta(type):
 
 class OrderSet(metaclass=OrderSetMeta, model=Undefined):
     """
-    A class representing a `GraphQLEnumType` used for ordering a `QueryType`.
+    A class representing a GraphQL Input Object Type for ordering the results of a query base on a QueryType.
+    Can be added to a QueryType in the QueryType's class definition.
 
     The following parameters can be passed in the class definition:
 
@@ -75,7 +76,8 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
     - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
     - `extensions`: GraphQL extensions for the created GraphQLEnum. Defaults to `None`.
 
-    >>> class MyOrder(OrderSet, model=...): ...
+    >>> class MyOrderSet(OrderSet, model=...): ...
+    >>> class MyQueryType(QueryType, model=..., orderset=MyOrderSet): ...
     """
 
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Order` names.
@@ -83,9 +85,9 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
     @classmethod
     def __build__(cls, order_data: list[str], info: GQLInfo) -> OrderResults:
         """
-        Build a list of 'models.OrderBy' expressions from the given Order names.
+        Build a list of 'models.OrderBy' expressions from the given order input data.
 
-        :param order_data: The data to build 'order_by' expressions from.
+        :param order_data: The input order data.
         :param info: The GraphQL resolve info for the request.
         """
         result = OrderResults(order_by=[])
@@ -107,10 +109,12 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
         return result
 
     @classmethod
-    def __enum_type__(cls) -> GraphQLEnumType:
+    def __input_type__(cls) -> GraphQLList:
         """
-        Create a `GraphQLEnumType` for this class.
-        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
+        Create the input type for this OrderSet.
+        The input is a non-null list of a GraphQL Enum
+        consisting of all the `undine.Order` names defined on this OrderSet,
+        in both ascending and descending directions.
         """
         enum_values: dict[str, GraphQLEnumValue] = {}
         for ordering in cls.__order_map__.values():
@@ -118,12 +122,13 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
                 enum_value = ordering.get_graphql_enum_value(descending=descending)
                 enum_values[to_schema_name(enum_value.value)] = enum_value
 
-        return get_or_create_graphql_enum(
+        enum_type = get_or_create_graphql_enum(
             name=cls.__typename__,
             values=enum_values,
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
+        return GraphQLList(GraphQLNonNull(enum_type))
 
 
 class Order:
@@ -137,7 +142,8 @@ class Order:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a `GraphQLEnumValue` used for ordering a `QueryType`.
+        A class representing a possible ordering for a QueryType.
+        Can be added to the class body of a `OrderSet` class.
 
         :param ref: Expression to order by. Can be anything that `convert_to_order_ref` can convert,
                     e.g., a string referencing a model field name, an `F` expression, a function, etc.

@@ -4,6 +4,7 @@ from django.db.models.functions import Length
 from example_project.app.models import Person, Task
 from tests.helpers import MockGQLInfo
 from undine import Order, OrderSet
+from undine.optimizer.ast import get_underlying_type
 
 
 def test_order__repr():
@@ -112,7 +113,8 @@ def test_order__description():
     enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.description == "Description."
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.values["nameAsc"].description == "Description."
     assert enum_type.values["nameDesc"].description == "Description."
 
@@ -126,7 +128,8 @@ def test_order__deprecation_reason():
     enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.deprecation_reason == "Use something else."
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.values["nameAsc"].deprecation_reason == "Use something else."
     assert enum_type.values["nameDesc"].deprecation_reason == "Use something else."
 
@@ -140,6 +143,7 @@ def test_order__extensions():
     enum_value = MyOrderSet.name.get_graphql_enum_value(descending=False)
     assert enum_value.extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
     assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}

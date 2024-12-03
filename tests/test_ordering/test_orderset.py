@@ -5,6 +5,7 @@ from example_project.app.models import Task
 from tests.helpers import MockGQLInfo
 from undine import Order, OrderSet
 from undine.errors.exceptions import MissingModelError
+from undine.optimizer.ast import get_underlying_type
 
 
 def test_orderset__attributes():
@@ -21,7 +22,8 @@ def test_orderset__enum_type():
     class MyOrderSet(OrderSet, model=Task):
         """Description."""
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.name == "MyOrderSet"
     assert sorted(enum_type.values) == [
         "createdAtAsc",
@@ -77,7 +79,8 @@ def test_orderset__typename():
 
     assert MyOrderSet.__typename__ == "CustomName"
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.name == "CustomName"
 
 
@@ -86,7 +89,8 @@ def test_orderset__extensions():
 
     assert MyOrderSet.__extensions__ == {"foo": "bar", "undine_orderset": MyOrderSet}
 
-    enum_type = MyOrderSet.__enum_type__()
+    input_type = MyOrderSet.__input_type__()
+    enum_type = get_underlying_type(input_type)
     assert enum_type.extensions == {"foo": "bar", "undine_orderset": MyOrderSet}
 
 

@@ -117,7 +117,7 @@ class QueryTypeMeta(type):
 
 class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     """
-    A class for creating a 'GraphQLObjectType' for a Django model.
+    A class representing a GraphQL Object Type for a Query based on a Django Model.
 
     The following parameters can be passed in the class definition:
 
@@ -143,10 +143,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __filter_queryset__(cls, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
-        """
-        Filtering that should always be applied to the queryset.
-        Optimizer will call this method for all querysets involving this QueryType.
-        """
+        """Filtering that should always be applied when fetching objects through this QueryType."""
         return queryset
 
     @classmethod
@@ -182,7 +179,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
-        """Creates a `GraphQLObjectType` for this class."""
+        """Creates a `GraphQLObjectType` for this QueryType to use in the GraphQL schema."""
 
         # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
@@ -210,8 +207,8 @@ class Field:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a `GraphQLField` in the `GraphQLObjectType` of a `QueryType`.
-        In other words, it's a field that can be queried from the `QueryType` it belongs to.
+        A class representing a queryable field on a GraphQL Object Type.
+        Can be added to the class body of a `QueryType` class.
 
         :param ref: Reference to build the field from. Can be anything that `convert_to_field_ref` can convert,
                     e.g., a string referencing a model field name, a model field, an expression, a function, etc.
@@ -294,14 +291,14 @@ class Field:
         return convert_field_ref_to_resolver(self.ref, caller=self)
 
     def resolve(self, func: GraphQLFieldResolver = None, /) -> GraphQLFieldResolver:
-        """Decorate a function to add a custom resolver for this field."""
+        """Decorate a function to add a custom resolver for this Field."""
         if func is None:  # Allow `@<field_name>.resolve()`
             return self.resolve  # type: ignore[return-value]
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
     def optimize(self, func: OptimizerFunc = None, /) -> OptimizerFunc:
-        """Decorate a function to add custom optimization rules for this field."""
+        """Decorate a function to add custom optimization rules for this Field."""
         if func is None:  # Allow `@<field_name>.optimize()`
             return self.optimize  # type: ignore[return-value]
         self.optimizer_func = get_wrapped_func(func)
@@ -311,7 +308,7 @@ class Field:
         """
         Decorate a function to add it as a permission check for this field.
 
-        Use `@<field_name>.permissions(skip_querytype_perms=True)` to skip QueryType permissions checks
+        Use `@<field_name>.permissions(skip_querytype_perms=True)` to skip QueryType's permissions checks
         for this field. Only affects fields referencing another QueryType.
         """
         if func is None:  # Allow `@<field_name>.permissions()`

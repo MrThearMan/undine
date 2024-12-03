@@ -68,7 +68,8 @@ class FilterSetMeta(type):
 
 class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     """
-    A class representing a `GraphQLInputObjectType` used for filtering a `QueryType`.
+    A class representing a GraphQL Input Object Type for filtering the results of a query base on a QueryType.
+    Can be added to a QueryType in the QueryType's class definition.
 
     The following parameters can be passed in the class definition:
 
@@ -81,6 +82,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
 
     >>> class MyFilters(FilterSet, model=...): ...
+    >>> class MyQueryType(QueryType, model=..., filterset=MyFilters): ...
     """
 
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Filter` names.
@@ -89,9 +91,9 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     def __build__(cls, filter_data: dict[str, Any], info: GQLInfo) -> FilterResults:
         """
         Build a list of 'models.Q' expression from the given filter data to apply to the queryset.
-        Also indicate if 'queryset.distinct()' is needed, and what aliases required.
+        Also indicate if 'queryset.distinct()' is needed, and what aliases are required.
 
-        :param filter_data: The data to build filters from.
+        :param filter_data: The input filter data.
         :param info: The GraphQL resolve info for the request.
         """
         filters: list[models.Q] = []
@@ -126,8 +128,10 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     @classmethod
     def __input_type__(cls) -> GraphQLInputType:
         """
-        Create a `GraphQLInputObjectType` for this class.
-        Cache the result since a GraphQL schema cannot contain multiple types with the same name.
+        Create the input type for this FilterSet.
+        The input is a a nullable GraphQL Input Object Type whose fields are
+        all the `undine.Filter` names defined on this FilterSet, as well as a few
+        special fields (NOT, AND, OR, XOR) for logical operations.
         """
 
         # Defer creating fields so that logical filters can be added.
@@ -164,7 +168,8 @@ class Filter:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        A class representing a `GraphQLInputType` used for filtering a `QueryType`.
+        A class representing an input field on a GraphQL Input Object Type used for filtering a QueryType.
+        Can be added to the class body of a `FilterSet` class.
 
         :param ref: Expression to filter by. Can be anything that `convert_to_filter_ref` can convert:
                     a string referencing a model field name, an expression, a function, etc.

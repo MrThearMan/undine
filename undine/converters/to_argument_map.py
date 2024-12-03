@@ -107,9 +107,8 @@ def load_deferred_converters() -> None:
             arguments[undine_settings.FILTER_INPUT_TYPE_KEY] = GraphQLArgument(input_type)
 
         if ref.__orderset__:
-            enum_type = ref.__orderset__.__enum_type__()
-            enum_type = GraphQLList(GraphQLNonNull(enum_type))
-            arguments[undine_settings.ORDER_BY_INPUT_TYPE_KEY] = GraphQLArgument(enum_type)
+            input_type = ref.__orderset__.__input_type__()
+            arguments[undine_settings.ORDER_BY_INPUT_TYPE_KEY] = GraphQLArgument(input_type)
 
         return arguments
 
