@@ -119,7 +119,8 @@ class ModelSingleResolver:
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.Model | None:
         queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
-        optimized_queryset = QueryOptimizer(self.query_type, info).optimize(queryset)
+        optimizer = QueryOptimizer(self.query_type.__model__, info, max_complexity=self.query_type.__max_complexity__)
+        optimized_queryset = optimizer.optimize(queryset)
         # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
         # The queryset should have the right model instance, since we started by filtering by its pk,
         # so we can just pick that out of the result cache (if it hasn't been filtered out).
@@ -137,7 +138,8 @@ class ModelManyResolver:
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         queryset = self.query_type.__get_queryset__(info)
-        optimized_queryset = QueryOptimizer(self.query_type, info).optimize(queryset)
+        optimizer = QueryOptimizer(self.query_type.__model__, info, max_complexity=self.query_type.__max_complexity__)
+        optimized_queryset = optimizer.optimize(queryset)
         if not self.query_type.__permission_many__(optimized_queryset, info):
             raise GraphQLPermissionDeniedError
         return optimized_queryset

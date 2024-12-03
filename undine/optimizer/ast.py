@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
-from django.db.models import Field, ForeignKey, Model
+from django.db import models
 from graphql import (
     FieldNode,
     FragmentDefinitionNode,
@@ -20,21 +20,26 @@ from undine.utils.model_utils import get_model_field, is_to_many, is_to_one
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
-    from undine.query import QueryType
+    from undine import Field, QueryType
     from undine.typing import GQLInfo, ModelField, Selections, ToManyField, ToOneField
 
 __all__ = [
     "GraphQLASTWalker",
+    "get_fragment_type",
+    "get_selections",
+    "get_underlying_type",
+    "is_foreign_key_id",
+    "is_graphql_builtin",
 ]
 
 
 class GraphQLASTWalker:  # noqa: PLR0904
     """Class for walking the GraphQL AST and handling the different nodes."""
 
-    def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:
+    def __init__(self, info: GQLInfo, model: type[models.Model] | None = None) -> None:
         self.info = info
         self.complexity: int = 0
-        self.model: type[Model] = model
+        self.model: type[models.Model] = model
 
     def increase_complexity(self) -> None:
         self.complexity += 1
@@ -84,7 +89,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         field_type: GraphQLOutputType,
         field_node: FieldNode,
         field_name: str,
-        model: type[Model],
+        model: type[models.Model],
     ) -> None:
         try:
             field: ModelField | None = get_model_field(model=model, lookup=field_name)
@@ -100,26 +105,34 @@ class GraphQLASTWalker:  # noqa: PLR0904
                 return self.handle_normal_field(field_type, field_node, field)
 
         if is_to_one(field):
-            with self.use_model(field.model):
-                return self.handle_to_one_field(field_type, field_node, field, field.related_model)
+            with self.use_model(model):
+                return self.handle_to_one_field(field_type, field_node, field)
 
         if is_to_many(field):
             with self.use_model(model):
-                return self.handle_to_many_field(field_type, field_node, field, field.related_model)
+                return self.handle_to_many_field(field_type, field_node, field)
 
         msg = f"Unhandled field: '{field.name}'"  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
 
-    def handle_custom_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None: ...
+    def handle_custom_field(
+        self,
+        field_type: GraphQLOutputType,
+        field_node: FieldNode,
+    ) -> None: ...
 
-    def handle_normal_field(self, field_type: GraphQLOutputType, field_node: FieldNode, field: Field) -> None: ...
+    def handle_normal_field(
+        self,
+        field_type: GraphQLOutputType,
+        field_node: FieldNode,
+        field: models.Field,
+    ) -> None: ...
 
     def handle_to_one_field(
         self,
         parent_type: GraphQLOutputType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[Model] | None,
     ) -> None:
         field_type = self.get_field_type(parent_type, field_node)
         selections = get_selections(field_node)
@@ -131,7 +144,6 @@ class GraphQLASTWalker:  # noqa: PLR0904
         parent_type: GraphQLOutputType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[Model] | None,
     ) -> None:
         field_type = self.get_field_type(parent_type, field_node)
         selections = get_selections(field_node)
@@ -155,11 +167,15 @@ class GraphQLASTWalker:  # noqa: PLR0904
         selections = get_selections(inline_fragment)  # pragma: no cover
         return self.handle_selections(fragment_type, selections)  # pragma: no cover
 
-    def get_model_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
+    def get_undine_query_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
         return field_type.extensions.get(undine_settings.QUERY_TYPE_EXTENSIONS_KEY)
 
-    def get_model(self, field_type: GraphQLOutputType) -> type[Model] | None:
-        return getattr(self.get_model_type(field_type), "__model__", None)
+    def get_undine_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> Field | None:
+        field = field_type.fields[field_node.name.value]
+        return field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
+
+    def get_model(self, field_type: GraphQLOutputType) -> type[models.Model] | None:
+        return getattr(self.get_undine_query_type(field_type), "__model__", None)
 
     def get_field_type(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> GraphQLOutputType:
         graphql_field = get_field_def(self.info.schema, parent_type, field_node)
@@ -175,7 +191,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         return related_field.get_cache_name() or related_field.name
 
     @contextlib.contextmanager
-    def use_model(self, model: type[Model]) -> GraphQLASTWalker:
+    def use_model(self, model: type[models.Model]) -> GraphQLASTWalker:
         orig_model = self.model
         try:
             self.model = model
@@ -184,7 +200,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
             self.model = orig_model
 
 
-GRAPHQL_BUILTIN = (
+GRAPHQL_BUILTINS = (
     "__typename",
     "__schema",
     "__type",
@@ -207,11 +223,11 @@ def get_selections(field_node: FieldNode | FragmentDefinitionNode | InlineFragme
 
 
 def is_graphql_builtin(field_name: str) -> bool:
-    return field_name.lower() in GRAPHQL_BUILTIN
+    return field_name.lower() in GRAPHQL_BUILTINS
 
 
-def is_foreign_key_id(field: Field, field_node: FieldNode) -> bool:
-    return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
+def is_foreign_key_id(field: models.Field, field_node: FieldNode) -> bool:
+    return isinstance(field, models.ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
 def get_fragment_type(field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> GraphQLOutputType:

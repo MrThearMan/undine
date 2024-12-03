@@ -6,7 +6,7 @@ from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo, patch_optimizer
 from undine import Field, FilterSet, OrderSet, QueryType
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
-from undine.optimizer.optimizer import OptimizationProcessor
+from undine.optimizer.optimizer import OptimizationData
 from undine.registies import GRAPHQL_TYPE_REGISTRY, QUERY_TYPE_REGISTRY
 from undine.resolvers import ModelManyResolver, ModelSingleResolver
 from undine.scalars import GraphQLDate
@@ -218,9 +218,9 @@ def test_query_type__permission_many():
 def test_query_type__optimizer_hook():
     class MyQueryType(QueryType, model=Task): ...
 
-    processor = OptimizationProcessor(query_type=MyQueryType, info=MockGQLInfo())
+    data = OptimizationData(model=Task)
 
-    MyQueryType.__optimizer_hook__(processor=processor)
+    MyQueryType.__optimizer_hook__(data=data, info=MockGQLInfo())
 
 
 @pytest.mark.django_db

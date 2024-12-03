@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from types import FunctionType
 
     from undine import FilterSet, OrderSet
-    from undine.optimizer.optimizer import OptimizationProcessor
+    from undine.optimizer.optimizer import OptimizationData
     from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Self
 
 __all__ = [
@@ -51,6 +51,7 @@ class QueryTypeMeta(type):
         auto: bool = True,
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
+        max_complexity: int | None = Undefined,
         typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,
@@ -99,11 +100,15 @@ class QueryTypeMeta(type):
         if register:
             QUERY_TYPE_REGISTRY[model] = instance
 
+        if max_complexity is Undefined:
+            max_complexity = undine_settings.OPTIMIZER_MAX_COMPLEXITY
+
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.
         instance.__model__ = model
         instance.__filterset__ = filterset
         instance.__orderset__ = orderset
         instance.__lookup_field__ = lookup_field
+        instance.__max_complexity__ = max_complexity
         instance.__field_map__ = dict(get_members(instance, Field))
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
@@ -124,6 +129,8 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     - `auto`: Whether to add fields for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added fields. No excludes by default.
     - `lookup_field`: Name of the field to use for looking up single objects. Defaults to `"pk"`.
+    - `max_complexity`: Maximum number of relations allowed in a query when using this QueryType as the Entrypoint.
+                        Use value of `OPTIMIZER_MAX_COMPLEXITY` setting by default.
     - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
     - `register`: Whether to register the `QueryType` for the given model so that other `QueryTypes` can use it in
                  their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
@@ -153,10 +160,10 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return True
 
     @classmethod
-    def __optimizer_hook__(cls, processor: OptimizationProcessor) -> None:
+    def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
         """
-        Hook for modifying the optimizer data outside of the GraphQL resolver context.
-        Can be used to optimize data required e.g. for permissions checks.
+        Hook for modifying the optimization data outside of the GraphQL resolver context.
+        Can be used to optimize e.g. data for permissions checks.
         """
 
     @classmethod
@@ -251,7 +258,7 @@ class Field:
 
         if isinstance(self.ref, (models.Expression, models.Subquery)):
 
-            def optimizer_func(field: Field, optimizer: OptimizationProcessor) -> None:
+            def optimizer_func(field: Field, optimizer: OptimizationData) -> None:
                 optimizer.annotations[field.name] = field.ref
 
             self.optimizer_func = optimizer_func

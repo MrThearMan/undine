@@ -54,4 +54,4 @@ def _(ref: LazyQueryTypeUnion) -> Any:
 
 @parse_description.register
 def _(_: LazyLambdaQueryType) -> Any:
-    return False
+    return None

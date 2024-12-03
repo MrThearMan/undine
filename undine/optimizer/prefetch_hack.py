@@ -53,7 +53,7 @@ def _prefetch_hack(
     """
     Patches the prefetch mechanism to not create duplicate joins in the SQL query.
     This is needed due to how filtering with many-to-many relations is implemented in Django,
-    which creates new joins con consecutive filters for the same relation.
+    which creates new joins for consecutive filters for the same relation.
     See: https://docs.djangoproject.com/en/dev/topics/db/queries/#spanning-multi-valued-relationships
 
     For nested connection fields, a window function with a partition on the many-to-many field

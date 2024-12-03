@@ -11,34 +11,34 @@ from undine.typing import ExpressionLike
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 __all__ = [
-    "extend_expression_to_joined_table",
+    "extend_expression",
 ]
 
 
 # TODO: Testing
-extend_expression_to_joined_table = FunctionDispatcher[ExpressionLike, ExpressionLike]()
+extend_expression = FunctionDispatcher[ExpressionLike, ExpressionLike]()
 """
-Rewrite an expression so that any containing lookups are referenced from the given table.
+Rewrite an expression so that any containing lookups are referenced through the given field.
 
 Positional arguments:
  - expression: The expression to extend.
 
 Keyword arguments:
- - table_name: Name of the table to extend the lookup to.
+ - field_name: Name of the field to extend the lookup to.
 """
 
 
-@extend_expression_to_joined_table.register
+@extend_expression.register
 def _(expression: models.F, **kwargs: Any) -> models.F:
-    table_name: str = kwargs["table_name"]
+    field_name: str = kwargs["field_name"]
     expression = deepcopy(expression)
-    expression.name = f"{table_name}{LOOKUP_SEP}{expression.name}"
+    expression.name = f"{field_name}{LOOKUP_SEP}{expression.name}"
     return expression
 
 
-@extend_expression_to_joined_table.register
+@extend_expression.register
 def _(expression: models.Q, **kwargs: Any) -> models.Q:
-    table_name: str = kwargs["table_name"]
+    field_name: str = kwargs["field_name"]
     expression = deepcopy(expression)
 
     children = expression.children
@@ -47,44 +47,44 @@ def _(expression: models.Q, **kwargs: Any) -> models.Q:
         if isinstance(child, tuple):
             value = child[1]
             if isinstance(child[1], (models.F, models.Q, models.Expression, models.Subquery)):
-                value = extend_expression_to_joined_table(child[1], table_name)
+                value = extend_expression(child[1], field_name)
 
-            expression.children.append((f"{table_name}{LOOKUP_SEP}{child[0]}", value))
+            expression.children.append((f"{field_name}{LOOKUP_SEP}{child[0]}", value))
 
         else:
-            expression.children.append(extend_expression_to_joined_table(child, table_name))
+            expression.children.append(extend_expression(child, field_name))
 
     return expression
 
 
-@extend_expression_to_joined_table.register
+@extend_expression.register
 def _(expression: models.Expression, **kwargs: Any) -> models.Expression:
-    table_name: str = kwargs["table_name"]
+    field_name: str = kwargs["field_name"]
     expression = deepcopy(expression)
 
-    expressions = [extend_expression_to_joined_table(expr, table_name) for expr in expression.get_source_expressions()]
+    expressions = [extend_expression(expr, field_name) for expr in expression.get_source_expressions()]
     expression.set_source_expressions(expressions)
     return expression
 
 
-@extend_expression_to_joined_table.register
+@extend_expression.register
 def _(expression: models.Subquery, **kwargs: Any) -> models.Subquery:
-    def extend_subquery_to_joined_table(expr: Any, table_name: str) -> Any:
+    def extend_subquery(expr: Any, field_name: str) -> Any:
         """For sub-queries, only OuterRefs are rewritten."""
         if isinstance(expr, (models.OuterRef, ResolvedOuterRef)):
             expr = deepcopy(expr)
-            expr.name = f"{table_name}{LOOKUP_SEP}{expr.name}"
+            expr.name = f"{field_name}{LOOKUP_SEP}{expr.name}"
             return expr
 
         expr = deepcopy(expr)
-        expressions = [extend_subquery_to_joined_table(expr, table_name) for expr in expr.get_source_expressions()]
+        expressions = [extend_subquery(expr, field_name) for expr in expr.get_source_expressions()]
         expr.set_source_expressions(expressions)
         return expr
 
-    table_name: str = kwargs["table_name"]
+    field_name: str = kwargs["field_name"]
     expression = deepcopy(expression)
     sub_expressions = expression.query.where.children
     expression.query.where.children = []
     for child in sub_expressions:
-        expression.query.where.children.append(extend_subquery_to_joined_table(child, table_name))
+        expression.query.where.children.append(extend_subquery(child, field_name))
     return expression

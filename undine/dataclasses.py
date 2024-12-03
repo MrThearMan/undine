@@ -8,12 +8,11 @@ from graphql import Undefined
 if TYPE_CHECKING:
     from django.db import models
 
-    from undine import MutationType, QueryType
-    from undine.typing import CombinableExpression, GQLInfo, JsonObject
+    from undine import MutationType
+    from undine.typing import ExpressionLike, GQLInfo, JsonObject
 
 __all__ = [
     "FilterResults",
-    "GraphQLFilterInfo",
     "GraphQLParams",
     "LookupRef",
     "MutationMiddlewareParams",
@@ -32,21 +31,11 @@ class Parameter:
     default_value: Any = Undefined
 
 
-@dataclasses.dataclass(slots=True)
-class GraphQLFilterInfo:
-    model_type: type[QueryType]
-    filters: list[models.Q] = dataclasses.field(default_factory=list)
-    distinct: bool = False
-    aliases: dict[str, CombinableExpression] = dataclasses.field(default_factory=dict)
-    order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
-    children: dict[str, GraphQLFilterInfo] = dataclasses.field(default_factory=dict)
-
-
 @dataclasses.dataclass(frozen=True, slots=True)
 class FilterResults:
     filters: list[models.Q]
     distinct: bool
-    aliases: dict[str, CombinableExpression]
+    aliases: dict[str, ExpressionLike]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
