@@ -46,14 +46,14 @@ class QueryOptimizer(GraphQLASTWalker):
 
     def optimize(self, queryset: models.QuerySet) -> models.QuerySet:
         """Optimize the given queryset."""
-        self.run()
+        self.run()  # Compile optimizations.
         results = self.process_optimizations(self.optimization_data)
         optimized_queryset = results.apply(queryset, self.info)
         evaluate_in_context(optimized_queryset, self.info)
         return optimized_queryset
 
     def process_optimizations(self, data: OptimizationData) -> OptimizationResults:
-        """Process the given data so that it can be applied to a queryset."""
+        """Process the given optimization data to OptimizerResults that can be applied to a queryset."""
         results = OptimizationResults(
             field_name=data.field_name,
             only_fields=data.only_fields,
@@ -108,11 +108,13 @@ class QueryOptimizer(GraphQLASTWalker):
         return models.Prefetch(data.field_name, optimized_queryset, to_attr=to_attr)
 
     def run_field_optimizer(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        """Run undine.Field optimization function for the given field."""
         undine_field = self.get_undine_field(field_type, field_node)
         if undine_field is not None and undine_field.optimizer_func is not None:
             undine_field.optimizer_func(undine_field, self.optimization_data)
 
     def parse_filter_info(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        """Parse filtering and ordering information from the given field."""
         graphql_field = parent_type.fields[field_node.name.value]
         object_type = get_underlying_type(graphql_field.type)
         query_type = self.get_undine_query_type(object_type)
@@ -214,10 +216,10 @@ class QueryOptimizer(GraphQLASTWalker):
         self.run_field_optimizer(field_type, field_node)
 
     @contextlib.contextmanager
-    def use_data(self, data: OptimizationData) -> None:
+    def use_data(self, nested_data: OptimizationData) -> None:
         original = self.optimization_data
         try:
-            self.optimization_data = data
+            self.optimization_data = nested_data
             yield
         finally:
             self.optimization_data = original
@@ -225,7 +227,10 @@ class QueryOptimizer(GraphQLASTWalker):
 
 @dataclasses.dataclass(slots=True)
 class OptimizationData:
-    """Holds optimization data that can be processed to results that can be applied to a queryset."""
+    """
+    Holds QueryOptimizer optimization data. Will be processed by the QueryOptimizer to OptimizerResults
+    when the optimization compilation is complete, which can then be used to optimize a queryset.
+    """
 
     model: type[models.Model] | None  # Will be 'None' for GenericForeignKeys.
     field_name: str | None = None  # Will be 'None' if there is no parent.
@@ -251,6 +256,7 @@ class OptimizationData:
         *,
         query_type: type[QueryType] | None = None,
     ) -> OptimizationData:
+        """Add a 'select_related' optimization for the given field."""
         maybe_optimizer = self.select_related.get(field_name)
         if maybe_optimizer is not None:
             return maybe_optimizer
@@ -276,6 +282,7 @@ class OptimizationData:
         query_type: type[QueryType] | None = None,
         to_attr: str | None = None,
     ) -> OptimizationData:
+        """Add a 'prefetch_related' optimization for the given field."""
         maybe_optimizer = self.prefetch_related.get(to_attr or field_name)
         if maybe_optimizer is not None:
             return maybe_optimizer

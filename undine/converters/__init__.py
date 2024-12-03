@@ -1,4 +1,4 @@
-from .extend_lookup import extend_expression
+from .extend_expression import extend_expression
 from .from_lookup import convert_lookup_to_graphql_type
 from .is_hidden import is_input_hidden
 from .is_input_only import is_input_only
