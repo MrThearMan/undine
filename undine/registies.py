@@ -9,12 +9,11 @@ from undine.errors.exceptions import RegistryDuplicateError, RegistryMissingType
 from undine.utils.reflection import get_instance_name
 
 if TYPE_CHECKING:
-    # Avoid circular imports by importing types only, and using 'ForwardRefs' (=quotes).
-    from undine.query import QueryType
-    from undine.utils.mutation_handler import MutationHandler  # noqa: F401
+    from undine import QueryType
 
 
 __all__ = [
+    "GRAPHQL_TYPE_REGISTRY",
     "QUERY_TYPE_REGISTRY",
 ]
 

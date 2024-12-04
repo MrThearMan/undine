@@ -15,6 +15,7 @@ from undine.parsers import parse_model_relation_info
 from undine.typing import TModel
 
 if TYPE_CHECKING:
+    from django.db import models
     from django.db.models import Model
 
 
@@ -65,6 +66,7 @@ class BulkMutationHandler(Generic[TModel]):
     def update_many(
         self,
         input_data: list[dict[str, Any]],
+        instances: list[models.Model],
         *,
         lookup_field: str,
         batch_size: int | None = None,
@@ -76,12 +78,11 @@ class BulkMutationHandler(Generic[TModel]):
         """
         self.pre_save(input_data)
 
-        existing = self.model._meta.default_manager.filter(pk__in=[item[lookup_field] for item in input_data])
-        instances: dict[int, Model] = {inst.pk: inst for inst in existing}
+        instances_by_pk: dict[int, Model] = {inst.pk: inst for inst in instances}
 
         for item in input_data:
             lookup_value = item.get(lookup_field)
-            instance = instances.get(lookup_value)
+            instance = instances_by_pk.get(lookup_value)
             if instance is None:
                 raise GraphQLModelNotFoundError(
                     key=lookup_field,
@@ -93,13 +94,11 @@ class BulkMutationHandler(Generic[TModel]):
                 setattr(instance, attr, value)
             instance.full_clean()
 
-        objs = list(instances.values())
-
         # Update all fields except the lookup field.
         fields = list({field for data in input_data for field in data if field != lookup_field})
 
-        self.model._meta.default_manager.bulk_update(objs, fields, batch_size=batch_size)
-        return objs
+        self.model._meta.default_manager.bulk_update(instances, fields, batch_size=batch_size)
+        return instances
 
     def pre_save(self, input_data: list[dict[str, Any]]) -> None:
         """

@@ -122,81 +122,67 @@ class PermissionCheckMiddleware(MutationMiddleware):
     priority: int = 100
 
     def __enter__(self) -> Self:
-        if self.params.mutation_type.__mutation_kind__ == "create":
-            self.check_create_permissions(self.params.mutation_type, self.params.input_data)
-        elif self.params.mutation_type.__mutation_kind__ == "update":
-            self.check_update_permissions(self.params.mutation_type, self.params.input_data)
-        elif self.params.mutation_type.__mutation_kind__ == "delete":
-            self.check_delete_permissions(self.params.mutation_type, self.params.input_data)
-        else:
-            self.check_custom_permissions(self.params.mutation_type, self.params.input_data)
+        if isinstance(self.params.input_data, dict):
+            self.check_single_permissions(self.params.mutation_type, self.params.input_data)
+        if isinstance(self.params.input_data, list):
+            self.check_many_permissions(self.params.mutation_type, self.params.input_data)
         return self
 
-    def check_create_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
-        from undine import MutationType  # noqa: PLC0415
-
-        if isinstance(input_data, list):
-            for item in input_data:
-                self.check_create_permissions(mutation_type=mutation_type, input_data=item)
+    def check_single_permissions(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
+        if mutation_type.__mutation_kind__ == "create":
+            mutation_type.__permission_create__(info=self.params.info, input_data=input_data)
             return
 
-        for field_name, value in input_data.items():
-            inpt = mutation_type.__input_map__[field_name]
-
-            if is_subclass(inpt.ref, MutationType):
-                self.check_create_permissions(mutation_type=inpt.ref, input_data=value)
-
-        mutation_type.__permission_create__(info=self.params.info, input_data=input_data)
-
-    def check_update_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
-        from undine import MutationType  # noqa: PLC0415
-
-        if isinstance(input_data, list):
-            for item in input_data:
-                self.check_update_permissions(mutation_type=mutation_type, input_data=item)
+        if mutation_type.__mutation_kind__ == "update":
+            mutation_type.__permission_delete__(
+                info=self.params.info,
+                instance=self.params.instance,
+                input_data=input_data,
+            )
             return
 
-        for field_name, value in input_data.items():
-            inpt = mutation_type.__input_map__[field_name]
-
-            if is_subclass(inpt.ref, MutationType):
-                self.check_update_permissions(mutation_type=inpt.ref, input_data=value)
-
-        # TODO: Add instance. Shouldn't query here and in the MutationHandler.
-        mutation_type.__permission_update__(info=self.params.info, instance=None, input_data=input_data)
-
-    def check_delete_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
-        from undine import MutationType  # noqa: PLC0415
-
-        if isinstance(input_data, list):
-            for item in input_data:
-                self.check_delete_permissions(mutation_type=mutation_type, input_data=item)
+        if mutation_type.__mutation_kind__ == "delete":
+            mutation_type.__permission_update__(
+                info=self.params.info,
+                instance=self.params.instance,
+                input_data=input_data,
+            )
             return
-
-        for field_name, value in input_data.items():
-            inpt = mutation_type.__input_map__[field_name]
-
-            if is_subclass(inpt.ref, MutationType):
-                self.check_delete_permissions(mutation_type=inpt.ref, input_data=value)
-
-        # TODO: Add instance. Shouldn't query here and in the MutationHandler.
-        mutation_type.__permission_delete__(info=self.params.info, instance=None, input_data=input_data)
-
-    def check_custom_permissions(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
-        from undine import MutationType  # noqa: PLC0415
-
-        if isinstance(input_data, list):
-            for item in input_data:
-                self.check_custom_permissions(mutation_type=mutation_type, input_data=item)
-            return
-
-        for field_name, value in input_data.items():
-            inpt = mutation_type.__input_map__[field_name]
-
-            if is_subclass(inpt.ref, MutationType):
-                self.check_custom_permissions(mutation_type=inpt.ref, input_data=value)
 
         mutation_type.__permission_custom__(info=self.params.info, input_data=input_data)
+
+    def check_many_permissions(self, mutation_type: type[MutationType], input_data: list[dict[str, Any]]) -> None:
+        lookup_field = self.params.mutation_type.__lookup_field__
+        instances_by_pk = {getattr(inst, lookup_field, None): inst for inst in self.params.instances or []}
+
+        for item in input_data:
+            if mutation_type.__mutation_kind__ == "create":
+                mutation_type.__permission_create__(info=self.params.info, input_data=item)
+                continue
+
+            if mutation_type.__mutation_kind__ == "custom":
+                mutation_type.__permission_custom__(info=self.params.info, input_data=item)
+                continue
+
+            instance = instances_by_pk.get(item.get(lookup_field))
+            if instance is None:
+                continue
+
+            if mutation_type.__mutation_kind__ == "update":
+                mutation_type.__permission_delete__(
+                    info=self.params.info,
+                    instance=instance,
+                    input_data=item,
+                )
+                continue
+
+            if mutation_type.__mutation_kind__ == "delete":
+                mutation_type.__permission_update__(
+                    info=self.params.info,
+                    instance=instance,
+                    input_data=item,
+                )
+                continue
 
 
 class InputDataValidationMiddleware(MutationMiddleware):
@@ -371,6 +357,7 @@ class MutationMiddlewareHandler:
         info: GQLInfo,
         input_data: JsonObject,
         instance: models.Model | None = None,
+        instances: list[models.Model] | None = None,
     ) -> None:
         self.middleware: list[MutationMiddleware] = []
 
@@ -379,6 +366,7 @@ class MutationMiddlewareHandler:
             info=info,
             input_data=input_data,
             instance=instance,
+            instances=instances,
         )
 
         sorted_middleware = sorted(mutation_type.__middleware__(), key=lambda m: (m.priority, m.__name__))

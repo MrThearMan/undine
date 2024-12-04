@@ -49,7 +49,7 @@ def test_bulk_mutation_handler__update():
     ]
 
     handler = BulkMutationHandler[Task](model=Task)
-    instances = handler.update_many(data, lookup_field="pk")
+    instances = handler.update_many(data, instances=[task], lookup_field="pk")
 
     assert len(instances) == 1
     assert instances[0].pk is not None

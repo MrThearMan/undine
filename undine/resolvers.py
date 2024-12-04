@@ -119,7 +119,7 @@ class ModelSingleResolver:
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.Model | None:
         queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
-        optimizer = QueryOptimizer(self.query_type.__model__, info, max_complexity=self.query_type.__max_complexity__)
+        optimizer = QueryOptimizer(query_type=self.query_type, info=info)
         optimized_queryset = optimizer.optimize(queryset)
         # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
         # The queryset should have the right model instance, since we started by filtering by its pk,
@@ -138,7 +138,7 @@ class ModelManyResolver:
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         queryset = self.query_type.__get_queryset__(info)
-        optimizer = QueryOptimizer(self.query_type.__model__, info, max_complexity=self.query_type.__max_complexity__)
+        optimizer = QueryOptimizer(query_type=self.query_type, info=info)
         optimized_queryset = optimizer.optimize(queryset)
         if not self.query_type.__permission_many__(optimized_queryset, info):
             raise GraphQLPermissionDeniedError
@@ -201,7 +201,11 @@ class CreateResolver(Generic[TModel]):
 
         handler = MutationHandler(model=self.mutation_type.__model__)
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=data,
+        ):
             return handler.create(data)
 
 
@@ -227,7 +231,11 @@ class BulkCreateResolver(Generic[TModel]):
 
         handler = BulkMutationHandler(model=model)
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=data,
+        ):
             return handler.create_many(
                 data,
                 batch_size=batch_size,
@@ -259,7 +267,12 @@ class UpdateResolver(Generic[TModel]):
         instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
         handler = MutationHandler(model=model)
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=data,
+            instance=instance,
+        ):
             return handler.update(instance, data)
 
 
@@ -274,14 +287,24 @@ class BulkUpdateResolver(Generic[TModel]):
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         model = self.mutation_type.__model__
+        lookup_field = self.mutation_type.__lookup_field__
+
+        batch_size: int | None = kwargs.get("batch_size")
 
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
-        batch_size: int | None = kwargs.get("batch_size")
+        pks = [item[lookup_field] for item in data]
+
+        instances: list[models.Model] = list(model._meta.default_manager.filter(pk__in=pks))
 
         handler = BulkMutationHandler(model=model)
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data):
-            return handler.update_many(data, lookup_field=self.mutation_type.__lookup_field__, batch_size=batch_size)
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=data,
+            instances=instances,
+        ):
+            return handler.update_many(data, instances, lookup_field=lookup_field, batch_size=batch_size)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -305,7 +328,12 @@ class DeleteResolver(Generic[TModel]):
 
         instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=data, instance=instance):
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=data,
+            instance=instance,
+        ):
             instance.delete()
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
@@ -323,10 +351,17 @@ class BulkDeleteResolver(Generic[TModel]):
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> dict[str, bool]:
         model = self.mutation_type.__model__
 
-        input_data: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
+        pks: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data={}):
-            model._meta.default_manager.filter(pk__in=input_data).delete()
+        instances = model._meta.default_manager.filter(pk__in=pks)
+
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data={},
+            instances=list(instances),
+        ):
+            instances.delete()
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
 
@@ -343,5 +378,9 @@ class CustomResolver:
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        with MutationMiddlewareHandler(mutation_type=self.mutation_type, info=info, input_data=input_data):
+        with MutationMiddlewareHandler(
+            mutation_type=self.mutation_type,
+            info=info,
+            input_data=input_data,
+        ):
             return self.mutation_type.__mutate__(root, info, input_data)

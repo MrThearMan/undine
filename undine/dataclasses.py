@@ -72,7 +72,8 @@ class MutationMiddlewareParams:
     mutation_type: type[MutationType]
     info: GQLInfo
     input_data: JsonObject
-    instance: models.Model | None = None
+    instance: models.Model | None = None  # Single mutations.
+    instances: list[models.Model] | None = None  # Bulk mutations.
 
 
 @dataclasses.dataclass(slots=True)

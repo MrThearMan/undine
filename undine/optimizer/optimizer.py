@@ -30,19 +30,17 @@ __all__ = [
 
 @swappable_by_subclassing
 class QueryOptimizer(GraphQLASTWalker):
-    def __init__(self, model: type[models.Model], info: GQLInfo, *, max_complexity: int | None) -> None:
+    def __init__(self, query_type: type[QueryType], info: GQLInfo) -> None:
         """
         Optimize querysets based on the the given GraphQL resolve info.
 
-        :param model: The model to start the optimization process from.
+        :param query_type: The QueryType to start the optimization process from.
         :param info: The GraphQL resolve info for the request. These are the "instructions" the optimizer follows
                      to compile the needed optimizations.
-        :param max_complexity: Maximum number of relations allowed in a the query.
-                               Used to protect from malicious queries.
         """
-        self.max_complexity = max_complexity
-        self.optimization_data = OptimizationData(model=model)
-        super().__init__(info=info, model=model)
+        self.max_complexity = query_type.__max_complexity__
+        self.optimization_data = OptimizationData(model=query_type.__model__)
+        super().__init__(info=info, model=query_type.__model__)
 
     def optimize(self, queryset: models.QuerySet) -> models.QuerySet:
         """Optimize the given queryset."""
