@@ -23,6 +23,7 @@ from graphql import (
     GraphQLError,
     GraphQLField,
     GraphQLFloat,
+    GraphQLID,
     GraphQLInputField,
     GraphQLInt,
     GraphQLList,
@@ -430,13 +431,14 @@ def _(ref: TypeRef, **kwargs: Any) -> GraphQLType:
 # --- Deferred -----------------------------------------------------------------------------------------------------
 
 
-def load_deferred_converters() -> None:
+def load_deferred_converters() -> None:  # noqa: C901
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import MutationType, QueryType
     from undine.converters import convert_lookup_to_graphql_type, convert_to_python_type
     from undine.parsers import parse_first_param_type, parse_return_annotation
+    from undine.relay import Connection, GlobalID, Node
 
     @convert_to_graphql_type.register
     def _(ref: FunctionType, **kwargs: Any) -> GraphQLType:
@@ -495,3 +497,15 @@ def load_deferred_converters() -> None:
             return ref.__output_type__()
 
         return ref.__input_type__()
+
+    @convert_to_graphql_type.register
+    def _(ref: Connection, **kwargs: Any) -> GraphQLOutputType:
+        return ref.output_type()
+
+    @convert_to_graphql_type.register
+    def _(ref: Node, **kwargs: Any) -> GraphQLOutputType:
+        return ref.interface
+
+    @convert_to_graphql_type.register
+    def _(_: GlobalID, **kwargs: Any) -> GraphQLOutputType:
+        return GraphQLID

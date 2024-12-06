@@ -15,11 +15,10 @@ from django.db.models.query_utils import DeferredAttribute
 from undine.typing import CombinableExpression, FieldRef, Lambda, ToManyField, ToOneField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
-from undine.utils.model_utils import get_model_field
 
 if TYPE_CHECKING:
     from undine import Field
-
+    from undine.optimizer.optimizer import OptimizationData
 
 __all__ = [
     "convert_to_field_ref",
@@ -39,22 +38,6 @@ Keyword arguments:
 
 
 @convert_to_field_ref.register
-def _(ref: str, **kwargs: Any) -> FieldRef:
-    caller: Field = kwargs["caller"]
-    if ref == "self":
-        return caller.owner
-    field = get_model_field(model=caller.owner.__model__, lookup=ref)
-    return convert_to_field_ref(field, **kwargs)
-
-
-@convert_to_field_ref.register
-def _(_: None, **kwargs: Any) -> FieldRef:
-    caller: Field = kwargs["caller"]
-    field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
-    return convert_to_field_ref(field, **kwargs)
-
-
-@convert_to_field_ref.register
 def _(ref: FunctionType, **kwargs: Any) -> FieldRef:
     return ref
 
@@ -66,6 +49,12 @@ def _(ref: Lambda, **kwargs: Any) -> FieldRef:
 
 @convert_to_field_ref.register
 def _(ref: CombinableExpression, **kwargs: Any) -> FieldRef:
+    caller: Field = kwargs["caller"]
+
+    def optimizer_func(field: Field, optimizer: OptimizationData) -> None:
+        optimizer.annotations[field.name] = field.ref
+
+    caller.optimizer_func = optimizer_func
     return ref
 
 
@@ -103,7 +92,23 @@ def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
-    from undine.query import QueryType
+    from undine import QueryType
+    from undine.relay import GlobalID
+    from undine.utils.model_utils import get_model_field
+
+    @convert_to_field_ref.register
+    def _(ref: str, **kwargs: Any) -> FieldRef:
+        caller: Field = kwargs["caller"]
+        if ref == "self":
+            return caller.owner
+        field = get_model_field(model=caller.owner.__model__, lookup=ref)
+        return convert_to_field_ref(field, **kwargs)
+
+    @convert_to_field_ref.register
+    def _(_: None, **kwargs: Any) -> FieldRef:
+        caller: Field = kwargs["caller"]
+        field = get_model_field(model=caller.owner.__model__, lookup=caller.name)
+        return convert_to_field_ref(field, **kwargs)
 
     @convert_to_field_ref.register
     def _(ref: type[QueryType], **kwargs: Any) -> FieldRef:
@@ -120,3 +125,7 @@ def load_deferred_converters() -> None:
     @convert_to_field_ref.register  # Required for Django<5.1
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
         return LazyQueryTypeUnion(field=ref)
+
+    @convert_to_field_ref.register
+    def _(ref: GlobalID, **kwargs: Any) -> FieldRef:
+        return ref

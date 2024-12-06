@@ -3,12 +3,16 @@ from __future__ import annotations
 from example_project.app.mutations import TaskCreateMutationType
 from example_project.app.types import ReportType, TaskType
 from undine import Entrypoint, create_schema
+from undine.relay import Connection, Node
 
 
 class Query:
     task = Entrypoint(TaskType)
     tasks = Entrypoint(TaskType, many=True)
     reports = Entrypoint(ReportType, many=True)
+
+    node = Entrypoint(Node)
+    paged_tasks = Entrypoint(Connection(TaskType))
 
     @Entrypoint
     def function(self, arg: str = "None") -> list[str]:

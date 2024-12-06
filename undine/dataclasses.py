@@ -79,7 +79,12 @@ class MutationMiddlewareParams:
 @dataclasses.dataclass(slots=True)
 class PaginationArgs:
     after: int | None
+    """The index after which to start (exclusive)."""
     before: int | None
+    """The index before which to stop (exclusive)."""
     first: int | None
+    """The number of items to return from the start."""
     last: int | None
+    """The number of items to return from the end (after evaluating first)."""
     size: int | None
+    """The total number of items in the queryset."""

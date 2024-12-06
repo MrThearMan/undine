@@ -71,6 +71,7 @@ def load_deferred_converters() -> None:
 
     from undine import QueryType
     from undine.parsers import parse_return_annotation
+    from undine.relay import GlobalID
 
     @is_field_nullable.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:
@@ -94,3 +95,7 @@ def load_deferred_converters() -> None:
         # Reverse relations are always nullable (Django can't enforce that a
         # foreign key on the related model points to this model).
         return True
+
+    @is_field_nullable.register
+    def _(_: GlobalID, **kwargs: Any) -> bool:
+        return False

@@ -86,7 +86,7 @@ class CustomerDetails(TypedDict):
     age: int
 
 
-class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet):
+class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet, relay=True):
     """Task Node description."""
 
     name = Field()

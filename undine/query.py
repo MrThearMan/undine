@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Container, Iterable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from django.db import models
 from graphql import GraphQLArgumentMap, GraphQLField, GraphQLFieldResolver, GraphQLOutputType, Undefined
 
 from undine.converters import (
@@ -16,6 +15,7 @@ from undine.converters import (
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
+from undine.relay import GlobalID, Node
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
@@ -23,7 +23,10 @@ from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
+    from collections.abc import Container, Iterable
     from types import FunctionType
+
+    from django.db import models
 
     from undine import FilterSet, OrderSet
     from undine.optimizer.optimizer import OptimizationData
@@ -52,6 +55,7 @@ class QueryTypeMeta(type):
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         max_complexity: int | None = Undefined,
+        relay: bool = False,
         typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,
@@ -64,6 +68,10 @@ class QueryTypeMeta(type):
 
         if auto:
             _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
+
+        typename = typename or _name
+        if relay:
+            _attrs["id"] = Field(GlobalID(typename=typename))
 
         if filterset is True:
             from undine import FilterSet  # noqa: PLC0415
@@ -110,7 +118,8 @@ class QueryTypeMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__max_complexity__ = max_complexity
         instance.__field_map__ = dict(get_members(instance, Field))
-        instance.__typename__ = typename or _name
+        instance.__typename__ = typename
+        instance.__relay__ = relay
         instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
         return instance
 
@@ -188,6 +197,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return get_or_create_object_type(
             name=cls.__typename__,
             fields=FunctionEqualityWrapper(fields, context=cls),
+            interfaces=(Node.interface,) if cls.__relay__ else None,
             description=get_docstring(cls),
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,
@@ -235,7 +245,7 @@ class Field:
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
         self.permissions_func: PermissionFunc | None = None
-        self.skip_querytype_perms: bool = False
+        self.skip_query_type_perms: bool = False
         self.extensions: dict[str, Any] = extensions or {}
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
@@ -252,13 +262,6 @@ class Field:
             self.nullable = is_field_nullable(self.ref, caller=self)
         if self.description is Undefined:
             self.description = parse_description(self.ref)
-
-        if isinstance(self.ref, (models.Expression, models.Subquery)):
-
-            def optimizer_func(field: Field, optimizer: OptimizationData) -> None:
-                optimizer.annotations[field.name] = field.ref
-
-            self.optimizer_func = optimizer_func
 
     def __call__(self, ref: FunctionType, /) -> Self:
         """Called when using as decorator with parenthesis: @Field(...)"""
@@ -304,15 +307,15 @@ class Field:
         self.optimizer_func = get_wrapped_func(func)
         return func
 
-    def permissions(self, func: PermissionFunc = None, /, *, skip_querytype_perms: bool = False) -> PermissionFunc:
+    def permissions(self, func: PermissionFunc = None, /, *, skip_query_type_perms: bool = False) -> PermissionFunc:
         """
         Decorate a function to add it as a permission check for this field.
 
-        Use `@<field_name>.permissions(skip_querytype_perms=True)` to skip QueryType's permissions checks
+        Use `@<field_name>.permissions(skip_query_type_perms=True)` to skip QueryType's permissions checks
         for this field. Only affects fields referencing another QueryType.
         """
         if func is None:  # Allow `@<field_name>.permissions()`
-            self.skip_querytype_perms = skip_querytype_perms
+            self.skip_query_type_perms = skip_query_type_perms
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func

@@ -18,7 +18,7 @@ def test_bulk_delete_resolver():
 
     class TaskDeleteMutation(MutationType, model=Task): ...
 
-    resolver = BulkDeleteResolver[Task](mutation_type=TaskDeleteMutation)
+    resolver = BulkDeleteResolver(mutation_type=TaskDeleteMutation)
 
     data = [task_1.pk, task_2.pk]
 

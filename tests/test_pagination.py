@@ -26,16 +26,8 @@ class InputParams(NamedTuple):
     errors: str | None
 
 
-class PaginationData(NamedTuple):
-    first: int | None = None
-    last: int | None = None
-    after: int | None = None
-    before: int | None = None
-    size: int = 100
-
-
 class DataParams(NamedTuple):
-    pagination_input: PaginationData
+    pagination_args: PaginationArgs
     start: int
     stop: int
 
@@ -174,99 +166,99 @@ def test_validate_pagination_args(pagination_input, output, errors):
     **parametrize_helper(
         {
             "default": DataParams(
-                pagination_input=PaginationData(),
+                pagination_args=PaginationArgs(size=100, first=None, last=None, after=None, before=None),
                 start=0,
                 stop=100,
             ),
             "after": DataParams(
-                pagination_input=PaginationData(after=1),
+                pagination_args=PaginationArgs(after=1, size=100, first=None, before=None, last=None),
                 start=1,
                 stop=100,
             ),
             "before": DataParams(
-                pagination_input=PaginationData(before=99),
+                pagination_args=PaginationArgs(before=99, size=100, first=None, after=None, last=None),
                 start=0,
                 stop=99,
             ),
             "first": DataParams(
-                pagination_input=PaginationData(first=10),
+                pagination_args=PaginationArgs(first=10, size=100, last=None, after=None, before=None),
                 start=0,
                 stop=10,
             ),
             "last": DataParams(
-                pagination_input=PaginationData(last=10),
+                pagination_args=PaginationArgs(last=10, size=100, first=None, after=None, before=None),
                 start=90,
                 stop=100,
             ),
             "after_before": DataParams(
-                pagination_input=PaginationData(after=1, before=99),
+                pagination_args=PaginationArgs(after=1, before=99, size=100, first=None, last=None),
                 start=1,
                 stop=99,
             ),
             "first_last": DataParams(
-                pagination_input=PaginationData(first=10, last=8),
+                pagination_args=PaginationArgs(first=10, last=8, size=100, after=None, before=None),
                 start=2,
                 stop=10,
             ),
             "after_before_first_last": DataParams(
-                pagination_input=PaginationData(after=1, before=99, first=10, last=8),
+                pagination_args=PaginationArgs(after=1, before=99, first=10, last=8, size=100),
                 start=3,
                 stop=11,
             ),
             "after_bigger_than_size": DataParams(
-                pagination_input=PaginationData(after=101),
+                pagination_args=PaginationArgs(after=101, size=100, first=None, before=None, last=None),
                 start=100,
                 stop=100,
             ),
             "before_bigger_than_size": DataParams(
-                pagination_input=PaginationData(before=101),
+                pagination_args=PaginationArgs(before=101, size=100, first=None, after=None, last=None),
                 start=0,
                 stop=100,
             ),
             "first_bigger_than_size": DataParams(
-                pagination_input=PaginationData(first=101),
+                pagination_args=PaginationArgs(first=101, size=100, last=None, after=None, before=None),
                 start=0,
                 stop=100,
             ),
             "last_bigger_than_size": DataParams(
-                pagination_input=PaginationData(last=101),
+                pagination_args=PaginationArgs(last=101, size=100, first=None, after=None, before=None),
                 start=0,
                 stop=100,
             ),
             "after_is_size": DataParams(
-                pagination_input=PaginationData(after=100),
+                pagination_args=PaginationArgs(after=100, size=100, first=None, before=None, last=None),
                 start=100,
                 stop=100,
             ),
             "before_is_size": DataParams(
-                pagination_input=PaginationData(before=100),
+                pagination_args=PaginationArgs(before=100, size=100, first=None, after=None, last=None),
                 start=0,
                 stop=100,
             ),
             "first_is_size": DataParams(
-                pagination_input=PaginationData(first=100),
+                pagination_args=PaginationArgs(first=100, size=100, last=None, after=None, before=None),
                 start=0,
                 stop=100,
             ),
             "last_is_size": DataParams(
-                pagination_input=PaginationData(last=100),
+                pagination_args=PaginationArgs(last=100, size=100, first=None, after=None, before=None),
                 start=0,
                 stop=100,
             ),
             "first_bigger_than_after_before": DataParams(
-                pagination_input=PaginationData(after=10, before=20, first=20),
+                pagination_args=PaginationArgs(after=10, before=20, first=20, size=100, last=None),
                 start=10,
                 stop=20,
             ),
             "last_bigger_than_after_before": DataParams(
-                pagination_input=PaginationData(after=10, before=20, last=20),
+                pagination_args=PaginationArgs(after=10, before=20, last=20, size=100, first=None),
                 start=10,
                 stop=20,
             ),
         },
     ),
 )
-def test_calculate_queryset_slice(pagination_input: PaginationData, start: int, stop: int) -> None:
-    cut = calculate_queryset_slice(**pagination_input._asdict())
+def test_calculate_queryset_slice(pagination_args: PaginationArgs, start: int, stop: int) -> None:
+    cut = calculate_queryset_slice(pagination_args)
     assert cut.start == start
     assert cut.stop == stop

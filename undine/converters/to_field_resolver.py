@@ -87,6 +87,7 @@ def load_deferred_converters() -> None:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine import QueryType
+    from undine.relay import GlobalID
 
     @convert_field_ref_to_resolver.register  # Required for Django<5.1
     def _(_: GenericForeignKey, **kwargs: Any) -> GraphQLFieldResolver:
@@ -104,3 +105,7 @@ def load_deferred_converters() -> None:
         if caller.many:
             return QueryTypeManyRelatedFieldResolver(field=caller, query_type=ref)
         return QueryTypeSingleRelatedFieldResolver(field=caller, query_type=ref)
+
+    @convert_field_ref_to_resolver.register
+    def _(ref: GlobalID, **kwargs: Any) -> GraphQLFieldResolver:
+        return ref.resolver

@@ -3,16 +3,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection, Iterable, Iterator, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Collection,
-    Iterable,
-    Iterator,
     Literal,
-    Mapping,
-    MutableMapping,
     NewType,
     Protocol,
     TypeAlias,
@@ -44,6 +40,7 @@ if TYPE_CHECKING:
 
     from undine import Field, Input, MutationType, QueryType
     from undine.optimizer.optimizer import OptimizationData
+    from undine.relay import Connection, GlobalID, Node
     from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
@@ -298,6 +295,8 @@ JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
 EntrypointRef: TypeAlias = Union[
     type["QueryType"],
     type["MutationType"],
+    type["Node"],
+    "Connection",
     Callable[..., Any],
 ]
 FieldRef: TypeAlias = Union[
@@ -309,6 +308,7 @@ FieldRef: TypeAlias = Union[
     "LazyLambdaQueryType",
     models.Expression,
     models.Subquery,
+    "GlobalID",
     Callable[..., Any],
 ]
 FilterRef: TypeAlias = Union[

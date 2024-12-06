@@ -203,7 +203,7 @@ def test_resolvers__query_type_single_resolver__query_type_permissions__skip_obj
     class TaskType(QueryType, model=Task):
         project = Field(ProjectType)
 
-        @project.permissions(skip_querytype_perms=True)
+        @project.permissions(skip_query_type_perms=True)
         def project_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 
@@ -302,7 +302,7 @@ def test_resolvers__query_type_many_resolver__query_type_permissions__skip_objec
     class TaskType(QueryType, model=Task):
         assignees = Field(PersonType, many=True)
 
-        @assignees.permissions(skip_querytype_perms=True)
+        @assignees.permissions(skip_query_type_perms=True)
         def assignees_permissions(self: Field, info: GQLInfo, instance: Task) -> bool:
             return True
 

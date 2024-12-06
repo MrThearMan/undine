@@ -16,6 +16,7 @@ __all__ = [
 ]
 
 
+# TODO: Support protocols?
 DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
 
 

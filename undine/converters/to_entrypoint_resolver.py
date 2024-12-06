@@ -42,10 +42,10 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     return FunctionResolver.adapt(ref)
 
 
-def load_deferred_converters() -> None:
+def load_deferred_converters() -> None:  # noqa: C901
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
-    from undine.mutation import MutationType
-    from undine.query import QueryType
+    from undine import MutationType, QueryType
+    from undine.relay import Connection, Node
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
@@ -71,3 +71,11 @@ def load_deferred_converters() -> None:
         if ref.__mutation_kind__ == "delete":
             return DeleteResolver(mutation_type=ref)
         return CustomResolver(mutation_type=ref)
+
+    @convert_entrypoint_ref_to_resolver.register
+    def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
+        return ref.resolver
+
+    @convert_entrypoint_ref_to_resolver.register
+    def _(ref: type[Node], **kwargs: Any) -> GraphQLFieldResolver:
+        return ref.resolver

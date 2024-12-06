@@ -85,9 +85,10 @@ def _(ref: LazyLambdaQueryType, **kwargs: Any) -> GraphQLArgumentMap:
     return convert_to_graphql_argument_map(ref.callback(), **kwargs)
 
 
-def load_deferred_converters() -> None:
+def load_deferred_converters() -> None:  # noqa: C901
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from undine import MutationType, QueryType
+    from undine.relay import Connection, GlobalID, Node
 
     @convert_to_graphql_argument_map.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
@@ -209,3 +210,15 @@ def load_deferred_converters() -> None:
 
         arguments[undine_settings.MUTATION_INPUT_KEY] = GraphQLArgument(input_type)
         return arguments
+
+    @convert_to_graphql_argument_map.register
+    def _(ref: Connection, **kwargs: Any) -> GraphQLArgumentMap:
+        return ref.arguments()
+
+    @convert_to_graphql_argument_map.register
+    def _(ref: Node, **kwargs: Any) -> GraphQLArgumentMap:
+        return ref.arguments
+
+    @convert_to_graphql_argument_map.register
+    def _(_: GlobalID, **kwargs: Any) -> GraphQLArgumentMap:
+        return {}

@@ -27,7 +27,7 @@ def test_bulk_update_resolver():
         request = Input(Task.request)
         project = Input(Task.project)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -70,7 +70,7 @@ def test_bulk_update_resolver__related_object_not_found():
     class TaskUpdateMutation(MutationType, model=Task):
         request = Input(Task.request)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -90,7 +90,7 @@ def test_bulk_update_resolver__reverse_relation__one_to_one():
     class TaskUpdateMutation(MutationType, model=Task):
         result = Input(Task.result)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -110,7 +110,7 @@ def test_bulk_update_resolver__reverse_relation__one_to_many():
     class TaskUpdateMutation(MutationType, model=Task):
         steps = Input(Task.steps)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -130,7 +130,7 @@ def test_bulk_update_resolver__many_to_many__forward():
     class TaskUpdateMutation(MutationType, model=Task):
         assignees = Input(Task.assignees)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -150,7 +150,7 @@ def test_bulk_update_resolver__many_to_many__reverse():
     class TaskUpdateMutation(MutationType, model=Task):
         reports = Input(Task.reports)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -170,7 +170,7 @@ def test_bulk_update_resolver__generic_relation():
     class TaskUpdateMutation(MutationType, model=Task):
         comments = Input(Task.comments)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {
@@ -194,7 +194,7 @@ def test_bulk_update_resolver__cannot_create_related_object():
     class TaskUpdateMutation(MutationType, model=Task):
         project = Input(ProjectUpdateMutation)
 
-    resolver = BulkUpdateResolver[Task](mutation_type=TaskUpdateMutation)
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation)
 
     data = [
         {

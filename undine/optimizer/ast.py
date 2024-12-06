@@ -8,7 +8,9 @@ from graphql import (
     FieldNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
+    GraphQLInterfaceType,
     GraphQLOutputType,
+    GraphQLSchema,
     GraphQLUnionType,
     InlineFragmentNode,
 )
@@ -156,7 +158,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         return self.handle_selections(field_type, selections)
 
     def handle_inline_fragment(self, field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> None:
-        fragment_type = get_fragment_type(field_type, inline_fragment)
+        fragment_type = get_fragment_type(field_type, inline_fragment, self.info.schema)
         fragment_model = self.get_model(fragment_type)
         if fragment_model is None:
             return None
@@ -230,13 +232,27 @@ def is_foreign_key_id(field: models.Field, field_node: FieldNode) -> bool:
     return isinstance(field, models.ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
-def get_fragment_type(field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> GraphQLOutputType:
+def get_fragment_type(
+    field_type: GraphQLUnionType | GraphQLInterfaceType,
+    inline_fragment: InlineFragmentNode,
+    schema: GraphQLSchema,
+) -> GraphQLOutputType:
     fragment_type_name = inline_fragment.type_condition.name.value
-    gen = (t for t in field_type.types if t.name == fragment_type_name)
-    fragment_type: GraphQLOutputType | None = next(gen, None)
 
-    if fragment_type is None:
-        msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
-        raise OptimizerError(msg)
+    # For unions, fetch the type from in the union.
+    if isinstance(field_type, GraphQLUnionType):
+        gen = (t for t in field_type.types if t.name == fragment_type_name)
+        fragment_type: GraphQLOutputType | None = next(gen, None)
+
+        if fragment_type is None:
+            msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
+            raise OptimizerError(msg)
+
+    # For interfaces, fetch the type from in the schema.
+    else:
+        fragment_type: GraphQLOutputType | None = schema.get_type(fragment_type_name)
+        if fragment_type is None:  # pragma: no cover
+            msg = f"Fragment type '{fragment_type_name}' not found in schema"
+            raise OptimizerError(msg)
 
     return fragment_type

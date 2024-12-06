@@ -88,14 +88,7 @@ def validate_pagination_args(  # noqa: C901, PLR0912
     return PaginationArgs(after=after, before=before, first=first, last=last, size=size)
 
 
-def calculate_queryset_slice(
-    *,
-    after: int | None,
-    before: int | None,
-    first: int | None,
-    last: int | None,
-    size: int,
-) -> slice:
+def calculate_queryset_slice(pagination_args: PaginationArgs) -> slice:
     """
     Calculate queryset slicing based on the provided arguments.
     Before this, the arguments should be validated so that:
@@ -106,42 +99,38 @@ def calculate_queryset_slice(
     This function is based on the Relay pagination algorithm.
     See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
 
-    :param after: The index after which to start (exclusive).
-    :param before: The index before which to stop (exclusive).
-    :param first: The number of items to return from the start.
-    :param last: The number of items to return from the end (after evaluating first).
-    :param size: The total number of items in the queryset.
+    :param pagination_args: The pagination arguments.
     """
     #
     # Start from form fetching max number of items.
     #
     start: int = 0
-    stop: int = size
+    stop: int = pagination_args.size
     #
     # If `after` is given, change the start index to `after`.
     # If `after` is greater than the current queryset size, change it to `size`.
     #
-    if after is not None:
-        start = min(after, stop)
+    if pagination_args.after is not None:
+        start = min(pagination_args.after, stop)
     #
     # If `before` is given, change the stop index to `before`.
     # If `before` is greater than the current queryset size, change it to `size`.
     #
-    if before is not None:
-        stop = min(before, stop)
+    if pagination_args.before is not None:
+        stop = min(pagination_args.before, stop)
     #
     # If first is given, and it's smaller than the current queryset size,
     # change the stop index to `start + first`
     # -> Length becomes that of `first`, and the items after it have been removed.
     #
-    if first is not None and first < (stop - start):
-        stop = start + first
+    if pagination_args.first is not None and pagination_args.first < (stop - start):
+        stop = start + pagination_args.first
     #
     # If last is given, and it's smaller than the current queryset size,
     # change the start index to `stop - last`.
     # -> Length becomes that of `last`, and the items before it have been removed.
     #
-    if last is not None and last < (stop - start):
-        start = stop - last
+    if pagination_args.last is not None and pagination_args.last < (stop - start):
+        start = stop - pagination_args.last
 
     return slice(start, stop)

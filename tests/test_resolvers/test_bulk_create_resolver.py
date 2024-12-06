@@ -33,7 +33,7 @@ def test_bulk_create_resolver():
         request = Input(Task.request)
         project = Input(Task.project)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -75,7 +75,7 @@ def test_bulk_create_resolver__related_object_not_found():
         request = Input(Task.request)
         project = Input(Task.project)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -101,7 +101,7 @@ def test_bulk_create_resolver__reverse_relation__one_to_one():
         project = Input(Task.project)
         result = Input(Task.result)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -128,7 +128,7 @@ def test_bulk_create_resolver__reverse_relation__one_to_many():
         project = Input(Task.project)
         steps = Input(Task.steps)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -155,7 +155,7 @@ def test_bulk_create_resolver__many_to_many__forward():
         project = Input(Task.project)
         assignees = Input(Task.assignees)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -182,7 +182,7 @@ def test_bulk_create_resolver__many_to_many__reverse():
         project = Input(Task.project)
         reports = Input(Task.reports)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -209,7 +209,7 @@ def test_bulk_create_resolver__generic_relation():
         project = Input(Task.project)
         comments = Input(Task.comments)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
@@ -237,7 +237,7 @@ def test_bulk_create_resolver__cannot_create_related_object():
         request = Input(Task.request)
         project = Input(ProjectCreateMutation)
 
-    resolver = BulkCreateResolver[Task](mutation_type=TaskCreateMutation)
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation)
 
     data = [
         {
