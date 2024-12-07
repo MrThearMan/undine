@@ -23,6 +23,9 @@ class DefaultSettings(NamedTuple):
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from snake case to camel case for the GraphQL schema?"""
 
+    CONNECTION_MAX_LIMIT: int = 100
+    """The maximum number of items to return in a connection by default."""
+
     DELETE_MUTATION_OUTPUT_FIELD_NAME: str = "success"
     """The name of the field in the output of a delete mutation."""
 

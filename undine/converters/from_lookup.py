@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from graphql import GraphQLBoolean, GraphQLInt
+from graphql import GraphQLBoolean, GraphQLInt, GraphQLType
 
 from undine.scalars import GraphQLDate, GraphQLTime
-from undine.typing import GraphQLType
 from undine.utils.function_dispatcher import FunctionDispatcher
 
 from .to_graphql_type import convert_to_graphql_type

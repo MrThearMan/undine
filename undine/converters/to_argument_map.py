@@ -8,9 +8,12 @@ from graphql import (
     GraphQLArgumentMap,
     GraphQLBoolean,
     GraphQLEnumValue,
+    GraphQLID,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLString,
+    GraphQLType,
 )
 
 from undine.converters.to_graphql_type import convert_to_graphql_type
@@ -85,10 +88,15 @@ def _(ref: LazyLambdaQueryType, **kwargs: Any) -> GraphQLArgumentMap:
     return convert_to_graphql_argument_map(ref.callback(), **kwargs)
 
 
+@convert_to_graphql_argument_map.register
+def _(_: GraphQLType, **kwargs: Any) -> GraphQLArgumentMap:
+    return {}
+
+
 def load_deferred_converters() -> None:  # noqa: C901
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from undine import MutationType, QueryType
-    from undine.relay import Connection, GlobalID, Node
+    from undine.relay import Connection, Node
 
     @convert_to_graphql_argument_map.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
@@ -213,12 +221,40 @@ def load_deferred_converters() -> None:  # noqa: C901
 
     @convert_to_graphql_argument_map.register
     def _(ref: Connection, **kwargs: Any) -> GraphQLArgumentMap:
-        return ref.arguments()
+        return {
+            "after": GraphQLArgument(
+                GraphQLString,
+                description="Returns the items in the list that come after the specified cursor.",
+                out_name="after",
+            ),
+            "first": GraphQLArgument(
+                GraphQLInt,
+                description="Returns the first n items from the list.",
+                out_name="first",
+            ),
+            "before": GraphQLArgument(
+                GraphQLString,
+                description="Returns the items in the list that come before the specified cursor.",
+                out_name="before",
+            ),
+            "last": GraphQLArgument(
+                GraphQLInt,
+                description="Returns the last n items from the list.",
+                out_name="last",
+            ),
+            "offset": GraphQLArgument(
+                GraphQLInt,
+                description="Offset for the connection.",
+                out_name="offset",
+            ),
+            **convert_to_graphql_argument_map(ref.query_type, many=True, entrypoint=True),
+        }
 
     @convert_to_graphql_argument_map.register
-    def _(ref: Node, **kwargs: Any) -> GraphQLArgumentMap:
-        return ref.arguments
-
-    @convert_to_graphql_argument_map.register
-    def _(_: GlobalID, **kwargs: Any) -> GraphQLArgumentMap:
-        return {}
+    def _(_: Node, **kwargs: Any) -> GraphQLArgumentMap:
+        return {
+            "id": GraphQLArgument(
+                GraphQLNonNull(GraphQLID),
+                description="The ID of an object",
+            ),
+        }

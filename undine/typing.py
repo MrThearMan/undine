@@ -22,8 +22,6 @@ from typing import (
 from typing import _eval_type  # isort: skip  # noqa: PLC2701
 
 
-from undine.dataclasses import TypeRef
-
 try:
     from typing import Self
 except ImportError:
@@ -31,7 +29,7 @@ except ImportError:
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.db import models
-from graphql import FieldNode, GraphQLInputType, GraphQLOutputType, GraphQLResolveInfo, SelectionNode
+from graphql import FieldNode, GraphQLInputType, GraphQLOutputType, GraphQLResolveInfo, GraphQLType, SelectionNode
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
@@ -39,8 +37,9 @@ if TYPE_CHECKING:
     from django.db.models.sql import Query
 
     from undine import Field, Input, MutationType, QueryType
+    from undine.dataclasses import TypeRef
     from undine.optimizer.optimizer import OptimizationData
-    from undine.relay import Connection, GlobalID, Node
+    from undine.relay import Connection, Node
     from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
 
 __all__ = [
@@ -267,7 +266,7 @@ CombinableExpression: TypeAlias = models.Expression | models.Subquery
 
 Root: TypeAlias = Any
 GQLInfo: TypeAlias = GQLInfoProtocol | GraphQLResolveInfo
-GraphQLType: TypeAlias = GraphQLOutputType | GraphQLInputType
+GraphQLInputOutputType: TypeAlias = GraphQLOutputType | GraphQLInputType
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 
 # Resolvers
@@ -295,7 +294,7 @@ JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
 EntrypointRef: TypeAlias = Union[
     type["QueryType"],
     type["MutationType"],
-    type["Node"],
+    "Node",
     "Connection",
     Callable[..., Any],
 ]
@@ -308,7 +307,8 @@ FieldRef: TypeAlias = Union[
     "LazyLambdaQueryType",
     models.Expression,
     models.Subquery,
-    "GlobalID",
+    "GraphQLType",
+    "TypeRef",
     Callable[..., Any],
 ]
 FilterRef: TypeAlias = Union[
@@ -327,7 +327,7 @@ OrderRef: TypeAlias = Union[
 InputRef: TypeAlias = Union[
     models.Field,
     type["MutationType"],
-    TypeRef,
+    "TypeRef",
     Callable[..., Any],
 ]
 

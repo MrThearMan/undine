@@ -10,11 +10,14 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any, Callable, Generic, Self
 
-from graphql import GraphQLResolveInfo, Undefined
+from graphql import GraphQLError, GraphQLFieldResolver, GraphQLID, GraphQLObjectType, GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
 from undine.middleware import MutationMiddlewareHandler
+from undine.optimizer.ast import get_underlying_type
 from undine.optimizer.optimizer import QueryOptimizer
+from undine.pagination import calculate_queryset_slice, validate_pagination_args
+from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManager, TModel
 from undine.utils.bulk_mutation_handler import BulkMutationHandler
@@ -40,6 +43,7 @@ __all__ = [
     "FunctionResolver",
     "ModelFieldResolver",
     "ModelManyRelatedFieldResolver",
+    "NodeResolver",
     "UpdateResolver",
 ]
 
@@ -143,6 +147,98 @@ class ModelManyResolver:
         if not self.query_type.__permission_many__(optimized_queryset, info):
             raise GraphQLPermissionDeniedError
         return optimized_queryset
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class GlobalIDResolver:
+    """Resolves a model primary key as a Global ID."""
+
+    typename: str
+
+    def __call__(self, root: models.Model, info: GQLInfo, **kwargs: Any) -> str:
+        return to_global_id(self.typename, root.pk)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NodeResolver:
+    """Resolves a model instance though a Global ID."""
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        typename, object_id = from_global_id(kwargs["id"])
+
+        object_type: GraphQLObjectType | None = info.schema.get_type(typename)
+        if object_type is None:
+            msg = f"Object type '{typename}' does not exist in schema."
+            raise GraphQLError(msg)
+
+        if Node not in object_type.interfaces:
+            msg = f"Object type '{typename}' must implement the 'Node' interface."
+            raise GraphQLError(msg)
+
+        query_type: type[QueryType] | None = object_type.extensions.get(undine_settings.QUERY_TYPE_EXTENSIONS_KEY)
+        if query_type is None:
+            msg = f"Cannot find undine QueryType from object type '{typename}'."
+            raise GraphQLError(msg)
+
+        field: Field | None = query_type.__field_map__.get("id")
+        if field is None:
+            msg = f"The object type '{typename}' doesn't have an 'id' field."
+            raise GraphQLError(msg)
+
+        field_type = get_underlying_type(field.get_field_type())
+        if field_type is not GraphQLID:
+            msg = (
+                f"The 'id' field of the object type '{typename}' must be of type '{GraphQLID.name}' "
+                f"to comply with the 'Node' interface."
+            )
+            raise GraphQLError(msg)
+
+        resolver = ModelSingleResolver(query_type=query_type)
+        return resolver(root, info, pk=object_id)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ConnectionResolver:
+    """Resolves a connection through a Global ID."""
+
+    max_limit: int
+    resolver: GraphQLFieldResolver
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
+        pagination_args = validate_pagination_args(
+            first=kwargs.pop("first", None),
+            last=kwargs.pop("last", None),
+            offset=kwargs.pop("offset", None),
+            after=kwargs.pop("after", None),
+            before=kwargs.pop("before", None),
+            max_limit=self.max_limit,
+        )
+
+        queryset = self.resolver(root, info, **kwargs)
+
+        pagination_args.size = total_count = queryset.count()
+
+        cut = calculate_queryset_slice(pagination_args=pagination_args)
+
+        queryset = queryset[cut]
+
+        edges = [
+            {
+                "cursor": offset_to_cursor(cut.start + index),
+                "node": instance,
+            }
+            for index, instance in enumerate(queryset)
+        ]
+        return {
+            "totalCount": total_count,
+            "pageInfo": {
+                "hasNextPage": cut.stop < total_count,
+                "hasPreviousPage": cut.start > 0,
+                "startCursor": None if not edges else edges[0]["cursor"],
+                "endCursor": None if not edges else edges[-1]["cursor"],
+            },
+            "edges": edges,
+        }
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

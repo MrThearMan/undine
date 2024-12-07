@@ -9,13 +9,13 @@ from tests.helpers import parametrize_helper
 from undine.converters import convert_lookup_to_graphql_type
 
 if TYPE_CHECKING:
-    from undine.typing import GraphQLType
+    from undine.typing import GraphQLInputOutputType
 
 
 class Params(NamedTuple):
     value: str
     default_type: type | None
-    expected: GraphQLType
+    expected: GraphQLInputOutputType
 
 
 @pytest.mark.parametrize(

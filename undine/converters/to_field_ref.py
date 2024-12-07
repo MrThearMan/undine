@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import datetime
+import decimal
+import uuid
+from enum import Enum
 from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
 from django.db import models
+from django.db.models import TextChoices
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
     ManyToManyDescriptor,
@@ -11,7 +16,9 @@ from django.db.models.fields.related_descriptors import (
     ReverseOneToOneDescriptor,
 )
 from django.db.models.query_utils import DeferredAttribute
+from graphql import GraphQLType
 
+from undine.dataclasses import TypeRef
 from undine.typing import CombinableExpression, FieldRef, Lambda, ToManyField, ToOneField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -88,12 +95,86 @@ def _(ref: ManyToManyDescriptor, **kwargs: Any) -> FieldRef:
     return convert_to_field_ref(ref.rel if ref.reverse else ref.field, **kwargs)
 
 
+@convert_to_field_ref.register
+def _(ref: GraphQLType, **kwargs: Any) -> FieldRef:
+    return ref
+
+
+@convert_to_field_ref.register
+def _(ref: str | type[str], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[bool], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[int], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[float], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[decimal.Decimal], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[datetime.datetime], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[datetime.date], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[datetime.time], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[datetime.timedelta], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[uuid.UUID], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[Enum], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[TextChoices], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[list], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
+@convert_to_field_ref.register
+def _(ref: type[dict], **kwargs: Any) -> FieldRef:
+    return TypeRef(value=ref)
+
+
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import QueryType
-    from undine.relay import GlobalID
     from undine.utils.model_utils import get_model_field
 
     @convert_to_field_ref.register
@@ -125,7 +206,3 @@ def load_deferred_converters() -> None:
     @convert_to_field_ref.register  # Required for Django<5.1
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
         return LazyQueryTypeUnion(field=ref)
-
-    @convert_to_field_ref.register
-    def _(ref: GlobalID, **kwargs: Any) -> FieldRef:
-        return ref

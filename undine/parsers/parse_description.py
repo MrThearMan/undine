@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.db import models
+from graphql import GraphQLNamedType, GraphQLWrappingType
 
 from undine.dataclasses import TypeRef
 from undine.typing import CombinableExpression, ModelField
@@ -55,3 +56,13 @@ def _(ref: LazyQueryTypeUnion) -> Any:
 @parse_description.register
 def _(_: LazyLambdaQueryType) -> Any:
     return None
+
+
+@parse_description.register
+def _(ref: GraphQLNamedType) -> Any:
+    return ref.description
+
+
+@parse_description.register
+def _(ref: GraphQLWrappingType) -> Any:
+    return parse_description(ref.of_type)

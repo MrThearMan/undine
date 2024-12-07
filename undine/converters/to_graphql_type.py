@@ -19,18 +19,16 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 from graphql import (
     GraphQLBoolean,
-    GraphQLEnumType,
     GraphQLError,
     GraphQLField,
     GraphQLFloat,
-    GraphQLID,
     GraphQLInputField,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLOutputType,
-    GraphQLScalarType,
+    GraphQLObjectType,
     GraphQLString,
+    GraphQLType,
     GraphQLUnionType,
 )
 
@@ -50,7 +48,7 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
-from undine.typing import CombinableExpression, GQLInfo, GraphQLType, TypedDictType, eval_type
+from undine.typing import CombinableExpression, GQLInfo, TypedDictType, eval_type
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type, get_or_create_object_type
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -80,7 +78,7 @@ Keyword arguments:
 
 
 @convert_to_graphql_type.register
-def _(ref: str | type[str], **kwargs: Any) -> GraphQLScalarType:
+def _(ref: str | type[str], **kwargs: Any) -> GraphQLType:
     if ref is str:
         return GraphQLString
 
@@ -89,52 +87,52 @@ def _(ref: str | type[str], **kwargs: Any) -> GraphQLScalarType:
 
 
 @convert_to_graphql_type.register
-def _(_: type[bool], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[bool], **kwargs: Any) -> GraphQLType:
     return GraphQLBoolean
 
 
 @convert_to_graphql_type.register
-def _(_: type[int], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[int], **kwargs: Any) -> GraphQLType:
     return GraphQLInt
 
 
 @convert_to_graphql_type.register
-def _(_: type[float], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[float], **kwargs: Any) -> GraphQLType:
     return GraphQLFloat
 
 
 @convert_to_graphql_type.register
-def _(_: type[Decimal], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[Decimal], **kwargs: Any) -> GraphQLType:
     return GraphQLDecimal
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.datetime], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[datetime.datetime], **kwargs: Any) -> GraphQLType:
     return GraphQLDateTime
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.date], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[datetime.date], **kwargs: Any) -> GraphQLType:
     return GraphQLDate
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.time], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[datetime.time], **kwargs: Any) -> GraphQLType:
     return GraphQLTime
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.timedelta], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[datetime.timedelta], **kwargs: Any) -> GraphQLType:
     return GraphQLDuration
 
 
 @convert_to_graphql_type.register
-def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLScalarType:
+def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLType:
     return GraphQLUUID
 
 
 @convert_to_graphql_type.register
-def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
+def _(ref: type[Enum], **kwargs: Any) -> GraphQLType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
         values={name: value.value for name, value in ref.__members__.items()},
@@ -143,7 +141,7 @@ def _(ref: type[Enum], **kwargs: Any) -> GraphQLEnumType:
 
 
 @convert_to_graphql_type.register
-def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLEnumType:
+def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
         values=dict(ref.choices),
@@ -152,12 +150,12 @@ def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLEnumType:
 
 
 @convert_to_graphql_type.register
-def _(_: type, **kwargs: Any) -> GraphQLScalarType:
+def _(_: type, **kwargs: Any) -> GraphQLType:
     return GraphQLAny
 
 
 @convert_to_graphql_type.register
-def _(ref: type[list], **kwargs: Any) -> GraphQLList:
+def _(ref: type[list], **kwargs: Any) -> GraphQLType:
     args = get_args(ref)
     # For lists without type, or with a union type, default to any.
     if len(args) != 1:
@@ -210,7 +208,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLType:
 
 
 @convert_to_graphql_type.register
-def _(ref: models.CharField, **kwargs: Any) -> GraphQLEnumType | GraphQLScalarType:
+def _(ref: models.CharField, **kwargs: Any) -> GraphQLType:
     if ref.choices is None:
         return GraphQLString
 
@@ -227,12 +225,12 @@ def _(ref: models.CharField, **kwargs: Any) -> GraphQLEnumType | GraphQLScalarTy
 
 
 @convert_to_graphql_type.register
-def _(_: models.TextField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.TextField, **kwargs: Any) -> GraphQLType:
     return GraphQLString
 
 
 @convert_to_graphql_type.register
-def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLEnumType:
+def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLType:
     return get_or_create_graphql_enum(
         name=ref.choices_enum.__name__,
         values=dict(ref.choices),
@@ -241,77 +239,77 @@ def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLEnumType:
 
 
 @convert_to_graphql_type.register
-def _(_: models.BooleanField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.BooleanField, **kwargs: Any) -> GraphQLType:
     return GraphQLBoolean
 
 
 @convert_to_graphql_type.register
-def _(_: models.IntegerField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.IntegerField, **kwargs: Any) -> GraphQLType:
     return GraphQLInt
 
 
 @convert_to_graphql_type.register
-def _(_: models.FloatField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.FloatField, **kwargs: Any) -> GraphQLType:
     return GraphQLFloat
 
 
 @convert_to_graphql_type.register
-def _(_: models.DecimalField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.DecimalField, **kwargs: Any) -> GraphQLType:
     return GraphQLDecimal
 
 
 @convert_to_graphql_type.register
-def _(_: models.DateField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.DateField, **kwargs: Any) -> GraphQLType:
     return GraphQLDate
 
 
 @convert_to_graphql_type.register
-def _(_: models.DateTimeField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.DateTimeField, **kwargs: Any) -> GraphQLType:
     return GraphQLDateTime
 
 
 @convert_to_graphql_type.register
-def _(_: models.TimeField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.TimeField, **kwargs: Any) -> GraphQLType:
     return GraphQLTime
 
 
 @convert_to_graphql_type.register
-def _(_: models.DurationField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.DurationField, **kwargs: Any) -> GraphQLType:
     return GraphQLDuration
 
 
 @convert_to_graphql_type.register
-def _(_: models.UUIDField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.UUIDField, **kwargs: Any) -> GraphQLType:
     return GraphQLUUID
 
 
 @convert_to_graphql_type.register
-def _(_: models.EmailField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.EmailField, **kwargs: Any) -> GraphQLType:
     return GraphQLEmail
 
 
 @convert_to_graphql_type.register
-def _(_: models.URLField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.URLField, **kwargs: Any) -> GraphQLType:
     return GraphQLURL
 
 
 @convert_to_graphql_type.register
-def _(_: models.BinaryField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.BinaryField, **kwargs: Any) -> GraphQLType:
     return GraphQLBase64
 
 
 @convert_to_graphql_type.register
-def _(_: models.JSONField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.JSONField, **kwargs: Any) -> GraphQLType:
     return GraphQLJSON
 
 
 @convert_to_graphql_type.register
-def _(_: models.FileField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.FileField, **kwargs: Any) -> GraphQLType:
     return GraphQLFile
 
 
 @convert_to_graphql_type.register
-def _(_: models.ImageField, **kwargs: Any) -> GraphQLScalarType:
+def _(_: models.ImageField, **kwargs: Any) -> GraphQLType:
     return GraphQLImage
 
 
@@ -326,7 +324,7 @@ def _(ref: models.ForeignKey, **kwargs: Any) -> GraphQLType:
 
 
 @convert_to_graphql_type.register
-def _(ref: models.ManyToManyField, **kwargs: Any) -> GraphQLList:
+def _(ref: models.ManyToManyField, **kwargs: Any) -> GraphQLType:
     type_ = convert_to_graphql_type(ref.target_field, **kwargs)
     return GraphQLList(GraphQLNonNull(type_))
 
@@ -337,13 +335,13 @@ def _(ref: models.OneToOneRel, **kwargs: Any) -> GraphQLType:
 
 
 @convert_to_graphql_type.register
-def _(ref: models.ManyToOneRel, **kwargs: Any) -> GraphQLList:
+def _(ref: models.ManyToOneRel, **kwargs: Any) -> GraphQLType:
     type_ = convert_to_graphql_type(ref.target_field, **kwargs)
     return GraphQLList(GraphQLNonNull(type_))
 
 
 @convert_to_graphql_type.register
-def _(ref: models.ManyToManyRel, **kwargs: Any) -> GraphQLList:
+def _(ref: models.ManyToManyRel, **kwargs: Any) -> GraphQLType:
     type_ = convert_to_graphql_type(ref.target_field, **kwargs)
     return GraphQLList(GraphQLNonNull(type_))
 
@@ -386,6 +384,14 @@ def _(ref: ReverseOneToOneDescriptor, **kwargs: Any) -> GraphQLType:
 @convert_to_graphql_type.register
 def _(ref: ManyToManyDescriptor, **kwargs: Any) -> GraphQLType:
     return convert_to_graphql_type(ref.rel if ref.reverse else ref.field, **kwargs)
+
+
+# --- GraphQL types ------------------------------------------------------------------------------------------------
+
+
+@convert_to_graphql_type.register
+def _(ref: GraphQLType, **kwargs: Any) -> GraphQLType:
+    return ref
 
 
 # --- Custom types -------------------------------------------------------------------------------------------------
@@ -431,14 +437,14 @@ def _(ref: TypeRef, **kwargs: Any) -> GraphQLType:
 # --- Deferred -----------------------------------------------------------------------------------------------------
 
 
-def load_deferred_converters() -> None:  # noqa: C901
+def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import MutationType, QueryType
     from undine.converters import convert_lookup_to_graphql_type, convert_to_python_type
     from undine.parsers import parse_first_param_type, parse_return_annotation
-    from undine.relay import Connection, GlobalID, Node
+    from undine.relay import Connection, Node, PageInfoType
 
     @convert_to_graphql_type.register
     def _(ref: FunctionType, **kwargs: Any) -> GraphQLType:
@@ -488,7 +494,7 @@ def load_deferred_converters() -> None:  # noqa: C901
         return convert_to_graphql_type(ref.field)
 
     @convert_to_graphql_type.register
-    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLOutputType:
+    def _(ref: type[QueryType], **kwargs: Any) -> GraphQLType:
         return ref.__output_type__()
 
     @convert_to_graphql_type.register
@@ -499,13 +505,41 @@ def load_deferred_converters() -> None:  # noqa: C901
         return ref.__input_type__()
 
     @convert_to_graphql_type.register
-    def _(ref: Connection, **kwargs: Any) -> GraphQLOutputType:
-        return ref.output_type()
+    def _(ref: Connection, **kwargs: Any) -> GraphQLType:
+        return get_or_create_object_type(
+            name=ref.query_type.__typename__ + "Connection",
+            description="A connection to a list of items.",
+            fields={
+                "totalCount": GraphQLField(
+                    GraphQLNonNull(GraphQLInt),
+                    description="Total number of items in the connection.",
+                ),
+                "pageInfo": GraphQLField(
+                    GraphQLNonNull(PageInfoType),
+                    description="Information to aid in pagination.",
+                ),
+                "edges": GraphQLField(
+                    GraphQLList(
+                        GraphQLObjectType(
+                            name=ref.query_type.__typename__ + "Edge",
+                            description="An edge in a connection.",
+                            fields=lambda: {
+                                "cursor": GraphQLField(
+                                    GraphQLNonNull(GraphQLString),
+                                    description="A cursor for use in pagination",
+                                ),
+                                "node": GraphQLField(
+                                    convert_to_graphql_type(ref.query_type, **kwargs),
+                                    description="The item at the end of the edge",
+                                ),
+                            },
+                        ),
+                    ),
+                    description="A list of edges.",
+                ),
+            },
+        )
 
     @convert_to_graphql_type.register
-    def _(ref: Node, **kwargs: Any) -> GraphQLOutputType:
-        return ref.interface
-
-    @convert_to_graphql_type.register
-    def _(_: GlobalID, **kwargs: Any) -> GraphQLOutputType:
-        return GraphQLID
+    def _(ref: Node, **kwargs: Any) -> GraphQLType:
+        return ref

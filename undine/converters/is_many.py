@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from types import FunctionType, GenericAlias
 from typing import Any, get_origin
+
+from graphql import GraphQLList, GraphQLNonNull, GraphQLType
 
 from undine.dataclasses import TypeRef
 from undine.typing import CombinableExpression, ModelField
@@ -37,7 +40,7 @@ def _(ref: TypeRef, **kwargs: Any) -> bool:
     annotation = ref.value
     if isinstance(annotation, GenericAlias):
         annotation = get_origin(annotation)
-    return isinstance(annotation, type) and issubclass(annotation, list)
+    return isinstance(annotation, type) and issubclass(annotation, Collection)
 
 
 @is_many.register
@@ -60,13 +63,19 @@ def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
     return False
 
 
+@is_many.register
+def _(ref: GraphQLType, **kwargs: Any) -> bool:
+    return isinstance(ref, GraphQLList) or (
+        isinstance(ref, GraphQLNonNull) and isinstance(ref.of_type, GraphQLList)
+    )
+
+
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine import MutationType, QueryType
     from undine.parsers import parse_return_annotation
-    from undine.relay import GlobalID
 
     @is_many.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:
@@ -87,8 +96,4 @@ def load_deferred_converters() -> None:
 
     @is_many.register
     def _(_: GenericForeignKey, **kwargs: Any) -> bool:
-        return False
-
-    @is_many.register
-    def _(_: GlobalID, **kwargs: Any) -> bool:
         return False

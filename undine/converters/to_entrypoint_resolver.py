@@ -9,12 +9,14 @@ from undine.resolvers import (
     BulkCreateResolver,
     BulkDeleteResolver,
     BulkUpdateResolver,
+    ConnectionResolver,
     CreateResolver,
     CustomResolver,
     DeleteResolver,
     FunctionResolver,
     ModelManyResolver,
     ModelSingleResolver,
+    NodeResolver,
     UpdateResolver,
 )
 from undine.typing import EntrypointRef
@@ -74,8 +76,9 @@ def load_deferred_converters() -> None:  # noqa: C901
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
-        return ref.resolver
+        resolver = convert_entrypoint_ref_to_resolver(ref.query_type, many=True)
+        return ConnectionResolver(resolver=resolver, max_limit=ref.max_limit)
 
     @convert_entrypoint_ref_to_resolver.register
-    def _(ref: type[Node], **kwargs: Any) -> GraphQLFieldResolver:
-        return ref.resolver
+    def _(_: Node, **kwargs: Any) -> GraphQLFieldResolver:
+        return NodeResolver()

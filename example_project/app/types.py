@@ -23,6 +23,7 @@ from undine import Field, Filter, Order
 from undine.filtering import FilterSet
 from undine.ordering import OrderSet
 from undine.query import QueryType
+from undine.relay import Node
 
 if TYPE_CHECKING:
     from undine.typing import GQLInfo
@@ -86,7 +87,7 @@ class CustomerDetails(TypedDict):
     age: int
 
 
-class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet, relay=True):
+class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrderSet, interfaces=[Node]):
     """Task Node description."""
 
     name = Field()

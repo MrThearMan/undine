@@ -12,6 +12,7 @@ from graphql import (
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLNullableType,
     GraphQLObjectType,
 )
 
@@ -19,12 +20,18 @@ from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicat
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from undine.typing import GQLInfo, TGraphQLType
     from undine.utils.reflection import FunctionEqualityWrapper
 
 
 __all__ = [
+    "add_default_status_codes",
     "get_or_create_graphql_enum",
+    "get_or_create_input_object_type",
+    "get_or_create_interface_type",
+    "get_or_create_object_type",
     "maybe_list_or_non_null",
 ]
 
@@ -46,11 +53,7 @@ def add_default_status_codes(errors: list[GraphQLError]) -> list[GraphQLError]:
     return errors
 
 
-def compare_graphql_types(
-    *,
-    new_type: GraphQLEnumType | GraphQLObjectType | GraphQLInputObjectType,
-    existing_type: GraphQLEnumType | GraphQLObjectType | GraphQLInputObjectType,
-) -> None:
+def compare_graphql_types(*, new_type: GraphQLNullableType, existing_type: GraphQLNullableType) -> None:
     """Raises a 'GraphQLDuplicateTypeError' if the existing type is different from the new type."""
     if (
         isinstance(new_type, GraphQLEnumType)
@@ -88,8 +91,8 @@ def get_or_create_graphql_enum(
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLEnumType:
     """
-    If a 'GraphQLEnumType' with the same name already exists,
-    check if the GraphQLEnumType's values are the same.
+    If a GraphQL Type with the same name already exists,
+    check if is a GraphQLEnumType and if the its values are the same.
     If they are, return the existing 'GraphQLEnumType'. If not, raise an error.
     Otherwise, create a new 'GraphQLEnumType'.
     """
@@ -119,14 +122,14 @@ def get_or_create_object_type(
     *,
     name: str,
     fields: dict[str, GraphQLField] | FunctionEqualityWrapper[dict[str, GraphQLField]],
-    interfaces: tuple[GraphQLInterfaceType, ...] | None = None,
+    interfaces: Collection[GraphQLInterfaceType] | None = None,
     description: str | None = None,
     is_type_of: Callable[[Any, GQLInfo], bool] | None = None,
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLObjectType:
     """
-    If a 'GraphQLObjectType' with the same name already exists,
-    check if the GraphQLObjectType's fields are the same.
+    If a GraphQL Type with the same name already exists,
+    check if it is a GraphQLObjectType and its fields are the same.
     If they are, return the existing 'GraphQLObjectType'. If not, raise an error.
     Otherwise, create a new 'GraphQLObjectType'.
     """
@@ -155,8 +158,8 @@ def get_or_create_input_object_type(
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLInputObjectType:
     """
-    If a 'GraphQLInputObjectType' with the same name already exists,
-    check if the GraphQLInputObjectType's fields are the same.
+    If a GraphQL Type with the same name already exists,
+    check if it is a GraphQLInputObjectType and its fields are the same.
     If they are, return the existing 'GraphQLInputObjectType'. If not, raise an error.
     Otherwise, create a new 'GraphQLInputObjectType'.
     """
@@ -173,3 +176,31 @@ def get_or_create_input_object_type(
 
     GRAPHQL_TYPE_REGISTRY[name] = input_object_type
     return input_object_type
+
+
+def get_or_create_interface_type(
+    *,
+    name: str,
+    fields: dict[str, GraphQLField] | FunctionEqualityWrapper[dict[str, GraphQLField]],
+    description: str | None = None,
+    extensions: dict[str, Any] | None = None,
+) -> GraphQLInterfaceType:
+    """
+    If a GraphQL Type with the same name already exists,
+    check if it is a GraphQLInterfaceType and its fields are the same.
+    If they are, return the existing 'GraphQLInterfaceType'. If not, raise an error.
+    Otherwise, create a new 'GraphQLInterfaceType'.
+    """
+    interface_type = GraphQLInterfaceType(
+        name=name,
+        fields=fields,
+        description=description,
+        extensions=extensions,
+    )
+
+    if name in GRAPHQL_TYPE_REGISTRY:
+        compare_graphql_types(new_type=interface_type, existing_type=GRAPHQL_TYPE_REGISTRY[name])
+        return GRAPHQL_TYPE_REGISTRY[name]
+
+    GRAPHQL_TYPE_REGISTRY[name] = interface_type
+    return interface_type

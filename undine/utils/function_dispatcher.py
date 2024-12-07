@@ -34,9 +34,9 @@ class FunctionDispatcher(Generic[From, To]):
        that matches the given argument literally (e.g. literal strings).
     3. Look for an implementation whose first argument is in the method resolution order
        (mro) of the given argument's type.
-    4. Look for a default implementation (registed function's first argument's type is `Any`).
+    4. Look for a default implementation (registered function's first argument's type is `Any`).
 
-    If no implmentation is found, an error will be raised.
+    If no implementation is found, an error will be raised.
     """
 
     def __init__(self, *, wrapper: DispatchWrapper[From, To] | None = None, union_default: Any = Undefined) -> None:
@@ -45,7 +45,7 @@ class FunctionDispatcher(Generic[From, To]):
 
         :param union_default: The default implementation to use for unions that have
                               more than one non-null type.
-        :param wrapper: A function that wraps all implementated functions for
+        :param wrapper: A function that wraps all implemented functions for
                         performing additional logic.
         """
         self.__name__ = get_instance_name()

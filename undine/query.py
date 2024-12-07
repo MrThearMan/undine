@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
-from graphql import GraphQLArgumentMap, GraphQLField, GraphQLFieldResolver, GraphQLOutputType, Undefined
+from graphql import (
+    GraphQLArgumentMap,
+    GraphQLField,
+    GraphQLFieldResolver,
+    GraphQLInterfaceType,
+    GraphQLOutputType,
+    Undefined,
+)
 
 from undine.converters import (
     convert_field_ref_to_resolver,
@@ -15,7 +22,6 @@ from undine.converters import (
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
-from undine.relay import GlobalID, Node
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_object_type, maybe_list_or_non_null
 from undine.utils.model_utils import get_lookup_field_name, get_model_fields_for_graphql
@@ -23,7 +29,7 @@ from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable
+    from collections.abc import Collection, Container, Iterable
     from types import FunctionType
 
     from django.db import models
@@ -55,7 +61,7 @@ class QueryTypeMeta(type):
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         max_complexity: int | None = Undefined,
-        relay: bool = False,
+        interfaces: Collection[GraphQLInterfaceType] | None = None,
         typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,
@@ -69,9 +75,10 @@ class QueryTypeMeta(type):
         if auto:
             _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
 
-        typename = typename or _name
-        if relay:
-            _attrs["id"] = Field(GlobalID(typename=typename))
+        for interface in interfaces or []:
+            for field_name, field in interface.fields.items():
+                _attrs[field_name] = interface_field = Field(field.type)
+                interface_field.resolver_func = field.resolve
 
         if filterset is True:
             from undine import FilterSet  # noqa: PLC0415
@@ -118,8 +125,8 @@ class QueryTypeMeta(type):
         instance.__lookup_field__ = lookup_field
         instance.__max_complexity__ = max_complexity
         instance.__field_map__ = dict(get_members(instance, Field))
-        instance.__typename__ = typename
-        instance.__relay__ = relay
+        instance.__typename__ = typename or _name
+        instance.__interfaces__ = interfaces
         instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
         return instance
 
@@ -140,6 +147,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     - `lookup_field`: Name of the field to use for looking up single objects. Defaults to `"pk"`.
     - `max_complexity`: Maximum number of relations allowed in a query when using this QueryType as the Entrypoint.
                         Use value of `OPTIMIZER_MAX_COMPLEXITY` setting by default.
+    - `interfaces`: List of interfaces to use for this QueryType. Defaults to `None`.
     - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
     - `register`: Whether to register the `QueryType` for the given model so that other `QueryTypes` can use it in
                  their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
@@ -197,7 +205,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return get_or_create_object_type(
             name=cls.__typename__,
             fields=FunctionEqualityWrapper(fields, context=cls),
-            interfaces=(Node.interface,) if cls.__relay__ else None,
+            interfaces=cls.__interfaces__,
             description=get_docstring(cls),
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,

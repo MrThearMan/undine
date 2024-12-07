@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from types import FunctionType, NoneType, UnionType
-from typing import TYPE_CHECKING, Any, get_args
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from django.db import models
+from graphql import GraphQLNonNull, GraphQLType
 
+from undine.dataclasses import TypeRef
 from undine.typing import CombinableExpression, FieldRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -65,13 +67,17 @@ def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
     return False
 
 
+@is_field_nullable.register
+def _(ref: GraphQLType, **kwargs: Any) -> bool:
+    return not isinstance(ref, GraphQLNonNull)
+
+
 def load_deferred_converters() -> None:
     # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine import QueryType
     from undine.parsers import parse_return_annotation
-    from undine.relay import GlobalID
 
     @is_field_nullable.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:
@@ -97,5 +103,11 @@ def load_deferred_converters() -> None:
         return True
 
     @is_field_nullable.register
-    def _(_: GlobalID, **kwargs: Any) -> bool:
-        return False
+    def _(ref: TypeRef, **kwargs: Any) -> bool:
+        origin = get_origin(ref.value)
+
+        if origin is not UnionType:
+            return False
+
+        args = get_args(ref.value)
+        return NoneType in args
