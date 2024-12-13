@@ -10,12 +10,13 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any, Callable, Generic, Self
 
-from graphql import GraphQLError, GraphQLFieldResolver, GraphQLID, GraphQLObjectType, GraphQLResolveInfo, Undefined
+from graphql import GraphQLError, GraphQLID, GraphQLObjectType, GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
-from undine.middleware import MutationMiddlewareHandler
+from undine.middleware import MutationMiddlewareHandler, QueryMiddlewareHandler
 from undine.optimizer.ast import get_underlying_type
 from undine.optimizer.optimizer import QueryOptimizer
+from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.pagination import calculate_queryset_slice, validate_pagination_args
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
@@ -57,6 +58,7 @@ class ModelFieldResolver:
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
         if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
             raise GraphQLPermissionDeniedError
+
         return getattr(instance, self.field.field_name, None)
 
 
@@ -69,6 +71,7 @@ class ModelSingleRelatedFieldResolver:
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.Model | None:
         if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
             raise GraphQLPermissionDeniedError
+
         return getattr(instance, self.field.field_name, None)
 
 
@@ -81,37 +84,49 @@ class ModelManyRelatedFieldResolver:
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         if self.field.permissions_func is not None and not self.field.permissions_func(self.field, info, instance):
             raise GraphQLPermissionDeniedError
+
         manager: RelatedManager = getattr(instance, self.field.field_name)
         return manager.get_queryset()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeSingleRelatedFieldResolver(ModelSingleRelatedFieldResolver):
+class QueryTypeSingleRelatedFieldResolver:
     """Resolves a single related field pointing to another QueryType."""
 
     query_type: type[QueryType]
+    field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
-        # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
-        rel_instance = super(QueryTypeSingleRelatedFieldResolver, self).__call__(instance, info, **kwargs)
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.Model:
+        with QueryMiddlewareHandler(
+            query_type=self.query_type,
+            info=info,
+            field=self.field,
+            parent_instance=instance,
+        ) as handler:
+            rel_instance = getattr(instance, self.field.field_name, None)
+            handler.params.instance = rel_instance
 
-        if not self.field.skip_query_type_perms and not self.query_type.__permission_single__(rel_instance, info):
-            raise GraphQLPermissionDeniedError
         return rel_instance
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeManyRelatedFieldResolver(ModelManyRelatedFieldResolver):
+class QueryTypeManyRelatedFieldResolver:
     """Resolves a many related field pointing to another QueryType."""
 
     query_type: type[QueryType]
+    field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> Any:
-        # Cannot use zero-arg `super()` due to an issue with `slots=True` dataclasses.
-        queryset = super(QueryTypeManyRelatedFieldResolver, self).__call__(instance, info, **kwargs)
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+        with QueryMiddlewareHandler(
+            info=info,
+            query_type=self.query_type,
+            field=self.field,
+            parent_instance=instance,
+        ) as handler:
+            manager: RelatedManager = getattr(instance, self.field.field_name)
+            queryset = manager.get_queryset()
+            handler.params.instances = list(queryset)
 
-        if not self.field.skip_query_type_perms and not self.query_type.__permission_many__(queryset, info):
-            raise GraphQLPermissionDeniedError
         return queryset
 
 
@@ -122,15 +137,15 @@ class ModelSingleResolver:
     query_type: type[QueryType]
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.Model | None:
-        queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
-        optimizer = QueryOptimizer(query_type=self.query_type, info=info)
-        optimized_queryset = optimizer.optimize(queryset)
-        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
-        # The queryset should have the right model instance, since we started by filtering by its pk,
-        # so we can just pick that out of the result cache (if it hasn't been filtered out).
-        instance = next(iter(optimized_queryset), None)
-        if not self.query_type.__permission_single__(instance, info):
-            raise GraphQLPermissionDeniedError
+        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+            queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
+            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            optimized_queryset = optimizer.optimize(queryset)
+
+            instances = evaluate_in_context(optimized_queryset, info)
+            instance = next(iter(instances), None)
+            handler.params.instance = instance
+
         return instance
 
 
@@ -141,11 +156,14 @@ class ModelManyResolver:
     query_type: type[QueryType]
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        queryset = self.query_type.__get_queryset__(info)
-        optimizer = QueryOptimizer(query_type=self.query_type, info=info)
-        optimized_queryset = optimizer.optimize(queryset)
-        if not self.query_type.__permission_many__(optimized_queryset, info):
-            raise GraphQLPermissionDeniedError
+        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+            queryset = self.query_type.__get_queryset__(info)
+            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            optimized_queryset = optimizer.optimize(queryset)
+
+            instances = evaluate_in_context(optimized_queryset, info)
+            handler.params.instances = instances
+
         return optimized_queryset
 
 
@@ -199,10 +217,10 @@ class NodeResolver:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ConnectionResolver:
-    """Resolves a connection through a Global ID."""
+    """Resolves a connection of a given query type."""
 
+    query_type: type[QueryType]
     max_limit: int
-    resolver: GraphQLFieldResolver
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
         pagination_args = validate_pagination_args(
@@ -214,20 +232,82 @@ class ConnectionResolver:
             max_limit=self.max_limit,
         )
 
-        queryset = self.resolver(root, info, **kwargs)
+        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+            queryset = self.query_type.__get_queryset__(info)
+            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            optimized_queryset = optimizer.optimize(queryset)
 
-        pagination_args.size = total_count = queryset.count()
+            pagination_args.size = total_count = optimized_queryset.count()
+            cut = calculate_queryset_slice(pagination_args=pagination_args)
+            paginated_queryset = optimized_queryset[cut]
+            instances = evaluate_in_context(paginated_queryset, info)
 
-        cut = calculate_queryset_slice(pagination_args=pagination_args)
-
-        queryset = queryset[cut]
+            handler.params.instances = instances
 
         edges = [
             {
                 "cursor": offset_to_cursor(cut.start + index),
                 "node": instance,
             }
-            for index, instance in enumerate(queryset)
+            for index, instance in enumerate(instances)
+        ]
+        return {
+            "totalCount": total_count,
+            "pageInfo": {
+                "hasNextPage": cut.stop < total_count,
+                "hasPreviousPage": cut.start > 0,
+                "startCursor": None if not edges else edges[0]["cursor"],
+                "endCursor": None if not edges else edges[-1]["cursor"],
+            },
+            "edges": edges,
+        }
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NestedConnectionResolver:
+    """Resolves a nested connection of a given query type from the given field."""
+
+    query_type: type[QueryType]
+    field: Field
+    max_limit: int
+
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
+        pagination_args = validate_pagination_args(
+            first=kwargs.pop("first", None),
+            last=kwargs.pop("last", None),
+            offset=kwargs.pop("offset", None),
+            after=kwargs.pop("after", None),
+            before=kwargs.pop("before", None),
+            max_limit=self.max_limit,
+        )
+
+        with QueryMiddlewareHandler(
+            info=info,
+            query_type=self.query_type,
+            field=self.field,
+            parent_instance=instance,
+        ) as handler:
+            # TODO: Support prefetches with `to_attr` (result will be a list of model instances)
+
+            field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
+            result: RelatedManager = getattr(instance, field_name)
+
+            queryset = result.get_queryset()
+            instances = list(queryset)
+
+            # TODO: Add pre-calculated total count. This is wrong.
+            pagination_args.size = total_count = len(instances) + 1
+
+            cut = calculate_queryset_slice(pagination_args)
+
+            handler.params.instances = instances
+
+        edges = [
+            {
+                "cursor": offset_to_cursor(cut.start + index),
+                "node": instance,
+            }
+            for index, instance in enumerate(instances)
         ]
         return {
             "totalCount": total_count,

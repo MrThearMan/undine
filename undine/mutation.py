@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Container, Iterable, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from graphql import (
     GraphQLBoolean,
@@ -30,7 +30,7 @@ from undine.middleware import (
     InputOnlyDataRemovalMiddleware,
     IntegrityErrorHandlingMiddleware,
     MutationMiddleware,
-    PermissionCheckMiddleware,
+    MutationPermissionCheckMiddleware,
     PostMutationHandlingMiddleware,
 )
 from undine.parsers import parse_description
@@ -42,6 +42,8 @@ from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
+    from collections.abc import Container, Iterable
+
     from django.db import models
 
     from undine.typing import GQLInfo, MutationKind, Root, ValidatorFunc
@@ -205,7 +207,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Middleware to use with mutations with using this MutationType as the Entrypoint."""
         return [
             InputDataModificationMiddleware,
-            PermissionCheckMiddleware,
+            MutationPermissionCheckMiddleware,
             InputDataValidationMiddleware,
             PostMutationHandlingMiddleware,
             InputOnlyDataRemovalMiddleware,
@@ -215,7 +217,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
 
 class Input:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         ref: Any = None,
         *,

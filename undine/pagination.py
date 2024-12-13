@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from graphql_relay import cursor_to_offset
-
 from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import PaginationArgumentValidationError
+from undine.relay import cursor_to_offset
 
 __all__ = [
     "calculate_queryset_slice",

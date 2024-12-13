@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Any, Self
 from django.db import IntegrityError, transaction
 from graphql import Undefined
 
-from undine.dataclasses import MutationMiddlewareParams
+from undine.dataclasses import MutationMiddlewareParams, QueryMiddlewareParams
 from undine.errors.constraints import get_constraint_message
-from undine.errors.exceptions import GraphQLModelConstaintViolationError
+from undine.errors.exceptions import GraphQLModelConstaintViolationError, GraphQLPermissionDeniedError
 from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from django.db import models
     from graphql import GraphQLFieldResolver
 
-    from undine import MutationType
+    from undine import Field, MutationType, QueryType
     from undine.typing import GQLInfo, JsonObject
 
 __all__ = [
@@ -44,6 +44,118 @@ def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQ
         raise
 
 
+# --- Query middleware -------------------------------------------------------------------------------------------
+
+
+class QueryMiddleware:
+    """Base class for query middleware."""
+
+    priority: int
+    """Middleware priority. Lower number means middleware context is entered earlier in the middleware stack."""
+
+    def __init__(self, params: QueryMiddlewareParams) -> None:
+        self.params = params
+
+    def __enter__(self) -> Self:
+        """Stuff that happens before the query is executed."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback_value: TracebackType | None,
+    ) -> bool:
+        """Stuff that happens after the query is executed."""
+        return False
+
+
+class QueryPermissionCheckMiddleware(QueryMiddleware):
+    """
+    Query middleware required for permissions checks to work.
+
+    Runs permission checks for the given query type.
+    """
+
+    priority = 100
+
+    def __enter__(self) -> Self:
+        if (
+            self.params.field is not None
+            and self.params.parent_instance is not None
+            and self.params.field.permissions_func is not None
+            and not self.params.field.permissions_func(self.params.field, self.params.info, self.params.parent_instance)
+        ):
+            raise GraphQLPermissionDeniedError
+
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback_value: TracebackType | None,
+    ) -> bool:
+        if self.params.field is not None and self.params.field.skip_query_type_perms:
+            return False
+
+        if (
+            self.params.instance is not None
+            and not self.params.query_type.__permission_single__(self.params.instance, self.params.info)
+        ) or (
+            self.params.instances is not None
+            and not self.params.query_type.__permission_many__(self.params.instances, self.params.info)
+        ):
+            raise GraphQLPermissionDeniedError
+
+        return False
+
+
+class QueryMiddlewareHandler:
+    """
+    Executes defined middlewares for a Entrypoint QueryType of a QueryType Field.
+
+    Middleware are run as nested context managers, where the middleware with the highest priority
+    (lowest number) is entered first and exited last.
+    """
+
+    def __init__(
+        self,
+        query_type: type[QueryType],
+        info: GQLInfo,
+        field: Field | None = None,
+        parent_instance: models.Model | None = None,
+    ) -> None:
+        self.middleware: list[QueryMiddleware] = []
+
+        self.params = QueryMiddlewareParams(
+            query_type=query_type,
+            info=info,
+            field=field,
+            parent_instance=parent_instance,
+        )
+
+        sorted_middleware = sorted(query_type.__middleware__(), key=lambda m: (m.priority, m.__name__))
+
+        for middleware in sorted_middleware:
+            self.middleware.append(middleware(self.params))
+
+    def __enter__(self) -> Self:
+        for middleware in self.middleware:
+            middleware.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback_value: TracebackType | None,
+    ) -> bool:
+        for middleware in reversed(self.middleware):
+            middleware.__exit__(exc_type, exc_value, traceback_value)
+        return False
+
+
 # --- Mutation middleware -----------------------------------------------------------------------------------------
 
 
@@ -64,7 +176,7 @@ class MutationMiddleware:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        traceback_value: TracebackType | None,
     ) -> bool:
         """Stuff that happens after the mutation is executed."""
         return False
@@ -112,11 +224,11 @@ class InputDataModificationMiddleware(MutationMiddleware):
                 self.fill_input_data(mutation_type=inpt.ref, input_data=value)
 
 
-class PermissionCheckMiddleware(MutationMiddleware):
+class MutationPermissionCheckMiddleware(MutationMiddleware):
     """
     Mutation middleware required for permission checks to work.
 
-    Run permission checks for all QueryTypes and Input fields in the given input data.
+    Runs permission checks for all QueryTypes and Input fields in the given input data.
     """
 
     priority: int = 100
@@ -383,8 +495,8 @@ class MutationMiddlewareHandler:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        traceback_value: TracebackType | None,
     ) -> bool:
         for middleware in reversed(self.middleware):
-            middleware.__exit__(exc_type, exc_value, traceback)
+            middleware.__exit__(exc_type, exc_value, traceback_value)
         return False

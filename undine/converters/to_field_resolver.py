@@ -8,12 +8,12 @@ from graphql import GraphQLFieldResolver, GraphQLID, GraphQLType, GraphQLWrappin
 from undine.dataclasses import TypeRef
 from undine.errors.exceptions import FunctionDispatcherError
 from undine.resolvers import (
-    ConnectionResolver,
     FunctionResolver,
     GlobalIDResolver,
     ModelFieldResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
+    NestedConnectionResolver,
     QueryTypeManyRelatedFieldResolver,
     QueryTypeSingleRelatedFieldResolver,
 )
@@ -131,8 +131,8 @@ def load_deferred_converters() -> None:
 
     @convert_field_ref_to_resolver.register
     def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
-        resolver = convert_field_ref_to_resolver(ref.query_type, many=True)
-        return ConnectionResolver(resolver=resolver, max_limit=ref.max_limit)
+        caller: Field = kwargs["caller"]
+        return NestedConnectionResolver(query_type=ref.query_type, field=caller, max_limit=ref.max_limit)
 
     @convert_field_ref_to_resolver.register
     def _(_: GraphQLID, **kwargs: Any) -> GraphQLFieldResolver:

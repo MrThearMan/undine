@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Any, NamedTuple
 
 import pytest
-from graphql_relay import offset_to_cursor
 
 from tests.helpers import parametrize_helper
 from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import PaginationArgumentValidationError
 from undine.pagination import calculate_queryset_slice, validate_pagination_args
+from undine.relay import offset_to_cursor
 
 
 class PaginationInput(NamedTuple):

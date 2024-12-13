@@ -11,6 +11,7 @@ from typing import (
     Literal,
     NewType,
     Protocol,
+    Self,
     TypeAlias,
     TypedDict,
     TypeVar,
@@ -20,12 +21,6 @@ from typing import (
 
 # Sort separately due to being a private import
 from typing import _eval_type  # isort: skip  # noqa: PLC2701
-
-
-try:
-    from typing import Self
-except ImportError:
-    from typing_extensions import Self
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.db import models

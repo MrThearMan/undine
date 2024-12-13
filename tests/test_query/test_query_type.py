@@ -211,8 +211,8 @@ def test_query_type__permission_many():
 
     class MyQueryType(QueryType, model=Task): ...
 
-    queryset = MyQueryType.__get_queryset__(info=MockGQLInfo())
-    assert MyQueryType.__permission_many__(queryset=queryset, info=MockGQLInfo()) is True
+    instances = list(MyQueryType.__get_queryset__(info=MockGQLInfo()))
+    assert MyQueryType.__permission_many__(instances=instances, info=MockGQLInfo()) is True
 
 
 def test_query_type__optimizer_hook():

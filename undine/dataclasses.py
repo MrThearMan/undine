@@ -8,7 +8,7 @@ from graphql import Undefined
 if TYPE_CHECKING:
     from django.db import models
 
-    from undine import MutationType
+    from undine import Field, MutationType, QueryType
     from undine.typing import ExpressionLike, GQLInfo, JsonObject
 
 __all__ = [
@@ -65,6 +65,16 @@ class TypeRef:
 class LookupRef:
     ref: Any
     lookup: str
+
+
+@dataclasses.dataclass(slots=True)
+class QueryMiddlewareParams:
+    query_type: type[QueryType]
+    info: GQLInfo
+    field: Field | None = None
+    parent_instance: models.Model | None = None
+    instance: models.Model | None = None
+    instances: list[models.Model] | None = None
 
 
 @dataclasses.dataclass(slots=True)

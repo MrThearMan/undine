@@ -20,6 +20,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
+from undine.middleware import QueryPermissionCheckMiddleware
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from django.db import models
 
     from undine import FilterSet, OrderSet
+    from undine.middleware import QueryMiddleware
     from undine.optimizer.optimizer import OptimizationData
     from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Self
 
@@ -169,8 +171,8 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         return True
 
     @classmethod
-    def __permission_many__(cls, queryset: models.QuerySet, info: GQLInfo) -> bool:
-        """Check permissions for accessing the given queryset through this QueryType."""
+    def __permission_many__(cls, instances: list[models.Model], info: GQLInfo) -> bool:
+        """Check permissions for accessing the given instances through this QueryType."""
         return True
 
     @classmethod
@@ -210,6 +212,13 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
             is_type_of=cls.__is_type_of__,
             extensions=cls.__extensions__,
         )
+
+    @classmethod
+    def __middleware__(cls) -> list[type[QueryMiddleware]]:
+        """Middleware to use with queries using this QueryType."""
+        return [
+            QueryPermissionCheckMiddleware,
+        ]
 
 
 class Field:

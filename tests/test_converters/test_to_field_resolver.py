@@ -11,6 +11,7 @@ from undine.resolvers import (
     ModelFieldResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
+    QueryTypeManyRelatedFieldResolver,
     QueryTypeSingleRelatedFieldResolver,
 )
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -237,6 +238,6 @@ def test_convert_field_ref_to_resolver__query_type__many():
 
     resolver = convert_field_ref_to_resolver(PersonType, caller=TaskType.assignees)
 
-    assert isinstance(resolver, ModelManyRelatedFieldResolver)
+    assert isinstance(resolver, QueryTypeManyRelatedFieldResolver)
 
     assert resolver.field == TaskType.assignees

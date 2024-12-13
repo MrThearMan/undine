@@ -11,7 +11,6 @@ from graphql import get_argument_values
 from undine.converters import extend_expression
 from undine.errors.exceptions import OptimizerError
 from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type
-from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.settings import undine_settings
 from undine.utils.reflection import swappable_by_subclassing
 
@@ -46,9 +45,7 @@ class QueryOptimizer(GraphQLASTWalker):
         """Optimize the given queryset."""
         self.run()  # Compile optimizations.
         results = self.process_optimizations(self.optimization_data)
-        optimized_queryset = results.apply(queryset, self.info)
-        evaluate_in_context(optimized_queryset, self.info)
-        return optimized_queryset
+        return results.apply(queryset, self.info)
 
     def process_optimizations(self, data: OptimizationData) -> OptimizationResults:
         """Process the given optimization data to OptimizerResults that can be applied to a queryset."""
