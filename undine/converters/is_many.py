@@ -65,9 +65,7 @@ def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: GraphQLType, **kwargs: Any) -> bool:
-    return isinstance(ref, GraphQLList) or (
-        isinstance(ref, GraphQLNonNull) and isinstance(ref.of_type, GraphQLList)
-    )
+    return isinstance(ref, GraphQLList) or (isinstance(ref, GraphQLNonNull) and isinstance(ref.of_type, GraphQLList))
 
 
 def load_deferred_converters() -> None:
@@ -76,6 +74,7 @@ def load_deferred_converters() -> None:
 
     from undine import MutationType, QueryType
     from undine.parsers import parse_return_annotation
+    from undine.relay import Connection
 
     @is_many.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:
@@ -97,3 +96,7 @@ def load_deferred_converters() -> None:
     @is_many.register
     def _(_: GenericForeignKey, **kwargs: Any) -> bool:
         return False
+
+    @is_many.register
+    def _(_: Connection, **kwargs: Any) -> bool:
+        return True

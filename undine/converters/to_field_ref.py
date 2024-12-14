@@ -175,6 +175,7 @@ def load_deferred_converters() -> None:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import QueryType
+    from undine.relay import Connection
     from undine.utils.model_utils import get_model_field
 
     @convert_to_field_ref.register
@@ -206,3 +207,7 @@ def load_deferred_converters() -> None:
     @convert_to_field_ref.register  # Required for Django<5.1
     def _(ref: GenericForeignKey, **kwargs: Any) -> FieldRef:
         return LazyQueryTypeUnion(field=ref)
+
+    @convert_to_field_ref.register
+    def _(ref: Connection, **kwargs: Any) -> FieldRef:
+        return ref

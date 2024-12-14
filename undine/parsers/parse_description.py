@@ -6,6 +6,7 @@ from django.db import models
 from graphql import GraphQLNamedType, GraphQLWrappingType
 
 from undine.dataclasses import TypeRef
+from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.lazy import LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion
@@ -66,3 +67,8 @@ def _(ref: GraphQLNamedType) -> Any:
 @parse_description.register
 def _(ref: GraphQLWrappingType) -> Any:
     return parse_description(ref.of_type)
+
+
+@parse_description.register
+def _(ref: Connection) -> Any:
+    return parse_description(ref.query_type)

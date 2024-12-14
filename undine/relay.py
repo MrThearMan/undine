@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
 
+from undine.errors.exceptions import ConnectionQueryTypeNotNodeError
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_interface_type, get_or_create_object_type
 
@@ -101,5 +102,8 @@ class Connection:
         *,
         max_limit: int | None = undine_settings.CONNECTION_MAX_LIMIT,
     ) -> None:
+        if Node not in query_type.__interfaces__:
+            raise ConnectionQueryTypeNotNodeError(query_type=query_type)
+
         self.query_type = query_type
         self.max_limit = max_limit

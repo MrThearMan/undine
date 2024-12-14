@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from string import Formatter
-from typing import TYPE_CHECKING, Any, ClassVar, Collection
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from graphql import GraphQLError
 
 from undine.errors import error_codes
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from graphql import GraphQLErrorExtensions, Node, Source
 
 __all__ = [
@@ -67,6 +69,12 @@ class UndineError(Exception):
     def __init__(self, msg: str = "", **kwargs: Any) -> None:
         msg = self.error_formatter.format(msg or self.msg, **kwargs)
         super().__init__(msg)
+
+
+class ConnectionQueryTypeNotNodeError(UndineError):  # TODO: Test
+    """Error raised when trying to create a Connection on a QueryType that does not implement the Node interface."""
+
+    msg = "QueryType '{query_type:dotpath}' does not implement the Node interface"
 
 
 class FunctionSignatureParsingError(UndineError):
@@ -182,7 +190,7 @@ class GraphQLStatusError(GraphQLError):
     code: ClassVar[str | None] = None
     error_formatter = ErrorMessageFormatter()
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         message: str = "",
         *,

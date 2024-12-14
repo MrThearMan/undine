@@ -52,7 +52,7 @@ def handle_validation_errors(func: Callable[P, T]) -> Callable[P, T]:
 
 
 def raised_exceptions_as_execution_results(func: Callable[P, ExecutionResult]) -> Callable[P, ExecutionResult]:
-    """Wraps raised excetions as GraphQL ExecutionResults if they happen in `execute_graphql`."""
+    """Wraps raised exceptions as GraphQL ExecutionResults if they happen in `execute_graphql`."""
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:

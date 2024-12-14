@@ -63,7 +63,7 @@ class QueryTypeMeta(type):
         exclude: Iterable[str] = (),
         lookup_field: str = "pk",
         max_complexity: int | None = Undefined,
-        interfaces: Collection[GraphQLInterfaceType] | None = None,
+        interfaces: Collection[GraphQLInterfaceType] = (),
         typename: str | None = None,
         register: bool = True,
         extensions: dict[str, Any] | None = None,
@@ -77,7 +77,7 @@ class QueryTypeMeta(type):
         if auto:
             _attrs |= get_fields_for_model(model, exclude=set(exclude) | set(_attrs))
 
-        for interface in interfaces or []:
+        for interface in interfaces:
             for field_name, field in interface.fields.items():
                 _attrs[field_name] = interface_field = Field(field.type)
                 interface_field.resolver_func = field.resolve

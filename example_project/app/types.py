@@ -23,7 +23,7 @@ from undine import Field, Filter, Order
 from undine.filtering import FilterSet
 from undine.ordering import OrderSet
 from undine.query import QueryType
-from undine.relay import Node
+from undine.relay import Connection, Node
 
 if TYPE_CHECKING:
     from undine.typing import GQLInfo
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 class ContentTypeType(QueryType, model=ContentType, exclude=["logentry", "permission"]): ...
 
 
-class PersonType(QueryType, model=Person, filterset=True, orderset=True): ...
+class PersonType(QueryType, model=Person, filterset=True, orderset=True, interfaces=[Node]): ...
 
 
 class CommentType(QueryType, model=Comment, filterset=True, orderset=True): ...
@@ -91,6 +91,8 @@ class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrde
     """Task Node description."""
 
     name = Field()
+
+    assignees = Field(Connection(PersonType))
 
     @name.permissions
     def name_permissions(self, info: GQLInfo, instance: Task) -> bool:

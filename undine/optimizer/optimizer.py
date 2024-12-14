@@ -98,9 +98,13 @@ class QueryOptimizer(GraphQLASTWalker):
 
         optimized_queryset = results.apply(queryset, self.info)
 
-        # TODO: Pagination.
+        self.paginate_nested_connection(optimized_queryset, self.info)
 
         return models.Prefetch(data.field_name, optimized_queryset, to_attr=to_attr)
+
+    def paginate_nested_connection(self, queryset: models.QuerySet, info: GQLInfo) -> None:
+        """Apply pagination to the given queryset."""
+        # TODO: Pagination.
 
     def run_field_optimizer(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
         """Run undine.Field optimization function for the given field."""

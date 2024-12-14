@@ -304,6 +304,7 @@ FieldRef: TypeAlias = Union[
     models.Subquery,
     "GraphQLType",
     "TypeRef",
+    "Connection",
     Callable[..., Any],
 ]
 FilterRef: TypeAlias = Union[

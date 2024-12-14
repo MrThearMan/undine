@@ -78,6 +78,7 @@ def load_deferred_converters() -> None:
 
     from undine import QueryType
     from undine.parsers import parse_return_annotation
+    from undine.relay import Connection
 
     @is_field_nullable.register
     def _(ref: FunctionType, **kwargs: Any) -> bool:
@@ -111,3 +112,7 @@ def load_deferred_converters() -> None:
 
         args = get_args(ref.value)
         return NoneType in args
+
+    @is_field_nullable.register
+    def _(ref: Connection, **kwargs: Any) -> bool:
+        return False
