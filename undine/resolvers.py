@@ -114,18 +114,20 @@ class QueryTypeManyRelatedFieldResolver:
     query_type: type[QueryType]
     field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> list[models.Model]:
         with QueryMiddlewareHandler(
             info=info,
             query_type=self.query_type,
             field=self.field,
             parent_instance=instance,
         ) as handler:
-            manager: RelatedManager = getattr(instance, self.field.field_name)
-            queryset = manager.get_queryset()
-            handler.params.instances = list(queryset)
+            field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
+            result: RelatedManager | list[models.Model] = getattr(instance, field_name)
+            instances = list(result.get_queryset()) if isinstance(result, models.Manager) else result
 
-        return queryset
+            handler.params.instances = instances
+
+        return instances
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
