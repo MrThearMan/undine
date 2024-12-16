@@ -334,6 +334,7 @@ extend-ignore-names = [
     "_base_manager",
     "_default_manager",
     "_meta",
+    "_hints",
     "_get_fields",
     "_relation_tree",
     "_getframe",

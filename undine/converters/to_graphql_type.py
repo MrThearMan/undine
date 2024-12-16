@@ -48,6 +48,7 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
+from undine.settings import undine_settings
 from undine.typing import CombinableExpression, GQLInfo, TypedDictType, eval_type
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql import get_or_create_graphql_enum, get_or_create_input_object_type, get_or_create_object_type
@@ -538,6 +539,7 @@ def load_deferred_converters() -> None:
                     description="A list of edges.",
                 ),
             },
+            extensions={undine_settings.CONNECTION_EXTENSIONS_KEY: ref},
         )
 
     @convert_to_graphql_type.register

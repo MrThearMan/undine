@@ -23,8 +23,20 @@ class DefaultSettings(NamedTuple):
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from snake case to camel case for the GraphQL schema?"""
 
+    CONNECTION_EXTENSIONS_KEY: str = "undine_connection"
+    """The key to use for storing the connection in the extensions of the GraphQL type."""
+
     CONNECTION_MAX_LIMIT: int = 100
     """The maximum number of items to return in a connection by default."""
+
+    CONNECTION_START_INDEX_HINT_KEY = "undine_start_index"
+    """The key to use for storing the start index of objects in a connection in the queryset hints."""
+
+    CONNECTION_STOP_INDEX_HINT_KEY = "undine_stop_index"
+    """The key to use for storing the stop index of objects in a connection in the queryset hints."""
+
+    CONNECTION_TOTAL_COUNT_HINT_KEY = "undine_total_count"
+    """The key to use for storing the total count of objects in a connection in the queryset hints."""
 
     DELETE_MUTATION_OUTPUT_FIELD_NAME: str = "success"
     """The name of the field in the output of a delete mutation."""

@@ -23,6 +23,7 @@ from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
     from undine import Field, QueryType
+    from undine.relay import Connection
     from undine.typing import GQLInfo, ModelField, Selections, ToManyField, ToOneField
 
 __all__ = [
@@ -39,7 +40,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
     """Class for walking the GraphQL AST and handling the different nodes."""
 
     def __init__(self, info: GQLInfo, model: type[models.Model] | None = None) -> None:
-        self.info = info
+        self.root_info = info
         self.complexity: int = 0
         self.model: type[models.Model] = model
 
@@ -47,7 +48,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         self.complexity += 1
 
     def run(self) -> None:
-        return self.handle_selections(self.info.parent_type, self.info.field_nodes)
+        return self.handle_selections(self.root_info.parent_type, self.root_info.field_nodes)
 
     def handle_selections(self, field_type: GraphQLOutputType, selections: Selections) -> None:
         for selection in selections:
@@ -65,7 +66,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
                 raise OptimizerError(msg)
 
     def handle_field_node(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        if self.info.parent_type == field_type:
+        if self.root_info.parent_type == field_type:
             return self.handle_query_class(field_type, field_node)
         return self.handle_object_type(field_type, field_node)
 
@@ -153,12 +154,12 @@ class GraphQLASTWalker:  # noqa: PLR0904
         return self.handle_selections(field_type, selections)
 
     def handle_fragment_spread(self, field_type: GraphQLOutputType, fragment_spread: FragmentSpreadNode) -> None:
-        fragment_definition = self.info.fragments[fragment_spread.name.value]
+        fragment_definition = self.root_info.fragments[fragment_spread.name.value]
         selections = get_selections(fragment_definition)
         return self.handle_selections(field_type, selections)
 
     def handle_inline_fragment(self, field_type: GraphQLUnionType, inline_fragment: InlineFragmentNode) -> None:
-        fragment_type = get_fragment_type(field_type, inline_fragment, self.info.schema)
+        fragment_type = get_fragment_type(field_type, inline_fragment, self.root_info.schema)
         fragment_model = self.get_model(fragment_type)
         if fragment_model is None:
             return None
@@ -172,6 +173,9 @@ class GraphQLASTWalker:  # noqa: PLR0904
     def get_undine_query_type(self, field_type: GraphQLOutputType) -> type[QueryType] | None:
         return field_type.extensions.get(undine_settings.QUERY_TYPE_EXTENSIONS_KEY)
 
+    def get_undine_connection(self, object_type: GraphQLOutputType) -> Connection | None:
+        return object_type.extensions.get(undine_settings.CONNECTION_EXTENSIONS_KEY)
+
     def get_undine_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> Field | None:
         field = field_type.fields[field_node.name.value]
         return field.extensions.get(undine_settings.FIELD_EXTENSIONS_KEY)
@@ -180,7 +184,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         return getattr(self.get_undine_query_type(field_type), "__model__", None)
 
     def get_field_type(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> GraphQLOutputType:
-        graphql_field = get_field_def(self.info.schema, parent_type, field_node)
+        graphql_field = get_field_def(self.root_info.schema, parent_type, field_node)
         return get_underlying_type(graphql_field.type)
 
     def get_field_name(self, field_node: FieldNode) -> str:
@@ -226,6 +230,10 @@ def get_selections(field_node: FieldNode | FragmentDefinitionNode | InlineFragme
 
 def is_graphql_builtin(field_name: str) -> bool:
     return field_name.lower() in GRAPHQL_BUILTINS
+
+
+def is_connection(field_type: GraphQLOutputType) -> bool:
+    return field_type.name.endswith("Connection") and "pageInfo" in field_type.fields and "edges" in field_type.fields
 
 
 def is_foreign_key_id(field: models.Field, field_node: FieldNode) -> bool:

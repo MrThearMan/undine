@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from undine.typing import GQLInfo, ToManyField
 
 __all__ = [
-    "_register_for_prefetch_hack",
-    "fetch_context",
+    "evaluate_in_context",
+    "register_for_prefetch_hack",
 ]
 
 
@@ -27,9 +27,17 @@ _PrefetchCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
 _PREFETCH_HACK_CACHE: WeakKeyDictionary[OperationDefinitionNode, _PrefetchCacheType] = WeakKeyDictionary()
 
 
-def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
-    # Registers the through table of a many-to-many field for the prefetch hack.
-    # See `_prefetch_hack` for more information.
+def evaluate_in_context(queryset: models.QuerySet, info: GQLInfo) -> list[models.Model]:
+    """Evaluates the queryset with the prefetch hack applied."""
+    with _fetch_context(info):
+        return list(queryset)  # the database query is executed here
+
+
+def register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
+    """
+    Registers the through table of a many-to-many field for the prefetch hack.
+    See `_prefetch_hack` for more information.
+    """
     if not isinstance(field, (models.ManyToManyField, models.ManyToManyRel)):
         return
 
@@ -86,7 +94,7 @@ def _hack_context(cache: _PrefetchCacheType) -> ContextManager:
 
 
 @contextlib.contextmanager
-def fetch_context(info: GQLInfo) -> ContextManager:
+def _fetch_context(info: GQLInfo) -> ContextManager:
     """Patches the prefetch mechanism if required."""
     context = nullcontext()
     if info.operation in _PREFETCH_HACK_CACHE:
@@ -97,9 +105,3 @@ def fetch_context(info: GQLInfo) -> ContextManager:
             yield
     finally:
         _PREFETCH_HACK_CACHE.pop(info.operation, None)
-
-
-def evaluate_in_context(queryset: models.QuerySet, info: GQLInfo) -> list[models.Model]:
-    """Evaluates the queryset with the prefetch hack applied."""
-    with fetch_context(info):
-        return list(queryset)  # the database query is executed here

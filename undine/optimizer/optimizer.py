@@ -2,23 +2,36 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+from copy import copy
 from typing import TYPE_CHECKING
 
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
+from django.db.models.functions import RowNumber
 from graphql import get_argument_values
 
 from undine.converters import extend_expression
 from undine.errors.exceptions import OptimizerError
-from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type
+from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type, is_connection
+from undine.relay import calculate_queryset_slice, validate_pagination_args
 from undine.settings import undine_settings
+from undine.utils.model_utils import SubqueryCount
 from undine.utils.reflection import swappable_by_subclassing
 
 if TYPE_CHECKING:
     from graphql import FieldNode, GraphQLOutputType
 
     from undine import QueryType
-    from undine.typing import ExpressionLike, FilterCallback, GQLInfo, QuerySetCallback, ToManyField, ToOneField
+    from undine.dataclasses import PaginationArgs
+    from undine.typing import (
+        ExpressionLike,
+        FilterCallback,
+        GQLInfo,
+        ModelField,
+        QuerySetCallback,
+        ToManyField,
+        ToOneField,
+    )
 
 __all__ = [
     "OptimizationData",
@@ -45,12 +58,12 @@ class QueryOptimizer(GraphQLASTWalker):
         """Optimize the given queryset."""
         self.run()  # Compile optimizations.
         results = self.process_optimizations(self.optimization_data)
-        return results.apply(queryset, self.info)
+        return results.apply(queryset, self.root_info)
 
     def process_optimizations(self, data: OptimizationData) -> OptimizationResults:
         """Process the given optimization data to OptimizerResults that can be applied to a queryset."""
         results = OptimizationResults(
-            field_name=data.field_name,
+            field=data.parent.model._meta.get_field(data.field_name) if data.parent else None,
             only_fields=data.only_fields,
             related_fields=data.related_fields,
             aliases=data.aliases,
@@ -59,6 +72,7 @@ class QueryOptimizer(GraphQLASTWalker):
             filters=data.filters,
             order_by=data.order_by,
             distinct=data.distinct,
+            pagination_args=data.pagination_args,
         )
 
         for select_related_data in data.select_related.values():
@@ -92,19 +106,12 @@ class QueryOptimizer(GraphQLASTWalker):
         results = self.process_optimizations(data)
 
         if data.queryset_callback is not None:
-            queryset = data.queryset_callback(self.info)
+            queryset = data.queryset_callback(self.root_info)
         else:
             queryset = data.model._meta.default_manager.get_queryset()
 
-        optimized_queryset = results.apply(queryset, self.info)
-
-        self.paginate_nested_connection(optimized_queryset, self.info)
-
+        optimized_queryset = results.apply(queryset, self.root_info)
         return models.Prefetch(data.field_name, optimized_queryset, to_attr=to_attr)
-
-    def paginate_nested_connection(self, queryset: models.QuerySet, info: GQLInfo) -> None:
-        """Apply pagination to the given queryset."""
-        # TODO: Pagination.
 
     def run_field_optimizer(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
         """Run undine.Field optimization function for the given field."""
@@ -116,6 +123,17 @@ class QueryOptimizer(GraphQLASTWalker):
         """Parse filtering and ordering information from the given field."""
         graphql_field = parent_type.fields[field_node.name.value]
         object_type = get_underlying_type(graphql_field.type)
+
+        max_limit: int = undine_settings.CONNECTION_MAX_LIMIT
+
+        is_connection_field = is_connection(object_type)
+        if is_connection_field:
+            undine_connection = self.get_undine_connection(object_type)
+            max_limit = getattr(undine_connection, "max_limit", undine_settings.CONNECTION_MAX_LIMIT)
+
+            edge_type = get_underlying_type(object_type.fields["edges"].type)
+            object_type = get_underlying_type(edge_type.fields["node"].type)
+
         query_type = self.get_undine_query_type(object_type)
         if query_type is None:  # Not a undine field.
             return
@@ -123,11 +141,21 @@ class QueryOptimizer(GraphQLASTWalker):
         self.optimization_data.queryset_callback = query_type.__get_queryset__
         self.optimization_data.filter_callback = query_type.__filter_queryset__
 
-        arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)
+        arg_values = get_argument_values(graphql_field, field_node, self.root_info.variable_values)
+
+        if is_connection_field:
+            self.optimization_data.pagination_args = validate_pagination_args(
+                first=arg_values.get("first"),
+                last=arg_values.get("last"),
+                offset=arg_values.get("offset"),
+                after=arg_values.get("after"),
+                before=arg_values.get("before"),
+                max_limit=max_limit,
+            )
 
         if query_type.__filterset__:
             filter_data = arg_values.get(undine_settings.FILTER_INPUT_TYPE_KEY, {})
-            filter_results = query_type.__filterset__.__build__(filter_data, self.info)
+            filter_results = query_type.__filterset__.__build__(filter_data, self.root_info)
 
             self.optimization_data.filters.extend(filter_results.filters)
             self.optimization_data.distinct = self.optimization_data.distinct or filter_results.distinct
@@ -135,11 +163,11 @@ class QueryOptimizer(GraphQLASTWalker):
 
         if query_type.__orderset__:
             order_data = arg_values.get(undine_settings.ORDER_BY_INPUT_TYPE_KEY, [])
-            order_results = query_type.__orderset__.__build__(order_data, self.info)
+            order_results = query_type.__orderset__.__build__(order_data, self.root_info)
 
             self.optimization_data.order_by.extend(order_results.order_by)
 
-        query_type.__optimizer_hook__(self.optimization_data, self.info)
+        query_type.__optimizer_hook__(self.optimization_data, self.root_info)
 
     def increase_complexity(self) -> None:
         super().increase_complexity()
@@ -194,9 +222,8 @@ class QueryOptimizer(GraphQLASTWalker):
         name = self.get_related_field_name(related_field)
 
         alias: str | None = getattr(field_node.alias, "value", None)
-        to_attr = alias if alias is not None else name
 
-        data = self.optimization_data.add_prefetch_related(name, to_attr=to_attr)
+        data = self.optimization_data.add_prefetch_related(name, to_attr=alias)
 
         if isinstance(related_field, models.ManyToOneRel):
             data.related_fields.append(related_field.field.attname)
@@ -245,6 +272,7 @@ class OptimizationData:
     filters: list[models.Q] = dataclasses.field(default_factory=list)
     order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
     distinct: bool = False
+    pagination_args: PaginationArgs | None = None
 
     queryset_callback: QuerySetCallback | None = None
     filter_callback: FilterCallback | None = None
@@ -305,7 +333,7 @@ class OptimizationData:
 class OptimizationResults:
     """Optimizations that can be applied to a queryset."""
 
-    field_name: str | None = None
+    field: ModelField | None = None  # Model field, if nested queryset optimization results.
 
     # Field optimizations
     only_fields: list[str] = dataclasses.field(default_factory=list)
@@ -315,11 +343,12 @@ class OptimizationResults:
     select_related: list[str] = dataclasses.field(default_factory=list)
     prefetch_related: list[models.Prefetch | str] = dataclasses.field(default_factory=list)
 
-    # Filters
+    # Filtering
     filter_callback: FilterCallback | None = None
     filters: list[models.Q] = dataclasses.field(default_factory=list)
     order_by: list[models.OrderBy] = dataclasses.field(default_factory=list)
     distinct: bool = False
+    pagination_args: PaginationArgs | None = None
 
     def apply(self, queryset: models.QuerySet, info: GQLInfo) -> models.QuerySet:
         """Apply the optimization results to the given queryset."""
@@ -343,6 +372,46 @@ class OptimizationResults:
             queryset = queryset.filter(ftr)
         if self.distinct:
             queryset = queryset.distinct()
+
+        if self.pagination_args is not None:
+            # TODO: Optimizations.
+            #  - If not pagination args and max limit is None
+            #  - Don't do total count if not required
+
+            # Top level connections
+            if self.field.name is None:
+                self.pagination_args.size = total_count = queryset.count()
+                cut = calculate_queryset_slice(pagination_args=self.pagination_args)
+                queryset = queryset[cut]
+
+                # Store the pagination args in the queryset hints for the connection resolver.
+                queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY] = total_count
+                queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY] = cut.start
+                queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY] = cut.stop
+
+            # Nested connections
+            else:
+                field_name = self.field.remote_field.name
+
+                queryset = queryset.annotate(
+                    # TODO: Calculate slice.
+                    # TODO: Add setters.
+                    _undine_slice_start=models.Value(0),
+                    _undine_slice_stop=models.Value(100),
+                    _undine_total_count=SubqueryCount(queryset.filter(**{field_name: models.OuterRef(field_name)})),
+                    _undine_partition_index=(
+                        models.Window(
+                            expression=RowNumber(),
+                            partition_by=models.F(field_name),
+                            order_by=self.order_by or copy(queryset.model._meta.ordering),
+                        )
+                        - models.Value(1)  # Start from zero.
+                    ),
+                ).filter(
+                    _undine_partition_index__gte=models.F("_undine_slice_start"),
+                    _undine_partition_index__lt=models.F("_undine_slice_stop"),
+                )
+
         return queryset
 
     def extend(self, other: OptimizationResults) -> OptimizationResults:
@@ -350,20 +419,20 @@ class OptimizationResults:
         Extend the given optimization results to this one
         by prefexing their lookups using the other's `field_name`.
         """
-        self.select_related.append(other.field_name)
-        self.only_fields.extend(f"{other.field_name}{LOOKUP_SEP}{only}" for only in other.only_fields)
-        self.related_fields.extend(f"{other.field_name}{LOOKUP_SEP}{only}" for only in other.related_fields)
-        self.select_related.extend(f"{other.field_name}{LOOKUP_SEP}{select}" for select in other.select_related)
+        self.select_related.append(other.field.name)
+        self.only_fields.extend(f"{other.field.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
+        self.related_fields.extend(f"{other.field.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
+        self.select_related.extend(f"{other.field.name}{LOOKUP_SEP}{select}" for select in other.select_related)
 
         for prefetch in other.prefetch_related:
             if isinstance(prefetch, str):
-                self.prefetch_related.append(f"{other.field_name}{LOOKUP_SEP}{prefetch}")
+                self.prefetch_related.append(f"{other.field.name}{LOOKUP_SEP}{prefetch}")
             if isinstance(prefetch, models.Prefetch):
-                prefetch.add_prefix(other.field_name)
+                prefetch.add_prefix(other.field.name)
                 self.prefetch_related.append(prefetch)
 
-        self.filters.extend(extend_expression(ftr, field_name=other.field_name) for ftr in other.filters)
-        self.order_by.extend(extend_expression(order, field_name=other.field_name) for order in other.order_by)
+        self.filters.extend(extend_expression(ftr, field_name=other.field.name) for ftr in other.filters)
+        self.order_by.extend(extend_expression(order, field_name=other.field.name) for order in other.order_by)
         self.distinct = other.distinct or self.distinct
 
         return self

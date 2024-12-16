@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Generator, TypeGuard
 
 from django.core.exceptions import FieldDoesNotExist
+from django.db import models
 from django.db.models.constants import LOOKUP_SEP
 
 from undine.errors.exceptions import (
@@ -15,11 +16,11 @@ from undine.settings import undine_settings
 
 if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-    from django.db import models
 
     from undine.typing import ModelField, TModel, ToManyField, ToOneField
 
 __all__ = [
+    "SubqueryCount",
     "generic_foreign_key_for_generic_relation",
     "generic_relations_for_generic_foreign_key",
     "get_instance_or_raise",
@@ -143,3 +144,8 @@ def is_to_many(field: models.Field) -> TypeGuard[ToManyField]:
 
 def is_to_one(field: models.Field) -> TypeGuard[ToOneField]:
     return bool(field.many_to_one or field.one_to_one)
+
+
+class SubqueryCount(models.Subquery):
+    template = "(SELECT COUNT(*) FROM (%(subquery)s) _count)"
+    output_field = models.BigIntegerField()

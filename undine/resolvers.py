@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any, Callable, Generic, Self
 
+from django.db import models
 from graphql import GraphQLError, GraphQLID, GraphQLObjectType, GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
@@ -17,7 +18,6 @@ from undine.middleware import MutationMiddlewareHandler, QueryMiddlewareHandler
 from undine.optimizer.ast import get_underlying_type
 from undine.optimizer.optimizer import QueryOptimizer
 from undine.optimizer.prefetch_hack import evaluate_in_context
-from undine.pagination import calculate_queryset_slice, validate_pagination_args
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, RelatedManager, TModel
@@ -28,8 +28,6 @@ from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
     from types import FunctionType
-
-    from django.db import models
 
     from undine import Field, MutationType, QueryType
     from undine.typing import Root
@@ -223,30 +221,21 @@ class ConnectionResolver:
     max_limit: int
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
-        pagination_args = validate_pagination_args(
-            first=kwargs.pop("first", None),
-            last=kwargs.pop("last", None),
-            offset=kwargs.pop("offset", None),
-            after=kwargs.pop("after", None),
-            before=kwargs.pop("before", None),
-            max_limit=self.max_limit,
-        )
-
         with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
             queryset = self.query_type.__get_queryset__(info)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
-
-            pagination_args.size = total_count = optimized_queryset.count()
-            cut = calculate_queryset_slice(pagination_args=pagination_args)
-            paginated_queryset = optimized_queryset[cut]
-            instances = evaluate_in_context(paginated_queryset, info)
+            instances = evaluate_in_context(optimized_queryset, info)
 
             handler.params.instances = instances
 
+        total_count = optimized_queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY]
+        start = optimized_queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY]
+        stop = optimized_queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY]
+
         edges = [
             {
-                "cursor": offset_to_cursor(cut.start + index),
+                "cursor": offset_to_cursor(start + index),
                 "node": instance,
             }
             for index, instance in enumerate(instances)
@@ -254,8 +243,8 @@ class ConnectionResolver:
         return {
             "totalCount": total_count,
             "pageInfo": {
-                "hasNextPage": cut.stop < total_count,
-                "hasPreviousPage": cut.start > 0,
+                "hasNextPage": stop < total_count,
+                "hasPreviousPage": start > 0,
                 "startCursor": None if not edges else edges[0]["cursor"],
                 "endCursor": None if not edges else edges[-1]["cursor"],
             },
@@ -272,39 +261,30 @@ class NestedConnectionResolver:
     max_limit: int
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
-        pagination_args = validate_pagination_args(
-            first=kwargs.pop("first", None),
-            last=kwargs.pop("last", None),
-            offset=kwargs.pop("offset", None),
-            after=kwargs.pop("after", None),
-            before=kwargs.pop("before", None),
-            max_limit=self.max_limit,
-        )
-
         with QueryMiddlewareHandler(
             info=info,
             query_type=self.query_type,
             field=self.field,
             parent_instance=instance,
         ) as handler:
-            # TODO: Support prefetches with `to_attr` (result will be a list of model instances)
-
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
-            result: RelatedManager = getattr(instance, field_name)
-
-            queryset = result.get_queryset()
-            instances = list(queryset)
-
-            # TODO: Add pre-calculated total count. This is wrong.
-            pagination_args.size = total_count = len(instances) + 1
-
-            cut = calculate_queryset_slice(pagination_args)
+            result: RelatedManager | list[models.Model] = getattr(instance, field_name)
+            instances = list(result.get_queryset()) if isinstance(result, models.Manager) else result
 
             handler.params.instances = instances
 
+        total_count: int = 0
+        start: int = 0
+        stop: int = 0
+        if instances:
+            # TODO: Add getters.
+            total_count = instances[0]._undine_total_count  # noqa: SLF001
+            start = instances[0]._undine_slice_start  # noqa: SLF001
+            stop = instances[0]._undine_slice_stop  # noqa: SLF001
+
         edges = [
             {
-                "cursor": offset_to_cursor(cut.start + index),
+                "cursor": offset_to_cursor(start + index),
                 "node": instance,
             }
             for index, instance in enumerate(instances)
@@ -312,8 +292,8 @@ class NestedConnectionResolver:
         return {
             "totalCount": total_count,
             "pageInfo": {
-                "hasNextPage": cut.stop < total_count,
-                "hasPreviousPage": cut.start > 0,
+                "hasNextPage": stop < total_count,
+                "hasPreviousPage": start > 0,
                 "startCursor": None if not edges else edges[0]["cursor"],
                 "endCursor": None if not edges else edges[-1]["cursor"],
             },

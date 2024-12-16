@@ -99,4 +99,5 @@ def load_deferred_converters() -> None:
 
     @is_many.register
     def _(_: Connection, **kwargs: Any) -> bool:
-        return True
+        # Connection edges have many nodes, but the connection itself is a single node.
+        return False
