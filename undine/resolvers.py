@@ -88,13 +88,13 @@ class ModelManyRelatedFieldResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeSingleRelatedFieldResolver:
+class QueryTypeSingleRelatedFieldResolver(Generic[TModel]):
     """Resolves a single related field pointing to another QueryType."""
 
     query_type: type[QueryType]
     field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> models.Model:
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> TModel:
         with QueryMiddlewareHandler(
             query_type=self.query_type,
             info=info,
@@ -108,13 +108,13 @@ class QueryTypeSingleRelatedFieldResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class QueryTypeManyRelatedFieldResolver:
+class QueryTypeManyRelatedFieldResolver(Generic[TModel]):
     """Resolves a many related field pointing to another QueryType."""
 
     query_type: type[QueryType]
     field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> list[models.Model]:
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         with QueryMiddlewareHandler(
             info=info,
             query_type=self.query_type,
@@ -131,12 +131,12 @@ class QueryTypeManyRelatedFieldResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelSingleResolver:
+class ModelSingleResolver(Generic[TModel]):
     """Top-level resolver for fetching a single model object."""
 
     query_type: type[QueryType]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.Model | None:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
         with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
             queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
@@ -155,7 +155,7 @@ class ModelManyResolver:
 
     query_type: type[QueryType]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
             queryset = self.query_type.__get_queryset__(info)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
@@ -164,7 +164,7 @@ class ModelManyResolver:
             instances = evaluate_in_context(optimized_queryset, info)
             handler.params.instances = instances
 
-        return optimized_queryset
+        return instances
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

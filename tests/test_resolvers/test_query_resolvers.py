@@ -227,10 +227,10 @@ def test_resolvers__query_type_many_resolver():
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
-    queryset = resolver(instance=task, info=MockGQLInfo())
-    assert isinstance(queryset, models.QuerySet)
-    assert queryset.count() == 1
-    assert queryset.first().name == "Test assignee"
+    instances: list[Task] = resolver(instance=task, info=MockGQLInfo())
+    assert isinstance(instances, list)
+    assert len(instances) == 1
+    assert instances[0].name == "Test assignee"
 
 
 @pytest.mark.django_db

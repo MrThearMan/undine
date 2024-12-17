@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import json
 import re
 from io import BytesIO
@@ -11,7 +12,15 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import HttpHeaders, HttpRequest, QueryDict
 from django.test.client import BOUNDARY
 from django.utils.datastructures import MultiValueDict
-from graphql import OperationType
+from graphql import (
+    FieldNode,
+    FragmentDefinitionNode,
+    GraphQLObjectType,
+    GraphQLOutputType,
+    GraphQLSchema,
+    NameNode,
+    OperationType,
+)
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
@@ -21,6 +30,7 @@ from undine.optimizer.optimizer import QueryOptimizer
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.http.request import MediaType
+    from graphql.pyutils import Path
 
     from undine.typing import HttpMethod
 
@@ -158,52 +168,51 @@ def get_graphql_multipart_spec_request(
     return request
 
 
+@dataclasses.dataclass(kw_only=True)
 class MockRequest:
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        path: str = "/",
-        method: HttpMethod = "GET",
-        body: bytes | None = None,
-        encoding: str = "utf-8",
-        user: User | AnonymousUser | None = None,
-        session: MutableMapping[str, Any] | None = None,
-        accepted_types: list[MediaType] | None = None,
-        headers: HttpHeaders | None = None,
-        scheme: str = "http",
-        content_type: str = "application/json",
-    ) -> None:
-        self.path = path
-        self.method = method
-        self.body = body or b""
-        self.encoding = encoding
-        self.user = user or AnonymousUser()
-        self.session = session or {}
-        self.accepted_types = accepted_types or []
-        self.headers = headers or {}
-        self.scheme = scheme
-        self.content_type = content_type
-
-        self.GET = QueryDict(mutable=True)
-        self.POST = QueryDict(mutable=True)
-        self.COOKIES = {}
-        self.META = {}
-        self.FILES = MultiValueDict()
+    path: str = "/"
+    method: HttpMethod = "GET"
+    body: bytes = b""
+    encoding: str = "utf-8"
+    user: User | AnonymousUser = dataclasses.field(default_factory=AnonymousUser)
+    session: MutableMapping[str, Any] = dataclasses.field(default_factory=dict)
+    accepted_types: list[MediaType] = dataclasses.field(default_factory=list)
+    headers: HttpHeaders = dataclasses.field(default_factory=dict)
+    scheme: str = "http"
+    content_type: str = "application/json"
+    GET: QueryDict = dataclasses.field(default_factory=lambda: QueryDict(mutable=True))
+    POST: QueryDict = dataclasses.field(default_factory=lambda: QueryDict(mutable=True))
+    COOKIES: dict[str, Any] = dataclasses.field(default_factory=dict)
+    META: dict[str, Any] = dataclasses.field(default_factory=dict)
+    FILES: MultiValueDict = dataclasses.field(default_factory=MultiValueDict)
 
 
+def _default_field_nodes() -> list[FieldNode]:
+    return [
+        FieldNode(
+            loc=None,
+            directives=(),
+            alias=None,
+            name=NameNode(value=""),
+            arguments=(),
+            selection_set=None,
+        ),
+    ]
+
+
+@dataclasses.dataclass(kw_only=True)
 class MockGQLInfo:
-    def __init__(
-        self,
-        *,
-        context: MockRequest | None = None,
-        operation: OperationType = OperationType.QUERY,
-    ) -> None:
-        self._context = context or MockRequest()
-        self.operation = operation
-
-    @property
-    def context(self) -> MockRequest:
-        return self._context
+    field_name: str = ""
+    field_nodes: list[FieldNode] = dataclasses.field(default_factory=_default_field_nodes)
+    return_type: GraphQLOutputType | None = None
+    parent_type: GraphQLObjectType | None = None
+    path: Path | None = None
+    schema: GraphQLSchema | None = None
+    fragments: dict[str, FragmentDefinitionNode] = dataclasses.field(default_factory=dict)
+    root_value: Any | None = None
+    operation: OperationType = OperationType.QUERY
+    variable_values: dict[str, Any] = dataclasses.field(default_factory=dict)
+    context: Any = dataclasses.field(default_factory=MockRequest)
 
 
 @contextlib.contextmanager
