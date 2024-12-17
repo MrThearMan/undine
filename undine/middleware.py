@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import traceback
 from copy import deepcopy
+from functools import wraps
 from types import FunctionType, TracebackType
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Callable, Generator, Self
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 from graphql import Undefined
 
 from undine.dataclasses import MutationMiddlewareParams, QueryMiddlewareParams
@@ -15,11 +16,10 @@ from undine.utils.logging import undine_logger
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
-    from django.db import models
     from graphql import GraphQLFieldResolver
 
     from undine import Field, MutationType, QueryType
-    from undine.typing import GQLInfo, JsonObject
+    from undine.typing import GQLInfo, JsonObject, QueryResult
 
 __all__ = [
     "AtomicMutationMiddleware",
@@ -56,18 +56,16 @@ class QueryMiddleware:
     def __init__(self, params: QueryMiddlewareParams) -> None:
         self.params = params
 
-    def __enter__(self) -> Self:
-        """Stuff that happens before the query is executed."""
-        return self
+    def __iter__(self) -> Generator[Self, None, None]:
+        self.before()
+        value = yield self
+        self.after(value)
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback_value: TracebackType | None,
-    ) -> bool:
+    def before(self) -> None:
+        """Stuff that happens before the query is executed."""
+
+    def after(self, value: QueryResult) -> None:
         """Stuff that happens after the query is executed."""
-        return False
 
 
 class QueryPermissionCheckMiddleware(QueryMiddleware):
@@ -79,81 +77,72 @@ class QueryPermissionCheckMiddleware(QueryMiddleware):
 
     priority = 100
 
-    def __enter__(self) -> Self:
-        if (
-            self.params.field is not None
-            and self.params.parent_instance is not None
-            and self.params.field.permissions_func is not None
-            and not self.params.field.permissions_func(self.params.field, self.params.info, self.params.parent_instance)
-        ):
-            raise GraphQLPermissionDeniedError
+    def before(self) -> None:
+        if self.params.root is None or self.params.field is None or self.params.field.permissions_func is None:
+            return
 
-        return self
+        if self.params.field.permissions_func(self.params.field, self.params.info, self.params.root):
+            return
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback_value: TracebackType | None,
-    ) -> bool:
+        raise GraphQLPermissionDeniedError
+
+    def after(self, value: QueryResult) -> None:
+        if value is None:
+            return
+
         if self.params.field is not None and self.params.field.skip_query_type_perms:
-            return False
+            return
 
-        if (
-            self.params.instance is not None
-            and not self.params.query_type.__permission_single__(self.params.instance, self.params.info)
-        ) or (
-            self.params.instances is not None
-            and not self.params.query_type.__permission_many__(self.params.instances, self.params.info)
-        ):
-            raise GraphQLPermissionDeniedError
+        if isinstance(value, models.Model):
+            if not self.params.query_type.__permission_single__(value, self.params.info):
+                raise GraphQLPermissionDeniedError
+            return
 
-        return False
+        if isinstance(value, list):
+            if not self.params.query_type.__permission_many__(value, self.params.info):
+                raise GraphQLPermissionDeniedError
+            return
 
 
 class QueryMiddlewareHandler:
     """
-    Executes defined middlewares for a Entrypoint QueryType of a QueryType Field.
+    Executes defined middlewares for a QueryType.
 
-    Middleware are run as nested context managers, where the middleware with the highest priority
-    (lowest number) is entered first and exited last.
+    Middleware have two steps, a before and and after step, where the middleware with the highest priority
+    (lowest number) has its before step run first and after step last.
     """
 
     def __init__(
         self,
         query_type: type[QueryType],
         info: GQLInfo,
+        root: Any,
         field: Field | None = None,
-        parent_instance: models.Model | None = None,
     ) -> None:
         self.middleware: list[QueryMiddleware] = []
-
-        self.params = QueryMiddlewareParams(
-            query_type=query_type,
-            info=info,
-            field=field,
-            parent_instance=parent_instance,
-        )
+        self.params = QueryMiddlewareParams(query_type=query_type, info=info, field=field, root=root)
 
         sorted_middleware = sorted(query_type.__middleware__(), key=lambda m: (m.priority, m.__name__))
 
         for middleware in sorted_middleware:
             self.middleware.append(middleware(self.params))
 
-    def __enter__(self) -> Self:
-        for middleware in self.middleware:
-            middleware.__enter__()
-        return self
+    def wrap(self, func: Callable[[], QueryResult], /) -> Callable[[], QueryResult]:
+        """Wraps a query function with the middleware, passing the result of the query to the after function."""
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback_value: TracebackType | None,
-    ) -> bool:
-        for middleware in reversed(self.middleware):
-            middleware.__exit__(exc_type, exc_value, traceback_value)
-        return False
+        @wraps(func)
+        def wrapper() -> QueryResult:
+            for middleware in self.middleware:
+                middleware.before()
+
+            value = func()
+
+            for middleware in reversed(self.middleware):
+                middleware.after(value)
+
+            return value
+
+        return wrapper
 
 
 # --- Mutation middleware -----------------------------------------------------------------------------------------

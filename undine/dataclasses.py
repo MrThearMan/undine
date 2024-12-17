@@ -72,9 +72,7 @@ class QueryMiddlewareParams:
     query_type: type[QueryType]
     info: GQLInfo
     field: Field | None = None
-    parent_instance: models.Model | None = None
-    instance: models.Model | None = None
-    instances: list[models.Model] | None = None
+    root: models.Model | None = None
 
 
 @dataclasses.dataclass(slots=True)

@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Generic,
     Literal,
     NewType,
     Protocol,
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CombinableExpression",
     "CombinableExpression",
+    "ConnectionType",
     "DispatchProtocol",
     "DjangoRequestProtocol",
     "DocstringParserProtocol",
@@ -57,8 +59,10 @@ __all__ = [
     "ModelField",
     "ModelManager",
     "MutationKind",
+    "NodeType",
     "OptimizerFunc",
     "OrderRef",
+    "PageInfoType",
     "RelatedField",
     "RelatedManager",
     "Root",
@@ -256,6 +260,7 @@ ToManyField: TypeAlias = models.ManyToManyField | models.ManyToManyRel | models.
 RelatedField: TypeAlias = ToOneField | ToManyField
 ModelField: TypeAlias = models.Field | models.ForeignObjectRel
 CombinableExpression: TypeAlias = models.Expression | models.Subquery
+QueryResult: TypeAlias = models.Model | list[models.Model] | None
 
 # GraphQL
 
@@ -263,6 +268,25 @@ Root: TypeAlias = Any
 GQLInfo: TypeAlias = GQLInfoProtocol | GraphQLResolveInfo
 GraphQLInputOutputType: TypeAlias = GraphQLOutputType | GraphQLInputType
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
+
+
+class NodeType(Generic[TModel], TypedDict):
+    cursor: str
+    node: TModel
+
+
+class PageInfoType(TypedDict):
+    hasNextPage: bool
+    hasPreviousPage: bool
+    startCursor: str | None
+    endCursor: str | None
+
+
+class ConnectionType(Generic[TModel], TypedDict):
+    totalCount: int
+    pageInfo: PageInfoType
+    edges: list[NodeType[TModel]]
+
 
 # Resolvers
 

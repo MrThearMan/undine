@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
-from copy import copy
 from typing import TYPE_CHECKING
 
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
-from django.db.models.functions import RowNumber
 from graphql import get_argument_values
 
 from undine.converters import extend_expression
@@ -15,7 +13,6 @@ from undine.errors.exceptions import OptimizerError
 from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type, is_connection
 from undine.relay import calculate_queryset_slice, validate_pagination_args
 from undine.settings import undine_settings
-from undine.utils.model_utils import SubqueryCount
 from undine.utils.reflection import swappable_by_subclassing
 
 if TYPE_CHECKING:
@@ -379,7 +376,7 @@ class OptimizationResults:
             #  - Don't do total count if not required
 
             # Top level connections
-            if self.field.name is None:
+            if self.field is None:
                 self.pagination_args.size = total_count = queryset.count()
                 cut = calculate_queryset_slice(pagination_args=self.pagination_args)
                 queryset = queryset[cut]
@@ -391,22 +388,23 @@ class OptimizationResults:
 
             # Nested connections
             else:
-                field_name = self.field.remote_field.name
+                _field_name = self.field.remote_field.name
 
                 queryset = queryset.annotate(
                     # TODO: Calculate slice.
-                    # TODO: Add setters.
+                    # TODO: Store slices and total counts?
                     _undine_slice_start=models.Value(0),
                     _undine_slice_stop=models.Value(100),
-                    _undine_total_count=SubqueryCount(queryset.filter(**{field_name: models.OuterRef(field_name)})),
-                    _undine_partition_index=(
-                        models.Window(
-                            expression=RowNumber(),
-                            partition_by=models.F(field_name),
-                            order_by=self.order_by or copy(queryset.model._meta.ordering),
-                        )
-                        - models.Value(1)  # Start from zero.
-                    ),
+                    # TODO: Calculate.
+                    # _undine_total_count=SubqueryCount(queryset.filter(**{field_name: models.OuterRef(field_name)})),
+                    # _undine_partition_index=(
+                    #     models.Window(
+                    #         expression=RowNumber(),
+                    #         partition_by=models.F(field_name),
+                    #         order_by=self.order_by or copy(queryset.model._meta.ordering),
+                    #     )
+                    #     - models.Value(1)  # Start from zero.
+                    # ),
                 ).filter(
                     _undine_partition_index__gte=models.F("_undine_slice_start"),
                     _undine_partition_index__lt=models.F("_undine_slice_stop"),

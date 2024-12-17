@@ -20,7 +20,7 @@ from undine.optimizer.optimizer import QueryOptimizer
 from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
-from undine.typing import GQLInfo, RelatedManager, TModel
+from undine.typing import ConnectionType, GQLInfo, NodeType, PageInfoType, RelatedManager, TModel
 from undine.utils.bulk_mutation_handler import BulkMutationHandler
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handler import MutationHandler
@@ -94,17 +94,14 @@ class QueryTypeSingleRelatedFieldResolver(Generic[TModel]):
     query_type: type[QueryType]
     field: Field
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> TModel:
-        with QueryMiddlewareHandler(
-            query_type=self.query_type,
-            info=info,
-            field=self.field,
-            parent_instance=instance,
-        ) as handler:
-            rel_instance = getattr(instance, self.field.field_name, None)
-            handler.params.instance = rel_instance
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
 
-        return rel_instance
+        @handler.wrap
+        def getter() -> TModel | None:
+            return getattr(instance, self.field.field_name, None)
+
+        return getter()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -115,19 +112,18 @@ class QueryTypeManyRelatedFieldResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        with QueryMiddlewareHandler(
-            info=info,
-            query_type=self.query_type,
-            field=self.field,
-            parent_instance=instance,
-        ) as handler:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
+
+        @handler.wrap
+        def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
             result: RelatedManager | list[models.Model] = getattr(instance, field_name)
-            instances = list(result.get_queryset()) if isinstance(result, models.Manager) else result
 
-            handler.params.instances = instances
+            if isinstance(result, models.Manager):
+                return list(result.get_queryset())
+            return result
 
-        return instances
+        return getter()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -137,16 +133,17 @@ class ModelSingleResolver(Generic[TModel]):
     query_type: type[QueryType]
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
+
+        @handler.wrap
+        def getter() -> TModel | None:
             queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
-
             instances = evaluate_in_context(optimized_queryset, info)
-            instance = next(iter(instances), None)
-            handler.params.instance = instance
+            return next(iter(instances), None)
 
-        return instance
+        return getter()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -156,15 +153,16 @@ class ModelManyResolver:
     query_type: type[QueryType]
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
+
+        @handler.wrap
+        def getter() -> list[TModel]:
             queryset = self.query_type.__get_queryset__(info)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
+            return evaluate_in_context(optimized_queryset, info)
 
-            instances = evaluate_in_context(optimized_queryset, info)
-            handler.params.instances = instances
-
-        return instances
+        return getter()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -216,91 +214,98 @@ class NodeResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ConnectionResolver:
+class ConnectionResolver(Generic[TModel]):
     """Resolves a connection of a given query type."""
 
     query_type: type[QueryType]
     max_limit: int
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
-        with QueryMiddlewareHandler(query_type=self.query_type, info=info) as handler:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType[TModel]:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
+
+        total_count: int = 0
+        start: int = 0
+        stop: int = 0
+
+        @handler.wrap
+        def getter() -> list[TModel]:
+            nonlocal total_count, start, stop
+
             queryset = self.query_type.__get_queryset__(info)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
-            instances = evaluate_in_context(optimized_queryset, info)
 
-            handler.params.instances = instances
+            total_count = optimized_queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY]
+            start = optimized_queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY]
+            stop = optimized_queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY]
 
-        total_count = optimized_queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY]
-        start = optimized_queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY]
-        stop = optimized_queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY]
+            return evaluate_in_context(optimized_queryset, info)
+
+        instances = getter()
 
         edges = [
-            {
-                "cursor": offset_to_cursor(start + index),
-                "node": instance,
-            }
+            NodeType(
+                cursor=offset_to_cursor(start + index),
+                node=instance,
+            )
             for index, instance in enumerate(instances)
         ]
-        return {
-            "totalCount": total_count,
-            "pageInfo": {
-                "hasNextPage": stop < total_count,
-                "hasPreviousPage": start > 0,
-                "startCursor": None if not edges else edges[0]["cursor"],
-                "endCursor": None if not edges else edges[-1]["cursor"],
-            },
-            "edges": edges,
-        }
+        return ConnectionType(
+            totalCount=total_count,
+            pageInfo=PageInfoType(
+                hasNextPage=stop < total_count,
+                hasPreviousPage=start > 0,
+                startCursor=None if not edges else edges[0]["cursor"],
+                endCursor=None if not edges else edges[-1]["cursor"],
+            ),
+            edges=edges,
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class NestedConnectionResolver:
+class NestedConnectionResolver(Generic[TModel]):
     """Resolves a nested connection of a given query type from the given field."""
 
     query_type: type[QueryType]
     field: Field
     max_limit: int
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:
-        with QueryMiddlewareHandler(
-            info=info,
-            query_type=self.query_type,
-            field=self.field,
-            parent_instance=instance,
-        ) as handler:
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> ConnectionType[TModel]:
+        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
+
+        @handler.wrap
+        def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
             result: RelatedManager | list[models.Model] = getattr(instance, field_name)
-            instances = list(result.get_queryset()) if isinstance(result, models.Manager) else result
 
-            handler.params.instances = instances
+            if isinstance(result, models.Manager):
+                return list(result.get_queryset())
+            return result
 
+        instances = getter()
+
+        # TODO: Get from where? From root instance?
         total_count: int = 0
         start: int = 0
         stop: int = 0
-        if instances:
-            # TODO: Add getters.
-            total_count = instances[0]._undine_total_count  # noqa: SLF001
-            start = instances[0]._undine_slice_start  # noqa: SLF001
-            stop = instances[0]._undine_slice_stop  # noqa: SLF001
 
         edges = [
-            {
-                "cursor": offset_to_cursor(start + index),
-                "node": instance,
-            }
+            NodeType(
+                cursor=offset_to_cursor(start + index),
+                node=instance,
+            )
             for index, instance in enumerate(instances)
         ]
-        return {
-            "totalCount": total_count,
-            "pageInfo": {
-                "hasNextPage": stop < total_count,
-                "hasPreviousPage": start > 0,
-                "startCursor": None if not edges else edges[0]["cursor"],
-                "endCursor": None if not edges else edges[-1]["cursor"],
-            },
-            "edges": edges,
-        }
+        return ConnectionType(
+            totalCount=total_count,
+            pageInfo=PageInfoType(
+                hasNextPage=stop < total_count,
+                hasPreviousPage=start > 0,
+                startCursor=None if not edges else edges[0]["cursor"],
+                endCursor=None if not edges else edges[-1]["cursor"],
+            ),
+            edges=edges,
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
