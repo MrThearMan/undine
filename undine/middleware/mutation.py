@@ -1,24 +1,20 @@
 from __future__ import annotations
 
-import traceback
 from copy import deepcopy
 from functools import wraps
-from types import FunctionType, TracebackType
-from typing import TYPE_CHECKING, Any, Callable, Generator, Self
+from types import FunctionType
+from typing import TYPE_CHECKING, Any, Callable, ParamSpec, Self
 
 from django.db import IntegrityError, models, transaction
 from graphql import Undefined
 
-from undine.dataclasses import MutationMiddlewareParams, QueryMiddlewareParams
+from undine.dataclasses import MutationMiddlewareParams
 from undine.errors.constraints import get_constraint_message
-from undine.errors.exceptions import GraphQLModelConstaintViolationError, GraphQLPermissionDeniedError
-from undine.utils.logging import undine_logger
+from undine.errors.exceptions import GraphQLModelConstaintViolationError
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
-    from graphql import GraphQLFieldResolver
-
-    from undine import Field, MutationType, QueryType
+    from undine import MutationType
     from undine.typing import GQLInfo, JsonObject, QueryResult
 
 __all__ = [
@@ -29,123 +25,12 @@ __all__ = [
     "IntegrityErrorHandlingMiddleware",
     "MutationMiddleware",
     "MutationMiddlewareHandler",
-    "error_logging_middleware",
+    "MutationPermissionCheckMiddleware",
+    "PostMutationHandlingMiddleware",
 ]
 
 
-# -- Field resolver middleware ------------------------------------------------------------------------------------
-
-
-def error_logging_middleware(resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-    try:
-        return resolver(root, info, **kwargs)
-    except Exception:
-        undine_logger.error(traceback.format_exc())
-        raise
-
-
-# --- Query middleware -------------------------------------------------------------------------------------------
-
-
-class QueryMiddleware:
-    """Base class for query middleware."""
-
-    priority: int
-    """Middleware priority. Lower number means middleware context is entered earlier in the middleware stack."""
-
-    def __init__(self, params: QueryMiddlewareParams) -> None:
-        self.params = params
-
-    def __iter__(self) -> Generator[Self, None, None]:
-        self.before()
-        value = yield self
-        self.after(value)
-
-    def before(self) -> None:
-        """Stuff that happens before the query is executed."""
-
-    def after(self, value: QueryResult) -> None:
-        """Stuff that happens after the query is executed."""
-
-
-class QueryPermissionCheckMiddleware(QueryMiddleware):
-    """
-    Query middleware required for permissions checks to work.
-
-    Runs permission checks for the given query type.
-    """
-
-    priority = 100
-
-    def before(self) -> None:
-        if self.params.root is None or self.params.field is None or self.params.field.permissions_func is None:
-            return
-
-        if self.params.field.permissions_func(self.params.field, self.params.info, self.params.root):
-            return
-
-        raise GraphQLPermissionDeniedError
-
-    def after(self, value: QueryResult) -> None:
-        if value is None:
-            return
-
-        if self.params.field is not None and self.params.field.skip_query_type_perms:
-            return
-
-        if isinstance(value, models.Model):
-            if not self.params.query_type.__permission_single__(value, self.params.info):
-                raise GraphQLPermissionDeniedError
-            return
-
-        if isinstance(value, list):
-            if not self.params.query_type.__permission_many__(value, self.params.info):
-                raise GraphQLPermissionDeniedError
-            return
-
-
-class QueryMiddlewareHandler:
-    """
-    Executes defined middlewares for a QueryType.
-
-    Middleware have two steps, a before and and after step, where the middleware with the highest priority
-    (lowest number) has its before step run first and after step last.
-    """
-
-    def __init__(
-        self,
-        query_type: type[QueryType],
-        info: GQLInfo,
-        root: Any,
-        field: Field | None = None,
-    ) -> None:
-        self.middleware: list[QueryMiddleware] = []
-        self.params = QueryMiddlewareParams(query_type=query_type, info=info, field=field, root=root)
-
-        sorted_middleware = sorted(query_type.__middleware__(), key=lambda m: (m.priority, m.__name__))
-
-        for middleware in sorted_middleware:
-            self.middleware.append(middleware(self.params))
-
-    def wrap(self, func: Callable[[], QueryResult], /) -> Callable[[], QueryResult]:
-        """Wraps a query function with the middleware, passing the result of the query to the after function."""
-
-        @wraps(func)
-        def wrapper() -> QueryResult:
-            for middleware in self.middleware:
-                middleware.before()
-
-            value = func()
-
-            for middleware in reversed(self.middleware):
-                middleware.after(value)
-
-            return value
-
-        return wrapper
-
-
-# --- Mutation middleware -----------------------------------------------------------------------------------------
+P = ParamSpec("P")
 
 
 class MutationMiddleware:
@@ -157,18 +42,14 @@ class MutationMiddleware:
     def __init__(self, params: MutationMiddlewareParams) -> None:
         self.params = params
 
-    def __enter__(self) -> Self:
+    def before(self) -> None:
         """Stuff that happens before the mutation is executed."""
-        return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback_value: TracebackType | None,
-    ) -> bool:
+    def after(self, value: QueryResult) -> None:
         """Stuff that happens after the mutation is executed."""
-        return False
+
+    def exception(self, exc: Exception) -> None:
+        """Stuff that happens if an exception is raised during the mutation."""
 
 
 class InputDataModificationMiddleware(MutationMiddleware):
@@ -183,9 +64,8 @@ class InputDataModificationMiddleware(MutationMiddleware):
 
     priority: int = 0
 
-    def __enter__(self) -> Self:
+    def before(self) -> None:
         self.fill_input_data(self.params.mutation_type, self.params.input_data)
-        return self
 
     def fill_input_data(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -222,12 +102,11 @@ class MutationPermissionCheckMiddleware(MutationMiddleware):
 
     priority: int = 100
 
-    def __enter__(self) -> Self:
+    def before(self) -> None:
         if isinstance(self.params.input_data, dict):
             self.check_single_permissions(self.params.mutation_type, self.params.input_data)
         if isinstance(self.params.input_data, list):
             self.check_many_permissions(self.params.mutation_type, self.params.input_data)
-        return self
 
     def check_single_permissions(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         if mutation_type.__mutation_kind__ == "create":
@@ -295,9 +174,8 @@ class InputDataValidationMiddleware(MutationMiddleware):
 
     priority: int = 200
 
-    def __enter__(self) -> Self:
+    def before(self) -> None:
         self.validate_data(self.params.mutation_type, self.params.input_data)
-        return self
 
     def validate_data(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -330,15 +208,9 @@ class PostMutationHandlingMiddleware(MutationMiddleware):
 
     priority: int = 200
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
-        if exc_type is None:
-            self.post_handling(self.params.mutation_type, self.params.input_data)
-        return False
+    def after(self, value: QueryResult) -> None:
+        # TODO: Do something with value?
+        self.post_handling(self.params.mutation_type, self.params.input_data)
 
     def post_handling(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -367,20 +239,15 @@ class InputOnlyDataRemovalMiddleware(MutationMiddleware):
 
     priority: int = 300
 
-    def __enter__(self) -> Self:
-        self.original_input_data = deepcopy(self.params.input_data)
-        self.remove_input_only_fields(self.params.mutation_type, self.params.input_data)
-        return self
+    def __init__(self, params: MutationMiddlewareParams) -> None:
+        self.original_input_data = deepcopy(params.input_data)
+        super().__init__(params)
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
-        if hasattr(self, "original_input_data"):
-            self.params.input_data = self.original_input_data
-        return False
+    def before(self) -> None:
+        self.remove_input_only_fields(self.params.mutation_type, self.params.input_data)
+
+    def after(self, value: QueryResult) -> None:
+        self.params.input_data = self.original_input_data
 
     def remove_input_only_fields(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
         from undine import MutationType  # noqa: PLC0415
@@ -407,17 +274,11 @@ class IntegrityErrorHandlingMiddleware(MutationMiddleware):
     # the transaction has already been rolled back before this raises a different error.
     priority: int = 900
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
+    def exception(self, exc: Exception) -> None:
         """If an integrity error occurs, raise a GraphQLStatusError with the appropriate error code."""
-        if isinstance(exc_value, IntegrityError):
-            msg = get_constraint_message(exc_value.args[0])
-            raise GraphQLModelConstaintViolationError(msg) from exc_value
-        return False
+        if isinstance(exc, IntegrityError):
+            msg = get_constraint_message(exc.args[0])
+            raise GraphQLModelConstaintViolationError(msg) from exc
 
 
 class AtomicMutationMiddleware(MutationMiddleware):
@@ -428,35 +289,42 @@ class AtomicMutationMiddleware(MutationMiddleware):
     # To be safe, make sure this this middleware runs last.
     priority: int = 1000
 
-    def __enter__(self) -> Self:
+    def __init__(self, params: MutationMiddlewareParams) -> None:
+        self.atomic: transaction.Atomic | None = None
+        super().__init__(params)
+
+    def before(self) -> Self:
         self.atomic = transaction.atomic()
-        self.atomic.__enter__()
+        self.atomic.__enter__()  # noqa: PLC2801
         return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
-        if hasattr(self, "atomic"):
-            self.atomic.__exit__(exc_type, exc_value, traceback)
-        return False
+    def after(self, value: QueryResult) -> None:
+        if self.atomic is not None:
+            self.atomic.__exit__(None, None, None)
+
+    def exception(self, exc: Exception) -> None:
+        if self.atomic is not None:
+            self.atomic.__exit__(type(exc), exc, exc.__traceback__)
 
 
 class MutationMiddlewareHandler:
     """
     Executes defined middlewares for a MutationType.
 
-    Middleware are run as nested context managers, where the middleware with the highest priority
-    (lowest number) is entered first and exited last.
+    All middleware have three possible steps:
+    - a before step, which is run before the mutation
+    - an after step, which is run after the mutation
+    - an exception step, which is run if an exception is raised during the mutation
+
+    The middleware with the highest priority (lowest number) has its before step run first
+    and after or exception steps last.
     """
 
     def __init__(
         self,
-        mutation_type: type[MutationType],
         info: GQLInfo,
         input_data: JsonObject,
+        mutation_type: type[MutationType],
         instance: models.Model | None = None,
         instances: list[models.Model] | None = None,
     ) -> None:
@@ -475,17 +343,24 @@ class MutationMiddlewareHandler:
         for middleware in sorted_middleware:
             self.middleware.append(middleware(self.params))
 
-    def __enter__(self) -> Self:
-        for middleware in self.middleware:
-            middleware.__enter__()
-        return self
+    def wrap(self, func: Callable[P, QueryResult], /) -> Callable[P, QueryResult]:
+        """Wraps a mutation function with the middleware."""
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback_value: TracebackType | None,
-    ) -> bool:
-        for middleware in reversed(self.middleware):
-            middleware.__exit__(exc_type, exc_value, traceback_value)
-        return False
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> QueryResult:
+            for middleware in self.middleware:
+                middleware.before()
+
+            try:
+                value = func(*args, **kwargs)
+            except Exception as exc:
+                for middleware in reversed(self.middleware):
+                    middleware.exception(exc)
+                raise
+            else:
+                for middleware in reversed(self.middleware):
+                    middleware.after(value)
+
+            return value
+
+        return wrapper

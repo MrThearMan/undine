@@ -132,7 +132,7 @@ def load_deferred_converters() -> None:
     @convert_field_ref_to_resolver.register
     def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
         caller: Field = kwargs["caller"]
-        return NestedConnectionResolver(query_type=ref.query_type, field=caller, max_limit=ref.max_limit)
+        return NestedConnectionResolver(query_type=ref.query_type, field=caller)
 
     @convert_field_ref_to_resolver.register
     def _(_: GraphQLID, **kwargs: Any) -> GraphQLFieldResolver:

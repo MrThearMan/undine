@@ -377,12 +377,12 @@ class OptimizationResults:
 
             # Top level connections
             if self.field is None:
-                self.pagination_args.size = total_count = queryset.count()
+                self.pagination_args.total_count = queryset.count()
                 cut = calculate_queryset_slice(pagination_args=self.pagination_args)
                 queryset = queryset[cut]
 
                 # Store the pagination args in the queryset hints for the connection resolver.
-                queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY] = total_count
+                queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY] = self.pagination_args.total_count
                 queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY] = cut.start
                 queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY] = cut.stop
 

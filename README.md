@@ -25,15 +25,11 @@ pip install undine
 
 # Before initial release:
 - [ ] Test aliased fields
-- [ ] Test permission checks
-- [ ] Add intances to update and delete permission checks
-- [ ] Add tests for optimization
-- [ ] Add support for pagination
-- [ ] Add support for Relay
+- [ ] Test query and mutation middleware
+- [ ] Test optimizations
+- [ ] Test connections and node interface
 - [ ] Add utilities for unit testing
-- [ ] Sync with graphene-django-query-optimizer
-- [ ] Add documentation for everything
-
+- [ ] Add documentation
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects

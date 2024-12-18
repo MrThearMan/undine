@@ -23,7 +23,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MissingModelError
-from undine.middleware import (
+from undine.middleware.mutation import (
     AtomicMutationMiddleware,
     InputDataModificationMiddleware,
     InputDataValidationMiddleware,
@@ -217,7 +217,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
 
 class Input:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         ref: Any = None,
         *,

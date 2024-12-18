@@ -4,6 +4,7 @@ import base64
 from typing import TYPE_CHECKING
 
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
+from graphql.type.scalars import serialize_id
 
 from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import ConnectionQueryTypeNotNodeError, PaginationArgumentValidationError
@@ -145,7 +146,7 @@ def calculate_queryset_slice(pagination_args: PaginationArgs) -> slice:
     # Start from form fetching max number of items.
     #
     start: int = 0
-    stop: int = pagination_args.size
+    stop: int = pagination_args.total_count
     #
     # If `after` is given, change the start index to `after`.
     # If `after` is greater than the current queryset size, change it to `size`.
@@ -176,25 +177,22 @@ def calculate_queryset_slice(pagination_args: PaginationArgs) -> slice:
     return slice(start, stop)
 
 
-def encode_cursor(string: str) -> str:
+def encode_base64(string: str) -> str:
     return base64.b64encode(string.encode("utf-8")).decode("ascii")
 
 
-def decode_cursor(string: str) -> str:
+def decode_base64(string: str) -> str:
     return base64.b64decode(string.encode("ascii")).decode("utf-8")
-
-
-PREFIX = "arrayconnection:"
 
 
 def offset_to_cursor(offset: int) -> str:
     """Create the cursor string from an offset."""
-    return encode_cursor(f"{PREFIX}{offset}")
+    return encode_base64(f"{undine_settings.RELAY_CURSOR_PREFIX}:{offset}")
 
 
 def cursor_to_offset(cursor: str) -> int:
     """Extract the offset from the cursor string."""
-    return int(decode_cursor(cursor).removeprefix(PREFIX))
+    return int(decode_base64(cursor).removeprefix(f"{undine_settings.RELAY_CURSOR_PREFIX}:"))
 
 
 def to_global_id(typename: str, object_id: str | int) -> str:
@@ -202,7 +200,7 @@ def to_global_id(typename: str, object_id: str | int) -> str:
     Takes a typename and an object ID specific to that type,
     and returns a "Global ID" that is unique among all types.
     """
-    return encode_cursor(f"{typename}:{GraphQLID.serialize(object_id)}")
+    return encode_base64(f"{typename}:{serialize_id(object_id)}")
 
 
 def from_global_id(global_id: str) -> tuple[str, str | int]:
@@ -210,7 +208,7 @@ def from_global_id(global_id: str) -> tuple[str, str | int]:
     Takes the "Global ID" created by `to_global_id`,
     and returns the typename and object ID used to create it.
     """
-    global_id = decode_cursor(global_id)
+    global_id = decode_base64(global_id)
     typename, object_id = global_id.split(":", 1)
     if object_id.isdigit():
         object_id = int(object_id)

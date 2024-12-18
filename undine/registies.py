@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from django.db import models
-from graphql import GraphQLEnumType, GraphQLInputObjectType, GraphQLObjectType
+from graphql import GraphQLNamedType
 
 from undine.errors.exceptions import RegistryDuplicateError, RegistryMissingTypeError
 from undine.utils.reflection import get_instance_name
@@ -60,7 +60,7 @@ This allows deferring the creation of field resolvers for related fields,
 which would use a `QueryType` that is not created when the field is defined.
 """
 
-GRAPHQL_TYPE_REGISTRY = Registry[str, GraphQLEnumType | GraphQLObjectType | GraphQLInputObjectType]()
+GRAPHQL_TYPE_REGISTRY = Registry[str, GraphQLNamedType]()
 """
 Caches created GraphQL types by their names, so that they can be reused during schema creation,
 because a GraphQL Schema cannot contain multiple types with the same name.

@@ -111,6 +111,6 @@ UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
     "GRAPHIQL_ENABLED": True,
     "MIDDLEWARE": [
-        "undine.middleware.error_logging_middleware",
+        "example_project.app.middleware.error_logging_middleware",
     ],
 }

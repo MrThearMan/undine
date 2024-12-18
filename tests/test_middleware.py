@@ -1,44 +1,27 @@
 from __future__ import annotations
 
 import itertools
-import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from example_project.app.models import Comment, Person, Project, ServiceRequest, Task, TaskTypeChoices, Team
 from tests.factories import UserFactory
-from tests.helpers import MockGQLInfo, MockRequest, exact
+from tests.helpers import MockGQLInfo, MockRequest
 from undine import Input, MutationType
 from undine.dataclasses import MutationMiddlewareParams
-from undine.middleware import (
+from undine.middleware.mutation import (
     InputDataModificationMiddleware,
     InputDataValidationMiddleware,
     InputOnlyDataRemovalMiddleware,
     MutationMiddleware,
     MutationMiddlewareHandler,
     PostMutationHandlingMiddleware,
-    error_logging_middleware,
 )
 
 if TYPE_CHECKING:
-    from undine.typing import GQLInfo
-
-
-def test_error_logging_middleware(caplog):
-    caplog.set_level(logging.DEBUG, logger="undine")
-
-    def func(*args, **kwargs):
-        msg = "Test"
-        raise ValueError(msg)
-
-    with pytest.raises(ValueError, match=exact("Test")):
-        error_logging_middleware(func, root=None, info=MockGQLInfo())
-
-    assert caplog.record_tuples[0][0] == "undine"
-    assert caplog.record_tuples[0][1] == logging.ERROR
-    assert "ValueError: Test" in caplog.record_tuples[0][2]
+    from undine.typing import GQLInfo, QueryResult
 
 
 def test_input_data_modification_middleware():
@@ -59,11 +42,19 @@ def test_input_data_modification_middleware():
         ),
     )
 
-    with middleware:
-        assert middleware.params.input_data == {
-            "name": "foo",
-            "current_user_id": 1,
-        }
+    middleware.before()
+
+    assert middleware.params.input_data == {
+        "name": "foo",
+        "current_user_id": 1,
+    }
+
+    middleware.after(None)
+
+    assert middleware.params.input_data == {
+        "name": "foo",
+        "current_user_id": 1,
+    }
 
 
 def test_input_data_validation_middleware():
@@ -106,10 +97,11 @@ def test_input_data_validation_middleware():
         ),
     )
 
-    with middleware:
-        assert validator_1_called == 1
-        assert validator_2_called == 2
-        assert validate_called == 3
+    middleware.before()
+
+    assert validator_1_called == 1
+    assert validator_2_called == 2
+    assert validate_called == 3
 
 
 def test_post_mutation_handling_middleware():
@@ -135,8 +127,11 @@ def test_post_mutation_handling_middleware():
         ),
     )
 
-    with middleware:
-        assert post_handler_called is False
+    middleware.before()
+
+    assert post_handler_called is False
+
+    middleware.after(None)
 
     assert post_handler_called is True
 
@@ -161,11 +156,14 @@ def test_input_only_data_removal_middleware():
         ),
     )
 
-    with middleware:
-        assert middleware.params.input_data == {
-            "type": TaskTypeChoices.STORY.value,
-            "created_at": "2022-01-01T00:00:00",
-        }
+    middleware.before()
+
+    assert middleware.params.input_data == {
+        "type": TaskTypeChoices.STORY.value,
+        "created_at": "2022-01-01T00:00:00",
+    }
+
+    middleware.after(None)
 
     assert middleware.params.input_data == input_data
 
@@ -234,19 +232,22 @@ def test_input_only_data_removal_middleware__nested():
         ),
     )
 
-    with middleware:
-        assert middleware.params.input_data == {
-            "type": TaskTypeChoices.STORY.value,
-            "project": {"pk": 1, "comments": [{}]},
-            "request": {},
-            "assignees": [{"name": "Test user"}],
-        }
+    middleware.before()
+
+    assert middleware.params.input_data == {
+        "type": TaskTypeChoices.STORY.value,
+        "project": {"pk": 1, "comments": [{}]},
+        "request": {},
+        "assignees": [{"name": "Test user"}],
+    }
+
+    middleware.after(None)
 
     assert middleware.params.input_data == input_data
 
 
 @pytest.mark.django_db
-def test_mutation_middleware_context__default():
+def test_mutation_middleware_handler__default():
     validate_called = False
 
     class MyMutationType(MutationType, model=Task, auto=False):
@@ -259,29 +260,31 @@ def test_mutation_middleware_context__default():
 
     input_data = {"name": "foo"}
 
-    with MutationMiddlewareHandler(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data):
+    middlewares = MutationMiddlewareHandler(MockGQLInfo(), input_data, mutation_type=MyMutationType)
+
+    def foo(*args, **kwargs):
         pass
+
+    middlewares.wrap(foo)()
 
     assert validate_called is True
 
 
 @pytest.mark.django_db
-def test_mutation_middleware_context__custom_middleware():
+def test_mutation_middleware_handler__custom_middleware():
     pre_called = False
     post_called = False
 
     class MyMiddleware(MutationMiddleware):
         priority = 101
 
-        def __enter__(self) -> Self:
+        def before(self) -> None:
             nonlocal pre_called, post_called
             pre_called = True
-            return self
 
-        def __exit__(self, *args: object, **kwargs: Any) -> bool:
+        def after(self, value: QueryResult) -> None:
             nonlocal pre_called, post_called
             post_called = True
-            return False
 
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input()
@@ -292,14 +295,15 @@ def test_mutation_middleware_context__custom_middleware():
 
     input_data = {"name": "foo"}
 
-    handler = MutationMiddlewareHandler(mutation_type=MyMutationType, info=MockGQLInfo(), input_data=input_data)
+    middlewares = MutationMiddlewareHandler(MockGQLInfo(), input_data, mutation_type=MyMutationType)
 
     assert pre_called is False
     assert post_called is False
 
-    with handler:
-        assert pre_called is True
-        assert post_called is False
+    def foo(*args, **kwargs):
+        pass
+
+    middlewares.wrap(foo)()
 
     assert pre_called is True
     assert post_called is True

@@ -9,7 +9,7 @@ from example_project.app.models import Task
 from tests.helpers import MockGQLInfo, exact
 from undine import MutationType, QueryType
 from undine.errors.exceptions import MissingModelError
-from undine.middleware import MutationMiddleware
+from undine.middleware.mutation import MutationMiddleware
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:

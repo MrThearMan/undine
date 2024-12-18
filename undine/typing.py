@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CombinableExpression",
     "CombinableExpression",
-    "ConnectionType",
+    "ConnectionDict",
     "DispatchProtocol",
     "DjangoRequestProtocol",
     "DocstringParserProtocol",
@@ -59,10 +59,10 @@ __all__ = [
     "ModelField",
     "ModelManager",
     "MutationKind",
-    "NodeType",
+    "NodeDict",
     "OptimizerFunc",
     "OrderRef",
-    "PageInfoType",
+    "PageInfoDict",
     "RelatedField",
     "RelatedManager",
     "Root",
@@ -270,22 +270,22 @@ GraphQLInputOutputType: TypeAlias = GraphQLOutputType | GraphQLInputType
 Selections: TypeAlias = Iterable[SelectionNode | FieldNode]
 
 
-class NodeType(Generic[TModel], TypedDict):
+class NodeDict(Generic[TModel], TypedDict):
     cursor: str
     node: TModel
 
 
-class PageInfoType(TypedDict):
+class PageInfoDict(TypedDict):
     hasNextPage: bool
     hasPreviousPage: bool
     startCursor: str | None
     endCursor: str | None
 
 
-class ConnectionType(Generic[TModel], TypedDict):
+class ConnectionDict(Generic[TModel], TypedDict):
     totalCount: int
-    pageInfo: PageInfoType
-    edges: list[NodeType[TModel]]
+    pageInfo: PageInfoDict
+    edges: list[NodeDict[TModel]]
 
 
 # Resolvers

@@ -20,7 +20,7 @@ from undine.converters import (
     is_many,
 )
 from undine.errors.exceptions import MismatchingModelError, MissingModelError
-from undine.middleware import QueryPermissionCheckMiddleware
+from undine.middleware.query import QueryPermissionCheckMiddleware
 from undine.parsers import parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from django.db import models
 
     from undine import FilterSet, OrderSet
-    from undine.middleware import QueryMiddleware
+    from undine.middleware.query import QueryMiddleware
     from undine.optimizer.optimizer import OptimizationData
     from undine.typing import GQLInfo, OptimizerFunc, PermissionFunc, Self
 

@@ -14,13 +14,14 @@ from django.db import models
 from graphql import GraphQLError, GraphQLID, GraphQLObjectType, GraphQLResolveInfo, Undefined
 
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLPermissionDeniedError
-from undine.middleware import MutationMiddlewareHandler, QueryMiddlewareHandler
+from undine.middleware.mutation import MutationMiddlewareHandler
+from undine.middleware.query import QueryMiddlewareHandler
 from undine.optimizer.ast import get_underlying_type
 from undine.optimizer.optimizer import QueryOptimizer
 from undine.optimizer.prefetch_hack import evaluate_in_context
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
-from undine.typing import ConnectionType, GQLInfo, NodeType, PageInfoType, RelatedManager, TModel
+from undine.typing import ConnectionDict, GQLInfo, NodeDict, PageInfoDict, RelatedManager, TModel
 from undine.utils.bulk_mutation_handler import BulkMutationHandler
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handler import MutationHandler
@@ -45,6 +46,87 @@ __all__ = [
     "NodeResolver",
     "UpdateResolver",
 ]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class FunctionResolver:
+    """Resolves a GraphQL field using the given function."""
+
+    func: FunctionType | Callable[..., Any]
+    root_param: str | None = None
+    info_param: str | None = None
+
+    @classmethod
+    def adapt(cls, func: FunctionType | Callable[..., Any], *, depth: int = 0) -> Self:
+        """
+        Create the appropriate resolver for a function based on its signature.
+        Leave out the `root` parameter from static functions, and only include the
+        `info` parameter if the function has a parameter of the `GraphQLResolveInfo` type.
+
+        Note that the `root` is always the first parameter, and the matching happens
+        by it's name, which can be configured with `RESOLVER_ROOT_PARAM_NAME`.
+        `self` and `cls` are always accepted root parameter names, since they are the
+        conventions for instance and class methods respectively.
+        """
+        sig = get_signature(func, depth=depth + 1)
+
+        root_param: str | None = None
+        info_param: str | None = None
+        for i, param in enumerate(sig.parameters.values()):
+            if i == 0 and param.name in {"self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME}:
+                root_param = param.name
+
+            elif param.annotation in {GQLInfo, GraphQLResolveInfo}:
+                info_param = param.name
+                break
+
+        return cls(func=func, root_param=root_param, info_param=info_param)
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        if self.root_param is not None:
+            kwargs[self.root_param] = root
+        if self.info_param is not None:
+            kwargs[self.info_param] = info
+        return self.func(**kwargs)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelSingleResolver(Generic[TModel]):
+    """Top-level resolver for fetching a single model object."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+        middlewares = QueryMiddlewareHandler(root, info, query_type=self.query_type)
+
+        @middlewares.wrap
+        def getter() -> TModel | None:
+            queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
+            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            optimized_queryset = optimizer.optimize(queryset)
+            instances = evaluate_in_context(optimized_queryset, info)
+            return next(iter(instances), None)
+
+        return getter()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ModelManyResolver(Generic[TModel]):
+    """Top-level resolver for fetching a set of model objects."""
+
+    query_type: type[QueryType]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        middlewares = QueryMiddlewareHandler(root, info, query_type=self.query_type)
+
+        @middlewares.wrap
+        def getter() -> list[TModel]:
+            queryset = self.query_type.__get_queryset__(info)
+            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            optimized_queryset = optimizer.optimize(queryset)
+            return evaluate_in_context(optimized_queryset, info)
+
+        return getter()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -95,9 +177,9 @@ class QueryTypeSingleRelatedFieldResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
+        middlewares = QueryMiddlewareHandler(instance, info, query_type=self.query_type, field=self.field)
 
-        @handler.wrap
+        @middlewares.wrap
         def getter() -> TModel | None:
             return getattr(instance, self.field.field_name, None)
 
@@ -112,9 +194,9 @@ class QueryTypeManyRelatedFieldResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
+        middlewares = QueryMiddlewareHandler(instance, info, query_type=self.query_type, field=self.field)
 
-        @handler.wrap
+        @middlewares.wrap
         def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
             result: RelatedManager | list[models.Model] = getattr(instance, field_name)
@@ -122,45 +204,6 @@ class QueryTypeManyRelatedFieldResolver(Generic[TModel]):
             if isinstance(result, models.Manager):
                 return list(result.get_queryset())
             return result
-
-        return getter()
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class ModelSingleResolver(Generic[TModel]):
-    """Top-level resolver for fetching a single model object."""
-
-    query_type: type[QueryType]
-
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
-
-        @handler.wrap
-        def getter() -> TModel | None:
-            queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
-            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
-            optimized_queryset = optimizer.optimize(queryset)
-            instances = evaluate_in_context(optimized_queryset, info)
-            return next(iter(instances), None)
-
-        return getter()
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class ModelManyResolver:
-    """Top-level resolver for fetching a set of model objects."""
-
-    query_type: type[QueryType]
-
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
-
-        @handler.wrap
-        def getter() -> list[TModel]:
-            queryset = self.query_type.__get_queryset__(info)
-            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
-            optimized_queryset = optimizer.optimize(queryset)
-            return evaluate_in_context(optimized_queryset, info)
 
         return getter()
 
@@ -218,16 +261,15 @@ class ConnectionResolver(Generic[TModel]):
     """Resolves a connection of a given query type."""
 
     query_type: type[QueryType]
-    max_limit: int
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType[TModel]:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=root)
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        middlewares = QueryMiddlewareHandler(root, info, query_type=self.query_type)
 
         total_count: int = 0
         start: int = 0
         stop: int = 0
 
-        @handler.wrap
+        @middlewares.wrap
         def getter() -> list[TModel]:
             nonlocal total_count, start, stop
 
@@ -244,15 +286,15 @@ class ConnectionResolver(Generic[TModel]):
         instances = getter()
 
         edges = [
-            NodeType(
+            NodeDict(
                 cursor=offset_to_cursor(start + index),
                 node=instance,
             )
             for index, instance in enumerate(instances)
         ]
-        return ConnectionType(
+        return ConnectionDict(
             totalCount=total_count,
-            pageInfo=PageInfoType(
+            pageInfo=PageInfoDict(
                 hasNextPage=stop < total_count,
                 hasPreviousPage=start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
@@ -268,12 +310,11 @@ class NestedConnectionResolver(Generic[TModel]):
 
     query_type: type[QueryType]
     field: Field
-    max_limit: int
 
-    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> ConnectionType[TModel]:
-        handler = QueryMiddlewareHandler(query_type=self.query_type, info=info, root=instance, field=self.field)
+    def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        middlewares = QueryMiddlewareHandler(instance, info, query_type=self.query_type, field=self.field)
 
-        @handler.wrap
+        @middlewares.wrap
         def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
             result: RelatedManager | list[models.Model] = getattr(instance, field_name)
@@ -290,15 +331,15 @@ class NestedConnectionResolver(Generic[TModel]):
         stop: int = 0
 
         edges = [
-            NodeType(
+            NodeDict(
                 cursor=offset_to_cursor(start + index),
                 node=instance,
             )
             for index, instance in enumerate(instances)
         ]
-        return ConnectionType(
+        return ConnectionDict(
             totalCount=total_count,
-            pageInfo=PageInfoType(
+            pageInfo=PageInfoDict(
                 hasNextPage=stop < total_count,
                 hasPreviousPage=start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
@@ -306,48 +347,6 @@ class NestedConnectionResolver(Generic[TModel]):
             ),
             edges=edges,
         )
-
-
-@dataclasses.dataclass(frozen=True, slots=True)
-class FunctionResolver:
-    """Resolves a GraphQL field using the given function."""
-
-    func: FunctionType | Callable[..., Any]
-    root_param: str | None = None
-    info_param: str | None = None
-
-    @classmethod
-    def adapt(cls, func: FunctionType | Callable[..., Any], *, depth: int = 0) -> Self:
-        """
-        Create the appropriate resolver for a function based on its signature.
-        Leave out the `root` parameter from static functions, and only include the
-        `info` parameter if the function has a parameter of the `GraphQLResolveInfo` type.
-
-        Note that the `root` is always the first parameter, and the matching happens
-        by it's name, which can be configured with `RESOLVER_ROOT_PARAM_NAME`.
-        `self` and `cls` are always accepted root parameter names, since they are the
-        conventions for instance and class methods respectively.
-        """
-        sig = get_signature(func, depth=depth + 1)
-
-        root_param: str | None = None
-        info_param: str | None = None
-        for i, param in enumerate(sig.parameters.values()):
-            if i == 0 and param.name in {"self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME}:
-                root_param = param.name
-
-            elif param.annotation in {GQLInfo, GraphQLResolveInfo}:
-                info_param = param.name
-                break
-
-        return cls(func=func, root_param=root_param, info_param=info_param)
-
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        if self.root_param is not None:
-            kwargs[self.root_param] = root
-        if self.info_param is not None:
-            kwargs[self.info_param] = info
-        return self.func(**kwargs)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -363,13 +362,9 @@ class CreateResolver(Generic[TModel]):
         data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
         handler = MutationHandler(model=self.mutation_type.__model__)
+        middlewares = MutationMiddlewareHandler(info, data, mutation_type=self.mutation_type)
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=data,
-        ):
-            return handler.create(data)
+        return middlewares.wrap(handler.create)(data)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -393,20 +388,16 @@ class BulkCreateResolver(Generic[TModel]):
         unique_fields: list[str] | None = kwargs.get("unique_fields")
 
         handler = BulkMutationHandler(model=model)
+        middlewares = MutationMiddlewareHandler(info, data, mutation_type=self.mutation_type)
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=data,
-        ):
-            return handler.create_many(
-                data,
-                batch_size=batch_size,
-                ignore_conflicts=ignore_conflicts,
-                update_conflicts=update_conflicts,
-                update_fields=update_fields,
-                unique_fields=unique_fields,
-            )
+        return middlewares.wrap(handler.create_many)(
+            data,
+            batch_size=batch_size,
+            ignore_conflicts=ignore_conflicts,
+            update_conflicts=update_conflicts,
+            update_fields=update_fields,
+            unique_fields=unique_fields,
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -428,15 +419,11 @@ class UpdateResolver(Generic[TModel]):
             raise GraphQLMissingLookupFieldError(model=model, key=lookup_field)
 
         instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
-        handler = MutationHandler(model=model)
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=data,
-            instance=instance,
-        ):
-            return handler.update(instance, data)
+        handler = MutationHandler(model=model)
+        middlewares = MutationMiddlewareHandler(info, data, mutation_type=self.mutation_type, instance=instance)
+
+        return middlewares.wrap(handler.update)(instance, data)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -460,14 +447,14 @@ class BulkUpdateResolver(Generic[TModel]):
         instances: list[models.Model] = list(model._meta.default_manager.filter(pk__in=pks))
 
         handler = BulkMutationHandler(model=model)
+        middlewares = MutationMiddlewareHandler(info, data, mutation_type=self.mutation_type, instances=instances)
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=data,
-            instances=instances,
-        ):
-            return handler.update_many(data, instances, lookup_field=lookup_field, batch_size=batch_size)
+        return middlewares.wrap(handler.update_many)(
+            data,
+            instances,
+            lookup_field=lookup_field,
+            batch_size=batch_size,
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -491,15 +478,14 @@ class DeleteResolver(Generic[TModel]):
 
         instance = get_instance_or_raise(model=model, key=lookup_field, value=value)
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=data,
-            instance=instance,
-        ):
-            instance.delete()
+        middlewares = MutationMiddlewareHandler(info, data, mutation_type=self.mutation_type, instance=instance)
+
+        middlewares.wrap(self.delete)(instance)
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
+
+    def delete(self, instance: models.Model) -> None:
+        instance.delete()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -516,17 +502,15 @@ class BulkDeleteResolver(Generic[TModel]):
 
         pks: list[Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        instances = model._meta.default_manager.filter(pk__in=pks)
+        queryset = model._meta.default_manager.filter(pk__in=pks)
+        middlewares = MutationMiddlewareHandler(info, {}, mutation_type=self.mutation_type, instances=list(queryset))
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data={},
-            instances=list(instances),
-        ):
-            instances.delete()
+        middlewares.wrap(self.delete)(queryset)
 
         return {undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: True}
+
+    def delete(self, queryset: models.QuerySet) -> None:
+        queryset.delete()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -541,9 +525,6 @@ class CustomResolver:
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Any:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
 
-        with MutationMiddlewareHandler(
-            mutation_type=self.mutation_type,
-            info=info,
-            input_data=input_data,
-        ):
-            return self.mutation_type.__mutate__(root, info, input_data)
+        middlewares = MutationMiddlewareHandler(info, input_data, mutation_type=self.mutation_type)
+
+        return middlewares.wrap(self.mutation_type.__mutate__)(root, info, input_data)

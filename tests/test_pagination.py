@@ -41,7 +41,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=None,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -53,7 +53,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=None,
                     last=1,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -65,7 +65,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=None,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -78,7 +78,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=None,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -90,7 +90,7 @@ class DataParams(NamedTuple):
                     before=0,
                     first=None,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -102,7 +102,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=1,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=1,
                 ),
                 errors=None,
@@ -144,7 +144,7 @@ class DataParams(NamedTuple):
                     before=None,
                     first=None,
                     last=None,
-                    size=None,
+                    total_count=None,
                     max_limit=None,
                 ),
                 errors=None,
@@ -215,7 +215,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
         {
             "default": DataParams(
                 pagination_args=PaginationArgs(
-                    size=100,
+                    total_count=100,
                     first=None,
                     last=None,
                     after=None,
@@ -228,7 +228,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "after": DataParams(
                 pagination_args=PaginationArgs(
                     after=1,
-                    size=100,
+                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
@@ -240,7 +240,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "before": DataParams(
                 pagination_args=PaginationArgs(
                     before=99,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
@@ -252,7 +252,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "first": DataParams(
                 pagination_args=PaginationArgs(
                     first=10,
-                    size=100,
+                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
@@ -264,7 +264,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "last": DataParams(
                 pagination_args=PaginationArgs(
                     last=10,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
@@ -277,7 +277,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
                 pagination_args=PaginationArgs(
                     after=1,
                     before=99,
-                    size=100,
+                    total_count=100,
                     first=None,
                     last=None,
                     max_limit=None,
@@ -289,7 +289,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
                 pagination_args=PaginationArgs(
                     first=10,
                     last=8,
-                    size=100,
+                    total_count=100,
                     after=None,
                     before=None,
                     max_limit=None,
@@ -303,7 +303,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
                     before=99,
                     first=10,
                     last=8,
-                    size=100,
+                    total_count=100,
                     max_limit=None,
                 ),
                 start=3,
@@ -312,7 +312,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "after_bigger_than_size": DataParams(
                 pagination_args=PaginationArgs(
                     after=101,
-                    size=100,
+                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
@@ -324,7 +324,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "before_bigger_than_size": DataParams(
                 pagination_args=PaginationArgs(
                     before=101,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
@@ -336,7 +336,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "first_bigger_than_size": DataParams(
                 pagination_args=PaginationArgs(
                     first=101,
-                    size=100,
+                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
@@ -348,7 +348,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "last_bigger_than_size": DataParams(
                 pagination_args=PaginationArgs(
                     last=101,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
@@ -360,7 +360,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "after_is_size": DataParams(
                 pagination_args=PaginationArgs(
                     after=100,
-                    size=100,
+                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
@@ -372,7 +372,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "before_is_size": DataParams(
                 pagination_args=PaginationArgs(
                     before=100,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
@@ -384,7 +384,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "first_is_size": DataParams(
                 pagination_args=PaginationArgs(
                     first=100,
-                    size=100,
+                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
@@ -396,7 +396,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
             "last_is_size": DataParams(
                 pagination_args=PaginationArgs(
                     last=100,
-                    size=100,
+                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
@@ -410,7 +410,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
                     after=10,
                     before=20,
                     first=20,
-                    size=100,
+                    total_count=100,
                     last=None,
                     max_limit=None,
                 ),
@@ -422,7 +422,7 @@ def test_validate_pagination_args(pagination_input, output, errors):
                     after=10,
                     before=20,
                     last=20,
-                    size=100,
+                    total_count=100,
                     first=None,
                     max_limit=None,
                 ),

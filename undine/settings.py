@@ -119,6 +119,9 @@ class DefaultSettings(NamedTuple):
     RELAY_CONNECTION_MAX_LIMIT: int = 100
     """The maximum number of items to display in a Relay connection."""
 
+    RELAY_CURSOR_PREFIX: str = "arrayconnection"
+    """The prefix to use for Relay cursors."""
+
     RESOLVER_ROOT_PARAM_NAME: str = "root"
     """The name of the root/parent parameter in resolvers."""
 

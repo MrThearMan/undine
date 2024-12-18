@@ -96,7 +96,7 @@ class PaginationArgs:
     """The number of items to return from the end (after evaluating first)."""
     max_limit: int | None
     """The maximum number of items allowed by the connection."""
-    size: int | None = None
+    total_count: int | None = None
     """The total number of items in the queryset."""
 
     def __bool__(self) -> bool:
@@ -105,6 +105,6 @@ class PaginationArgs:
             and self.last is None
             and self.after is None
             and self.before is None
-            and self.size is None
             and self.max_limit is None
+            and self.total_count is None
         )
