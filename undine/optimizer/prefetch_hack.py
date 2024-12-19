@@ -1,21 +1,14 @@
 from __future__ import annotations
 
-import contextlib
 from collections import defaultdict
-from contextlib import nullcontext
-from copy import deepcopy
-from functools import partial
-from typing import TYPE_CHECKING, ContextManager, TypeAlias
+from typing import TYPE_CHECKING
 from unittest.mock import patch
-from weakref import WeakKeyDictionary
 
 from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset  # noqa: PLC2701
 
 if TYPE_CHECKING:
-    from graphql import OperationDefinitionNode
-
-    from undine.typing import GQLInfo, ToManyField
+    from undine.typing import PrefetchHackCacheType, ToManyField
 
 __all__ = [
     "evaluate_in_context",
@@ -23,17 +16,17 @@ __all__ = [
 ]
 
 
-_PrefetchCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
-_PREFETCH_HACK_CACHE: WeakKeyDictionary[OperationDefinitionNode, _PrefetchCacheType] = WeakKeyDictionary()
+_KEY = "_undine_prefetch_hack_cache"
+_PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}"
 
 
-def evaluate_in_context(queryset: models.QuerySet, info: GQLInfo) -> list[models.Model]:
+def evaluate_in_context(queryset: models.QuerySet) -> list[models.Model]:
     """Evaluates the queryset with the prefetch hack applied."""
-    with _fetch_context(info):
+    with patch(_PATH, side_effect=_prefetch_hack):
         return list(queryset)  # the database query is executed here
 
 
-def register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
+def register_for_prefetch_hack(queryset: models.QuerySet, field: ToManyField) -> None:
     """
     Registers the through table of a many-to-many field for the prefetch hack.
     See `_prefetch_hack` for more information.
@@ -46,18 +39,11 @@ def register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
     field_name = field.remote_field.name
     through = forward_field.m2m_db_table()
 
-    # Use the `info.operation` as the key to make sure the saved values are cleared after the request ends.
-    cache = _PREFETCH_HACK_CACHE.setdefault(info.operation, defaultdict(lambda: defaultdict(set)))
+    cache: PrefetchHackCacheType = queryset._hints.setdefault(_KEY, defaultdict(lambda: defaultdict(set)))
     cache[db_table][field_name].add(through)
 
 
-def _prefetch_hack(
-    queryset: models.QuerySet,
-    field_name: str,
-    instances: list[models.Model],
-    *,
-    cache: _PrefetchCacheType,
-) -> models.QuerySet:
+def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[models.Model]) -> models.QuerySet:
     """
     Patches the prefetch mechanism to not create duplicate joins in the SQL query.
     This is needed due to how filtering with many-to-many relations is implemented in Django,
@@ -71,37 +57,18 @@ def _prefetch_hack(
     in the SQL query, which messes up the window function's partitioning. Therefore, this hack is needed
     to prevent the INNER join from being added.
     """
-    #
-    # `filter_is_sticky` is set here just to prevent the `used_aliases` from being cleared
-    # when the queryset is cloned for filtering in `_filter_prefetch_queryset`.
-    # See: `django.db.models.sql.query.Query.chain`.
-    queryset.query.filter_is_sticky = True
-    #
-    # Add the registered through tables for a given model and field to the Query's `used_aliases`.
-    # This is passed along during the filtering that happens as a part of `_filter_prefetch_queryset`,
-    # until `django.db.models.sql.query.Query.join`, which has access to it with its `reuse` argument.
-    # There, this should prevent the method from adding a duplicate join.
-    queryset.query.used_aliases = cache[queryset.model._meta.db_table][field_name]
+    cache: PrefetchHackCacheType | None = queryset._hints.pop(_KEY, None)
+    if cache is not None:
+        #
+        # `filter_is_sticky` is set here just to prevent the `used_aliases` from being cleared
+        # when the queryset is cloned for filtering in `_filter_prefetch_queryset`.
+        # See: `django.db.models.sql.query.Query.chain`.
+        queryset.query.filter_is_sticky = True
+        #
+        # Add the registered through tables for a given model and field to the Query's `used_aliases`.
+        # This is passed along during the filtering that happens as a part of `_filter_prefetch_queryset`,
+        # until `django.db.models.sql.query.Query.join`, which has access to it with its `reuse` argument.
+        # There, this should prevent the method from adding a duplicate join.
+        queryset.query.used_aliases = cache[queryset.model._meta.db_table][field_name]
 
     return _filter_prefetch_queryset(queryset, field_name, instances)
-
-
-def _hack_context(cache: _PrefetchCacheType) -> ContextManager:
-    return patch(
-        f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}",
-        side_effect=partial(_prefetch_hack, cache=cache),
-    )
-
-
-@contextlib.contextmanager
-def _fetch_context(info: GQLInfo) -> ContextManager:
-    """Patches the prefetch mechanism if required."""
-    context = nullcontext()
-    if info.operation in _PREFETCH_HACK_CACHE:
-        context = _hack_context(cache=deepcopy(_PREFETCH_HACK_CACHE[info.operation]))
-
-    try:
-        with context:
-            yield
-    finally:
-        _PREFETCH_HACK_CACHE.pop(info.operation, None)

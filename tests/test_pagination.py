@@ -215,12 +215,12 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
         {
             "default": DataParams(
                 pagination_args=PaginationArgs(
-                    total_count=100,
                     first=None,
                     last=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
@@ -228,11 +228,11 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
             "after": DataParams(
                 pagination_args=PaginationArgs(
                     after=1,
-                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=1,
                 stop=100,
@@ -240,11 +240,11 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
             "before": DataParams(
                 pagination_args=PaginationArgs(
                     before=99,
-                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=99,
@@ -252,11 +252,11 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
             "first": DataParams(
                 pagination_args=PaginationArgs(
                     first=10,
-                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=10,
@@ -264,11 +264,11 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
             "last": DataParams(
                 pagination_args=PaginationArgs(
                     last=10,
-                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=90,
                 stop=100,
@@ -277,10 +277,10 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
                 pagination_args=PaginationArgs(
                     after=1,
                     before=99,
-                    total_count=100,
                     first=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=1,
                 stop=99,
@@ -289,10 +289,10 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
                 pagination_args=PaginationArgs(
                     first=10,
                     last=8,
-                    total_count=100,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=2,
                 stop=10,
@@ -303,104 +303,104 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
                     before=99,
                     first=10,
                     last=8,
-                    total_count=100,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=3,
                 stop=11,
             ),
-            "after_bigger_than_size": DataParams(
+            "after_bigger_than_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     after=101,
-                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=100,
                 stop=100,
             ),
-            "before_bigger_than_size": DataParams(
+            "before_bigger_than_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     before=101,
-                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
             ),
-            "first_bigger_than_size": DataParams(
+            "first_bigger_than_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     first=101,
-                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
             ),
-            "last_bigger_than_size": DataParams(
+            "last_bigger_than_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     last=101,
-                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
             ),
-            "after_is_size": DataParams(
+            "after_is_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     after=100,
-                    total_count=100,
                     first=None,
                     before=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=100,
                 stop=100,
             ),
-            "before_is_size": DataParams(
+            "before_is_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     before=100,
-                    total_count=100,
                     first=None,
                     after=None,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
             ),
-            "first_is_size": DataParams(
+            "first_is_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     first=100,
-                    total_count=100,
                     last=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
             ),
-            "last_is_size": DataParams(
+            "last_is_total_count": DataParams(
                 pagination_args=PaginationArgs(
                     last=100,
-                    total_count=100,
                     first=None,
                     after=None,
                     before=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=0,
                 stop=100,
@@ -410,9 +410,9 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
                     after=10,
                     before=20,
                     first=20,
-                    total_count=100,
                     last=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=10,
                 stop=20,
@@ -422,9 +422,9 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
                     after=10,
                     before=20,
                     last=20,
-                    total_count=100,
                     first=None,
                     max_limit=None,
+                    total_count=100,
                 ),
                 start=10,
                 stop=20,
@@ -432,6 +432,7 @@ def test_pagination_args_from_connection_params(pagination_input, output, errors
         },
     ),
 )
+@pytest.mark.django_db
 def test_calculate_queryset_slice(pagination_args: PaginationArgs, start: int, stop: int) -> None:
     queryset = pagination_args.paginate_queryset(models.QuerySet())
     assert queryset.query.low_mark == start

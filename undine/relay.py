@@ -11,12 +11,14 @@ from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, Gra
 from graphql.type.scalars import serialize_id
 
 from undine.errors.exceptions import ConnectionQueryTypeNotNodeError, PaginationArgumentValidationError
+from undine.optimizer.prefetch_hack import register_for_prefetch_hack
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_interface_type, get_or_create_object_type
 from undine.utils.model_utils import SubqueryCount
 
 if TYPE_CHECKING:
     from undine import QueryType
+    from undine.typing import ToManyField
 
 __all__ = [
     "Connection",
@@ -62,9 +64,11 @@ class PaginationArgs:
     last: int | None
     """The number of items to return from the end (after evaluating first)."""
     max_limit: int | None
-    """The maximum number of items allowed by the connection."""
+    """The maximum number of items allowed by the connection. No limit if `None`."""
     total_count: int | None = None
     """The total number of items that can be paginated."""
+    requires_total_count: bool = False
+    """Whether the total count is required for this query."""
 
     @classmethod
     def from_connection_params(  # noqa: C901, PLR0912
@@ -159,44 +163,66 @@ class PaginationArgs:
         This function is based on the Relay pagination algorithm.
         See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
         """
-        if self.total_count is None:
+        if self.requires_total_count:
             self.total_count = queryset.count()
 
         start: int = 0
-        stop: int = self.total_count
+        stop: int | None = self.total_count
 
         if self.after is not None:
-            start = min(self.after, stop)
+            start = self.after
+
         if self.before is not None:
-            stop = min(self.before, stop)
+            stop = self.before if stop is None else min(self.before, stop)
+
         if self.first is not None:
-            stop = min(start + self.first, stop)
+            stop = start + self.first if stop is None else min(start + self.first, stop)
+
         if self.last is not None:
+            if stop is None:
+                if self.total_count is None:
+                    self.total_count = queryset.count()
+                stop = self.total_count
+
             start = max(stop - self.last, start)
 
         queryset._hints["_undine_total_count"] = self.total_count
         return queryset[start:stop]
 
-    def paginate_prefetch_queryset(self, queryset: models.QuerySet, related_name: str) -> models.QuerySet:
-        # TODO: Some optimizations here.
+    def paginate_prefetch_queryset(self, queryset: models.QuerySet, related_field: ToManyField) -> models.QuerySet:
+        """
+        Paginate a prefetch queryset based on the given pagination arguments.
 
-        start = models.Value(0)
-        stop = models.F("_undine_total_count")
+        This is basically the same as `paginate_queryset`, but for prefetched querysets.
+        """
+        # TODO: Optimizations?
+        related_name = related_field.remote_field.name
 
-        queryset = queryset.annotate(
-            _undine_total_count=SubqueryCount(
-                queryset=queryset.filter(**{related_name: models.OuterRef(related_name)}),
-            ),
-        )
+        start: models.Expression = models.Value(0)
+        stop: models.Expression | None = None
+
+        if self.requires_total_count:
+            queryset = prefetch_total_count(queryset, related_name)
+            stop = models.F("_undine_total_count")
 
         if self.after is not None:
-            start = Least(models.Value(self.after), stop)
+            start = models.Value(self.after)
+
         if self.before is not None:
-            stop = Least(models.Value(self.before), stop)
+            stop = models.Value(self.before) if stop is None else Least(models.Value(self.before), stop)
+
         if self.first is not None:
-            stop = Least(start + models.Value(self.first), stop)
+            stop = start + models.Value(self.first) if stop is None else Least(start + models.Value(self.first), stop)
+
         if self.last is not None:
+            if stop is None:
+                if "_undine_total_count" not in queryset.query.annotations:
+                    queryset = prefetch_total_count(queryset, related_name)
+                stop = models.F("_undine_total_count")
+
             stop = Greatest(stop - models.Value(self.last), start)
+
+        register_for_prefetch_hack(queryset, related_field)
 
         return queryset.annotate(
             _undine_pagination_start=start,
@@ -213,6 +239,11 @@ class PaginationArgs:
             _undine_pagination_index__gte=models.F("_undine_slice_start"),
             _undine_pagination_index__lt=models.F("_undine_slice_stop"),
         )
+
+
+def prefetch_total_count(queryset: models.QuerySet, related_name: str) -> models.QuerySet:
+    subquery_queryset = queryset.filter(**{related_name: models.OuterRef(related_name)})
+    return queryset.annotate(_undine_total_count=SubqueryCount(subquery_queryset))
 
 
 def encode_base64(string: str) -> str:
@@ -253,6 +284,7 @@ def from_global_id(global_id: str) -> tuple[str, str | int]:
     return typename, object_id
 
 
+# TODO: Descriptions.
 PageInfoType = get_or_create_object_type(
     name="PageInfo",
     description="Information about pagination in a connection.",

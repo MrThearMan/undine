@@ -10,7 +10,7 @@ from graphql import get_argument_values
 
 from undine.converters import extend_expression
 from undine.errors.exceptions import OptimizerError
-from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type, is_connection
+from undine.optimizer.ast import GraphQLASTWalker, get_selections, get_underlying_type, is_connection
 from undine.relay import PaginationArgs
 from undine.settings import undine_settings
 from undine.utils.reflection import swappable_by_subclassing
@@ -25,6 +25,7 @@ if TYPE_CHECKING:
         GQLInfo,
         ModelField,
         QuerySetCallback,
+        RelatedField,
         ToManyField,
         ToOneField,
     )
@@ -63,7 +64,7 @@ class QueryOptimizer(GraphQLASTWalker):
             model_field = data.parent.model._meta.get_field(data.field_name)
 
         results = OptimizationResults(
-            model_field=model_field,
+            related_field=model_field,
             only_fields=data.only_fields,
             aliases=data.aliases,
             annotations=data.annotations,
@@ -123,7 +124,7 @@ class QueryOptimizer(GraphQLASTWalker):
         graphql_field = parent_type.fields[field_node.name.value]
         object_type = get_underlying_type(graphql_field.type)
 
-        max_limit: int = undine_settings.CONNECTION_MAX_LIMIT
+        arg_values = get_argument_values(graphql_field, field_node, self.root_info.variable_values)
 
         is_connection_field = is_connection(object_type)
         if is_connection_field:
@@ -133,16 +134,6 @@ class QueryOptimizer(GraphQLASTWalker):
             edge_type = get_underlying_type(object_type.fields["edges"].type)
             object_type = get_underlying_type(edge_type.fields["node"].type)
 
-        query_type = self.get_undine_query_type(object_type)
-        if query_type is None:  # Not a undine field.
-            return
-
-        self.optimization_data.queryset_callback = query_type.__get_queryset__
-        self.optimization_data.filter_callback = query_type.__filter_queryset__
-
-        arg_values = get_argument_values(graphql_field, field_node, self.root_info.variable_values)
-
-        if is_connection_field:
             self.optimization_data.pagination_args = PaginationArgs.from_connection_params(
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
@@ -151,6 +142,19 @@ class QueryOptimizer(GraphQLASTWalker):
                 before=arg_values.get("before"),
                 max_limit=max_limit,
             )
+
+            selections = {node.name.value for node in get_selections(field_node)}
+            if "totalCount" in selections:
+                self.optimization_data.pagination_args.requires_total_count = True
+
+            # TODO: If `pageInfo` has a `hasNextPage` field, then `total_count` is required.
+
+        query_type = self.get_undine_query_type(object_type)
+        if query_type is None:  # Not a undine field.
+            return
+
+        self.optimization_data.queryset_callback = query_type.__get_queryset__
+        self.optimization_data.filter_callback = query_type.__filter_queryset__
 
         if query_type.__filterset__:
             filter_data = arg_values.get(undine_settings.FILTER_INPUT_TYPE_KEY, {})
@@ -332,7 +336,7 @@ class OptimizationResults:
     """Optimizations that can be applied to a queryset."""
 
     # The model field for a relation, if these are the results for a prefetch.
-    model_field: ModelField | None = None
+    related_field: RelatedField | None = None
 
     # Field optimizations
     only_fields: list[str] = dataclasses.field(default_factory=list)
@@ -372,14 +376,10 @@ class OptimizationResults:
             queryset = queryset.distinct()
 
         if self.pagination_args is not None:
-            # Top level connections
-            if self.model_field is None:
+            if self.related_field is None:
                 queryset = self.pagination_args.paginate_queryset(queryset)
-
-            # Nested connections
             else:
-                related_name = self.model_field.remote_field.name
-                queryset = self.pagination_args.paginate_prefetch_queryset(queryset, related_name)
+                queryset = self.pagination_args.paginate_prefetch_queryset(queryset, self.related_field)
 
         return queryset
 
@@ -388,19 +388,19 @@ class OptimizationResults:
         Extend the given optimization results to this one
         by prefexing their lookups using the other's `field_name`.
         """
-        self.select_related.append(other.model_field.name)
-        self.only_fields.extend(f"{other.model_field.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
-        self.select_related.extend(f"{other.model_field.name}{LOOKUP_SEP}{select}" for select in other.select_related)
+        self.select_related.append(other.related_field.name)
+        self.only_fields.extend(f"{other.related_field.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
+        self.select_related.extend(f"{other.related_field.name}{LOOKUP_SEP}{select}" for select in other.select_related)
 
         for prefetch in other.prefetch_related:
             if isinstance(prefetch, str):
-                self.prefetch_related.append(f"{other.model_field.name}{LOOKUP_SEP}{prefetch}")
+                self.prefetch_related.append(f"{other.related_field.name}{LOOKUP_SEP}{prefetch}")
             if isinstance(prefetch, models.Prefetch):
-                prefetch.add_prefix(other.model_field.name)
+                prefetch.add_prefix(other.related_field.name)
                 self.prefetch_related.append(prefetch)
 
-        self.filters.extend(extend_expression(ftr, field_name=other.model_field.name) for ftr in other.filters)
-        self.order_by.extend(extend_expression(order, field_name=other.model_field.name) for order in other.order_by)
+        self.filters.extend(extend_expression(ftr, field_name=other.related_field.name) for ftr in other.filters)
+        self.order_by.extend(extend_expression(order, field_name=other.related_field.name) for order in other.order_by)
         self.distinct = other.distinct or self.distinct
 
         return self

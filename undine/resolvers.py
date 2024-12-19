@@ -104,7 +104,7 @@ class ModelSingleResolver(Generic[TModel]):
             queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
-            instances = evaluate_in_context(optimized_queryset, info)
+            instances = evaluate_in_context(optimized_queryset)
             return next(iter(instances), None)
 
         return getter()
@@ -124,7 +124,7 @@ class ModelManyResolver(Generic[TModel]):
             queryset = self.query_type.__get_queryset__(info)
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
-            return evaluate_in_context(optimized_queryset, info)
+            return evaluate_in_context(optimized_queryset)
 
         return getter()
 
@@ -265,7 +265,7 @@ class ConnectionResolver(Generic[TModel]):
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
         middlewares = QueryMiddlewareHandler(root, info, query_type=self.query_type)
 
-        total_count: int = 0
+        total_count: int | None = 0
         start: int = 0
         stop: int = 0
 
@@ -281,7 +281,7 @@ class ConnectionResolver(Generic[TModel]):
             start = optimized_queryset.query.low_mark
             stop = optimized_queryset.query.high_mark
 
-            return evaluate_in_context(optimized_queryset, info)
+            return evaluate_in_context(optimized_queryset)
 
         instances = getter()
 
@@ -295,7 +295,7 @@ class ConnectionResolver(Generic[TModel]):
         return ConnectionDict(
             totalCount=total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=stop < total_count,
+                hasNextPage=stop < total_count,  # TODO: If `total_count` is None?
                 hasPreviousPage=start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
@@ -328,7 +328,7 @@ class NestedConnectionResolver(Generic[TModel]):
 
                 queryset = result.get_queryset()
 
-                total_count = 100  # TODO: Where?
+                total_count = 100  # TODO: Get where?
                 start = queryset.query.low_mark
                 stop = queryset.query.high_mark
 

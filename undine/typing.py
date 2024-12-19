@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, MutableMapping
 from typing import (
     TYPE_CHECKING,
@@ -307,6 +308,7 @@ DjangoRequest: TypeAlias = WSGIRequest | DjangoRequestProtocol
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
 JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
+PrefetchHackCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
 
 # Refs
 
