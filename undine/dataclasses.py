@@ -17,7 +17,6 @@ __all__ = [
     "LookupRef",
     "MutationMiddlewareParams",
     "OrderResults",
-    "PaginationArgs",
     "Parameter",
     "PostSaveData",
     "TypeRef",
@@ -82,29 +81,3 @@ class MutationMiddlewareParams:
     input_data: JsonObject
     instance: models.Model | None = None  # Single mutations.
     instances: list[models.Model] | None = None  # Bulk mutations.
-
-
-@dataclasses.dataclass(slots=True)
-class PaginationArgs:
-    after: int | None
-    """The index after which to start (exclusive)."""
-    before: int | None
-    """The index before which to stop (exclusive)."""
-    first: int | None
-    """The number of items to return from the start."""
-    last: int | None
-    """The number of items to return from the end (after evaluating first)."""
-    max_limit: int | None
-    """The maximum number of items allowed by the connection."""
-    total_count: int | None = None
-    """The total number of items in the queryset."""
-
-    def __bool__(self) -> bool:
-        return not (
-            self.first is None
-            and self.last is None
-            and self.after is None
-            and self.before is None
-            and self.max_limit is None
-            and self.total_count is None
-        )

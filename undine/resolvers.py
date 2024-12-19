@@ -277,9 +277,9 @@ class ConnectionResolver(Generic[TModel]):
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
 
-            total_count = optimized_queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY]
-            start = optimized_queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY]
-            stop = optimized_queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY]
+            total_count = optimized_queryset._hints["_undine_total_count"]
+            start = optimized_queryset.query.low_mark
+            stop = optimized_queryset.query.high_mark
 
             return evaluate_in_context(optimized_queryset, info)
 
@@ -314,21 +314,29 @@ class NestedConnectionResolver(Generic[TModel]):
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
         middlewares = QueryMiddlewareHandler(instance, info, query_type=self.query_type, field=self.field)
 
+        total_count: int = 0
+        start: int = 0
+        stop: int = 0
+
         @middlewares.wrap
         def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
             result: RelatedManager | list[models.Model] = getattr(instance, field_name)
 
             if isinstance(result, models.Manager):
-                return list(result.get_queryset())
+                nonlocal total_count, start, stop
+
+                queryset = result.get_queryset()
+
+                total_count = 100  # TODO: Where?
+                start = queryset.query.low_mark
+                stop = queryset.query.high_mark
+
+                return list(queryset)
+
             return result
 
         instances = getter()
-
-        # TODO: Get from where? From root instance?
-        total_count: int = 0
-        start: int = 0
-        stop: int = 0
 
         edges = [
             NodeDict(

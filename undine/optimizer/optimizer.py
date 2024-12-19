@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
@@ -11,7 +11,7 @@ from graphql import get_argument_values
 from undine.converters import extend_expression
 from undine.errors.exceptions import OptimizerError
 from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type, is_connection
-from undine.relay import calculate_queryset_slice, validate_pagination_args
+from undine.relay import PaginationArgs
 from undine.settings import undine_settings
 from undine.utils.reflection import swappable_by_subclassing
 
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from graphql import FieldNode, GraphQLOutputType
 
     from undine import QueryType
-    from undine.dataclasses import PaginationArgs
     from undine.typing import (
         ExpressionLike,
         FilterCallback,
@@ -59,10 +58,13 @@ class QueryOptimizer(GraphQLASTWalker):
 
     def process_optimizations(self, data: OptimizationData) -> OptimizationResults:
         """Process the given optimization data to OptimizerResults that can be applied to a queryset."""
+        model_field: ModelField | None = None
+        if data.parent is not None and data.field_name is not None:
+            model_field = data.parent.model._meta.get_field(data.field_name)
+
         results = OptimizationResults(
-            field=data.parent.model._meta.get_field(data.field_name) if data.parent else None,
+            model_field=model_field,
             only_fields=data.only_fields,
-            related_fields=data.related_fields,
             aliases=data.aliases,
             annotations=data.annotations,
             filter_callback=data.filter_callback,
@@ -141,7 +143,7 @@ class QueryOptimizer(GraphQLASTWalker):
         arg_values = get_argument_values(graphql_field, field_node, self.root_info.variable_values)
 
         if is_connection_field:
-            self.optimization_data.pagination_args = validate_pagination_args(
+            self.optimization_data.pagination_args = PaginationArgs.from_connection_params(
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
                 offset=arg_values.get("offset"),
@@ -196,11 +198,11 @@ class QueryOptimizer(GraphQLASTWalker):
             data = self.optimization_data.add_select_related(name)
 
         if isinstance(related_field, models.ForeignKey):
-            self.optimization_data.related_fields.append(related_field.attname)
+            self.optimization_data.only_fields.append(related_field.attname)
 
         if isinstance(related_field, GenericForeignKey):
-            self.optimization_data.related_fields.append(related_field.ct_field)
-            self.optimization_data.related_fields.append(related_field.fk_field)
+            self.optimization_data.only_fields.append(related_field.ct_field)
+            self.optimization_data.only_fields.append(related_field.fk_field)
 
         self.run_field_optimizer(parent_type, field_node)
 
@@ -223,11 +225,11 @@ class QueryOptimizer(GraphQLASTWalker):
         data = self.optimization_data.add_prefetch_related(name, to_attr=alias)
 
         if isinstance(related_field, models.ManyToOneRel):
-            data.related_fields.append(related_field.field.attname)
+            data.only_fields.append(related_field.field.attname)
 
         if isinstance(related_field, GenericRelation):
-            data.related_fields.append(related_field.object_id_field_name)
-            data.related_fields.append(related_field.content_type_field_name)
+            data.only_fields.append(related_field.object_id_field_name)
+            data.only_fields.append(related_field.content_type_field_name)
 
         self.run_field_optimizer(parent_type, field_node)
 
@@ -260,7 +262,6 @@ class OptimizationData:
     parent: OptimizationData | None = None
 
     only_fields: list[str] = dataclasses.field(default_factory=list)
-    related_fields: list[str] = dataclasses.field(default_factory=list)
     aliases: dict[str, ExpressionLike] = dataclasses.field(default_factory=dict)
     annotations: dict[str, ExpressionLike] = dataclasses.field(default_factory=dict)
     select_related: dict[str, OptimizationData] = dataclasses.field(default_factory=dict)
@@ -330,11 +331,11 @@ class OptimizationData:
 class OptimizationResults:
     """Optimizations that can be applied to a queryset."""
 
-    field: ModelField | None = None  # Model field, if nested queryset optimization results.
+    # The model field for a relation, if these are the results for a prefetch.
+    model_field: ModelField | None = None
 
     # Field optimizations
     only_fields: list[str] = dataclasses.field(default_factory=list)
-    related_fields: list[str] = dataclasses.field(default_factory=list)
     aliases: dict[str, ExpressionLike] = dataclasses.field(default_factory=dict)
     annotations: dict[str, ExpressionLike] = dataclasses.field(default_factory=dict)
     select_related: list[str] = dataclasses.field(default_factory=list)
@@ -353,8 +354,8 @@ class OptimizationResults:
             queryset = queryset.select_related(*self.select_related)
         if self.prefetch_related:
             queryset = queryset.prefetch_related(*self.prefetch_related)
-        if not undine_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (self.only_fields or self.related_fields):
-            queryset = queryset.only(*self.only_fields, *self.related_fields)
+        if not undine_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and self.only_fields:
+            queryset = queryset.only(*self.only_fields)
         if self.aliases:
             queryset = queryset.alias(**self.aliases)
         if self.annotations:
@@ -371,66 +372,35 @@ class OptimizationResults:
             queryset = queryset.distinct()
 
         if self.pagination_args is not None:
-            # TODO: Optimizations.
-            #  - If not pagination args and max limit is None
-            #  - Don't do total count if not required
-
             # Top level connections
-            if self.field is None:
-                self.pagination_args.total_count = queryset.count()
-                cut = calculate_queryset_slice(pagination_args=self.pagination_args)
-                queryset = queryset[cut]
-
-                # Store the pagination args in the queryset hints for the connection resolver.
-                queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_HINT_KEY] = self.pagination_args.total_count
-                queryset._hints[undine_settings.CONNECTION_START_INDEX_HINT_KEY] = cut.start
-                queryset._hints[undine_settings.CONNECTION_STOP_INDEX_HINT_KEY] = cut.stop
+            if self.model_field is None:
+                queryset = self.pagination_args.paginate_queryset(queryset)
 
             # Nested connections
             else:
-                _field_name = self.field.remote_field.name
-
-                queryset = queryset.annotate(
-                    # TODO: Calculate slice.
-                    # TODO: Store slices and total counts?
-                    _undine_slice_start=models.Value(0),
-                    _undine_slice_stop=models.Value(100),
-                    # TODO: Calculate.
-                    # _undine_total_count=SubqueryCount(queryset.filter(**{field_name: models.OuterRef(field_name)})),
-                    # _undine_partition_index=(
-                    #     models.Window(
-                    #         expression=RowNumber(),
-                    #         partition_by=models.F(field_name),
-                    #         order_by=self.order_by or copy(queryset.model._meta.ordering),
-                    #     )
-                    #     - models.Value(1)  # Start from zero.
-                    # ),
-                ).filter(
-                    _undine_partition_index__gte=models.F("_undine_slice_start"),
-                    _undine_partition_index__lt=models.F("_undine_slice_stop"),
-                )
+                related_name = self.model_field.remote_field.name
+                queryset = self.pagination_args.paginate_prefetch_queryset(queryset, related_name)
 
         return queryset
 
-    def extend(self, other: OptimizationResults) -> OptimizationResults:
+    def extend(self, other: Self) -> Self:
         """
         Extend the given optimization results to this one
         by prefexing their lookups using the other's `field_name`.
         """
-        self.select_related.append(other.field.name)
-        self.only_fields.extend(f"{other.field.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
-        self.related_fields.extend(f"{other.field.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
-        self.select_related.extend(f"{other.field.name}{LOOKUP_SEP}{select}" for select in other.select_related)
+        self.select_related.append(other.model_field.name)
+        self.only_fields.extend(f"{other.model_field.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
+        self.select_related.extend(f"{other.model_field.name}{LOOKUP_SEP}{select}" for select in other.select_related)
 
         for prefetch in other.prefetch_related:
             if isinstance(prefetch, str):
-                self.prefetch_related.append(f"{other.field.name}{LOOKUP_SEP}{prefetch}")
+                self.prefetch_related.append(f"{other.model_field.name}{LOOKUP_SEP}{prefetch}")
             if isinstance(prefetch, models.Prefetch):
-                prefetch.add_prefix(other.field.name)
+                prefetch.add_prefix(other.model_field.name)
                 self.prefetch_related.append(prefetch)
 
-        self.filters.extend(extend_expression(ftr, field_name=other.field.name) for ftr in other.filters)
-        self.order_by.extend(extend_expression(order, field_name=other.field.name) for order in other.order_by)
+        self.filters.extend(extend_expression(ftr, field_name=other.model_field.name) for ftr in other.filters)
+        self.order_by.extend(extend_expression(order, field_name=other.model_field.name) for order in other.order_by)
         self.distinct = other.distinct or self.distinct
 
         return self

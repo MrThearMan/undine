@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Any, NamedTuple
 
 import pytest
+from django.db import models
 
 from tests.helpers import parametrize_helper
-from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import PaginationArgumentValidationError
-from undine.relay import calculate_queryset_slice, offset_to_cursor, validate_pagination_args
+from undine.relay import PaginationArgs, offset_to_cursor
 
 
 class PaginationInput(NamedTuple):
@@ -197,9 +197,9 @@ class DataParams(NamedTuple):
         },
     ),
 )
-def test_validate_pagination_args(pagination_input, output, errors):
+def test_pagination_args_from_connection_params(pagination_input, output, errors):
     try:
-        args = validate_pagination_args(**pagination_input._asdict())
+        args = PaginationArgs.from_connection_params(**pagination_input._asdict())
     except PaginationArgumentValidationError as error:
         if errors is None:
             pytest.fail(f"Unexpected error: {error}")
@@ -433,6 +433,6 @@ def test_validate_pagination_args(pagination_input, output, errors):
     ),
 )
 def test_calculate_queryset_slice(pagination_args: PaginationArgs, start: int, stop: int) -> None:
-    cut = calculate_queryset_slice(pagination_args)
-    assert cut.start == start
-    assert cut.stop == stop
+    queryset = pagination_args.paginate_queryset(models.QuerySet())
+    assert queryset.query.low_mark == start
+    assert queryset.query.high_mark == stop

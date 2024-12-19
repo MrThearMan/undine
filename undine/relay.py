@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING
+import dataclasses
+from copy import copy
+from typing import TYPE_CHECKING, Self
 
+from django.db import models
+from django.db.models.functions import Greatest, Least, RowNumber
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
 from graphql.type.scalars import serialize_id
 
-from undine.dataclasses import PaginationArgs
 from undine.errors.exceptions import ConnectionQueryTypeNotNodeError, PaginationArgumentValidationError
 from undine.settings import undine_settings
 from undine.utils.graphql import get_or_create_interface_type, get_or_create_object_type
+from undine.utils.model_utils import SubqueryCount
 
 if TYPE_CHECKING:
     from undine import QueryType
@@ -17,8 +21,7 @@ if TYPE_CHECKING:
 __all__ = [
     "Connection",
     "Node",
-    "calculate_queryset_slice",
-    "validate_pagination_args",
+    "PaginationArgs",
 ]
 
 
@@ -48,133 +51,168 @@ class Connection:
         self.max_limit = max_limit
 
 
-def validate_pagination_args(  # noqa: C901, PLR0912
-    first: int | None,
-    last: int | None,
-    offset: int | None,
-    after: str | None,
-    before: str | None,
-    max_limit: int | None = None,
-) -> PaginationArgs:
-    """
-    Validate the pagination arguments and return a dictionary with the validated values.
+@dataclasses.dataclass(slots=True)
+class PaginationArgs:
+    after: int | None
+    """The index after which to start (exclusive)."""
+    before: int | None
+    """The index before which to stop (exclusive)."""
+    first: int | None
+    """The number of items to return from the start."""
+    last: int | None
+    """The number of items to return from the end (after evaluating first)."""
+    max_limit: int | None
+    """The maximum number of items allowed by the connection."""
+    total_count: int | None = None
+    """The total number of items that can be paginated."""
 
-    :param first: Number of records to return from the beginning.
-    :param last: Number of records to return from the end.
-    :param offset: Number of records to skip from the beginning.
-    :param after: Cursor value for the last record in the previous page.
-    :param before: Cursor value for the first record in the next page.
-    :param max_limit: Maximum limit for the number of records that can be requested.
-    """
-    after = cursor_to_offset(after) if after is not None else None
-    before = cursor_to_offset(before) if before is not None else None
+    @classmethod
+    def from_connection_params(  # noqa: C901, PLR0912
+        cls,
+        first: int | None,
+        last: int | None,
+        offset: int | None,
+        after: str | None,
+        before: str | None,
+        max_limit: int | None = None,
+    ) -> Self:
+        """
+        Create pagination arguments from relay connection params while validating that the arguments are valid.
 
-    if first is not None:
-        if not isinstance(first, int) or first <= 0:
-            msg = "Argument 'first' must be a positive integer."
+        :param first: Number of records to return from the beginning.
+        :param last: Number of records to return from the end.
+        :param offset: Number of records to skip from the beginning.
+        :param after: Cursor value for the last record in the previous page.
+        :param before: Cursor value for the first record in the next page.
+        :param max_limit: Maximum limit for the number of records that can be requested.
+        """
+        after = cursor_to_offset(after) if after is not None else None
+        before = cursor_to_offset(before) if before is not None else None
+
+        if first is not None:
+            if not isinstance(first, int) or first <= 0:
+                msg = "Argument 'first' must be a positive integer."
+                raise PaginationArgumentValidationError(msg)
+
+            if isinstance(max_limit, int) and first > max_limit:
+                msg = f"Requesting first {first} records exceeds the limit of {max_limit}."
+                raise PaginationArgumentValidationError(msg)
+
+        if last is not None:
+            if not isinstance(last, int) or last <= 0:
+                msg = "Argument 'last' must be a positive integer."
+                raise PaginationArgumentValidationError(msg)
+
+            if isinstance(max_limit, int) and last > max_limit:
+                msg = f"Requesting last {last} records exceeds the limit of {max_limit}."
+                raise PaginationArgumentValidationError(msg)
+
+        if max_limit is not None and not isinstance(max_limit, int):
+            msg = f"Pagination max limit must be None or an integer, but got: {max_limit!r}."
             raise PaginationArgumentValidationError(msg)
 
-        if isinstance(max_limit, int) and first > max_limit:
-            msg = f"Requesting first {first} records exceeds the limit of {max_limit}."
+        if isinstance(max_limit, int) and first is None and last is None:
+            first = max_limit
+
+        if offset is not None:
+            if after is not None or before is not None:
+                msg = "Can only use either `offset` or `before`/`after` for pagination."
+                raise PaginationArgumentValidationError(msg)
+            if not isinstance(offset, int) or offset < 0:
+                msg = "Argument `offset` must be a positive integer."
+                raise PaginationArgumentValidationError(msg)
+
+            # Convert offset to after cursor value. Note that after cursor dictates
+            # a value _after_ which results should be returned, so we need to subtract
+            # 1 from the offset to get the correct cursor value.
+            if offset > 0:  # ignore zero offset
+                after = offset - 1
+
+        if after is not None and (not isinstance(after, int) or after < 0):
+            msg = "The node pointed with `after` does not exist."
             raise PaginationArgumentValidationError(msg)
 
-    if last is not None:
-        if not isinstance(last, int) or last <= 0:
-            msg = "Argument 'last' must be a positive integer."
+        if before is not None and (not isinstance(before, int) or before < 0):
+            msg = "The node pointed with `before` does not exist."
             raise PaginationArgumentValidationError(msg)
 
-        if isinstance(max_limit, int) and last > max_limit:
-            msg = f"Requesting last {last} records exceeds the limit of {max_limit}."
+        if after is not None and before is not None and after >= before:
+            msg = "The node pointed with `after` must be before the node pointed with `before`."
             raise PaginationArgumentValidationError(msg)
 
-    if max_limit is not None and not isinstance(max_limit, int):
-        msg = f"Pagination max limit must be None or an integer, but got: {max_limit!r}."
-        raise PaginationArgumentValidationError(msg)
+        # Since `after` is also exclusive, we need to add 1 to it, so that slicing works correctly.
+        if after is not None:
+            after += 1
 
-    if isinstance(max_limit, int) and first is None and last is None:
-        first = max_limit
+        # `total_count` is added after the optimization is done.
+        return cls(after=after, before=before, first=first, last=last, max_limit=max_limit)
 
-    if offset is not None:
-        if after is not None or before is not None:
-            msg = "Can only use either `offset` or `before`/`after` for pagination."
-            raise PaginationArgumentValidationError(msg)
-        if not isinstance(offset, int) or offset < 0:
-            msg = "Argument `offset` must be a positive integer."
-            raise PaginationArgumentValidationError(msg)
+    def paginate_queryset(self, queryset: models.QuerySet) -> models.QuerySet:
+        """
+        Paginate a top-level queryset based on the given pagination arguments.
 
-        # Convert offset to after cursor value. Note that after cursor dictates
-        # a value _after_ which results should be returned, so we need to subtract
-        # 1 from the offset to get the correct cursor value.
-        if offset > 0:  # ignore zero offset
-            after = offset - 1
+        Before this, the arguments should be validated so that:
+         - `first` and `last` are positive integers or `None`
+         - `after` and `before` are non-negative integers or `None`
+         - If both `after` and `before` are given, `after` is less than or equal to `before`
 
-    if after is not None and (not isinstance(after, int) or after < 0):
-        msg = "The node pointed with `after` does not exist."
-        raise PaginationArgumentValidationError(msg)
+        This function is based on the Relay pagination algorithm.
+        See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
+        """
+        if self.total_count is None:
+            self.total_count = queryset.count()
 
-    if before is not None and (not isinstance(before, int) or before < 0):
-        msg = "The node pointed with `before` does not exist."
-        raise PaginationArgumentValidationError(msg)
+        start: int = 0
+        stop: int = self.total_count
 
-    if after is not None and before is not None and after >= before:
-        msg = "The node pointed with `after` must be before the node pointed with `before`."
-        raise PaginationArgumentValidationError(msg)
+        if self.after is not None:
+            start = min(self.after, stop)
+        if self.before is not None:
+            stop = min(self.before, stop)
+        if self.first is not None:
+            stop = min(start + self.first, stop)
+        if self.last is not None:
+            start = max(stop - self.last, start)
 
-    # Since `after` is also exclusive, we need to add 1 to it, so that slicing works correctly.
-    if after is not None:
-        after += 1
+        queryset._hints["_undine_total_count"] = self.total_count
+        return queryset[start:stop]
 
-    # `size` is added after the optimization is done.
-    return PaginationArgs(after=after, before=before, first=first, last=last, max_limit=max_limit)
+    def paginate_prefetch_queryset(self, queryset: models.QuerySet, related_name: str) -> models.QuerySet:
+        # TODO: Some optimizations here.
 
+        start = models.Value(0)
+        stop = models.F("_undine_total_count")
 
-def calculate_queryset_slice(pagination_args: PaginationArgs) -> slice:
-    """
-    Calculate queryset slicing based on the provided arguments.
-    Before this, the arguments should be validated so that:
-     - `size` is not `None`
-     - `first` and `last`, positive integers or `None`
-     - `after` and `before` are non-negative integers or `None`
-     - If both `after` and `before` are given, `after` is less than or equal to `before`
+        queryset = queryset.annotate(
+            _undine_total_count=SubqueryCount(
+                queryset=queryset.filter(**{related_name: models.OuterRef(related_name)}),
+            ),
+        )
 
-    This function is based on the Relay pagination algorithm.
-    See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
+        if self.after is not None:
+            start = Least(models.Value(self.after), stop)
+        if self.before is not None:
+            stop = Least(models.Value(self.before), stop)
+        if self.first is not None:
+            stop = Least(start + models.Value(self.first), stop)
+        if self.last is not None:
+            stop = Greatest(stop - models.Value(self.last), start)
 
-    :param pagination_args: The pagination arguments.
-    """
-    #
-    # Start from form fetching max number of items.
-    #
-    start: int = 0
-    stop: int = pagination_args.total_count
-    #
-    # If `after` is given, change the start index to `after`.
-    # If `after` is greater than the current queryset size, change it to `size`.
-    #
-    if pagination_args.after is not None:
-        start = min(pagination_args.after, stop)
-    #
-    # If `before` is given, change the stop index to `before`.
-    # If `before` is greater than the current queryset size, change it to `size`.
-    #
-    if pagination_args.before is not None:
-        stop = min(pagination_args.before, stop)
-    #
-    # If first is given, and it's smaller than the current queryset size,
-    # change the stop index to `start + first`
-    # -> Length becomes that of `first`, and the items after it have been removed.
-    #
-    if pagination_args.first is not None and pagination_args.first < (stop - start):
-        stop = start + pagination_args.first
-    #
-    # If last is given, and it's smaller than the current queryset size,
-    # change the start index to `stop - last`.
-    # -> Length becomes that of `last`, and the items before it have been removed.
-    #
-    if pagination_args.last is not None and pagination_args.last < (stop - start):
-        start = stop - pagination_args.last
-
-    return slice(start, stop)
+        return queryset.annotate(
+            _undine_pagination_start=start,
+            _undine_pagination_stop=stop,
+            _undine_pagination_index=(
+                models.Window(
+                    expression=RowNumber(),
+                    partition_by=models.F(related_name),
+                    order_by=queryset.query.order_by or copy(queryset.model._meta.ordering),
+                )
+                - models.Value(1)  # Start from zero.
+            ),
+        ).filter(
+            _undine_pagination_index__gte=models.F("_undine_slice_start"),
+            _undine_pagination_index__lt=models.F("_undine_slice_stop"),
+        )
 
 
 def encode_base64(string: str) -> str:
