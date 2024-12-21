@@ -134,7 +134,7 @@ class QueryOptimizer(GraphQLASTWalker):
             edge_type = get_underlying_type(object_type.fields["edges"].type)
             object_type = get_underlying_type(edge_type.fields["node"].type)
 
-            self.optimization_data.pagination_args = PaginationArgs.from_connection_params(
+            self.optimization_data.pagination_args = PaginationArgs(
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
                 offset=arg_values.get("offset"),
@@ -143,11 +143,14 @@ class QueryOptimizer(GraphQLASTWalker):
                 max_limit=max_limit,
             )
 
-            selections = {node.name.value for node in get_selections(field_node)}
+            selections = {node.name.value: node for node in get_selections(field_node)}
             if "totalCount" in selections:
                 self.optimization_data.pagination_args.requires_total_count = True
 
-            # TODO: If `pageInfo` has a `hasNextPage` field, then `total_count` is required.
+            if "pageInfo" in selections:
+                page_info_selections = {node.name.value for node in get_selections(selections["pageInfo"])}
+                if "hasNextPage" in page_info_selections:
+                    self.optimization_data.pagination_args.requires_total_count = True
 
         query_type = self.get_undine_query_type(object_type)
         if query_type is None:  # Not a undine field.

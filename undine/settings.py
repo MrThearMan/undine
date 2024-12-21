@@ -29,14 +29,17 @@ class DefaultSettings(NamedTuple):
     CONNECTION_MAX_LIMIT: int = 100
     """The maximum number of items to return in a connection by default."""
 
-    CONNECTION_START_INDEX_HINT_KEY = "undine_start_index"
-    """The key to use for storing the start index of objects in a connection in the queryset hints."""
+    CONNECTION_START_INDEX_KEY: str = "_undine_pagination_start"
+    """The key to which the connection's pagination start index is annotated to or added to in the queryset hints."""
 
-    CONNECTION_STOP_INDEX_HINT_KEY = "undine_stop_index"
-    """The key to use for storing the stop index of objects in a connection in the queryset hints."""
+    CONNECTION_STOP_INDEX_KEY: str = "_undine_pagination_stop"
+    """The key to which the connection's pagination stop index is annotated to or added to in the queryset hints."""
 
-    CONNECTION_TOTAL_COUNT_HINT_KEY = "undine_total_count"
-    """The key to use for storing the total count of objects in a connection in the queryset hints."""
+    CONNECTION_INDEX_KEY: str = "_undine_pagination_index"
+    """The key to which connection node's pagination index is annotated to the queryset."""
+
+    CONNECTION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
+    """The key to which the connection's total count annotated to or added to in the queryset hints."""
 
     DELETE_MUTATION_OUTPUT_FIELD_NAME: str = "success"
     """The name of the field in the output of a delete mutation."""
@@ -109,6 +112,9 @@ class DefaultSettings(NamedTuple):
 
     PLUGIN_EXPLORER_VERSION: str = "3.0.2"
     """The version of the plugin explorer to use for GraphiQL."""
+
+    PREFETCH_HACK_CACHE_KEY: str = "_undine_prefetch_hack_cache"
+    """The key to use for storing the prefetch hack cache in the queryset hints."""
 
     QUERY_TYPE_EXTENSIONS_KEY: str = "undine_type"
     """The key used to store a QueryType in the object type GraphQL extensions."""

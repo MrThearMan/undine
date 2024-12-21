@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import base64
-import dataclasses
 from copy import copy
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 from django.db import models
 from django.db.models.functions import Greatest, Least, RowNumber
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
 from graphql.type.scalars import serialize_id
 
+from undine.dataclasses import ValidatedPaginationArgs
 from undine.errors.exceptions import ConnectionQueryTypeNotNodeError, PaginationArgumentValidationError
 from undine.optimizer.prefetch_hack import register_for_prefetch_hack
 from undine.settings import undine_settings
@@ -37,9 +37,12 @@ Node = get_or_create_interface_type(
         ),
     },
 )
+"""The Relay `Node` interface."""
 
 
 class Connection:
+    """A Relay Connection for a list of items."""
+
     def __init__(
         self,
         query_type: type[QueryType],
@@ -53,35 +56,21 @@ class Connection:
         self.max_limit = max_limit
 
 
-@dataclasses.dataclass(slots=True)
 class PaginationArgs:
-    after: int | None
-    """The index after which to start (exclusive)."""
-    before: int | None
-    """The index before which to stop (exclusive)."""
-    first: int | None
-    """The number of items to return from the start."""
-    last: int | None
-    """The number of items to return from the end (after evaluating first)."""
-    max_limit: int | None
-    """The maximum number of items allowed by the connection. No limit if `None`."""
-    total_count: int | None = None
-    """The total number of items that can be paginated."""
-    requires_total_count: bool = False
-    """Whether the total count is required for this query."""
+    """Arguments for Relay-based pagination."""
 
-    @classmethod
-    def from_connection_params(  # noqa: C901, PLR0912
-        cls,
+    def __init__(
+        self,
+        *,
         first: int | None,
         last: int | None,
         offset: int | None,
         after: str | None,
         before: str | None,
         max_limit: int | None = None,
-    ) -> Self:
+    ) -> None:
         """
-        Create pagination arguments from relay connection params while validating that the arguments are valid.
+        Create pagination arguments from Relay connection arguments.
 
         :param first: Number of records to return from the beginning.
         :param last: Number of records to return from the end.
@@ -90,8 +79,52 @@ class PaginationArgs:
         :param before: Cursor value for the first record in the next page.
         :param max_limit: Maximum limit for the number of records that can be requested.
         """
-        after = cursor_to_offset(after) if after is not None else None
-        before = cursor_to_offset(before) if before is not None else None
+        validated_args = self.validate(
+            first=first,
+            last=last,
+            offset=offset,
+            after=cursor_to_offset(after) if after is not None else None,
+            before=cursor_to_offset(before) if before is not None else None,
+            max_limit=max_limit,
+        )
+
+        self.after = validated_args.after
+        """The index after which to start (exclusive)."""
+
+        self.before = validated_args.before
+        """The index before which to stop (exclusive)."""
+
+        self.first = validated_args.first
+        """The number of items to return from the start."""
+
+        self.last = validated_args.last
+        """The number of items to return from the end (after evaluating first)."""
+
+        self.max_limit = max_limit
+        """The maximum number of items allowed by the connection. No limit if `None`."""
+
+        # Added in `paginate_queryset` or `paginate_prefetch_queryset` if needed.
+        self.total_count: int | None = None
+        """The total number of items that can be paginated."""
+
+        # Added during optimization based on connection params.
+        self.requires_total_count: bool = False
+        """Whether the total count is required for this query."""
+
+    @staticmethod
+    def validate(  # noqa: C901, PLR0912
+        *,
+        first: int | None,
+        last: int | None,
+        offset: int | None,
+        after: int | None,
+        before: int | None,
+        max_limit: int | None = None,
+    ) -> ValidatedPaginationArgs:
+        """Validate the given pagination arguments and return the validated arguments."""
+        if max_limit is not None and (not isinstance(max_limit, int) or max_limit < 1):
+            msg = f"`max_limit` must be `None` or a positive integer, got: {max_limit!r}"
+            raise PaginationArgumentValidationError(msg)
 
         if first is not None:
             if not isinstance(first, int) or first <= 0:
@@ -110,10 +143,6 @@ class PaginationArgs:
             if isinstance(max_limit, int) and last > max_limit:
                 msg = f"Requesting last {last} records exceeds the limit of {max_limit}."
                 raise PaginationArgumentValidationError(msg)
-
-        if max_limit is not None and not isinstance(max_limit, int):
-            msg = f"Pagination max limit must be None or an integer, but got: {max_limit!r}."
-            raise PaginationArgumentValidationError(msg)
 
         if isinstance(max_limit, int) and first is None and last is None:
             first = max_limit
@@ -148,29 +177,25 @@ class PaginationArgs:
         if after is not None:
             after += 1
 
-        # `total_count` is added after the optimization is done.
-        return cls(after=after, before=before, first=first, last=last, max_limit=max_limit)
+        return ValidatedPaginationArgs(after=after, before=before, first=first, last=last)
 
     def paginate_queryset(self, queryset: models.QuerySet) -> models.QuerySet:
         """
         Paginate a top-level queryset based on the given pagination arguments.
 
-        Before this, the arguments should be validated so that:
-         - `first` and `last` are positive integers or `None`
-         - `after` and `before` are non-negative integers or `None`
-         - If both `after` and `before` are given, `after` is less than or equal to `before`
+        Assumes that parameters have been validated in `from_connection_params`.
 
         This function is based on the Relay pagination algorithm.
         See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
         """
-        if self.requires_total_count:
+        if self.requires_total_count or self.max_limit is None:
             self.total_count = queryset.count()
 
         start: int = 0
         stop: int | None = self.total_count
 
         if self.after is not None:
-            start = self.after
+            start = self.after if stop is None else min(self.after, stop)
 
         if self.before is not None:
             stop = self.before if stop is None else min(self.before, stop)
@@ -186,27 +211,31 @@ class PaginationArgs:
 
             start = max(stop - self.last, start)
 
-        queryset._hints["_undine_total_count"] = self.total_count
+        queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_KEY] = self.total_count
+        queryset._hints[undine_settings.CONNECTION_START_INDEX_KEY] = start
+        queryset._hints[undine_settings.CONNECTION_STOP_INDEX_KEY] = stop
         return queryset[start:stop]
 
     def paginate_prefetch_queryset(self, queryset: models.QuerySet, related_field: ToManyField) -> models.QuerySet:
         """
         Paginate a prefetch queryset based on the given pagination arguments.
 
-        This is basically the same as `paginate_queryset`, but for prefetched querysets.
+        Assumes that parameters have been validated in `from_connection_params`.
+
+        This function is based on the Relay pagination algorithm.
+        See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
         """
-        # TODO: Optimizations?
         related_name = related_field.remote_field.name
 
         start: models.Expression = models.Value(0)
         stop: models.Expression | None = None
 
-        if self.requires_total_count:
+        if self.requires_total_count or self.max_limit is None:
             queryset = prefetch_total_count(queryset, related_name)
-            stop = models.F("_undine_total_count")
+            stop = models.F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
 
         if self.after is not None:
-            start = models.Value(self.after)
+            start = models.Value(self.after) if stop is None else Least(models.Value(self.after), stop)
 
         if self.before is not None:
             stop = models.Value(self.before) if stop is None else Least(models.Value(self.before), stop)
@@ -216,34 +245,45 @@ class PaginationArgs:
 
         if self.last is not None:
             if stop is None:
-                if "_undine_total_count" not in queryset.query.annotations:
+                if undine_settings.CONNECTION_TOTAL_COUNT_KEY not in queryset.query.annotations:
                     queryset = prefetch_total_count(queryset, related_name)
-                stop = models.F("_undine_total_count")
+                stop = models.F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
 
             stop = Greatest(stop - models.Value(self.last), start)
 
         register_for_prefetch_hack(queryset, related_field)
 
-        return queryset.annotate(
-            _undine_pagination_start=start,
-            _undine_pagination_stop=stop,
-            _undine_pagination_index=(
-                models.Window(
-                    expression=RowNumber(),
-                    partition_by=models.F(related_name),
-                    order_by=queryset.query.order_by or copy(queryset.model._meta.ordering),
-                )
-                - models.Value(1)  # Start from zero.
-            ),
-        ).filter(
-            _undine_pagination_index__gte=models.F("_undine_slice_start"),
-            _undine_pagination_index__lt=models.F("_undine_slice_stop"),
+        return (
+            queryset.alias(
+                **{
+                    undine_settings.CONNECTION_INDEX_KEY: (
+                        models.Window(
+                            expression=RowNumber(),
+                            partition_by=models.F(related_name),
+                            order_by=queryset.query.order_by or copy(queryset.model._meta.ordering),
+                        )
+                        - models.Value(1)  # Start from zero.
+                    ),
+                },
+            )
+            .annotate(
+                **{
+                    undine_settings.CONNECTION_START_INDEX_KEY: start,
+                    undine_settings.CONNECTION_STOP_INDEX_KEY: stop,
+                },
+            )
+            .filter(
+                **{
+                    f"{undine_settings.CONNECTION_INDEX_KEY}__gte": start,
+                    f"{undine_settings.CONNECTION_INDEX_KEY}__lt": stop,
+                },
+            )
         )
 
 
 def prefetch_total_count(queryset: models.QuerySet, related_name: str) -> models.QuerySet:
     subquery_queryset = queryset.filter(**{related_name: models.OuterRef(related_name)})
-    return queryset.annotate(_undine_total_count=SubqueryCount(subquery_queryset))
+    return queryset.annotate(**{undine_settings.CONNECTION_TOTAL_COUNT_KEY: SubqueryCount(subquery_queryset)})
 
 
 def encode_base64(string: str) -> str:
@@ -284,7 +324,7 @@ def from_global_id(global_id: str) -> tuple[str, str | int]:
     return typename, object_id
 
 
-# TODO: Descriptions.
+# TODO: Better descriptions.
 PageInfoType = get_or_create_object_type(
     name="PageInfo",
     description="Information about pagination in a connection.",

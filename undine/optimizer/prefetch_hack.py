@@ -7,6 +7,8 @@ from unittest.mock import patch
 from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset  # noqa: PLC2701
 
+from undine.settings import undine_settings
+
 if TYPE_CHECKING:
     from undine.typing import PrefetchHackCacheType, ToManyField
 
@@ -16,7 +18,6 @@ __all__ = [
 ]
 
 
-_KEY = "_undine_prefetch_hack_cache"
 _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}"
 
 
@@ -39,7 +40,8 @@ def register_for_prefetch_hack(queryset: models.QuerySet, field: ToManyField) ->
     field_name = field.remote_field.name
     through = forward_field.m2m_db_table()
 
-    cache: PrefetchHackCacheType = queryset._hints.setdefault(_KEY, defaultdict(lambda: defaultdict(set)))
+    key = undine_settings.PREFETCH_HACK_CACHE_KEY
+    cache: PrefetchHackCacheType = queryset._hints.setdefault(key, defaultdict(lambda: defaultdict(set)))
     cache[db_table][field_name].add(through)
 
 
@@ -57,7 +59,8 @@ def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[m
     in the SQL query, which messes up the window function's partitioning. Therefore, this hack is needed
     to prevent the INNER join from being added.
     """
-    cache: PrefetchHackCacheType | None = queryset._hints.pop(_KEY, None)
+    key = undine_settings.PREFETCH_HACK_CACHE_KEY
+    cache: PrefetchHackCacheType | None = queryset._hints.pop(key, None)
     if cache is not None:
         #
         # `filter_is_sticky` is set here just to prevent the `used_aliases` from being cleared

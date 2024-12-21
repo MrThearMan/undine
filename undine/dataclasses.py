@@ -81,3 +81,11 @@ class MutationMiddlewareParams:
     input_data: JsonObject
     instance: models.Model | None = None  # Single mutations.
     instances: list[models.Model] | None = None  # Bulk mutations.
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class ValidatedPaginationArgs:
+    after: int | None
+    before: int | None
+    first: int | None
+    last: int | None

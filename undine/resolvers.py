@@ -277,9 +277,9 @@ class ConnectionResolver(Generic[TModel]):
             optimizer = QueryOptimizer(query_type=self.query_type, info=info)
             optimized_queryset = optimizer.optimize(queryset)
 
-            total_count = optimized_queryset._hints["_undine_total_count"]
-            start = optimized_queryset.query.low_mark
-            stop = optimized_queryset.query.high_mark
+            total_count = optimized_queryset._hints.get(undine_settings.CONNECTION_TOTAL_COUNT_KEY, None)
+            start = optimized_queryset._hints[undine_settings.CONNECTION_START_INDEX_KEY]
+            stop = optimized_queryset._hints[undine_settings.CONNECTION_STOP_INDEX_KEY]
 
             return evaluate_in_context(optimized_queryset)
 
@@ -295,7 +295,7 @@ class ConnectionResolver(Generic[TModel]):
         return ConnectionDict(
             totalCount=total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=stop < total_count,  # TODO: If `total_count` is None?
+                hasNextPage=stop < total_count if total_count is not None else True,
                 hasPreviousPage=start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
@@ -314,27 +314,27 @@ class NestedConnectionResolver(Generic[TModel]):
     def __call__(self, instance: models.Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
         middlewares = QueryMiddlewareHandler(instance, info, query_type=self.query_type, field=self.field)
 
-        total_count: int = 0
+        total_count: int | None = 0
         start: int = 0
         stop: int = 0
 
         @middlewares.wrap
         def getter() -> list[TModel]:
             field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
-            result: RelatedManager | list[models.Model] = getattr(instance, field_name)
+            result: RelatedManager[TModel] | list[TModel] = getattr(instance, field_name)
 
             if isinstance(result, models.Manager):
+                optimized_queryset = result.get_queryset()
+                result = list(optimized_queryset)
+
+            if result:
                 nonlocal total_count, start, stop
 
-                queryset = result.get_queryset()
+                total_count = getattr(result[0], undine_settings.CONNECTION_TOTAL_COUNT_KEY, None)
+                start = getattr(result[0], undine_settings.CONNECTION_START_INDEX_KEY)
+                stop = getattr(result[0], undine_settings.CONNECTION_STOP_INDEX_KEY)
 
-                total_count = 100  # TODO: Get where?
-                start = queryset.query.low_mark
-                stop = queryset.query.high_mark
-
-                return list(queryset)
-
-            return result
+            return instances
 
         instances = getter()
 
@@ -348,7 +348,7 @@ class NestedConnectionResolver(Generic[TModel]):
         return ConnectionDict(
             totalCount=total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=stop < total_count,
+                hasNextPage=stop < total_count if total_count is not None else True,
                 hasPreviousPage=start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],

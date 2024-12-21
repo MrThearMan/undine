@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 import pytest
 from django.db import models
@@ -8,432 +8,225 @@ from django.db import models
 from tests.helpers import parametrize_helper
 from undine.errors.exceptions import PaginationArgumentValidationError
 from undine.relay import PaginationArgs, offset_to_cursor
+from undine.settings import undine_settings
 
 
-class PaginationInput(NamedTuple):
-    first: Any = None
-    last: Any = None
-    offset: Any = None
-    after: Any = None
-    before: Any = None
-    max_limit: Any = None
+class PaginationParams(NamedTuple):
+    first: str | int | None = None
+    last: str | int | None = None
+    offset: str | int | None = None
+    after: str | None = None
+    before: str | None = None
+    max_limit: str | int | None = 100
 
 
 class InputParams(NamedTuple):
-    pagination_input: PaginationInput
-    output: PaginationArgs | None
-    errors: str | None
-
-
-class DataParams(NamedTuple):
-    pagination_args: PaginationArgs
-    start: int
-    stop: int
+    params: PaginationParams
+    start: int | None = None
+    stop: int | None = None
+    total_count: int | None = 200
+    errors: str | None = None
 
 
 @pytest.mark.parametrize(
     **parametrize_helper(
         {
+            "none": InputParams(
+                params=PaginationParams(),
+                start=0,
+                stop=100,
+            ),
             "first": InputParams(
-                pagination_input=PaginationInput(),
-                output=PaginationArgs(
-                    after=None,
-                    before=None,
-                    first=None,
-                    last=None,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
+                params=PaginationParams(first=1),
+                start=0,
+                stop=1,
             ),
             "last": InputParams(
-                pagination_input=PaginationInput(last=1),
-                output=PaginationArgs(
-                    after=None,
-                    before=None,
-                    first=None,
-                    last=1,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
+                params=PaginationParams(last=1),
+                start=199,
+                stop=200,
             ),
             "offset": InputParams(
-                pagination_input=PaginationInput(offset=1),
-                output=PaginationArgs(
-                    after=1,
-                    before=None,
-                    first=None,
-                    last=None,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
+                params=PaginationParams(offset=1),
+                start=1,
+                stop=101,
             ),
             "after": InputParams(
-                pagination_input=PaginationInput(after=offset_to_cursor(0)),
-                # Add 1 to after to make it exclusive in slicing.
-                output=PaginationArgs(
-                    after=1,
-                    before=None,
-                    first=None,
-                    last=None,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
+                params=PaginationParams(after=offset_to_cursor(0)),
+                start=1,
+                stop=101,
             ),
             "before": InputParams(
-                pagination_input=PaginationInput(before=offset_to_cursor(0)),
-                output=PaginationArgs(
-                    after=None,
-                    before=0,
-                    first=None,
-                    last=None,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
-            ),
-            "max limit": InputParams(
-                pagination_input=PaginationInput(max_limit=1),
-                output=PaginationArgs(
-                    after=None,
-                    before=None,
-                    first=1,
-                    last=None,
-                    total_count=None,
-                    max_limit=1,
-                ),
-                errors=None,
-            ),
-            "first zero": InputParams(
-                pagination_input=PaginationInput(first=0),
-                output=None,
-                errors="Argument 'first' must be a positive integer.",
-            ),
-            "last zero": InputParams(
-                pagination_input=PaginationInput(last=0),
-                output=None,
-                errors="Argument 'last' must be a positive integer.",
-            ),
-            "first negative": InputParams(
-                pagination_input=PaginationInput(first=-1),
-                output=None,
-                errors="Argument 'first' must be a positive integer.",
-            ),
-            "last negative": InputParams(
-                pagination_input=PaginationInput(last=-1),
-                output=None,
-                errors="Argument 'last' must be a positive integer.",
-            ),
-            "first exceeds max limit": InputParams(
-                pagination_input=PaginationInput(first=2, max_limit=1),
-                output=None,
-                errors="Requesting first 2 records exceeds the limit of 1.",
-            ),
-            "last exceeds max limit": InputParams(
-                pagination_input=PaginationInput(last=2, max_limit=1),
-                output=None,
-                errors="Requesting last 2 records exceeds the limit of 1.",
-            ),
-            "offset zero": InputParams(
-                pagination_input=PaginationInput(offset=0),
-                output=PaginationArgs(
-                    after=None,
-                    before=None,
-                    first=None,
-                    last=None,
-                    total_count=None,
-                    max_limit=None,
-                ),
-                errors=None,
-            ),
-            "after negative": InputParams(
-                pagination_input=PaginationInput(after=offset_to_cursor(-1)),
-                output=None,
-                errors="The node pointed with `after` does not exist.",
-            ),
-            "before negative": InputParams(
-                pagination_input=PaginationInput(before=offset_to_cursor(-1)),
-                output=None,
-                errors="The node pointed with `before` does not exist.",
-            ),
-            "after before": InputParams(
-                pagination_input=PaginationInput(after=offset_to_cursor(1), before=offset_to_cursor(0), max_limit=None),
-                output=None,
-                errors="The node pointed with `after` must be before the node pointed with `before`.",
-            ),
-            "offset after": InputParams(
-                pagination_input=PaginationInput(offset=1, after=offset_to_cursor(0)),
-                output=None,
-                errors="Can only use either `offset` or `before`/`after` for pagination.",
-            ),
-            "offset before": InputParams(
-                pagination_input=PaginationInput(offset=1, before=offset_to_cursor(0)),
-                output=None,
-                errors="Can only use either `offset` or `before`/`after` for pagination.",
-            ),
-            "first not int": InputParams(
-                pagination_input=PaginationInput(first="0"),
-                output=None,
-                errors="Argument 'first' must be a positive integer.",
-            ),
-            "last not int": InputParams(
-                pagination_input=PaginationInput(last="0"),
-                output=None,
-                errors="Argument 'last' must be a positive integer.",
-            ),
-            "offset not int": InputParams(
-                pagination_input=PaginationInput(offset="0"),
-                output=None,
-                errors="Argument `offset` must be a positive integer.",
-            ),
-            "max limit not int": InputParams(
-                pagination_input=PaginationInput(max_limit="foo"),
-                output=None,
-                errors="Pagination max limit must be None or an integer, but got: 'foo'.",
-            ),
-        },
-    ),
-)
-def test_pagination_args_from_connection_params(pagination_input, output, errors):
-    try:
-        args = PaginationArgs.from_connection_params(**pagination_input._asdict())
-    except PaginationArgumentValidationError as error:
-        if errors is None:
-            pytest.fail(f"Unexpected error: {error}")
-        assert str(error) == errors  # noqa: PT017
-    else:
-        if errors is not None:
-            pytest.fail(f"Expected error: {errors}")
-        assert args == output
-
-
-@pytest.mark.parametrize(
-    **parametrize_helper(
-        {
-            "default": DataParams(
-                pagination_args=PaginationArgs(
-                    first=None,
-                    last=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "after": DataParams(
-                pagination_args=PaginationArgs(
-                    after=1,
-                    first=None,
-                    before=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=1,
-                stop=100,
-            ),
-            "before": DataParams(
-                pagination_args=PaginationArgs(
-                    before=99,
-                    first=None,
-                    after=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=99,
-            ),
-            "first": DataParams(
-                pagination_args=PaginationArgs(
-                    first=10,
-                    last=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
+                params=PaginationParams(before=offset_to_cursor(10)),
                 start=0,
                 stop=10,
             ),
-            "last": DataParams(
-                pagination_args=PaginationArgs(
-                    last=10,
-                    first=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=90,
-                stop=100,
+            "max limit": InputParams(
+                params=PaginationParams(max_limit=1),
+                start=0,
+                stop=1,
             ),
-            "after_before": DataParams(
-                pagination_args=PaginationArgs(
-                    after=1,
-                    before=99,
-                    first=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=1,
+            "after and before": InputParams(
+                params=PaginationParams(after=offset_to_cursor(1), before=offset_to_cursor(99)),
+                start=2,
                 stop=99,
             ),
-            "first_last": DataParams(
-                pagination_args=PaginationArgs(
-                    first=10,
-                    last=8,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
+            "first and last": InputParams(
+                params=PaginationParams(first=10, last=8),
                 start=2,
                 stop=10,
             ),
-            "after_before_first_last": DataParams(
-                pagination_args=PaginationArgs(
-                    after=1,
-                    before=99,
-                    first=10,
-                    last=8,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=3,
-                stop=11,
+            "before and first": InputParams(
+                params=PaginationParams(before=offset_to_cursor(50), first=10),
+                start=0,
+                stop=10,
             ),
-            "after_bigger_than_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    after=101,
-                    first=None,
-                    before=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=100,
-                stop=100,
+            "before and last": InputParams(
+                params=PaginationParams(before=offset_to_cursor(50), last=10),
+                start=40,
+                stop=50,
             ),
-            "before_bigger_than_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    before=101,
-                    first=None,
-                    after=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
+            "after and first": InputParams(
+                params=PaginationParams(after=offset_to_cursor(50), first=10),
+                start=51,
+                stop=61,
+            ),
+            "after and last": InputParams(
+                params=PaginationParams(after=offset_to_cursor(50), last=10),
+                start=190,
+                stop=200,
+            ),
+            "after and before and first": InputParams(
+                params=PaginationParams(after=offset_to_cursor(1), before=offset_to_cursor(99), first=10),
+                start=2,
+                stop=12,
+            ),
+            "after and before and last": InputParams(
+                params=PaginationParams(after=offset_to_cursor(1), before=offset_to_cursor(99), last=10),
+                start=89,
+                stop=99,
+            ),
+            "after and before and first and last": InputParams(
+                params=PaginationParams(after=offset_to_cursor(1), before=offset_to_cursor(99), first=10, last=8),
+                start=4,
+                stop=12,
+            ),
+            "after bigger than total count": InputParams(
+                params=PaginationParams(after=offset_to_cursor(201)),
+                start=200,
+                stop=200,
+            ),
+            "before bigger than total count": InputParams(
+                params=PaginationParams(before=offset_to_cursor(201)),
                 start=0,
                 stop=100,
             ),
-            "first_bigger_than_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    first=101,
-                    last=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "last_bigger_than_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    last=101,
-                    first=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "after_is_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    after=100,
-                    first=None,
-                    before=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=100,
-                stop=100,
-            ),
-            "before_is_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    before=100,
-                    first=None,
-                    after=None,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "first_is_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    first=100,
-                    last=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "last_is_total_count": DataParams(
-                pagination_args=PaginationArgs(
-                    last=100,
-                    first=None,
-                    after=None,
-                    before=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
-                start=0,
-                stop=100,
-            ),
-            "first_bigger_than_after_before": DataParams(
-                pagination_args=PaginationArgs(
-                    after=10,
-                    before=20,
-                    first=20,
-                    last=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
+            "first bigger than interval from after to before": InputParams(
+                params=PaginationParams(after=offset_to_cursor(9), before=offset_to_cursor(20), first=20),
                 start=10,
                 stop=20,
             ),
-            "last_bigger_than_after_before": DataParams(
-                pagination_args=PaginationArgs(
-                    after=10,
-                    before=20,
-                    last=20,
-                    first=None,
-                    max_limit=None,
-                    total_count=100,
-                ),
+            "last bigger than interval from after to before": InputParams(
+                params=PaginationParams(after=offset_to_cursor(9), before=offset_to_cursor(20), last=20),
                 start=10,
                 stop=20,
             ),
+            "offset zero": InputParams(
+                params=PaginationParams(offset=0),
+                start=0,
+                stop=100,
+            ),
+            "offset bigger than total count": InputParams(
+                params=PaginationParams(offset=201),
+                start=200,
+                stop=200,
+            ),
+            "first zero": InputParams(
+                params=PaginationParams(first=0),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last zero": InputParams(
+                params=PaginationParams(last=0),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "first negative": InputParams(
+                params=PaginationParams(first=-1),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last negative": InputParams(
+                params=PaginationParams(last=-1),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "first exceeds max limit": InputParams(
+                params=PaginationParams(first=2, max_limit=1),
+                errors="Requesting first 2 records exceeds the limit of 1.",
+            ),
+            "last exceeds max limit": InputParams(
+                params=PaginationParams(last=2, max_limit=1),
+                errors="Requesting last 2 records exceeds the limit of 1.",
+            ),
+            "after negative": InputParams(
+                params=PaginationParams(after=offset_to_cursor(-1)),
+                errors="The node pointed with `after` does not exist.",
+            ),
+            "before negative": InputParams(
+                params=PaginationParams(before=offset_to_cursor(-1)),
+                errors="The node pointed with `before` does not exist.",
+            ),
+            "after bigger than before": InputParams(
+                params=PaginationParams(after=offset_to_cursor(1), before=offset_to_cursor(0)),
+                errors="The node pointed with `after` must be before the node pointed with `before`.",
+            ),
+            "offset after": InputParams(
+                params=PaginationParams(offset=1, after=offset_to_cursor(0)),
+                errors="Can only use either `offset` or `before`/`after` for pagination.",
+            ),
+            "offset before": InputParams(
+                params=PaginationParams(offset=1, before=offset_to_cursor(10)),
+                errors="Can only use either `offset` or `before`/`after` for pagination.",
+            ),
+            "first not int": InputParams(
+                params=PaginationParams(first="0"),
+                errors="Argument 'first' must be a positive integer.",
+            ),
+            "last not int": InputParams(
+                params=PaginationParams(last="0"),
+                errors="Argument 'last' must be a positive integer.",
+            ),
+            "offset not int": InputParams(
+                params=PaginationParams(offset="0"),
+                errors="Argument `offset` must be a positive integer.",
+            ),
+            "max limit not int": InputParams(
+                params=PaginationParams(max_limit="foo"),
+                errors="`max_limit` must be `None` or a positive integer, got: 'foo'",
+            ),
+            # TODO: `max_limit=None`.
+            # TODO: `requires_total_count=True`.
+            # TODO: `last=<int>` and `total_count=None`.
         },
     ),
 )
 @pytest.mark.django_db
-def test_calculate_queryset_slice(pagination_args: PaginationArgs, start: int, stop: int) -> None:
-    queryset = pagination_args.paginate_queryset(models.QuerySet())
-    assert queryset.query.low_mark == start
-    assert queryset.query.high_mark == stop
+def test_pagination_args__from_connection_params__paginate_queryset(params, start, stop, total_count, errors):
+    try:
+        args = PaginationArgs(**params._asdict())
+
+    except PaginationArgumentValidationError as error:
+        if errors is None:
+            pytest.fail(f"Unexpected error: {error}")
+        assert str(error) == errors  # noqa: PT017
+
+    else:
+        if errors is not None:
+            pytest.fail(f"Expected error: {errors}")
+
+        args.total_count = total_count
+
+        queryset = args.paginate_queryset(models.QuerySet())
+        assert queryset._hints[undine_settings.CONNECTION_TOTAL_COUNT_KEY] == total_count
+        assert queryset._hints[undine_settings.CONNECTION_START_INDEX_KEY] == start
+        assert queryset._hints[undine_settings.CONNECTION_STOP_INDEX_KEY] == stop
+
+
+# TODO: test `paginate_prefetch_queryset`
