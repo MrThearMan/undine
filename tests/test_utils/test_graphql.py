@@ -9,6 +9,7 @@ from graphql import (
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
@@ -73,7 +74,7 @@ def test_compare_graphql_types__enum__same():
         values={"foo": GraphQLEnumValue(value="foo")},
     )
 
-    compare_graphql_types(new_type=enum_1, existing_type=enum_2)
+    compare_graphql_types(new_obj=enum_1, existing_obj=enum_2)
 
 
 def test_compare_graphql_types__enum__different_values():
@@ -87,7 +88,7 @@ def test_compare_graphql_types__enum__different_values():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=enum_1, existing_type=enum_2)
+        compare_graphql_types(new_obj=enum_1, existing_obj=enum_2)
 
 
 def test_compare_graphql_types__object_type__same():
@@ -100,7 +101,7 @@ def test_compare_graphql_types__object_type__same():
         fields={"foo": GraphQLField(GraphQLString)},
     )
 
-    compare_graphql_types(new_type=object_type_1, existing_type=object_type_2)
+    compare_graphql_types(new_obj=object_type_1, existing_obj=object_type_2)
 
 
 def test_compare_graphql_types__object_type__different_fields():
@@ -114,7 +115,7 @@ def test_compare_graphql_types__object_type__different_fields():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=object_type_1, existing_type=object_type_2)
+        compare_graphql_types(new_obj=object_type_1, existing_obj=object_type_2)
 
 
 def test_compare_graphql_types__input_object_type__same():
@@ -127,7 +128,7 @@ def test_compare_graphql_types__input_object_type__same():
         fields={"foo": GraphQLInputField(GraphQLString)},
     )
 
-    compare_graphql_types(new_type=input_object_type_1, existing_type=input_object_type_2)
+    compare_graphql_types(new_obj=input_object_type_1, existing_obj=input_object_type_2)
 
 
 def test_compare_graphql_types__input_object_type__different_fields():
@@ -141,7 +142,34 @@ def test_compare_graphql_types__input_object_type__different_fields():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=input_object_type_1, existing_type=input_object_type_2)
+        compare_graphql_types(new_obj=input_object_type_1, existing_obj=input_object_type_2)
+
+
+def test_compare_graphql_types__interface_type__same():
+    input_object_type_1 = GraphQLInterfaceType(
+        name="foo",
+        fields={"foo": GraphQLField(GraphQLString)},
+    )
+    input_object_type_2 = GraphQLInterfaceType(
+        name="foo",
+        fields={"foo": GraphQLField(GraphQLString)},
+    )
+
+    compare_graphql_types(new_obj=input_object_type_1, existing_obj=input_object_type_2)
+
+
+def test_compare_graphql_types__interface_type__different_fields():
+    input_object_type_1 = GraphQLInterfaceType(
+        name="foo",
+        fields={"foo": GraphQLField(GraphQLString)},
+    )
+    input_object_type_2 = GraphQLInterfaceType(
+        name="foo",
+        fields={"bar": GraphQLField(GraphQLString)},
+    )
+
+    with pytest.raises(GraphQLDuplicateTypeError):
+        compare_graphql_types(new_obj=input_object_type_1, existing_obj=input_object_type_2)
 
 
 def test_compare_graphql_types__enum_vs_object_type():
@@ -155,7 +183,7 @@ def test_compare_graphql_types__enum_vs_object_type():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=enum, existing_type=object_type)
+        compare_graphql_types(new_obj=enum, existing_obj=object_type)
 
 
 def test_compare_graphql_types__enum_vs_input_object_type():
@@ -169,7 +197,7 @@ def test_compare_graphql_types__enum_vs_input_object_type():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=enum, existing_type=input_object_type)
+        compare_graphql_types(new_obj=enum, existing_obj=input_object_type)
 
 
 def test_compare_graphql_types__object_type_vs_input_object_type():
@@ -183,7 +211,7 @@ def test_compare_graphql_types__object_type_vs_input_object_type():
     )
 
     with pytest.raises(GraphQLDuplicateTypeError):
-        compare_graphql_types(new_type=object_type, existing_type=input_object_type)
+        compare_graphql_types(new_obj=object_type, existing_obj=input_object_type)
 
 
 def test_get_or_create_graphql_enum():

@@ -347,7 +347,7 @@ class GraphQLClient(Client):
         operation_name: str | None = None,
     ) -> GQLResponse:
         """
-        Make a GraphQL query to the test client.
+        Create a GraphQL client for testing.
 
         :params query: GraphQL query string.
         :params variables: Variables for the query.

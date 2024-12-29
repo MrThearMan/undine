@@ -2,6 +2,23 @@ site_name: Undine
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Queries: queries.md
+  - Mutations: mutations.md
+  - Schema: schema.md
+  - Filtering: filtering.md
+  - Ordering: ordering.md
+  - Permissions: permissions.md
+  - Relay: relay.md
+  - Files: files.md
+  - Scalars: scalars.md
+  - Converters: converters.md
+  - Middleware: middleware.md
+  - Optimizer: optimizer.md
+  - Testing: testing.md
+  - Settings: settings.md
+  - Roadmap: roadmap.md
+  - Development: development.md
 
 theme:
   name: readthedocs
@@ -27,7 +44,7 @@ markdown_extensions:
 plugins:
   - search:
   - mermaid2:
-      version: 10.6.1
+      version: 11.4.1
 
 extra_css:
   - css/docs.css

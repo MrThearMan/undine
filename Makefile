@@ -50,7 +50,7 @@ dev:
 	@poetry run python manage.py runserver localhost:8000
 
 docs:
-	@poetry run mkdocs serve -a localhost:8080
+	@poetry run mkdocs serve -a localhost:$(call args, "8081")
 
 generate:
 	@poetry run python manage.py create_test_data

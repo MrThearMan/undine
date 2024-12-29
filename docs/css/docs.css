@@ -25,7 +25,6 @@ body {
 
 .wy-side-scroll {
     overflow-y: auto;
-    height: auto;
 }
 
 div.wy-nav-content,
@@ -38,11 +37,13 @@ div.wy-nav-content,
 .wy-menu-vertical a {
     color: #bbbbbb;
     background: #343131;
+    border-color: #2d2d2d;
 }
 
 .wy-menu-vertical li.toctree-l2 a:hover,
 .wy-menu-vertical a:hover {
     background: #2d2d2d;
+    border-color: #2d2d2d;
 }
 
 .wy-side-nav-search input[type=text] {
@@ -63,9 +64,8 @@ div.wy-nav-content,
 .wy-menu-vertical li.toctree-l3.current > a,
 .wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a {
     color: #bbbbbb;
-    background: #343131!important;
-    border-bottom: 1px solid #343131;
-    border-top: 1px solid #343131;
+    background: #2d2d2d !important;
+    border: none;
 }
 
 .wy-menu-vertical li.current,
@@ -77,8 +77,7 @@ div.wy-nav-content,
 .wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a:hover {
     color: #bbbbbb;
     background: #2d2d2d!important;
-    border-bottom: 1px solid #343131;
-    border-top: 1px solid #343131;
+    border: none;
 }
 
 .rst-content pre code,

@@ -25,17 +25,18 @@ pip install undine
 
 # Before initial release:
 - [ ] Refactor testing helpers
+- [ ] Refactor function dispatcher (types vs. instances, protocols)
 - [ ] Add documentation
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects
-- [ ] Add support for caching
-- [ ] Add support for subscriptions
-- [ ] Add support for persisted queries (via sub-app)
-- [ ] Add support for union types
-- [ ] Add support for dataloaders
-- [ ] Add support for directives
-- [ ] Add support for schema export
+- [ ] Add caching
+- [ ] Add subscriptions
+- [ ] Add persisted queries (via sub-app)
+- [ ] Add union types
+- [ ] Add dataloaders
+- [ ] Add directives
+- [ ] Add schema export
 - [ ] Add debug toolbar integration
 - [ ] Add sentry integration
 

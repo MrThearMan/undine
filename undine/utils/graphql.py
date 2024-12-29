@@ -54,33 +54,22 @@ def add_default_status_codes(errors: list[GraphQLError]) -> list[GraphQLError]:
     return errors
 
 
-def compare_graphql_types(*, new_type: GraphQLNullableType, existing_type: GraphQLNullableType) -> None:
-    """Raises a 'GraphQLDuplicateTypeError' if the existing type is different from the new type."""
-    if (
-        isinstance(new_type, GraphQLEnumType)
-        and isinstance(existing_type, GraphQLEnumType)
-        and new_type.values == existing_type.values
-    ):
-        return
+def compare_graphql_types(*, new_obj: GraphQLNullableType, existing_obj: GraphQLNullableType) -> None:
+    """Raises a 'GraphQLDuplicateTypeError' if the existing object is different from the new object."""
+    new_type = type(new_obj)
+    existing_type = type(existing_obj)
 
-    if (
-        isinstance(new_type, GraphQLObjectType)
-        and isinstance(existing_type, GraphQLObjectType)
-        and new_type._fields == existing_type._fields
-    ):
-        return
-
-    if (
-        isinstance(new_type, GraphQLInputObjectType)
-        and isinstance(existing_type, GraphQLInputObjectType)
-        and new_type._fields == existing_type._fields
-    ):
-        return
+    if new_type is existing_type:
+        if isinstance(new_obj, GraphQLEnumType):
+            if new_obj.values == existing_obj.values:
+                return
+        elif new_obj._fields == existing_obj._fields:
+            return
 
     raise GraphQLDuplicateTypeError(
-        name=new_type.name,
-        type_new=type(new_type),
-        type_existing=type(existing_type),
+        name=new_obj.name,
+        type_new=new_type,
+        type_existing=existing_type,
     )
 
 
@@ -112,7 +101,7 @@ def get_or_create_graphql_enum(
     )
 
     if name in GRAPHQL_TYPE_REGISTRY:
-        compare_graphql_types(new_type=enum, existing_type=GRAPHQL_TYPE_REGISTRY[name])
+        compare_graphql_types(new_obj=enum, existing_obj=GRAPHQL_TYPE_REGISTRY[name])
         return GRAPHQL_TYPE_REGISTRY[name]
 
     GRAPHQL_TYPE_REGISTRY[name] = enum
@@ -144,7 +133,7 @@ def get_or_create_object_type(
     )
 
     if name in GRAPHQL_TYPE_REGISTRY:
-        compare_graphql_types(new_type=object_type, existing_type=GRAPHQL_TYPE_REGISTRY[name])
+        compare_graphql_types(new_obj=object_type, existing_obj=GRAPHQL_TYPE_REGISTRY[name])
         return GRAPHQL_TYPE_REGISTRY[name]
 
     GRAPHQL_TYPE_REGISTRY[name] = object_type
@@ -172,7 +161,7 @@ def get_or_create_input_object_type(
     )
 
     if name in GRAPHQL_TYPE_REGISTRY:
-        compare_graphql_types(new_type=input_object_type, existing_type=GRAPHQL_TYPE_REGISTRY[name])
+        compare_graphql_types(new_obj=input_object_type, existing_obj=GRAPHQL_TYPE_REGISTRY[name])
         return GRAPHQL_TYPE_REGISTRY[name]
 
     GRAPHQL_TYPE_REGISTRY[name] = input_object_type
@@ -200,7 +189,7 @@ def get_or_create_interface_type(
     )
 
     if name in GRAPHQL_TYPE_REGISTRY:
-        compare_graphql_types(new_type=interface_type, existing_type=GRAPHQL_TYPE_REGISTRY[name])
+        compare_graphql_types(new_obj=interface_type, existing_obj=GRAPHQL_TYPE_REGISTRY[name])
         return GRAPHQL_TYPE_REGISTRY[name]
 
     GRAPHQL_TYPE_REGISTRY[name] = interface_type
