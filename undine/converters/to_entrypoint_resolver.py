@@ -44,7 +44,7 @@ Keyword arguments:
 
 @convert_entrypoint_ref_to_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
-    return FunctionResolver(ref)
+    return FunctionResolver(func=ref)
 
 
 def load_deferred_converters() -> None:  # noqa: C901

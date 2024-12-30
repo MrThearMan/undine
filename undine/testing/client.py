@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 
-class GraphQLClientResponse:  # TODO: Test
+class GraphQLClientResponse:
     """A response from a GraphQL client."""
 
     def __init__(self, response: HttpResponse, database_queries: DBQueryData) -> None:
@@ -76,7 +76,7 @@ class GraphQLClientResponse:  # TODO: Test
         try:
             return next(iter(data.values()))
         except StopIteration:
-            msg = f"No query object not found in response content: {self.json}"
+            msg = f"No query object not found in response content\nContent: {self.json}"
             pytest.fail(msg, pytrace=False)
 
     @property
@@ -91,7 +91,7 @@ class GraphQLClientResponse:  # TODO: Test
         try:
             return self.results["edges"]
         except (KeyError, TypeError):
-            msg = f"Edges not found in response content: {self.json}"
+            msg = f"Edges not found in response content\nContent: {self.json}"
             pytest.fail(msg, pytrace=False)
 
     def node(self, index: int) -> dict[str, Any]:
@@ -105,7 +105,7 @@ class GraphQLClientResponse:  # TODO: Test
         try:
             return self.edges[index]["node"]
         except (IndexError, TypeError):
-            msg = f"Node {index!r} not found in response content: {self.json}"
+            msg = f"Node {index!r} not found in response content\nContent: {self.json}"
             pytest.fail(msg, pytrace=False)
 
     @property
@@ -125,7 +125,7 @@ class GraphQLClientResponse:  # TODO: Test
         try:
             return self.json["errors"]
         except (KeyError, TypeError):
-            msg = f"Errors not found in response content: {self.json}"
+            msg = f"Errors not found in response content\nContent: {self.json}"
             pytest.fail(msg, pytrace=False)
 
     def error_message(self, selector: int | str) -> str:
@@ -147,20 +147,14 @@ class GraphQLClientResponse:  # TODO: Test
         if isinstance(selector, int):
             try:
                 return self.errors[selector]["message"]
-            except IndexError:
-                msg = f"Errors list doesn't have an index {selector}: {self.json}"
-                pytest.fail(msg, pytrace=False)
-            except (KeyError, TypeError):
-                msg = f"Field 'message' not found in error content: {self.json}"
+            except (IndexError, KeyError, TypeError):
+                msg = f"Errors message not found from index {selector}\nContent: {self.json}"
                 pytest.fail(msg, pytrace=False)
         else:
             try:
                 return next(error["message"] for error in self.errors if error["path"][-1] == selector)
-            except StopIteration:
-                msg = f"Errors list doesn't have an error for field '{selector}': {self.json}"
-                pytest.fail(msg, pytrace=False)
-            except (KeyError, TypeError):
-                msg = f"Field 'message' not found in error content: {self.json}"
+            except (StopIteration, KeyError, TypeError):
+                msg = f"Errors message not found from path {selector!r}\nContent: {self.json}"
                 pytest.fail(msg, pytrace=False)
 
     def assert_query_count(self, count: int) -> None:
@@ -175,6 +169,7 @@ class GraphQLClient(Client):
     def __call__(
         self,
         query: str,
+        *,
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,

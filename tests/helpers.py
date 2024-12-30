@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, NamedTuple, TypedDict, TypeVar
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.files import File
 from django.http import HttpHeaders, HttpRequest, QueryDict
 from django.test.client import BOUNDARY
 from django.utils.datastructures import MultiValueDict
@@ -228,3 +229,13 @@ def patch_optimizer(*, func: Callable[[QuerySet], QuerySet] | None = None) -> Ge
     path = QueryOptimizer.__module__ + "." + QueryOptimizer.__qualname__ + "." + QueryOptimizer.optimize.__name__
     with patch(path, side_effect=func):
         yield
+
+
+def create_mock_png() -> File:
+    from PIL import Image  # noqa: PLC0415
+
+    bytes_io = BytesIO()
+    img = Image.new("RGB", (1, 1))
+    img.save(bytes_io, format="PNG", compress_level=1)
+    bytes_io.seek(0)
+    return File(bytes_io, name="image.png")

@@ -368,7 +368,7 @@ def test_resolvers__function_resolver():
     def func():
         return "foo"
 
-    resoler = FunctionResolver(func)
+    resoler = FunctionResolver(func=func)
     result = resoler(root=None, info=MockGQLInfo())
     assert result == "foo"
 
@@ -377,7 +377,7 @@ def test_resolvers__function_resolver__root():
     def func(root: Any):
         return root
 
-    resolver = FunctionResolver(func, root_param="root")
+    resolver = FunctionResolver(func=func, root_param="root")
     result = resolver(root="foo", info=MockGQLInfo())
     assert result == "foo"
 
@@ -387,7 +387,7 @@ def test_resolvers__function_resolver__info():
         return info
 
     info = MockGQLInfo()
-    resolver = FunctionResolver(func, info_param="info")
+    resolver = FunctionResolver(func=func, info_param="info")
     result = resolver(root=None, info=info)
     assert result == info
 
@@ -396,7 +396,7 @@ def test_resolvers__function_resolver__adapt():
     def func():
         return "foo"
 
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root=None, info=MockGQLInfo())
     assert result == "foo"
 
@@ -405,7 +405,7 @@ def test_resolvers__function_resolver__adapt__root():
     def func(root: Any):
         return root
 
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root="foo", info=MockGQLInfo())
     assert result == "foo"
 
@@ -414,7 +414,7 @@ def test_resolvers__function_resolver__adapt__root__self():
     def func(self: Any):
         return self
 
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root="foo", info=MockGQLInfo())
     assert result == "foo"
 
@@ -423,7 +423,7 @@ def test_resolvers__function_resolver__adapt__root__cls():
     def func(cls: Any):
         return cls
 
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root="foo", info=MockGQLInfo())
     assert result == "foo"
 
@@ -433,7 +433,7 @@ def test_resolvers__function_resolver__adapt__info():
         return info
 
     info = MockGQLInfo()
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root=None, info=info)
     assert result == info
 
@@ -443,7 +443,7 @@ def test_resolvers__function_resolver__adapt__info__graphql_resolver_info():
         return info
 
     info = MockGQLInfo()
-    resolver = FunctionResolver(func)
+    resolver = FunctionResolver(func=func)
     result = resolver(root=None, info=info)
     assert result == info
 

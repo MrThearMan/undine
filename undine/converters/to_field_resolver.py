@@ -44,7 +44,7 @@ Keyword arguments:
 @convert_field_ref_to_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Field = kwargs["caller"]
-    return FunctionResolver(ref, field=caller)
+    return FunctionResolver(func=ref, field=caller)
 
 
 @convert_field_ref_to_resolver.register

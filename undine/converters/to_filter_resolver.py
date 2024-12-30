@@ -32,7 +32,7 @@ Keyword arguments:
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFilterResolver:
-    return FilterFunctionResolver(ref)
+    return FilterFunctionResolver(func=ref)
 
 
 @convert_filter_ref_to_filter_resolver.register

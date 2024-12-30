@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from django.db.models import Q
 
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
-    from undine.typing import GQLInfo, GraphQLFilterResolver
+    from types import FunctionType
+
+    from undine.typing import GQLInfo
 
 __all__ = [
     "FilterFunctionResolver",
@@ -16,18 +18,18 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class FilterFunctionResolver:
     """Resolves a `FilterSet` field function."""
 
-    func: GraphQLFilterResolver
-    root_param: str | None = None
-    info_param: str | None = None
+    func: FunctionType | Callable[..., Any] = dataclasses.field(kw_only=True)
+    root_param: str | None = dataclasses.field(default=None, init=False)
+    info_param: str | None = dataclasses.field(default=None, init=False)
 
     def __post_init__(self) -> None:
         params = get_root_and_info_params(self.func)
-        self.root_param = params.root_param
-        self.info_param = params.info_param
+        object.__setattr__(self, "root_param", params.root_param)
+        object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Q:
         if self.root_param is not None:

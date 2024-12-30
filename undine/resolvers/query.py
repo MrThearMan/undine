@@ -45,22 +45,22 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class FunctionResolver:
     """
     Resolves a GraphQL field using the given function.
-    If Field is provided, its permissions checks will be run before the function during resolver execution.
+    If `field` is provided, its permissions checks will be run before the function during resolver execution.
     """
 
     func: FunctionType | Callable[..., Any]
-    field: Field | None = None
-    root_param: str | None = None
-    info_param: str | None = None
+    field: Field | None = dataclasses.field(default=None, kw_only=True)
+    root_param: str | None = dataclasses.field(default=None, init=False)
+    info_param: str | None = dataclasses.field(default=None, init=False)
 
     def __post_init__(self) -> None:
         params = get_root_and_info_params(self.func)
-        self.root_param = params.root_param
-        self.info_param = params.info_param
+        object.__setattr__(self, "root_param", params.root_param)
+        object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         if self.field is not None and self.field.permissions_func is not None:
