@@ -24,6 +24,6 @@ def test_bulk_delete_resolver():
 
     results = resolver(root=None, info=MockGQLInfo(), input=data)
 
-    assert results == {"success": True}
+    assert results == [{"pk": task_1.pk}, {"pk": task_2.pk}]
 
     assert Task.objects.count() == 0

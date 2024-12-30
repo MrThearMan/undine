@@ -26,8 +26,8 @@ class DefaultSettings(NamedTuple):
     CONNECTION_EXTENSIONS_KEY: str = "undine_connection"
     """The key to use for storing the connection in the extensions of the GraphQL type."""
 
-    CONNECTION_MAX_LIMIT: int = 100
-    """The maximum number of items to return in a connection by default."""
+    CONNECTION_MAX_LIMIT: int | None = 100
+    """The maximum number of items to return in a Relay Connection."""
 
     CONNECTION_START_INDEX_KEY: str = "_undine_pagination_start"
     """The key to which the connection's pagination start index is annotated to or added to in the queryset hints."""
@@ -36,13 +36,10 @@ class DefaultSettings(NamedTuple):
     """The key to which the connection's pagination stop index is annotated to or added to in the queryset hints."""
 
     CONNECTION_INDEX_KEY: str = "_undine_pagination_index"
-    """The key to which connection node's pagination index is annotated to the queryset."""
+    """The key to which nested connection node's pagination index is annotated to the queryset."""
 
     CONNECTION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
     """The key to which the connection's total count annotated to or added to in the queryset hints."""
-
-    DELETE_MUTATION_OUTPUT_FIELD_NAME: str = "success"
-    """The name of the field in the output of a delete mutation."""
 
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
     """Disable optimizing fetched fields with `queryset.only()`."""
@@ -60,7 +57,7 @@ class DefaultSettings(NamedTuple):
     """The key used to store a Field in the field GraphQL extensions."""
 
     FILTER_EXTENSIONS_KEY: str = "undine_filter"
-    """The key used to store a Filter in the argument GraphQL extensions."""
+    """The key used to store a `Filter` in the argument GraphQL extensions."""
 
     FILTER_INPUT_TYPE_KEY: str = "filter"
     """The key used for the filter input type of QueryType."""
@@ -69,7 +66,7 @@ class DefaultSettings(NamedTuple):
     """The key used to store a FilterSet in the argument GraphQL extensions."""
 
     INPUT_EXTENSIONS_KEY: str = "undine_input"
-    """The key used to store an Input in the argument GraphQL extensions."""
+    """The key used to store an `Input` in the argument GraphQL extensions."""
 
     GRAPHIQL_ENABLED: bool = False
     """Is GraphiQL enabled?"""
@@ -80,14 +77,14 @@ class DefaultSettings(NamedTuple):
     MAX_ERRORS: int = 100
     """The maximum number of validation errors allowed in a GraphQL request before it is rejected."""
 
-    MAX_TOKENS: int = None
+    MAX_TOKENS: int | None = None
     """Maximum number of tokens the GraphQL parser will parse before it rejects a request"""
 
     MIDDLEWARE: list[str] = []
     """Middleware to use in GraphQL field resolving."""
 
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
-    """The key used to store a Mutation in the argument GraphQL extensions."""
+    """The key used to store a `MutationType` in the argument GraphQL extensions."""
 
     MUTATION_INPUT_KEY: str = "input"
     """The key used for the input argument of a MutationType."""
@@ -99,13 +96,13 @@ class DefaultSettings(NamedTuple):
     """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
 
     ORDER_EXTENSIONS_KEY: str = "undine_order"
-    """The key used to store an Order in the argument GraphQL extensions."""
+    """The key used to store an `Order` in the argument GraphQL extensions."""
 
     ORDER_BY_INPUT_TYPE_KEY: str = "orderBy"
-    """The key used for the order by argument of a QueryType."""
+    """The key used for the order by argument of a `QueryType`."""
 
     ORDERSET_EXTENSIONS_KEY: str = "undine_orderset"
-    """The key used to store a OrderSet in the argument GraphQL extensions."""
+    """The key used to store a `OrderSet` in the argument GraphQL extensions."""
 
     PLUGIN_EXPLORER_VERSION: str = "3.0.2"
     """The version of the plugin explorer to use for GraphiQL."""
@@ -114,16 +111,10 @@ class DefaultSettings(NamedTuple):
     """The key to use for storing the prefetch hack cache in the queryset hints."""
 
     QUERY_TYPE_EXTENSIONS_KEY: str = "undine_type"
-    """The key used to store a QueryType in the object type GraphQL extensions."""
+    """The key used to store a `QueryType` in the object type GraphQL extensions."""
 
     REACT_VERSION: str = "18.3.1"
     """The version of React to use for GraphiQL."""
-
-    RELAY_CONNECTION_MAX_LIMIT: int = 100
-    """The maximum number of items to display in a Relay connection."""
-
-    RELAY_CURSOR_PREFIX: str = "arrayconnection"
-    """The prefix to use for Relay cursors."""
 
     RESOLVER_ROOT_PARAM_NAME: str = "root"
     """The name of the root/parent parameter in resolvers."""
@@ -133,6 +124,9 @@ class DefaultSettings(NamedTuple):
 
     SCHEMA: str = "undine.settings.example_schema"
     """The schema to use for the GraphQL API."""
+
+    TESTING_CLIENT_RESPONSE_CLASS: str = "undine.testing.client.GraphQLClientResponse"
+    """The response class to use for testing."""
 
     TESTING_ENDPOINT: str = "/graphql/"
     """The endpoint to use for testing."""
@@ -147,6 +141,7 @@ IMPORT_STRINGS: set[str] = {
     "MIDDLEWARE.0",
     "MUTATION_MIDDLEWARE.0",
     "SCHEMA",
+    "TESTING_CLIENT_RESPONSE_CLASS",
 }
 
 undine_settings = SettingsHolder(

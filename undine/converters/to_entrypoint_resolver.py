@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLFieldResolver
 
@@ -22,6 +22,9 @@ from undine.resolvers import (
 from undine.typing import EntrypointRef
 from undine.utils.function_dispatcher import FunctionDispatcher
 
+if TYPE_CHECKING:
+    from undine import Entrypoint
+
 __all__ = [
     "convert_entrypoint_ref_to_resolver",
 ]
@@ -35,7 +38,7 @@ Positional arguments:
  - ref: The reference to convert.
 
 Keyword arguments:
- - many: Whether the entrypoint is for a list field.
+ - caller: The 'undine.Entrypoint' instance that is calling this function.
 """
 
 
@@ -51,13 +54,16 @@ def load_deferred_converters() -> None:  # noqa: C901
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
-        if kwargs["many"]:
-            return QueryTypeManyResolver(query_type=ref)
-        return QueryTypeSingleResolver(query_type=ref)
+        caller: Entrypoint = kwargs["caller"]
+        if caller.many:
+            return QueryTypeManyResolver(query_type=ref, max_complexity=caller.max_complexity)
+        return QueryTypeSingleResolver(query_type=ref, max_complexity=caller.max_complexity)
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:  # noqa: PLR0911
-        if kwargs["many"]:
+        # TODO: Optimize queries from mutations.
+        caller: Entrypoint = kwargs["caller"]
+        if caller.many:
             if ref.__mutation_kind__ == "create":
                 return BulkCreateResolver(mutation_type=ref)
             if ref.__mutation_kind__ == "update":
@@ -76,7 +82,8 @@ def load_deferred_converters() -> None:  # noqa: C901
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
-        return ConnectionResolver(connection=ref)
+        caller: Entrypoint = kwargs["caller"]
+        return ConnectionResolver(connection=ref, max_complexity=caller.max_complexity)
 
     @convert_entrypoint_ref_to_resolver.register
     def _(_: Node, **kwargs: Any) -> GraphQLFieldResolver:

@@ -118,6 +118,7 @@ class QueryTypeSingleResolver(Generic[TModel]):
     """Top-level resolver for fetching a single model object via a QueryType."""
 
     query_type: type[QueryType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
         middlewares = QueryMiddlewareHandler(root, info, self.query_type)
@@ -125,7 +126,8 @@ class QueryTypeSingleResolver(Generic[TModel]):
         @middlewares.wrap
         def getter() -> TModel | None:
             queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
-            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            model = self.query_type.__model__
+            optimizer = QueryOptimizer(model=model, info=info, max_complexity=self.max_complexity)
             optimized_queryset = optimizer.optimize(queryset)
             instances = evaluate_with_prefetch_hack(optimized_queryset)
             return next(iter(instances), None)
@@ -138,14 +140,16 @@ class QueryTypeManyResolver(Generic[TModel]):
     """Top-level resolver for fetching a set of model objects via a QueryType."""
 
     query_type: type[QueryType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        middlewares = QueryMiddlewareHandler(root, info, self.query_type)
+        middlewares = QueryMiddlewareHandler(root, info, self.query_type, many=True)
 
         @middlewares.wrap
         def getter() -> list[TModel]:
             queryset = self.query_type.__get_queryset__(info)
-            optimizer = QueryOptimizer(query_type=self.query_type, info=info)
+            model = self.query_type.__model__
+            optimizer = QueryOptimizer(model=model, info=info, max_complexity=self.max_complexity)
             optimized_queryset = optimizer.optimize(queryset)
             return evaluate_with_prefetch_hack(optimized_queryset)
 
@@ -177,7 +181,7 @@ class NestedQueryTypeManyResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        middlewares = QueryMiddlewareHandler(root, info, self.query_type, field=self.field)
+        middlewares = QueryMiddlewareHandler(root, info, self.query_type, field=self.field, many=True)
 
         @middlewares.wrap
         def getter() -> list[TModel]:
@@ -241,9 +245,10 @@ class ConnectionResolver(Generic[TModel]):
     """Resolves a connection of items."""
 
     connection: Connection
+    max_complexity: int | None = None
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        middlewares = QueryMiddlewareHandler(root, info, self.connection.query_type)
+        middlewares = QueryMiddlewareHandler(root, info, self.connection.query_type, many=True)
 
         total_count: int | None = 0
         start: int = 0
@@ -254,7 +259,8 @@ class ConnectionResolver(Generic[TModel]):
             nonlocal total_count, start, stop
 
             queryset = self.connection.query_type.__get_queryset__(info)
-            optimizer = QueryOptimizer(query_type=self.connection.query_type, info=info)
+            model = self.connection.query_type.__model__
+            optimizer = QueryOptimizer(model=model, info=info, max_complexity=self.max_complexity)
             optimized_queryset = optimizer.optimize(queryset)
 
             total_count = optimized_queryset._hints.get(undine_settings.CONNECTION_TOTAL_COUNT_KEY, None)
@@ -264,10 +270,11 @@ class ConnectionResolver(Generic[TModel]):
             return evaluate_with_prefetch_hack(optimized_queryset)
 
         instances = getter()
+        typename = self.connection.query_type.__typename__
 
         edges = [
             NodeDict(
-                cursor=offset_to_cursor(start + index),
+                cursor=offset_to_cursor(typename, start + index),
                 node=instance,
             )
             for index, instance in enumerate(instances)
@@ -292,7 +299,7 @@ class NestedConnectionResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        middlewares = QueryMiddlewareHandler(root, info, self.connection.query_type, field=self.field)
+        middlewares = QueryMiddlewareHandler(root, info, self.connection.query_type, field=self.field, many=True)
 
         total_count: int | None = None
         start: int = 0
@@ -316,10 +323,11 @@ class NestedConnectionResolver(Generic[TModel]):
             return result
 
         instances = getter()
+        typename = self.connection.query_type.__typename__
 
         edges = [
             NodeDict(
-                cursor=offset_to_cursor(start + index),
+                cursor=offset_to_cursor(typename, start + index),
                 node=instance,
             )
             for index, instance in enumerate(instances)

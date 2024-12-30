@@ -1,4 +1,3 @@
-
 from django.db.models import Count, Q, Subquery
 from django.db.models.functions import Now
 from graphql import GraphQLBoolean, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString
@@ -6,7 +5,7 @@ from graphql import GraphQLBoolean, GraphQLInt, GraphQLList, GraphQLNonNull, Gra
 from example_project.app.models import Project, Task
 from tests.helpers import MockGQLInfo
 from undine import Filter, FilterSet
-from undine.resolvers import FunctionResolver
+from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver
 
 
 def test_filter__repr():
@@ -31,7 +30,7 @@ def test_filter__attributes():
     assert MyFilter.name.extensions == {"undine_filter": MyFilter.name}
     assert MyFilter.name.filterset == MyFilter
     assert MyFilter.name.name == "name"
-    assert isinstance(MyFilter.name.resolver, FunctionResolver)
+    assert isinstance(MyFilter.name.resolver, FilterModelFieldResolver)
 
 
 def test_filter__get_expression():
@@ -145,7 +144,7 @@ def test_filter__function__attributes():
     assert MyFilter.in_the_past.extensions == {"undine_filter": MyFilter.in_the_past}
     assert MyFilter.in_the_past.filterset == MyFilter
     assert MyFilter.in_the_past.name == "in_the_past"
-    assert isinstance(MyFilter.in_the_past.resolver, FunctionResolver)
+    assert isinstance(MyFilter.in_the_past.resolver, FilterFunctionResolver)
 
 
 def test_filter__function__get_expression():

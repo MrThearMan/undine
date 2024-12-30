@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import json
-import re
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -23,24 +22,13 @@ User = get_user_model()
 
 __all__ = [
     "GraphQLClient",
+    "GraphQLClientResponse",
 ]
 
 
-SCHEMA_ERRORS: list[re.Pattern] = [
-    # These do not cover all schema errors, only the most common ones.
-    re.compile(r"^Argument '\w+' .*"),
-    re.compile(r"^Variable '\$\w+' .*"),
-    re.compile(r"^\w+ cannot represent .*"),
-]
+class GraphQLClientResponse:  # TODO: Test
+    """A response from a GraphQL client."""
 
-
-class FieldError(TypedDict):
-    field: str
-    message: str
-    code: str
-
-
-class GQLResponse:
     def __init__(self, response: HttpResponse, database_queries: DBQueryData) -> None:
         # 'django.test.client.Client.request' sets json attribute on the response.
         self.json: dict[str, Any] = response.json()  # type: ignore[attr-defined]
@@ -76,12 +64,12 @@ class GQLResponse:
         return self.json["data"]
 
     @property
-    def first_query_object(self) -> dict[str, Any] | list[Any] | None:
+    def results(self) -> dict[str, Any] | list[Any] | None:
         """
-        Return the first query object in the response content.
+        Return the results from the first query object in the response content.
 
         >>> self.json = {"data": {"foo": {"name": "bar"}}}
-        >>> self.first_query_object
+        >>> self.results
         {"name": "bar"}
         """
         data = self.data or {}
@@ -101,12 +89,12 @@ class GQLResponse:
         [{"node": {"name": "bar"}}]
         """
         try:
-            return self.first_query_object["edges"]
+            return self.results["edges"]
         except (KeyError, TypeError):
             msg = f"Edges not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
-    def node(self, index: int = 0) -> dict[str, Any]:
+    def node(self, index: int) -> dict[str, Any]:
         """
         Return the node at the given index in the response content edges.
 
@@ -140,14 +128,14 @@ class GQLResponse:
             msg = f"Errors not found in response content: {self.json}"
             pytest.fail(msg, pytrace=False)
 
-    def error_message(self, selector: int | str = 0) -> str:
+    def error_message(self, selector: int | str) -> str:
         """
         Return the error message from the errors list...
 
         1) in the given index
 
         >>> self.json = {"errors": [{"message": "bar", ...}]}
-        >>> self.error_message(0)  # default
+        >>> self.error_message(0)
         "bar"
 
         2) in the given path:
@@ -175,161 +163,6 @@ class GQLResponse:
                 msg = f"Field 'message' not found in error content: {self.json}"
                 pytest.fail(msg, pytrace=False)
 
-    @property
-    def field_errors(self) -> list[FieldError]:
-        """
-        Return all field error messages.
-
-        >>> self.json = {
-        ...     "errors": [
-        ...         {
-        ...             "extensions": {
-        ...                 "errors": [
-        ...                     {
-        ...                         "field": "foo",
-        ...                         "messages": ["bar"],
-        ...                         "codes": ["baz"],
-        ...                     },
-        ...                 ],
-        ...             },
-        ...         },
-        ...     ],
-        ... }
-        ...
-        >>> self.field_errors
-        [{"field": "foo", "messages": ["bar"], "codes": ["baz"]}]
-        """
-        try:
-            return [error for item in self.errors for error in item.get("extensions", {}).get("errors", [])]
-        except (KeyError, TypeError):
-            msg = f"Field errors not found in response content: {self.json}"
-            pytest.fail(msg, pytrace=False)
-
-    def field_error_messages(self, field: str = "nonFieldErrors") -> list[str]:
-        """
-        Return field error messages for desired field.
-
-        >>> self.json = {
-        ...     "errors": [
-        ...         {
-        ...             "extensions": {
-        ...                 "errors": [
-        ...                     {
-        ...                         "field": "foo",
-        ...                         "messages": "bar",
-        ...                         "codes": "baz",
-        ...                     },
-        ...                     {
-        ...                         "field": "foo",
-        ...                         "messages": "one",
-        ...                         "codes": "",
-        ...                     },
-        ...                 ],
-        ...             },
-        ...         },
-        ...     ],
-        ... }
-        ...
-        >>> self.field_error_messages("foo")
-        ["bar", "one"]
-        """
-        messages: list[str] = []
-        for error in self.field_errors:
-            if error.get("field") == field:
-                try:
-                    messages.append(error["message"])
-                except (KeyError, TypeError):
-                    msg = f"Error message for field {field!r} not found in error: {error}"
-                    pytest.fail(msg, pytrace=False)
-
-        return messages
-
-    def error_code(self, selector: int | str = 0) -> str:
-        """
-        Return the error code from the errors list.
-
-        1) in the given index
-
-        >>> self.json = {"errors": [{"extensions": {"code": "bar"}, ...}]}
-        >>> self.error_code(0)  # default
-        "bar"
-
-        2) in the given path:
-
-        >>> self.json = {"errors": [{"extensions": {"code": "bar"}, "path": ["fizz", "buzz", "foo"], ...}]}
-        >>> self.error_code("foo")
-        "bar"
-        """
-        if isinstance(selector, int):
-            try:
-                return self.errors[selector]["extensions"]["code"]
-            except (KeyError, TypeError):
-                msg = f"Error code not found in error content: {self.json}"
-                pytest.fail(msg, pytrace=False)
-        else:
-            try:
-                return next(error["extensions"]["code"] for error in self.errors if error["path"][-1] == selector)
-            except StopIteration:
-                msg = f"Errors list doesn't have an error for field '{selector}': {self.json}"
-                pytest.fail(msg, pytrace=False)
-            except (KeyError, TypeError):
-                msg = f"Field 'extensions' not found in error content: {self.json}"
-                pytest.fail(msg, pytrace=False)
-
-    def field_error_codes(self, field: str = "nonFieldErrors") -> list[str]:
-        """
-        Return field error codes for desired field.
-
-        >>> self.json = {
-        ...     "errors": [
-        ...         {
-        ...             "extensions": {
-        ...                 "errors": [
-        ...                     {
-        ...                         "field": "foo",
-        ...                         "messages": "bar",
-        ...                         "codes": "baz",
-        ...                     },
-        ...                     {
-        ...                         "field": "foo",
-        ...                         "messages": "one",
-        ...                         "codes": "",
-        ...                     },
-        ...                 ],
-        ...             },
-        ...         },
-        ...     ],
-        ... }
-        ...
-        >>> self.field_error_codes("foo")
-        ["bar", ""]
-        """
-        codes: list[str] = []
-        for error in self.field_errors:
-            if error.get("field") == field:
-                try:
-                    codes.append(error["code"])
-                except (KeyError, TypeError):
-                    msg = f"Error code for field {field!r} not found in error: {error}"
-                    pytest.fail(msg, pytrace=False)
-
-        return codes
-
-    @property
-    def has_schema_errors(self) -> bool:
-        """
-        Return True if there are any known GraphQL schema validation errors in the response.
-
-        >>> self.json = {"errors": [{"message": "bar", ...}]}
-        >>> self.has_schema_errors
-        False
-
-        >>> self.json = {"errors": [{"message": f"Variable '$input' got invalid value...", ...}]}
-        >>> self.has_schema_errors
-        True
-        """
-        return any(any(e.match(error["message"]) is not None for e in SCHEMA_ERRORS) for error in self.errors)
-
     def assert_query_count(self, count: int) -> None:
         if len(self.queries) != count:
             msg = f"Expected {count} queries, got {len(self.queries)}.\n{self.query_log}"
@@ -337,7 +170,7 @@ class GQLResponse:
 
 
 class GraphQLClient(Client):
-    response_class: ClassVar[type[GQLResponse]] = GQLResponse
+    """A GraphQL client for testing."""
 
     def __call__(
         self,
@@ -345,9 +178,9 @@ class GraphQLClient(Client):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
-    ) -> GQLResponse:
+    ) -> GraphQLClientResponse:
         """
-        Create a GraphQL client for testing.
+        Make a GraphQL query.
 
         :params query: GraphQL query string.
         :params variables: Variables for the query.
@@ -386,7 +219,7 @@ class GraphQLClient(Client):
                 headers=headers,
             )
 
-        return self.response_class(response, results)
+        return undine_settings.TESTING_CLIENT_RESPONSE_CLASS(response, results)
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         defaults = {

@@ -18,7 +18,7 @@ class UndineConfig(AppConfig):
 
     def load_deferred_converters(self) -> None:
         """
-        Converter-modules can define a `load_deferred_converters` function,
+        Modules in `undine.converters` can define a `load_deferred_converters` function,
         which is used to delay registration of some converters until
         django apps are ready. This is to avoid circular imports and
         issues importing models from other django apps.

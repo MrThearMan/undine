@@ -22,8 +22,9 @@ _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__na
 
 
 def evaluate_with_prefetch_hack(queryset: QuerySet) -> list[Model]:
+    """Evaluates the given queryset with the prefetch hack applied."""
     with patch(_PATH, side_effect=_prefetch_hack):
-        return list(queryset)  # the database query is executed here
+        return list(queryset)  # If the optimizer did its job, the database query is executed here.
 
 
 def register_for_prefetch_hack(queryset: QuerySet, field: ToManyField) -> None:

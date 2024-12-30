@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Iterator
 
 import pytest
-from graphql import GraphQLBoolean, GraphQLNonNull, GraphQLString
+from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import MockGQLInfo, exact
@@ -200,14 +200,16 @@ def test_mutation_type__mutation_kind__delete__primary_key():
 
 
 def test_mutation_type__mutation_kind__delete__output_type():
+    class TaskType(QueryType, model=Task): ...
+
     class MyDeleteMutation(MutationType, model=Task): ...
 
     output_type = MyDeleteMutation.__output_type__()
-    assert output_type.name == "DeleteMutationOutput"
-    assert sorted(output_type.fields) == ["success"]
-    assert output_type.fields["success"].type == GraphQLNonNull(GraphQLBoolean)
-    assert output_type.fields["success"].description is None
-    assert output_type.fields["success"].deprecation_reason is None
+    assert output_type.name == "MyDeleteMutationOutput"
+    assert sorted(output_type.fields) == ["pk"]
+    assert output_type.fields["pk"].type == GraphQLNonNull(GraphQLInt)
+    assert output_type.fields["pk"].description is None
+    assert output_type.fields["pk"].deprecation_reason is None
 
 
 def test_mutation_type__mutation_kind__custom__implicit():

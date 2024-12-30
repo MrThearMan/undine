@@ -55,6 +55,7 @@ python = ">=3.11,<4"
 Django = ">=4.2"
 graphql-core = ">=3.2.3"
 django-settings-holder = ">=0.2.2"
+sqlparse = ">=0.5.3"
 requests = {version = ">=2.32.3", optional = true}
 
 [tool.poetry.group.test.dependencies]

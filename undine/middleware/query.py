@@ -3,9 +3,9 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable
 
-from django.db.models import Model
-
 if TYPE_CHECKING:
+    from django.db.models import Model
+
     from undine import Field, QueryType
     from undine.typing import GQLInfo, QueryResult
 
@@ -37,6 +37,15 @@ class QueryMiddleware:
         field: Field | None = None,
         many: bool = False,
     ) -> None:
+        """
+        Initialize the middleware.
+
+        :param root: The root value for the query.
+        :param info: The GraphQL resolve info for the request.
+        :param query_type: The QueryType that is being executed.
+        :param field: The undine.Field being queried.
+        :param many: Whether the query is for a list of items.
+        """
         self.root = root
         self.root_info = info
         self.query_type = query_type
@@ -73,11 +82,10 @@ class QueryPermissionCheckMiddleware(QueryMiddleware):
         if self.field is not None and self.field.skip_query_type_perms:
             return
 
-        if isinstance(value, Model):
-            self.query_type.__permissions_single__(value, self.root_info)
-
-        elif isinstance(value, list):
+        if self.many:
             self.query_type.__permissions_many__(value, self.root_info)
+        else:
+            self.query_type.__permissions_single__(value, self.root_info)
 
 
 class QueryMiddlewareHandler:
@@ -102,6 +110,15 @@ class QueryMiddlewareHandler:
         field: Field | None = None,
         many: bool = False,
     ) -> None:
+        """
+        Initialize the middleware handler.
+
+        :param root: The root value for the query.
+        :param info: The GraphQL resolve info for the request.
+        :param query_type: The QueryType that is being executed.
+        :param field: The undine.Field being queried.
+        :param many: Whether the query is for a list of items.
+        """
         self.middleware: list[QueryMiddleware] = [
             middleware(
                 root=root,

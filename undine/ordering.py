@@ -57,7 +57,7 @@ class OrderSetMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Order` names.
         instance.__model__ = model
-        instance.__order_map__ = dict(get_members(instance, Order))
+        instance.__order_map__ = get_members(instance, Order)
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.ORDERSET_EXTENSIONS_KEY: instance}
         return instance
@@ -65,18 +65,18 @@ class OrderSetMeta(type):
 
 class OrderSet(metaclass=OrderSetMeta, model=Undefined):
     """
-    A class representing a GraphQL Input Object Type for ordering the results of a query base on a QueryType.
-    Can be added to a QueryType in the QueryType's class definition.
+    A class for adding ordering for a QueryType.
+    Represents a GraphQL `EnumType` in the GraphQL schema.
 
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django model this OrderSet is for. This input is required.
                Must match the model of the `QueryType` this `OrderSet` is for.
-    - `auto`: Whether to add undine.Order fields for all model fields (in both ascending and descending directions)
+    - `auto`: Whether to add `undine.Order` fields for all model fields (in both ascending and descending directions)
               automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from automatically added ordering fields. No excludes by default.
     - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
-    - `extensions`: GraphQL extensions for the created GraphQLEnum. Defaults to `None`.
+    - `extensions`: GraphQL extensions for the created GraphQLEnum.
 
     >>> class MyOrderSet(OrderSet, model=...): ...
     >>> class MyQueryType(QueryType, model=..., orderset=MyOrderSet): ...
@@ -113,9 +113,10 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
     @classmethod
     def __input_type__(cls) -> GraphQLList:
         """
-        Create the input type for this OrderSet.
-        The input is a non-null list of a GraphQL Enum
-        consisting of all the `undine.Order` names defined on this OrderSet,
+        Create the input type to use for the `QueryType` this `OrderSet` is for.
+
+        The input is a non-null list of a GraphQL `EnumType` whose values are
+        the names of all the `undine.Order` instances defined on this `OrderSet`,
         in both ascending and descending directions.
         """
         enum_values: dict[str, GraphQLEnumValue] = {}
@@ -135,8 +136,11 @@ class OrderSet(metaclass=OrderSetMeta, model=Undefined):
 
 class Order:
     """
-    A class representing a possible ordering for a QueryType.
-    Can be added to the class body of a `OrderSet` class.
+    A class for defining a possible ordering for a QueryType.
+    Represents a value in the GraphQL `EnumType` for the `OrderSet` this is added to.
+
+    >>> class MyOrderSet(OrderSet, model=...):
+    ...     order_name = Order()
     """
 
     def __init__(
@@ -149,17 +153,14 @@ class Order:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        Create a new Order.
+        Create a new `Order`.
 
-        :param ref: Expression to order by. Can be anything that `convert_to_order_ref` can convert,
-                    e.g., a string referencing a model field name, an `F` expression, a function, etc.
-                    If not provided, use the name of the attribute this is assigned to
-                    in the `OrderSet` class.
+        :param ref: the expression to order by. Must be convertable by the `convert_to_order_ref` function.
+                    If not provided, use the name of the attribute this is assigned to in the `OrderSet` class.
         :param null_placement: Where should null values be placed? By default, use database default.
-        :param description: Description of the Order. If not provided, looks at the converted reference,
-                            and tries to find the description from it.
-        :param deprecation_reason: If this Order is deprecated, describes the reason for deprecation.
-        :param extensions: GraphQL extensions for the Order.
+        :param description: Description of the `Order`.
+        :param deprecation_reason: If this `Order` is deprecated, describes the reason for deprecation.
+        :param extensions: GraphQL extensions for the `Order`.
         """
         self.ref = ref
         self.description = description
@@ -170,6 +171,8 @@ class Order:
         self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type[OrderSet], name: str) -> None:
+        # Called as part of the descriptor protocol if this `Order` is assigned
+        # to a variable in the class body of a `OrderSet`.
         self.orderset = owner
         self.name = name
 
@@ -202,7 +205,7 @@ class Order:
 
 
 def get_orders_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Order]:  # TODO: Test
-    """Creates undine.Order for all the given model's non-related fields, except those in the 'exclude' list."""
+    """Creates `undine.Order` for all the given model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Order] = {}
     for model_field in get_model_fields_for_graphql(model, include_relations=False):
         field_name = model_field.name
@@ -214,7 +217,7 @@ def get_orders_for_model(model: type[Model], *, exclude: Container[str]) -> dict
         if field_name in exclude:
             continue
 
-        # TODO: Filter out fields that don't make sense for ordering (e.g. FileFields.)
+        # TODO: Filter out fields that don't make sense for ordering (e.g. FileFields)
 
         result[field_name] = Order(field_name)
 

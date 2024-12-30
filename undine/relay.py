@@ -35,11 +35,12 @@ __all__ = [
 
 
 class PaginationHandler:
-    """Handles pagination for Relay Connections."""
+    """Handles pagination for Relay Connection based on the given arguments."""
 
     def __init__(
         self,
         *,
+        typename: str,
         after: str | None = None,
         before: str | None = None,
         first: int | None = None,
@@ -48,21 +49,22 @@ class PaginationHandler:
         max_limit: int | None = None,
     ) -> None:
         """
-        Handle pagination for Relay Connection based on the given arguments.
+        Create a new PaginationHandler.
 
-        :param after: Cursor value for the last item in the previous page.
-        :param before: Cursor value for the first item in the next page.
         :param first: Number of item to return from the start.
         :param last: Number of item to return from the end (after applying `first`).
+        :param after: Cursor value for the last item in the previous page.
+        :param before: Cursor value for the first item in the next page.
         :param offset: Number of item to skip from the start.
         :param max_limit: Maximum limit for the number of item that can be requested in a page. No limit if `None`.
         """
         validated_args = self.validate(
+            typename=typename,
             first=first,
             last=last,
             offset=offset,
-            after=cursor_to_offset(after) if after is not None else None,
-            before=cursor_to_offset(before) if before is not None else None,
+            after_cursor=after,
+            before_cursor=before,
             max_limit=max_limit,
         )
 
@@ -92,14 +94,27 @@ class PaginationHandler:
     @staticmethod
     def validate(  # noqa: C901, PLR0912
         *,
+        typename: str,
         first: int | None,
         last: int | None,
         offset: int | None,
-        after: int | None,
-        before: int | None,
-        max_limit: int | None = None,
+        after_cursor: str | None,
+        before_cursor: str | None,
+        max_limit: int | None,
     ) -> ValidatedPaginationArgs:
         """Validate the given pagination arguments and return the validated arguments."""
+        try:
+            after = cursor_to_offset(typename, after_cursor) if after_cursor is not None else None
+        except Exception as error:
+            msg = f"Argument 'after' is not a valid cursor for type '{typename}'."
+            raise PaginationArgumentValidationError(msg) from error
+
+        try:
+            before = cursor_to_offset(typename, before_cursor) if before_cursor is not None else None
+        except Exception as error:
+            msg = f"Argument 'before' is not a valid cursor for type '{typename}'."
+            raise PaginationArgumentValidationError(msg) from error
+
         if max_limit is not None and (not isinstance(max_limit, int) or max_limit < 1):
             msg = f"`max_limit` must be `None` or a positive integer, got: {max_limit!r}"
             raise PaginationArgumentValidationError(msg)
@@ -197,7 +212,9 @@ class PaginationHandler:
         """
         Paginate a prefetch queryset using a window function partitioned by the given related field.
 
-        Pagination arguments are annotated to the queryset.
+        Pagination arguments are annotated to the queryset, since they are calculated in the database.
+        There is the issue that they might not be available if the queryset is empty after pagination,
+        but since they can be different for each prefetch parition, we cannot do anything about that.
 
         This function is based on the Relay pagination algorithm.
         See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
@@ -268,11 +285,11 @@ class Connection:
         pagination_handler: type[PaginationHandler] = PaginationHandler,
     ) -> None:
         """
-        Create a Connection.
+        Create a new Connection.
 
-        :param query_type: QueryType to use for the connection.
+        :param query_type: `QueryType` to use for the connection.
         :param max_limit: Maximum number of items to return in a page. No limit if `None`.
-        :param pagination_handler: Handler to use for pagination. Defaults to `PaginationHandler`.
+        :param pagination_handler: Handler to use for pagination.
         """
         if Node not in query_type.__interfaces__:
             raise ConnectionQueryTypeNotNodeError(query_type=query_type)
@@ -283,7 +300,7 @@ class Connection:
 
 
 def total_count_subquery(queryset: QuerySet, related_name: str) -> SubqueryCount:
-    """Total count calculated in a subquery, partitioned by the given related name."""
+    """Get a subquery for calculating total count, partitioned by the given related name."""
     return SubqueryCount(queryset=queryset.filter(**{related_name: OuterRef(related_name)}))
 
 
@@ -311,14 +328,14 @@ def decode_base64(string: str) -> str:
     return base64.b64decode(string.encode("ascii")).decode("utf-8")
 
 
-def offset_to_cursor(offset: int) -> str:
+def offset_to_cursor(typename: str, offset: int) -> str:
     """Create the cursor string from an offset."""
-    return encode_base64(f"{undine_settings.RELAY_CURSOR_PREFIX}:{offset}")
+    return encode_base64(f"connection:{typename}:{offset}")
 
 
-def cursor_to_offset(cursor: str) -> int:
+def cursor_to_offset(typename: str, cursor: str) -> int:
     """Extract the offset from the cursor string."""
-    return int(decode_base64(cursor).removeprefix(f"{undine_settings.RELAY_CURSOR_PREFIX}:"))
+    return int(decode_base64(cursor).removeprefix(f"connection:{typename}:"))
 
 
 def to_global_id(typename: str, object_id: str | int) -> str:
@@ -326,7 +343,7 @@ def to_global_id(typename: str, object_id: str | int) -> str:
     Takes a typename and an object ID specific to that type,
     and returns a "Global ID" that is unique among all types.
     """
-    return encode_base64(f"{typename}:{serialize_id(object_id)}")
+    return encode_base64(f"ID:{typename}:{serialize_id(object_id)}")
 
 
 def from_global_id(global_id: str) -> tuple[str, str | int]:
@@ -335,7 +352,7 @@ def from_global_id(global_id: str) -> tuple[str, str | int]:
     and returns the typename and object ID used to create it.
     """
     global_id = decode_base64(global_id)
-    typename, object_id = global_id.split(":", 1)
+    _, typename, object_id = global_id.split(":")
     if object_id.isdigit():
         object_id = int(object_id)
     return typename, object_id

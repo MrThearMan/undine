@@ -7,6 +7,7 @@ Resolvers must be callables with the following signature:
 
 from __future__ import annotations
 
+from .filter import FilterFunctionResolver, FilterModelFieldResolver, FilterQExpressionResolver
 from .mutation import (
     BulkCreateResolver,
     BulkDeleteResolver,
@@ -39,6 +40,9 @@ __all__ = [
     "CreateResolver",
     "CustomResolver",
     "DeleteResolver",
+    "FilterFunctionResolver",
+    "FilterModelFieldResolver",
+    "FilterQExpressionResolver",
     "FunctionResolver",
     "FunctionResolver",
     "GlobalIDResolver",

@@ -24,7 +24,7 @@ To = TypeVar("To")
 
 class Registry(Generic[From, To]):
     """
-    A registry that stores mappings from one type to another.
+    A registry for values that need to be globally available.
     Verifies that a value for a given key is only registered once.
     """
 
@@ -55,13 +55,13 @@ class Registry(Generic[From, To]):
 
 QUERY_TYPE_REGISTRY = Registry[type[Model], type["QueryType"]]()
 """
-Maps Django model classes to their corresponding `QueryTypes`.
+Maps from a Django Model class to a corresponding `QueryType`.
 This allows deferring the creation of field resolvers for related fields,
 which would use a `QueryType` that is not created when the field is defined.
 """
 
 GRAPHQL_TYPE_REGISTRY = Registry[str, GraphQLNamedType]()
 """
-Caches created GraphQL types by their names, so that they can be reused during schema creation,
-because a GraphQL Schema cannot contain multiple types with the same name.
+Caches created GraphQL types by their names so that they can be reused during schema creation
+since a GraphQL Schema cannot contain multiple types with the same name.
 """

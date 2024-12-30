@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
 
     from undine import MutationType
-    from undine.typing import GQLInfo, JsonObject, MutationResult
+    from undine.typing import GQLInfo, JsonObject, MutationKind, MutationResult
 
 __all__ = [
     "AtomicMutationMiddleware",
@@ -46,18 +46,33 @@ class MutationMiddleware:
     priority: int
     """Middleware priority. Lower number means middleware context is entered earlier in the middleware stack."""
 
+    supported_mutations: tuple[type[MutationKind], ...] = ("create", "update", "delete", "custom")  # TODO: Test
+    """List of mutation kinds that this middleware supports."""
+
     def __init__(
         self,
         *,
         input_data: JsonObject,
         info: GQLInfo,
         mutation_type: type[MutationType],
+        many: bool = False,
         instance: Model | None = None,
         instances: list[Model] | None = None,
     ) -> None:
+        """
+        Initialize the middleware.
+
+        :param input_data: The input data for the mutation.
+        :param info: The GraphQL resolve info for the request.
+        :param mutation_type: The MutationType that is being executed.
+        :param many: Whether the mutation is a bulk mutation.
+        :param instance: The instance being mutated.
+        :param instances: The list of instances being mutated.
+        """
         self.input_data = input_data
         self.root_info = info
         self.mutation_type = mutation_type
+        self.many = many
         self.instance = instance
         self.instances = instances
 
@@ -82,6 +97,8 @@ class InputDataModificationMiddleware(MutationMiddleware):
     """
 
     priority: int = 0
+
+    supported_mutations: tuple[type[MutationKind], ...] = ("create", "update", "custom")
 
     def before(self) -> None:
         self.fill_input_data(self.mutation_type, self.input_data)
@@ -124,7 +141,7 @@ class MutationPermissionCheckMiddleware(MutationMiddleware):
     priority: int = 100
 
     def before(self) -> None:
-        if isinstance(self.input_data, list):
+        if self.many:
             self.check_perms_many(
                 mutation_type=self.mutation_type,
                 input_data=self.input_data,
@@ -190,7 +207,7 @@ class InputDataValidationMiddleware(MutationMiddleware):
     def before(self) -> None:
         self.validate_data(self.mutation_type, self.input_data)
 
-    def validate_data(self, mutation_type: type[MutationType], input_data: dict[str, Any]) -> None:
+    def validate_data(self, mutation_type: type[MutationType], input_data: JsonObject) -> None:
         from undine import MutationType  # noqa: PLC0415
 
         if isinstance(input_data, list):
@@ -322,18 +339,31 @@ class MutationMiddlewareHandler:
         input_data: JsonObject,
         mutation_type: type[MutationType],
         *,
+        many: bool = False,
         instance: Model | None = None,
         instances: list[Model] | None = None,
     ) -> None:
+        """
+        Initialize the middleware handler.
+
+        :param info: The GraphQL resolve info for the request.
+        :param input_data: The input data for the mutation.
+        :param mutation_type: The MutationType that is being executed.
+        :param many: Whether the mutation is a bulk mutation.
+        :param instance: The instance being mutated.
+        :param instances: The list of instances being mutated.
+        """
         self.middleware: list[MutationMiddleware] = [
             middleware(
                 input_data=input_data,
                 info=info,
                 mutation_type=mutation_type,
+                many=many,
                 instance=instance,
                 instances=instances,
             )
             for middleware in sorted(mutation_type.__middleware__(), key=lambda m: (m.priority, m.__name__))
+            if mutation_type.__mutation_kind__ in middleware.supported_mutations
         ]
 
     def wrap(self, func: Callable[P, MutationResult], /) -> Callable[P, MutationResult]:

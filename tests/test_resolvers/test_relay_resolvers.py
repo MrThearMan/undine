@@ -186,18 +186,19 @@ def test_resolvers__connection_resolver(undine_settings):
     with patch_optimizer(func=optimize):
         result = resolver(root=task, info=MockGQLInfo())
 
+    typename = TaskType.__typename__
     assert result == (
         ConnectionDict(
             totalCount=100,
             pageInfo=PageInfoDict(
                 hasNextPage=True,
                 hasPreviousPage=False,
-                startCursor=offset_to_cursor(0),
-                endCursor=offset_to_cursor(0),
+                startCursor=offset_to_cursor(typename, 0),
+                endCursor=offset_to_cursor(typename, 0),
             ),
             edges=[
                 NodeDict(
-                    cursor=offset_to_cursor(0),
+                    cursor=offset_to_cursor(typename, 0),
                     node=task,
                 ),
             ],
@@ -233,18 +234,19 @@ def test_resolvers__nested_connection_resolver(undine_settings):
 
     result = resolver(root=task, info=MockGQLInfo())
 
+    typename = PersonType.__typename__
     assert result == (
         ConnectionDict(
             totalCount=100,
             pageInfo=PageInfoDict(
                 hasNextPage=True,
                 hasPreviousPage=False,
-                startCursor=offset_to_cursor(0),
-                endCursor=offset_to_cursor(0),
+                startCursor=offset_to_cursor(typename, 0),
+                endCursor=offset_to_cursor(typename, 0),
             ),
             edges=[
                 NodeDict(
-                    cursor=offset_to_cursor(0),
+                    cursor=offset_to_cursor(typename, 0),
                     node=assignee,
                 ),
             ],
@@ -292,18 +294,19 @@ def test_resolvers__nested_connection_resolver__to_attr(undine_settings):
 
     result = resolver(root=task, info=MockGQLInfo(field_nodes=field_nodes))
 
+    typename = PersonType.__typename__
     assert result == (
         ConnectionDict(
             totalCount=100,
             pageInfo=PageInfoDict(
                 hasNextPage=True,
                 hasPreviousPage=False,
-                startCursor=offset_to_cursor(0),
-                endCursor=offset_to_cursor(0),
+                startCursor=offset_to_cursor(typename, 0),
+                endCursor=offset_to_cursor(typename, 0),
             ),
             edges=[
                 NodeDict(
-                    cursor=offset_to_cursor(0),
+                    cursor=offset_to_cursor(typename, 0),
                     node=assignee,
                 ),
             ],

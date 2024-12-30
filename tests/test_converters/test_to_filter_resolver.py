@@ -1,5 +1,3 @@
-from types import LambdaType
-
 from django.db.models import Q, Subquery
 from django.db.models.functions import Now
 
@@ -7,7 +5,7 @@ from example_project.app.models import Comment, Task
 from tests.helpers import MockGQLInfo
 from undine import Filter, FilterSet
 from undine.converters import convert_filter_ref_to_filter_resolver
-from undine.resolvers import FunctionResolver
+from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver, FilterQExpressionResolver
 
 
 def test_convert_filter_ref_to_filter_resolver__function():
@@ -15,7 +13,7 @@ def test_convert_filter_ref_to_filter_resolver__function():
 
     result = convert_filter_ref_to_filter_resolver(func)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterFunctionResolver)
 
     assert result.func == func
     assert result.root_param is None
@@ -27,7 +25,7 @@ def test_convert_filter_ref_to_filter_resolver__function__root():
 
     result = convert_filter_ref_to_filter_resolver(func)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterFunctionResolver)
 
     assert result.func == func
     assert result.root_param == "root"
@@ -39,7 +37,7 @@ def test_convert_filter_ref_to_filter_resolver__function__self():
 
     result = convert_filter_ref_to_filter_resolver(func)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterFunctionResolver)
 
     assert result.func == func
     assert result.root_param == "self"
@@ -51,7 +49,7 @@ def test_convert_filter_ref_to_filter_resolver__function__cls():
 
     result = convert_filter_ref_to_filter_resolver(func)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterFunctionResolver)
 
     assert result.func == func
     assert result.root_param == "cls"
@@ -65,11 +63,9 @@ def test_convert_filter_ref_to_filter_resolver__model_field():
     field = Task._meta.get_field("name")
     result = convert_filter_ref_to_filter_resolver(field, caller=TaskFilterSet.name)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterModelFieldResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.lookup == "name__exact"
 
     assert result(root=None, info=MockGQLInfo(), value="foo") == Q(name__exact="foo")
 
@@ -82,11 +78,9 @@ def test_convert_filter_ref_to_filter_resolver__q_expression():
 
     result = convert_filter_ref_to_filter_resolver(q, caller=TaskFilterSet.name_defined)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterQExpressionResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.q_expression == q
 
     assert result(root=None, info=MockGQLInfo(), value=True) == q
     assert result(root=None, info=MockGQLInfo(), value=False) == ~q
@@ -100,11 +94,9 @@ def test_convert_filter_ref_to_filter_resolver__expression():
 
     result = convert_filter_ref_to_filter_resolver(expr, caller=TaskFilterSet.is_now)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterModelFieldResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.lookup == "is_now__exact"
 
     assert result(root=None, info=MockGQLInfo(), value=True) == Q(is_now__exact=True)
 
@@ -117,11 +109,9 @@ def test_convert_filter_ref_to_filter_resolver__subquery():
 
     result = convert_filter_ref_to_filter_resolver(sq, caller=TaskFilterSet.first_task)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterModelFieldResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.lookup == "first_task__exact"
 
     assert result(root=None, info=MockGQLInfo(), value=1) == Q(first_task__exact=1)
 
@@ -134,11 +124,9 @@ def test_convert_to_field_ref__generic_relation():
 
     result = convert_filter_ref_to_filter_resolver(field, caller=TaskFilterSet.comments)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterModelFieldResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.lookup == "comments__exact"
 
 
 def test_convert_to_field_ref__generic_foreign_key():
@@ -149,8 +137,6 @@ def test_convert_to_field_ref__generic_foreign_key():
 
     result = convert_filter_ref_to_filter_resolver(field, caller=CommentFilterSet.target)
 
-    assert isinstance(result, FunctionResolver)
+    assert isinstance(result, FilterModelFieldResolver)
 
-    assert isinstance(result.func, LambdaType)
-    assert result.root_param is None
-    assert result.info_param is None
+    assert result.lookup == "target__exact"

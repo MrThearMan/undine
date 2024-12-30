@@ -9,7 +9,9 @@ nav:
   - Filtering: filtering.md
   - Ordering: ordering.md
   - Permissions: permissions.md
+  - Pagination: pagination.md
   - Relay: relay.md
+  - Interfaces: interfaces.md
   - Files: files.md
   - Scalars: scalars.md
   - Converters: converters.md

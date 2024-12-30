@@ -4,12 +4,14 @@ from .mutation import Input, MutationType
 from .ordering import Order, OrderSet
 from .query import Field, QueryType
 from .schema import Entrypoint, create_schema
+from .typing import GQLInfo
 
 __all__ = [
     "Entrypoint",
     "Field",
     "Filter",
     "FilterSet",
+    "GQLInfo",
     "GraphQLView",
     "Input",
     "MutationType",

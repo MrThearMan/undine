@@ -125,6 +125,7 @@ def load_deferred_converters() -> None:  # noqa: C901
             if not kwargs.get("entrypoint", False):
                 return {}
 
+            # TODO: Suport custom lookups, e.g. GlobalID.
             field = get_model_field(model=ref.__model__, lookup="pk")
             input_type = convert_to_graphql_type(field, model=ref.__model__)
             input_type = GraphQLNonNull(input_type)

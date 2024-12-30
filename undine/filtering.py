@@ -63,7 +63,7 @@ class FilterSetMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Filter` names.
         instance.__model__ = model
-        instance.__filter_map__ = dict(get_members(instance, Filter))
+        instance.__filter_map__ = get_members(instance, Filter)
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.FILTERSET_EXTENSIONS_KEY: instance}
         return instance
@@ -71,18 +71,18 @@ class FilterSetMeta(type):
 
 class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     """
-    A class representing a GraphQL Input Object Type for filtering the results of a query base on a QueryType.
-    Can be added to a QueryType in the QueryType's class definition.
+    A class for adding filtering for a QueryType.
+    Represents a GraphQL `InputObjectType` in the GraphQL schema.
 
     The following parameters can be passed in the class definition:
 
-    - `model`: Set the Django model this `FilterSet` is for. This input is required.
-               Must match the model of the `QueryType` this `FilterSet` is for.
-    - `auto`: Whether to add undine.Filter fields for all model fields and their lookups automatically.
+    - `model`: Set the Django `Model` this `FilterSet` is for. This input is required.
+               Must match the `Model` of the `QueryType` this `FilterSet` will be added to.
+    - `auto`: Whether to add `undine.Filter` fields for all `Model` fields and their lookups automatically.
               Defaults to `True`.
-    - `exclude`: List of model fields to exclude from the automatically added filters. No excludes by default.
-    - `typename`: Override name for the input object type in the GraphQL schema. Use class name by default.
-    - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
+    - `exclude`: List of `Model` fields to exclude from the automatically added filters. No excludes by default.
+    - `typename`: Override the name for the `InputObjectType` in the GraphQL schema. Use class name by default.
+    - `extensions`: GraphQL extensions for the created `InputObjectType`.
 
     >>> class MyFilters(FilterSet, model=...): ...
     >>> class MyQueryType(QueryType, model=..., filterset=MyFilters): ...
@@ -149,10 +149,11 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
     @classmethod
     def __input_type__(cls) -> GraphQLInputType:
         """
-        Create the input type for this FilterSet.
-        The input is a nullable GraphQL Input Object Type whose fields are
-        all the `undine.Filter` names defined on this FilterSet, as well as a few
-        special fields (NOT, AND, OR, XOR) for logical operations.
+        Create the input type to use for the `QueryType` this `FilterSet` is for.
+
+        The input is a nullable GraphQL `InputObjectType` whose fields are
+        all the `undine.Filter` instances defined in this `FilterSet`,
+        as well as a few special fields (NOT, AND, OR, XOR) for logical operations.
         """
 
         # Defer creating fields so that logical filters can be added.
@@ -177,8 +178,11 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
 
 class Filter:
     """
-    A class representing an input field on a GraphQL Input Object Type used for filtering a QueryType.
-    Can be added to the class body of a `FilterSet` class.
+    A class for defining a possible filter input.
+    Represents a field in the GraphQL `InputObjectType` for the `FilterSet` this is added to.
+
+    >>> class MyFilters(FilterSet, model=...):
+    ...     filter_name = Filter()
     """
 
     def __init__(  # noqa: PLR0913
@@ -197,28 +201,22 @@ class Filter:
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        Create a new Filter.
+        Create a new `Filter`.
 
-        :param ref: Expression to filter by. Can be anything that `convert_to_filter_ref` can convert:
-                    a string referencing a model field name, an expression, a function, etc.
-                    If not provided, use the name of the attribute this is assigned to
-                    in the `FilterSet` class.
-        :param lookup: Lookup expression to use for the filter.
-        :param many: If `True`, the Filter will accept a list of values, and filtering will be done by matching
-                     all the provided values against the filter condition. Defaults to `False`,
-                     accepting only a single value.
+        :param ref: The expression to filter by. Must be convertable by the `convert_to_filter_ref` function.
+                    If not provided, use the name of the attribute this is assigned to in the `FilterSet` class.
+        :param lookup: The lookup expression to use for the `Filter`.
+        :param many: If `True`, the `Filter` will accept a list of values, and filtering will be done by matching
+                     all the provided values against the filter condition.
         :param match: Sets the behavior of `many` so that the filter condition will include an item if it
-                      matches either "any" or "all" of the provided values. Defaults to "any".
-        :param distinct: Whether the Filter requires `queryset.distinct()` to be used.
-        :param required: Whether the Filter is a required input.
-        :param description: Description of the Filter. If not provided, looks at the converted reference,
-                            and tries to find the description from it.
-        :param field_name: Name of the Model Field this Filter is for. Use this if the Filter's name in the
-                           `FilterSet` class is different from the Model Field name. Not required if `ref` is
-                           a string referencing a Model Field name.
-        :param required_aliases: What queryset aliases are required for this Filter.
-        :param deprecation_reason: If the Filter is deprecated, describes the reason for deprecation.
-        :param extensions: GraphQL extensions for the Filter.
+                      matches either "any" or "all" of the provided values.
+        :param distinct: Does the `Filter` require `queryset.distinct()` to be used?
+        :param required: Is the `Filter` is a required input?
+        :param description: Description of the `Filter`.
+        :param field_name: Name of the `Model` field this `Filter` is for if different from its name on the `FilterSet`.
+        :param required_aliases: `QuerySet` aliases required for this `Filter`.
+        :param deprecation_reason: If the `Filter` is deprecated, describes the reason for deprecation.
+        :param extensions: GraphQL extensions for the `Filter`.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.lookup = lookup.lower()
@@ -234,6 +232,8 @@ class Filter:
         self.extensions[undine_settings.FILTER_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type[FilterSet], name: str) -> None:
+        # Called as part of the descriptor protocol if this `Filter` is assigned
+        # to a variable in the class body of a `FilterSet`.
         self.filterset = owner
         self.name = name
 
@@ -277,7 +277,7 @@ class Filter:
 
 
 def get_filters_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Filter]:  # TODO: Test
-    """Creates undine.Filters for all the given model's non-related fields, except those in the 'exclude' list."""
+    """Creates undine.Filters for all the given Model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Filter] = {}
     for model_field in get_model_fields_for_graphql(model, include_relations=False):
         field_name = model_field.name
@@ -294,7 +294,7 @@ def get_filters_for_model(model: type[Model], *, exclude: Container[str]) -> dic
             if name in exclude:
                 continue
 
-            # TODO: Validate that filter makes sense.
+            # TODO: Filter out fields that don't make sense for filtering (e.g. FileFields or nonsensical lookups)
 
             result[name] = Filter(field_name, lookup=lookup)
 

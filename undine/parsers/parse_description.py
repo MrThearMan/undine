@@ -19,7 +19,12 @@ __all__ = [
 
 
 parse_description = FunctionDispatcher[Any, str | None]()
-"""Parse a description from the reference."""
+"""
+Parse a description from the reference.
+
+Positional arguments:
+ - ref: The reference to parse description from.
+"""
 
 
 @parse_description.register

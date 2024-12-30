@@ -11,9 +11,10 @@ from graphql import GraphQLScalarType, get_argument_values
 
 from undine.converters import extend_expression
 from undine.errors.exceptions import OptimizerError
-from undine.optimizer.ast import GraphQLASTWalker, get_underlying_type, is_connection
 from undine.settings import undine_settings
-from undine.utils.reflection import swappable_by_subclassing
+from undine.utils.reflection import is_same_func, swappable_by_subclassing
+
+from .ast import GraphQLASTWalker, get_underlying_type, is_connection
 
 if TYPE_CHECKING:
     from graphql import FieldNode, GraphQLOutputType
@@ -41,17 +42,17 @@ __all__ = [
 
 @swappable_by_subclassing
 class QueryOptimizer(GraphQLASTWalker):
-    def __init__(self, query_type: type[QueryType], info: GQLInfo) -> None:
+    def __init__(self, *, model: type[Model], info: GQLInfo, max_complexity: int | None) -> None:
         """
         Optimize querysets based on the given GraphQL resolve info.
 
-        :param query_type: The QueryType to start the optimization process from.
+        :param model: The Django `Model` to start the optimization process from.
         :param info: The GraphQL resolve info for the request. These are the "instructions" the optimizer follows
                      to compile the needed optimizations.
         """
-        self.max_complexity = query_type.__max_complexity__
-        self.optimization_data = OptimizationData(model=query_type.__model__)
-        super().__init__(info=info, model=query_type.__model__)
+        self.max_complexity = max_complexity
+        self.optimization_data = OptimizationData(model=model)
+        super().__init__(info=info, model=model)
 
     def optimize(self, queryset: QuerySet) -> QuerySet:
         """Optimize the given queryset."""
@@ -113,8 +114,8 @@ class QueryOptimizer(GraphQLASTWalker):
         optimized_queryset = results.apply(queryset, self.root_info)
         return Prefetch(data.field_name, optimized_queryset, to_attr=to_attr)
 
-    def run_field_optimizer(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        """Run undine.Field optimization function for the given field."""
+    def run_undine_field_hooks(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
+        """Run `undine.Field` hooks if the field has the undine field in its extension."""
         undine_field = self.get_undine_field(field_type, field_node)
         if undine_field is None:
             return
@@ -144,6 +145,7 @@ class QueryOptimizer(GraphQLASTWalker):
             object_type = get_underlying_type(edge_type.fields["node"].type)
 
             self.optimization_data.pagination = undine_connection.pagination_handler(
+                typename=object_type.name,
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
                 offset=arg_values.get("offset"),
@@ -156,14 +158,12 @@ class QueryOptimizer(GraphQLASTWalker):
         if query_type is None:  # Not an undine field.
             return
 
-        self.optimization_data.queryset_callback = query_type.__get_queryset__
-        self.optimization_data.pre_filter_callback = query_type.__filter_queryset__
+        self.optimization_data.fill_from_query_type(query_type=query_type)
 
         if query_type.__filterset__:
             filter_data = arg_values.get(undine_settings.FILTER_INPUT_TYPE_KEY, {})
             filter_results = query_type.__filterset__.__build__(filter_data, self.root_info)
 
-            self.optimization_data.post_filter_callback = query_type.__filterset__.__filter_queryset__
             self.optimization_data.filters.extend(filter_results.filters)
             self.optimization_data.aliases |= filter_results.aliases
             self.optimization_data.distinct |= filter_results.distinct
@@ -192,13 +192,12 @@ class QueryOptimizer(GraphQLASTWalker):
             self.optimization_data.pagination.requires_total_count = True
 
     def handle_page_info_field(self, parent_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        # Pagination data should always be set here.
         if self.optimization_data.pagination is not None and field_node.name.value != "hasNextPage":
             self.optimization_data.pagination.requires_total_count = True
 
     def handle_normal_field(self, field_type: GraphQLOutputType, field_node: FieldNode, field: Field) -> None:
         self.optimization_data.only_fields.append(field.get_attname())
-        self.run_field_optimizer(field_type, field_node)
+        self.run_undine_field_hooks(field_type, field_node)
 
     def handle_to_one_field(
         self,
@@ -222,7 +221,7 @@ class QueryOptimizer(GraphQLASTWalker):
             self.optimization_data.only_fields.append(related_field.ct_field)
             self.optimization_data.only_fields.append(related_field.fk_field)
 
-        self.run_field_optimizer(parent_type, field_node)
+        self.run_undine_field_hooks(parent_type, field_node)
 
         with self.use_data(data):
             self.parse_filter_info(parent_type, field_node)
@@ -247,14 +246,14 @@ class QueryOptimizer(GraphQLASTWalker):
             data.only_fields.append(related_field.object_id_field_name)
             data.only_fields.append(related_field.content_type_field_name)
 
-        self.run_field_optimizer(parent_type, field_node)
+        self.run_undine_field_hooks(parent_type, field_node)
 
         with self.use_data(data):
             self.parse_filter_info(parent_type, field_node)
             super().handle_to_many_field(parent_type, field_node, related_field)
 
     def handle_custom_field(self, field_type: GraphQLOutputType, field_node: FieldNode) -> None:
-        self.run_field_optimizer(field_type, field_node)
+        self.run_undine_field_hooks(field_type, field_node)
 
     @contextlib.contextmanager
     def use_data(self, nested_data: OptimizationData) -> None:
@@ -311,19 +310,11 @@ class OptimizationData:
         if maybe_optimizer is not None:
             return maybe_optimizer
 
-        if query_type is not None:
-            model: type[Model] = query_type.__model__
-        else:
-            model = self.model._meta.get_field(field_name).related_model  # type: ignore[attr-defined]
+        model: type[Model] = self.model._meta.get_field(field_name).related_model  # type: ignore[attr-defined]
 
         data = OptimizationData(model=model, field_name=field_name, parent=self)
-
         if query_type is not None:
-            data.queryset_callback = query_type.__get_queryset__
-            data.pre_filter_callback = query_type.__filter_queryset__
-
-            if query_type.__filterset__:
-                data.post_filter_callback = query_type.__filterset__.__filter_queryset__
+            data.fill_from_query_type(query_type=query_type)
 
         self.select_related[field_name] = data
         return data
@@ -336,25 +327,18 @@ class OptimizationData:
         to_attr: str | None = None,
     ) -> OptimizationData:
         """Add a 'prefetch_related' optimization for the given field."""
-        maybe_optimizer = self.prefetch_related.get(to_attr or field_name)
+        name = to_attr or field_name
+        maybe_optimizer = self.prefetch_related.get(name)
         if maybe_optimizer is not None:
             return maybe_optimizer
 
-        if query_type is not None:
-            model: type[Model] | None = query_type.__model__
-        else:
-            model = self.model._meta.get_field(field_name).related_model  # type: ignore[attr-defined]
+        model: type[Model] = self.model._meta.get_field(field_name).related_model  # type: ignore[attr-defined]
 
         data = OptimizationData(model=model, field_name=field_name, parent=self)
-
         if query_type is not None:
-            data.queryset_callback = query_type.__get_queryset__
-            data.pre_filter_callback = query_type.__filter_queryset__
+            data.fill_from_query_type(query_type=query_type)
 
-            if query_type.__filterset__:
-                data.post_filter_callback = query_type.__filterset__.__filter_queryset__
-
-        self.prefetch_related[to_attr or field_name] = data
+        self.prefetch_related[name] = data
         return data
 
     def should_promote_to_prefetch(self) -> bool:
@@ -363,8 +347,35 @@ class OptimizationData:
         `prefetch_related` instead of `select_related`?
 
         E.g. If the model instances need to be annotated, we need to prefetch to retain those annotations.
+        Or if we have filtering that always needs to be done on the related objects.
         """
-        return bool(self.annotations) or bool(self.aliases) or bool(self.field_calculations)
+        return (
+            bool(self.annotations)
+            or bool(self.aliases)
+            or bool(self.field_calculations)
+            or self.pre_filter_callback is not None
+            or self.post_filter_callback is not None
+        )
+
+    def fill_from_query_type(self, query_type: type[QueryType]) -> Self:
+        """Fill the optimization data from the given QueryType."""
+        from undine import FilterSet, QueryType  # noqa: PLC0415
+
+        self.model = query_type.__model__
+        self.queryset_callback = query_type.__get_queryset__
+
+        # Only include pre-filter callback if it's different from the default.
+        if not is_same_func(query_type.__filter_queryset__, QueryType.__filter_queryset__):
+            self.pre_filter_callback = query_type.__filter_queryset__
+
+        # Only include post-filter callback if it's different from the default.
+        if (
+            query_type.__filterset__  # Has filterset
+            and not is_same_func(query_type.__filterset__.__filter_queryset__, FilterSet.__filter_queryset__)
+        ):
+            self.post_filter_callback = query_type.__filterset__.__filter_queryset__
+
+        return self
 
 
 @dataclasses.dataclass(slots=True)

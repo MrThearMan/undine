@@ -82,6 +82,42 @@ def test_get_wrapped_func__property():
     assert get_wrapped_func(Foo.func) == Foo.func.fget
 
 
+def test_get_wrapped_func__classmethod():
+    captured = None
+
+    def capture(value):
+        nonlocal captured
+        captured = value
+        return value
+
+    class Foo:
+        @capture
+        @classmethod
+        def func(cls): ...
+
+    assert isinstance(captured, classmethod)
+
+    assert get_wrapped_func(captured) == Foo.func.__func__
+
+
+def test_get_wrapped_func__staticmethod():
+    captured = None
+
+    def capture(value):
+        nonlocal captured
+        captured = value
+        return value
+
+    class Foo:
+        @capture
+        @staticmethod
+        def func(): ...
+
+    assert isinstance(captured, staticmethod)
+
+    assert get_wrapped_func(captured) == Foo.func
+
+
 def test_get_wrapped_func__partial():
     def func(x: int): ...
 

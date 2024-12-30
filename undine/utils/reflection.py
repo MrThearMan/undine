@@ -30,6 +30,7 @@ __all__ = [
     "is_lambda",
     "is_not_required_type",
     "is_required_type",
+    "is_same_func",
     "is_subclass",
     "swappable_by_subclassing",
 ]
@@ -39,9 +40,9 @@ T = TypeVar("T")
 TType = TypeVar("TType", bound=type)
 
 
-def get_members(obj: object, type_: type[T]) -> list[tuple[str, T]]:
+def get_members(obj: object, type_: type[T]) -> dict[str, T]:
     """Get memebers of the given object that are instances of the given type."""
-    return inspect.getmembers(obj, lambda x: isinstance(x, type_))
+    return dict(inspect.getmembers(obj, lambda x: isinstance(x, type_)))
 
 
 def get_wrapped_func(func: T) -> T:
@@ -56,7 +57,7 @@ def get_wrapped_func(func: T) -> T:
         if isinstance(func, partial):
             func = func.func
             continue
-        if isinstance(func, (classmethod, staticmethod)):  # pragma: no cover
+        if inspect.ismethod(func) and hasattr(func, "__func__"):
             func = func.__func__
             continue
         if isinstance(func, property):
@@ -127,7 +128,7 @@ def swappable_by_subclassing(cls: T) -> T:
     Decorated class will return the most recently
     created direct subclass when it is instantiated.
 
-    Class should have a `__init__` method(?),
+    Class should have a `__init__` method(?),  # TODO: test if __init__ is required.
     and should not have a `__new__` method.
     """
     orig_init_subclass = cls.__init_subclass__
@@ -171,6 +172,14 @@ def is_required_type(type_: Any) -> bool:
 def is_not_required_type(type_: Any) -> bool:
     """Check if the given type is a TypedDict `Required` type."""
     return isinstance(type_, ParametrizedType) and type_.__origin__._name == "NotRequired"  # noqa: SLF001
+
+
+def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType | Callable[..., Any], /) -> bool:
+    """
+    Check if the given functions are the same function.
+    Handles partial functions and functions wrapped with `functools.wraps`.
+    """
+    return get_wrapped_func(func_1) == get_wrapped_func(func_2)
 
 
 def get_instance_name() -> str:

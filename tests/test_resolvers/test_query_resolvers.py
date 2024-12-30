@@ -264,7 +264,7 @@ def test_resolvers__query_type_many_resolver__permissions():
     task = TaskFactory.create()
 
     with patch_optimizer(), pytest.raises(GraphQLPermissionDeniedError):
-        assert resolver(root=task, info=MockGQLInfo()) == task
+        assert resolver(root=task, info=MockGQLInfo()) == [task]
 
 
 @pytest.mark.django_db

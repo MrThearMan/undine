@@ -25,13 +25,9 @@ def test_delete_resolver():
 
     resolver = DeleteResolver(mutation_type=TaskDeleteMutation)
 
-    data = {
-        "pk": task.pk,
-    }
+    result = resolver(root=None, info=MockGQLInfo(), input={"pk": task.pk})
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
-
-    assert result == {"success": True}
+    assert result == {"pk": task.pk}
 
     assert Task.objects.count() == 0
 
@@ -82,14 +78,9 @@ def test_delete_resolver__input_only_fields():
 
     resolver = DeleteResolver(mutation_type=TaskDeleteMutation)
 
-    data = {
-        "pk": task.pk,
-        "foo": True,
-    }
+    result = resolver(root=None, info=MockGQLInfo(), input={"pk": task.pk, "foo": True})
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
-
-    assert result == {"success": True}
+    assert result == {"pk": task.pk}
 
     assert Task.objects.count() == 0
 

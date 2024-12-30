@@ -127,7 +127,7 @@ def test_optimizer__relations__forward_one_to_one__forward_one_to_one(graphql, u
     # 1 query for all examples, forward one-to-one relations, and nested forward one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"forwardOneToOneField": {"name": "1"}}},
         {"forwardOneToOneField": {"forwardOneToOneField": {"name": "2"}}},
         {"forwardOneToOneField": {"forwardOneToOneField": {"name": "3"}}},
@@ -160,7 +160,7 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_one(graphql, 
     # 1 query for all examples, forward one-to-one relations, and nested forward many-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"forwardManyToOneField": {"name": "1"}}},
         {"forwardOneToOneField": {"forwardManyToOneField": {"name": "2"}}},
         {"forwardOneToOneField": {"forwardManyToOneField": {"name": "3"}}},
@@ -194,7 +194,7 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_many(graphql,
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"forwardManyToManyFields": [{"name": "1"}]}},
         {"forwardOneToOneField": {"forwardManyToManyFields": [{"name": "2"}]}},
         {"forwardOneToOneField": {"forwardManyToManyFields": [{"name": "3"}]}},
@@ -227,7 +227,7 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_one(graphql, u
     # 1 query for all examples, forward one-to-one relations and nested reverse one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"reverseOneToOneRel": {"name": "1"}}},
         {"forwardOneToOneField": {"reverseOneToOneRel": {"name": "2"}}},
         {"forwardOneToOneField": {"reverseOneToOneRel": {"name": "3"}}},
@@ -261,7 +261,7 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_many(graphql, 
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"reverseOneToManyRels": [{"name": "1"}]}},
         {"forwardOneToOneField": {"reverseOneToManyRels": [{"name": "2"}]}},
         {"forwardOneToOneField": {"reverseOneToManyRels": [{"name": "3"}]}},
@@ -295,7 +295,7 @@ def test_optimizer__relations__forward_one_to_one__reverse_many_to_many(graphql,
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardOneToOneField": {"reverseManyToManyRels": [{"name": "1"}]}},
         {"forwardOneToOneField": {"reverseManyToManyRels": [{"name": "2"}]}},
         {"forwardOneToOneField": {"reverseManyToManyRels": [{"name": "3"}]}},
@@ -331,7 +331,7 @@ def test_optimizer__relations__forward_many_to_one__forward_one_to_one(graphql, 
     # 1 query for all examples, forward many-to-one relations, and nested forward one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"forwardOneToOneField": {"name": "1"}}},
         {"forwardManyToOneField": {"forwardOneToOneField": {"name": "2"}}},
         {"forwardManyToOneField": {"forwardOneToOneField": {"name": "3"}}},
@@ -364,7 +364,7 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_one(graphql,
     # 1 query for all examples, forward many-to-one relations, and nested forward many-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"forwardManyToOneField": {"name": "1"}}},
         {"forwardManyToOneField": {"forwardManyToOneField": {"name": "2"}}},
         {"forwardManyToOneField": {"forwardManyToOneField": {"name": "3"}}},
@@ -398,7 +398,7 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_many(graphql
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"forwardManyToManyFields": [{"name": "1"}]}},
         {"forwardManyToOneField": {"forwardManyToManyFields": [{"name": "2"}]}},
         {"forwardManyToOneField": {"forwardManyToManyFields": [{"name": "3"}]}},
@@ -431,7 +431,7 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_one(graphql, 
     # 1 query for all examples, forward many-to-one relations and nested reverse one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"reverseOneToOneRel": {"name": "1"}}},
         {"forwardManyToOneField": {"reverseOneToOneRel": {"name": "2"}}},
         {"forwardManyToOneField": {"reverseOneToOneRel": {"name": "3"}}},
@@ -465,7 +465,7 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_many(graphql,
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"reverseOneToManyRels": [{"name": "1"}]}},
         {"forwardManyToOneField": {"reverseOneToManyRels": [{"name": "2"}]}},
         {"forwardManyToOneField": {"reverseOneToManyRels": [{"name": "3"}]}},
@@ -499,7 +499,7 @@ def test_optimizer__relations__forward_many_to_one__reverse_many_to_many(graphql
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToOneField": {"reverseManyToManyRels": [{"name": "1"}]}},
         {"forwardManyToOneField": {"reverseManyToManyRels": [{"name": "2"}]}},
         {"forwardManyToOneField": {"reverseManyToManyRels": [{"name": "3"}]}},
@@ -536,7 +536,7 @@ def test_optimizer__relations__forward_many_to_many__forward_one_to_one(graphql,
     # 1 query fo all forward many-to-many relations, and nested forward one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"forwardOneToOneField": {"name": "1"}}]},
         {"forwardManyToManyFields": [{"forwardOneToOneField": {"name": "2"}}]},
         {"forwardManyToManyFields": [{"forwardOneToOneField": {"name": "3"}}]},
@@ -570,7 +570,7 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_one(graphql
     # 1 query fo all forward many-to-many relations, and nested forward many-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"forwardManyToOneField": {"name": "1"}}]},
         {"forwardManyToManyFields": [{"forwardManyToOneField": {"name": "2"}}]},
         {"forwardManyToManyFields": [{"forwardManyToOneField": {"name": "3"}}]},
@@ -605,7 +605,7 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_many(graphq
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"forwardManyToManyFields": [{"name": "1"}]}]},
         {"forwardManyToManyFields": [{"forwardManyToManyFields": [{"name": "2"}]}]},
         {"forwardManyToManyFields": [{"forwardManyToManyFields": [{"name": "3"}]}]},
@@ -639,7 +639,7 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_one(graphql,
     # 1 query for all forward many-to-many relations and nested reverse one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"reverseOneToOneRel": {"name": "1"}}]},
         {"forwardManyToManyFields": [{"reverseOneToOneRel": {"name": "2"}}]},
         {"forwardManyToManyFields": [{"reverseOneToOneRel": {"name": "3"}}]},
@@ -674,7 +674,7 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_many(graphql
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"reverseOneToManyRels": [{"name": "1"}]}]},
         {"forwardManyToManyFields": [{"reverseOneToManyRels": [{"name": "2"}]}]},
         {"forwardManyToManyFields": [{"reverseOneToManyRels": [{"name": "3"}]}]},
@@ -709,7 +709,7 @@ def test_optimizer__relations__forward_many_to_many__reverse_many_to_many(graphq
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"forwardManyToManyFields": [{"reverseManyToManyRels": [{"name": "1"}]}]},
         {"forwardManyToManyFields": [{"reverseManyToManyRels": [{"name": "2"}]}]},
         {"forwardManyToManyFields": [{"reverseManyToManyRels": [{"name": "3"}]}]},
@@ -745,7 +745,7 @@ def test_optimizer__relations__reverse_one_to_one__forward_one_to_one(graphql, u
     # 1 query for all examples, reverse one-to-one relations, and nested forward one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"forwardOneToOneField": {"name": "1"}}},
         {"reverseOneToOneRel": {"forwardOneToOneField": {"name": "2"}}},
         {"reverseOneToOneRel": {"forwardOneToOneField": {"name": "3"}}},
@@ -778,7 +778,7 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_one(graphql, 
     # 1 query for all examples, reverse one-to-one relations, and nested forward many-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"forwardManyToOneField": {"name": "1"}}},
         {"reverseOneToOneRel": {"forwardManyToOneField": {"name": "2"}}},
         {"reverseOneToOneRel": {"forwardManyToOneField": {"name": "3"}}},
@@ -812,7 +812,7 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_many(graphql,
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"forwardManyToManyFields": [{"name": "1"}]}},
         {"reverseOneToOneRel": {"forwardManyToManyFields": [{"name": "2"}]}},
         {"reverseOneToOneRel": {"forwardManyToManyFields": [{"name": "3"}]}},
@@ -845,7 +845,7 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_one(graphql, u
     # 1 query for all examples, reverse one-to-one relations and nested reverse one-to-one relations
     response.assert_query_count(1)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"reverseOneToOneRel": {"name": "1"}}},
         {"reverseOneToOneRel": {"reverseOneToOneRel": {"name": "2"}}},
         {"reverseOneToOneRel": {"reverseOneToOneRel": {"name": "3"}}},
@@ -879,7 +879,7 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_many(graphql, 
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"reverseOneToManyRels": [{"name": "1"}]}},
         {"reverseOneToOneRel": {"reverseOneToManyRels": [{"name": "2"}]}},
         {"reverseOneToOneRel": {"reverseOneToManyRels": [{"name": "3"}]}},
@@ -913,7 +913,7 @@ def test_optimizer__relations__reverse_one_to_one__reverse_many_to_many(graphql,
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToOneRel": {"reverseManyToManyRels": [{"name": "1"}]}},
         {"reverseOneToOneRel": {"reverseManyToManyRels": [{"name": "2"}]}},
         {"reverseOneToOneRel": {"reverseManyToManyRels": [{"name": "3"}]}},
@@ -950,7 +950,7 @@ def test_optimizer__relations__reverse_one_to_many__forward_one_to_one(graphql, 
     # 1 query for all reverse one-to-many relations query and nested forward one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"forwardOneToOneField": {"name": "1"}}]},
         {"reverseOneToManyRels": [{"forwardOneToOneField": {"name": "2"}}]},
         {"reverseOneToManyRels": [{"forwardOneToOneField": {"name": "3"}}]},
@@ -984,7 +984,7 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_one(graphql,
     # 1 query for all reverse one-to-many relations query and nested forward many-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"forwardManyToOneField": {"name": "1"}}]},
         {"reverseOneToManyRels": [{"forwardManyToOneField": {"name": "2"}}]},
         {"reverseOneToManyRels": [{"forwardManyToOneField": {"name": "3"}}]},
@@ -1019,7 +1019,7 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_many(graphql
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"forwardManyToManyFields": [{"name": "1"}]}]},
         {"reverseOneToManyRels": [{"forwardManyToManyFields": [{"name": "2"}]}]},
         {"reverseOneToManyRels": [{"forwardManyToManyFields": [{"name": "3"}]}]},
@@ -1053,7 +1053,7 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_one(graphql, 
     # 1 query for all reverse one-to-many relations query and nested reverse one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"reverseOneToOneRel": {"name": "1"}}]},
         {"reverseOneToManyRels": [{"reverseOneToOneRel": {"name": "2"}}]},
         {"reverseOneToManyRels": [{"reverseOneToOneRel": {"name": "3"}}]},
@@ -1088,7 +1088,7 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_many(graphql,
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"reverseOneToManyRels": [{"name": "1"}]}]},
         {"reverseOneToManyRels": [{"reverseOneToManyRels": [{"name": "2"}]}]},
         {"reverseOneToManyRels": [{"reverseOneToManyRels": [{"name": "3"}]}]},
@@ -1123,7 +1123,7 @@ def test_optimizer__relations__reverse_one_to_many__reverse_many_to_many(graphql
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseOneToManyRels": [{"reverseManyToManyRels": [{"name": "1"}]}]},
         {"reverseOneToManyRels": [{"reverseManyToManyRels": [{"name": "2"}]}]},
         {"reverseOneToManyRels": [{"reverseManyToManyRels": [{"name": "3"}]}]},
@@ -1160,7 +1160,7 @@ def test_optimizer__relations__reverse_many_to_many__forward_one_to_one(graphql,
     # 1 query for all reverse many-to-many relations and nested forward one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"forwardOneToOneField": {"name": "1"}}]},
         {"reverseManyToManyRels": [{"forwardOneToOneField": {"name": "2"}}]},
         {"reverseManyToManyRels": [{"forwardOneToOneField": {"name": "3"}}]},
@@ -1194,7 +1194,7 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_one(graphql
     # 1 query for all reverse many-to-many relations and nested forward many-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"forwardManyToOneField": {"name": "1"}}]},
         {"reverseManyToManyRels": [{"forwardManyToOneField": {"name": "2"}}]},
         {"reverseManyToManyRels": [{"forwardManyToOneField": {"name": "3"}}]},
@@ -1229,7 +1229,7 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_many(graphq
     # 1 query for all nested forward many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"forwardManyToManyFields": [{"name": "1"}]}]},
         {"reverseManyToManyRels": [{"forwardManyToManyFields": [{"name": "2"}]}]},
         {"reverseManyToManyRels": [{"forwardManyToManyFields": [{"name": "3"}]}]},
@@ -1263,7 +1263,7 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_one(graphql,
     # 1 query for all reverse many-to-many relations and nested reverse one-to-one relations
     response.assert_query_count(2)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"reverseOneToOneRel": {"name": "1"}}]},
         {"reverseManyToManyRels": [{"reverseOneToOneRel": {"name": "2"}}]},
         {"reverseManyToManyRels": [{"reverseOneToOneRel": {"name": "3"}}]},
@@ -1298,7 +1298,7 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_many(graphql
     # 1 query for all nested reverse one-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"reverseOneToManyRels": [{"name": "1"}]}]},
         {"reverseManyToManyRels": [{"reverseOneToManyRels": [{"name": "2"}]}]},
         {"reverseManyToManyRels": [{"reverseOneToManyRels": [{"name": "3"}]}]},
@@ -1333,7 +1333,7 @@ def test_optimizer__relations__reverse_many_to_many__reverse_many_to_many(graphq
     # 1 query for all nested reverse many-to-many relations
     response.assert_query_count(3)
 
-    assert response.first_query_object == [
+    assert response.results == [
         {"reverseManyToManyRels": [{"reverseManyToManyRels": [{"name": "1"}]}]},
         {"reverseManyToManyRels": [{"reverseManyToManyRels": [{"name": "2"}]}]},
         {"reverseManyToManyRels": [{"reverseManyToManyRels": [{"name": "3"}]}]},
@@ -1820,4 +1820,4 @@ def test_optimizer__relations__max_query_complexity(graphql, undine_settings):
     """
 
     response = graphql(query)
-    assert response.error_message() == "Query complexity exceeds the maximum allowed of 5"
+    assert response.error_message(0) == "Query complexity exceeds the maximum allowed of 5"

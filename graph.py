@@ -2,6 +2,8 @@ from pathlib import Path
 
 import grimp
 
+# TODO: Support narrowing scope.
+
 
 def export_mermaid_graph(top_level_module: str) -> None:
     """Builds a flowchart of the module dependencies and exports it to a markdown file."""

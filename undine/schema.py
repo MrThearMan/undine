@@ -54,36 +54,47 @@ __all__ = [
 
 
 class Entrypoint:
-    """Designate a new entrypoint in the GraphQL Schema for a query or mutation."""
+    """
+    Designate a new entrypoint in the GraphQL Schema for a query or a mutation.
+
+    >>> class MyQueryType(QueryType, model=...):
+    ...     name = Entrypoint()
+    >>>
+    >>> class Query:
+    ...     my_query = Entrypoint(MyQueryType)
+    """
 
     def __init__(
         self,
         ref: EntrypointRef = Undefined,
         *,
         many: bool = False,
+        max_complexity: int = Undefined,
         description: str | None = Undefined,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
-        Create a new Entrypoint.
+        Create a new `Entrypoint`.
 
-        :param ref: Reference to the QueryType or Mutation to use as the entrypoint.
-        :param many: Whether the entrypoint should return a list of the referenced type.
-                     For function based entrypoints, this is determined from the function's return type.
-        :param description: Description for the entrypoint. If not provided, looks at the converted reference,
-                            and tries to find the description from it.
-        :param deprecation_reason: If the entrypoint is deprecated, describes the reason for deprecation.
-        :param extensions: GraphQL extensions for the entrypoint.
+        :param ref: The reference to use for the `Entrypoint`.
+        :param many: Whether the `Entrypoint` should return a non-null list of the referenced type.
+        :param max_complexity: Maximum number of relations that are allowed to be queried from this `Entrypoint`.
+        :param description: Description for the `Entrypoint`.
+        :param deprecation_reason: If the `Entrypoint` is deprecated, describes the reason for deprecation.
+        :param extensions: GraphQL extensions for the `Entrypoint`.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.many = many
+        self.max_complexity = max_complexity or undine_settings.OPTIMIZER_MAX_COMPLEXITY
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type, name: str) -> None:
+        # Called as part of the descriptor protocol if this `Entrypoint` is assigned
+        # to a variable in the class body of a `Query` or `Mutation` class.
         self.owner = owner
         self.name = name
 
@@ -124,7 +135,7 @@ class Entrypoint:
         return convert_to_graphql_argument_map(self.ref, many=self.many, entrypoint=True)
 
     def get_resolver(self) -> GraphQLFieldResolver:
-        return convert_entrypoint_ref_to_resolver(self.ref, many=self.many)
+        return convert_entrypoint_ref_to_resolver(self.ref, caller=self)
 
 
 def create_schema(  # noqa: PLR0913
@@ -148,7 +159,9 @@ def create_schema(  # noqa: PLR0913
 
         return get_or_create_object_type(
             name=cls.__name__,
-            fields={to_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint)},
+            fields={
+                to_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint).items()
+            },
             description=get_docstring(cls),
             extensions=extensions,
         )

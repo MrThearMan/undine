@@ -2,16 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Self
 
-from graphql import (
-    GraphQLBoolean,
-    GraphQLField,
-    GraphQLFieldResolver,
-    GraphQLInputField,
-    GraphQLInputType,
-    GraphQLNonNull,
-    GraphQLOutputType,
-    Undefined,
-)
+from graphql import GraphQLFieldResolver, GraphQLInputField, GraphQLInputType, GraphQLOutputType, Undefined
 
 from undine.converters import (
     convert_to_default_value,
@@ -46,7 +37,16 @@ if TYPE_CHECKING:
 
     from django.db.models import Model
 
-    from undine.typing import FieldPermFunc, GQLInfo, InputPermFunc, MutationKind, MutationResult, Root, ValidatorFunc
+    from undine.typing import (
+        FieldPermFunc,
+        GQLInfo,
+        InputPermFunc,
+        JsonObject,
+        MutationKind,
+        MutationResult,
+        Root,
+        ValidatorFunc,
+    )
 
 __all__ = [
     "Input",
@@ -106,7 +106,7 @@ class MutationTypeMeta(type):
 
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.
         instance.__model__ = model
-        instance.__input_map__ = dict(get_members(instance, Input))
+        instance.__input_map__ = get_members(instance, Input)
         instance.__mutation_kind__ = mutation_kind
         instance.__typename__ = typename or _name
         instance.__extensions__ = (extensions or {}) | {undine_settings.MUTATION_EXTENSIONS_KEY: instance}
@@ -115,17 +115,18 @@ class MutationTypeMeta(type):
 
 class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     """
-    A class representing a GraphQL Input Object Type for a Mutation based on a Django Model.
+    A class for creating a Mutation for a Django `Model`.
+    Represents a GraphQL `InputObjectType` in the GraphQL schema.
 
     The following parameters can be passed in the class definition:
 
-    - `model`: Set the Django model this `MutationType` is for. This input is required.
-    - `mutation_kind`: Kind of mutation this is. One of "create", "update", "delete" or "custom".
-                       If not given, it will be guessed based on the name of the class.
-    - `auto`: Whether to add inputs for all model fields automatically. Defaults to `True`.
-    - `exclude`: List of model fields to exclude from automatically added inputs. No excludes by default.
-    - `typename`: Override name for the InputObjectType in the GraphQL schema. Use class name by default.
-    - `extensions`: GraphQL extensions for the created `InputObjectType`. Defaults to `None`.
+    - `model`: Set the Django `Model` this `MutationType` is for. This input is required.
+    - `mutation_kind`: The kind of mutation this is. One of "create", "update", "delete" or "custom".
+                       If not given, this will be guessed based on the name of the class.
+    - `auto`: Whether to add `undine.Input` fields for all `Model` fields automatically. Defaults to `True`.
+    - `exclude`: List of `Model` fields to exclude from automatically added inputs. No excludes by default.
+    - `typename`: Override name for the `InputObjectType` in the GraphQL schema. Use class name by default.
+    - `extensions`: GraphQL extensions for the created `InputObjectType`.
 
     >>> class MyMutationType(MutationType, model=...): ...
     """
@@ -133,27 +134,26 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     # Members should use `__dunder__` names to avoid name collisions with possible `undine.Input` names.
 
     @classmethod
-    def __mutate__(cls, root: Root, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+    def __mutate__(cls, root: Root, info: GQLInfo, input_data: JsonObject) -> Any:
         """Override this method for custom mutations."""
 
     @classmethod
     def __validate__(cls, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """Validate all input data given to this MutationType."""
+        """Validate all input data given to this `MutationType`."""
 
     @classmethod
     def __post_handle__(cls, info: GQLInfo, value: MutationResult) -> None:
-        """A hook that is run after a mutation using this MutationType has been executed."""
+        """A hook that is run after a mutation using this `MutationType` has been executed."""
 
     @classmethod
     def __permissions__(cls, info: GQLInfo, input_data: dict[str, Any], instance: Model | None = None) -> None:
-        """Check whether mutation is allowed using this MutationType."""
+        """Check whether mutation is allowed using this `MutationType`."""
 
     @classmethod
     def __input_type__(cls) -> GraphQLInputType:
-        """Create a `GraphQLInputObjectType` for this MutationType."""
+        """Create the `GraphQLInputObjectType` for this `MutationType`."""
         if cls.__mutation_kind__ == "delete":
-            input_field = cls.__input_map__.get("pk")
-            return input_field.get_field_type()
+            return cls.__input_map__["pk"].get_field_type()
 
         # Defer creating fields so that self-referential related inputs can be created.
         def fields() -> dict[str, GraphQLInputField]:
@@ -173,19 +173,21 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
     @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
-        """Fetch the `GraphQLObjectType` for this MutationType from the QueryType registry."""
+        """Create the GraphQL `ObjectType` for this `MutationType`."""
+        output_type = QUERY_TYPE_REGISTRY[cls.__model__]
+
         if cls.__mutation_kind__ == "delete":
+            field = output_type.__field_map__["pk"]
             return get_or_create_object_type(
-                name="DeleteMutationOutput",
-                fields={
-                    undine_settings.DELETE_MUTATION_OUTPUT_FIELD_NAME: GraphQLField(GraphQLNonNull(GraphQLBoolean)),
-                },
+                name=cls.__typename__ + "Output",
+                fields={"pk": field.as_graphql_field()},
             )
-        return QUERY_TYPE_REGISTRY[cls.__model__].__output_type__()
+
+        return output_type.__output_type__()
 
     @classmethod
     def __middleware__(cls) -> list[type[MutationMiddleware]]:
-        """Middleware to use with mutations with using this MutationType as the Entrypoint."""
+        """Middleware to use with mutations using this `MutationType`."""
         return [
             InputDataModificationMiddleware,
             MutationPermissionCheckMiddleware,
@@ -199,11 +201,14 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
 
 class Input:
     """
-    A class representing an input field on a GraphQL Input Object Type used for mutations.
-    Can be added to the class body of a `MutationType` class.
+    A class for defining a possible input for a mutation.
+    Represents an input field on a GraphQL `InputObjectType` for the `MutationType` this is added to.
+
+    >>> class MyMutationType(MutationType, model=...):
+    ...     input_name = Input()
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         ref: Any = None,
         *,
@@ -213,32 +218,28 @@ class Input:
         input_only: bool = Undefined,
         hidden: bool = Undefined,
         description: str | None = Undefined,
+        field_name: str | None = None,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         """
         Create a new Input.
 
-        :param ref: Reference to build the input from. Can be anything that `convert_to_input_ref` can convert,
-                    e.g., a string referencing a model field name, a model field, a `MutationType`, etc.
-                    If not provided, use the name of the attribute this is assigned to
-                    in the `MutationType` class.
-        :param many: Whether the input should contain a non-null list of the referenced type.
-                     If not provided, looks at the reference and tries to determine this from it.
-        :param required: Whether the input should be required. If not provided, looks at the reference
-                         and the MutationType's mutation kind to determine this.
-        :param default_value: Value to use for the input if non is provided. Also makes the input not required,
+        :param ref: Reference to build the input from. Must be convertable by the `convert_to_input_ref` function.
+                    If not provided, use the name of the attribute this is assigned to in the `MutationType` class.
+        :param many: Whether the `Input` should return a non-null list of the referenced type.
+        :param required: Whether the input should be required.
+        :param default_value: Value to use for the input if none is provided. Also makes the input not required,
                               if not otherwise specified. Must be a valid GraphQL default value.
-        :param input_only: If `True`, the input's value is not included when the mutation is performed
-                           (value still exists for any mutation middlewares). If not provided,
-                           looks at the reference, and if it doesn't point to a field on the model,
-                           this field will be considered input-only.
-        :param hidden: If `True`, the input is not included in the schema. In most cases, should also
+        :param input_only: If `True`, the value for this `Input` is not included when the mutation is performed,
+                           but is still available for mutation middlewares.
+        :param hidden: If `True`, the `Input` is not included in the schema. In most cases, should also
                        add a `default_value` for the input.
-        :param description: Description for the input. If not provided, looks at the converted reference,
-                            and tries to find the description from it.
-        :param deprecation_reason: If the input is deprecated, describes the reason for deprecation.
-        :param extensions: GraphQL extensions for the input.
+        :param description: Description for the input.
+        :param field_name: Name of the `Model` field this `Input` is for if different from
+                           its name on the `MutationType`.
+        :param deprecation_reason: If the `Input` is deprecated, describes the reason for deprecation.
+        :param extensions: GraphQL extensions for the `Input`.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.many = many
@@ -247,6 +248,7 @@ class Input:
         self.hidden = hidden
         self.default_value = default_value
         self.description = description
+        self.field_name = field_name
         self.deprecation_reason = deprecation_reason
         self.validator_func: ValidatorFunc | None = None
         self.permissions_func: FieldPermFunc | None = None
@@ -254,13 +256,20 @@ class Input:
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type[MutationType], name: str) -> None:
+        # Called as part of the descriptor protocol if this `Input` is assigned
+        # to a variable in the class body of a `MutationType`.
         self.mutation_type = owner
         self.name = name
 
         self.ref = convert_to_input_ref(self.ref, caller=self)
 
+        if self.field_name is None:
+            self.field_name = self.name
+            if isinstance(self.ref, str) and self.ref != "self":
+                self.field_name = self.ref
+
         if self.many is Undefined:
-            self.many = is_many(self.ref, model=self.mutation_type.__model__, name=self.name)
+            self.many = is_many(self.ref, model=self.mutation_type.__model__, name=self.field_name)
         if self.input_only is Undefined:
             self.input_only = is_input_only(self.ref)
         if self.hidden is Undefined:
@@ -313,7 +322,7 @@ class Input:
 
 
 def get_inputs_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Input]:  # TODO: Test
-    """Add undine.Inputs for all the given model's fields, except those in the 'exclude' list."""
+    """Add `undine.Inputs` for all the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Input] = {}
     for model_field in get_model_fields_for_graphql(model, include_nonsaveable=False):
         field_name = model_field.name

@@ -50,7 +50,7 @@ __all__ = [
 class QueryTypeMeta(type):
     """A metaclass that modifies how a `QueryType` is created."""
 
-    def __new__(  # noqa: PLR0913
+    def __new__(
         cls,
         _name: str,
         _bases: tuple[type, ...],
@@ -62,7 +62,6 @@ class QueryTypeMeta(type):
         orderset: type[OrderSet] | Literal[True] | None = None,
         auto: bool = True,
         exclude: Iterable[str] = (),
-        max_complexity: int | None = Undefined,
         interfaces: Collection[GraphQLInterfaceType] = (),
         typename: str | None = None,
         register: bool = True,
@@ -118,15 +117,11 @@ class QueryTypeMeta(type):
         if register:
             QUERY_TYPE_REGISTRY[model] = instance
 
-        if max_complexity is Undefined:
-            max_complexity = undine_settings.OPTIMIZER_MAX_COMPLEXITY
-
         # Members should use `__dunder__` names to avoid name collisions with possible `undine.Field` names.
         instance.__model__ = model
         instance.__filterset__ = filterset
         instance.__orderset__ = orderset
-        instance.__max_complexity__ = max_complexity
-        instance.__field_map__ = dict(get_members(instance, Field))
+        instance.__field_map__ = get_members(instance, Field)
         instance.__typename__ = typename or _name
         instance.__interfaces__ = interfaces
         instance.__extensions__ = (extensions or {}) | {undine_settings.QUERY_TYPE_EXTENSIONS_KEY: instance}
@@ -135,24 +130,23 @@ class QueryTypeMeta(type):
 
 class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     """
-    A class representing a GraphQL Object Type for a Query based on a Django Model.
+    A class for creating a Query for a Django `Model`.
+    Represents a GraphQL `ObjectType` in the GraphQL schema.
 
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django model this `QueryType` represents. This input is required.
-    - `filterset`: Set the `FilterSet` class this QueryType uses, or `True` to create one with
+    - `filterset`: Set the `FilterSet` class this `QueryType` uses, or `True` to create one with
                    default parameters. Defaults to `None`.
-    - `orderset`: Set the `OrderSet` class this QueryType uses, or `True` to create one with
+    - `orderset`: Set the `OrderSet` class this `QueryType` uses, or `True` to create one with
                   default parameters. Defaults to `None`.
     - `auto`: Whether to add fields for all model fields automatically. Defaults to `True`.
     - `exclude`: List of model fields to exclude from the automatically added fields. No excludes by default.
-    - `max_complexity`: Maximum number of relations allowed in a query when using this QueryType as the Entrypoint.
-                        Use value of `OPTIMIZER_MAX_COMPLEXITY` setting by default.
-    - `interfaces`: List of interfaces to use for this QueryType. Defaults to an empty tuple.
+    - `interfaces`: List of interfaces to use for this `QueryType`. No interfaces by default.
     - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
     - `register`: Whether to register the `QueryType` for the given model so that other `QueryTypes` can use it in
-                 their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
-    - `extensions`: GraphQL extensions for the created ObjectType. Defaults to `None`.
+                  their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
+    - `extensions`: GraphQL extensions for the created ObjectType.
 
     >>> class MyQueryType(QueryType, model=...): ...
     """
@@ -166,36 +160,36 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __permissions_single__(cls, instance: Model, info: GQLInfo) -> None:
-        """Check permissions for accessing the given instance through this QueryType."""
+        """Check permissions for accessing a single instance through this `QueryType`."""
 
     @classmethod
     def __permissions_many__(cls, instances: list[Model], info: GQLInfo) -> None:
-        """Check permissions for accessing the given instances through this QueryType."""
+        """Check permissions for accessing multiple instances through this `QueryType`."""
 
     @classmethod
     def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
         """
         Hook for modifying the optimization data outside the GraphQL resolver context.
-        Can be used to optimize e.g. data for permissions checks.
+        Can be used to e.g. optimize data for permissions checks.
         """
 
     @classmethod
     def __get_queryset__(cls, info: GQLInfo) -> QuerySet:
-        """Base queryset for this QueryType."""
+        """Base queryset for this `QueryType`."""
         return cls.__model__._default_manager.get_queryset()
 
     @classmethod
     def __is_type_of__(cls, value: Model, info: GQLInfo) -> bool:
         """
         Function for resolving types of abstract GraphQL types like unions.
-        Indicates whether the given value belongs to this QueryType.
+        Indicates whether the given value belongs to this `QueryType`.
         """
         # Purposely not using `isinstance` here to prevent errors from model inheritance.
         return type(value) is cls.__model__
 
     @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
-        """Creates a `GraphQLObjectType` for this QueryType to use in the GraphQL schema."""
+        """Creates a GraphQL `ObjectType` for this `QueryType`."""
 
         # Defer creating fields until all QueryTypes have been registered.
         def fields() -> dict[str, GraphQLField]:
@@ -212,7 +206,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
     @classmethod
     def __middleware__(cls) -> list[type[QueryMiddleware]]:
-        """Middleware to use with queries using this QueryType."""
+        """Middleware to use with queries using this `QueryType`."""
         return [
             QueryPermissionCheckMiddleware,
         ]
@@ -220,8 +214,11 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
 
 class Field:
     """
-    A class representing a queryable field on a GraphQL Object Type.
-    Can be added to the class body of a `QueryType` class.
+    A class for defining a queryable field.
+    Represents a field on a GraphQL `ObjectType` for the `QueryType` this is added to.
+
+    >>> class MyQueryType(QueryType, model=...):
+    ...     name = Field()
     """
 
     def __init__(
@@ -238,21 +235,14 @@ class Field:
         """
         Create a new Field.
 
-        :param ref: Reference to build the Field from. Can be anything that `convert_to_field_ref` can convert,
-                    e.g., a string referencing a Model Field name, a Model Field, an expression, a function, etc.
-                    If not provided, use the name of the attribute this is assigned to
-                    in the `QueryType` class.
-        :param many: Whether the Field should contain a non-null list of the referenced type.
-                     If not provided, looks at the reference and tries to determine this from it.
-        :param nullable: Whether the referenced type can be null. If not provided, looks at the converted
-                         reference and tries to determine nullability from it.
-        :param description: Description for the Field. If not provided, looks at the converted reference
-                            and tries to find the description from it.
-        :param field_name: Name of the Model Field this Field is for. Use this if the Field's name in the
-                           `QueryType` class is different from the Model Field name. Not required if `ref` is
-                           a string referencing a Model Field name.
-        :param deprecation_reason: If the Field is deprecated, describes the reason for deprecation.
-        :param extensions: GraphQL extensions for the Field.
+        :param ref: Reference to build the `Field` from. Must be convertable by the `convert_to_field_ref` function.
+                    If not provided, use the name of the attribute this is assigned to in the `QueryType` class.
+        :param many: Whether the `Field` should return a non-null list of the referenced type.
+        :param nullable: Whether the referenced type can be null.
+        :param description: Description for the `Field`.
+        :param field_name: Name of the `Model` field this `Field` is for if different from its name on the `QueryType`.
+        :param deprecation_reason: If the `Field` is deprecated, describes the reason for deprecation.
+        :param extensions: GraphQL extensions for the `Field`.
         """
         self.ref = cache_signature_if_function(ref, depth=1)
         self.many = many
@@ -269,6 +259,8 @@ class Field:
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
     def __set_name__(self, owner: type[QueryType], name: str) -> None:
+        # Called as part of the descriptor protocol if this `Field` is assigned
+        # to a variable in the class body of a `QueryType`.
         self.query_type = owner
         self.name = name
 

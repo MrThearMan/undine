@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
 
-from undine.resolvers import FunctionResolver
+from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver, FilterQExpressionResolver
 from undine.typing import CombinableExpression, FilterRef, GraphQLFilterResolver, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -32,27 +32,27 @@ Keyword arguments:
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFilterResolver:
-    return FunctionResolver(ref)
+    return FilterFunctionResolver(ref)
 
 
 @convert_filter_ref_to_filter_resolver.register
-def _(ref: ModelField, **kwargs: Any) -> GraphQLFilterResolver:
+def _(_: ModelField, **kwargs: Any) -> GraphQLFilterResolver:
     caller: Filter = kwargs["caller"]
     lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
-    return FunctionResolver(lambda value: Q(**{lookup: value}))
+    return FilterModelFieldResolver(lookup=lookup)
 
 
 @convert_filter_ref_to_filter_resolver.register
 def _(ref: Q, **kwargs: Any) -> GraphQLFilterResolver:
-    return FunctionResolver(lambda value: ref if value else ~ref)
+    return FilterQExpressionResolver(q_expression=ref)
 
 
 @convert_filter_ref_to_filter_resolver.register
 def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFilterResolver:
-    # The expression or subquery should be aliased in the queryset to the given name.
+    # The expression or subquery should be aliased in the queryset.
     caller: Filter = kwargs["caller"]
     lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
-    return FunctionResolver(lambda value: Q(**{lookup: value}))
+    return FilterModelFieldResolver(lookup=lookup)
 
 
 def load_deferred_converters() -> None:
@@ -60,7 +60,7 @@ def load_deferred_converters() -> None:
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     @convert_filter_ref_to_filter_resolver.register  # Required for Django<5.1
-    def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLFilterResolver:
+    def _(_: GenericForeignKey, **kwargs: Any) -> GraphQLFilterResolver:
         caller: Filter = kwargs["caller"]
         lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
-        return FunctionResolver(lambda value: Q(**{lookup: value}))
+        return FilterModelFieldResolver(lookup=lookup)

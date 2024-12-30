@@ -63,9 +63,6 @@ def test_middleware__query_permission_check_middleware__query_type__single():
     middleware.after(value=None)
     assert pemissions_single_called is False
 
-    middleware.after(value=[task])
-    assert pemissions_single_called is False
-
     middleware.after(value=task)
     assert pemissions_single_called is True
 
@@ -95,16 +92,9 @@ def test_middleware__query_permission_check_middleware__query_type__many():
 
     task = TaskFactory.build(name="foo")
 
-    middleware = QueryPermissionCheckMiddleware(
-        root=task,
-        info=MockGQLInfo(),
-        query_type=TaskType,
-    )
+    middleware = QueryPermissionCheckMiddleware(root=task, info=MockGQLInfo(), query_type=TaskType, many=True)
 
     middleware.after(value=None)
-    assert pemissions_many_called is False
-
-    middleware.after(value=task)
     assert pemissions_many_called is False
 
     middleware.after(value=[task])

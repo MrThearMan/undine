@@ -365,7 +365,7 @@ FieldRef: TypeAlias = Union[
     "LazyLambdaQueryType",
     Expression,
     Subquery,
-    "GraphQLType",
+    GraphQLType,
     "TypeRef",
     "Connection",
     "Calculated",
