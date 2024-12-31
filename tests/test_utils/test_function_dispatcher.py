@@ -8,7 +8,7 @@ import pytest
 from graphql import Undefined
 
 from tests.helpers import exact
-from undine.errors.exceptions import FunctionDispatcherError
+from undine.errors.exceptions import FunctionDispatcherError, FunctionDispatcherImplementationNotFoundError
 from undine.typing import Lambda
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -20,8 +20,7 @@ def test_function_dispatcher__name() -> None:
 
 def test_function_dispatcher__no_registered_implementation() -> None:
     dispatcher = FunctionDispatcher()
-    msg = "'dispatcher' doesn't contain an implementation for '<class 'str'>' (test)."
-    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+    with pytest.raises(FunctionDispatcherImplementationNotFoundError):
         dispatcher("test")
 
 
@@ -35,6 +34,26 @@ def test_function_dispatcher__use_implementation() -> None:
     assert dispatcher("test") == "test"
 
 
+def test_function_dispatcher__use_implementation__none() -> None:
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: None) -> None:
+        return key
+
+    assert dispatcher(None) is None
+
+
+def test_function_dispatcher__use_implementation__type() -> None:
+    dispatcher = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: type) -> type:
+        return key
+
+    assert dispatcher(type) is type
+
+
 def test_function_dispatcher__wrong_implementation() -> None:
     dispatcher = FunctionDispatcher()
 
@@ -42,8 +61,7 @@ def test_function_dispatcher__wrong_implementation() -> None:
     def _(key: str) -> str:
         return key
 
-    msg = "'dispatcher' doesn't contain an implementation for '<class 'int'>' (1)."
-    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+    with pytest.raises(FunctionDispatcherImplementationNotFoundError):
         dispatcher(1)
 
 
@@ -56,6 +74,7 @@ def test_function_dispatcher__any_implementation() -> None:
 
     assert dispatcher("test") == "test"
     assert dispatcher(1) == 1
+    assert dispatcher(Undefined) is Undefined
 
 
 def test_function_dispatcher__different_implementations() -> None:
@@ -86,7 +105,24 @@ def test_function_dispatcher__use_parent_implementation() -> None:
     def _(key: Parent) -> int:
         return key.foo
 
-    assert dispatcher(Child) == 1
+    assert dispatcher(Child()) == 1
+
+
+def test_function_dispatcher__class_should_not_use_instance_implementation() -> None:
+    dispatcher = FunctionDispatcher()
+
+    class Parent:
+        foo = 1
+
+    class Child(Parent):
+        bar = 2
+
+    @dispatcher.register
+    def _(key: Parent) -> int:
+        return key.foo
+
+    with pytest.raises(FunctionDispatcherError):
+        assert dispatcher(Child)
 
 
 def test_function_dispatcher__nullable():
@@ -128,36 +164,14 @@ def test_function_dispatcher__wrapper():
     assert dispatcher(3) == 1
 
 
-def test_function_dispatcher__union_default():
-    dispatcher = FunctionDispatcher(union_default=type)
-
-    @dispatcher.register
-    def _(key: type[int]) -> type[int]:
-        return key
-
-    @dispatcher.register
-    def _(key: type[str]) -> type[str]:
-        return key
-
-    @dispatcher.register
-    def _(key: type) -> type:
-        return Any
-
-    assert dispatcher(int) == int
-    assert dispatcher(str) == str
-    assert dispatcher(str | int) == Any
-
-
-def test_function_dispatcher__undefined() -> None:
+def test_function_dispatcher__undefined():
     dispatcher = FunctionDispatcher()
 
     @dispatcher.register
-    def _(key: Any) -> Any:
+    def my_impl(key: Undefined) -> str:
         return key
 
-    msg = "FunctionDispatcher key must be a type or value."
-    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        dispatcher(Undefined)
+    assert dispatcher(Undefined) is Undefined
 
 
 def test_function_dispatcher__literal() -> None:
@@ -194,17 +208,6 @@ def test_function_dispatcher__must_register_a_function():
         dispatcher.register(None)  # type: ignore[arg-type]
 
 
-def test_function_dispatcher__cannot_register_implementation_for_undefined():
-    dispatcher = FunctionDispatcher()
-
-    msg = "Cannot register function 'my_impl' for 'dispatcher': First argument type cannot be 'Undefined'."
-    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-
-        @dispatcher.register
-        def my_impl(key: Undefined) -> str:
-            return key
-
-
 def test_function_dispatcher__no_arguments():
     dispatcher = FunctionDispatcher()
 
@@ -230,15 +233,15 @@ def test_function_dispatcher__first_argument_missing_type():
             return ""
 
 
-def test_function_dispatcher__cannot_register_union_generic():
+def test_function_dispatcher__register_union_generic():
     dispatcher = FunctionDispatcher()
 
-    msg = "'dispatcher' cannot register an implementation for type 'type[str | int]'."
-    with pytest.raises(FunctionDispatcherError, match=exact(msg)):
+    @dispatcher.register
+    def my_impl(key: type[str | int]) -> Any:
+        return key
 
-        @dispatcher.register
-        def my_impl(key: type[str | int]) -> str:
-            return ""
+    assert dispatcher(int) == int
+    assert dispatcher(str) == str
 
 
 def test_function_dispatcher__multiple_union_types():
@@ -300,7 +303,7 @@ def test_function_dispatcher__not_required():
     dispatcher = FunctionDispatcher()
 
     @dispatcher.register
-    def my_impl(ref: int) -> int:
+    def my_impl(ref: type[int]) -> type[int]:
         return ref
 
     assert dispatcher(NotRequired[int]) == int
@@ -311,8 +314,13 @@ def test_function_dispatcher__required():
     dispatcher = FunctionDispatcher()
 
     @dispatcher.register
-    def my_impl(ref: int) -> int:
+    def my_impl(ref: type[int]) -> type[int]:
         return ref
 
     assert dispatcher(Required[int]) == int
     assert dispatcher(Required[int], return_nullable=True) == (int, False)
+
+
+# TODO: Test protocol implementations
+# TODO: Test literal implementations
+# TODO: Test errors

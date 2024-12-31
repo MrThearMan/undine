@@ -1,220 +1,213 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Generator, Hashable
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, Literal, TypeAlias, Union, get_args, get_origin
+from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin, is_protocol
 
 from graphql import Undefined
 
-from undine.errors.exceptions import FunctionDispatcherError
-from undine.typing import DispatchProtocol, From, Lambda, To
+from undine.dataclasses import DispatchImplementations
+from undine.errors.exceptions import (
+    FunctionDispatcherImplementationNotFoundError,
+    FunctionDispatcherImproperLiteralError,
+    FunctionDispatcherNoArgumentAnnotationError,
+    FunctionDispatcherNoArgumentsError,
+    FunctionDispatcherNonRuntimeProtocolError,
+    FunctionDispatcherRegistrationError,
+    FunctionDispatcherUnionTypeError,
+    FunctionDispatcherUnknownArgumentError,
+)
+from undine.typing import DispatchCategory, DispatchProtocol, DispatchWrapper, From, Lambda, LiteralArg, To
 
-from .reflection import get_instance_name, get_signature, is_lambda, is_not_required_type, is_required_type
+from .reflection import (
+    can_be_literal_arg,
+    get_instance_name,
+    get_signature,
+    is_lambda,
+    is_not_required_type,
+    is_required_type,
+)
 
 __all__ = [
     "FunctionDispatcher",
 ]
 
 
-# TODO: Support protocols?
-DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
-
-
 class FunctionDispatcher(Generic[From, To]):
     """
     A class that holds different implementations for a function
-    based on the function's first argument. Different implementations
-    can be added with the `register` method.
-
-    When called, FunctionDispatcher will find the implementation that matches
-    the given first argument using this strategy:
-
-    1. Look for an implementation that matches the given argument's type.
-    2. If functions have been registered with for 'Literal' types, look for an implementation
-       that matches the given argument literally (e.g. literal strings).
-    3. Look for an implementation whose first argument is in the method resolution order
-       (mro) of the given argument's type.
-    4. Look for a default implementation (registered function's first argument's type is `Any`).
-
+    based on the function's first argument. Different implementations can be added with the `register` method.
+    Use implementations by calling the instance with a single positional argument and any number of keyword arguments.
     If no implementation is found, an error will be raised.
     """
 
-    def __init__(self, *, wrapper: DispatchWrapper[From, To] | None = None, union_default: Any = Undefined) -> None:
+    def __init__(self, *, wrapper: DispatchWrapper[From, To] | None = None) -> None:
         """
         Create a new FunctionDispatcher. Must be added to a variable before use!
 
-        :param union_default: The default implementation to use for unions that have
-                              more than one non-null type.
-        :param wrapper: A function that wraps all implemented functions for
-                        performing additional logic.
+        :param wrapper: A function that wraps all implemented functions for performing additional logic.
         """
         self.__name__ = get_instance_name()
+        self.implementations = DispatchImplementations[From, To]()
         self.wrapper = wrapper
-        self.union_default = union_default
         self.default = Undefined
-        self.implementations: dict[From, Callable[[From], To]] = {}
-        self.contains_literals = False
 
     def __class_getitem__(cls, key: tuple[From, To]) -> FunctionDispatcher[From, To]:
         """Adds typing information when used like this: `foo = FunctionDispatcher[From, To]()`."""
         return cls  # type: ignore[return-value]
 
-    def __call__(self, key: From, **kwargs: Any) -> To:
+    def __call__(self, original_key: From, /, *, return_nullable: bool = False, **kwargs: Any) -> To:
         """Find the implementation for the given key and call it with the given keyword arguments."""
-        return_nullable = kwargs.pop("return_nullable", False)
-        if key is Undefined:
-            msg = "FunctionDispatcher key must be a type or value."
-            raise FunctionDispatcherError(msg)
+        key, nullable = self._split_nullability(original_key)
+        implementation = self[key]
+        result = implementation(key, **kwargs)
 
-        new_key, nullable = self._handle_nullable(key)
-        type_ = self._get_key(new_key)
-        value = self._get_implementation(key, type_)
-        result = value(new_key, **kwargs)
         if return_nullable:
             return result, nullable
+
         return result
 
-    def register(self, func: Callable[[From], To]) -> Callable[[From], To]:
-        """
-        Register the given function as an implementation for its
-        first argument's type in the FunctionDispatcher.
+    def __getitem__(self, original_key: From) -> DispatchProtocol:  # noqa: C901, PLR0912
+        """Find the implementation for the given key."""
+        key = self._split_nullability(original_key)[0]
+        key = get_origin(key) or key
 
-        If the first argument's type is 'Any', the function will be
-        registered as the default implementation.
+        if is_lambda(key):
+            impl = self.implementations.types.get(Lambda)
+            if impl is not None:
+                return impl
 
-        If the first argument's type is a Union, the function will be
-        registered as the implementation for all the types in the Union.
-        """
-        if not isinstance(func, FunctionType):
-            msg = f"Can only register functions with '{self.__name__}'. Got {func}."
-            raise FunctionDispatcherError(msg)
+        elif callable(key):
+            for proto, impl in self.implementations.protocols.items():
+                if isinstance(key, proto):
+                    return impl
 
-        type_ = self._first_param_type(func, depth=1)
-        if type_ is Any:
-            self.default = self.wrapper(func) if self.wrapper is not None else func
-            return func
+        elif can_be_literal_arg(key):
+            impl = self.implementations.literals.get(key)
+            if impl is not None:
+                return impl
 
-        if type_ is Lambda:
-            self.implementations[Lambda] = self.wrapper(func) if self.wrapper is not None else func
-            return func
+        if isinstance(key, type):
+            section = self.implementations.types
+            cls: type = get_origin(key) or key
 
-        origin = get_origin(type_)
+        else:
+            section = self.implementations.instances
+            cls = type(key)
 
-        if origin is Literal:
-            self.contains_literals = True
-            for name in get_args(type_):
-                self.implementations[name] = self.wrapper(func) if self.wrapper is not None else func
-            return func
+            if isinstance(key, Hashable):
+                impl = section.get(key)
+                if impl is not None:
+                    return impl
 
-        keys: list[type] = (
-            [origin or type_]
-            if origin not in {type, UnionType, Union}
-            else [get_origin(arg) or arg for arg in get_args(type_)]
-        )
-
-        for key in keys:
-            if key is Undefined:
-                msg = (
-                    f"Cannot register function '{func.__name__}' for '{self.__name__}': "
-                    f"First argument type cannot be 'Undefined'."
-                )
-                raise FunctionDispatcherError(msg)
-
-            key_ = self._get_key(key)
-            if key_ is UnionType:
-                msg = f"'{self.__name__}' cannot register an implementation for type '{type_}'."
-                raise FunctionDispatcherError(msg)
-
-            self.implementations[key_] = self.wrapper(func) if self.wrapper is not None else func
-
-        return func
-
-    def _get_implementation(self, key: From, type_: type) -> Callable[[From], To]:
-        value = self.implementations.get(type_, Undefined)
-        if value is not Undefined:
-            return value
-
-        if self.contains_literals:
-            value = self.implementations.get(key, Undefined)
-            if value is not Undefined:
-                return value
-
-        for parent_type in type_.__mro__[1:]:
-            value = self.implementations.get(parent_type, Undefined)
-            if value is not Undefined:
-                return value
+        for mro_cls in cls.__mro__:
+            impl = section.get(mro_cls)
+            if impl is not None:
+                return impl
 
         if self.default is not Undefined:
             return self.default
 
-        msg = f"'{self.__name__}' doesn't contain an implementation for '{type_}' ({key})."
-        raise FunctionDispatcherError(msg)
+        raise FunctionDispatcherImplementationNotFoundError(name=self.__name__, key=key, cls=cls)
 
-    def _get_key(self, key: Any) -> type:
-        if is_lambda(key):
-            return Lambda
-        origin = get_origin(key) or key
-        return type(key) if not isinstance(origin, type) else origin
+    def register(self, func: Callable[[From], To]) -> Callable[[From], To]:
+        """Register the given function as an implementation for its first argument's type."""
+        if not isinstance(func, FunctionType):
+            raise FunctionDispatcherRegistrationError(name=self.__name__, value=func)
 
-    def _handle_nullable(self, key: From) -> tuple[Any, bool]:
-        """For types like Union[str, None], return 'str, True'."""
-        from undine.parsers import parse_return_annotation  # noqa: PLC0415
+        annotation = self._first_param_type(func, depth=1)
 
-        if is_lambda(key):
-            return key, False
+        if annotation is Any:
+            self.default = self.wrapper(func) if self.wrapper else func
+            return func
 
+        if annotation in {Lambda, type}:
+            self.implementations.types[annotation] = self.wrapper(func) if self.wrapper else func
+            return func
+
+        if is_protocol(annotation):
+            if not annotation._is_runtime_protocol:  # noqa: SLF001
+                raise FunctionDispatcherNonRuntimeProtocolError(annotation=annotation)
+
+            self.implementations.protocols[annotation] = self.wrapper(func) if self.wrapper else func
+            return func
+
+        origin = get_origin(annotation)
+
+        # Example: "str" or "int"
+        if not origin:
+            self.implementations.instances[annotation] = self.wrapper(func) if self.wrapper else func
+            return func
+
+        for section, arg in self._iter_args(annotation):
+            implementations = getattr(self.implementations, section)
+            implementations[arg] = self.wrapper(func) if self.wrapper else func
+
+        return func
+
+    def _split_nullability(self, key: From) -> tuple[From, bool]:
         # GraphQL doesn't differentiate between required and non-null...
         if is_required_type(key):
-            result, _nullable = self._handle_nullable(key.__args__[0])
-            return result, False
+            return key.__args__[0], False
 
         if is_not_required_type(key):
-            result, _nullable = self._handle_nullable(key.__args__[0])
-            return result, True
+            return key.__args__[0], True
 
-        annotation = key
         origin = get_origin(key)
-
-        if isinstance(key, FunctionType):
-            annotation = parse_return_annotation(key)
-            origin = get_origin(annotation)
-
-        if origin is not UnionType:
+        if origin not in {UnionType, Union}:
             return key, False
 
-        nullable: bool = False
-        args = get_args(annotation)
-        if NoneType in args:
+        args = get_args(key)
+
+        nullable = NoneType in args
+        if nullable:
             args = tuple(arg for arg in args if arg is not NoneType)
-            nullable = True
 
-        if len(args) == 1:
-            return key if isinstance(key, FunctionType) else args[0], nullable
+        if len(args) > 1:
+            raise FunctionDispatcherUnionTypeError(args=args)
 
-        # Allow using a default type for union with multiple non-null types.
-        if self.union_default is not Undefined:
-            return self.union_default, nullable
+        return args[0], nullable
 
-        msg = f"Union type must have a single non-null type argument, got {args}."
-        raise FunctionDispatcherError(msg)
-
-    def _first_param_type(self, func: FunctionType, *, depth: int = 0) -> type:
+    def _first_param_type(self, func: FunctionType, *, depth: int = 0) -> Any:
         """Get the type of the first parameter of the given function."""
         sig = get_signature(func, depth=depth + 1)
 
         try:
-            type_ = next(param.annotation for param in sig.parameters.values())
+            annotation = next(param.annotation for param in sig.parameters.values())
         except StopIteration as error:
-            msg = (
-                f"Function '{func.__name__}' must have at least one argument "
-                f"so that it can be registered for '{self.__name__}'."
-            )
-            raise FunctionDispatcherError(msg) from error
+            raise FunctionDispatcherNoArgumentsError(func_name=func.__name__, name=self.__name__) from error
 
-        if type_ is inspect.Parameter.empty:
-            msg = (
-                f"Function '{func.__name__}' must have a type hint for its first argument "
-                f"so that it can be registered for '{self.__name__}'."
-            )
-            raise FunctionDispatcherError(msg)
-        return type_
+        if annotation is inspect.Parameter.empty:
+            raise FunctionDispatcherNoArgumentAnnotationError(func_name=func.__name__, name=self.__name__)
+
+        return annotation
+
+    def _iter_args(self, annotation: Any) -> Generator[tuple[DispatchCategory, Any], None, None]:
+        origin = get_origin(annotation)
+
+        for arg in get_args(annotation):
+            arg_origin = get_origin(arg)
+
+            # Example: "str | int" or "Union[str, int]"
+            if origin in {UnionType, Union}:
+                if arg_origin is not None:
+                    yield from self._iter_args(arg)
+                else:
+                    yield "instances", arg
+
+            # Example: "type[str]" or "type[str | int]"
+            elif origin is type:
+                if arg_origin is not None:
+                    yield from (("types", ann) for _, ann in self._iter_args(arg))
+                else:
+                    yield "types", arg
+
+            # Example: Literal["foo", "bar"]
+            elif origin is Literal:
+                if not isinstance(arg, LiteralArg):
+                    raise FunctionDispatcherImproperLiteralError(arg=arg)
+                yield "literals", arg
+
+            else:
+                raise FunctionDispatcherUnknownArgumentError(annotation=annotation)

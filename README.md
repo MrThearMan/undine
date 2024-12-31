@@ -24,7 +24,6 @@ pip install undine
 ---
 
 # Before initial release:
-- [ ] Refactor function dispatcher (types vs. instances, protocols)
 - [ ] Add documentation
 
 # Later:

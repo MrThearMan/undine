@@ -13,13 +13,13 @@ def test_dataclass__calculated__typed_dict():
 
     calculated = Calculated(Arguments, return_annotation=int | None)
 
-    assert calculated.parameters == [
+    assert calculated.parameters == (
         Parameter(
             name="value",
             annotation=int,
             docstring="Description",
         ),
-    ]
+    )
     assert calculated.return_annotation == int | None
 
 
@@ -30,14 +30,14 @@ def test_dataclass__calculated__named_tuple():
 
     calculated = Calculated(Arguments, return_annotation=str)
 
-    assert calculated.parameters == [
+    assert calculated.parameters == (
         Parameter(
             name="value",
             annotation=int | None,
             default_value=1,
             docstring="Description",
         ),
-    ]
+    )
     assert calculated.return_annotation == str
 
 
@@ -49,12 +49,12 @@ def test_dataclass__calculated__dataclass():
 
     calculated = Calculated(Arguments, return_annotation=str)
 
-    assert calculated.parameters == [
+    assert calculated.parameters == (
         Parameter(
             name="value",
             annotation=int | None,
             default_value=1,
             docstring="Description",
         ),
-    ]
+    )
     assert calculated.return_annotation == str

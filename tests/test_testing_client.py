@@ -253,7 +253,7 @@ def test_testing_client__error__no_error_message__index(undine_settings):
 
     response = client(query)
 
-    msg = f"Errors message not found from index \nContent: {response.json}"
+    msg = f"Errors message not found from index 1\nContent: {response.json}"
     with pytest.raises(Failed, match=exact(msg)):
         assert response.error_message(1)
 

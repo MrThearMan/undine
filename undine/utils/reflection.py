@@ -11,7 +11,7 @@ from graphql import GraphQLResolveInfo
 from undine.dataclasses import RootAndInfoParams
 from undine.errors.exceptions import FunctionSignatureParsingError
 from undine.settings import undine_settings
-from undine.typing import GQLInfo, Lambda, ParametrizedType
+from undine.typing import GQLInfo, Lambda, LiteralArg, ParametrizedType
 
 if TYPE_CHECKING:
     from collections.abc import Hashable
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 __all__ = [
     "FunctionEqualityWrapper",
     "cache_signature_if_function",
+    "can_be_literal_arg",
     "get_instance_name",
     "get_members",
     "get_root_and_info_params",
@@ -180,6 +181,10 @@ def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType
     Handles partial functions and functions wrapped with `functools.wraps`.
     """
     return get_wrapped_func(func_1) == get_wrapped_func(func_2)
+
+
+def can_be_literal_arg(key: Any) -> TypeGuard[LiteralArg]:
+    return isinstance(key, LiteralArg)
 
 
 def get_instance_name() -> str:

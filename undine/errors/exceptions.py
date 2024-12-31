@@ -13,23 +13,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLErrorExtensions, Node, Source
 
 __all__ = [
-    "FunctionDispatcherError",
-    "FunctionSignatureParsingError",
-    "GraphQLConversionError",
-    "GraphQLConversionError",
     "GraphQLStatusError",
-    "GraphQLStatusError",
-    "InvalidParserError",
-    "MismatchingModelError",
-    "MissingFunctionAnnotationsError",
-    "MissingFunctionReturnTypeError",
-    "MissingModelError",
-    "ModelFieldDoesNotExistError",
-    "ModelFieldNotARelationError",
-    "NoFunctionParametersError",
-    "OptimizerError",
-    "RegistryDuplicateError",
-    "RegistryMissingTypeError",
     "UndineError",
 ]
 
@@ -159,6 +143,78 @@ class PaginationArgumentValidationError(UndineError):
 
 class FunctionDispatcherError(UndineError):
     """Error raised for `FunctionDispatcher` errors."""
+
+
+class FunctionDispatcherImplementationNotFoundError(FunctionDispatcherError):  # TODO: Test
+    """Error raised when `FunctionDispatcher` cannot find an implementation for a given key."""
+
+    msg = "'{name}' doesn't contain an implementation for '{key!r}' (type: {cls:dotpath})."
+
+
+class FunctionDispatcherImproperLiteralError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a Literal that has an invalid value.
+    """
+
+    msg = "Literal argument must be a string, integer, bytes, boolean, enum, or None, got {arg!r}."
+
+
+class FunctionDispatcherNoArgumentAnnotationError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a function that doesn't have a type hint for its first argument.
+    """
+
+    msg = (
+        "Function '{func_name}' must have a type hint for its first argument "
+        "so that it can be registered for '{name}'."
+    )
+
+
+class FunctionDispatcherNoArgumentsError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a function that doesn't have any arguments.
+    """
+
+    msg = "Function '{func_name}' must have at least one argument so that it can be registered for '{name}'."
+
+
+class FunctionDispatcherNonRuntimeProtocolError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a protocol that hasn't been decorated with `@runtime_checkable`.
+    """
+
+    msg = "Protocol '{name}' is not a runtime checkable protocol."
+
+
+class FunctionDispatcherRegistrationError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    that is something other than a function.
+    """
+
+    msg = "Can only register functions with '{name}'. Got {value!r}."
+
+
+class FunctionDispatcherUnionTypeError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a Union type that has more than one non-null type.
+    """
+
+    msg = "Union type must have a single non-null type argument, got {args}."
+
+
+class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):  # TODO: Test
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with an unknown argument type.
+    """
+
+    msg = "Unknown argument: {annotation!r}"
 
 
 class RegistryDuplicateError(UndineError):

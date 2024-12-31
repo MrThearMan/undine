@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, MutableMapping
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -61,7 +62,9 @@ __all__ = [
     "CalculationResolver",
     "CombinableExpression",
     "ConnectionDict",
+    "DispatchCategory",
     "DispatchProtocol",
+    "DispatchWrapper",
     "DjangoRequestProtocol",
     "DocstringParserProtocol",
     "EntrypointRef",
@@ -76,6 +79,7 @@ __all__ = [
     "InputRef",
     "JsonObject",
     "Lambda",
+    "LiteralArg",
     "ModelField",
     "ModelManager",
     "MutationKind",
@@ -100,6 +104,7 @@ TypedDictType: TypeAlias = _TypedDictMeta
 ParametrizedType: TypeAlias = _GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list["JsonObject"]
 PrefetchHackCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
+LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
 
 # TypeVars
 
@@ -113,6 +118,7 @@ TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
 
 MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
+DispatchCategory: TypeAlias = Literal["types", "instances", "literals", "protocols"]
 
 # NewTypes
 
@@ -159,6 +165,9 @@ class ExpressionLike(Protocol):
 
 class DispatchProtocol(Protocol[From, To]):
     def __call__(self, key: From, **kwargs: Any) -> To: ...
+
+
+DispatchWrapper: TypeAlias = Callable[[DispatchProtocol[From, To]], DispatchProtocol[From, To]]
 
 
 class DjangoRequestProtocol(Protocol):

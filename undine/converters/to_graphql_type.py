@@ -87,7 +87,7 @@ __all__ = [
     "convert_to_graphql_type",
 ]
 
-convert_to_graphql_type = FunctionDispatcher[Any, GraphQLIOType](union_default=type)
+convert_to_graphql_type = FunctionDispatcher[Any, GraphQLIOType]()
 """
 Convert a given value to a GraphQL input type or output type.
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Callable, get_type_hints
+from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, get_type_hints
 
 from graphql import Undefined
 
+from undine.typing import From, To
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.parsers.parse_model_relation_info import RelationType
-    from undine.typing import ExpressionLike, FilterRef, GenericField, RelatedField
+    from undine.typing import DispatchProtocol, ExpressionLike, FilterRef, GenericField, LiteralArg, RelatedField
 
 __all__ = [
     "Calculated",
@@ -156,6 +157,14 @@ class RelatedFieldInfo:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
+class DispatchImplementations(Generic[From, To]):
+    types: dict[type, DispatchProtocol[From, To]] = dataclasses.field(default_factory=dict)
+    instances: dict[object, DispatchProtocol[From, To]] = dataclasses.field(default_factory=dict)
+    literals: dict[LiteralArg, DispatchProtocol[From, To]] = dataclasses.field(default_factory=dict)
+    protocols: dict[type[Protocol], DispatchProtocol[From, To]] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class Calculated:
     """A QueryType Field wrapper for fields that need to be calculated using user input."""
 
@@ -165,7 +174,7 @@ class Calculated:
     Parsed to parameters.
     """
 
-    parameters: list[Parameter] = dataclasses.field(init=False, default_factory=list)
+    parameters: tuple[Parameter] = dataclasses.field(init=False, default_factory=tuple)
     """
     Parameters parsed from the reference.
     Used as arguments for the field and can be used in the calculation.
@@ -196,12 +205,16 @@ class Calculated:
                 elif field.default_factory is not dataclasses.MISSING:
                     defaults[field.name] = field.default_factory()
 
-        self.parameters.extend(
-            Parameter(
-                name=name,
-                annotation=annotation,
-                default_value=defaults.get(name, Undefined),
-                docstring=docstrings.get(name),
-            )
-            for name, annotation in type_hints.items()
+        object.__setattr__(
+            self,
+            "parameters",
+            tuple(
+                Parameter(
+                    name=name,
+                    annotation=annotation,
+                    default_value=defaults.get(name, Undefined),
+                    docstring=docstrings.get(name),
+                )
+                for name, annotation in type_hints.items()
+            ),
         )

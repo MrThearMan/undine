@@ -377,7 +377,7 @@ def test_resolvers__function_resolver__root():
     def func(root: Any):
         return root
 
-    resolver = FunctionResolver(func=func, root_param="root")
+    resolver = FunctionResolver(func=func)
     result = resolver(root="foo", info=MockGQLInfo())
     assert result == "foo"
 
@@ -386,10 +386,10 @@ def test_resolvers__function_resolver__info():
     def func(info: GQLInfo):
         return info
 
-    info = MockGQLInfo()
-    resolver = FunctionResolver(func=func, info_param="info")
-    result = resolver(root=None, info=info)
-    assert result == info
+    gql_info = MockGQLInfo()
+    resolver = FunctionResolver(func=func)
+    result = resolver(root=None, info=gql_info)
+    assert result == gql_info
 
 
 def test_resolvers__function_resolver__adapt():
