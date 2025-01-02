@@ -3,7 +3,6 @@ from typing import Any, NamedTuple
 import pytest
 from django.db.models import F, OrderBy, OuterRef, Q, Subquery
 from django.db.models.expressions import ResolvedOuterRef
-from django.db.models.lookups import IntegerFieldExact
 
 from example_project.app.models import Task
 from tests.helpers import parametrize_helper
@@ -46,6 +45,6 @@ def test_converters__extend_expression__subquery():
     field_name = "report"
     sq = extend_expression(input_value, field_name=field_name)
 
-    condition: IntegerFieldExact = sq.query.where.children[0]
+    condition = sq.query.where.children[0]
     assert isinstance(condition.rhs, ResolvedOuterRef)
     assert condition.rhs.name == "report__task"
