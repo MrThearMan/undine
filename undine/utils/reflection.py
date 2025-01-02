@@ -4,7 +4,7 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType, LambdaType
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeGuard, TypeVar
 
 from graphql import GraphQLResolveInfo
 
@@ -30,11 +30,21 @@ __all__ = [
     "has_callable_attribute",
     "is_lambda",
     "is_not_required_type",
+    "is_protocol",
     "is_required_type",
     "is_same_func",
     "is_subclass",
     "swappable_by_subclassing",
 ]
+
+
+try:  # pragma: no cover
+    from typing import is_protocol
+except ImportError:  # pragma: no cover
+
+    def is_protocol(tp: type, /) -> bool:
+        """Check if the given type is a Protocol."""
+        return isinstance(tp, type) and getattr(tp, "_is_protocol", False) and tp != Protocol
 
 
 T = TypeVar("T")

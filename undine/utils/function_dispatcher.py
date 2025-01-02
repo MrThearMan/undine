@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Generator, Hashable
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin, is_protocol
+from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
 
 from graphql import Undefined
 
@@ -26,6 +26,7 @@ from .reflection import (
     get_signature,
     is_lambda,
     is_not_required_type,
+    is_protocol,
     is_required_type,
 )
 
