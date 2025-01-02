@@ -159,7 +159,7 @@ example_schema = GraphQLSchema(
     query=GraphQLObjectType(
         "Query",
         fields={
-            "hello": GraphQLField(
+            "testing": GraphQLField(
                 GraphQLString,
                 resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
             ),

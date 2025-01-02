@@ -16,15 +16,19 @@ pip install undine
 Undine is a GraphQL library for Django. It's designed to be easy to use and extend,
 while providing out-of-the-box solutions for many common issues GraphQL developers face.
 
-## Features
+## Feature highlights
 
-- Automatic type generation from Django models
-- Automatic filtering and ordering generation
+- Automatic generation of GraphQL types from Django models
 - Automatic query optimization
-- Mutations (both single and bulk!)
-- Permission framework
-- Built-in support for Relay
-- File uploads
+- Logically composable filtering
+- Ordering based on enums
+- Single and bulk mutations, including relations
+- Calculated query fields based on user input
+- Hidden and input-only mutation inputs
+- Query and Mutation middleware for customizing execution
+- Hooks for checking permissions
+- Support for Relay Connections and the Relay Node interface
+- File uploads based on GraphQL multipart request specification
 
 [coverage-badge]: https://coveralls.io/repos/github/MrThearMan/undine/badge.svg?branch=main
 [status-badge]: https://img.shields.io/github/actions/workflow/status/MrThearMan/undine/test.yml?branch=main

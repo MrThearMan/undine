@@ -8,12 +8,24 @@ import pytest
 from django.http import HttpResponse
 from django.http.request import MediaType
 from django.middleware.csrf import get_token
+from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 from tests.helpers import MockRequest
 from undine import GraphQLView
 from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.settings import example_schema
 from undine.typing import HttpMethod
+
+example_schema = GraphQLSchema(
+    query=GraphQLObjectType(
+        "Query",
+        fields={
+            "hello": GraphQLField(
+                GraphQLString,
+                resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
+            ),
+        },
+    ),
+)
 
 
 @pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"])

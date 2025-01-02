@@ -38,7 +38,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFilterResolver:
 @convert_filter_ref_to_filter_resolver.register
 def _(_: ModelField, **kwargs: Any) -> GraphQLFilterResolver:
     caller: Filter = kwargs["caller"]
-    lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
+    lookup = f"{caller.model_field_name}{LOOKUP_SEP}{caller.lookup}"
     return FilterModelFieldResolver(lookup=lookup)
 
 
@@ -51,7 +51,7 @@ def _(ref: Q, **kwargs: Any) -> GraphQLFilterResolver:
 def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFilterResolver:
     # The expression or subquery should be aliased in the queryset.
     caller: Filter = kwargs["caller"]
-    lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
+    lookup = f"{caller.model_field_name}{LOOKUP_SEP}{caller.lookup}"
     return FilterModelFieldResolver(lookup=lookup)
 
 
@@ -62,5 +62,5 @@ def load_deferred_converters() -> None:
     @convert_filter_ref_to_filter_resolver.register  # Required for Django<5.1
     def _(_: GenericForeignKey, **kwargs: Any) -> GraphQLFilterResolver:
         caller: Filter = kwargs["caller"]
-        lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
+        lookup = f"{caller.model_field_name}{LOOKUP_SEP}{caller.lookup}"
         return FilterModelFieldResolver(lookup=lookup)

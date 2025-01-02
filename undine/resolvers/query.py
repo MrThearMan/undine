@@ -83,7 +83,7 @@ class ModelFieldResolver:
         if self.field.permissions_func is not None:
             self.field.permissions_func(self.field, info, root)
 
-        return getattr(root, self.field.field_name, None)
+        return getattr(root, self.field.model_field_name, None)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -96,7 +96,7 @@ class ModelSingleRelatedFieldResolver:
         if self.field.permissions_func is not None:
             self.field.permissions_func(self.field, info, root)
 
-        return getattr(root, self.field.field_name, None)
+        return getattr(root, self.field.model_field_name, None)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -109,7 +109,7 @@ class ModelManyRelatedFieldResolver:
         if self.field.permissions_func is not None:
             self.field.permissions_func(self.field, info, root)
 
-        manager: RelatedManager = getattr(root, self.field.field_name)
+        manager: RelatedManager = getattr(root, self.field.model_field_name)
         return manager.get_queryset()
 
 
@@ -168,7 +168,7 @@ class NestedQueryTypeSingleResolver(Generic[TModel]):
 
         @middlewares.wrap
         def getter() -> TModel | None:
-            return getattr(root, self.field.field_name, None)
+            return getattr(root, self.field.model_field_name, None)
 
         return getter()
 
@@ -185,7 +185,7 @@ class NestedQueryTypeManyResolver(Generic[TModel]):
 
         @middlewares.wrap
         def getter() -> list[TModel]:
-            field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
+            field_name = getattr(info.field_nodes[0].alias, "value", self.field.model_field_name)
             result: RelatedManager | list[Model] = getattr(root, field_name)
             if isinstance(result, Manager):
                 return list(result.get_queryset())
@@ -307,7 +307,7 @@ class NestedConnectionResolver(Generic[TModel]):
 
         @middlewares.wrap
         def getter() -> list[TModel]:
-            field_name = getattr(info.field_nodes[0].alias, "value", self.field.field_name)
+            field_name = getattr(info.field_nodes[0].alias, "value", self.field.model_field_name)
             result: RelatedManager[TModel] | list[TModel] = getattr(root, field_name)
 
             if isinstance(result, Manager):

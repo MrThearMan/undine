@@ -197,7 +197,7 @@ def load_deferred_converters() -> None:
     @convert_to_field_ref.register
     def _(_: None, **kwargs: Any) -> FieldRef:
         caller: UndineField = kwargs["caller"]
-        field = get_model_field(model=caller.query_type.__model__, lookup=caller.field_name)
+        field = get_model_field(model=caller.query_type.__model__, lookup=caller.model_field_name)
         return convert_to_field_ref(field, **kwargs)
 
     @convert_to_field_ref.register

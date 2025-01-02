@@ -6,7 +6,7 @@ from django.urls import path
 from undine import GraphQLView
 
 urlpatterns = [
-    path("graphql/", GraphQLView.as_view()),
+    path("graphql/", GraphQLView.as_view(), name="graphql"),
     path("admin/", admin.site.urls),
 ]
 

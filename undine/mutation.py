@@ -218,7 +218,7 @@ class Input:
         input_only: bool = Undefined,
         hidden: bool = Undefined,
         description: str | None = Undefined,
-        field_name: str | None = None,
+        model_field_name: str | None = None,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
@@ -236,8 +236,8 @@ class Input:
         :param hidden: If `True`, the `Input` is not included in the schema. In most cases, should also
                        add a `default_value` for the input.
         :param description: Description for the input.
-        :param field_name: Name of the `Model` field this `Input` is for if different from
-                           its name on the `MutationType`.
+        :param model_field_name: Name of the `Model` field this `Input` is for if different from
+                                 its name on the `MutationType`.
         :param deprecation_reason: If the `Input` is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the `Input`.
         """
@@ -248,7 +248,7 @@ class Input:
         self.hidden = hidden
         self.default_value = default_value
         self.description = description
-        self.field_name = field_name
+        self.model_field_name = model_field_name
         self.deprecation_reason = deprecation_reason
         self.validator_func: ValidatorFunc | None = None
         self.permissions_func: FieldPermFunc | None = None
@@ -263,13 +263,13 @@ class Input:
 
         self.ref = convert_to_input_ref(self.ref, caller=self)
 
-        if self.field_name is None:
-            self.field_name = self.name
+        if self.model_field_name is None:
+            self.model_field_name = self.name
             if isinstance(self.ref, str) and self.ref != "self":
-                self.field_name = self.ref
+                self.model_field_name = self.ref
 
         if self.many is Undefined:
-            self.many = is_many(self.ref, model=self.mutation_type.__model__, name=self.field_name)
+            self.many = is_many(self.ref, model=self.mutation_type.__model__, name=self.model_field_name)
         if self.input_only is Undefined:
             self.input_only = is_input_only(self.ref)
         if self.hidden is Undefined:

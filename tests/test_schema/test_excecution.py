@@ -115,7 +115,17 @@ def test_create_schema__nullable():
 
 
 def test_execute_graphql(undine_settings):
-    undine_settings.SCHEMA = example_schema
+    undine_settings.SCHEMA = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={
+                "hello": GraphQLField(
+                    GraphQLString,
+                    resolve=lambda obj, info: "Hello, World!",  # noqa: ARG005
+                ),
+            },
+        ),
+    )
 
     params = GraphQLParams(query="query { hello }")
     result = execute_graphql(params=params, method="POST", context_value=None)

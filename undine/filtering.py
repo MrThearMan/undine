@@ -195,7 +195,7 @@ class Filter:
         distinct: bool = False,
         required: bool = False,
         description: str | None = Undefined,
-        field_name: str | None = None,
+        model_field_name: str | None = None,
         required_aliases: dict[str, ExpressionLike] | None = None,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -213,7 +213,8 @@ class Filter:
         :param distinct: Does the `Filter` require `queryset.distinct()` to be used?
         :param required: Is the `Filter` is a required input?
         :param description: Description of the `Filter`.
-        :param field_name: Name of the `Model` field this `Filter` is for if different from its name on the `FilterSet`.
+        :param model_field_name: Name of the `Model` field this `Filter` is for if different from
+                                 its name on the `FilterSet`.
         :param required_aliases: `QuerySet` aliases required for this `Filter`.
         :param deprecation_reason: If the `Filter` is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the `Filter`.
@@ -225,7 +226,7 @@ class Filter:
         self.distinct = distinct
         self.required = required
         self.description = description
-        self.field_name = field_name
+        self.model_field_name = model_field_name
         self.required_aliases = required_aliases or {}
         self.deprecation_reason = deprecation_reason
         self.extensions = extensions or {}
@@ -237,8 +238,8 @@ class Filter:
         self.filterset = owner
         self.name = name
 
-        if self.field_name is None:
-            self.field_name = self.ref if isinstance(self.ref, str) else self.name
+        if self.model_field_name is None:
+            self.model_field_name = self.ref if isinstance(self.ref, str) else self.name
 
         self.ref = convert_to_filter_ref(self.ref, caller=self)
 

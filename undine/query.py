@@ -228,7 +228,7 @@ class Field:
         many: bool = Undefined,
         nullable: bool = Undefined,
         description: str | None = Undefined,
-        field_name: str | None = None,
+        model_field_name: str | None = None,
         deprecation_reason: str | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
@@ -240,7 +240,8 @@ class Field:
         :param many: Whether the `Field` should return a non-null list of the referenced type.
         :param nullable: Whether the referenced type can be null.
         :param description: Description for the `Field`.
-        :param field_name: Name of the `Model` field this `Field` is for if different from its name on the `QueryType`.
+        :param model_field_name: Name of the `Model` field this `Field` is for if different from
+                                 its name on the `QueryType`.
         :param deprecation_reason: If the `Field` is deprecated, describes the reason for deprecation.
         :param extensions: GraphQL extensions for the `Field`.
         """
@@ -248,7 +249,7 @@ class Field:
         self.many = many
         self.nullable = nullable
         self.description = description
-        self.field_name = field_name
+        self.model_field_name = model_field_name
         self.deprecation_reason = deprecation_reason
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
@@ -264,17 +265,17 @@ class Field:
         self.query_type = owner
         self.name = name
 
-        if self.field_name is None:
-            self.field_name = self.name
+        if self.model_field_name is None:
+            self.model_field_name = self.name
             if isinstance(self.ref, str) and self.ref != "self":
-                self.field_name = self.ref
+                self.model_field_name = self.ref
             elif isinstance(self.ref, F):
-                self.field_name = self.ref.name
+                self.model_field_name = self.ref.name
 
         self.ref = convert_to_field_ref(self.ref, caller=self)
 
         if self.many is Undefined:
-            self.many = is_many(self.ref, model=self.query_type.__model__, name=self.field_name)
+            self.many = is_many(self.ref, model=self.query_type.__model__, name=self.model_field_name)
         if self.nullable is Undefined:
             self.nullable = is_field_nullable(self.ref, caller=self)
         if self.description is Undefined:

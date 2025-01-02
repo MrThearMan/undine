@@ -34,6 +34,7 @@ define helptext
   migrate                    Run pre-commit hooks on all files.
   migrations                 Run pre-commit hooks on all files.
   mypy                       Run mypy on all files.
+  styles                     Generate pygments styles.
   test <name>                Run all tests maching the given <name>
   tests                      Run all tests with coverage.
   tox                        Run all tests with tox.
@@ -50,7 +51,7 @@ dev:
 	@poetry run python manage.py runserver localhost:8000
 
 docs:
-	@poetry run mkdocs serve -a localhost:$(call args, "8081")
+	@poetry run mkdocs serve -a localhost:$(call args, "8080")
 
 generate:
 	@poetry run python manage.py create_test_data
@@ -72,6 +73,9 @@ migrations:
 
 mypy:
 	@poetry run mypy undine/
+
+styles:
+	@poetry run pygmentize -f html -S $(call args, "fruity") -a .highlight > docs/css/pygments.css
 
 test:
 	@poetry run pytest -k $(call args, "")

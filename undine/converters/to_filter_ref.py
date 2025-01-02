@@ -46,7 +46,7 @@ def _(ref: str, **kwargs: Any) -> FilterRef:
 @convert_to_filter_ref.register
 def _(_: None, **kwargs: Any) -> FilterRef:
     caller: Filter = kwargs["caller"]
-    field = get_model_field(model=caller.filterset.__model__, lookup=caller.field_name)
+    field = get_model_field(model=caller.filterset.__model__, lookup=caller.model_field_name)
     return convert_to_filter_ref(field, **kwargs)
 
 
