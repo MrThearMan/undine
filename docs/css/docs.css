@@ -9,11 +9,12 @@ Variables
     --undine-nav-color: #191919;
     --undine-section-color: #222222;
     --undine-active-color: #111111;
-    --undine-highlight-color: #424242;
+    --undine-quote-color: #424242;
     --undine-notice-color: #aa4926;
 
-    --undine-code-color: #111111;
+    --undine-code-color: #1a1c20;
     --undine-lineno-color: #404d60;
+    --undine-highlight-color: #23252d;
 
     --undine-scrollbar-color: #424242;
 }
@@ -166,6 +167,8 @@ body {
 Codeblocks
 */
 .highlight {
+    color: var(--undine-text-color) !important;
+    background: var(--undine-code-color) !important;
     border: 1px solid var(--undine-code-color) !important;
     border-radius: 6px;
 
@@ -183,21 +186,32 @@ Codeblocks
             color: var(--undine-text-color) !important;
             background: var(--undine-code-color) !important;
             border: none !important;
-            padding: 0;
             margin: 0;
+            padding: 0;
             white-space: break-spaces;
             vertical-align: middle;
 
             div {
                 pre {
-                    padding: 0 8px;
-                    background: var(--undine-code-color);
+                    padding: 0;
+                    line-height: 125%;
                     border-right: 1px solid var(--undine-lineno-color);
 
                     span {
+
+                        &.normal {
+                            padding: 0 13px;
+                        }
+
+                        &.special {
+                            padding: 0 13px;
+                            background-color: var(--undine-highlight-color);
+                        }
+
                         a {
                             color: var(--undine-lineno-color);
                         }
+
                     }
                 }
             }
@@ -215,6 +229,7 @@ Codeblocks
 
             div {
                 pre {
+                    line-height: 125%;
                     padding: 0;
                     margin: 0;
 
@@ -223,6 +238,10 @@ Codeblocks
                         background: var(--undine-code-color);
                         padding: 8px 12px;
                         border: none;
+
+                        .hll {
+                            background-color: var(--undine-highlight-color);
+                        }
                     }
                 }
             }
@@ -263,8 +282,8 @@ Scrollbars
 Blockquotes
 */
 blockquote {
-    background: var(--undine-highlight-color);
-    border: 1px solid var(--undine-highlight-color);
+    background: var(--undine-quote-color);
+    border: 1px solid var(--undine-quote-color);
     border-left: 4px solid var(--undine-notice-color);
     border-top-right-radius: 6px;
     border-bottom-right-radius: 6px;

@@ -112,7 +112,7 @@ class TaskType(QueryType, model=Task):
 
 Let's say we add a `Project` model and a ForeignKey to the `Task` model:
 
-```python
+```python hl_lines="3 4 11"
 from django.db import models
 
 class Project(models.Model):
