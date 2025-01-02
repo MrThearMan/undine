@@ -9,6 +9,8 @@ Variables
     --undine-nav-color: #191919;
     --undine-section-color: #222222;
     --undine-active-color: #111111;
+    --undine-highlight-color: #424242;
+    --undine-notice-color: #aa4926;
 
     --undine-code-color: #111111;
     --undine-lineno-color: #404d60;
@@ -237,7 +239,7 @@ p > code {
     color: var(--undine-text-color) !important;
     background: var(--undine-code-color) !important;
     border: 1px solid var(--undine-code-color) !important;
-    border-radius: 3px !important;
+    border-radius: 6px !important;
 }
 
 /*
@@ -249,11 +251,11 @@ Scrollbars
     background: var(--undine-nav-color);
 }
 ::-webkit-scrollbar-track {
-    border-radius: 5px;
+    border-radius: 6px;
     background: var(--undine-nav-color);
 }
 ::-webkit-scrollbar-thumb {
-    border-radius: 5px;
+    border-radius: 6px;
     background: var(--undine-scrollbar-color);
 }
 
@@ -261,18 +263,16 @@ Scrollbars
 Blockquotes
 */
 blockquote {
-    background: #323232;
-    border: 2px solid #363636;
-    border-left: 4px solid #2980b9;
-    margin-left: 0;
-    padding: 16px 12px 16px 24px;
+    background: var(--undine-highlight-color);
+    border: 1px solid var(--undine-highlight-color);
+    border-left: 4px solid var(--undine-notice-color);
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    margin-left: 0 !important;
+    padding: 24px 12px 0 24px;
 
-    p {
-        margin: 0;
-    }
-
-    code {
-        line-height: normal;
+    .highlight {
+        margin-bottom: 24px !important;
     }
 }
 

@@ -9,7 +9,6 @@ A `QueryType` is a class that represents a GraphQL `ObjectType` in the GraphQL s
 A basic configuration is done by subclassing `QueryType` and adding a `model` argument
 to the class definition:
 
-
 ```python
 from undine import QueryType
 from example_project.app.models import Task
