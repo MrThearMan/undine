@@ -440,7 +440,7 @@ deps =
     pillow
 
 commands =
-    coverage run -m pytest -vv -s --disable-warnings
+    coverage run -m pytest --disable-warnings
 """
 
 [build-system]

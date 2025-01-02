@@ -55,7 +55,7 @@ def _(ref: LazyQueryType) -> Any:
 
 @parse_description.register
 def _(ref: LazyQueryTypeUnion) -> Any:
-    return parse_description(ref.field)
+    return getattr(ref.field, "help_text", None) or None
 
 
 @parse_description.register
