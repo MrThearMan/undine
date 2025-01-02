@@ -8,7 +8,6 @@ from typing import Any, NamedTuple, TypedDict
 
 import django
 import pytest
-from django.contrib.postgres.fields import ArrayField, HStoreField
 from django.db.models import (
     BigIntegerField,
     BinaryField,
@@ -342,18 +341,6 @@ def test_convert_to_graphql_type__typed_dict__input():
             "GenericForeignKey": Params(
                 input_type=Comment._meta.get_field("target"),
                 output_type=GraphQLString,
-            ),
-            "ArrayField": Params(
-                input_type=ArrayField(CharField(max_length=255)),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "ArrayField nullable": Params(
-                input_type=ArrayField(CharField(max_length=255, null=True)),
-                output_type=GraphQLList(GraphQLString),
-            ),
-            "HStoreField": Params(
-                input_type=HStoreField(),
-                output_type=GraphQLJSON,
             ),
         },
     ),
@@ -707,54 +694,6 @@ def test_convert_to_graphql_type__dataclasses(input_type, output_type):
                 input_type=LookupRef(DateField(), lookup="iso_week_day"),
                 output_type=GraphQLInt,
             ),
-            "contains arrayfield": Params(
-                input_type=LookupRef(ArrayField(CharField()), lookup="contains"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "contained_by arrayfield charfield": Params(
-                input_type=LookupRef(ArrayField(CharField()), lookup="contained_by"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "contained_by arrayfield integerfield": Params(
-                input_type=LookupRef(ArrayField(IntegerField()), lookup="contained_by"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
-            ),
-            "overlap charfield": Params(
-                input_type=LookupRef(ArrayField(CharField()), lookup="overlap"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "overlap integerfield": Params(
-                input_type=LookupRef(ArrayField(IntegerField()), lookup="overlap"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
-            ),
-            "contains hstorefield": Params(
-                input_type=LookupRef(HStoreField(), lookup="contains"),
-                output_type=GraphQLJSON,
-            ),
-            "contained_by hstorefield": Params(
-                input_type=LookupRef(HStoreField(), lookup="contained_by"),
-                output_type=GraphQLJSON,
-            ),
-            "has_key": Params(
-                input_type=LookupRef(HStoreField(), lookup="has_key"),
-                output_type=GraphQLString,
-            ),
-            "has_any_keys": Params(
-                input_type=LookupRef(HStoreField(), lookup="has_any_keys"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "has_keys": Params(
-                input_type=LookupRef(HStoreField(), lookup="has_any_keys"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "keys": Params(
-                input_type=LookupRef(HStoreField(), lookup="keys"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
-            "values": Params(
-                input_type=LookupRef(HStoreField(), lookup="values"),
-                output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
-            ),
             "unaccent": Params(
                 input_type=LookupRef(CharField(), lookup="unaccent"),
                 output_type=GraphQLString,
@@ -774,7 +713,7 @@ def test_convert_to_graphql_type__dataclasses(input_type, output_type):
         },
     ),
 )
-def test_convert_to_graphql_type__lookup_ref(input_type, output_type):
+def test_convert_to_graphql_type__lookups(input_type, output_type):
     assert convert_to_graphql_type(input_type) == output_type
 
 
@@ -849,3 +788,88 @@ def test_convert_to_graphql_type__generated_field():
 
     field = GeneratedField(expression=Sum("number"), output_field=IntegerField(), db_persist=False)
     assert convert_to_graphql_type(field) == GraphQLInt
+
+
+try:
+    from django.contrib.postgres.fields import ArrayField, HStoreField
+
+    @pytest.mark.parametrize(
+        **parametrize_helper(
+            {
+                "ArrayField": Params(
+                    input_type=ArrayField(CharField(max_length=255)),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "ArrayField nullable": Params(
+                    input_type=ArrayField(CharField(max_length=255, null=True)),
+                    output_type=GraphQLList(GraphQLString),
+                ),
+                "HStoreField": Params(
+                    input_type=HStoreField(),
+                    output_type=GraphQLJSON,
+                ),
+            },
+        ),
+    )
+    def test_convert_to_graphql_type__postgresql_model_fields(input_type, output_type):
+        assert convert_to_graphql_type(input_type) == output_type
+
+    @pytest.mark.parametrize(
+        **parametrize_helper(
+            {
+                "contains arrayfield": Params(
+                    input_type=LookupRef(ArrayField(CharField()), lookup="contains"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "contained_by arrayfield charfield": Params(
+                    input_type=LookupRef(ArrayField(CharField()), lookup="contained_by"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "contained_by arrayfield integerfield": Params(
+                    input_type=LookupRef(ArrayField(IntegerField()), lookup="contained_by"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
+                ),
+                "overlap charfield": Params(
+                    input_type=LookupRef(ArrayField(CharField()), lookup="overlap"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "overlap integerfield": Params(
+                    input_type=LookupRef(ArrayField(IntegerField()), lookup="overlap"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
+                ),
+                "contains hstorefield": Params(
+                    input_type=LookupRef(HStoreField(), lookup="contains"),
+                    output_type=GraphQLJSON,
+                ),
+                "contained_by hstorefield": Params(
+                    input_type=LookupRef(HStoreField(), lookup="contained_by"),
+                    output_type=GraphQLJSON,
+                ),
+                "has_key": Params(
+                    input_type=LookupRef(HStoreField(), lookup="has_key"),
+                    output_type=GraphQLString,
+                ),
+                "has_any_keys": Params(
+                    input_type=LookupRef(HStoreField(), lookup="has_any_keys"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "has_keys": Params(
+                    input_type=LookupRef(HStoreField(), lookup="has_any_keys"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "keys": Params(
+                    input_type=LookupRef(HStoreField(), lookup="keys"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+                "values": Params(
+                    input_type=LookupRef(HStoreField(), lookup="values"),
+                    output_type=GraphQLList(GraphQLNonNull(GraphQLString)),
+                ),
+            },
+        ),
+    )
+    def test_convert_to_graphql_type__postgresql_lookups(input_type, output_type):
+        assert convert_to_graphql_type(input_type) == output_type
+
+except ImportError:  # pragma: no cover
+    pass

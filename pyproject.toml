@@ -424,18 +424,21 @@ deps =
     django50: Django >=5.0,<5.1
     django51: Django >=5.1,<5.2
 
-    graphql-core >= 3.2.3
-    graphql-relay >= 3.2.0
+    graphql-core
     django-settings-holder
-    typing-extensions
-    urllib3
+    sqlparse
     requests
 
     pytest
     pytest-django
     coverage
-    factory-boy
     hypothesis
+    freezegun
+    factory-boy
+    urllib3
+    psycopg[binary,pool]
+    pillow
+
 commands =
     coverage run -m pytest -vv -s --disable-warnings
 """
