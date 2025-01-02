@@ -37,7 +37,7 @@ UNDINE = {
 
 More information on available settings can be found in the [settings](settings.md) section.
 
-## Adding the GraphQL endpoint
+## Adding an endpoint
 
 Next, we need to add an endpoint to Django for our GraphQL. Add the following to your `urls.py` file:
 

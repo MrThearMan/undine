@@ -83,3 +83,4 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .vi { color: #d3834a } /* Name.Variable.Instance */
 .highlight .vm { color: #d3834a } /* Name.Variable.Magic */
 .highlight .il { color: #0086f7; font-weight: bold } /* Literal.Number.Integer.Long */
+.highlight .p + .n:has( + .o) { color: #aa4926 } /* Highligh keyword argument keywords (not perfect) */
