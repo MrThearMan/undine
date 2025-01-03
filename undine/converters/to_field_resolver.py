@@ -113,8 +113,8 @@ def _(ref: GraphQLWrappingType, **kwargs: Any) -> GraphQLFieldResolver:
     return convert_field_ref_to_resolver(ref.of_type, **kwargs)
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
     from undine import QueryType

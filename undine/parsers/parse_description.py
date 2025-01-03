@@ -6,7 +6,6 @@ from django.db.models import F, Q
 from graphql import GraphQLNamedType, GraphQLWrappingType
 
 from undine.dataclasses import Calculated, LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion, TypeRef
-from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.text import get_docstring
@@ -55,7 +54,7 @@ def _(ref: LazyQueryType) -> Any:
 
 @parse_description.register
 def _(ref: LazyQueryTypeUnion) -> Any:
-    return getattr(ref.field, "help_text", None) or None
+    return parse_description(ref.field)
 
 
 @parse_description.register
@@ -78,6 +77,16 @@ def _(ref: GraphQLWrappingType) -> Any:
     return parse_description(ref.of_type)
 
 
-@parse_description.register
-def _(ref: Connection) -> Any:
-    return parse_description(ref.query_type)
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
+    from django.contrib.contenttypes.fields import GenericForeignKey  # noqa: PLC0415
+
+    from undine.relay import Connection  # noqa: PLC0415
+
+    @parse_description.register
+    def _(ref: GenericForeignKey) -> Any:  # Required for Django<5.1
+        return getattr(ref, "help_text", None) or None
+
+    @parse_description.register
+    def _(ref: Connection) -> Any:
+        return parse_description(ref.query_type)

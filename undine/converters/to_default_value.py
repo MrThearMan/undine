@@ -50,8 +50,8 @@ def _(_: FunctionType, **kwargs: Any) -> Any:
     return Undefined
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine import MutationType

@@ -47,8 +47,8 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     return FunctionResolver(func=ref)
 
 
-def load_deferred_converters() -> None:  # noqa: C901
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:  # noqa: C901
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from undine import MutationType, QueryType
     from undine.relay import Connection, Node
 

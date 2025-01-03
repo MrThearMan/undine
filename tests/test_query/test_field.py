@@ -4,7 +4,8 @@ from typing import TypedDict, Unpack
 
 import pytest
 from django.db.models import Count, QuerySet, Value
-from graphql import GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
+from django.db.models.functions import Upper
+from graphql import GraphQLArgument, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
@@ -286,12 +287,26 @@ def test_field__extensions():
     assert graphql_field.extensions == {"foo": "bar", "undine_field": field}
 
 
-def test_field__expression_field():
+def test_field__expression_field__count():
     class MyQueryType(QueryType, model=Task):
-        name = Field(Count("*"))
+        count = Field(Count("*"))
 
-    field = MyQueryType.name
+    field = MyQueryType.count
     assert field.optimizer_func is not None
+
+    field_type = field.get_field_type()
+    assert field_type == GraphQLNonNull(GraphQLInt)
+
+
+def test_field__expression_field__upper():
+    class MyQueryType(QueryType, model=Task):
+        upper_name = Field(Upper("name"))
+
+    field = MyQueryType.upper_name
+    assert field.optimizer_func is not None
+
+    field_type = field.get_field_type()
+    assert field_type == GraphQLNonNull(GraphQLString)
 
 
 def test_field__calculated_field():

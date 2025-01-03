@@ -13,7 +13,7 @@ from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, ModelField, OrderRef
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.model_utils import get_model_field
+from undine.utils.model_utils import determine_output_field, get_model_field
 
 if TYPE_CHECKING:
     from undine import Order
@@ -50,7 +50,14 @@ def _(_: None, **kwargs: Any) -> OrderRef:
 
 
 @convert_to_order_ref.register
-def _(ref: CombinableExpression | F, **kwargs: Any) -> OrderRef:
+def _(ref: F, **kwargs: Any) -> OrderRef:
+    return ref
+
+
+@convert_to_order_ref.register
+def _(ref: CombinableExpression, **kwargs: Any) -> OrderRef:
+    caller: Order = kwargs["caller"]
+    determine_output_field(ref, model=caller.orderset.__model__)
     return ref
 
 
@@ -79,8 +86,8 @@ def _(ref: ManyToManyDescriptor, **kwargs: Any) -> OrderRef:
     return convert_to_order_ref(ref.rel if ref.reverse else ref.field, **kwargs)
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     @convert_to_order_ref.register

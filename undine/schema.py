@@ -55,13 +55,13 @@ __all__ = [
 
 class Entrypoint:
     """
-    Designate a new entrypoint in the GraphQL Schema for a query or a mutation.
+    A class for creating new fields in the root operation types of the GraphQL schema.
+    These can be used to make queries or make mutations.
 
-    >>> class MyQueryType(QueryType, model=...):
-    ...     name = Entrypoint()
-    >>>
     >>> class Query:
-    ...     my_query = Entrypoint(MyQueryType)
+    >>>     @Entrypoint
+    >>>     def testing(self, name: str) -> str:
+    >>>         return f"Hello, {name}!"
     """
 
     def __init__(
@@ -138,18 +138,16 @@ class Entrypoint:
         return convert_entrypoint_ref_to_resolver(self.ref, caller=self)
 
 
-def create_schema(  # noqa: PLR0913
+def create_schema(
     *,
-    query_class: type | None = None,
+    query_class: type,
     mutation_class: type | None = None,
-    subscription_class: type | None = None,
     schema_description: str | None = None,
-    additional_types: Collection[GraphQLNamedType] | None = None,
-    additional_directives: Collection[GraphQLDirective] | None = None,
     query_extensions: dict[str, Any] | None = None,
     mutation_extensions: dict[str, Any] | None = None,
-    subscription_extensions: dict[str, Any] | None = None,
     schema_extensions: dict[str, Any] | None = None,
+    additional_types: Collection[GraphQLNamedType] | None = None,
+    additional_directives: Collection[GraphQLDirective] | None = None,
 ) -> GraphQLSchema:
     """Creates the GraphQL schema."""
 
@@ -160,7 +158,8 @@ def create_schema(  # noqa: PLR0913
         return get_or_create_object_type(
             name=cls.__name__,
             fields={
-                to_schema_name(name): entr.as_graphql_field() for name, entr in get_members(cls, Entrypoint).items()
+                to_schema_name(name): entrypoint.as_graphql_field()
+                for name, entrypoint in get_members(cls, Entrypoint).items()
             },
             description=get_docstring(cls),
             extensions=extensions,
@@ -168,12 +167,10 @@ def create_schema(  # noqa: PLR0913
 
     query_object_type = create_type(query_class, query_extensions)
     mutation_object_type = create_type(mutation_class, mutation_extensions)
-    subscription_object_type = create_type(subscription_class, subscription_extensions)
 
     return GraphQLSchema(
         query=query_object_type,
         mutation=mutation_object_type,
-        subscription=subscription_object_type,
         types=additional_types,
         directives=(*specified_directives, *additional_directives) if additional_directives else None,
         description=schema_description,

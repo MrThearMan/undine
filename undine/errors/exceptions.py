@@ -66,6 +66,24 @@ class EmptyFilterResult(UndineError):  # noqa: N818
     msg = "Filter result should be null."
 
 
+class ExpessionMultipleOutputFieldError(UndineError):  # TODO: Test
+    """Error raised if no output field cannot be determined for an expression."""
+
+    msg = (
+        "Could not determine an output field for expression {expr!r}. "
+        "Got multiple possible output fields: {output_fields}."
+    )
+
+
+class ExpessionNoOutputFieldError(UndineError):  # TODO: Test
+    """Error raised if no output field cannot be determined for an expression."""
+
+    msg = (
+        "Could not determine an output field for expression {expr!r}. "
+        "No output field found from any source expressions."
+    )
+
+
 class FunctionSignatureParsingError(UndineError):
     """Error raised if a function is missing type annotations for its parameters."""
 

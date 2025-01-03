@@ -1,6 +1,7 @@
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 from graphql import ExecutionResult, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.type.definition import GraphQLField, GraphQLNonNull
 
@@ -107,11 +108,9 @@ def test_create_schema__extensions():
     assert schema.mutation_type.extensions == {"foo": "3"}
 
 
-def test_create_schema__nullable():
-    schema = create_schema()
-
-    assert schema.query_type is None
-    assert schema.mutation_type is None
+def test_create_schema__query_type_required():
+    with pytest.raises(TypeError):
+        create_schema()
 
 
 def test_execute_graphql(undine_settings):

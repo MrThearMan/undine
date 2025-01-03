@@ -81,15 +81,17 @@ def _(ref: ManyToManyDescriptor, **kwargs: Any) -> InputRef:
 
 
 @convert_to_input_ref.register
-def _(ref: str | type[str], **kwargs: Any) -> InputRef:
-    if ref is str:
-        return TypeRef(value=ref)
-
+def _(ref: str, **kwargs: Any) -> InputRef:
     caller: Input = kwargs["caller"]
     if ref == "self":
         return caller.mutation_type
     field = get_model_field(model=caller.mutation_type.__model__, lookup=ref)
     return convert_to_input_ref(field, **kwargs)
+
+
+@convert_to_input_ref.register
+def _(ref: type[str], **kwargs: Any) -> InputRef:
+    return TypeRef(value=ref)
 
 
 @convert_to_input_ref.register
@@ -162,8 +164,8 @@ def _(ref: FunctionType, **kwargs: Any) -> InputRef:
     return ref
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import MutationType

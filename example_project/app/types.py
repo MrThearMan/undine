@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count, F, Q
-from django.db.models.functions import Coalesce, Length, Now
+from django.db.models.functions import Coalesce, Length, Now, Upper
 
 from example_project.app.models import (
     AcceptanceCriteria,
@@ -91,6 +91,8 @@ class TaskType(QueryType, model=Task, filterset=TaskFilterSet, orderset=TaskOrde
     """Task Node description."""
 
     name = Field()
+
+    name_upper = Field(Upper("name"))
 
     assignees = Field(Connection(PersonType))
 

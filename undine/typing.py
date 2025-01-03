@@ -349,7 +349,7 @@ GraphQLFilterResolver: TypeAlias = Callable[..., Q]
 """(self: Model, info: GQLInfo, **kwargs: Any) -> Q"""
 
 CalculationResolver: TypeAlias = Callable[..., QuerySet]
-"""(self: Model, queryset: QuerySet, info: GQLInfo, **kwargs: Any) -> QuerySet"""
+"""(self: Field, queryset: QuerySet, info: GQLInfo, **kwargs: Any) -> QuerySet"""
 
 # Callbacks
 

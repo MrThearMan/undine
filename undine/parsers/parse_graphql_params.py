@@ -21,6 +21,11 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
 
+__all__ = [
+    "GraphQLRequestParamsParser",
+]
+
+
 class GraphQLRequestParamsParser:
     """Parse GraphQLParams from a given HttpRequest."""
 

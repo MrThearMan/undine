@@ -20,6 +20,7 @@ from graphql import GraphQLType
 from undine.dataclasses import Calculated, LazyLambdaQueryType, LazyQueryType, LazyQueryTypeUnion, TypeRef
 from undine.typing import CombinableExpression, FieldRef, Lambda, ToManyField, ToOneField
 from undine.utils.function_dispatcher import FunctionDispatcher
+from undine.utils.model_utils import determine_output_field
 
 if TYPE_CHECKING:
     from undine import Field as UndineField
@@ -55,6 +56,7 @@ def _(ref: Lambda, **kwargs: Any) -> FieldRef:
 @convert_to_field_ref.register
 def _(ref: CombinableExpression, **kwargs: Any) -> FieldRef:
     caller: UndineField = kwargs["caller"]
+    determine_output_field(ref, model=caller.query_type.__model__)
 
     def optimizer_func(field: UndineField, optimizer: OptimizationData) -> None:
         optimizer.annotations[field.name] = field.ref
@@ -178,8 +180,8 @@ def _(ref: Calculated, **kwargs: Any) -> FieldRef:
     return ref
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import QueryType

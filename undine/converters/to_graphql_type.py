@@ -480,8 +480,8 @@ def _(ref: Calculated, **kwargs: Any) -> GraphQLIOType:
 # --- Deferred -----------------------------------------------------------------------------------------------------
 
 
-def load_deferred_converters() -> None:  # noqa: C901
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:  # noqa: C901
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     from undine import MutationType, QueryType

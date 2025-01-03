@@ -55,8 +55,8 @@ def _(_: CombinableExpression, **kwargs: Any) -> GraphQLFilterResolver:
     return FilterModelFieldResolver(lookup=lookup)
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     @convert_filter_ref_to_filter_resolver.register  # Required for Django<5.1

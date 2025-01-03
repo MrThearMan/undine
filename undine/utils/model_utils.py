@@ -3,10 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Field, IntegerField, Model, Subquery
+from django.db.models import F, Field, IntegerField, Model, Subquery
 from django.db.models.constants import LOOKUP_SEP
 
 from undine.errors.exceptions import (
+    ExpessionMultipleOutputFieldError,
+    ExpessionNoOutputFieldError,
     GraphQLModelNotFoundError,
     GraphQLMultipleObjectsFoundError,
     ModelFieldDoesNotExistError,
@@ -18,10 +20,11 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
-    from undine.typing import ModelField, TModel, ToManyField, ToOneField
+    from undine.typing import CombinableExpression, ModelField, TModel, ToManyField, ToOneField
 
 __all__ = [
     "SubqueryCount",
+    "determine_output_field",
     "generic_foreign_key_for_generic_relation",
     "generic_relations_for_generic_foreign_key",
     "get_instance_or_raise",
@@ -202,3 +205,29 @@ class SubqueryCount(Subquery):
         except Exception:  # noqa: BLE001
             subquery = "<subquery>"
         return f"<{self.__class__.__name__}{self.template % {'subquery': subquery}}>"
+
+
+def determine_output_field(expression: CombinableExpression, *, model: type[Model]) -> None:  # TODO: Test
+    """Determine the `output_field` for the given expression if it doesn't have one."""
+    if hasattr(expression, "output_field"):
+        return
+
+    possible_output_fields: dict[type[Field], Any] = {}
+    for expr in expression.get_source_expressions():
+        if hasattr(expr, "output_field"):
+            field: Field = expr.output_field
+            possible_output_fields[field.__class__] = field.clone()
+            continue
+
+        if isinstance(expr, F):
+            field: Field = get_model_field(model=model, lookup=expr.name)
+            possible_output_fields[field.__class__] = field.clone()
+            continue
+
+    if len(possible_output_fields) == 0:
+        raise ExpessionNoOutputFieldError(expr=expression)
+
+    if len(possible_output_fields) > 1:
+        raise ExpessionMultipleOutputFieldError(expr=expression, output_fields=possible_output_fields)
+
+    expression.output_field = next(iter(possible_output_fields.values()))

@@ -14,7 +14,7 @@ from django.db.models.query_utils import DeferredAttribute
 
 from undine.typing import CombinableExpression, FilterRef, ModelField
 from undine.utils.function_dispatcher import FunctionDispatcher
-from undine.utils.model_utils import get_model_field
+from undine.utils.model_utils import determine_output_field, get_model_field
 
 if TYPE_CHECKING:
     from undine import Filter
@@ -88,12 +88,19 @@ def _(ref: FunctionType, **kwargs: Any) -> FilterRef:
 
 
 @convert_to_filter_ref.register
-def _(ref: CombinableExpression | Q, **kwargs: Any) -> FilterRef:
+def _(ref: Q, **kwargs: Any) -> FilterRef:
     return ref
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+@convert_to_filter_ref.register
+def _(ref: CombinableExpression, **kwargs: Any) -> FilterRef:
+    caller: Filter = kwargs["caller"]
+    determine_output_field(ref, model=caller.filterset.__model__)
+    return ref
+
+
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel
 
     @convert_to_filter_ref.register

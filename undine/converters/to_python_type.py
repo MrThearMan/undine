@@ -218,8 +218,8 @@ def _(ref: GraphQLList, **kwargs: Any) -> type:
     return list.__class_getitem__(item_type)
 
 
-def load_deferred_converters() -> None:
-    # See. `undine.apps.UndineConfig.load_deferred_converters()` for explanation.
+def load_deferred() -> None:
+    # See. `undine.apps.UndineConfig.load_deferred()` for explanation.
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 
     @convert_to_python_type.register

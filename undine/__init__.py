@@ -1,3 +1,4 @@
+from .dataclasses import Calculated
 from .filtering import Filter, FilterSet
 from .http.view import GraphQLView
 from .mutation import Input, MutationType
@@ -7,6 +8,7 @@ from .schema import Entrypoint, create_schema
 from .typing import GQLInfo
 
 __all__ = [
+    "Calculated",
     "Entrypoint",
     "Field",
     "Filter",
