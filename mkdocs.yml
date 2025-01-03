@@ -3,9 +3,9 @@ site_name: Undine
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Schema: schema.md
   - Queries: queries.md
   - Mutations: mutations.md
-  - Schema: schema.md
   - Filtering: filtering.md
   - Ordering: ordering.md
   - Permissions: permissions.md
@@ -20,6 +20,7 @@ nav:
   - Testing: testing.md
   - Settings: settings.md
   - Roadmap: roadmap.md
+  - FAQ: faq.md
   - Development: development.md
 
 theme:

@@ -254,11 +254,11 @@ Codeblocks
 /*
 Inline code
 */
-p > code {
-    color: var(--undine-text-color) !important;
-    background: var(--undine-code-color) !important;
-    border: 1px solid var(--undine-code-color) !important;
-    border-radius: 6px !important;
+.rst-content code {
+    color: var(--undine-text-color);
+    background: var(--undine-code-color);
+    border: 1px solid var(--undine-code-color);
+    border-radius: 6px;
 }
 
 /*

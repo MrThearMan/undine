@@ -23,23 +23,19 @@ but there is no need to place `"undine"` in any specific order in the `INSTALLED
 ## Configuration
 
 Undine is configured using the `UNDINE` setting in your Django project's `settings.py` file.
-Let's add a few settings to get started:
+Let's add a settings to enable GraphiQL, a tool for exploring our GraphQL schema on the browser.
 
 ```python
 UNDINE = {
-    "SCHEMA": "undine.settings.example_schema",
     "GRAPHIQL_ENABLED": True,
 }
 ```
-
-`SCHEMA` will point to an example schema, which we'll replace with our own later.
-`GRAPHIQL_ENABLED` will enable GraphiQL, which is a tool for exploring the schema on the browser.
 
 More information on available settings can be found in the [settings](settings.md) section.
 
 ## Adding an endpoint
 
-Next, we need to add an endpoint to Django for our GraphQL. Add the following to your `urls.py` file:
+Next, we need to add an endpoint for our GraphQL schema. Add the following to your `urls.py` file:
 
 ```python
 from django.urls import path
@@ -73,6 +69,6 @@ You should see the following response:
 
 ## Next steps
 
-Now that you have a basic GraphQL server up and running, you can start adding more features to it.
-Check out the [Queries](queries.md), [Mutations](mutations.md), and [Schema](schema.md) sections
+Now that we have a basic GraphQL server up and running, we can start to add more features to it.
+Check out the [Schema](schema.md), [Queries](queries.md), and [Mutations](mutations.md)  sections
 to learn more about how to use Undine to build your GraphQL API.
