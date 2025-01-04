@@ -1,5 +1,12 @@
 # Getting Started
 
+## New to GraphQL?
+
+If you are new to GraphQL, we recommend reading the [official GraphQL docs](https://graphql.org/learn/)
+first to get a better understanding of what GraphQL is and how it works. Undine's documentation will
+assume you know the basic concepts of GraphQL (types, query syntax, fields, arguments, resolvers, etc.),
+and focuses on how these concepts can be implemented with Undine.
+
 ## Installation
 
 Undine is available on PyPI and can be installed with `pip`:
