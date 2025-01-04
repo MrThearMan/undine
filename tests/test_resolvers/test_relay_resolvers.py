@@ -5,7 +5,7 @@ from graphql import FieldNode, NameNode
 from example_project.app.models import Person, Task
 from tests.factories import TaskFactory
 from tests.helpers import MockGQLInfo, patch_optimizer
-from undine import Entrypoint, Field, QueryType, create_schema
+from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
 from undine.errors.exceptions import (
     GraphQLNodeIDFieldTypeError,
     GraphQLNodeInterfaceMissingError,
@@ -36,10 +36,10 @@ def test_resolvers__global_id_resolver():
 def test_resolvers__node_resolver(undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -55,10 +55,10 @@ def test_resolvers__node_resolver(undine_settings):
 def test_resolvers__node_resolver__not_a_global_id(undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -73,10 +73,10 @@ def test_resolvers__node_resolver__not_a_global_id(undine_settings):
 def test_resolvers__node_resolver__object_type_not_in_schema(undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -92,10 +92,10 @@ def test_resolvers__node_resolver__object_type_not_in_schema(undine_settings):
 def test_resolvers__node_resolver__does_not_implement_node_interface(undine_settings):
     class TaskType(QueryType, model=Task, auto=False): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -113,10 +113,10 @@ def test_resolvers__node_resolver__missing_undine_query_type(undine_settings):
 
     TaskType.__extensions__ = {}  # Remove undine QueryType extension on purpose.
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -134,10 +134,10 @@ def test_resolvers__node_resolver__missing_id_field(undine_settings):
 
     TaskType.__field_map__.pop("id")  # Remove `id` field on purpose
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 
@@ -154,10 +154,10 @@ def test_resolvers__node_resolver__id_not_global_id(undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         id = Field()
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task = TaskFactory.create()
 

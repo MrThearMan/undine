@@ -4,7 +4,7 @@ from .http.view import GraphQLView
 from .mutation import Input, MutationType
 from .ordering import Order, OrderSet
 from .query import Field, QueryType
-from .schema import Entrypoint, create_schema
+from .schema import Entrypoint, RootOperationType, create_schema
 from .typing import GQLInfo
 
 __all__ = [
@@ -20,5 +20,6 @@ __all__ = [
     "Order",
     "OrderSet",
     "QueryType",
+    "RootOperationType",
     "create_schema",
 ]

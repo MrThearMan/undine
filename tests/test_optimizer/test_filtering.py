@@ -7,7 +7,7 @@ from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from example_project.app.models import Task
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory
-from undine import Entrypoint, Field, Filter, FilterSet, QueryType, create_schema
+from undine import Entrypoint, Field, Filter, FilterSet, QueryType, RootOperationType, create_schema
 from undine.dataclasses import Calculated
 from undine.errors.exceptions import EmptyFilterResult
 from undine.typing import GQLInfo
@@ -21,10 +21,10 @@ def test_optimizer__filtering(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")
@@ -57,10 +57,10 @@ def test_optimizer__filtering__many__match_any(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")
@@ -94,10 +94,10 @@ def test_optimizer__filtering__many__match_all(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")
@@ -129,10 +129,10 @@ def test_optimizer__filtering__distinct(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     assignee_1 = PersonFactory.create(name="foo")
     assignee_2 = PersonFactory.create(name="bar")
@@ -170,10 +170,10 @@ def test_optimizer__filtering__distinct_missing(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     assignee_1 = PersonFactory.create(name="foo")
     assignee_2 = PersonFactory.create(name="bar")
@@ -214,10 +214,10 @@ def test_optimizer__filtering__lookup_changes_input_type(graphql, undine_setting
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     project = ProjectFactory.create()
 
@@ -251,10 +251,10 @@ def test_optimizer__filtering__q_value(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     project = ProjectFactory.create()
 
@@ -289,10 +289,10 @@ def test_optimizer__filtering__q_value__negated(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     project = ProjectFactory.create()
 
@@ -332,10 +332,10 @@ def test_optimizer__filtering__function(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     task_1 = TaskFactory.create(name="foo")
     task_2 = TaskFactory.create(name="bar")
@@ -375,10 +375,10 @@ def test_optimizer__filtering__function__empty_filter_results(graphql, undine_se
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")
@@ -409,10 +409,10 @@ def test_optimizer__filtering__logical_operators(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")
@@ -455,10 +455,10 @@ def setup_optimizer__filtering__function__typed_dict(undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
 
 @pytest.mark.django_db
@@ -527,7 +527,7 @@ def test_optimizer__filtering__calculated_field(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, filterset=TaskFilterSet):
         name = Field()
 
-        calculated_number = Field(Calculated(Arguments, return_annotation=int))
+        calculated_number = Field(Calculated(Arguments, returns=int))
 
         @calculated_number.calculate
         def calc(self: Field, queryset: QuerySet, info: GQLInfo, **kwargs: Unpack[Arguments]) -> QuerySet:
@@ -539,10 +539,10 @@ def test_optimizer__filtering__calculated_field(graphql, undine_settings):
                 ),
             )
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="foo")
     TaskFactory.create(name="bar")

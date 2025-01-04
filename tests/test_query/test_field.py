@@ -314,7 +314,7 @@ def test_field__calculated_field():
         value: int
 
     class MyQueryType(QueryType, model=Task, auto=False):
-        calculated = Field(Calculated(Arguments, return_annotation=int | None))
+        calculated = Field(Calculated(Arguments, returns=int | None))
 
         @calculated.calculate
         def calc(self: Field, queryset: QuerySet, info: GQLInfo, **kwargs: Unpack[Arguments]) -> QuerySet:

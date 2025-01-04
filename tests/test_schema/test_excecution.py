@@ -9,7 +9,7 @@ from example_project.app.models import Task
 from undine import Entrypoint, MutationType, QueryType, create_schema
 from undine.dataclasses import GraphQLParams
 from undine.registies import GRAPHQL_TYPE_REGISTRY
-from undine.schema import execute_graphql
+from undine.schema import RootOperationType, execute_graphql
 from undine.settings import example_schema
 
 
@@ -18,13 +18,13 @@ def test_create_schema():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    class Mutation:
+    class Mutation(RootOperationType):
         create_task = Entrypoint(TaskCreateMutation)
 
-    schema = create_schema(query_class=Query, mutation_class=Mutation)
+    schema = create_schema(query=Query, mutation=Mutation)
 
     assert isinstance(schema.query_type, GraphQLObjectType)
     assert schema.query_type.name == "Query"
@@ -43,13 +43,13 @@ def test_create_schema__registered():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
-    class Mutation:
+    class Mutation(RootOperationType):
         create_task = Entrypoint(TaskCreateMutation)
 
-    create_schema(query_class=Query, mutation_class=Mutation)
+    create_schema(query=Query, mutation=Mutation)
 
     assert "Query" in GRAPHQL_TYPE_REGISTRY
     assert isinstance(GRAPHQL_TYPE_REGISTRY["Query"], GraphQLObjectType)
@@ -63,17 +63,17 @@ def test_create_schema__descriptions():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query:
+    class Query(RootOperationType):
         """Query description."""
 
         task = Entrypoint(TaskType)
 
-    class Mutation:
+    class Mutation(RootOperationType):
         """Mutation description."""
 
         create_task = Entrypoint(TaskCreateMutation)
 
-    schema = create_schema(query_class=Query, mutation_class=Mutation, schema_description="Description.")
+    schema = create_schema(query=Query, mutation=Mutation, description="Description.")
 
     assert schema.description == "Description."
     assert schema.query_type.description == "Query description."
@@ -85,27 +85,21 @@ def test_create_schema__extensions():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query:
-        """Query description."""
-
+    class Query(RootOperationType, extensions={"foo": "2"}):
         task = Entrypoint(TaskType)
 
-    class Mutation:
-        """Mutation description."""
-
+    class Mutation(RootOperationType, extensions={"foo": "3"}):
         create_task = Entrypoint(TaskCreateMutation)
 
     schema = create_schema(
-        query_class=Query,
-        mutation_class=Mutation,
-        schema_extensions={"foo": "1"},
-        query_extensions={"foo": "2"},
-        mutation_extensions={"foo": "3"},
+        query=Query,
+        mutation=Mutation,
+        extensions={"foo": "1"},
     )
 
     assert schema.extensions == {"foo": "1"}
-    assert schema.query_type.extensions == {"foo": "2"}
-    assert schema.mutation_type.extensions == {"foo": "3"}
+    assert schema.query_type.extensions == {"foo": "2", "undine_root_operation_type": Query}
+    assert schema.mutation_type.extensions == {"foo": "3", "undine_root_operation_type": Mutation}
 
 
 def test_create_schema__query_type_required():

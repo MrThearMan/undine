@@ -305,7 +305,7 @@ def total_count_subquery(queryset: QuerySet, related_name: str) -> SubqueryCount
 
 
 def add_partition_index(queryset: QuerySet, related_name: str) -> QuerySet:
-    """Add an index to each instance in the queryset, paritioned by the given related name."""
+    """Add an index to each instance in the queryset, partitioned by the given related name."""
     return queryset.alias(
         **{
             undine_settings.CONNECTION_INDEX_KEY: (

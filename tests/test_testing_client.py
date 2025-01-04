@@ -7,18 +7,18 @@ from _pytest.outcomes import Failed  # noqa: PLC2701
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from tests.helpers import create_mock_png, exact
-from undine import Entrypoint, GQLInfo, create_schema
+from undine import Entrypoint, GQLInfo, RootOperationType, create_schema
 from undine.scalars import GraphQLFile
 from undine.testing.client import GraphQLClient
 
 
 def test_testing_client(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -45,12 +45,12 @@ def test_testing_client(undine_settings):
 
 
 def test_testing_client__operation_name(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query Greet {
@@ -65,7 +65,7 @@ def test_testing_client__operation_name(undine_settings):
 
 
 def test_testing_client__connection(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def stuff(self) -> dict[str, Any]:
             return {
@@ -75,7 +75,7 @@ def test_testing_client__connection(undine_settings):
                 ],
             }
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -120,12 +120,12 @@ def test_testing_client__connection(undine_settings):
 
 
 def test_testing_client__error(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -162,12 +162,12 @@ def test_testing_client__error(undine_settings):
 
 
 def test_testing_client__error__no_results(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -185,12 +185,12 @@ def test_testing_client__error__no_results(undine_settings):
 
 
 def test_testing_client__error__no_edges(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -208,7 +208,7 @@ def test_testing_client__error__no_edges(undine_settings):
 
 
 def test_testing_client__error__no_node(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def stuff(self) -> dict[str, Any]:
             return {
@@ -218,7 +218,7 @@ def test_testing_client__error__no_node(undine_settings):
                 ],
             }
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -236,12 +236,12 @@ def test_testing_client__error__no_node(undine_settings):
 
 
 def test_testing_client__error__no_error_message__index(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -259,12 +259,12 @@ def test_testing_client__error__no_error_message__index(undine_settings):
 
 
 def test_testing_client__error__no_error_message__path(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -282,12 +282,12 @@ def test_testing_client__error__no_error_message__path(undine_settings):
 
 
 def test_testing_client__assert_query_count(undine_settings):
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self) -> str:
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -316,14 +316,14 @@ def test_testing_client__assert_query_count(undine_settings):
 def test_testing_client__login_with_superuser(undine_settings):
     request_user = None
 
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self, info: GQLInfo) -> str:
             nonlocal request_user
             request_user = info.context.user
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -346,14 +346,14 @@ def test_testing_client__login_with_superuser(undine_settings):
 def test_testing_client__login_with_regular_user(undine_settings):
     request_user = None
 
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self, info: GQLInfo) -> str:
             nonlocal request_user
             request_user = info.context.user
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     query = """
         query {
@@ -375,14 +375,14 @@ def test_testing_client__login_with_regular_user(undine_settings):
 def test_testing_client__files(undine_settings):
     captured: InMemoryUploadedFile | None = None
 
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def greeting(self, file: GraphQLFile) -> str:
             nonlocal captured
             captured = deepcopy(file)
             return "Hello, World!"
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     png = create_mock_png()
     png_bytes = bytes(png.file.read())

@@ -471,7 +471,7 @@ def _(ref: TypeRef, **kwargs: Any) -> GraphQLIOType:
 @convert_to_graphql_type.register
 def _(ref: Calculated, **kwargs: Any) -> GraphQLIOType:
     kwargs["return_nullable"] = True
-    value, nullable = convert_to_graphql_type(ref.return_annotation, **kwargs)
+    value, nullable = convert_to_graphql_type(ref.returns, **kwargs)
     if not nullable:
         value = GraphQLNonNull(value)
     return value

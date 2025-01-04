@@ -95,11 +95,11 @@ class Arguments(TypedDict):
                 expected=True,
             ),
             "calculated single": Params(
-                value=Calculated(Arguments, return_annotation=int),
+                value=Calculated(Arguments, returns=int),
                 expected=False,
             ),
             "calculated many": Params(
-                value=Calculated(Arguments, return_annotation=list[int]),
+                value=Calculated(Arguments, returns=list[int]),
                 expected=True,
             ),
         },

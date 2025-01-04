@@ -64,7 +64,7 @@ def _(_: LazyLambdaQueryType) -> Any:
 
 @parse_description.register
 def _(ref: Calculated) -> Any:
-    return parse_description(ref.ref)
+    return parse_description(ref.takes)
 
 
 @parse_description.register

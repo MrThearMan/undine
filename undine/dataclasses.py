@@ -168,53 +168,46 @@ class DispatchImplementations(Generic[From, To]):
 class Calculated:
     """A QueryType Field wrapper for fields that need to be calculated using user input."""
 
-    ref: Any
+    takes: Any
     """
-    Any object that has an `__annotations__` attribute (e.g. TypedDict).
-    Parsed to parameters.
-    """
-
-    parameters: tuple[Parameter] = dataclasses.field(init=False, default_factory=tuple)
-    """
-    Parameters parsed from the reference.
-    Used as arguments for the field and can be used in the calculation.
+    A TypedDict, NamedTuple or dataclass describing the input arguments for the field.
     """
 
-    return_annotation: type | UnionType = dataclasses.field(init=True, kw_only=True)
+    returns: type | UnionType = dataclasses.field(init=True, kw_only=True)
     """
-    The return annotation of the reference.
+    A type describing the return type for the field.
     """
 
-    def __post_init__(self) -> None:
-        """Parse parameters from the given reference."""
+    @property
+    def parameters(self) -> tuple[Parameter, ...]:
+        """
+        Parse annotations to parameters.
+        Used as arguments for the field and can be used in the calculation.
+        """
         from undine.parsers import parse_class_variable_docstrings  # noqa: PLC0415
 
-        type_hints = get_type_hints(self.ref)
-        docstrings = parse_class_variable_docstrings(self.ref)
+        type_hints = get_type_hints(self.takes)
+        docstrings = parse_class_variable_docstrings(self.takes)
 
         defaults: dict[str, Any] = {}
 
         # NamedTuples have a `_field_defaults` attribute.
-        if hasattr(self.ref, "_field_defaults"):
-            defaults = self.ref._field_defaults
+        if hasattr(self.takes, "_field_defaults"):
+            defaults = self.takes._field_defaults
 
-        elif dataclasses.is_dataclass(self.ref):
-            for field in dataclasses.fields(self.ref):
+        elif dataclasses.is_dataclass(self.takes):
+            for field in dataclasses.fields(self.takes):
                 if field.default is not dataclasses.MISSING:
                     defaults[field.name] = field.default
                 elif field.default_factory is not dataclasses.MISSING:
                     defaults[field.name] = field.default_factory()
 
-        object.__setattr__(
-            self,
-            "parameters",
-            tuple(
-                Parameter(
-                    name=name,
-                    annotation=annotation,
-                    default_value=defaults.get(name, Undefined),
-                    docstring=docstrings.get(name),
-                )
-                for name, annotation in type_hints.items()
-            ),
+        return tuple(
+            Parameter(
+                name=name,
+                annotation=annotation,
+                default_value=defaults.get(name, Undefined),
+                docstring=docstrings.get(name),
+            )
+            for name, annotation in type_hints.items()
         )

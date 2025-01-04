@@ -245,7 +245,7 @@ def test_convert_field_ref_to_resolver__calculated():
     class Arguments(TypedDict):
         value: int
 
-    calc = Calculated(Arguments, return_annotation=int)
+    calc = Calculated(Arguments, returns=int)
 
     class TaskType(QueryType, model=Task):
         calculated = Field(calc)

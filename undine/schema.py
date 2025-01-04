@@ -48,20 +48,60 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Entrypoint",
+    "RootOperationType",
     "create_schema",
     "execute_graphql",
 ]
 
 
+class RootOperationType:
+    """
+    Base class for GraphQL root operation types (`Query` or `Mutation`).
+
+    The following parameters can be passed in the class definition:
+
+    - `typename`: Override name for the `RootOperationType` in the GraphQL schema. Use class name by default.
+    - `extensions`: GraphQL extensions for the created `RootOperationType`.
+
+    >>> class TaskType(QueryType, model=...): ...
+    >>>
+    >>> class Query(RootOperationType):
+    ...     tasks = Entrypoint(TaskType, many=True)
+    """
+
+    # Members should use `__dunder__` names to avoid name collisions with possible `undine.Entrypoint` names.
+
+    def __init_subclass__(
+        cls,
+        typename: str | None = None,
+        extensions: dict[str, Any] | None = None,
+    ) -> None:
+        cls.__entrypoint_map__ = get_members(cls, Entrypoint)
+        cls.__typename__ = typename or cls.__name__
+        cls.__extensions__ = (extensions or {}) | {undine_settings.ROOT_OPERATION_TYPE_EXTENSIONS_KEY: cls}
+
+    @classmethod
+    def __output_type__(cls) -> GraphQLObjectType:
+        """Creates the GraphQL `ObjectType` for this `RootOperationType`."""
+        return get_or_create_object_type(
+            name=cls.__typename__,
+            fields={
+                to_schema_name(name): entrypoint.as_graphql_field()
+                for name, entrypoint in cls.__entrypoint_map__.items()
+            },
+            description=get_docstring(cls),
+            extensions=cls.__extensions__,
+        )
+
+
 class Entrypoint:
     """
-    A class for creating new fields in the root operation types of the GraphQL schema.
-    These can be used to make queries or make mutations.
+    A class for creating new fields in the `RootOperationTypes` of the GraphQL schema.
 
-    >>> class Query:
-    >>>     @Entrypoint
-    >>>     def testing(self, name: str) -> str:
-    >>>         return f"Hello, {name}!"
+    >>> class TaskType(QueryType, model=...): ...
+    >>>
+    >>> class Query(RootOperationType):
+    ...     tasks = Entrypoint(TaskType, many=True)
     """
 
     def __init__(
@@ -140,41 +180,25 @@ class Entrypoint:
 
 def create_schema(
     *,
-    query_class: type,
-    mutation_class: type | None = None,
-    schema_description: str | None = None,
-    query_extensions: dict[str, Any] | None = None,
-    mutation_extensions: dict[str, Any] | None = None,
-    schema_extensions: dict[str, Any] | None = None,
+    query: type[RootOperationType],
+    mutation: type[RootOperationType] | None = None,
+    # TODO: Subscription
+    description: str | None = None,
+    extensions: dict[str, Any] | None = None,
     additional_types: Collection[GraphQLNamedType] | None = None,
     additional_directives: Collection[GraphQLDirective] | None = None,
 ) -> GraphQLSchema:
     """Creates the GraphQL schema."""
-
-    def create_type(cls: type | None, extensions: dict[str, Any] | None = None) -> GraphQLObjectType | None:
-        if cls is None:
-            return None
-
-        return get_or_create_object_type(
-            name=cls.__name__,
-            fields={
-                to_schema_name(name): entrypoint.as_graphql_field()
-                for name, entrypoint in get_members(cls, Entrypoint).items()
-            },
-            description=get_docstring(cls),
-            extensions=extensions,
-        )
-
-    query_object_type = create_type(query_class, query_extensions)
-    mutation_object_type = create_type(mutation_class, mutation_extensions)
+    query_object_type = query.__output_type__()
+    mutation_object_type = mutation.__output_type__() if mutation is not None else None
 
     return GraphQLSchema(
         query=query_object_type,
         mutation=mutation_object_type,
         types=additional_types,
         directives=(*specified_directives, *additional_directives) if additional_directives else None,
-        description=schema_description,
-        extensions=schema_extensions,
+        description=description,
+        extensions=extensions,
     )
 
 

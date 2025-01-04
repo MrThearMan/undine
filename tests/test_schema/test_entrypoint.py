@@ -12,7 +12,7 @@ from graphql import (
 )
 
 from example_project.app.models import Task
-from undine import Entrypoint, MutationType, QueryType
+from undine import Entrypoint, MutationType, QueryType, RootOperationType
 from undine.errors.exceptions import MissingEntrypointRefError
 from undine.resolvers import (
     BulkCreateResolver,
@@ -27,7 +27,7 @@ def test_entrypoint__query__repr():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     assert repr(Query.task) == f"<undine.schema.Entrypoint(ref={TaskType})>"
@@ -37,7 +37,7 @@ def test_entrypoint__query__attributes():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     assert Query.task.ref == TaskType
@@ -53,7 +53,7 @@ def test_entrypoint__query__get_field_type():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     field_type = Query.task.get_field_type()
@@ -65,7 +65,7 @@ def test_entrypoint__query__get_field_arguments():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     arguments = Query.task.get_field_arguments()
@@ -77,7 +77,7 @@ def test_entrypoint__query__get_resolver():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     resolver = Query.task.get_resolver()
@@ -88,7 +88,7 @@ def test_entrypoint__query__as_graphql_field():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType)
 
     graphql_field = Query.task.as_graphql_field()
@@ -107,7 +107,7 @@ def test_entrypoint__query__many__attributes():
     class TaskType(QueryType, model=Task, filterset=True, orderset=True):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType, many=True)
 
     assert Query.task.ref == TaskType
@@ -123,7 +123,7 @@ def test_entrypoint__query__many__get_field_type():
     class TaskType(QueryType, model=Task, filterset=True, orderset=True):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType, many=True)
 
     field_type = Query.task.get_field_type()
@@ -137,7 +137,7 @@ def test_entrypoint__query__many__get_field_arguments():
     class TaskType(QueryType, model=Task, filterset=True, orderset=True):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType, many=True)
 
     arguments = Query.task.get_field_arguments()
@@ -155,7 +155,7 @@ def test_entrypoint__query__many__get_field_arguments():
 def test_entrypoint__query__many__get_resolver():
     class TaskType(QueryType, model=Task, filterset=True, orderset=True): ...
 
-    class Query:
+    class Query(RootOperationType):
         task = Entrypoint(TaskType, many=True)
 
     resolver = Query.task.get_resolver()
@@ -278,7 +278,7 @@ def test_entrypoint__missing_reference():
 
     with pytest.raises(error):
 
-        class Query:
+        class Query(RootOperationType):
             foo = Entrypoint()
 
 
@@ -286,7 +286,7 @@ def test_entrypoint__description_in_entrypoint():
     class TaskType(QueryType, model=Task):
         """Description."""
 
-    class Query:
+    class Query(RootOperationType):
         foo = Entrypoint(TaskType, description="Actual description.")
 
     assert Query.foo.description == "Actual description."
@@ -295,14 +295,14 @@ def test_entrypoint__description_in_entrypoint():
 def test_entrypoint__deprecation_reason():
     class TaskType(QueryType, model=Task): ...
 
-    class Query:
+    class Query(RootOperationType):
         foo = Entrypoint(TaskType, deprecation_reason="Use something else.")
 
     assert Query.foo.deprecation_reason == "Use something else."
 
 
 def test_entrypoint__function():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -312,7 +312,7 @@ def test_entrypoint__function():
 
 
 def test_entrypoint__function__attributes():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -328,7 +328,7 @@ def test_entrypoint__function__attributes():
 
 
 def test_entrypoint__function__get_field_type():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -339,7 +339,7 @@ def test_entrypoint__function__get_field_type():
 
 
 def test_entrypoint__function__get_field_arguments():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -350,7 +350,7 @@ def test_entrypoint__function__get_field_arguments():
 
 
 def test_entrypoint__function__get_resolver():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -361,7 +361,7 @@ def test_entrypoint__function__get_resolver():
 
 
 def test_entrypoint__function__as_graphql_field():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint
         def double(self, number: int) -> int:
             """Description."""
@@ -378,7 +378,7 @@ def test_entrypoint__function__as_graphql_field():
 
 
 def test_entrypoint__function__decorator_arguments():
-    class Query:
+    class Query(RootOperationType):
         @Entrypoint(deprecation_reason="Use something else.")
         def double(self, number: int) -> int:
             return number * 2

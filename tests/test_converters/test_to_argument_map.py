@@ -492,7 +492,7 @@ def test_to_argument_map__calculated():
     class Arguments(TypedDict):
         value: int
 
-    value = Calculated(Arguments, return_annotation=int)
+    value = Calculated(Arguments, returns=int)
     args = convert_to_graphql_argument_map(value, many=False)
 
     assert args == {
@@ -510,7 +510,7 @@ def test_to_argument_map__calculated__description():
         value: int
         """Description"""
 
-    value = Calculated(Arguments, return_annotation=int)
+    value = Calculated(Arguments, returns=int)
     args = convert_to_graphql_argument_map(value, many=False)
 
     assert args == {
@@ -527,7 +527,7 @@ def test_to_argument_map__calculated__nullable():
     class Arguments(TypedDict):
         value: int | None
 
-    value = Calculated(Arguments, return_annotation=int)
+    value = Calculated(Arguments, returns=int)
     args = convert_to_graphql_argument_map(value, many=False)
 
     assert args == {

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from example_project.app.mutations import TaskCreateMutationType
 from example_project.app.types import ReportType, TaskType
-from undine import Entrypoint, create_schema
+from undine import Entrypoint, RootOperationType, create_schema
 from undine.relay import Connection, Node
 
 
-class Query:
+class Query(RootOperationType):
     task = Entrypoint(TaskType)
     tasks = Entrypoint(TaskType, many=True)
     reports = Entrypoint(ReportType, many=True)
@@ -24,10 +24,10 @@ class Query:
         return [arg]
 
 
-class Mutation:
+class Mutation(RootOperationType):
     create_task = Entrypoint(TaskCreateMutationType)
 
     bulk_create_task = Entrypoint(TaskCreateMutationType, many=True)
 
 
-schema = create_schema(query_class=Query, mutation_class=Mutation)
+schema = create_schema(query=Query, mutation=Mutation)

@@ -112,7 +112,7 @@ def test_parse_description__calculated():
     class Arguments(TypedDict):
         value: int
 
-    value = Calculated(Arguments, return_annotation=int)
+    value = Calculated(Arguments, returns=int)
     assert parse_description(value) is None
 
 
@@ -122,5 +122,5 @@ def test_parse_description__calculated__has_docstring():
 
         value: int
 
-    value = Calculated(Arguments, return_annotation=int)
+    value = Calculated(Arguments, returns=int)
     assert parse_description(value) == "Description."

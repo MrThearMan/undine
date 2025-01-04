@@ -5,7 +5,7 @@ from django.db.models.functions import Reverse
 
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
-from undine import Entrypoint, Field, Order, OrderSet, QueryType, create_schema
+from undine import Entrypoint, Field, Order, OrderSet, QueryType, RootOperationType, create_schema
 
 
 @pytest.mark.django_db
@@ -16,10 +16,10 @@ def test_optimizer__ordering(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, orderset=TaskOrderSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="1")
     TaskFactory.create(name="3")
@@ -55,10 +55,10 @@ def test_optimizer__ordering__multiple(graphql, undine_settings):
         name = Field()
         due_by = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="1", due_by=datetime.date(2025, 1, 1))
     TaskFactory.create(name="3", due_by=datetime.date(2025, 1, 1))
@@ -104,10 +104,10 @@ def test_optimizer__ordering__nulls_first(graphql, undine_settings):
         name = Field()
         project = Field(ProjectType)
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="1", project__name="1")
     TaskFactory.create(name="3", project=None)
@@ -148,10 +148,10 @@ def test_optimizer__ordering__nulls_last(graphql, undine_settings):
         name = Field()
         project = Field(ProjectType)
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="1", project__name="1")
     TaskFactory.create(name="3", project=None)
@@ -188,10 +188,10 @@ def test_optimizer__ordering__expression(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, orderset=TaskOrderSet):
         name = Field()
 
-    class Query:
+    class Query(RootOperationType):
         tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query_class=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
     TaskFactory.create(name="1")
     TaskFactory.create(name="3")

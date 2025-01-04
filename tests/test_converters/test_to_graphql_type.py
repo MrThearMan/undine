@@ -505,15 +505,15 @@ def test_convert_to_graphql_type__lazy_query_type_union():
     **parametrize_helper(
         {
             "calculated": Params(
-                input_type=Calculated(Arguments, return_annotation=int),
+                input_type=Calculated(Arguments, returns=int),
                 output_type=GraphQLNonNull(GraphQLInt),
             ),
             "calculated nullable": Params(
-                input_type=Calculated(Arguments, return_annotation=int | None),
+                input_type=Calculated(Arguments, returns=int | None),
                 output_type=GraphQLInt,
             ),
             "calculated many": Params(
-                input_type=Calculated(Arguments, return_annotation=list[int]),
+                input_type=Calculated(Arguments, returns=list[int]),
                 output_type=GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
             ),
             "type ref": Params(

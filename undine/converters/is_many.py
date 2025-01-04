@@ -70,7 +70,7 @@ def _(_: LazyLambdaQueryType, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: Calculated, **kwargs: Any) -> bool:
-    return is_many(TypeRef(value=ref.return_annotation))
+    return is_many(TypeRef(value=ref.returns))
 
 
 @is_many.register

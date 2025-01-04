@@ -84,7 +84,7 @@ def _(ref: TypeRef, **kwargs: Any) -> bool:
 
 @is_field_nullable.register
 def _(ref: Calculated, **kwargs: Any) -> bool:
-    return is_field_nullable(TypeRef(value=ref.return_annotation))
+    return is_field_nullable(TypeRef(value=ref.returns))
 
 
 @is_field_nullable.register

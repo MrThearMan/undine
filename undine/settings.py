@@ -119,6 +119,9 @@ class DefaultSettings(NamedTuple):
     RESOLVER_ROOT_PARAM_NAME: str = "root"
     """The name of the root/parent parameter in resolvers."""
 
+    ROOT_OPERATION_TYPE_EXTENSIONS_KEY: str = "undine_root_operation_type"
+    """The key used to store a `RootOperationType` in the object type GraphQL extensions."""
+
     ROOT_VALUE: Any = None
     """The root value for the GraphQL execution."""
 

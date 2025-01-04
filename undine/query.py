@@ -146,7 +146,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
     - `typename`: Override name for the `QueryType` in the GraphQL schema. Use class name by default.
     - `register`: Whether to register the `QueryType` for the given model so that other `QueryTypes` can use it in
                   their fields and `MutationTypes` can use it as their output type. Defaults to `True`.
-    - `extensions`: GraphQL extensions for the created ObjectType.
+    - `extensions`: GraphQL extensions for the created `ObjectType`.
 
     >>> class MyQueryType(QueryType, model=...): ...
     """
