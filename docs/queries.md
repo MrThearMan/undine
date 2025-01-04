@@ -31,7 +31,7 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 ```
 
-Then the GraphQL `ObjectType` for the `QueryType` using the above configuration would be:
+Then the GraphQL `ObjectType` for the `QueryType` would be:
 
 ```graphql
 type TaskType {
@@ -44,8 +44,7 @@ type TaskType {
 ### Creating an Entrypoint
 
 To be able to query our model data using a `QueryType`, we need to create an `Entrypoint`
-for that `QueryType` in the `Query` class for our schema (see more on creating the schema
-in the [Schema](schema.md) section).
+for that `QueryType` (see more on creating the schema in the [Schema](schema.md) section).
 
 For querying a single model instance, simply use the `QueryType` class
 as the reference for the `Entrypoint`.
@@ -403,11 +402,13 @@ from django.db.models import QuerySet, Value
 from undine import Field, QueryType, GQLInfo, Calculated
 from example_project.app.models import Task
 
+
 class CalcInput(TypedDict):
     value: int
 
+
 class TaskType(QueryType, model=Task):
-    calc = Field(Calculated(CalcInput, return_annotation=int))
+    calc = Field(Calculated(takes=CalcInput, returns=int))
 
     @calc.calculate
     def _(self, queryset: QuerySet, info: GQLInfo, **kwargs: Unpack[CalcInput]) -> QuerySet:
@@ -415,9 +416,9 @@ class TaskType(QueryType, model=Task):
         return queryset.annotate(calc=Value(kwargs["value"]))
 ```
 
-`Calculated` takes two arguments: the first is an object that describes the
-input arguments needed for the calculation (a `TypedDict`, a `NamedTuple` or a `dataclass`),
-and the second describes its return type.
+`Calculated` takes two arguments: `takes`, which describes the input arguments needed for the 
+calculation (a `TypedDict`, a `NamedTuple` or a `dataclass`), and `returns`, which describes
+its return type.
 
 The calculation function is decorated with the `@<field_name>.calculate` decorator.
 The function should annotate a value to the given queryset with the same name as the field.
