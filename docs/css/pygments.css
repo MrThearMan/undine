@@ -4,7 +4,7 @@ Code highlighting: https://pygments.org/docs/tokens/
 
 .highlight .bp { color: #94558D } /* Name.Builtin.Pseudo */
 
-.highlight .c { color: #008800; font-style: italic; } /* Comment */
+.highlight .c { color: #7A7E85; font-style: italic; } /* Comment */
 .highlight .c1 { color: #7A7E85; font-style: italic; } /* Comment.Single */
 .highlight .ch { color: #7A7E85; font-style: italic; } /* Comment.Hashbang */
 .highlight .cm { color: #7A7E85; font-style: italic; } /* Comment.Multiline */
@@ -63,7 +63,7 @@ Code highlighting: https://pygments.org/docs/tokens/
 .highlight .ni { color: #BCBEC4 } /* Name.Entity */
 .highlight .nl { color: #BCBEC4 } /* Name.Label */
 .highlight .nn { color: #BCBEC4 } /* Name.Namespace */
-.highlight .no { color: #0086d2 } /* Name.Constant */
+.highlight .no { color: #BCBEC4 } /* Name.Constant */
 .highlight .nt { color: #d3834a; font-weight: bold } /* Name.Tag */
 .highlight .nv { color: #d3834a } /* Name.Variable */
 .highlight .nx { color: #BCBEC4 } /* Name.Other */

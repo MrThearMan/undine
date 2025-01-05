@@ -252,6 +252,28 @@ Codeblocks
 }
 
 /*
+Details
+*/
+details {
+    margin-bottom: 24px;
+    padding: 8px 16px;
+    border: 2px solid var(--undine-quote-color);
+    border-radius: 6px;
+
+    summary {
+        padding: 3px;
+    }
+
+    summary:hover {
+        cursor: pointer;
+    }
+
+    p {
+        margin: 16px 0;
+    }
+}
+
+/*
 Inline code
 */
 .rst-content code {

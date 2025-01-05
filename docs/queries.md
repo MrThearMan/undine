@@ -1,13 +1,13 @@
 # Queries
 
-This section will cover how to connect your Django models to the GraphQL schema through
+This section will cover how to connect your Django models to the GraphQL schema using
 Undine `QueryTypes` and `Fields`.
 
-## QueryType
+## QueryTypes
 
-A `QueryType` class represents a GraphQL `ObjectType` for a Django model.
-A basic configuration is done by subclassing `QueryType` and adding a `model` argument
-to the class definition:
+A `QueryType` represents a GraphQL `ObjectType` for querying a Django model
+in the GraphQL schema. A basic configuration is done by subclassing `QueryType`
+and adding a `model` argument to the class definition:
 
 ```python
 from undine import QueryType
@@ -19,7 +19,6 @@ class TaskType(QueryType, model=Task): ...
 
 `QueryType` has some automatic behaviors that introspect the given model
 and makes its fields available on the generated `ObjectType`.
-
 For example, if the `Task` model has the following fields:
 
 ```python
@@ -41,56 +40,7 @@ type TaskType {
 }
 ```
 
-### Creating an Entrypoint
-
-To be able to query our model data using a `QueryType`, we need to create an `Entrypoint`
-for that `QueryType` (see more on creating the schema in the [Schema](schema.md) section).
-
-For querying a single model instance, simply use the `QueryType` class
-as the reference for the `Entrypoint`.
-
-```python
-from undine import Entrypoint, QueryType
-from example_project.app.models import Task
-
-class TaskType(QueryType, model=Task): ...
-
-class Query:
-    task = Entrypoint(TaskType)
-```
-
-This will create the following field in the `Query` root operation type:
-
-```graphql
-type Query {
-    task(pk: Int!): TaskType
-}
-```
-
-To query a list of model instances, we simply add the `many` argument
-to the `Entrypoint` in addition to the `QueryType`.
-
-```python
-from undine import Entrypoint, QueryType
-from example_project.app.models import Task
-
-class TaskType(QueryType, model=Task): ...
-
-class Query:
-    tasks = Entrypoint(TaskType, many=True)
-```
-
-This will create the following field in the `Query` root operation type:
-
-```graphql
-type Query {
-    tasks: [TaskType!]!
-}
-```
-
-### Configuration
-
-We can disable automatic field generation by setting the `auto` argument to `False` in the class definition:
+We can disable autogeneration by setting the `auto` argument to `False` in the class definition:
 
 ```python
 from undine import QueryType
@@ -100,7 +50,7 @@ from example_project.app.models import Task
 class TaskType(QueryType, model=Task, auto=False): ...
 ```
 
-Alternatively, we could exclude some fields from the `ObjectType` by setting the `exclude` argument:
+Alternatively, we could exclude some fields from the autogeneration by setting the `exclude` argument:
 
 ```python
 from undine import QueryType
@@ -125,7 +75,8 @@ Results from `QueryTypes` can be filtered in two ways:
 
 1) Adding a `FilterSet` to the `QueryType`.
 
-This is explained in detail in the [Filtering](filtering.md) section.
+`Filtersets` provide a way to queries to be filtered using defined filters.
+They are explained in detail in the [Filtering](filtering.md) section.
 
 2) Defining custom filtering in the `__filter_queryset__` classmethod.
 
@@ -149,13 +100,15 @@ Results from `QueryTypes` can be ordered in two ways:
 
 1) Adding an `OrderSet` to the `QueryType`.
 
+OrderSets provide a way to queries to be ordered using defined orderings.
 This is explained in detail in the [Ordering](ordering.md) section.
 
-2) Defining custom ordering in the  `__filter_queryset__` classmethod.
+2) Defining custom ordering in the `__filter_queryset__` classmethod.
 
 Same as custom [filtering](#filtering), this is used for all results returned by the `QueryType`.
 However, since queryset ordering is reset when a new ordering is applied to the queryset,
-ordering added here serves as the default ordering for the `QueryType`.
+ordering added here serves as the default ordering for the `QueryType`, and is overridden if
+any ordering is applied using an `OrderSet`.
 
 ```python
 from django.db.models import QuerySet
@@ -174,7 +127,7 @@ class TaskType(QueryType, model=Task):
 ### Custom optimizations
 
 Usually touching the `QueryType` optimizations is not necessary, but if required,
-you can override a `__optimizer_hook__` classmethod to do so.
+you can override a `__optimizer_hook__` classmethod on the `QueryType` to do so.
 
 ```python
 from undine import QueryType, GQLInfo
@@ -191,10 +144,18 @@ This hook can be helpful when you require data from outside the GraphQL executio
 to e.g. make permission checks. See [optimizer](optimizer.md) section for more information
 on how the query optimizer works and [Permissions](permissions.md) on how permissions checks work.
 
-## Field
+## Fields
 
-A `Field` is a class that represents a field on a GraphQL `ObjectType`. `Fields` should
-be added to the class body of a `QueryType` class, like so:
+`Fields` on a `QueryType` correspond to either model fields or annotated expressions.
+In th GraphQL schema, they represent fields on the `ObjectType` generated from a `QueryType`.
+
+A `Field` always requires a _**reference**_ from which it will create the proper GraphQL resolver,
+output type, and arguments for the field.
+
+### Model field references
+
+If a `Field` has the same name on the `QueryType` as a model field on the `QueryType's` model,
+the reference can be omitted.
 
 ```python
 from undine import Field, QueryType
@@ -207,16 +168,7 @@ class TaskType(QueryType, model=Task):
     created_at = Field()
 ```
 
-We don't need to add any arguments to the `Field` instances, since they automatically
-introspect all relevant data from the model field they correspond to.
-
-### References
-
-A `Field's` "reference" is actual "thing" the Field is built from.
-Without arguments, `None` is used as the reference, which means the `Field` is built from the model field
-with the same name as the `Field` instance on the `QueryType` class.
-
-As an example, we could use a string as the reference to the model field:
+We could also use a string as a direct reference to the model field:
 
 ```python
 from undine import Field, QueryType
@@ -247,7 +199,7 @@ class TaskType(QueryType, model=Task):
 ```
 
 We could also use the `model_field_name` argument instead of using the reference.
-This is useful when linking `QueryTypes` together (see [Relations](#relations)).
+This is useful when linking `QueryTypes` together (see [Relations](#relations) below).
 
 ```python
 from undine import Field, QueryType
@@ -257,8 +209,10 @@ class TaskType(QueryType, model=Task):
     title = Field(model_field_name="name")
 ```
 
-Django ORM expressions also work as the references. These create an
-annotation on the model instances when fetched.
+### Expression references
+
+Django ORM expressions also work as the references (Subqueries are also supported).
+These create an annotation on the model instances when fetched.
 
 ```python
 from undine import Field, QueryType
@@ -267,6 +221,126 @@ from example_project.app.models import Task
 
 class TaskType(QueryType, model=Task):
     upper_name = Field(Upper("name"))
+```
+
+### FunctionType references
+
+`FunctionTypes` (instances of `types.FunctionType` e.g. functions or methods)
+can also be used to create `Fields`. This can be done by decoraging a method with the `Field` class.
+
+```python
+from undine import Field, QueryType, GQLInfo
+from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task):
+    @Field
+    def greeting(self, info: GQLInfo) -> str:
+        return "Hello World!"
+```
+
+The `Field` will use the decorated method as its GraphQL resolver.
+The method's return type will be used as the `Field's` output type, so annotating it is required.
+
+/// details | About method signature
+
+Note that the method's `self` argument is not actually the instance of the class, but the `root` argument
+of a GraphQL field resolver. In fact, the decorated method is treated as a static method by the `Field`.
+
+To clarify this, it's recommended to change the argument's name to `root`, as defined by the
+`RESOLVER_ROOT_PARAM_NAME` setting. The value of the `root` argument is the model instance being queried.
+
+The `root` and `info` arguments can all be left out if not needed.
+When included, `root` is always the first argument of the method (typing not required) and `info`
+always has the `GQLInfo` type annotation (typing required).
+
+///
+
+You can add arguments to the `Field` by adding arguments to the function signature.
+Typing these arguments is required to determine their input type.
+
+```python
+from undine import Field, QueryType, GQLInfo
+from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task):
+    @Field
+    def greeting(self, info: GQLInfo, *, name: str) -> str:
+        return f"Hello, {name}!"
+```
+
+We can add a description to the `Field` by adding a docstring to the method.
+If the method has arguments, we can add descriptions to those arguments by using
+[reStructuredText docstrings format](https://peps.python.org/pep-0287/).
+
+> Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER` setting
+> that conforms to the `DocstringParserProtocol` from `undine.typing`.
+
+```python
+from undine import Field, QueryType, GQLInfo
+from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task):
+    @Field
+    def testing(self, name: str) -> str:
+        """
+        Return a greeting.
+
+        :param name: The name to greet.
+        """
+        return f"Hello, {name}!"
+```
+
+> If the method requires fields from the `root` argument instance, we should add custom optimization
+> rules for the `Field` so that the fields are available when the resolver is called.
+> See [custom optimizations](#custom-optimizations) for how to add these.
+>
+> It might be simpler to use [Calculated references](#calculated-references) instead, since they
+> allow using the queryset directly.
+
+### Calculated references
+
+Using the `Calculated` class as a reference creates a field that is calculated based on user input.
+These require a special calculation function to be defined.
+
+```python
+from typing import TypedDict, Unpack
+from django.db.models import QuerySet, Value
+from undine import Field, QueryType, GQLInfo, Calculated
+from example_project.app.models import Task
+
+class CalcInput(TypedDict):
+    value: int
+
+class TaskType(QueryType, model=Task):
+    calc = Field(Calculated(takes=CalcInput, returns=int))
+
+    @calc.calculate
+    def _(self, queryset: QuerySet, info: GQLInfo, **kwargs: Unpack[CalcInput]) -> QuerySet:
+        # Some impressive calculation here
+        return queryset.annotate(calc=Value(kwargs["value"]))
+```
+
+`Calculated` takes two arguments:
+
+1. `takes`: describes the input arguments needed for the calculation (`TypedDict`/`NamedTuple`/`dataclass`).
+2. `returns`: describes its return type.
+
+The calculation function is decorated with the `@<field_name>.calculate` decorator.
+The function should annotate a value to the given queryset with the same name as the field.
+
+/// details | About method signature
+
+The `self` argument for the calculation function is not the instance of the `QueryType` class,
+but the field instance that the `calculate` decorator is applied to.
+
+///
+
+The field will look like this in the GraphQL schema:
+
+```graphql
+type TaskType {
+    calc(value: Int!): Int!
+}
 ```
 
 ### Relations
@@ -389,46 +463,6 @@ class TaskType(QueryType, model=Task):
     @name.resolve
     def resolve_name(self: Task) -> str:
         return self.name.upper()
-```
-
-### Calculated fields
-
-A calculated field is a field that is calculated based on user input.
-These require a special setup and a calculation function to be defined.
-
-```python
-from typing import TypedDict, Unpack
-from django.db.models import QuerySet, Value
-from undine import Field, QueryType, GQLInfo, Calculated
-from example_project.app.models import Task
-
-
-class CalcInput(TypedDict):
-    value: int
-
-
-class TaskType(QueryType, model=Task):
-    calc = Field(Calculated(takes=CalcInput, returns=int))
-
-    @calc.calculate
-    def _(self, queryset: QuerySet, info: GQLInfo, **kwargs: Unpack[CalcInput]) -> QuerySet:
-        # Some impressive calculation here
-        return queryset.annotate(calc=Value(kwargs["value"]))
-```
-
-`Calculated` takes two arguments: `takes`, which describes the input arguments needed for the 
-calculation (a `TypedDict`, a `NamedTuple` or a `dataclass`), and `returns`, which describes
-its return type.
-
-The calculation function is decorated with the `@<field_name>.calculate` decorator.
-The function should annotate a value to the given queryset with the same name as the field.
-
-The calculated field will look like this in the GraphQL schema:
-
-```graphql
-type TaskType {
-    calc(value: Int!): Int!
-}
 ```
 
 ### Custom optimizations

@@ -3,81 +3,88 @@
 In the [getting started](getting-started.md) section, we started a basic GraphQL server using an
 example schema. In this section, we'll learn how to create a schema for your own data.
 
-## RootOperationType
+Before we can create the schema itsef, we'll need to create some basic types for it,
+mainly the `RootType` for supporting query operations in the schema, as well as
+an `Entrypoint` in that `RootType` for actually fetching the data.
 
-A GraphQL schema defines a `RootOperationType` for each kind of operation that it supports:
+## RootTypes
+
+A GraphQL schema defines a `RootType` for each kind of operation that it supports:
 
 1. `Query`: For querying data (required).
 2. `Mutation`: For mutating data (optional).
 3. `Subscription`: For fetching real-time data (optional, not yet supported by Undine).
 
-To create the required `RootOperationType` for querying, we'll create a class named `Query`
-that subclasses `RootOperationType`.
+> In GraphQL terms, a `RootType` is just a regular `ObjectType` that just happens
+> to be the root of the GraphQL schema. In Undine, we have a separate class for it
+> for clarity and to better support things like optimizations and permissions.
+
+To create the required `RootType` for querying, we'll create a class named `Query`
+that subclasses `RootType`.
 
 ```python
-from undine import RootOperationType
+from undine import RootType
 
-class Query(RootOperationType): ...
+class Query(RootType): ...
 ```
 
-This isn't a valid `RootOperationType` yet since all `RootOperationTypes` need at least
+This isn't a valid `RootType` yet since all `RootTypes` need at least
 one `Entrypoint` in their class body.
 
 ## Entrypoints
 
-In Undine, `Entrypoints` are simply the fields in a `RootOperationType`.
-You can think them as the _"API endpoints inside the GraphQL schema"_.
-`Entrypoints` can be created by using one of three types of objects as a "reference":
-a `FunctionType`, a `QueryType`, or a `MutationType`.
+`Entrypoints` can be thought of as the _"API endpoints inside the GraphQL schema"_.
+They are the fields in a `RootType` from which we can execute operations like queries
+or mutations.
 
-> A "reference" is simply the first argument given to the `Entrypoint` class,
-> from which the GraphQL field for that `Entrypoint` will be created.
+An `Entrypoint` always requires a _**reference**_ from which it will create the
+proper GraphQL resolver, output type, and arguments for the operation.
 
-### FunctionType Entrypoints
+### FunctionType references
 
-An `Entrypoint` for a `FunctionType` is created by using any function-like object as the
-reference of an `Entrypoint` class. This can be done either by decorating a method in the
-`RootOperationType` class with the `Entrypoint` class, or by using a function as the first argument
-of the `Entrypoint` class.
+Using a `FunctionType` (instances of `types.FunctionType` e.g. functions or methods)
+as a reference is the most basic way of creating an `Entrypoint`.
 
-As an example, let's create a simple query `Entrypoint` that returns a greeting
-(although the process would be the same for a mutation `Entrypoint`).
+`FunctionType` references can be used for both query and mutation `Entrypoints`.
+As an example, let's create a query `Entrypoint` from a method on the Query `RootType`
+that returns a greeting by decoraging a method with the `Entrypoint` class.
 
 ```python
-from typing import Any
-from undine import Entrypoint, RootOperationType, GQLInfo
+from undine import Entrypoint, RootType, GQLInfo
 
-class Query(RootOperationType):
+class Query(RootType):
     @Entrypoint
-    def testing(root: None, info: GQLInfo, **kwargs: Any) -> str:
-        return "Hello, World!"
+    def testing(self, info: GQLInfo) -> str:
+        return "Hello World!"
 ```
 
-Note that the first argument of the method is not `self` but `root`. This is because
-when used as the `FunctionType` for an `Entrypoint`, the decorated method is treated as a
-static method, where the first argument is the `root` argument of a GraphQL field resolver.
-We could have used `self` as well, but chose to rename it to keep things more clear.
-The value of the `root` argument is `None` by default, but can be configured using the `ROOT_VALUE` setting.
+The `Entrypoint` will use the decorated method as its GraphQL resolver.
+The method's return type will be used as the `Entrypoint's` output type, so annotating it is required.
 
-The output type for this `Entrypoint` will be determined by the return type of the method.
-Not including a return type will result in an error.
+/// details | About method signature
 
-The `root` and `info` arguments, as well as `**kwargs`, can all be left out if not needed,
-as the `Entrypoint` will create an intermediary layer between the GraphQL resolver signature and the method.
+Note that the method's `self` argument is not actually the instance of the class, but the `root` argument
+of a GraphQL field resolver. In fact, the decorated method is treated as a static method by the `Entrypoint`.
+
+To clarify this, it's recommended to change the argument's name to `root`, as defined by the
+`RESOLVER_ROOT_PARAM_NAME` setting. The value of the `root` argument is `None` by default,
+but can be configured using the `ROOT_VALUE` setting.
+
+The `root` and `info` arguments can all be left out if not needed.
 When included, `root` is always the first argument of the method (typing not required) and `info`
 always has the `GQLInfo` type annotation (typing required).
 
-#### Arguments
+///
 
 We can add arguments to the `Entrypoint` by adding them to the function signature.
-Typing these arguments is also required to determine their input type.
+Typing these arguments is required to determine their input type.
 
 ```python
-from undine import Entrypoint, RootOperationType
+from undine import Entrypoint, RootType
 
-class Query(RootOperationType):
+class Query(RootType):
     @Entrypoint
-    def testing(root, name: str) -> str:
+    def testing(self, name: str) -> str:
         return f"Hello, {name}!"
 ```
 
@@ -86,26 +93,27 @@ Note that non-null arguments are required by GraphQL, so if we want to make an a
 optional, we can do so by making it nullable, or adding a default value.
 
 ```python
-from undine import Entrypoint, RootOperationType
+from undine import Entrypoint, RootType
 
-class Query(RootOperationType):
+class Query(RootType):
     @Entrypoint
-    def testing(root, name: str | None = None) -> str:
+    def testing(self, name: str | None = None) -> str:
         return f"Hello, {name or 'World'}!"
 ```
 
-#### Descriptions
-
-We can also a description to the `Entrypoint` by adding a docstring to the method.
+We can add a description to the `Entrypoint` by adding a docstring to the method.
 If the method has arguments, we can add descriptions to those arguments by using
 [reStructuredText docstrings format](https://peps.python.org/pep-0287/).
 
-```python
-from undine import Entrypoint
+> Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER` setting
+> that conforms to the `DocstringParserProtocol` from `undine.typing`.
 
-class Query:
+```python
+from undine import Entrypoint, RootType
+
+class Query(RootType):
     @Entrypoint
-    def testing(root, name: str) -> str:
+    def testing(self, name: str) -> str:
         """
         Return a greeting.
 
@@ -114,40 +122,120 @@ class Query:
         return f"Hello, {name}!"
 ```
 
-> Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER` setting
-> that conforms to the `DocstringParserProtocol` from `undine.typing`.
+### QueryType references
 
-### QueryType and MutationType Entrypoints
+A `QueryType` represents a GraphQL `ObjectType` for querying a Django model
+in the GraphQL schema. You should first read more on `QueryTypes` in the [Queries](queries.md) section
+since this section will only cover using them in `Entrypoints`.
 
-`Entrypoint` can also be used with `QueryType` and `MutationType` classes
-to create `Entrypoints` for querying and mutating Django model data.
-We'll cover these more thoroughly in the [Queries](queries.md) and
-[Mutations](mutations.md) sections, but here is a quick example:
+For querying a single model instance, simply use the `QueryType` class
+as the reference for the `Entrypoint`.
 
 ```python
-from undine import Entrypoint
-from example_project.app.types import TaskType
-from example_project.app.mutations import TaskCreateMutationType
+from undine import Entrypoint, QueryType, RootType
+from example_project.app.models import Task
 
-class Query:
+class TaskType(QueryType, model=Task): ...
+
+class Query(RootType):
     task = Entrypoint(TaskType)
+```
 
-class Mutation:
-    create_task = Entrypoint(TaskCreateMutationType)
+This would create the following field in the Query `RootType`:
+
+```graphql
+type Query {
+    task(pk: Int!): TaskType
+}
+```
+
+To query a list of model instances, we simply add the `many` argument
+to the `Entrypoint` in addition to the `QueryType`.
+
+```python
+from undine import Entrypoint, QueryType, RootType
+from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task): ...
+
+class Query(RootType):
+    tasks = Entrypoint(TaskType, many=True)
+```
+
+This would create the following field in the Query `RootType`:
+
+```graphql
+type Query {
+    tasks: [TaskType!]!
+}
+```
+
+### MutationType references
+
+A `MutationType` represents a possible mutation operation based on a Django model.
+You should first read more on `MutationTypes` in the [Mutations](mutations.md) section
+since this section will only cover using them in `Entrypoints`.
+
+To create a mutation for a model instance (create mutation in this example),
+simply use the `MutationType` class as the reference for the `Entrypoint`.
+
+```python
+from undine import Entrypoint, MutationType, RootType
+from example_project.app.models import Task
+
+class TaskCreateMutation(MutationType, model=Task): ...
+
+class Mutation(RootType):
+    create_task = Entrypoint(TaskCreateMutation)
+```
+
+This would create the following field in the Mutation `RootType`:
+
+```graphql
+type Mutation {
+    createTask(input: TaskCreateMutation!): TaskType!
+}
+```
+
+To make this a bulk mutation, we can add the `many` argument to the `Entrypoint`.
+
+```python
+from undine import Entrypoint, MutationType, RootType
+from example_project.app.models import Task
+
+class TaskCreateMutation(MutationType, model=Task): ...
+
+class Mutation(RootType):
+    bulk_create_tasks = Entrypoint(TaskCreateMutation, many=True)
+```
+
+This would create the following field in the Mutation `RootType`:
+
+```graphql
+type Mutation {
+    bulkCreateTask(
+        batchSize: Int = null
+        ignoreConflicts: Boolean = false
+        updateConflicts: Boolean = false
+        updateFields: [TaskCreateMutationBulkCreateField!] = null
+        uniqueFields: [TaskCreateMutationBulkCreateField!] = null
+        input: [TaskCreateMutation!]!
+    ): [TaskType!]!
+}
 ```
 
 ## Crating the Schema
 
-Now that we have our `RootOperationType` for querying, we'll create
+Now that we have our `RootType` for querying, we'll create
 the GraphQL schema using the `create_schema` function.
 
 ```python
-from undine import create_schema, Entrypoint, RootOperationType
+from undine import create_schema, Entrypoint, RootType
 
-class Query(RootOperationType):
-   @Entrypoint
-   def testing(root) -> str:
-      return "Hello, World!"
+class Query(RootType):
+    @Entrypoint
+    def testing(self) -> str:
+        return "Hello, World!"
 
 schema = create_schema(query=Query)
 ```
