@@ -377,7 +377,7 @@ def test_to_argument_map__mutation_type__bulk_create_mutation():
     assert isinstance(result["updateFields"].type.of_type.of_type, GraphQLEnumType)
 
     enum_type: GraphQLEnumType = result["updateFields"].type.of_type.of_type
-    assert enum_type.name == "TaskBulkCreateMutationBulkCreateFields"
+    assert enum_type.name == "TaskBulkCreateMutationBulkCreateField"
     assert sorted(enum_type.values) == [
         "acceptancecriteria",
         "assignees",
@@ -415,7 +415,7 @@ def test_to_argument_map__mutation_type__bulk_create_mutation():
     assert isinstance(result["uniqueFields"].type.of_type.of_type, GraphQLEnumType)
 
     enum_type: GraphQLEnumType = result["uniqueFields"].type.of_type.of_type
-    assert enum_type.name == "TaskBulkCreateMutationBulkCreateFields"
+    assert enum_type.name == "TaskBulkCreateMutationBulkCreateField"
     assert sorted(enum_type.values) == [
         "acceptancecriteria",
         "assignees",

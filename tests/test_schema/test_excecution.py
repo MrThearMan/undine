@@ -98,8 +98,8 @@ def test_create_schema__extensions():
     )
 
     assert schema.extensions == {"foo": "1"}
-    assert schema.query_type.extensions == {"foo": "2", "undine_root_operation_type": Query}
-    assert schema.mutation_type.extensions == {"foo": "3", "undine_root_operation_type": Mutation}
+    assert schema.query_type.extensions == {"foo": "2", "undine_root_type": Query}
+    assert schema.mutation_type.extensions == {"foo": "3", "undine_root_type": Mutation}
 
 
 def test_create_schema__query_type_required():

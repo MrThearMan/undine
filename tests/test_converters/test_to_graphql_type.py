@@ -752,7 +752,7 @@ def test_convert_to_graphql_type__generic_foreign_key__is_input():
 
     assert isinstance(result.fields["typename"].type, GraphQLNonNull)
     assert isinstance(result.fields["typename"].type.of_type, GraphQLEnumType)
-    assert result.fields["typename"].type.of_type.name == "CommentTargetChoices"
+    assert result.fields["typename"].type.of_type.name == "CommentTargetChoice"
 
     assert result.fields["typename"].type.of_type.values == {
         "PROJECT": GraphQLEnumValue(value="PROJECT", description="Project"),
