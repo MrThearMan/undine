@@ -511,7 +511,7 @@ def load_deferred() -> None:  # noqa: C901
         name = ref.model.__name__ + to_pascal_case(ref.name)
 
         typename_enum = get_or_create_graphql_enum(
-            name=f"{name}Choices",
+            name=f"{name}Choice",
             values={
                 field.model.__name__.upper(): field.model.__name__
                 for field in generic_relations_for_generic_foreign_key(ref)

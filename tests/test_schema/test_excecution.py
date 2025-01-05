@@ -9,7 +9,7 @@ from example_project.app.models import Task
 from undine import Entrypoint, MutationType, QueryType, create_schema
 from undine.dataclasses import GraphQLParams
 from undine.registies import GRAPHQL_TYPE_REGISTRY
-from undine.schema import RootOperationType, execute_graphql
+from undine.schema import RootType, execute_graphql
 from undine.settings import example_schema
 
 
@@ -18,10 +18,10 @@ def test_create_schema():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         task = Entrypoint(TaskType)
 
-    class Mutation(RootOperationType):
+    class Mutation(RootType):
         create_task = Entrypoint(TaskCreateMutation)
 
     schema = create_schema(query=Query, mutation=Mutation)
@@ -43,10 +43,10 @@ def test_create_schema__registered():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         task = Entrypoint(TaskType)
 
-    class Mutation(RootOperationType):
+    class Mutation(RootType):
         create_task = Entrypoint(TaskCreateMutation)
 
     create_schema(query=Query, mutation=Mutation)
@@ -63,12 +63,12 @@ def test_create_schema__descriptions():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         """Query description."""
 
         task = Entrypoint(TaskType)
 
-    class Mutation(RootOperationType):
+    class Mutation(RootType):
         """Mutation description."""
 
         create_task = Entrypoint(TaskCreateMutation)
@@ -85,10 +85,10 @@ def test_create_schema__extensions():
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
-    class Query(RootOperationType, extensions={"foo": "2"}):
+    class Query(RootType, extensions={"foo": "2"}):
         task = Entrypoint(TaskType)
 
-    class Mutation(RootOperationType, extensions={"foo": "3"}):
+    class Mutation(RootType, extensions={"foo": "3"}):
         create_task = Entrypoint(TaskCreateMutation)
 
     schema = create_schema(

@@ -1,5 +1,5 @@
 from example_project.app.models import Task
-from undine import Entrypoint, MutationType, QueryType, RootOperationType
+from undine import Entrypoint, MutationType, QueryType, RootType
 from undine.converters import convert_entrypoint_ref_to_resolver
 from undine.resolvers import (
     BulkCreateResolver,
@@ -79,7 +79,7 @@ def test_convert_entrypoint_ref_to_resolver__function__root_param__cls():
 def test_convert_entrypoint_ref_to_resolver__query_type():
     class TaskType(QueryType, model=Task): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         task = Entrypoint(TaskType)
 
     result = convert_entrypoint_ref_to_resolver(TaskType, caller=Query.task)
@@ -90,7 +90,7 @@ def test_convert_entrypoint_ref_to_resolver__query_type():
 def test_convert_entrypoint_ref_to_resolver__query_type__many():
     class TaskType(QueryType, model=Task): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         task = Entrypoint(TaskType, many=True)
 
     result = convert_entrypoint_ref_to_resolver(TaskType, caller=Query.task)

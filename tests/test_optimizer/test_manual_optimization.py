@@ -2,7 +2,7 @@ import pytest
 
 from example_project.app.models import Person, Project, Task
 from tests.factories import TaskFactory
-from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 from undine.optimizer.optimizer import OptimizationData
 from undine.typing import GQLInfo
 
@@ -20,7 +20,7 @@ def test_optimizer__add_select_related(graphql, undine_settings):
     class ProjectType(QueryType, model=Project, auto=False):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -64,7 +64,7 @@ def test_optimizer__add_prefetch_related(graphql, undine_settings):
     class PersonType(QueryType, model=Person, auto=False):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)

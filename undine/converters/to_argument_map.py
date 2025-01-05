@@ -192,7 +192,7 @@ def load_deferred() -> None:  # noqa: C901
                 )
 
                 enum = get_or_create_graphql_enum(
-                    name=f"{ref.__typename__}BulkCreateFields",
+                    name=f"{ref.__typename__}BulkCreateField",
                     values={
                         to_schema_name(key): GraphQLEnumValue(
                             value=key,

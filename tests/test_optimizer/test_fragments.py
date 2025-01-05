@@ -2,7 +2,7 @@ import pytest
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
-from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 
 
 @pytest.mark.django_db
@@ -10,7 +10,7 @@ def test_optimizer__fragment_spread(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         type = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -51,7 +51,7 @@ def test_optimizer__fragment_spread__to_one_relation(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         project = Field(ProjectType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -89,7 +89,7 @@ def test_optimizer__fragment_spread__to_many_relation(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         assignees = Field(PersonType, many=True)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -128,7 +128,7 @@ def test_optimizer__fragment_spread__same_relation_in_multiple_fragments(graphql
     class TaskType(QueryType, model=Task, auto=False):
         assignees = Field(PersonType, many=True)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)

@@ -33,7 +33,7 @@ from example_project.example.models import (
 )
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory, TeamFactory
 from tests.factories.example import ExampleFactory
-from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 
 ###############################################################################################
 
@@ -95,7 +95,7 @@ def example_schema():
 
     class ReverseManyToManyToReverseManyToManyType(QueryType, model=ReverseManyToManyToReverseManyToMany): ...
 
-    class Query(RootOperationType):
+    class Query(RootType):
         examples = Entrypoint(ExampleType, many=True)
 
     return create_schema(query=Query)
@@ -1351,7 +1351,7 @@ def test_optimizer__relations__generic_relation(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         comments = Field(CommentType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1400,7 +1400,7 @@ def test_optimizer__relations__generic_foreign_key(graphql, undine_settings):
     class CommentType(QueryType, model=Comment, auto=False):
         target = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         comments = Entrypoint(CommentType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1461,7 +1461,7 @@ def test_optimizer__relations__generic_foreign_key__as_nested_relation(graphql, 
         name = Field()
         comments = Field(CommentType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         people = Entrypoint(PersonType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1548,7 +1548,7 @@ def test_optimizer__relations__generic_foreign_key__with_nested_relations(graphq
     class CommentType(QueryType, model=Comment, auto=False):
         target = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         comments = Entrypoint(CommentType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1619,7 +1619,7 @@ def test_optimizer__relations__same_relation_multiple_times(graphql, undine_sett
     class TaskType(QueryType, model=Task, auto=False):
         assignees = Field(PersonType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1671,7 +1671,7 @@ def test_optimizer__relations__same_related_object_selected_with_different_field
         type = Field()
         project = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1730,7 +1730,7 @@ def test_optimizer__relations__related_objects_shared_by_multiple_objects(graphq
         project = Field(ProjectType)
         assignees = Field(PersonType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1789,7 +1789,7 @@ def test_optimizer__relations__max_query_complexity(graphql, undine_settings):
         name = Field()
         project = Field(ProjectType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)

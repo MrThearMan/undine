@@ -5,7 +5,7 @@ from django.db.models.functions import Reverse
 
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
-from undine import Entrypoint, Field, Order, OrderSet, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, Order, OrderSet, QueryType, RootType, create_schema
 
 
 @pytest.mark.django_db
@@ -16,7 +16,7 @@ def test_optimizer__ordering(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, orderset=TaskOrderSet):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -55,7 +55,7 @@ def test_optimizer__ordering__multiple(graphql, undine_settings):
         name = Field()
         due_by = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -104,7 +104,7 @@ def test_optimizer__ordering__nulls_first(graphql, undine_settings):
         name = Field()
         project = Field(ProjectType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -148,7 +148,7 @@ def test_optimizer__ordering__nulls_last(graphql, undine_settings):
         name = Field()
         project = Field(ProjectType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -188,7 +188,7 @@ def test_optimizer__ordering__expression(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, orderset=TaskOrderSet):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)

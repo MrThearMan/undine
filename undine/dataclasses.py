@@ -169,14 +169,10 @@ class Calculated:
     """A QueryType Field wrapper for fields that need to be calculated using user input."""
 
     takes: Any
-    """
-    A TypedDict, NamedTuple or dataclass describing the input arguments for the field.
-    """
+    """A TypedDict, NamedTuple or dataclass describing the input arguments for the field."""
 
     returns: type | UnionType = dataclasses.field(init=True, kw_only=True)
-    """
-    A type describing the return type for the field.
-    """
+    """A type describing the return type for the field."""
 
     @property
     def parameters(self) -> tuple[Parameter, ...]:

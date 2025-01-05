@@ -2,7 +2,7 @@ import pytest
 
 from example_project.app.models import Comment, Person, Project, Report, Task, TaskStep, Team
 from tests.factories import CommentFactory, PersonFactory, ReportFactory, TaskFactory, TaskStepFactory, TeamFactory
-from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 from undine.relay import Connection, Node, offset_to_cursor, to_global_id
 
 # Relay Node interface
@@ -13,7 +13,7 @@ def test_optimizer__relay__node(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         node = Entrypoint(Node)
         tasks = Entrypoint(Connection(TaskType))
 
@@ -61,7 +61,7 @@ def test_optimizer__relay__node__joins(graphql, undine_settings):
         project = Field(ProjectType)
         assignees = Field(PersonType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         node = Entrypoint(Node)
         tasks = Entrypoint(Connection(TaskType))
 
@@ -113,7 +113,7 @@ def test_optimizer__relay__connection(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -156,7 +156,7 @@ def test_optimizer__relay__connection__first(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -197,7 +197,7 @@ def test_optimizer__relay__connection__last(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -239,7 +239,7 @@ def test_optimizer__relay__connection__after(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -282,7 +282,7 @@ def test_optimizer__relay__connection__before(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -325,7 +325,7 @@ def test_optimizer__relay__connection__offset(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -367,7 +367,7 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -442,7 +442,7 @@ def test_optimizer__relay__connection__no_max_limit(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType, max_limit=None))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -485,7 +485,7 @@ def test_optimizer__relay__connection__no_max_limit__first(graphql, undine_setti
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType, max_limit=None))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -526,7 +526,7 @@ def test_optimizer__relay__connection__no_max_limit__last(graphql, undine_settin
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType, max_limit=None))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -569,7 +569,7 @@ def test_optimizer__relay__connection__max_limit__has_next_page(graphql, undine_
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType, max_limit=2))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -638,7 +638,7 @@ def test_optimizer__relay__connection__max_limit__has_previous_page(graphql, und
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType, max_limit=2))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -715,7 +715,7 @@ def test_optimizer__relay__connection__joins(graphql, undine_settings):
         project = Field(ProjectType)
         assignees = Field(PersonType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -791,7 +791,7 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
         project = Field(ProjectType)
         assignees = Field(PersonType)
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -879,7 +879,7 @@ def test_optimizer__relay__connection__total_count_in_fragment(graphql, undine_s
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -929,7 +929,7 @@ def test_optimizer__relay__connection__different_ordering(graphql, undine_settin
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node], orderset=True):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -971,7 +971,7 @@ def test_optimizer__relay__connection__only_total_count(graphql, undine_settings
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1008,7 +1008,7 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1050,7 +1050,7 @@ def test_optimizer__relay__connection__alias(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False, interfaces=[Node]):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1113,7 +1113,7 @@ def test_optimizer__relay__nested_connection__many_to_many__forward(graphql, und
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1204,7 +1204,7 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
         name = Field()
         reports = Field(Connection(ReportType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1295,7 +1295,7 @@ def test_optimizer__relay__nested_connection__first(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1383,7 +1383,7 @@ def test_optimizer__relay__nested_connection__last(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1471,7 +1471,7 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1559,7 +1559,7 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1650,7 +1650,7 @@ def test_optimizer__relay__nested_connection__offset(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1737,7 +1737,7 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1876,7 +1876,7 @@ def test_optimizer__relay__nested_connection__no_max_limit(graphql, undine_setti
         name = Field()
         assignees = Field(Connection(PersonType, max_limit=None))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -1967,7 +1967,7 @@ def test_optimizer__relay__nested_connection__no_max_limit__first(graphql, undin
         name = Field()
         assignees = Field(Connection(PersonType, max_limit=None))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2055,7 +2055,7 @@ def test_optimizer__relay__nested_connection__no_max_limit__last(graphql, undine
         name = Field()
         assignees = Field(Connection(PersonType, max_limit=None))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2143,7 +2143,7 @@ def test_optimizer__relay__nested_connection__max_limit__has_next_page(graphql, 
         name = Field()
         assignees = Field(Connection(PersonType, max_limit=2))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2278,7 +2278,7 @@ def test_optimizer__relay__nested_connection__max_limit__has_previous_page(graph
         name = Field()
         assignees = Field(Connection(PersonType, max_limit=2))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2409,7 +2409,7 @@ def test_optimizer__relay__nested_connection__joins(graphql, undine_settings):
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2541,7 +2541,7 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2705,7 +2705,7 @@ def test_optimizer__relay__nested_connection__total_count_in_fragment(graphql, u
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2804,7 +2804,7 @@ def test_optimizer__relay__nested_connection__one_to_many(graphql, undine_settin
         name = Field()
         steps = Field(Connection(TaskStepType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2894,7 +2894,7 @@ def test_optimizer__relay__nested_connection__one_to_many__total_count(graphql, 
         name = Field()
         steps = Field(Connection(TaskStepType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -2988,7 +2988,7 @@ def test_optimizer__relay__nested_connection__different_ordering(graphql, undine
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3078,7 +3078,7 @@ def test_optimizer__relay__nested_connection__only_total_count(graphql, undine_s
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3156,7 +3156,7 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3250,7 +3250,7 @@ def test_optimizer__relay__nested_connection__multiple_connections(graphql, undi
         assignees = Field(Connection(PersonType))
         steps = Field(Connection(TaskStepType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3372,7 +3372,7 @@ def test_optimizer__relay__nested_connection__aliased_connections(graphql, undin
         name = Field()
         assignees = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3486,7 +3486,7 @@ def test_optimizer__relay__nested_connection__generic_relation(graphql, undine_s
         name = Field()
         comments = Field(Connection(CommentType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -3580,7 +3580,7 @@ def test_optimizer__relay__nested_connection__third_level_connection(graphql, un
         name = Field()
         members = Field(Connection(PersonType))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         teams = Entrypoint(Connection(TeamType))
 
     undine_settings.SCHEMA = create_schema(query=Query)

@@ -6,7 +6,7 @@ from django.db.models.functions import Left
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
-from undine import Entrypoint, Field, QueryType, RootOperationType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 from undine.dataclasses import Calculated
 from undine.typing import GQLInfo
 
@@ -16,7 +16,7 @@ def test_optimizer__fields__expression(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         first_letter = Field(Left("name", 1))
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -42,7 +42,7 @@ def test_optimizer__fields__typename(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -68,7 +68,7 @@ def test_optimizer__fields__aliases(graphql, undine_settings):
     class TaskType(QueryType, model=Task, auto=False):
         name = Field()
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
@@ -109,7 +109,7 @@ def test_optimizer__fields__calculated_field(graphql, undine_settings):
                 ),
             )
 
-    class Query(RootOperationType):
+    class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)

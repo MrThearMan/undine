@@ -48,24 +48,24 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Entrypoint",
-    "RootOperationType",
+    "RootType",
     "create_schema",
     "execute_graphql",
 ]
 
 
-class RootOperationType:
+class RootType:
     """
-    Base class for GraphQL root operation types (`Query` or `Mutation`).
+    Base class for GraphQL root (operation) types (`Query` or `Mutation`).
 
     The following parameters can be passed in the class definition:
 
-    - `typename`: Override name for the `RootOperationType` in the GraphQL schema. Use class name by default.
-    - `extensions`: GraphQL extensions for the created `RootOperationType`.
+    - `typename`: Override name for the `RootType` in the GraphQL schema. Use class name by default.
+    - `extensions`: GraphQL extensions for the created `RootType`.
 
     >>> class TaskType(QueryType, model=...): ...
     >>>
-    >>> class Query(RootOperationType):
+    >>> class Query(RootType):
     ...     tasks = Entrypoint(TaskType, many=True)
     """
 
@@ -78,11 +78,11 @@ class RootOperationType:
     ) -> None:
         cls.__entrypoint_map__ = get_members(cls, Entrypoint)
         cls.__typename__ = typename or cls.__name__
-        cls.__extensions__ = (extensions or {}) | {undine_settings.ROOT_OPERATION_TYPE_EXTENSIONS_KEY: cls}
+        cls.__extensions__ = (extensions or {}) | {undine_settings.ROOT_TYPE_EXTENSIONS_KEY: cls}
 
     @classmethod
     def __output_type__(cls) -> GraphQLObjectType:
-        """Creates the GraphQL `ObjectType` for this `RootOperationType`."""
+        """Creates the GraphQL `ObjectType` for this `RootType`."""
         return get_or_create_object_type(
             name=cls.__typename__,
             fields={
@@ -96,11 +96,11 @@ class RootOperationType:
 
 class Entrypoint:
     """
-    A class for creating new fields in the `RootOperationTypes` of the GraphQL schema.
+    A class for creating new fields in the `RootTypes` of the GraphQL schema.
 
     >>> class TaskType(QueryType, model=...): ...
     >>>
-    >>> class Query(RootOperationType):
+    >>> class Query(RootType):
     ...     tasks = Entrypoint(TaskType, many=True)
     """
 
@@ -180,8 +180,8 @@ class Entrypoint:
 
 def create_schema(
     *,
-    query: type[RootOperationType],
-    mutation: type[RootOperationType] | None = None,
+    query: type[RootType],
+    mutation: type[RootType] | None = None,
     # TODO: Subscription
     description: str | None = None,
     extensions: dict[str, Any] | None = None,
