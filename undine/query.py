@@ -167,7 +167,7 @@ class QueryType(metaclass=QueryTypeMeta, model=Undefined):
         """Check permissions for accessing multiple instances through this `QueryType`."""
 
     @classmethod
-    def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
+    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
         """
         Hook for modifying the optimization data outside the GraphQL resolver context.
         Can be used to e.g. optimize data for permissions checks.

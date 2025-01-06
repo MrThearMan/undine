@@ -583,3 +583,11 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     msg = "'{content_type}' is not a supported content type."
     status = 415
     code = error_codes.UNSUPPORTED_CONTENT_TYPE
+
+
+class GraphQLValidationError(GraphQLStatusError):  # TODO: Test
+    """Error meant to be raised for validation errors during mutations."""
+
+    msg = "Validation error"  # override with custom message
+    status = 400
+    code = error_codes.VALIDATION_ERROR

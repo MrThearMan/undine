@@ -221,12 +221,12 @@ def test_query_type__permission_many():
     MyQueryType.__permissions_many__(instances=instances, info=MockGQLInfo())
 
 
-def test_query_type__optimizer_hook():
+def test_query_type__optimizations():
     class MyQueryType(QueryType, model=Task): ...
 
     data = OptimizationData(model=Task)
 
-    MyQueryType.__optimizer_hook__(data=data, info=MockGQLInfo())
+    MyQueryType.__optimizations__(data=data, info=MockGQLInfo())
 
 
 @pytest.mark.django_db

@@ -45,7 +45,7 @@ def test_entrypoint__query__attributes():
     assert Query.task.description == "Description."
     assert Query.task.deprecation_reason is None
     assert Query.task.extensions == {"undine_entrypoint": Query.task}
-    assert Query.task.owner == Query
+    assert Query.task.root_type == Query
     assert Query.task.name == "task"
 
 
@@ -115,7 +115,7 @@ def test_entrypoint__query__many__attributes():
     assert Query.task.description == "Description."
     assert Query.task.deprecation_reason is None
     assert Query.task.extensions == {"undine_entrypoint": Query.task}
-    assert Query.task.owner == Query
+    assert Query.task.root_type == Query
     assert Query.task.name == "task"
 
 
@@ -183,7 +183,7 @@ def test_entrypoint__mutation__attributes():
     assert Mutation.create_task.description == "Mutation description."
     assert Mutation.create_task.deprecation_reason is None
     assert Mutation.create_task.extensions == {"undine_entrypoint": Mutation.create_task}
-    assert Mutation.create_task.owner == Mutation
+    assert Mutation.create_task.root_type == Mutation
     assert Mutation.create_task.name == "create_task"
 
 
@@ -323,7 +323,7 @@ def test_entrypoint__function__attributes():
     assert Query.double.description == "Description."
     assert Query.double.deprecation_reason is None
     assert Query.double.extensions == {"undine_entrypoint": Query.double}
-    assert Query.double.owner == Query
+    assert Query.double.root_type == Query
     assert Query.double.name == "double"
 
 

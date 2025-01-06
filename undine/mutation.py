@@ -15,6 +15,7 @@ from undine.converters import (
 )
 from undine.errors.exceptions import MissingModelError
 from undine.middleware.mutation import (
+    AfterMutationMiddleware,
     AtomicMutationMiddleware,
     InputDataModificationMiddleware,
     InputDataValidationMiddleware,
@@ -22,7 +23,6 @@ from undine.middleware.mutation import (
     IntegrityErrorHandlingMiddleware,
     MutationMiddleware,
     MutationPermissionCheckMiddleware,
-    PostMutationHandlingMiddleware,
 )
 from undine.parsers import parse_class_variable_docstrings, parse_description
 from undine.registies import QUERY_TYPE_REGISTRY
@@ -142,7 +142,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         """Validate all input data given to this `MutationType`."""
 
     @classmethod
-    def __post_handle__(cls, info: GQLInfo, value: MutationResult) -> None:
+    def __after__(cls, info: GQLInfo, value: MutationResult) -> None:
         """A hook that is run after a mutation using this `MutationType` has been executed."""
 
     @classmethod
@@ -192,7 +192,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
             InputDataModificationMiddleware,
             MutationPermissionCheckMiddleware,
             InputDataValidationMiddleware,
-            PostMutationHandlingMiddleware,
+            AfterMutationMiddleware,
             InputOnlyDataRemovalMiddleware,
             IntegrityErrorHandlingMiddleware,
             AtomicMutationMiddleware,
@@ -274,7 +274,7 @@ class Input:
             self.input_only = is_input_only(self.ref)
         if self.hidden is Undefined:
             self.hidden = is_input_hidden(self.ref)
-        if self.default_value is Undefined:
+        if self.default_value is Undefined and self.mutation_type.__mutation_kind__ != "update":  # TODO: Test
             self.default_value = convert_to_default_value(self.ref)
         if self.required is Undefined:
             self.required = is_input_required(self.ref, caller=self)

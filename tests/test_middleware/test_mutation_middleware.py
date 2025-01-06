@@ -12,13 +12,13 @@ from tests.factories import UserFactory
 from tests.helpers import MockGQLInfo, MockRequest
 from undine import Input, MutationType
 from undine.middleware.mutation import (
+    AfterMutationMiddleware,
     InputDataModificationMiddleware,
     InputDataValidationMiddleware,
     InputOnlyDataRemovalMiddleware,
     MutationMiddleware,
     MutationMiddlewareHandler,
     MutationPermissionCheckMiddleware,
-    PostMutationHandlingMiddleware,
 )
 from undine.typing import GQLInfo, JsonObject, MutationResult
 
@@ -136,14 +136,14 @@ def test_middleware__input_data_validation_middleware():
     assert validate_called == 3
 
 
-def test_middleware__post_mutation_handling_middleware():
+def test_middleware__after_mutation_middleware():
     post_handler_called = False
 
     class MyMutationType(MutationType, model=Task, auto=False):
         name = Input()
 
         @classmethod
-        def __post_handle__(cls, info: GQLInfo, value: Model) -> None:
+        def __after__(cls, info: GQLInfo, value: Model) -> None:
             nonlocal post_handler_called
             post_handler_called = True
 
@@ -151,7 +151,7 @@ def test_middleware__post_mutation_handling_middleware():
         "name": "foo",
     }
 
-    middleware = PostMutationHandlingMiddleware(
+    middleware = AfterMutationMiddleware(
         mutation_type=MyMutationType,
         info=MockGQLInfo(),
         input_data=deepcopy(input_data),

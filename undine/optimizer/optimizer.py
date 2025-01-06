@@ -175,7 +175,7 @@ class QueryOptimizer(GraphQLASTWalker):
 
             self.optimization_data.order_by.extend(order_results.order_by)
 
-        query_type.__optimizer_hook__(self.optimization_data, self.root_info)
+        query_type.__optimizations__(self.optimization_data, self.root_info)
 
     def increase_complexity(self) -> None:
         super().increase_complexity()

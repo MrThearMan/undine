@@ -132,10 +132,10 @@ class Entrypoint:
         self.extensions = extensions or {}
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
-    def __set_name__(self, owner: type, name: str) -> None:
+    def __set_name__(self, owner: type[RootType], name: str) -> None:
         # Called as part of the descriptor protocol if this `Entrypoint` is assigned
-        # to a variable in the class body of a `Query` or `Mutation` class.
-        self.owner = owner
+        # to a variable in the class body of a `RootType` class.
+        self.root_type = owner
         self.name = name
 
         if self.ref is Undefined:
@@ -144,7 +144,7 @@ class Entrypoint:
         if isinstance(self.ref, FunctionType):
             self.many = is_many(self.ref)
         if self.description is Undefined:
-            variable_docstrings = parse_class_variable_docstrings(self.owner)
+            variable_docstrings = parse_class_variable_docstrings(self.root_type)
             self.description = variable_docstrings.get(self.name, Undefined)
             if self.description is Undefined:
                 self.description = parse_description(self.ref)

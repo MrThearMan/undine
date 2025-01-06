@@ -14,7 +14,7 @@ def test_optimizer__add_select_related(graphql, undine_settings):
         project = Field(lambda: ProjectType)
 
         @classmethod
-        def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_select_related("project", query_type=ProjectType)
 
     class ProjectType(QueryType, model=Project, auto=False):
@@ -58,7 +58,7 @@ def test_optimizer__add_prefetch_related(graphql, undine_settings):
         assignees = Field(lambda: PersonType, many=True)
 
         @classmethod
-        def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_prefetch_related("assignees", query_type=PersonType)
 
     class PersonType(QueryType, model=Person, auto=False):

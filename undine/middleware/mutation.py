@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from undine.typing import GQLInfo, JsonObject, MutationKind, MutationResult
 
 __all__ = [
+    "AfterMutationMiddleware",
     "AtomicMutationMiddleware",
     "InputDataModificationMiddleware",
     "InputDataValidationMiddleware",
@@ -28,7 +29,6 @@ __all__ = [
     "MutationMiddleware",
     "MutationMiddlewareHandler",
     "MutationPermissionCheckMiddleware",
-    "PostMutationHandlingMiddleware",
 ]
 
 
@@ -229,17 +229,17 @@ class InputDataValidationMiddleware(MutationMiddleware):
         mutation_type.__validate__(info=self.root_info, input_data=input_data)
 
 
-class PostMutationHandlingMiddleware(MutationMiddleware):
+class AfterMutationMiddleware(MutationMiddleware):
     """
-    Mutation middleware required for post-mutation handling to work.
+    Mutation middleware required for after-mutation handling to work.
 
-    Runs `__post_handle__` method for the Entrypoint MutationType.
+    Runs `__after__` method for the Entrypoint MutationType.
     """
 
     priority: int = 200
 
     def after(self, value: MutationResult) -> None:
-        self.mutation_type.__post_handle__(info=self.root_info, value=value)
+        self.mutation_type.__after__(info=self.root_info, value=value)
 
 
 class InputOnlyDataRemovalMiddleware(MutationMiddleware):
