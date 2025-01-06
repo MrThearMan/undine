@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "undine",
+    # "undine.persisted_queries",
     "example_project.example",
     "example_project.app",
 ]

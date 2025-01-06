@@ -31,7 +31,6 @@ pip install undine
 - [ ] Refactor MutationHandler to make less queries when updating nested objects
 - [ ] Add caching
 - [ ] Add subscriptions
-- [ ] Add persisted queries (via sub-app)
 - [ ] Add union types
 - [ ] Add dataloaders
 - [ ] Add directives
