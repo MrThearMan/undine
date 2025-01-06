@@ -35,7 +35,6 @@ pip install undine
 - [ ] Add union types
 - [ ] Add dataloaders
 - [ ] Add directives
-- [ ] Add schema export
 - [ ] Add debug toolbar integration
 - [ ] Add sentry integration
 
