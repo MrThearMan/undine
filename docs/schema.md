@@ -40,12 +40,11 @@ or mutations.
 An `Entrypoint` always requires a _**reference**_ from which it will create the
 proper GraphQL resolver, output type, and arguments for the operation.
 
-### FunctionType references
+### Function references
 
-Using a `FunctionType` (instances of `types.FunctionType` e.g. functions or methods)
-as a reference is the most basic way of creating an `Entrypoint`.
+Using a function (or a method) as a reference is the most basic way of creating an `Entrypoint`.
 
-`FunctionType` references can be used for both query and mutation `Entrypoints`.
+Function references can be used for both query and mutation `Entrypoints`.
 As an example, let's create a query `Entrypoint` from a method on the Query `RootType`
 that returns a greeting by decoraging a method with the `Entrypoint` class.
 
@@ -105,9 +104,6 @@ We can add a description to the `Entrypoint` by adding a docstring to the method
 If the method has arguments, we can add descriptions to those arguments by using
 [reStructuredText docstrings format](https://peps.python.org/pep-0287/).
 
-> Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER` setting
-> that conforms to the `DocstringParserProtocol` from `undine.typing`.
-
 ```python
 from undine import Entrypoint, RootType
 
@@ -121,6 +117,9 @@ class Query(RootType):
         """
         return f"Hello, {name}!"
 ```
+
+Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER`
+setting that conforms to the `DocstringParserProtocol` from `undine.typing`.
 
 ### QueryType references
 
@@ -180,8 +179,10 @@ To create a mutation for a model instance (create mutation in this example),
 simply use the `MutationType` class as the reference for the `Entrypoint`.
 
 ```python
-from undine import Entrypoint, MutationType, RootType
+from undine import Entrypoint, MutationType, RootType, QueryType
 from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task): ...
 
 class TaskCreateMutation(MutationType, model=Task): ...
 

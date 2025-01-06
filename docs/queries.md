@@ -1,7 +1,7 @@
 # Queries
 
 This section will cover how to connect your Django models to the GraphQL schema using
-Undine `QueryTypes` and `Fields`.
+`QueryTypes` and `Fields`.
 
 ## QueryTypes
 
@@ -17,9 +17,20 @@ from example_project.app.models import Task
 class TaskType(QueryType, model=Task): ...
 ```
 
-`QueryType` has some automatic behaviors that introspect the given model
-and makes its fields available on the generated `ObjectType`.
-For example, if the `Task` model has the following fields:
+By default, the name of the generated `ObjectType` is the same as the name of the `QueryType` class.
+If you want to change the name, you can do so by setting the `typename` argument:
+
+```python
+from undine import QueryType
+from example_project.app.models import Task
+
+class TaskType(QueryType, model=Task, typename="Task"): ...
+```
+
+#### Autogeneration
+
+By default, `QueryType` automatically introspects the given model and makes its fields
+available on the generated `ObjectType`. For example, if the `Task` model has the following fields:
 
 ```python
 from django.db import models
@@ -34,6 +45,7 @@ Then the GraphQL `ObjectType` for the `QueryType` would be:
 
 ```graphql
 type TaskType {
+    pk: Int!
     name: String!
     done: Boolean!
     createdAt: DateTime!
@@ -57,16 +69,6 @@ from undine import QueryType
 from example_project.app.models import Task
 
 class TaskType(QueryType, model=Task, exclude=["name"]): ...
-```
-
-By default, the name of the generated `ObjectType` is the same as the name of the `QueryType` class.
-If you want to change the name, you can do so by setting the `typename` argument:
-
-```python
-from undine import QueryType
-from example_project.app.models import Task
-
-class TaskType(QueryType, model=Task, typename="Task"): ...
 ```
 
 ### Filtering
@@ -124,10 +126,35 @@ class TaskType(QueryType, model=Task):
 > Note: It's probably better to use [custom optimizations](#custom-optimizations)
 > to add a default ordering for optimization reasons.
 
+### QueryType registry
+
+When a new `QueryType` is created, Undine automatically registers it for its given model.
+This allows other `QueryTypes` to look up the `QueryType` for linking relations,
+(see [Relations](#relations)) and `MutationTypes` to find out their matching output type
+(see [Mutations output types](mutations.md#output-type)).
+
+The QueryType registry only allows one `QueryType` to be registered for each model.
+During `QueryType` registration, if a `QueryType` is already registered for the model,
+an error will be raised.
+
+If you need to create multiple `QueryTypes` for the same model, you can choose to not
+register a `QueryType` for the model by setting the `register` argument to `False` in the
+`QueryType` class definition.
+
+```python
+from undine import QueryType
+from example_project.app.models import Task
+
+class OtherTaskType(QueryType, model=Task, register=False): ...
+```
+
+You then need to use this `QueryType` explicitly in `Field` references
+or in `MutationType.__output_type__`.
+
 ### Custom optimizations
 
 Usually touching the `QueryType` optimizations is not necessary, but if required,
-you can override a `__optimizer_hook__` classmethod on the `QueryType` to do so.
+you can override a `__optimizations__` classmethod on the `QueryType` to do so.
 
 ```python
 from undine import QueryType, GQLInfo
@@ -136,7 +163,7 @@ from example_project.app.models import Task
 
 class TaskType(QueryType, model=Task):
     @classmethod
-    def __optimizer_hook__(cls, data: OptimizationData, info: GQLInfo) -> None:
+    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
         ... # Some optimization here
 ```
 
@@ -150,7 +177,7 @@ on how the query optimizer works and [Permissions](permissions.md) on how permis
 In th GraphQL schema, they represent fields on the `ObjectType` generated from a `QueryType`.
 
 A `Field` always requires a _**reference**_ from which it will create the proper GraphQL resolver,
-output type, and arguments for the field.
+output type, and arguments for the `Field`.
 
 ### Model field references
 
@@ -223,10 +250,10 @@ class TaskType(QueryType, model=Task):
     upper_name = Field(Upper("name"))
 ```
 
-### FunctionType references
+### Function references
 
-`FunctionTypes` (instances of `types.FunctionType` e.g. functions or methods)
-can also be used to create `Fields`. This can be done by decoraging a method with the `Field` class.
+Functions (or methods) can also be used to create `Fields`.
+This can be done by decoraging a method with the `Field` class.
 
 ```python
 from undine import Field, QueryType, GQLInfo
@@ -247,7 +274,7 @@ Note that the method's `self` argument is not actually the instance of the class
 of a GraphQL field resolver. In fact, the decorated method is treated as a static method by the `Field`.
 
 To clarify this, it's recommended to change the argument's name to `root`, as defined by the
-`RESOLVER_ROOT_PARAM_NAME` setting. The value of the `root` argument is the model instance being queried.
+`RESOLVER_ROOT_PARAM_NAME` setting. The value of the `root` argument is the **model instance** being queried.
 
 The `root` and `info` arguments can all be left out if not needed.
 When included, `root` is always the first argument of the method (typing not required) and `info`
@@ -272,9 +299,6 @@ We can add a description to the `Field` by adding a docstring to the method.
 If the method has arguments, we can add descriptions to those arguments by using
 [reStructuredText docstrings format](https://peps.python.org/pep-0287/).
 
-> Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER` setting
-> that conforms to the `DocstringParserProtocol` from `undine.typing`.
-
 ```python
 from undine import Field, QueryType, GQLInfo
 from example_project.app.models import Task
@@ -290,6 +314,9 @@ class TaskType(QueryType, model=Task):
         return f"Hello, {name}!"
 ```
 
+Other types of docstrings can be used by providing a parser to the `DOCSTRING_PARSER`
+setting that conforms to the `DocstringParserProtocol` from `undine.typing`.
+
 > If the method requires fields from the `root` argument instance, we should add custom optimization
 > rules for the `Field` so that the fields are available when the resolver is called.
 > See [custom optimizations](#custom-optimizations) for how to add these.
@@ -299,7 +326,7 @@ class TaskType(QueryType, model=Task):
 
 ### Calculated references
 
-Using the `Calculated` class as a reference creates a field that is calculated based on user input.
+Using an instance of `Calculated` as a reference creates a field that is calculated based on user input.
 These require a special calculation function to be defined.
 
 ```python
@@ -331,11 +358,11 @@ The function should annotate a value to the given queryset with the same name as
 /// details | About method signature
 
 The `self` argument for the calculation function is not the instance of the `QueryType` class,
-but the field instance that the `calculate` decorator is applied to.
+but the `Field` instance that the calculation function is added to.
 
 ///
 
-The field will look like this in the GraphQL schema:
+The `Field` will look like this in the GraphQL schema:
 
 ```graphql
 type TaskType {
@@ -372,16 +399,18 @@ class ProjectType(QueryType, model=Project): ...
 class TaskType(QueryType, model=Task): ...
 ```
 
-When `auto` is on for the `QueryTypes`, they will be automatically linked together
-in the GraphQL schema:
+When `auto` is on for the `QueryTypes` they will be automatically linked together
+in the GraphQL schema using relations:
 
 ```graphql
 type ProjectType {
+    pk: Int!
     name: String!
     tasks: [TaskType!]!
 }
 
 type TaskType {
+    pk: Int!
     name: String!
     done: Boolean!
     createdAt: DateTime!
@@ -433,7 +462,7 @@ description if no description is provided in these ways.
 ### Nullable and many
 
 Most of the time a `Field's` reference is enough to determine whether the `Field`
-returns a nullable value and/or a list of values, but sometimes this needs to be configured manually.
+returns a nullable value and/or a list of values, but sometimes you might want to configure this manually.
 This can be done by adding the `nullable` and `many` arguments to the `Field` respectively.
 
 ```python
@@ -446,7 +475,7 @@ class TaskType(QueryType, model=Task):
 
 ### Custom resolvers
 
-> Usually overriding the `Field` resolver is not necessary, and should be avoided
+> Usually using a custom `Field` resolver is not necessary, and should be avoided
 > if possible. This is because most modifications to resolvers can result in canceling
 > query optimizations (see the [optimizer](optimizer.md) section for details).
 
