@@ -13,11 +13,9 @@ from undine.settings import undine_settings
 from .query_logging import DBQueryData, capture_database_queries
 
 if TYPE_CHECKING:
+    from django.contrib.auth.models import User
     from django.core.files import File
     from django.http import HttpResponse
-
-
-User = get_user_model()
 
 
 __all__ = [
@@ -223,7 +221,7 @@ class GraphQLClient(Client):
             "email": "superuser@django.com",
             **kwargs,
         }
-        user, _ = User.objects.get_or_create(username=username, defaults=defaults)
+        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
         self.force_login(user)
         return user
 
@@ -234,6 +232,6 @@ class GraphQLClient(Client):
             "email": "user@django.com",
             **kwargs,
         }
-        user, _ = User.objects.get_or_create(username=username, defaults=defaults)
+        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
         self.force_login(user)
         return user

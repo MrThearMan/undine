@@ -52,7 +52,7 @@ def to_snake_case(string: str) -> str:
     return text
 
 
-def dotpath(obj: type | FunctionType | Callable) -> str:
+def dotpath(obj: type | FunctionType | Callable[..., Any]) -> str:
     """Get the 'dotpath import path' of the given object."""
     return f"{obj.__module__}.{obj.__qualname__}"
 

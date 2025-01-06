@@ -23,9 +23,9 @@ from typing import (
 )
 
 # Sort separately due to being a private import
-from typing import _eval_type  # isort: skip  # noqa: PLC2701
-from typing import _GenericAlias  # isort: skip  # noqa: PLC2701
-from typing import _TypedDictMeta  # isort: skip  # noqa: PLC2701
+from typing import _eval_type  # isort: skip  # noqa: PLC2701  # type: ignore[attr-defined]
+from typing import _GenericAlias  # isort: skip  # noqa: PLC2701  # type: ignore[attr-defined]
+from typing import _TypedDictMeta  # isort: skip  # noqa: PLC2701  # type: ignore[attr-defined]
 
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import (

@@ -79,8 +79,9 @@ mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.0.1"
-mypy = "1.14.1"
 grimp = "3.5"
+mypy = "1.13.0"
+django-stubs = "5.1.1"
 
 [tool.poetry.extras]
 static = ["requests"]
@@ -369,15 +370,28 @@ max-args = 9
 
 [tool.mypy]
 python_version = "3.13"
-warn_return_any = "True"
-warn_unused_configs = "True"
-ignore_missing_imports = "True"
+files = [
+    "undine",
+]
+allow_redefinition = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+ignore_missing_imports = true
+implicit_reexport = false
+install_types = true
+non_interactive = true
+show_error_codes = true
+show_traceback = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
 plugins = [
     "mypy_django_plugin.main",
 ]
 
 [tool.django-stubs]
-django_settings_module = "tests.project.settings"
+django_settings_module = "example_project.project.settings"
 
 [tool.coverage.run]
 relative_files = true
