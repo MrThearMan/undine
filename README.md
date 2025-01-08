@@ -25,7 +25,6 @@ pip install undine
 
 # Before initial release:
 - [ ] Add documentation
-- [ ] Run and setup mypy
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects

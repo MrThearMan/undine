@@ -1,6 +1,3 @@
-# ruff: noqa: FBT001, FBT002
-"""Custom type definitions for the project."""
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -13,6 +10,7 @@ from typing import (
     Generic,
     Literal,
     NewType,
+    NotRequired,
     Protocol,
     Self,
     TypeAlias,
@@ -21,6 +19,8 @@ from typing import (
     Union,
     runtime_checkable,
 )
+
+from graphql import GraphQLFormattedError
 
 # Sort separately due to being a private import
 from typing import _eval_type  # isort: skip  # noqa: PLC2701  # type: ignore[attr-defined]
@@ -61,13 +61,17 @@ if TYPE_CHECKING:
 __all__ = [
     "CalculationResolver",
     "CombinableExpression",
+    "CompleteMessage",
+    "ConnectionAckMessage",
     "ConnectionDict",
+    "ConnectionInitMessage",
     "DispatchCategory",
     "DispatchProtocol",
     "DispatchWrapper",
     "DjangoRequestProtocol",
     "DocstringParserProtocol",
     "EntrypointRef",
+    "ErrorMessage",
     "ExpressionLike",
     "FieldPermFunc",
     "FieldRef",
@@ -80,19 +84,26 @@ __all__ = [
     "JsonObject",
     "Lambda",
     "LiteralArg",
+    "Message",
     "ModelField",
     "ModelManager",
     "MutationKind",
+    "NextMessage",
+    "NextMessagePayload",
     "NodeDict",
     "OptimizerFunc",
     "OrderRef",
     "PageInfoDict",
     "ParametrizedType",
+    "PingMessage",
+    "PongMessage",
     "RelatedField",
     "RelatedManager",
     "Root",
     "Selections",
     "Self",
+    "SubscribeMessage",
+    "SubscribeMessagePayload",
     "ToManyField",
     "ToOneField",
     "ValidatorFunc",
@@ -156,10 +167,10 @@ class ExpressionLike(Protocol):
     def resolve_expression(
         self,
         query: Query,
-        allow_joins: bool,
+        allow_joins: bool,  # noqa: FBT001
         reuse: set[str] | None,
-        summarize: bool,
-        for_save: bool,
+        summarize: bool,  # noqa: FBT001
+        for_save: bool,  # noqa: FBT001
     ) -> ExpressionLike: ...
 
 
@@ -202,8 +213,8 @@ class ModelManager(Protocol[TModel]):  # noqa: PLR0904
         self,
         objs: Iterable[TModel],
         batch_size: int | None = None,
-        ignore_conflicts: bool = False,
-        update_conflicts: bool = False,
+        ignore_conflicts: bool = False,  # noqa: FBT001, FBT002
+        update_conflicts: bool = False,  # noqa: FBT001, FBT002
         update_fields: Collection[str] | None = None,
         unique_fields: Collection[str] | None = None,
     ) -> list[TModel]: ...
@@ -294,7 +305,7 @@ class RelatedManager(ModelManager[TModel]):
 
     def clear(self) -> None: ...
 
-    def remove(self, obj: Iterable[TModel], bulk: bool = True) -> TModel: ...
+    def remove(self, obj: Iterable[TModel], bulk: bool = True) -> TModel: ...  # noqa: FBT001, FBT002
 
     def create(self, through_defaults: Any = None, **kwargs: Any) -> TModel: ...
 
@@ -408,3 +419,183 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
     This is a proxy of the 'typing._eval_type' function.
     """
     return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover
+
+
+# TODO: Subscriptions
+# See: https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md
+
+
+class ConnectionInitMessage(TypedDict):
+    """
+    Direction: Client -> Server.
+
+    Indicates that the client wants to establish a connection within the existing socket.
+    This connection is not the actual WebSocket communication channel, but is rather a frame
+    within it asking the server to allow future operation requests.
+
+    The server must receive the connection initialisation message within the allowed waiting
+    time specified in the connectionInitWaitTimeout parameter during the server setup.
+    If the client does not request a connection within the allowed timeout, the server will
+    close the socket with the event: 4408: Connection initialisation timeout.
+
+    If the server receives more than one ConnectionInit message at any given time, the server
+    will close the socket with the event 4429: Too many initialisation requests.
+
+    If the server wishes to reject the connection, for example during authentication,
+    it is recommended to close the socket with 4403: Forbidden.
+    """
+
+    type: Literal["connection_init"]
+    payload: NotRequired[dict[str, Any] | None]
+
+
+class ConnectionAckMessage(TypedDict):
+    """
+    Direction: Server -> Client.
+
+    Expected response to the ConnectionInit message from the client acknowledging
+    a successful connection with the server.
+
+    The server can use the optional payload field to transfer additional details about the connection.
+    """
+
+    type: Literal["connection_ack"]
+    payload: NotRequired[dict[str, Any] | None]
+
+
+class PingMessage(TypedDict):
+    """
+    Direction: bidirectional.
+
+    Useful for detecting failed connections, displaying latency metrics or other types of network probing.
+
+    A Pong must be sent in response from the receiving party as soon as possible.
+
+    The Ping message can be sent at any time within the established socket.
+
+    The optional payload field can be used to transfer additional details about the ping.
+    """
+
+    type: Literal["ping"]
+    payload: NotRequired[dict[str, Any] | None]
+
+
+class PongMessage(TypedDict):
+    """
+    Direction: bidirectional.
+
+    The response to the Ping message. Must be sent as soon as the Ping message is received.
+
+    The Pong message can be sent at any time within the established socket.
+    Furthermore, the Pong message may even be sent unsolicited as an unidirectional heartbeat.
+
+    The optional payload field can be used to transfer additional details about the pong.
+    """
+
+    type: Literal["pong"]
+    payload: NotRequired[dict[str, Any] | None]
+
+
+class SubscribeMessagePayload(TypedDict):
+    """Payload for the `SubscribeMessage`."""
+
+    operationName: NotRequired[str | None]
+    query: str
+    variables: NotRequired[dict[str, Any] | None]
+    extensions: NotRequired[dict[str, Any] | None]
+
+
+class SubscribeMessage(TypedDict):
+    """
+    Direction: Client -> Server.
+
+    Requests an operation specified in the message payload. This message provides a unique ID
+    field to connect published messages to the operation requested by this message.
+
+    If there is already an active subscriber for an operation matching the provided ID,
+    regardless of the operation type, the server must close the socket immediately with the
+    event 4409: Subscriber for <unique-operation-id> already exists.
+
+    The server needs only keep track of IDs for as long as the subscription is active.
+    Once a client completes an operation, it is free to re-use that ID.
+
+    Executing operations is allowed only after the server has acknowledged the connection
+    through the ConnectionAck message, if the connection is not acknowledged,
+    the socket will be closed immediately with the event 4401: Unauthorized.
+    """
+
+    id: str
+    type: Literal["subscribe"]
+    payload: SubscribeMessagePayload
+
+
+class NextMessagePayload(TypedDict):
+    """Payload for the `NextMessage`."""
+
+    errors: NotRequired[list[GraphQLFormattedError]]
+    data: NotRequired[dict[str, Any] | None]
+    extensions: NotRequired[dict[str, Any]]
+
+
+class NextMessage(TypedDict):
+    """
+    Direction: Server -> Client
+
+    Operation execution result(s) from the source stream created by the binding Subscribe message.
+    After all results have been emitted, the Complete message will follow indicating stream completion.
+    """
+
+    id: str
+    type: Literal["next"]
+    payload: NextMessagePayload
+
+
+class ErrorMessage(TypedDict):
+    """
+    Direction: Server -> Client
+
+    Operation execution error(s) in response to the Subscribe message.
+    This can occur before execution starts, usually due to validation errors,
+    or during the execution of the request. This message terminates the operation
+    and no further messages will be sent.
+    """
+
+    id: str
+    type: Literal["error"]
+    payload: list[GraphQLFormattedError]
+
+
+class CompleteMessage(TypedDict):
+    """
+    Direction: bidirectional
+
+    Server -> Client indicates that the requested operation execution has completed.
+    If the server dispatched the Error message relative to the original Subscribe message,
+    no Complete message will be emitted.
+
+    Client -> Server indicates that the client has stopped listening and wants to complete
+    the subscription. No further events, relevant to the original subscription, should be sent through.
+    Even if the client sent a Complete message for a single-result-operation before it resolved,
+    the result should not be sent through once it does.
+
+    Note: The asynchronous nature of the full-duplex connection means that a client can send
+    a Complete message to the server even when messages are in-flight to the client,
+    or when the server has itself completed the operation (via a Error or Complete message).
+    Both client and server must therefore be prepared to receive (and ignore) messages for
+    operations that they consider already completed.
+    """
+
+    id: str
+    type: Literal["complete"]
+
+
+Message = (
+    ConnectionInitMessage
+    | ConnectionAckMessage
+    | PingMessage
+    | PongMessage
+    | SubscribeMessage
+    | NextMessage
+    | ErrorMessage
+    | CompleteMessage
+)
