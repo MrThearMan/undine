@@ -27,7 +27,7 @@ from example_project.app.models import Task
 class TaskType(QueryType, model=Task, typename="Task"): ...
 ```
 
-#### Autogeneration
+#### Auto-generation
 
 By default, `QueryType` automatically introspects the given model and makes its fields
 available on the generated `ObjectType`. For example, if the `Task` model has the following fields:
@@ -52,7 +52,7 @@ type TaskType {
 }
 ```
 
-We can disable autogeneration by setting the `auto` argument to `False` in the class definition:
+We can disable auto-generation by setting the `auto` argument to `False` in the class definition:
 
 ```python
 from undine import QueryType
@@ -62,7 +62,7 @@ from example_project.app.models import Task
 class TaskType(QueryType, model=Task, auto=False): ...
 ```
 
-Alternatively, we could exclude some fields from the autogeneration by setting the `exclude` argument:
+Alternatively, we could exclude some fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 from undine import QueryType
@@ -253,7 +253,7 @@ class TaskType(QueryType, model=Task):
 ### Function references
 
 Functions (or methods) can also be used to create `Fields`.
-This can be done by decoraging a method with the `Field` class.
+This can be done by decorating a method with the `Field` class.
 
 ```python
 from undine import Field, QueryType, GQLInfo
@@ -300,7 +300,7 @@ If the method has arguments, we can add descriptions to those arguments by using
 [reStructuredText docstrings format](https://peps.python.org/pep-0287/).
 
 ```python
-from undine import Field, QueryType, GQLInfo
+from undine import Field, QueryType
 from example_project.app.models import Task
 
 class TaskType(QueryType, model=Task):

@@ -63,7 +63,7 @@ from example_project.app.models import Task
 class TaskCreateMutation(MutationType, model=Task, typename="Task"): ...
 ```
 
-### Autogeneration
+### Auto-generation
 
 By default `MutationType` automatically introspects the given model and makes its fields
 available on the generated `InputObjectType`. For example, if the `Task` model has the following fields:
@@ -108,7 +108,7 @@ input TaskDeleteMutation {
 }
 ```
 
-We can disable autogeneration by setting the `auto` argument to `False` in the class definition:
+We can disable auto-generation by setting the `auto` argument to `False` in the class definition:
 
 ```python
 from undine import MutationType
@@ -118,7 +118,7 @@ from example_project.app.models import Task
 class TaskCreateMutation(MutationType, model=Task, auto=False): ...
 ```
 
-Alternatively, we could exclude some fields from the autogeneration by setting the `exclude` argument:
+Alternatively, we could exclude some fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 from undine import MutationType

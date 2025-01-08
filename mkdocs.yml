@@ -3,6 +3,7 @@ site_name: Undine
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Tutorial: tutorial.md
   - Schema: schema.md
   - Queries: queries.md
   - Mutations: mutations.md

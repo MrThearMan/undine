@@ -3,7 +3,7 @@
 In the [getting started](getting-started.md) section, we started a basic GraphQL server using an
 example schema. In this section, we'll learn how to create a schema for your own data.
 
-Before we can create the schema itsef, we'll need to create some basic types for it,
+Before we can create the schema itself, we'll need to create some basic types for it,
 mainly the `RootType` for supporting query operations in the schema, as well as
 an `Entrypoint` in that `RootType` for actually fetching the data.
 
@@ -46,7 +46,7 @@ Using a function (or a method) as a reference is the most basic way of creating 
 
 Function references can be used for both query and mutation `Entrypoints`.
 As an example, let's create a query `Entrypoint` from a method on the Query `RootType`
-that returns a greeting by decoraging a method with the `Entrypoint` class.
+that returns a greeting by decorating a method with the `Entrypoint` class.
 
 ```python
 from undine import Entrypoint, RootType, GQLInfo
