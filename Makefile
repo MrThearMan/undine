@@ -7,7 +7,6 @@
 .PHONY: lint
 .PHONY: migrate
 .PHONY: migrations
-.PHONY: mypy
 .PHONY: test
 .PHONY: tests
 .PHONY: tox
@@ -33,7 +32,6 @@ define helptext
   lint                       Run pre-commit hooks on all files.
   migrate                    Run pre-commit hooks on all files.
   migrations                 Run pre-commit hooks on all files.
-  mypy                       Run mypy on all files.
   styles                     Generate pygments styles.
   test <name>                Run all tests maching the given <name>
   tests                      Run all tests with coverage.
@@ -70,9 +68,6 @@ migrate:
 
 migrations:
 	@poetry run python manage.py makemigrations
-
-mypy:
-	@poetry run mypy undine/
 
 styles:
 	@poetry run pygmentize -f html -S $(call args, "fruity") -a .highlight > docs/css/pygments.css

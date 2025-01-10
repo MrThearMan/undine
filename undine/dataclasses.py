@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, get_type_hints
+from typing import TYPE_CHECKING, Any, Generic, Protocol, get_type_hints
 
 from graphql import Undefined
 
@@ -9,6 +9,7 @@ from undine.typing import From, To
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import UnionType
 
     from django.contrib.contenttypes.fields import GenericForeignKey

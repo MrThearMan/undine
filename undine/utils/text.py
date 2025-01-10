@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from inspect import cleandoc
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from undine.settings import undine_settings
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
     from types import FunctionType
 
 __all__ = [

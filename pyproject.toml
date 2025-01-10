@@ -1,19 +1,12 @@
-[tool.poetry]
+[project]
 name = "undine"
 version = "0.0.1"
 description = "A GraphQL library for Django"
 authors = [
-    "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
-]
-packages = [
-    { include = "undine" },
-    { include = "pytest_undine" },
+    { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
 ]
 license = "MIT"
 readme = "README.md"
-homepage = "https://mrthearman.github.io/undine"
-repository = "https://github.com/MrThearMan/undine"
-documentation = "https://mrthearman.github.io/undine"
 keywords = [
     "Django",
     "GraphQL",
@@ -40,51 +33,56 @@ classifiers = [
     "Framework :: Django :: 5.0",
     "Framework :: Django :: 5.1",
 ]
-exclude = [
-    "tests",
+requires-python = ">=3.11,<4"
+dynamic = [
+    "dependencies",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+"Homepage" = "https://mrthearman.github.io/undine"
+"Repository" = "https://github.com/MrThearMan/undine"
 "Bug Tracker" = "https://github.com/MrThearMan/undine/issues"
+"Documentation" = "https://mrthearman.github.io/undine"
 
-[tool.poetry.plugins.pytest11]
+[tool.poetry]
+packages = [
+    { include = "undine" },
+    { include = "pytest_undine" },
+]
+
+[project.entry-points.pytest11]
 undine = "pytest_undine.fixtures"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<4"
 Django = ">=4.2"
 graphql-core = ">=3.2.3"
 django-settings-holder = ">=0.2.2"
 sqlparse = ">=0.5.3"
-requests = {version = ">=2.32.3", optional = true}
+requests = { version = ">=2.32.3", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.4"
 pytest-django = "4.9.0"
 coverage = "7.6.10"
-hypothesis = "6.123.2"
+hypothesis = "6.123.13"
 freezegun = "1.5.1"
 factory-boy = "3.3.1"
 tox = "4.23.2"
 tox-gh-actions = "3.2.0"
 urllib3 = "2.3.0"
-psycopg = {version = "3.2.3", extras = ["binary", "pool"]}
+psycopg = { version = "3.2.3", extras = ["binary", "pool"] }
 pillow = "11.1.0"
+requests = "2.32.3"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.13"
-pygments = "2.19.0"
+pymdown-extensions = "10.14"
+pygments = "2.19.1"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.0.1"
 grimp = "3.5"
-mypy = "1.13.0"
-django-stubs = "5.1.1"
-
-[tool.poetry.extras]
-static = ["requests"]
 
 [tool.ruff]
 fix = true
@@ -214,6 +212,7 @@ extend-select = [
     "UP042",    # replace-str-enum
 ]
 ignore = [
+    "A005",     # Allow shadowning builtin modules
     "ANN401",   # Any-typing allowed
     "ARG001",   # Unused function argument
     "ARG002",   # Unused method argument
@@ -223,7 +222,7 @@ ignore = [
     #
     # Conflicting with ruff-format (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
     #
-    # "COM812",   # missing-trailing-comma
+    "COM812",   # missing-trailing-comma
     "COM819",   # prohibited-trailing-comma
     "D206",     # indent-with-spaces
     "D300",     # triple-single-quotes
@@ -368,31 +367,6 @@ max-complexity = 12
 [tool.ruff.lint.pylint]
 max-args = 9
 
-[tool.mypy]
-python_version = "3.13"
-files = [
-    "undine",
-]
-allow_redefinition = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-ignore_missing_imports = true
-implicit_reexport = false
-install_types = true
-non_interactive = true
-show_error_codes = true
-show_traceback = true
-strict_optional = true
-warn_redundant_casts = true
-warn_unused_configs = true
-warn_unused_ignores = true
-plugins = [
-    "mypy_django_plugin.main",
-]
-
-[tool.django-stubs]
-django_settings_module = "example_project.project.settings"
-
 [tool.coverage.run]
 relative_files = true
 
@@ -458,5 +432,5 @@ commands =
 """
 
 [build-system]
-requires = ["poetry-core>=1.9.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

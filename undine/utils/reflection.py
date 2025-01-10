@@ -4,7 +4,7 @@ import inspect
 import sys
 from functools import partial, wraps
 from types import FunctionType, LambdaType
-from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeGuard, TypeVar
 
 from graphql import GraphQLResolveInfo
 
@@ -14,7 +14,7 @@ from undine.settings import undine_settings
 from undine.typing import GQLInfo, Lambda, LiteralArg, ParametrizedType
 
 if TYPE_CHECKING:
-    from collections.abc import Hashable
+    from collections.abc import Callable, Hashable
     from types import FrameType
 
 

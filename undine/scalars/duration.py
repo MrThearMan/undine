@@ -46,8 +46,7 @@ def serialize(output_value: Any) -> int:
 GraphQLDuration = GraphQLScalarType(
     name="Duration",
     description=(
-        "The `Duration` scalar type represents a duration in seconds. "
-        "It maps to the Python `datetime.timedelta` type."
+        "The `Duration` scalar type represents a duration in seconds. It maps to the Python `datetime.timedelta` type."
     ),
     serialize=serialize,
     parse_value=parse_duration,

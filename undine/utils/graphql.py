@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from graphql import (
     GraphQLEnumType,
@@ -20,7 +20,7 @@ from undine.errors.exceptions import GraphQLCantCreateEnumError, GraphQLDuplicat
 from undine.registies import GRAPHQL_TYPE_REGISTRY
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Callable, Collection
 
     from undine.typing import GQLInfo, TGraphQLType
     from undine.utils.reflection import FunctionEqualityWrapper

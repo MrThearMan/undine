@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Collection, Iterable, Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, MutableMapping
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     Literal,
     NewType,
@@ -391,19 +390,8 @@ FieldRef: TypeAlias = Union[
     "Calculated",
     Callable[..., Any],
 ]
-FilterRef: TypeAlias = Union[
-    Field,
-    ForeignObjectRel,
-    Q,
-    Expression,
-    Subquery,
-    Callable[..., Any],
-]
-OrderRef: TypeAlias = Union[
-    F,
-    Expression,
-    Subquery,
-]
+FilterRef: TypeAlias = Field | ForeignObjectRel | Q | Expression | Subquery | Callable[..., Any]
+OrderRef: TypeAlias = F | Expression | Subquery
 InputRef: TypeAlias = Union[
     Field,
     type["MutationType"],

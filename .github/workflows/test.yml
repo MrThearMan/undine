@@ -17,4 +17,5 @@ jobs:
     uses: MrThearMan/CI/.github/workflows/test.yml@v0.4.12
     with:
       python-version: '["3.11", "3.12", "3.13"]'
+      poetry-version: "2.0.0"
       coveralls: false

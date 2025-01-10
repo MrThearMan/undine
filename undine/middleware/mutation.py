@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from functools import wraps
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, Callable, ParamSpec, Self
+from typing import TYPE_CHECKING, Any, ParamSpec, Self
 
 from django.db.transaction import Atomic, atomic
 from django.db.utils import IntegrityError
@@ -14,6 +14,8 @@ from undine.errors.exceptions import GraphQLModelConstaintViolationError
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from django.db.models import Model
 
     from undine import MutationType

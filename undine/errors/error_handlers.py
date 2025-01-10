@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from django.core.exceptions import ValidationError
 from graphql import ExecutionResult, GraphQLError
@@ -9,6 +9,9 @@ from graphql.pyutils import inspect
 
 from undine.errors.exceptions import GraphQLConversionError
 from undine.utils.logging import undine_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 __all__ = [
     "handle_conversion_errors",

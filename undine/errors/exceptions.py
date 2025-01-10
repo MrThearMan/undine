@@ -185,8 +185,7 @@ class FunctionDispatcherNoArgumentAnnotationError(FunctionDispatcherError):  # T
     """
 
     msg = (
-        "Function '{func_name}' must have a type hint for its first argument "
-        "so that it can be registered for '{name}'."
+        "Function '{func_name}' must have a type hint for its first argument so that it can be registered for '{name}'."
     )
 
 
@@ -328,7 +327,7 @@ class GraphQLBulkMutationManyRelatedError(GraphQLStatusError):
 class GraphQLBulkMutationGenericRelationsError(GraphQLStatusError):
     """Error raised when bulk mutation resolver recieves data for a generic relation."""
 
-    msg = "'{name}' is a generic relation on '{model:dotpath}'. " "Bulk mutations do not support generic relations."
+    msg = "'{name}' is a generic relation on '{model:dotpath}'. Bulk mutations do not support generic relations."
     status = 400
     code = error_codes.INVALID_INPUT_DATA
 

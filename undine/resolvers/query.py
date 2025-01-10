@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Callable, Generic
+from typing import TYPE_CHECKING, Any, Generic
 
 from django.db.models import Manager, Model, QuerySet
 from graphql import GraphQLID, GraphQLObjectType
@@ -24,6 +24,7 @@ from undine.typing import ConnectionDict, GQLInfo, NodeDict, PageInfoDict, Relat
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import FunctionType
 
     from undine import Field, QueryType

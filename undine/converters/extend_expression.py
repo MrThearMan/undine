@@ -45,7 +45,7 @@ def _(expression: Q, **kwargs: Any) -> Q:
     for child in children:
         if isinstance(child, tuple):
             value = child[1]
-            if isinstance(child[1], (F, Q, Expression, Subquery)):
+            if isinstance(child[1], F | Q | Expression | Subquery):
                 value = extend_expression(child[1], field_name=field_name)
 
             expression.children.append((f"{field_name}{LOOKUP_SEP}{child[0]}", value))
@@ -70,7 +70,7 @@ def _(expression: Expression, **kwargs: Any) -> Expression:
 def _(expression: Subquery, **kwargs: Any) -> Subquery:
     def extend_subquery(expr: Any, *, field_name_: str) -> Any:
         """For sub-queries, only OuterRefs are rewritten."""
-        if isinstance(expr, (OuterRef, ResolvedOuterRef)):
+        if isinstance(expr, OuterRef | ResolvedOuterRef):
             expr = deepcopy(expr)
             expr.name = f"{field_name_}{LOOKUP_SEP}{expr.name}"
             return expr

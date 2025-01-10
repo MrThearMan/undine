@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Generator, Hashable
+from collections.abc import Callable, Generator, Hashable
 from types import FunctionType, NoneType, UnionType
-from typing import Any, Callable, Generic, Literal, Union, get_args, get_origin
+from typing import Any, Generic, Literal, Union, get_args, get_origin
 
 from graphql import Undefined
 

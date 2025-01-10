@@ -124,7 +124,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
                     frt = cls.__filter_map__[filter_name]
                     distinct |= frt.distinct
                     aliases |= frt.required_aliases
-                    if isinstance(frt.ref, (Expression, Subquery)):
+                    if isinstance(frt.ref, Expression | Subquery):
                         aliases[frt.name] = frt.ref
 
                     if frt.many:

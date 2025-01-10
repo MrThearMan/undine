@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import traceback
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from undine.testing.query_logging import capture_database_queries
 from undine.utils.logging import undine_logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from django.core.handlers.wsgi import WSGIRequest
     from django.http import HttpResponse
     from graphql import GraphQLFieldResolver

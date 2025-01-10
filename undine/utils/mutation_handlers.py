@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Generic
+from typing import TYPE_CHECKING, Any, Generic
 
 from django.db.models import Model
 
@@ -26,6 +26,8 @@ from undine.utils.model_utils import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine.parsers.parse_model_relation_info import RelatedFieldInfo

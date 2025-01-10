@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
 
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import FunctionType
 
     from undine.typing import GQLInfo

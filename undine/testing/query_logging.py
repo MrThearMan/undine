@@ -6,7 +6,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import sqlparse
 from django import db
@@ -14,7 +14,7 @@ from django import db
 from undine.utils.logging import undine_logger
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
 __all__ = [
     "capture_database_queries",

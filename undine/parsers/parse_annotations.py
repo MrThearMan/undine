@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from django.db.models import QuerySet
 from graphql import GraphQLResolveInfo, Undefined
@@ -16,6 +16,7 @@ from undine.typing import GQLInfo
 from undine.utils.reflection import get_signature, is_subclass
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import FunctionType
 
 
