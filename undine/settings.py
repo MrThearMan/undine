@@ -83,6 +83,12 @@ class DefaultSettings(NamedTuple):
     MIDDLEWARE: list[str] = []
     """Middleware to use in GraphQL field resolving."""
 
+    MODELTRANSLATION_INCLUDE_TRANSLATABLE: bool = False
+    """Whether to add translatable fields to the GraphQL schema when using `django-modeltranslation`."""
+
+    MODELTRANSLATION_INCLUDE_TRANSLATIONS: bool = True
+    """Whether to add translation fields to the GraphQL schema when using `django-modeltranslation`."""
+
     MUTATION_EXTENSIONS_KEY: str = "undine_mutation"
     """The key used to store a `MutationType` in the argument GraphQL extensions."""
 

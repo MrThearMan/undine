@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from modeltranslation.fields import TranslationField
 
     from undine.typing import CombinableExpression, ModelField, TModel, ToManyField, ToOneField
 
@@ -31,8 +32,10 @@ __all__ = [
     "get_model_field",
     "get_model_fields_for_graphql",
     "get_model_update_fields",
+    "get_translatable_fields",
     "is_to_many",
     "is_to_one",
+    "is_translation_field",
 ]
 
 
@@ -110,11 +113,23 @@ def get_model_field(*, model: type[Model], lookup: str) -> ModelField:
     return field
 
 
+def get_translatable_fields(model: type[Model]) -> set[str]:
+    """If `django-modeltranslation` is installed, find all translatable fields in the given model."""
+    try:
+        from modeltranslation.manager import get_translatable_fields_for_model  # noqa: PLC0415
+    except ImportError:
+        return set()
+
+    return set(get_translatable_fields_for_model(model) or [])
+
+
 def get_model_fields_for_graphql(
     model: type[Model],
     *,
     include_relations: bool = True,
     include_nonsaveable: bool = True,
+    include_translatable: bool = True,
+    include_translations: bool = True,
 ) -> Generator[Field, None, None]:
     """
     Get all fields from the model that should be included in a GraphQL schema.
@@ -122,8 +137,15 @@ def get_model_fields_for_graphql(
     :param model: The model to get fields from.
     :param include_relations: Whether to include relation fields.
     :param include_nonsaveable: Whether to include fields that are not editable or not concrete.
+    :param include_translatable: Whether to include translatable fields.
+    :param include_translations: Whether to include translation fields.
     """
+    translatable_fields = get_translatable_fields(model)
+
     for model_field in model._meta._get_fields():
+        if model_field.name in translatable_fields and not include_translatable:
+            continue
+
         is_relation = bool(getattr(model_field, "is_relation", False))  # Does field reference a relation?
         editable = bool(getattr(model_field, "editable", True))  # Is field value editable by users?
         concrete = bool(getattr(model_field, "concrete", True))  # Does field correspond to a db column?
@@ -134,6 +156,9 @@ def get_model_fields_for_graphql(
             continue
 
         if not include_nonsaveable and (not editable or not concrete):
+            continue
+
+        if not include_translations and is_translation_field(model_field):
             continue
 
         yield model_field
@@ -153,6 +178,16 @@ def is_to_many(field: Field) -> TypeGuard[ToManyField]:
 
 def is_to_one(field: Field) -> TypeGuard[ToOneField]:
     return bool(field.many_to_one or field.one_to_one)
+
+
+try:
+    from modeltranslation.fields import TranslationField
+except ImportError:
+    TranslationField = type("TranslationField", (), {})
+
+
+def is_translation_field(field: Field) -> TypeGuard[TranslationField]:
+    return isinstance(field, TranslationField)
 
 
 class SubqueryCount(Subquery):

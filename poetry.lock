@@ -6,7 +6,7 @@ version = "3.8.1"
 description = "ASGI specs, helper code, and adapters"
 optional = false
 python-versions = ">=3.8"
-groups = ["main"]
+groups = ["main", "test"]
 files = [
     {file = "asgiref-3.8.1-py3-none-any.whl", hash = "sha256:3e1e3ecc849832fe52ccf2cb6686b7a55f82bb1d6aee72a58826471390335e47"},
     {file = "asgiref-3.8.1.tar.gz", hash = "sha256:c343bd80a0bec947a9860adb4c432ffa7db769836c64238fc34bdc3fec84d590"},
@@ -328,7 +328,7 @@ version = "5.1.4"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.10"
-groups = ["main"]
+groups = ["main", "test"]
 files = [
     {file = "Django-5.1.4-py3-none-any.whl", hash = "sha256:236e023f021f5ce7dee5779de7b286565fdea5f4ab86bae5338e3f7b69896cf0"},
     {file = "Django-5.1.4.tar.gz", hash = "sha256:de450c09e91879fa5a307f696e57c851955c910a438a35e6b4c895e86bedc82a"},
@@ -342,6 +342,21 @@ tzdata = {version = "*", markers = "sys_platform == \"win32\""}
 [package.extras]
 argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
+
+[[package]]
+name = "django-modeltranslation"
+version = "0.19.12"
+description = "Translates Django models using a registration approach."
+optional = false
+python-versions = "*"
+groups = ["test"]
+files = [
+    {file = "django_modeltranslation-0.19.12-py3-none-any.whl", hash = "sha256:6f42811876cb36370a2a727f4669bf9fa086d3c2efad573aedf49f339ba48cd1"},
+    {file = "django_modeltranslation-0.19.12.tar.gz", hash = "sha256:d3a48c4b0e2a8033fc53a4e4d4d8c27c52e81bfbf00ae65fc76bd4ef64177d5b"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
 
 [[package]]
 name = "django-settings-holder"
@@ -1410,7 +1425,7 @@ version = "0.5.3"
 description = "A non-validating SQL parser."
 optional = false
 python-versions = ">=3.8"
-groups = ["main"]
+groups = ["main", "test"]
 files = [
     {file = "sqlparse-0.5.3-py3-none-any.whl", hash = "sha256:cf2196ed3418f3ba5de6af7e82c694a9fbdbfecccdfc72e281548517081f16ca"},
     {file = "sqlparse-0.5.3.tar.gz", hash = "sha256:09f67787f56a0b16ecdbde1bfc7f5d9c3371ca683cfeaa8e6ff60b4807ec9272"},
@@ -1574,4 +1589,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "bb1fd32518146569b9b56824ef64ee7794e576f69c2f1cc88fb5ff1a68d08bb2"
+content-hash = "51ddd69458b83f27c35b161570fc8a0d13fd2ef0008bc160af05de0f381fde4f"

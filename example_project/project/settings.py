@@ -13,6 +13,7 @@ WSGI_APPLICATION = "example_project.project.wsgi.application"
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
+    "modeltranslation",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -97,7 +98,10 @@ LOGGING = {
 }
 
 LANGUAGE_CODE = "en-us"
-LANGUAGES = [("en", "English")]
+LANGUAGES = [
+    ("en", "English"),
+    ("fi", "Finnish"),
+]
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_L10N = True

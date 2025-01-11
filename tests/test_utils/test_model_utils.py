@@ -201,3 +201,6 @@ def test_get_model_fields_for_graphql__no_unsaveable():
         Task._meta.get_field("type"),
         Task._meta.get_field("worked_hours"),
     ]
+
+
+# TODO: Translatable fields

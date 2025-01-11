@@ -207,7 +207,13 @@ class Order:
 def get_orders_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Order]:  # TODO: Test
     """Creates `undine.Order` for all the given model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Order] = {}
-    for model_field in get_model_fields_for_graphql(model, include_relations=False):
+
+    for model_field in get_model_fields_for_graphql(
+        model,
+        include_relations=False,
+        include_translatable=undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE,
+        include_translations=undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS,
+    ):
         field_name = model_field.name
 
         is_primary_key = bool(getattr(model_field, "primary_key", False))

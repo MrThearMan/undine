@@ -25,6 +25,7 @@ pip install undine
 
 # Before initial release:
 - [ ] Add documentation
+- [ ] `django-modeltranslation` support
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects

@@ -352,7 +352,12 @@ class Field:
 def get_fields_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Field]:  # TODO: Test
     """Add undine.Fields for all the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Field] = {}
-    for model_field in get_model_fields_for_graphql(model):
+
+    for model_field in get_model_fields_for_graphql(
+        model,
+        include_translatable=undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE,
+        include_translations=undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS,
+    ):
         field_name = model_field.name
 
         is_primary_key = bool(getattr(model_field, "primary_key", False))

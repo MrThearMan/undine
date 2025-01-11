@@ -12,9 +12,9 @@ keywords = [
     "GraphQL",
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    # "Development Status :: 1 - Planning",
     # "Development Status :: 2 - Pre-Alpha",
-    # "Development Status :: 3 - Alpha",
+    "Development Status :: 3 - Alpha",
     # "Development Status :: 4 - Beta",
     # "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
@@ -45,6 +45,7 @@ dynamic = [
 "Documentation" = "https://mrthearman.github.io/undine"
 
 [tool.poetry]
+requires-poetry = ">=2.0.0"
 packages = [
     { include = "undine" },
     { include = "pytest_undine" },
@@ -73,6 +74,7 @@ urllib3 = "2.3.0"
 psycopg = { version = "3.2.3", extras = ["binary", "pool"] }
 pillow = "11.1.0"
 requests = "2.32.3"
+django-modeltranslation = "0.19.12"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
