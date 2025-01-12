@@ -143,9 +143,6 @@ def get_model_fields_for_graphql(
     translatable_fields = get_translatable_fields(model)
 
     for model_field in model._meta._get_fields():
-        if model_field.name in translatable_fields and not include_translatable:
-            continue
-
         is_relation = bool(getattr(model_field, "is_relation", False))  # Does field reference a relation?
         editable = bool(getattr(model_field, "editable", True))  # Is field value editable by users?
         concrete = bool(getattr(model_field, "concrete", True))  # Does field correspond to a db column?
@@ -156,6 +153,9 @@ def get_model_fields_for_graphql(
             continue
 
         if not include_nonsaveable and (not editable or not concrete):
+            continue
+
+        if not include_translatable and model_field.name in translatable_fields:
             continue
 
         if not include_translations and is_translation_field(model_field):

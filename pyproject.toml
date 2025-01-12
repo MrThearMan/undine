@@ -350,17 +350,13 @@ extend-ignore-names = [
 ]
 
 [tool.ruff.lint.pep8-naming]
-classmethod-decorators = [
-    "undine.utils.decorators.cached_class_property",
-    "undine.utils.decorators.cached_class_method",
-]
 staticmethod-decorators = [
+    "undine.mutation.Input.permissions",
     "undine.mutation.Input.validator",
-]
-
-[tool.ruff.lint.pydocstyle]
-property-decorators = [
-    "undine.utils.decorators.cached_class_property",
+    "undine.query.Field.calculate",
+    "undine.query.Field.optimize",
+    "undine.query.Field.permissions",
+    "undine.query.Field.resolve",
 ]
 
 [tool.ruff.lint.mccabe]
@@ -389,7 +385,7 @@ exclude_lines = [
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "example_project.project.settings"
-addopts = "-vv -s --disable-warnings"
+addopts = "--disable-warnings"
 
 [tool.tox]
 legacy_tox_ini = """

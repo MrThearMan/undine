@@ -16,7 +16,6 @@ def test_orderset__attributes():
     assert MyOrderSet.__typename__ == "MyOrderSet"
     assert MyOrderSet.__extensions__ == {"undine_orderset": MyOrderSet}
     assert sorted(MyOrderSet.__order_map__) == [
-        "attachment",
         "check_time",
         "contact_email",
         "created_at",
@@ -25,7 +24,6 @@ def test_orderset__attributes():
         "due_by",
         "external_uuid",
         "extra_data",
-        "image",
         "name",
         "pk",
         "points",
@@ -43,8 +41,6 @@ def test_orderset__enum_type():
     enum_type = get_underlying_type(input_type)
     assert enum_type.name == "MyOrderSet"
     assert sorted(enum_type.values) == [
-        "attachmentAsc",
-        "attachmentDesc",
         "checkTimeAsc",
         "checkTimeDesc",
         "contactEmailAsc",
@@ -61,8 +57,6 @@ def test_orderset__enum_type():
         "externalUuidDesc",
         "extraDataAsc",
         "extraDataDesc",
-        "imageAsc",
-        "imageDesc",
         "nameAsc",
         "nameDesc",
         "pkAsc",

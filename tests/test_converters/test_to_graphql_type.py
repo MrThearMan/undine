@@ -363,7 +363,7 @@ class RoleTextChoicesFieldModel(Model):  # noqa: DJ008
 
     class Meta:
         managed = False
-        app_label = "tests"
+        app_label = __name__
 
 
 def test_convert_to_graphql_type__char_field__textchoices():

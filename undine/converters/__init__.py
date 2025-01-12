@@ -10,6 +10,7 @@ from .to_default_value import convert_to_default_value
 from .to_entrypoint_resolver import convert_entrypoint_ref_to_resolver
 from .to_field_ref import convert_to_field_ref
 from .to_field_resolver import convert_field_ref_to_resolver
+from .to_filter_lookups import convert_to_filter_lookups
 from .to_filter_ref import convert_to_filter_ref
 from .to_filter_resolver import convert_filter_ref_to_filter_resolver
 from .to_graphql_type import convert_to_graphql_type
@@ -24,6 +25,7 @@ __all__ = [
     "convert_lookup_to_graphql_type",
     "convert_to_default_value",
     "convert_to_field_ref",
+    "convert_to_filter_lookups",
     "convert_to_filter_ref",
     "convert_to_graphql_argument_map",
     "convert_to_graphql_type",

@@ -321,7 +321,7 @@ class Input:
         return func
 
 
-def get_inputs_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Input]:  # TODO: Test
+def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Input]:
     """Add `undine.Inputs` for all the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Input] = {}
 

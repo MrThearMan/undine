@@ -18,6 +18,9 @@ Variables
     --undine-highlight-color: #23252d;
 
     --undine-scrollbar-color: #424242;
+
+    /* Default color */
+    background-color: var(--undine-section-color);
 }
 
 /*
@@ -25,7 +28,7 @@ Layout
 */
 body {
     color: var(--undine-text-color);
-    background: var(--undine-section-color);
+    background-color: var(--undine-section-color);
 
     .wy-grid-for-nav {
 
@@ -33,7 +36,7 @@ body {
         Sidebar
         */
         nav.wy-nav-side {
-            background: var(--undine-nav-color);
+            background-color: var(--undine-nav-color);
             width: var(--undine-nav-width);
             padding-bottom: 0;
 
@@ -46,14 +49,14 @@ body {
                 */
                 .wy-side-nav-search {
                     width: auto;
-                    background: var(--undine-nav-color);
+                    background-color: var(--undine-nav-color);
 
                     /*
                     Search bar
                     */
                     input[type=text] {
                         color: var(--undine-text-color);
-                        background: var(--undine-section-color);
+                        background-color: var(--undine-section-color);
                         border-color: var(--undine-active-color);
                         box-shadow: none;
                         caret-color : var(--undine-text-color);
@@ -72,7 +75,7 @@ body {
                     li[class^='toctree-'],
                     li[class^='toctree-'] > a {
                         color: var(--undine-text-color);
-                        background: var(--undine-nav-color);
+                        background-color: var(--undine-nav-color);
                         border: none;
                     }
 
@@ -84,7 +87,7 @@ body {
                     li[class^='toctree-'].current > a:hover,
                     li[class^='toctree-'] > a:hover {
                         color: var(--undine-text-color);
-                        background: var(--undine-active-color);
+                        background-color: var(--undine-active-color);
                         border: none;
                     }
                 }
@@ -98,17 +101,17 @@ body {
         */
         section.wy-nav-content-wrap {
             margin-left: var(--undine-nav-width);
-            background: var(--undine-section-color);
+            background-color: var(--undine-section-color);
 
             /*
             Mobile top nav
             */
             nav.wy-nav-top {
-                background: var(--undine-nav-color);
+                background-color: var(--undine-nav-color);
             }
 
             .wy-nav-content {
-                background: var(--undine-section-color);
+                background-color: var(--undine-section-color);
                 max-width: 1024px;
                 margin: auto;
 
@@ -123,7 +126,7 @@ body {
                     padding-left: 0.5rem;
                     padding-right: 0.5rem;
                     border-radius: 6px;
-                    background: var(--undine-target-color);
+                    background-color: var(--undine-target-color);
                 }
             }
         }
@@ -183,7 +186,7 @@ Codeblocks
 */
 .highlight {
     color: var(--undine-text-color) !important;
-    background: var(--undine-code-color) !important;
+    background-color: var(--undine-code-color) !important;
     border: 1px solid var(--undine-code-color) !important;
     border-radius: 6px;
 
@@ -199,7 +202,7 @@ Codeblocks
 
         td.linenos {
             color: var(--undine-text-color) !important;
-            background: var(--undine-code-color) !important;
+            background-color: var(--undine-code-color) !important;
             border: none !important;
             margin: 0;
             padding: 0;
@@ -235,7 +238,7 @@ Codeblocks
 
         td.code {
             color: var(--undine-text-color) !important;
-            background: var(--undine-code-color) !important;
+            background-color: var(--undine-code-color) !important;
             border: none !important;
             padding: 0;
             margin: 0;
@@ -250,7 +253,7 @@ Codeblocks
 
                     code {
                         color: var(--undine-text-color);
-                        background: var(--undine-code-color);
+                        background-color: var(--undine-code-color);
                         padding: 8px 12px;
                         border: none;
 
@@ -293,7 +296,7 @@ Inline code
 */
 .rst-content code {
     color: var(--undine-text-color);
-    background: var(--undine-code-color);
+    background-color: var(--undine-code-color);
     border: 1px solid var(--undine-code-color);
     border-radius: 6px;
 }
@@ -304,22 +307,22 @@ Scrollbars
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    background: var(--undine-nav-color);
+    background-color: var(--undine-nav-color);
 }
 ::-webkit-scrollbar-track {
     border-radius: 6px;
-    background: var(--undine-nav-color);
+    background-color: var(--undine-nav-color);
 }
 ::-webkit-scrollbar-thumb {
     border-radius: 6px;
-    background: var(--undine-scrollbar-color);
+    background-color: var(--undine-scrollbar-color);
 }
 
 /*
 Blockquotes
 */
 blockquote {
-    background: var(--undine-quote-color);
+    background-color: var(--undine-quote-color);
     border: 1px solid var(--undine-quote-color);
     border-left: 4px solid var(--undine-notice-color);
     border-top-right-radius: 6px;

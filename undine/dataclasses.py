@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, get_type_hints
 from graphql import Undefined
 
 from undine.typing import From, To
-from undine.utils.model_utils import generic_relations_for_generic_foreign_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -138,6 +137,7 @@ class LazyQueryTypeUnion:
 
     def get_types(self) -> list[type[QueryType]]:
         from undine.registies import QUERY_TYPE_REGISTRY  # noqa: PLC0415
+        from undine.utils.model_utils import generic_relations_for_generic_foreign_key  # noqa: PLC0415
 
         return [
             QUERY_TYPE_REGISTRY[field.remote_field.related_model]

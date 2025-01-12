@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
-from django.db.models import Model, OrderBy
+from django.db.models import FileField, Model, OrderBy
 from graphql import GraphQLEnumValue, GraphQLList, GraphQLNonNull, Undefined
 
 from undine.converters import convert_to_order_ref
@@ -204,7 +204,7 @@ class Order:
         )
 
 
-def get_orders_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Order]:  # TODO: Test
+def get_orders_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Order]:
     """Creates `undine.Order` for all the given model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Order] = {}
 
@@ -223,7 +223,9 @@ def get_orders_for_model(model: type[Model], *, exclude: Container[str]) -> dict
         if field_name in exclude:
             continue
 
-        # TODO: Filter out fields that don't make sense for ordering (e.g. FileFields)
+        # Ordering by a FileField doesn't make sense.
+        if isinstance(model_field, FileField):
+            continue
 
         result[field_name] = Order(field_name)
 

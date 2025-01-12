@@ -53,7 +53,7 @@ def test_filter__as_graphql_input():
     class MyFilter(FilterSet, model=Task, auto=False):
         name = Filter()
 
-    input_field = MyFilter.name.as_graphql_input()
+    input_field = MyFilter.name.as_graphql_input_field()
     assert input_field.type == GraphQLString
     assert input_field.description is None
     assert input_field.deprecation_reason is None
@@ -75,7 +75,7 @@ def test_filter__q_expession():
     field_type = MyFilter.has_project.get_field_type()
     assert field_type == GraphQLBoolean
 
-    input_field = MyFilter.has_project.as_graphql_input()
+    input_field = MyFilter.has_project.as_graphql_input_field()
     assert input_field.type == GraphQLBoolean
 
 
@@ -94,7 +94,7 @@ def test_filter__expression():
     field_type = MyFilter.assignee_count.get_field_type()
     assert field_type == GraphQLInt
 
-    input_field = MyFilter.assignee_count.as_graphql_input()
+    input_field = MyFilter.assignee_count.as_graphql_input_field()
     assert input_field.type == GraphQLInt
 
 
@@ -113,7 +113,7 @@ def test_filter__subquery():
     field_type = MyFilter.project_id.get_field_type()
     assert field_type == GraphQLInt
 
-    input_field = MyFilter.project_id.as_graphql_input()
+    input_field = MyFilter.project_id.as_graphql_input_field()
     assert input_field.type == GraphQLInt
 
 
@@ -170,14 +170,14 @@ def test_filter__function__get_field_type():
     assert field_type == GraphQLBoolean
 
 
-def test_filter__function__as_graphql_input():
+def test_filter__function__as_graphql_input_field():
     class MyFilter(FilterSet, model=Task, auto=False):
         @Filter
         def in_the_past(self, *, value: bool) -> Q:
             """Filter tasks created in the past."""
             return Q(created_at__lt=Now()) if value else Q(created_at__gte=Now())
 
-    input_field = MyFilter.in_the_past.as_graphql_input()
+    input_field = MyFilter.in_the_past.as_graphql_input_field()
     assert input_field.type == GraphQLBoolean
     assert input_field.description == "Filter tasks created in the past."
     assert input_field.deprecation_reason is None
@@ -198,7 +198,7 @@ def test_filter__deprecation_reason():
 
     assert MyFilter.name.deprecation_reason == "Use something else."
 
-    input_field = MyFilter.name.as_graphql_input()
+    input_field = MyFilter.name.as_graphql_input_field()
     assert input_field.deprecation_reason == "Use something else."
 
 
@@ -208,7 +208,7 @@ def test_filter__description():
 
     assert MyFilter.name.description == "Description."
 
-    input_field = MyFilter.name.as_graphql_input()
+    input_field = MyFilter.name.as_graphql_input_field()
     assert input_field.description == "Description."
 
 
@@ -248,5 +248,5 @@ def test_filter__extensions():
 
     assert MyFilter.name.extensions == {"foo": "bar", "undine_filter": MyFilter.name}
 
-    input_field = MyFilter.name.as_graphql_input()
+    input_field = MyFilter.name.as_graphql_input_field()
     assert input_field.extensions == {"foo": "bar", "undine_filter": MyFilter.name}

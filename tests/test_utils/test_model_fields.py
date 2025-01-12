@@ -20,7 +20,7 @@ class MyTextChoicesFieldModel(Model):  # noqa: DJ008
 
     class Meta:
         managed = False
-        app_label = "tests"
+        app_label = __name__
 
 
 FIELD = MyTextChoicesFieldModel._meta.get_field("role")

@@ -54,7 +54,7 @@ Code highlighting: https://pygments.org/docs/tokens/
 .highlight .mo { color: #2AACB8; font-weight: bold } /* Literal.Number.Oct */
 
 .highlight .n { color: #BCBEC4 } /* Name */
-.highlight .na { color: #ff0086; font-weight: bold } /* Name.Attribute */
+.highlight .na { color: #b3ae60; font-weight: bold } /* Name.Attribute */
 .highlight .nb { color: #8888c6 } /* Name.Builtin */
 .highlight .nc { color: #BCBEC4 } /* Name.Class */
 .highlight .nd { color: #b3ae60 } /* Name.Decorator */

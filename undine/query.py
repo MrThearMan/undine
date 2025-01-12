@@ -349,7 +349,7 @@ class Field:
         return func
 
 
-def get_fields_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Field]:  # TODO: Test
+def get_fields_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Field]:
     """Add undine.Fields for all the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Field] = {}
 

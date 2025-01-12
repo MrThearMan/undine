@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Any, Literal, Self
 from django.db.models import Expression, Q, QuerySet, Subquery
 from graphql import GraphQLInputField, GraphQLInputType, Undefined
 
-from undine.converters import convert_filter_ref_to_filter_resolver, convert_to_filter_ref, convert_to_graphql_type
+from undine.converters import (
+    convert_filter_ref_to_filter_resolver,
+    convert_to_filter_lookups,
+    convert_to_filter_ref,
+    convert_to_graphql_type,
+)
 from undine.dataclasses import FilterResults, LookupRef
 from undine.errors.exceptions import EmptyFilterResult, MissingModelError
 from undine.parsers import parse_class_variable_docstrings, parse_description
@@ -158,7 +163,7 @@ class FilterSet(metaclass=FilterSetMeta, model=Undefined):
 
         # Defer creating fields so that logical filters can be added.
         def fields() -> dict[str, GraphQLInputField]:
-            inputs = {to_schema_name(name): frt.as_graphql_input() for name, frt in cls.__filter_map__.items()}
+            inputs = {to_schema_name(name): frt.as_graphql_input_field() for name, frt in cls.__filter_map__.items()}
             input_field = GraphQLInputField(type_=input_object_type)
             inputs["NOT"] = input_field
             inputs["AND"] = input_field
@@ -262,7 +267,7 @@ class Filter:
     def get_expression(self, value: Any, info: GQLInfo) -> Q:
         return self.resolver(self, info, value=value)
 
-    def as_graphql_input(self) -> GraphQLInputField:
+    def as_graphql_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
             type_=self.get_field_type(),
             description=self.description,
@@ -277,7 +282,7 @@ class Filter:
         return maybe_list_or_non_null(graphql_type, many=self.many, required=self.required)
 
 
-def get_filters_for_model(model: type[Model], *, exclude: Container[str]) -> dict[str, Filter]:  # TODO: Test
+def get_filters_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Filter]:
     """Creates undine.Filters for all the given Model's non-related fields, except those in the 'exclude' list."""
     result: dict[str, Filter] = {}
 
@@ -296,12 +301,10 @@ def get_filters_for_model(model: type[Model], *, exclude: Container[str]) -> dic
         if field_name in exclude:
             continue
 
-        for lookup in model_field.get_lookups():
+        for lookup in convert_to_filter_lookups(model_field):
             name = f"{field_name}_{lookup}"
             if name in exclude:
                 continue
-
-            # TODO: Filter out fields that don't make sense for filtering (e.g. FileFields or nonsensical lookups)
 
             result[name] = Filter(field_name, lookup=lookup)
 

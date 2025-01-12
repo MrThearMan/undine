@@ -240,7 +240,7 @@ class Params(NamedTuple):
                 default_type=str,
                 expected=GraphQLString,
             ),
-            # TODO: Add missing lookups.
+            # TODO: Range field lookups
         },
     ),
 )
