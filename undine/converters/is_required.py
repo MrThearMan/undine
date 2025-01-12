@@ -37,12 +37,19 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
 
     is_primary_key = bool(getattr(ref, "primary_key", False))
     is_create_mutation = caller.mutation_type.__mutation_kind__ == "create"
+    is_nested_mutation = caller.mutation_type.__mutation_kind__ == "nested"
     is_to_many_field = bool(ref.one_to_many) or bool(ref.many_to_many)
     is_nullable = bool(getattr(ref, "null", True))
     has_auto_default = bool(getattr(ref, "auto_now", False)) or bool(getattr(ref, "auto_now_add", False))
     has_default = has_auto_default or getattr(ref, "default", NOT_PROVIDED) is not NOT_PROVIDED
 
-    return is_primary_key or (is_create_mutation and not is_to_many_field and not is_nullable and not has_default)
+    if is_nested_mutation:
+        return False
+
+    if is_create_mutation:
+        return not is_to_many_field and not is_nullable and not has_default
+
+    return is_primary_key
 
 
 @is_input_required.register

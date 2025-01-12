@@ -12,6 +12,8 @@ from undine.typing import GQLInfo, TModel
 from undine.utils.model_utils import get_instance_or_raise
 from undine.utils.mutation_handlers import BulkMutationHandler, MutationHandler
 
+from .query import QueryTypeManyFilteredResolver, QueryTypeManyResolver, QueryTypeSingleResolver
+
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
@@ -29,14 +31,12 @@ __all__ = [
 ]
 
 
-# TODO: Add optimizers.
-
-
 @dataclasses.dataclass(frozen=True, slots=True)
 class CreateResolver(Generic[TModel]):
     """Resolves a mutation for creating a model instance using."""
 
     mutation_type: type[MutationType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> TModel:
         data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_KEY]
@@ -44,7 +44,11 @@ class CreateResolver(Generic[TModel]):
         handler = MutationHandler(model=self.mutation_type.__model__)
         middlewares = MutationMiddlewareHandler(info, data, self.mutation_type)
 
-        return middlewares.wrap(handler.create)(data)
+        instance = middlewares.wrap(handler.create)(data)
+
+        query_type = self.mutation_type.__query_type__()
+        resolver = QueryTypeSingleResolver(query_type=query_type, max_complexity=self.max_complexity)
+        return resolver(root, info, pk=instance.pk)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -52,6 +56,7 @@ class UpdateResolver(Generic[TModel]):
     """Resolves a mutation for updating a model instance."""
 
     mutation_type: type[MutationType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> Model:
         model = self.mutation_type.__model__
@@ -61,12 +66,17 @@ class UpdateResolver(Generic[TModel]):
         if value is Undefined:
             raise GraphQLMissingLookupFieldError(model=model, key="pk")
 
+        # TODO: Optimize fetching based on mutation input.
         instance = get_instance_or_raise(model=model, key="pk", value=value)
 
         handler = MutationHandler(model=model)
         middlewares = MutationMiddlewareHandler(info, data, self.mutation_type, instance=instance)
 
-        return middlewares.wrap(handler.update)(instance, data)
+        middlewares.wrap(handler.update)(instance, data)
+
+        query_type = self.mutation_type.__query_type__()
+        resolver = QueryTypeSingleResolver(query_type=query_type, max_complexity=self.max_complexity)
+        return resolver(root, info, pk=instance.pk)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -104,6 +114,7 @@ class BulkCreateResolver(Generic[TModel]):
     """Resolves a bulk create mutation for creating a list of model instances."""
 
     mutation_type: type[MutationType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         model = self.mutation_type.__model__
@@ -118,7 +129,7 @@ class BulkCreateResolver(Generic[TModel]):
         handler = BulkMutationHandler(model=model)
         middlewares = MutationMiddlewareHandler(info, data, self.mutation_type, many=True)
 
-        return middlewares.wrap(handler.create_many)(
+        instances = middlewares.wrap(handler.create_many)(
             data,
             batch_size=batch_size,
             ignore_conflicts=ignore_conflicts,
@@ -127,12 +138,20 @@ class BulkCreateResolver(Generic[TModel]):
             unique_fields=unique_fields,
         )
 
+        query_type = self.mutation_type.__query_type__()
+        resolver = QueryTypeManyFilteredResolver(
+            query_type=query_type,
+            max_complexity=self.max_complexity,
+        )
+        return resolver(root, info, pk__in=[instance.pk for instance in instances])
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class BulkUpdateResolver(Generic[TModel]):
     """Resolves a bulk update mutation for updating a list of model instances."""
 
     mutation_type: type[MutationType]
+    max_complexity: int | None = None
 
     def __call__(self, root: Root, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         model = self.mutation_type.__model__
@@ -140,17 +159,25 @@ class BulkUpdateResolver(Generic[TModel]):
         data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_KEY]
         batch_size: int | None = kwargs.get("batch_size")
 
+        # TODO: Optimize fetching based on mutation input.
         pks = [item["pk"] for item in data]
         instances: list[Model] = list(model._meta.default_manager.filter(pk__in=pks))
 
         handler = BulkMutationHandler(model=model)
         middlewares = MutationMiddlewareHandler(info, data, self.mutation_type, instances=instances, many=True)
 
-        return middlewares.wrap(handler.update_many)(
+        middlewares.wrap(handler.update_many)(
             data,
             instances,
             batch_size=batch_size,
         )
+
+        query_type = self.mutation_type.__query_type__()
+        resolver = QueryTypeManyResolver(
+            query_type=query_type,
+            max_complexity=self.max_complexity,
+        )
+        return resolver(root, info, pk__in=[instance.pk for instance in instances])
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

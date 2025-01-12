@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 import sqlparse
 from django import db
 
+from undine.settings import undine_settings
 from undine.utils.logging import undine_logger
 
 if TYPE_CHECKING:
@@ -98,6 +99,9 @@ def db_query_logger(
 
 
 def get_stack_info() -> str:
+    if undine_settings.TESTING_FULL_STACKTRACE:
+        return "".join(traceback.StackSummary.from_list(traceback.extract_stack()).format())
+
     for frame in reversed(traceback.extract_stack()):
         if frame.filename == THIS_FILE:
             continue
@@ -109,7 +113,7 @@ def get_stack_info() -> str:
 
 
 @contextmanager
-def capture_database_queries(*, log: bool = True) -> Generator[DBQueryData, None, None]:
+def capture_database_queries(*, log: bool) -> Generator[DBQueryData, None, None]:
     """Capture results of what database queries were executed."""
     query_data = DBQueryData(queries=[])
     query_logger = partial(db_query_logger, query_data=query_data)

@@ -25,6 +25,7 @@ pip install undine
 
 # Before initial release:
 - [ ] Add documentation
+- [ ] Optimization to mutation outputs
 
 # Later:
 - [ ] Refactor MutationHandler to make less queries when updating nested objects

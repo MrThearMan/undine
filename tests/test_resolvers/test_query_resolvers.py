@@ -18,6 +18,7 @@ from undine.resolvers import (
     ModelSingleRelatedFieldResolver,
     NestedQueryTypeManyResolver,
     NestedQueryTypeSingleResolver,
+    QueryTypeManyFilteredResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
 )
@@ -244,12 +245,12 @@ def test_resolvers__nested_query_type_single_resolver__skip_query_type_perms():
 def test_resolvers__query_type_many_resolver():
     class TaskType(QueryType, model=Task): ...
 
-    resolver = QueryTypeSingleResolver(query_type=TaskType)
+    resolver = QueryTypeManyResolver(query_type=TaskType)
 
     task = TaskFactory.create()
 
     with patch_optimizer():
-        assert resolver(root=task, info=MockGQLInfo()) == task
+        assert resolver(root=task, info=MockGQLInfo()) == [task]
 
 
 @pytest.mark.django_db
@@ -265,6 +266,19 @@ def test_resolvers__query_type_many_resolver__permissions():
 
     with patch_optimizer(), pytest.raises(GraphQLPermissionDeniedError):
         assert resolver(root=task, info=MockGQLInfo()) == [task]
+
+
+@pytest.mark.django_db
+def test_resolvers__query_type_many_filtered_resolver():
+    class TaskType(QueryType, model=Task): ...
+
+    TaskFactory.create()
+    task = TaskFactory.create()
+
+    resolver = QueryTypeManyFilteredResolver(query_type=TaskType)
+
+    with patch_optimizer():
+        assert resolver(root=task, info=MockGQLInfo(), pk=task.pk) == [task]
 
 
 @pytest.mark.django_db

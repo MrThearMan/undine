@@ -7,8 +7,8 @@ from django.core.exceptions import ValidationError
 
 from example_project.app.models import ServiceRequest, Task
 from tests.factories import TaskFactory
-from tests.helpers import MockGQLInfo
-from undine import Input, MutationType
+from tests.helpers import MockGQLInfo, patch_optimizer
+from undine import Input, MutationType, QueryType
 from undine.errors.exceptions import GraphQLMissingLookupFieldError, GraphQLModelNotFoundError
 from undine.resolvers import UpdateResolver
 from undine.typing import GQLInfo
@@ -17,6 +17,8 @@ from undine.typing import GQLInfo
 @pytest.mark.django_db
 def test_update_resolver():
     task = TaskFactory.create(name="Test task")
+
+    class TaskType(QueryType, model=Task): ...
 
     class TaskUpdateMutation(MutationType, model=Task): ...
 
@@ -27,7 +29,8 @@ def test_update_resolver():
         "name": "New task",
     }
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        result = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(result, Task)
     assert result.name == "New task"
@@ -68,6 +71,8 @@ def test_update_resolver__input_only_fields():
 
     validator_called = False
 
+    class TaskType(QueryType, model=Task): ...
+
     class TaskUpdateMutation(MutationType, model=Task):
         foo = Input(bool, input_only=True)
 
@@ -88,7 +93,8 @@ def test_update_resolver__input_only_fields():
         "foo": True,
     }
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        result = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(result, Task)
     assert result.name == "New task"

@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
     from django.db.models import Model
 
+    from undine import QueryType
     from undine.typing import (
         FieldPermFunc,
         GQLInfo,
@@ -121,7 +122,7 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
     The following parameters can be passed in the class definition:
 
     - `model`: Set the Django `Model` this `MutationType` is for. This input is required.
-    - `mutation_kind`: The kind of mutation this is. One of "create", "update", "delete" or "custom".
+    - `mutation_kind`: The kind of mutation this is. One of "create", "update", "delete", "custom" or "nested".
                        If not given, this will be guessed based on the name of the class.
     - `auto`: Whether to add `undine.Input` fields for all `Model` fields automatically. Defaults to `True`.
     - `exclude`: List of `Model` fields to exclude from automatically added inputs. No excludes by default.
@@ -172,18 +173,23 @@ class MutationType(metaclass=MutationTypeMeta, model=Undefined):
         )
 
     @classmethod
+    def __query_type__(cls) -> type[QueryType]:
+        """Get the `QueryType` for this `MutationType`."""
+        return QUERY_TYPE_REGISTRY[cls.__model__]
+
+    @classmethod
     def __output_type__(cls) -> GraphQLOutputType:
         """Create the GraphQL `ObjectType` for this `MutationType`."""
-        output_type = QUERY_TYPE_REGISTRY[cls.__model__]
+        query_type = cls.__query_type__()
 
         if cls.__mutation_kind__ == "delete":
-            field = output_type.__field_map__["pk"]
+            field = query_type.__field_map__["pk"]
             return get_or_create_object_type(
                 name=cls.__typename__ + "Output",
                 fields={"pk": field.as_graphql_field()},
             )
 
-        return output_type.__output_type__()
+        return query_type.__output_type__()
 
     @classmethod
     def __middleware__(cls) -> list[type[MutationMiddleware]]:

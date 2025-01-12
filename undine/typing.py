@@ -126,7 +126,7 @@ TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
 
 # Literals
 
-MutationKind: TypeAlias = Literal["create", "update", "delete", "custom"]
+MutationKind: TypeAlias = Literal["create", "update", "delete", "custom", "nested"]
 HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
 DispatchCategory: TypeAlias = Literal["types", "instances", "literals", "protocols"]
 

@@ -61,21 +61,20 @@ def load_deferred() -> None:  # noqa: C901
 
     @convert_entrypoint_ref_to_resolver.register
     def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:  # noqa: PLR0911
-        # TODO: Optimize queries from mutations.
         caller: Entrypoint = kwargs["caller"]
         if caller.many:
             if ref.__mutation_kind__ == "create":
-                return BulkCreateResolver(mutation_type=ref)
+                return BulkCreateResolver(mutation_type=ref, max_complexity=caller.max_complexity)
             if ref.__mutation_kind__ == "update":
-                return BulkUpdateResolver(mutation_type=ref)
+                return BulkUpdateResolver(mutation_type=ref, max_complexity=caller.max_complexity)
             if ref.__mutation_kind__ == "delete":
                 return BulkDeleteResolver(mutation_type=ref)
             return CustomResolver(mutation_type=ref)
 
         if ref.__mutation_kind__ == "create":
-            return CreateResolver(mutation_type=ref)
+            return CreateResolver(mutation_type=ref, max_complexity=caller.max_complexity)
         if ref.__mutation_kind__ == "update":
-            return UpdateResolver(mutation_type=ref)
+            return UpdateResolver(mutation_type=ref, max_complexity=caller.max_complexity)
         if ref.__mutation_kind__ == "delete":
             return DeleteResolver(mutation_type=ref)
         return CustomResolver(mutation_type=ref)

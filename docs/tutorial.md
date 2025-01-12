@@ -52,7 +52,7 @@ UNDINE = {
 }
 ```
 
-Now we can start the Django server and navigate to `/graphql/` to see GraphiQL UI.
+Now start the Django server and navigate to `/graphql/` to see GraphiQL UI.
 Make the following request:
 
 ```graphql
@@ -94,7 +94,7 @@ replace the return value of the `testing` method with a message of your choosing
 
 In Undine, [`Entrypoints`](schema.md#entrypoints) are used in the class bodies of
 [`RootTypes`](schema.md#roottypes) to define the GraphQL operations that can be
-executed on the root of the schema.
+executed at the root of the schema.
 
 Now we need to tell Undine to use our schema instead of the example one.
 Add the `SCHEMA` setting to Undine's configuration, and set it to point
@@ -107,14 +107,14 @@ UNDINE = {
 }
 ```
 
-We can now restart the server and make the same request as before.
+Restart the Django server and make the same request as before.
 You should see you own message instead of the example one.
 
 ---
 
 ## Part 3: Adding Queries
 
-Now that we have our own schema, let's get started adding our models to it.
+Now that we have our own schema, let's start exposing Django models through it.
 In our `models.py` file, add the following model:
 
 ```python
@@ -124,15 +124,13 @@ class Task(Model):
     name = CharField(max_length=255)
     done = BooleanField(default=False)
     created_at = DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return self.name
 ```
 
 Create and run migrations for this model.
 
 Next, we'll connect our `Task` model to the schema and exposing two `Entrypoints`:
-one for fetching a single `Task` and another for fetching all `Tasks`.
+one for fetching a single `Task` and another for fetching all `Tasks`. Replace the
+current `schema.py` file with the following:
 
 ```python
 from undine import create_schema, Entrypoint, RootType, QueryType
@@ -149,15 +147,15 @@ schema = create_schema(query=Query)
 ```
 
 A [`QueryType`](queries.md#querytypes) is a class that represents a GraphQL `ObjectType` for querying
-a Django model in the GraphQL schema. `QueryTypes` automatically introspect their model and make
-its fields available on the generated `ObjectType`. That's why we don't need a class body for the
-`TaskType` in this case.
+a Django model in the GraphQL schema. `QueryTypes` automatically introspect their model to create fields
+for their generated `ObjectType` — that's why we don't need to add anything to the `TaskType` class body
+to expose the model in this basic way.
 
-To make the `Entrypoints` for this `QueryType`, we simply use the QueryType as an
+To make the `Entrypoints` for this `QueryType`, we simply use the `QueryType` as an
 argument to the `Entrypoint` class instead of decorating a method like we did before.
 This creates an `Entrypoint` for fetching a single `Task` by its primary key.
-For the `Entrypoints` for fetching all `Tasks`, we pass the `many` argument to the `Entrypoint`
-in addition to the `QueryType`.
+For the `Entrypoint` for fetching all `Tasks`, we pass the `many=True` additionally
+to indicate a list endpoint.
 
 Let's try our new schema. But wait, first we need some data to query!
 In your terminal, run `python manage.py shell` to start Django's shell and
@@ -208,38 +206,29 @@ You should see the following response:
 }
 ```
 
-Let's add a couple more models to our project:
+Let's add a couple more models to our project to test relations:
 
-```python hl_lines="3 4 5 6 7 14 19 20 21 22 23 24 25 26"
+```python hl_lines="3 4 11 13 14 15 16 17"
 from django.db.models import *  # for brevity
 
 class Project(Model):
     name = CharField(max_length=255)
-
-    def __str__(self) -> str:
-        return self.name
 
 class Task(Model):
     name = CharField(max_length=255)
     done = BooleanField(default=False)
     created_at = DateTimeField(auto_now_add=True)
 
-    project = ForeignKey(Project, on_delete=SET_NULL, null=True, related_name="tasks")
-
-    def __str__(self) -> str:
-        return self.name
+    project = ForeignKey(Project, on_delete=SET_NULL, null=True, blank=True, related_name="tasks")
 
 class Step(Model):
     name = CharField(max_length=255)
     done = BooleanField(default=False)
 
     task = ForeignKey(Task, on_delete=CASCADE, related_name="steps")
-
-    def __str__(self) -> str:
-        return self.name
 ```
 
-Create and run migrations for these models, and create some data for them:
+Create and run migrations for these models, then create some data for them:
 
 ```pycon
 >>> from service.models import Project, Step, Task
@@ -259,7 +248,7 @@ Create and run migrations for these models, and create some data for them:
 >>> step_5 = Step.objects.create(name="Step 5", done=true, task=task_3)
 ```
 
-Then, we'll add these models to our schema by creating a `QueryType` for each of them.
+Then we'll add these models to our schema by creating a `QueryType` for each of them.
 
 ```python hl_lines="3 5 9"
 from undine import create_schema, Entrypoint, RootType, QueryType
@@ -279,7 +268,7 @@ class Query(RootType):
 schema = create_schema(query=Query)
 ```
 
-`QueryTypes` will automatically link to each other through the model relations,
+`QueryTypes` will automatically link to each other through their model relations,
 so we don't need to do anything else here.
 
 Let's reboot the Django server once more and make the following request:
@@ -376,4 +365,114 @@ by adding the necessary joins to the database query.
 
 ## Part 4: Adding Mutations
 
+Next we'll add mutations to our schema to allow us to create, update, and delete
+`Task` and `Project` instances. Add the following to the `schema.py` file:
 
+```python hl_lines="1 11 12 13 14 15 21 22 23 24 26"
+from undine import create_schema, Entrypoint, RootType, QueryType, MutationType
+
+from .models import Project, Step, Task
+
+class ProjectType(QueryType, model=Project): ...
+
+class TaskType(QueryType, model=Task): ...
+
+class StepType(QueryType, model=Step): ...
+
+class TaskCreateMutation(MutationType, model=Task): ...
+
+class TaskUpdateMutation(MutationType, model=Task): ...
+
+class TaskDeleteMutation(MutationType, model=Task): ...
+
+class Query(RootType):
+    task = Entrypoint(TaskType)
+    tasks = Entrypoint(TaskType, many=True)
+
+class Mutation(RootType):
+    create_task = Entrypoint(TaskCreateMutation)
+    update_task = Entrypoint(TaskUpdateMutation)
+    delete_task = Entrypoint(TaskDeleteMutation)
+
+schema = create_schema(query=Query, mutation=Mutation)
+```
+
+Undine will know that the [`MutationType`](mutations.md#mutationtype) `TaskCreateMutation`
+is a create mutation because the class has the word "create" in its name.
+You could also use the `mutation_kind` argument in the `MutationType` class
+definition to be more explicit.
+
+Undine will generate different resolvers and `ObjectTypes` based on the `MutationType's`
+`mutation_kind`, for example the primary key for the model is not included in the create
+mutations, while in update mutations all fields are not required to support partial updates.
+Undine will also use the `TaskType` as output type for the `MutationTypes` automatically since
+they share the same model.
+
+Let's try out our new mutations. Boot up the Django server and make the following request:
+
+```graphql
+mutation {
+  createTask(input: {name: "New task"}) {
+    pk
+    name
+  }
+}
+```
+
+You should see the following response (`pk` will be different):
+
+```json
+{
+  "data": {
+    "createTask": {
+      "pk": 1,
+      "name": "New task"
+    }
+  }
+}
+```
+
+Take note of the `pk` value, and use it to update the task:
+
+```graphql
+mutation {
+  updateTask(input: {pk: 1, name: "Updated task"}) {
+    name
+  }
+}
+```
+
+You should see the following response:
+
+```json
+{
+  "data": {
+    "updateTask": {
+      "name": "Updated task"
+    }
+  }
+}
+```
+
+Finally, let's delete the task. Note delete mutations only add the primary key
+to the input arguments as well as to the output types by default.
+
+```graphql
+mutation {
+  deleteTask(input: {pk: 1}) {
+    pk
+  }
+}
+```
+
+You should see the following response:
+
+```json
+{
+  "data": {
+    "deleteTask": {
+      "pk": 1
+    }
+  }
+}
+```

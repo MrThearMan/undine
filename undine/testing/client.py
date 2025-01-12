@@ -171,15 +171,16 @@ class GraphQLClient(Client):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        log_sql: bool = False,
     ) -> GraphQLClientResponse:
         """
-        Make a GraphQL query.
+        Execute a GraphQL operation.
 
-        :params query: GraphQL query string.
-        :params variables: Variables for the query.
-        :params headers: Headers for the query.
-        :params log: Whether to log the database queries executed in the request.
-        :params operation_name: Name of the operation to execute.
+        :param query: GraphQL query string.
+        :param variables: Variables for the query.
+        :param headers: Headers for the query.
+        :param operation_name: Name of the operation to execute.
+        :param log_sql: Whether to log the SQL queries executed in the request.
         """
         variables: dict[str, Any] = variables or {}
         files = extract_files(variables, prefix="variables")
@@ -204,7 +205,7 @@ class GraphQLClient(Client):
                 **files_map,
             }
 
-        with capture_database_queries(log=True) as results:
+        with capture_database_queries(log=log_sql) as results:
             response: HttpResponse = self.post(  # type: ignore[assignment]
                 path=undine_settings.TESTING_ENDPOINT,
                 data=data,
@@ -213,6 +214,9 @@ class GraphQLClient(Client):
             )
 
         return undine_settings.TESTING_CLIENT_RESPONSE_CLASS(response, results)
+
+    query = __call__
+    mutation = __call__
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         defaults = {

@@ -41,6 +41,7 @@ __all__ = [
     "NestedQueryTypeManyResolver",
     "NestedQueryTypeSingleResolver",
     "NodeResolver",
+    "QueryTypeManyFilteredResolver",
     "QueryTypeManyResolver",
     "QueryTypeSingleResolver",
 ]
@@ -149,6 +150,27 @@ class QueryTypeManyResolver(Generic[TModel]):
         @middlewares.wrap
         def getter() -> list[TModel]:
             queryset = self.query_type.__get_queryset__(info)
+            model = self.query_type.__model__
+            optimizer = QueryOptimizer(model=model, info=info, max_complexity=self.max_complexity)
+            optimized_queryset = optimizer.optimize(queryset)
+            return evaluate_with_prefetch_hack(optimized_queryset)
+
+        return getter()
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class QueryTypeManyFilteredResolver(Generic[TModel]):
+    """Top-level resolver for fetching a filtered set of model objects via a QueryType."""
+
+    query_type: type[QueryType]
+    max_complexity: int | None = None
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        middlewares = QueryMiddlewareHandler(root, info, self.query_type, many=True)
+
+        @middlewares.wrap
+        def getter() -> list[TModel]:
+            queryset = self.query_type.__get_queryset__(info).filter(**kwargs)
             model = self.query_type.__model__
             optimizer = QueryOptimizer(model=model, info=info, max_complexity=self.max_complexity)
             optimized_queryset = optimizer.optimize(queryset)

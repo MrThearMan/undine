@@ -12,8 +12,8 @@ from tests.factories import (
     TaskStepFactory,
     TeamFactory,
 )
-from tests.helpers import MockGQLInfo
-from undine import Input, MutationType
+from tests.helpers import MockGQLInfo, patch_optimizer
+from undine import Input, MutationType, QueryType
 from undine.errors.exceptions import (
     GraphQLBulkMutationForwardRelationError,
     GraphQLBulkMutationGenericRelationsError,
@@ -28,6 +28,8 @@ from undine.resolvers import BulkCreateResolver
 def test_bulk_create_resolver():
     project = ProjectFactory.create()
     request = ServiceRequestFactory.create()
+
+    class TaskType(QueryType, model=Task): ...
 
     class TaskCreateMutation(MutationType, model=Task):
         request = Input(Task.request)
@@ -49,7 +51,8 @@ def test_bulk_create_resolver():
         },
     ]
 
-    results = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        results = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(results, list)
     assert len(results) == 2

@@ -1,7 +1,7 @@
 import datetime
 
 import factory
-from factory import SubFactory, faker, fuzzy
+from factory import faker, fuzzy
 
 from example_project.app.models import Task, TaskTypeChoices
 
@@ -19,7 +19,7 @@ class TaskFactory(GenericDjangoModelFactory[Task]):
     related_tasks = ManyToManyFactory("tests.factories.task.TaskFactory")
 
     request = NullableSubFactory("tests.factories.service_request.ServiceRequestFactory")
-    project = SubFactory("tests.factories.project.ProjectFactory")
+    project = NullableSubFactory("tests.factories.project.ProjectFactory")
     assignees = ManyToManyFactory("tests.factories.person.PersonFactory")
 
     result = ReverseSubFactory("tests.factories.task_result.TaskResultFactory")

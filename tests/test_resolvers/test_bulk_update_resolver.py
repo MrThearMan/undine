@@ -4,8 +4,8 @@ import pytest
 
 from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, ServiceRequestFactory, TaskFactory, TeamFactory
-from tests.helpers import MockGQLInfo
-from undine import Input, MutationType
+from tests.helpers import MockGQLInfo, patch_optimizer
+from undine import Input, MutationType, QueryType
 from undine.errors.exceptions import (
     GraphQLBulkMutationForwardRelationError,
     GraphQLBulkMutationGenericRelationsError,
@@ -22,6 +22,8 @@ def test_bulk_update_resolver():
     request = ServiceRequestFactory.create()
     task_1 = TaskFactory.create(name="Task 1", type=TaskTypeChoices.STORY.value)
     task_2 = TaskFactory.create(name="Task 2", type=TaskTypeChoices.BUG_FIX.value, request=None)
+
+    class TaskType(QueryType, model=Task): ...
 
     class TaskUpdateMutation(MutationType, model=Task):
         request = Input(Task.request)
@@ -45,7 +47,8 @@ def test_bulk_update_resolver():
         },
     ]
 
-    results = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        results = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(results, list)
     assert len(results) == 2

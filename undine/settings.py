@@ -65,6 +65,9 @@ class DefaultSettings(NamedTuple):
     FILTERSET_EXTENSIONS_KEY: str = "undine_filterset"
     """The key used to store a FilterSet in the argument GraphQL extensions."""
 
+    TESTING_FULL_STACKTRACE: bool = False
+    """Whether to include the full stacktrace in testing client instead of just the relevant frames."""
+
     INPUT_EXTENSIONS_KEY: str = "undine_input"
     """The key used to store an `Input` in the argument GraphQL extensions."""
 

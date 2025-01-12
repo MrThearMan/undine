@@ -28,6 +28,7 @@ from .query import (
     NestedQueryTypeManyResolver,
     NestedQueryTypeSingleResolver,
     NodeResolver,
+    QueryTypeManyFilteredResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
 )
@@ -53,6 +54,7 @@ __all__ = [
     "NestedQueryTypeManyResolver",
     "NestedQueryTypeSingleResolver",
     "NodeResolver",
+    "QueryTypeManyFilteredResolver",
     "QueryTypeManyResolver",
     "QueryTypeSingleResolver",
     "UpdateResolver",

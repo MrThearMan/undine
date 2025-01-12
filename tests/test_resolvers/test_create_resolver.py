@@ -7,8 +7,8 @@ from django.core.exceptions import ValidationError
 
 from example_project.app.models import ServiceRequest, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, ServiceRequestFactory
-from tests.helpers import MockGQLInfo
-from undine import Input, MutationType
+from tests.helpers import MockGQLInfo, patch_optimizer
+from undine import Input, MutationType, QueryType
 from undine.resolvers import CreateResolver
 from undine.typing import GQLInfo
 
@@ -17,6 +17,8 @@ from undine.typing import GQLInfo
 def test_create_resolver():
     project = ProjectFactory.create(name="Test project")
     request = ServiceRequestFactory.create(details="Test request")
+
+    class TaskType(QueryType, model=Task): ...
 
     class TaskCreateMutation(MutationType, model=Task): ...
 
@@ -29,7 +31,8 @@ def test_create_resolver():
         "project": project.pk,
     }
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        result = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(result, Task)
     assert result.name == "Test task"
@@ -42,6 +45,8 @@ def test_create_resolver():
 def test_create_resolver__input_only_fields():
     project = ProjectFactory.create(name="Test project")
     request = ServiceRequestFactory.create(details="Test request")
+
+    class TaskType(QueryType, model=Task): ...
 
     validator_called = False
 
@@ -67,7 +72,8 @@ def test_create_resolver__input_only_fields():
         "foo": True,
     }
 
-    result = resolver(root=None, info=MockGQLInfo(), input=data)
+    with patch_optimizer():
+        result = resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert isinstance(result, Task)
     assert result.name == "Test task"
@@ -78,6 +84,8 @@ def test_create_resolver__input_only_fields():
 @pytest.mark.django_db
 def test_create_resolver__atomic():
     project = ProjectFactory.create(name="Test project")
+
+    class TaskType(QueryType, model=Task): ...
 
     class ServiceRequestType(MutationType, model=ServiceRequest): ...
 
@@ -96,7 +104,7 @@ def test_create_resolver__atomic():
         "project": project.pk,
     }
 
-    with pytest.raises(ValidationError):
+    with patch_optimizer(), pytest.raises(ValidationError):
         resolver(root=None, info=MockGQLInfo(), input=data)
 
     assert ServiceRequest.objects.count() == 0
