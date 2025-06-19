@@ -1,0 +1,61 @@
+{
+  "data": {
+    "tasks": [
+      {
+        "pk": 1,
+        "name": "Task 1",
+        "done": false,
+        "project": {
+          "pk": 1,
+          "name": "Project 1"
+        },
+        "steps": [
+          {
+            "pk": 1,
+            "name": "Step 1",
+            "done": false
+          },
+          {
+            "pk": 2,
+            "name": "Step 2",
+            "done": true
+          }
+        ]
+      },
+      {
+        "pk": 2,
+        "name": "Task 2",
+        "done": true,
+        "project": {
+          "pk": 2,
+          "name": "Project 2"
+        },
+        "steps": [
+          {
+            "pk": 3,
+            "name": "Step 3",
+            "done": false
+          }
+        ]
+      },
+      {
+        "pk": 3,
+        "name": "Task 3",
+        "done": false,
+        "project": null,
+        "steps": [
+          {
+            "pk": 4,
+            "name": "Step 4",
+            "done": true
+          },
+          {
+            "pk": 5,
+            "name": "Step 5",
+            "done": true
+          }
+        ]
+      }
+    ]
+  }
+}

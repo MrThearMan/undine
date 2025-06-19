@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Settings - Undine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+        <link href="../css/pygments.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Settings";
+        var mkdocs_page_input_path = "settings.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Undine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Settings</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#required">Required</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#schema">SCHEMA</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphql_path">GRAPHQL_PATH</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#flags">Flags</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#allow_did_you_mean_suggestions">ALLOW_DID_YOU_MEAN_SUGGESTIONS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#allow_introspection_queries">ALLOW_INTROSPECTION_QUERIES</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#camel_case_schema_fields">CAMEL_CASE_SCHEMA_FIELDS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#file_upload_enabled">FILE_UPLOAD_ENABLED</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mutation_full_clean">MUTATION_FULL_CLEAN</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#persisted_documents_only">PERSISTED_DOCUMENTS_ONLY</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#limits">Limits</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_page_size">CONNECTION_PAGE_SIZE</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#entrypoint_limit_per_model">ENTRYPOINT_LIMIT_PER_MODEL</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_filters_per_type">MAX_FILTERS_PER_TYPE</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_orders_per_type">MAX_ORDERS_PER_TYPE</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#graphql-execution">GraphQL execution</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#additional_validation_rules">ADDITIONAL_VALIDATION_RULES</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#execution_context_class">EXECUTION_CONTEXT_CLASS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_allowed_aliases">MAX_ALLOWED_ALIASES</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_allowed_directives">MAX_ALLOWED_DIRECTIVES</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_errors">MAX_ERRORS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_query_complexity">MAX_QUERY_COMPLEXITY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#max_tokens">MAX_TOKENS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#middleware">MIDDLEWARE</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mutation_instance_limit">MUTATION_INSTANCE_LIMIT</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#no_error_location">NO_ERROR_LOCATION</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#root_value">ROOT_VALUE</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#hooks">Hooks</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#operation_hooks">OPERATION_HOOKS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#parse_hooks">PARSE_HOOKS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#validation_hooks">VALIDATION_HOOKS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#execution_hooks">EXECUTION_HOOKS</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#testing-client">Testing client</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#testing_client_full_stacktrace">TESTING_CLIENT_FULL_STACKTRACE</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#graphiql">GraphiQL</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#graphiql_enabled">GRAPHIQL_ENABLED</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphiql_plugin_explorer_version">GRAPHIQL_PLUGIN_EXPLORER_VERSION</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphiql_react_version">GRAPHIQL_REACT_VERSION</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphiql_version">GRAPHIQL_VERSION</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#django-modeltranslation">Django-modeltranslation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#modeltranslation_include_translatable">MODELTRANSLATION_INCLUDE_TRANSLATABLE</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#modeltranslation_include_translations">MODELTRANSLATION_INCLUDE_TRANSLATIONS</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#optimizer">Optimizer</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_start_index_key">CONNECTION_START_INDEX_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_stop_index_key">CONNECTION_STOP_INDEX_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_index_key">CONNECTION_INDEX_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_total_count_key">CONNECTION_TOTAL_COUNT_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#disable_only_fields_optimization">DISABLE_ONLY_FIELDS_OPTIMIZATION</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#optimizer_class">OPTIMIZER_CLASS</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#prefetch_hack_cache_key">PREFETCH_HACK_CACHE_KEY</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#argument-parameter-names">Argument &amp; parameter names</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#mutation_input_data_key">MUTATION_INPUT_DATA_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#query_type_filter_input_key">QUERY_TYPE_FILTER_INPUT_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#query_type_order_input_key">QUERY_TYPE_ORDER_INPUT_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#resolver_root_param_name">RESOLVER_ROOT_PARAM_NAME</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#total_count_param_name">TOTAL_COUNT_PARAM_NAME</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#other">Other</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#docstring_parser">DOCSTRING_PARSER</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sdl_printer">SDL_PRINTER</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extensions-keys">Extensions keys</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#calculation_argument_extensions_key">CALCULATION_ARGUMENT_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#connection_extensions_key">CONNECTION_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#directive_argument_extensions_key">DIRECTIVE_ARGUMENT_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#directive_extensions_key">DIRECTIVE_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#entrypoint_extensions_key">ENTRYPOINT_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#field_extensions_key">FIELD_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#filter_extensions_key">FILTER_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#filterset_extensions_key">FILTERSET_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#input_extensions_key">INPUT_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#interface_field_extensions_key">INTERFACE_FIELD_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#interface_type_extensions_key">INTERFACE_TYPE_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mutation_type_extensions_key">MUTATION_TYPE_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#order_extensions_key">ORDER_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#orderset_extensions_key">ORDERSET_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#query_type_extensions_key">QUERY_TYPE_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#root_type_extensions_key">ROOT_TYPE_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scalar_extensions_key">SCALAR_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#schema_directives_extensions_key">SCHEMA_DIRECTIVES_EXTENSIONS_KEY</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#union_type_extensions_key">UNION_TYPE_EXTENSIONS_KEY</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Undine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Settings</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the settings that can be used to customize Undine.
+The settings can also be found in the <a href="https://github.com/MrThearMan/undine/blob/main/undine/settings.py" target="_blank">settings file</a>.</p>
+<h2 id="required">Required<a class="headerlink" href="#required" title="Permanent link">🔗</a></h2>
+<h3 id="schema"><code>SCHEMA</code><a class="headerlink" href="#schema" title="Permanent link">🔗</a></h3>
+<p>Describes the location of the schema to use for the GraphQL API.
+Should be given as the dotted path to the schema variable.</p>
+<h3 id="graphql_path"><code>GRAPHQL_PATH</code><a class="headerlink" href="#graphql_path" title="Permanent link">🔗</a></h3>
+<p>The URL path where the GraphQL endpoint is located by default.</p>
+<h2 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">🔗</a></h2>
+<h3 id="allow_did_you_mean_suggestions"><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code><a class="headerlink" href="#allow_did_you_mean_suggestions" title="Permanent link">🔗</a></h3>
+<p>Whether to allow the <em>'did you mean'</em> suggestions on error messages.</p>
+<h3 id="allow_introspection_queries"><code>ALLOW_INTROSPECTION_QUERIES</code><a class="headerlink" href="#allow_introspection_queries" title="Permanent link">🔗</a></h3>
+<p>Whether schema introspection queries are allowed or not. Should set to <code>True</code> if you want to use the GraphiQL.</p>
+<h3 id="camel_case_schema_fields"><code>CAMEL_CASE_SCHEMA_FIELDS</code><a class="headerlink" href="#camel_case_schema_fields" title="Permanent link">🔗</a></h3>
+<p>Should names be converted from <em>'snake_case'</em> to <em>'camelCase'</em> for the GraphQL schema?</p>
+<h3 id="file_upload_enabled"><code>FILE_UPLOAD_ENABLED</code><a class="headerlink" href="#file_upload_enabled" title="Permanent link">🔗</a></h3>
+<p>Whether file uploads are enabled. Should enable CSRF protection on the GraphiQL endpoint if enabled.</p>
+<h3 id="mutation_full_clean"><code>MUTATION_FULL_CLEAN</code><a class="headerlink" href="#mutation_full_clean" title="Permanent link">🔗</a></h3>
+<p>Whether to run <code>model.full_clean()</code> when mutating a model. Turning this off can reduce
+the number of database queries during mutations.</p>
+<h3 id="persisted_documents_only"><code>PERSISTED_DOCUMENTS_ONLY</code><a class="headerlink" href="#persisted_documents_only" title="Permanent link">🔗</a></h3>
+<p>Whether to only allow persisted documents to be executed.</p>
+<h2 id="limits">Limits<a class="headerlink" href="#limits" title="Permanent link">🔗</a></h2>
+<h3 id="connection_page_size"><code>CONNECTION_PAGE_SIZE</code><a class="headerlink" href="#connection_page_size" title="Permanent link">🔗</a></h3>
+<p>The maximum number of items to return in a page of a Connection.</p>
+<h3 id="entrypoint_limit_per_model"><code>ENTRYPOINT_LIMIT_PER_MODEL</code><a class="headerlink" href="#entrypoint_limit_per_model" title="Permanent link">🔗</a></h3>
+<p>Default number of objects that are fetched per model when fetching results in an abstract type Entrypoint.</p>
+<h3 id="max_filters_per_type"><code>MAX_FILTERS_PER_TYPE</code><a class="headerlink" href="#max_filters_per_type" title="Permanent link">🔗</a></h3>
+<p>The maximum number of filters allowed for a single <code>FilterSet</code>.</p>
+<h3 id="max_orders_per_type"><code>MAX_ORDERS_PER_TYPE</code><a class="headerlink" href="#max_orders_per_type" title="Permanent link">🔗</a></h3>
+<p>The maximum number of orders allowed for a single <code>OrderSet</code>.</p>
+<h2 id="graphql-execution">GraphQL execution<a class="headerlink" href="#graphql-execution" title="Permanent link">🔗</a></h2>
+<h3 id="additional_validation_rules"><code>ADDITIONAL_VALIDATION_RULES</code><a class="headerlink" href="#additional_validation_rules" title="Permanent link">🔗</a></h3>
+<p>Additional validation rules to use for validating the GraphQL schema.</p>
+<h3 id="execution_context_class"><code>EXECUTION_CONTEXT_CLASS</code><a class="headerlink" href="#execution_context_class" title="Permanent link">🔗</a></h3>
+<p>GraphQL execution context class used by the schema.</p>
+<h3 id="max_allowed_aliases"><code>MAX_ALLOWED_ALIASES</code><a class="headerlink" href="#max_allowed_aliases" title="Permanent link">🔗</a></h3>
+<p>The maximum number of aliases allowed in a single operation.</p>
+<h3 id="max_allowed_directives"><code>MAX_ALLOWED_DIRECTIVES</code><a class="headerlink" href="#max_allowed_directives" title="Permanent link">🔗</a></h3>
+<p>The maximum number of directives allowed in a single operation.</p>
+<h3 id="max_errors"><code>MAX_ERRORS</code><a class="headerlink" href="#max_errors" title="Permanent link">🔗</a></h3>
+<p>The maximum number of validation errors allowed in a GraphQL request before it is rejected.</p>
+<h3 id="max_query_complexity"><code>MAX_QUERY_COMPLEXITY</code><a class="headerlink" href="#max_query_complexity" title="Permanent link">🔗</a></h3>
+<p>Maximum query complexity that is allowed to be queried in a single operation.</p>
+<h3 id="max_tokens"><code>MAX_TOKENS</code><a class="headerlink" href="#max_tokens" title="Permanent link">🔗</a></h3>
+<p>Maximum number of tokens the GraphQL parser will parse before it rejects a request.</p>
+<h3 id="middleware"><code>MIDDLEWARE</code><a class="headerlink" href="#middleware" title="Permanent link">🔗</a></h3>
+<p>Middleware to use in GraphQL field resolving.</p>
+<h3 id="mutation_instance_limit"><code>MUTATION_INSTANCE_LIMIT</code><a class="headerlink" href="#mutation_instance_limit" title="Permanent link">🔗</a></h3>
+<p>The maximum number of objects that can be mutated in a single mutation.</p>
+<h3 id="no_error_location"><code>NO_ERROR_LOCATION</code><a class="headerlink" href="#no_error_location" title="Permanent link">🔗</a></h3>
+<p>Whether to add the location information to GraphQL errors.</p>
+<h3 id="root_value"><code>ROOT_VALUE</code><a class="headerlink" href="#root_value" title="Permanent link">🔗</a></h3>
+<p>The root value for the GraphQL execution.</p>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">🔗</a></h2>
+<h3 id="operation_hooks"><code>OPERATION_HOOKS</code><a class="headerlink" href="#operation_hooks" title="Permanent link">🔗</a></h3>
+<p>Hooks to run during the operation.</p>
+<h3 id="parse_hooks"><code>PARSE_HOOKS</code><a class="headerlink" href="#parse_hooks" title="Permanent link">🔗</a></h3>
+<p>Hooks to run during parsing the GraphQL request.</p>
+<h3 id="validation_hooks"><code>VALIDATION_HOOKS</code><a class="headerlink" href="#validation_hooks" title="Permanent link">🔗</a></h3>
+<p>Hooks to run during validation the GraphQL request.</p>
+<h3 id="execution_hooks"><code>EXECUTION_HOOKS</code><a class="headerlink" href="#execution_hooks" title="Permanent link">🔗</a></h3>
+<p>Hooks to run during execution the GraphQL request.</p>
+<h2 id="testing-client">Testing client<a class="headerlink" href="#testing-client" title="Permanent link">🔗</a></h2>
+<h3 id="testing_client_full_stacktrace"><code>TESTING_CLIENT_FULL_STACKTRACE</code><a class="headerlink" href="#testing_client_full_stacktrace" title="Permanent link">🔗</a></h3>
+<p>Whether to include the full stacktrace in testing client instead of just the relevant frames.</p>
+<h2 id="graphiql">GraphiQL<a class="headerlink" href="#graphiql" title="Permanent link">🔗</a></h2>
+<h3 id="graphiql_enabled"><code>GRAPHIQL_ENABLED</code><a class="headerlink" href="#graphiql_enabled" title="Permanent link">🔗</a></h3>
+<p>Whether to enable GraphiQL. Should also set <code>ALLOW_INTROSPECTION_QUERIES</code> to <code>True</code>.</p>
+<h3 id="graphiql_plugin_explorer_version"><code>GRAPHIQL_PLUGIN_EXPLORER_VERSION</code><a class="headerlink" href="#graphiql_plugin_explorer_version" title="Permanent link">🔗</a></h3>
+<p>Version of the plugin explorer to use for GraphiQL.</p>
+<h3 id="graphiql_react_version"><code>GRAPHIQL_REACT_VERSION</code><a class="headerlink" href="#graphiql_react_version" title="Permanent link">🔗</a></h3>
+<p>Version of React to use for GraphiQL.</p>
+<h3 id="graphiql_version"><code>GRAPHIQL_VERSION</code><a class="headerlink" href="#graphiql_version" title="Permanent link">🔗</a></h3>
+<p>Version of GraphiQL to use.</p>
+<h2 id="django-modeltranslation">Django-modeltranslation<a class="headerlink" href="#django-modeltranslation" title="Permanent link">🔗</a></h2>
+<h3 id="modeltranslation_include_translatable"><code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code><a class="headerlink" href="#modeltranslation_include_translatable" title="Permanent link">🔗</a></h3>
+<p>Whether to add translatable fields to the GraphQL schema when using <code>django-modeltranslation</code>.</p>
+<h3 id="modeltranslation_include_translations"><code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code><a class="headerlink" href="#modeltranslation_include_translations" title="Permanent link">🔗</a></h3>
+<p>Whether to add translation fields to the GraphQL schema when using <code>django-modeltranslation</code>.</p>
+<h2 id="optimizer">Optimizer<a class="headerlink" href="#optimizer" title="Permanent link">🔗</a></h2>
+<h3 id="connection_start_index_key"><code>CONNECTION_START_INDEX_KEY</code><a class="headerlink" href="#connection_start_index_key" title="Permanent link">🔗</a></h3>
+<p>The key to which the connection's pagination start index is annotated to or added to in the queryset hints.</p>
+<h3 id="connection_stop_index_key"><code>CONNECTION_STOP_INDEX_KEY</code><a class="headerlink" href="#connection_stop_index_key" title="Permanent link">🔗</a></h3>
+<p>The key to which the connection's pagination stop index is annotated to or added to in the queryset hints.</p>
+<h3 id="connection_index_key"><code>CONNECTION_INDEX_KEY</code><a class="headerlink" href="#connection_index_key" title="Permanent link">🔗</a></h3>
+<p>The key to which nested connection node's pagination index is annotated to the queryset.</p>
+<h3 id="connection_total_count_key"><code>CONNECTION_TOTAL_COUNT_KEY</code><a class="headerlink" href="#connection_total_count_key" title="Permanent link">🔗</a></h3>
+<p>The key to which the connection's total count annotated to or added to in the queryset hints.</p>
+<h3 id="disable_only_fields_optimization"><code>DISABLE_ONLY_FIELDS_OPTIMIZATION</code><a class="headerlink" href="#disable_only_fields_optimization" title="Permanent link">🔗</a></h3>
+<p>Disable optimizing fetched fields with <code>queryset.only()</code>.</p>
+<h3 id="optimizer_class"><code>OPTIMIZER_CLASS</code><a class="headerlink" href="#optimizer_class" title="Permanent link">🔗</a></h3>
+<p>The optimizer class to use for optimizing queries.</p>
+<h3 id="prefetch_hack_cache_key"><code>PREFETCH_HACK_CACHE_KEY</code><a class="headerlink" href="#prefetch_hack_cache_key" title="Permanent link">🔗</a></h3>
+<p>The key to use for storing the prefetch hack cache in the queryset hints.</p>
+<h2 id="argument-parameter-names">Argument &amp; parameter names<a class="headerlink" href="#argument-parameter-names" title="Permanent link">🔗</a></h2>
+<h3 id="mutation_input_data_key"><code>MUTATION_INPUT_DATA_KEY</code><a class="headerlink" href="#mutation_input_data_key" title="Permanent link">🔗</a></h3>
+<p>The key used for the input argument of a MutationType.</p>
+<h3 id="query_type_filter_input_key"><code>QUERY_TYPE_FILTER_INPUT_KEY</code><a class="headerlink" href="#query_type_filter_input_key" title="Permanent link">🔗</a></h3>
+<p>The key used for the filter argument of QueryType.</p>
+<h3 id="query_type_order_input_key"><code>QUERY_TYPE_ORDER_INPUT_KEY</code><a class="headerlink" href="#query_type_order_input_key" title="Permanent link">🔗</a></h3>
+<p>The key used for the order by argument of a <code>QueryType</code>.</p>
+<h3 id="resolver_root_param_name"><code>RESOLVER_ROOT_PARAM_NAME</code><a class="headerlink" href="#resolver_root_param_name" title="Permanent link">🔗</a></h3>
+<p>The name of the root/parent parameter in resolvers.</p>
+<h3 id="total_count_param_name"><code>TOTAL_COUNT_PARAM_NAME</code><a class="headerlink" href="#total_count_param_name" title="Permanent link">🔗</a></h3>
+<p>The name of the total count parameter in connection resolvers.</p>
+<h2 id="other">Other<a class="headerlink" href="#other" title="Permanent link">🔗</a></h2>
+<h3 id="docstring_parser"><code>DOCSTRING_PARSER</code><a class="headerlink" href="#docstring_parser" title="Permanent link">🔗</a></h3>
+<p>The docstring parser to use.</p>
+<h3 id="sdl_printer"><code>SDL_PRINTER</code><a class="headerlink" href="#sdl_printer" title="Permanent link">🔗</a></h3>
+<p>The SDL printer to use.</p>
+<h2 id="extensions-keys">Extensions keys<a class="headerlink" href="#extensions-keys" title="Permanent link">🔗</a></h2>
+<h3 id="calculation_argument_extensions_key"><code>CALCULATION_ARGUMENT_EXTENSIONS_KEY</code><a class="headerlink" href="#calculation_argument_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>CalculationArgument</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="connection_extensions_key"><code>CONNECTION_EXTENSIONS_KEY</code><a class="headerlink" href="#connection_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>Connection</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="directive_argument_extensions_key"><code>DIRECTIVE_ARGUMENT_EXTENSIONS_KEY</code><a class="headerlink" href="#directive_argument_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>DirectiveArgument</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="directive_extensions_key"><code>DIRECTIVE_EXTENSIONS_KEY</code><a class="headerlink" href="#directive_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>Directive</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="entrypoint_extensions_key"><code>ENTRYPOINT_EXTENSIONS_KEY</code><a class="headerlink" href="#entrypoint_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store an <code>Entrypoint</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="field_extensions_key"><code>FIELD_EXTENSIONS_KEY</code><a class="headerlink" href="#field_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>Field</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="filter_extensions_key"><code>FILTER_EXTENSIONS_KEY</code><a class="headerlink" href="#filter_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>Filter</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="filterset_extensions_key"><code>FILTERSET_EXTENSIONS_KEY</code><a class="headerlink" href="#filterset_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>FilterSet</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="input_extensions_key"><code>INPUT_EXTENSIONS_KEY</code><a class="headerlink" href="#input_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store an <code>Input</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="interface_field_extensions_key"><code>INTERFACE_FIELD_EXTENSIONS_KEY</code><a class="headerlink" href="#interface_field_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store an <code>InterfaceField</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="interface_type_extensions_key"><code>INTERFACE_TYPE_EXTENSIONS_KEY</code><a class="headerlink" href="#interface_type_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>InterfaceType</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="mutation_type_extensions_key"><code>MUTATION_TYPE_EXTENSIONS_KEY</code><a class="headerlink" href="#mutation_type_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>MutationType</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="order_extensions_key"><code>ORDER_EXTENSIONS_KEY</code><a class="headerlink" href="#order_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store an <code>Order</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="orderset_extensions_key"><code>ORDERSET_EXTENSIONS_KEY</code><a class="headerlink" href="#orderset_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>OrderSet</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="query_type_extensions_key"><code>QUERY_TYPE_EXTENSIONS_KEY</code><a class="headerlink" href="#query_type_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>QueryType</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="root_type_extensions_key"><code>ROOT_TYPE_EXTENSIONS_KEY</code><a class="headerlink" href="#root_type_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>RootType</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="scalar_extensions_key"><code>SCALAR_EXTENSIONS_KEY</code><a class="headerlink" href="#scalar_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>Scalar</code> in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="schema_directives_extensions_key"><code>SCHEMA_DIRECTIVES_EXTENSIONS_KEY</code><a class="headerlink" href="#schema_directives_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store the schema directives in the <code>extensions</code> of the GraphQL type.</p>
+<h3 id="union_type_extensions_key"><code>UNION_TYPE_EXTENSIONS_KEY</code><a class="headerlink" href="#union_type_extensions_key" title="Permanent link">🔗</a></h3>
+<p>The key used to store a <code>UnionType</code> in the <code>extensions</code> of the GraphQL type.  </p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../optimizer/" class="btn btn-neutral float-left" title="Optimizer"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../lifecycle-hooks/" class="btn btn-neutral float-right" title="Lifecycle Hooks">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../optimizer/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../lifecycle-hooks/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
