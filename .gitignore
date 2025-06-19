@@ -17,6 +17,8 @@ coverage.xml
 profile.svg
 .coverage
 /example_project/project/testdb
+/site
+/dist
 
 # Local configs
 .idea
