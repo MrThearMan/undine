@@ -13,8 +13,10 @@ ROOT_URLCONF = "example_project.project.urls"
 WSGI_APPLICATION = "example_project.project.wsgi.application"
 
 ALLOWED_HOSTS = []
+INTERNAL_IPS = ["127.0.0.1"]
 
 INSTALLED_APPS = [
+    "debug_toolbar",
     "modeltranslation",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -36,6 +38,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 TEMPLATES = [

@@ -16,6 +16,10 @@ Should be given as the dotted path to the schema variable.
 
 The URL path where the GraphQL endpoint is located by default.
 
+### `GRAPHQL_VIEW_NAME`
+
+The name of given to the GraphQL view in the URLconf.
+
 ## Flags
 
 ### `ALLOW_DID_YOU_MEAN_SUGGESTIONS`

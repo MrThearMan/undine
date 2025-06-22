@@ -3,34 +3,16 @@
 In this section, we'll cover the integrations to other libraries that
 Undine includes.
 
-## pytest
+## django-debug-toolbar
 
-Undine ships with a pytest plugin that includes a testing client and few fixtures
-to help you write tests for your GraphQL APIs.
+Undine integrates with [django-debug-toolbar]{:target="_blank"}
+by modifying the debug toolbar so that it works with [GraphiQL].
+After [installing the debug toolbar], Undine should automatically
+patch the toolbar without any additional configuration.
 
-The `GraphQLClient` class is wrapper around Django's test client that
-makes testing your GraphQL API easier. It can be added to a test using
-the `graphql` fixture. Here is a simple example:
-
-```python
--8<- "integrations/graphql_test_client.py"
-```
-
-GraphQL requests can be made by calling the client as shown above.
-This makes a request to the GraphQL endpoint set by the `GRAPHQL_PATH` setting.
-
-GraphQL variables can be passed using the `variables` argument. If these variables
-include any files, the client will automatically create a GraphQL multipart request
-instead of a normal GraphQL request.
-
-The client returns a custom response object `GraphQLClientResponse`,
-which has a number of useful properties for introspecting the response.
-The response object also has details on the database queries that were executed
-during the request, which can be useful for debugging the performance of your
-GraphQL API.
-
-The plugin also includes a `undine_settings` fixture that allows modifying
-Undine's settings during testing more easily.
+[django-debug-toolbar]: https://github.com/django-commons/django-debug-toolbar
+[GraphiQL]: https://github.com/graphql/graphiql
+[installing the debug toolbar]: https://django-debug-toolbar.readthedocs.io/en/stable/installation.html
 
 ## django-modeltranslation
 
@@ -59,3 +41,32 @@ You can of course always add the translatable fields manually.
 
 > Note that due to the way that `django-modeltranslation` works,
 > the translation fields are always nullable, even for the default language.
+
+## pytest
+
+Undine ships with a pytest plugin that includes a testing client and few fixtures
+to help you write tests for your GraphQL APIs.
+
+The `GraphQLClient` class is wrapper around Django's test client that
+makes testing your GraphQL API easier. It can be added to a test using
+the `graphql` fixture. Here is a simple example:
+
+```python
+-8<- "integrations/graphql_test_client.py"
+```
+
+GraphQL requests can be made by calling the client as shown above.
+This makes a request to the GraphQL endpoint set by the `GRAPHQL_PATH` setting.
+
+GraphQL variables can be passed using the `variables` argument. If these variables
+include any files, the client will automatically create a GraphQL multipart request
+instead of a normal GraphQL request.
+
+The client returns a custom response object `GraphQLClientResponse`,
+which has a number of useful properties for introspecting the response.
+The response object also has details on the database queries that were executed
+during the request, which can be useful for debugging the performance of your
+GraphQL API.
+
+The plugin also includes a `undine_settings` fixture that allows modifying
+Undine's settings during testing more easily.

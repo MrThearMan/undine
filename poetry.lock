@@ -377,6 +377,23 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "django-debug-toolbar"
+version = "5.2.0"
+description = "A configurable set of panels that display various debug information about the current request/response."
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "extra == \"debug\""
+files = [
+    {file = "django_debug_toolbar-5.2.0-py3-none-any.whl", hash = "sha256:15627f4c2836a9099d795e271e38e8cf5204ccd79d5dbcd748f8a6c284dcd195"},
+    {file = "django_debug_toolbar-5.2.0.tar.gz", hash = "sha256:9e7f0145e1a1b7d78fcc3b53798686170a5b472d9cf085d88121ff823e900821"},
+]
+
+[package.dependencies]
+django = ">=4.2.9"
+sqlparse = ">=0.2"
+
+[[package]]
 name = "django-modeltranslation"
 version = "0.19.15"
 description = "Translates Django models using a registration approach."
@@ -1633,10 +1650,11 @@ files = [
 watchmedo = ["PyYAML (>=3.10)"]
 
 [extras]
+debug = ["django-debug-toolbar"]
 image = ["pillow"]
 testing = ["sqlparse"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "60bcdaf0a4c1d05375c5eee4d50cbbb20bd0dc29018b600f4b1ec56c1360018b"
+content-hash = "127146e6abd30b7d0231ec126e01f3ae4b98a9859ac4ebbf348a52710ebf4f2d"

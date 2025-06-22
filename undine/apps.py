@@ -12,9 +12,15 @@ class UndineConfig(AppConfig):
     verbose_name = "undine"
 
     def ready(self) -> None:
+        self.register_additional_types()
         self.register_converters()
         self.maybe_disable_did_you_mean()
-        self.register_additional_types()
+        self.patch_debug_toolbar_if_installed()
+
+    def register_additional_types(self) -> None:
+        from undine.utils.graphql.type_registry import register_builtins  # noqa: PLC0415
+
+        register_builtins()
 
     def register_converters(self) -> None:
         """Import all converter implementation modules to register the implementations to the converters."""
@@ -37,7 +43,11 @@ class UndineConfig(AppConfig):
         if not undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS:
             did_you_mean.__globals__["MAX_LENGTH"] = 0
 
-    def register_additional_types(self) -> None:
-        from undine.utils.graphql.type_registry import register_builtins  # noqa: PLC0415
+    def patch_debug_toolbar_if_installed(self) -> None:
+        """Patch `django-debug-toolbar` to work with Undine if it's installed."""
+        try:
+            from undine.integrations.debug_toolbar import monkeypatch_middleware  # noqa: PLC0415
+        except ImportError:
+            return
 
-        register_builtins()
+        monkeypatch_middleware()

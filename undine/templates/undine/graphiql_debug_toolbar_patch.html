@@ -1,0 +1,48 @@
+<script>
+  (function (JSON, Response) {
+    const djDebug = document.getElementById("djDebug");
+
+    // If the response contains 'debugToolbar' data, update it to the toolbar
+    function update(data) {
+      if (data === null || !data.hasOwnProperty("debugToolbar")) return data;
+
+      // 'debugToolbar' data defined by `undine.integrations.debug_toolbar.add_debug_toolbar_data`
+      Object.entries(data.debugToolbar.panels).map(([id, panel]) => {
+        if (panel.toolbarTitle) {
+          document.getElementById(`djdt-${id}`).querySelector("small").textContent = panel.toolbarTitle;
+        }
+
+        if (panel.panelTitle) {
+          const content = djDebug.querySelector(`#${id}`);
+
+          content.querySelector(".djDebugPanelTitle").querySelector("h3").textContent = panel.panelTitle;
+          content.querySelector(".djdt-scroll").innerHTML = "";
+
+          if (content.querySelector(".djdt-loader") === null) {
+            const loader = document.createElement("div");
+            loader.className = "djdt-loader";
+            content.querySelector(".djDebugPanelContent").prepend(loader);
+          }
+        }
+      });
+
+      djDebug.setAttribute("data-store-id", data.debugToolbar.storeId);
+
+      delete data.debugToolbar;
+      return data;
+    }
+
+    // Patch 'JSON.parse' with the update function
+    const origParse = JSON.parse;
+    JSON.parse = function (text) {
+      return update(origParse(text));
+    };
+
+    // Patch 'Response.json' with the update function
+    const origJson = Response.prototype.json
+    Response.prototype.json = function () {
+      return origJson.apply(this, arguments).then((data) => update(data));
+    };
+
+  })(JSON, Response);
+</script>

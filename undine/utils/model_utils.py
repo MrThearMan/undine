@@ -18,6 +18,7 @@ from undine.exceptions import (
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
 )
+from undine.integrations.modeltranslation import get_translatable_fields, is_translation_field
 from undine.settings import undine_settings
 from undine.typing import ModelField, RelationType
 from undine.utils.constraints import get_constraint_message
@@ -27,7 +28,6 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.db.models import Field, ManyToManyRel, Model
-    from modeltranslation.fields import TranslationField
 
     from undine.typing import (
         CombinableExpression,
@@ -57,10 +57,8 @@ __all__ = [
     "get_related_field_name",
     "get_reverse_field_name",
     "get_save_update_fields",
-    "get_translatable_fields",
     "is_to_many",
     "is_to_one",
-    "is_translation_field",
     "lookup_to_display_name",
     "set_forward_ids",
 ]
@@ -214,16 +212,6 @@ def get_related_field_name(related_field: RelatedField | GenericField) -> str:
     return related_field.get_cache_name() or related_field.name
 
 
-def get_translatable_fields(model: type[Model]) -> set[str]:
-    """If `django-modeltranslation` is installed, find all translatable fields in the given model."""
-    try:
-        from modeltranslation.manager import get_translatable_fields_for_model  # noqa: PLC0415
-    except ImportError:
-        return set()
-
-    return set(get_translatable_fields_for_model(model) or [])
-
-
 def get_model_fields_for_graphql(
     model: type[Model],
     *,
@@ -324,16 +312,6 @@ def is_generic_foreign_key(field: ModelField | GenericField) -> TypeGuard[Generi
     has_content_type_field = hasattr(field, "ct_field")
     has_object_id_field = hasattr(field, "fk_field")
     return is_many_to_one and has_content_type_field and has_object_id_field
-
-
-try:
-    from modeltranslation.fields import TranslationField
-except ImportError:
-    TranslationField = type("TranslationField", (), {})  # type: ignore[misc,assignment]
-
-
-def is_translation_field(field: Field) -> TypeGuard[TranslationField]:
-    return isinstance(field, TranslationField)
 
 
 class SubqueryCount(Subquery):

@@ -11,6 +11,7 @@ urlpatterns = [
     path("", include("undine.http.urls")),
     path("persisted-documents/", PersistedDocumentsView.as_view(), name="persisted_documents"),
     path("admin/", admin.site.urls),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]
 
 

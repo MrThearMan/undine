@@ -36,6 +36,9 @@ class UndineDefaultSettings(NamedTuple):
     GRAPHQL_PATH: str = "graphql/"
     """The path where the GraphQL endpoint is located by default."""
 
+    GRAPHQL_VIEW_NAME: str = "graphql"
+    """The name of given to the GraphQL view in the URLconf."""
+
     # Flags
 
     ALLOW_DID_YOU_MEAN_SUGGESTIONS: bool = False

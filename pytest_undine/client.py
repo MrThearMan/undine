@@ -144,7 +144,7 @@ class GraphQLClientResponse:
         return self.json[item]
 
     def __contains__(self, item: str) -> bool:
-        return item not in self.json
+        return item in self.json
 
     @property
     def queries(self) -> list[str]:

@@ -216,24 +216,24 @@ def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
         <!DOCTYPE html>
         <html lang="en-us">
         <head>
-            <title>GraphiQL</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="robots" content="noindex">
-            <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo="/>
+          <title>GraphiQL</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="robots" content="noindex">
+          <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo="/>
 
-            <link rel="stylesheet" href="/static/undine/css/main.css">
-            <link rel="stylesheet" href="/static/undine/vendor/graphiql.min.css">
-            <link rel="stylesheet" href="/static/undine/vendor/plugin-explorer.css">
+          <link rel="stylesheet" href="/static/undine/css/main.css">
+          <link rel="stylesheet" href="/static/undine/vendor/graphiql.min.css">
+          <link rel="stylesheet" href="/static/undine/vendor/plugin-explorer.css">
 
-            <script src="/static/undine/vendor/react.development.js"></script>
-            <script src="/static/undine/vendor/react-dom.development.js"></script>
-            <script src="/static/undine/vendor/graphiql.min.js"></script>
-            <script src="/static/undine/vendor/plugin-explorer.umd.js"></script>
+          <script src="/static/undine/vendor/react.development.js"></script>
+          <script src="/static/undine/vendor/react-dom.development.js"></script>
+          <script src="/static/undine/vendor/graphiql.min.js"></script>
+          <script src="/static/undine/vendor/plugin-explorer.umd.js"></script>
         </head>
         <body style="background-color: hsl(var(--color-base))">
-            <div id="graphiql"></div>
-            <input type="hidden" name="csrfmiddlewaretoken" value="{csrf}">
-            <script src="/static/undine/js/main.js" defer></script>
+          <div id="graphiql"></div>
+          <input type="hidden" name="csrfmiddlewaretoken" value="{csrf}">
+          <script src="/static/undine/js/main.js" defer></script>
         </body>
         </html>
         """,
