@@ -54,3 +54,6 @@ plugins:
 extra_css:
   - css/docs.css
   - css/pygments.css
+
+extra_javascript:
+  - js/docs.js

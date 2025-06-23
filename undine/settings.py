@@ -9,8 +9,9 @@ from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLStrin
 from settings_holder import SettingsHolder, reload_settings
 
 if TYPE_CHECKING:
-    from graphql import ASTValidationRule, ExecutionContext, GraphQLFieldResolver
+    from graphql import ASTValidationRule, GraphQLFieldResolver
 
+    from undine.execution import UndineExecutionContext
     from undine.hooks import LifecycleHook
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import DocstringParserProtocol
@@ -28,7 +29,7 @@ SETTING_NAME: str = "UNDINE"
 class UndineDefaultSettings(NamedTuple):
     """Default settings for Undine."""
 
-    # Required
+    # Schema
 
     SCHEMA: GraphQLSchema = "undine.settings.example_schema"  # type: ignore[assignment]
     """The schema to use for the GraphQL API."""
@@ -78,7 +79,7 @@ class UndineDefaultSettings(NamedTuple):
     ADDITIONAL_VALIDATION_RULES: list[type[ASTValidationRule]] = []
     """Additional validation rules to use for validating the GraphQL schema."""
 
-    EXECUTION_CONTEXT_CLASS: type[ExecutionContext] = "undine.execution.UndineExecutionContext"  # type: ignore[assignment]
+    EXECUTION_CONTEXT_CLASS: type[UndineExecutionContext] = "undine.execution.UndineExecutionContext"  # type: ignore[assignment]
     """GraphQL execution context class used by the schema."""
 
     MAX_ALLOWED_ALIASES: int = 15
