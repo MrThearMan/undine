@@ -8,6 +8,7 @@
 [![GitHub Issues][issues-badge]][issues]
 [![Downloads][downloads-badge]][pypi]
 [![Python Version][version-badge]][pypi]
+[![Django Version][django-badge]][pypi]
 
 [coverage-badge]: https://coveralls.io/repos/github/MrThearMan/undine/badge.svg?branch=main
 [status-badge]: https://img.shields.io/github/actions/workflow/status/MrThearMan/undine/test.yml?branch=main
@@ -17,6 +18,7 @@
 [issues-badge]: https://img.shields.io/github/issues-raw/MrThearMan/undine
 [version-badge]: https://img.shields.io/pypi/pyversions/undine
 [downloads-badge]: https://img.shields.io/pypi/dm/undine
+[django-badge]: https://img.shields.io/pypi/djversions/undine
 
 [coverage]: https://coveralls.io/github/MrThearMan/undine?branch=main
 [status]: https://github.com/MrThearMan/undine/actions/workflows/test.yml
