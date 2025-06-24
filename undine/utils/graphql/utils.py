@@ -105,6 +105,16 @@ def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
     return original_name if info.path.key == info.field_name else info.path.key  # type: ignore[return-value]
 
 
+async def pre_evaluate_request_user(info: GQLInfo) -> None:
+    """
+    Fetches the request user from the context and caches it to the request.
+    This is a workaround when current user is required in an async event loop,
+    but the function itself is not async.
+    """
+    # '_current_user' would be set by 'django.contrib.auth.middleware.get_user' when calling 'request.user'
+    info.context._cached_user = await info.context.auser()  # type: ignore[attr-defined]  # noqa: SLF001
+
+
 # Predicates
 
 

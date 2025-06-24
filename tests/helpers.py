@@ -186,6 +186,9 @@ class MockRequest:
     content_params: dict[str, str] | None = dataclasses.field(default_factory=dict)
     accepted_types: list[MediaType] = dataclasses.field(default_factory=list)
 
+    async def auser(self) -> User:
+        return self.user
+
 
 def mock_gql_info(  # noqa: PLR0913
     *,

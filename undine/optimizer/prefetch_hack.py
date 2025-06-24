@@ -28,7 +28,13 @@ _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__na
 def evaluate_with_prefetch_hack(queryset: QuerySet[TModel]) -> list[TModel]:
     """Evaluates the given queryset with the prefetch hack applied."""
     with patch(_PATH, side_effect=_prefetch_hack):
-        return list(queryset)  # If the optimizer did its job, the database query is executed here.
+        return list(queryset)  # If the optimizer did its job, the database query is executed here
+
+
+async def evaluate_with_prefetch_hack_async(queryset: QuerySet[TModel]) -> list[TModel]:
+    """Evaluates the given queryset with the prefetch hack applied."""
+    with patch(_PATH, side_effect=_prefetch_hack):
+        return [inst async for inst in queryset]  # If the optimizer did its job, the database query is executed here
 
 
 def register_for_prefetch_hack(queryset: QuerySet, field: ManyToManyField | ManyToManyRel) -> None:
@@ -36,19 +42,19 @@ def register_for_prefetch_hack(queryset: QuerySet, field: ManyToManyField | Many
     Registers the through table of a many-to-many field for the prefetch hack.
     See `_prefetch_hack` for more information.
     """
-    related_model: type[Model] = field.related_model
+    related_model: type[Model] = field.related_model  # type: ignore[assignment]
     db_table = related_model._meta.db_table
     field_name = field.remote_field.name
 
     forward_field: ManyToManyField
-    forward_field = field if isinstance(field, ManyToManyField) else field.remote_field
+    forward_field = field if isinstance(field, ManyToManyField) else field.remote_field  # type: ignore[assignment]
     through = forward_field.m2m_db_table()
 
     cache: PrefetchHackCacheType = defaultdict(lambda: defaultdict(set))
     cache[db_table][field_name].add(through)
 
     key = undine_settings.PREFETCH_HACK_CACHE_KEY
-    queryset._hints.setdefault(key, cache)
+    queryset._hints.setdefault(key, cache)  # type: ignore[attr-defined]
 
 
 def _prefetch_hack(queryset: QuerySet, field_name: str, instances: list[Model]) -> QuerySet:
@@ -66,7 +72,7 @@ def _prefetch_hack(queryset: QuerySet, field_name: str, instances: list[Model]) 
     to prevent the INNER join from being added.
     """
     key = undine_settings.PREFETCH_HACK_CACHE_KEY
-    cache: PrefetchHackCacheType | None = queryset._hints.pop(key, None)
+    cache: PrefetchHackCacheType | None = queryset._hints.pop(key, None)  # type: ignore[attr-defined]
     if cache is not None:
         #
         # `filter_is_sticky` is set here just to prevent the `used_aliases` from being cleared

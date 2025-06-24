@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from undine.execution import UndineExecutionContext
     from undine.hooks import LifecycleHook
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import DocstringParserProtocol
+    from undine.typing import DocstringParserProtocol, PersistedDocumentsPermissionsCallback
     from undine.utils.graphql.sdl_printer import SDLPrinter
 
 
@@ -48,6 +48,9 @@ class UndineDefaultSettings(NamedTuple):
     ALLOW_INTROSPECTION_QUERIES: bool = False
     """Whether schema introspection queries are allowed or not."""
 
+    ASYNC: bool = False
+    """Whether to use async views or not."""
+
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from 'snake_case' to 'camelCase' for the GraphQL schema?"""
 
@@ -56,9 +59,6 @@ class UndineDefaultSettings(NamedTuple):
 
     MUTATION_FULL_CLEAN: bool = True
     """Whether to run `model.full_clean()` when mutating a model."""
-
-    PERSISTED_DOCUMENTS_ONLY: bool = False
-    """Whether to only allow persisted documents to be executed."""
 
     # Limits
 
@@ -141,6 +141,20 @@ class UndineDefaultSettings(NamedTuple):
 
     GRAPHIQL_VERSION: str = "3.8.3"
     """The version of GraphiQL to use."""
+
+    # Persisted documents
+
+    PERSISTED_DOCUMENTS_ONLY: bool = False
+    """Whether to only allow persisted documents to be executed."""
+
+    PERSISTED_DOCUMENTS_PATH: str = "persisted-documents/"
+    """The path where the persisted documents registration endpoint is located by default."""
+
+    PERSISTED_DOCUMENTS_PERMISSION_CALLBACK: PersistedDocumentsPermissionsCallback | None = None
+    """The function to use for permission checks for registration of persisted documents."""
+
+    PERSISTED_DOCUMENTS_VIEW_NAME: str = "persisted_documents"
+    """The name of given to the persisted documents registration view in the URLconf."""
 
     # Django-modeltranslation
 
@@ -269,6 +283,7 @@ IMPORT_STRINGS: set[str | bytes] = {
     "OPERATION_HOOKS.0",
     "OPTIMIZER_CLASS",
     "PARSE_HOOKS.0",
+    "PERSISTED_DOCUMENTS_PERMISSION_FUNC",
     "SCHEMA",
     "SDL_PRINTER",
     "VALIDATION_HOOKS.0",

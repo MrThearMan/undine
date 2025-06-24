@@ -6,15 +6,18 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from graphql import Undefined
 
+from undine.typing import TModel
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from types import UnionType
 
     from django.contrib.contenttypes.fields import GenericForeignKey
-    from django.db.models import Model, OrderBy, Q
+    from django.db.models import Model, OrderBy, Q, QuerySet
     from graphql import FieldNode, InlineFragmentNode
 
     from undine import QueryType
+    from undine.relay import PaginationHandler
     from undine.typing import (
         DispatchProtocol,
         DjangoExpression,
@@ -35,6 +38,7 @@ __all__ = [
     "LazyRelation",
     "LookupRef",
     "MaybeManyOrNonNull",
+    "OptimizationWithPagination",
     "OrderResults",
     "Parameter",
     "RelInfo",
@@ -115,6 +119,14 @@ class ValidatedPaginationArgs:
     last: int | None
 
 
+@dataclasses.dataclass(slots=True)
+class OptimizationWithPagination(Generic[TModel]):
+    """Pagination arguments that have been validated."""
+
+    queryset: QuerySet[TModel]
+    pagination: PaginationHandler
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class RootAndInfoParams:
     root_param: str | None
@@ -130,7 +142,7 @@ class LazyRelation:
     def get_type(self) -> type[QueryType]:
         from undine.query import QUERY_TYPE_REGISTRY  # noqa: PLC0415
 
-        return QUERY_TYPE_REGISTRY[self.field.related_model]
+        return QUERY_TYPE_REGISTRY[self.field.related_model]  # type: ignore[index]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -144,7 +156,7 @@ class LazyGenericForeignKey:
         from undine.utils.model_utils import generic_relations_for_generic_foreign_key  # noqa: PLC0415
 
         return [
-            QUERY_TYPE_REGISTRY[field.remote_field.related_model]
+            QUERY_TYPE_REGISTRY[field.remote_field.related_model]  # type: ignore[index]
             for field in generic_relations_for_generic_foreign_key(self.field)
         ]
 

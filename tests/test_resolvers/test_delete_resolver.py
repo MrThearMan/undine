@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from inspect import isawaitable
 from itertools import count
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
@@ -16,7 +18,9 @@ from undine.typing import GQLInfo
 
 
 @pytest.mark.django_db
-def test_delete_resolver() -> None:
+def test_delete_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     task = TaskFactory.create(name="Test task")
 
     class TaskDeleteMutation(MutationType[Task]): ...
@@ -31,7 +35,9 @@ def test_delete_resolver() -> None:
 
 
 @pytest.mark.django_db
-def test_delete_resolver__instance_not_found() -> None:
+def test_delete_resolver__instance_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskDeleteMutation(MutationType[Task]): ...
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
@@ -41,7 +47,9 @@ def test_delete_resolver__instance_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_delete_resolver__lookup_field_not_found() -> None:
+def test_delete_resolver__lookup_field_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskDeleteMutation(MutationType[Task]): ...
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
@@ -51,7 +59,9 @@ def test_delete_resolver__lookup_field_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_delete_resolver__mutation_hooks() -> None:
+def test_delete_resolver__mutation_hooks(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     counter = count()
 
     input_validate_called: int = -1
@@ -99,3 +109,24 @@ def test_delete_resolver__mutation_hooks() -> None:
     assert input_validate_called == 2
     assert validate_called == 3
     assert after_called == 4
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_delete_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    class TaskDeleteMutation(MutationType[Task]): ...
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
+    assert isawaitable(result)
+
+    result = await result
+
+    assert result == SimpleNamespace(pk=task.pk)
+
+    assert (await Task.objects.all().acount()) == 0

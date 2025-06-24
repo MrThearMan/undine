@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from inspect import isawaitable
+
 import pytest
+from asgiref.sync import sync_to_async
 from django.db.models import Prefetch, Value
 from graphql.pyutils import Path
 
@@ -36,6 +39,8 @@ def test_resolvers__global_id_resolver() -> None:
 
 @pytest.mark.django_db
 def test_resolvers__node_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task], auto=False, interfaces=[Node]): ...
 
     class Query(RootType):
@@ -53,6 +58,34 @@ def test_resolvers__node_resolver(undine_settings) -> None:
 
     with patch_optimizer():
         assert resolver(root=task, info=info, id=object_id) == task
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__node_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Node]): ...
+
+    class Query(RootType):
+        node = Entrypoint(Node)
+        tasks = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = await sync_to_async(TaskFactory.create)()
+
+    resolver: NodeResolver[Task] = NodeResolver(entrypoint=Query.node)
+
+    info = mock_gql_info(schema=undine_settings.SCHEMA)
+    object_id = to_global_id(typename=TaskType.__schema_name__, object_id=task.pk)
+
+    with patch_optimizer():
+        coroutine = resolver(root=task, info=info, id=object_id)
+        assert isawaitable(coroutine)
+
+        result = await coroutine
+        assert result == task
 
 
 @pytest.mark.django_db
@@ -165,6 +198,8 @@ def test_resolvers__node_resolver__missing_id_field(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_resolvers__connection_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task], auto=False, interfaces=[Node]): ...
 
     connection = Connection(TaskType)
@@ -202,8 +237,55 @@ def test_resolvers__connection_resolver(undine_settings) -> None:
     )
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__connection_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Node]): ...
+
+    connection = Connection(TaskType)
+
+    class Query(RootType):
+        tasks = Entrypoint(connection)
+
+    task = await sync_to_async(TaskFactory.create)()
+
+    resolver: ConnectionResolver[Task] = ConnectionResolver(connection=connection, entrypoint=Query.tasks)
+
+    pagination = PaginationHandler(typename=TaskType.__schema_name__, first=1)
+    pagination.total_count = 100
+
+    with patch_optimizer(pagination=pagination):
+        coroutine = resolver(root=task, info=mock_gql_info())
+        assert isawaitable(coroutine)
+
+        result = await coroutine
+
+    typename = TaskType.__schema_name__
+    assert result == (
+        ConnectionDict(
+            totalCount=100,
+            pageInfo=PageInfoDict(
+                hasNextPage=True,
+                hasPreviousPage=False,
+                startCursor=offset_to_cursor(typename, 0),
+                endCursor=offset_to_cursor(typename, 0),
+            ),
+            edges=[
+                NodeDict(
+                    cursor=offset_to_cursor(typename, 0),
+                    node=task,
+                ),
+            ],
+        )
+    )
+
+
 @pytest.mark.django_db
 def test_resolvers__connection_resolver__permissions(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
         @classmethod
         def __permissions__(cls, instance: Task, info: GQLInfo) -> None:

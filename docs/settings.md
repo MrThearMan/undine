@@ -34,6 +34,15 @@ if using GraphiQL.
 
 ///
 
+/// details | `ASYNC`
+    attrs: {id: async}
+
+Type `bool` | Default: `False`
+
+Whether to use async views or not.
+
+///
+
 /// details | `CALCULATION_ARGUMENT_EXTENSIONS_KEY`
     attrs: {id: calculation_argument_extensions_key}
 
@@ -508,6 +517,33 @@ Whether to only allow persisted documents to be executed in the GraphQL API.
 
 ///
 
+/// details | `PERSISTED_DOCUMENTS_PATH`
+    attrs: {id: persisted_documents_path}
+
+Type: `str` | Default: `"persisted-documents/"`
+
+The path where the persisted documents registration endpoint is located by default.
+
+///
+
+/// details | `PERSISTED_DOCUMENTS_PERMISSION_CALLBACK`
+    attrs: {id: persisted_documents_permission_callback}
+
+Type: `PersistedDocumentsPermissionsCallback` | Default: `None`
+
+The function to use for permission checks for registration of persisted documents.
+
+///
+
+/// details | `PERSISTED_DOCUMENTS_VIEW_NAME`
+    attrs: {id: persisted_documents_view_name}
+
+Type: `str` | Default: `"persisted_documents"`
+
+The name of given to the persisted documents registration view in the URLconf.
+
+///
+
 /// details | `PREFETCH_HACK_CACHE_KEY`
     attrs: {id: prefetch_hack_cache_key}
 
@@ -628,6 +664,16 @@ Type: `str` | Default: `"totalCount"`
 
 The name of the parameter in a connection `ObjectType` for holding the count for the
 total number of items that can be queried from the connection.
+
+///
+
+/// details | `UNDINE_PERSISTED_DOCUMENTS_MODEL`
+    attrs: {id: undine_persisted_documents_model}
+
+Type: `type[Model]` | Default: `"undine.persisted_documents.models.PersistedDocument"`
+
+The model to use for the `PersistedDocument` model. Works similarly to `AUTH_USER_MODEL`,
+so must be set before running migrations for the persisted documents app.
 
 ///
 

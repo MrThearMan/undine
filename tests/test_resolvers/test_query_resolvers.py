@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from inspect import isawaitable
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.db.models import Model, Q, QuerySet
 from graphql import GraphQLResolveInfo
 
@@ -322,7 +324,9 @@ def test_resolvers__model_generic_foreign_key_resolver__field_permissions() -> N
 
 
 @pytest.mark.django_db
-def test_resolvers__query_type_single_resolver() -> None:
+def test_resolvers__query_type_single_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class Query(RootType):
@@ -339,8 +343,35 @@ def test_resolvers__query_type_single_resolver() -> None:
         assert resolver(root=task, info=mock_gql_info()) == task
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__query_type_single_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    resolver: QueryTypeSingleResolver[Task] = QueryTypeSingleResolver(
+        query_type=TaskType,
+        entrypoint=Query.task,
+    )
+
+    task = await sync_to_async(TaskFactory.create)()
+
+    with patch_optimizer():
+        coroutine = resolver(root=task, info=mock_gql_info())
+        assert isawaitable(coroutine)
+
+        result = await coroutine
+        assert result == task
+
+
 @pytest.mark.django_db
-def test_resolvers__query_type_single_resolver__permissions() -> None:
+def test_resolvers__query_type_single_resolver__permissions(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task], model=Task):
         @classmethod
         def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
@@ -361,7 +392,9 @@ def test_resolvers__query_type_single_resolver__permissions() -> None:
 
 
 @pytest.mark.django_db
-def test_resolvers__query_type_many_resolver() -> None:
+def test_resolvers__query_type_many_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class Query(RootType):
@@ -378,8 +411,35 @@ def test_resolvers__query_type_many_resolver() -> None:
         assert resolver(root=task, info=mock_gql_info()) == [task]
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__query_type_many_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    resolver: QueryTypeManyResolver[Task] = QueryTypeManyResolver(
+        query_type=TaskType,
+        entrypoint=Query.task,
+    )
+
+    task = await sync_to_async(TaskFactory.create)()
+
+    with patch_optimizer():
+        coroutine = resolver(root=task, info=mock_gql_info())
+        assert isawaitable(coroutine)
+
+        result = await coroutine
+        assert result == [task]
+
+
 @pytest.mark.django_db
-def test_resolvers__query_type_many_resolver__permissions() -> None:
+def test_resolvers__query_type_many_resolver__permissions(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]):
         @classmethod
         def __permissions__(cls, instance: Model, info: GQLInfo) -> None:
@@ -400,7 +460,9 @@ def test_resolvers__query_type_many_resolver__permissions() -> None:
 
 
 @pytest.mark.django_db
-def test_resolvers__query_type_many_resolver__additional_filtering() -> None:
+def test_resolvers__query_type_many_resolver__additional_filtering(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     TaskFactory.create()
