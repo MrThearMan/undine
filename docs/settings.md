@@ -178,7 +178,7 @@ Should be given as the dotted path to the execution context class.
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during execution phase the GraphQL request.
+Hooks to run during execution phase the GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -456,7 +456,7 @@ Whether to remove error location information to GraphQL errors.
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run encompassing the entire GraphQL operation.
+Hooks to run encompassing the entire GraphQL operation. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -494,7 +494,7 @@ The key used to store a `OrderSet` in the `extensions` of the `GraphQLEnumType`.
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during parsing phase of a GraphQL request.
+Hooks to run during parsing phase of a GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -645,7 +645,7 @@ The key used to store a Undine `UnionType` in the `extensions` of the `GraphQLUn
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during validation the GraphQL request. See [Lifecycle Hooks] for more information.
+Hooks to run during validation the GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///

@@ -79,7 +79,7 @@ def decode_body(body: bytes, charset: str = "utf-8") -> str:
 
     :param body: The body to decode.
     :param charset: The charset to decode the body with.
-    :raises GraphQLDecodeError: If the body cannot be decoded.
+    :raises GraphQLRequestDecodingError: If the body cannot be decoded.
     :return: The decoded body.
     """
     try:
@@ -91,12 +91,12 @@ def decode_body(body: bytes, charset: str = "utf-8") -> str:
 
 def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -> dict[str, Any]:
     """
-    Load JSON dict.
+    Load JSON dict from string, raising GraphQL errors if decoding fails.
 
     :param string: The string to load.
     :param decode_error_msg: The error message to use if decoding fails.
     :param type_error_msg: The error message to use if the string is not a JSON object.
-    :raises GraphQLDecodeError: If decoding fails or the string is not a JSON object.
+    :raises GraphQLRequestDecodingError: If decoding fails or the string is not a JSON object.
     :return: The loaded JSON dict.
     """
     try:
