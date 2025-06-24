@@ -12,8 +12,8 @@ from django.middleware.csrf import get_token
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 from tests.helpers import MockRequest, create_multipart_form_data_request
-from undine import GraphQLView
 from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
+from undine.http.views import graphql_view
 from undine.typing import HttpMethod
 
 example_schema = GraphQLSchema(
@@ -33,14 +33,12 @@ example_schema = GraphQLSchema(
 def test_graphql_view__method_not_allowed(method: HttpMethod, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method=method,
         accepted_types=[MediaType("*/*")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpMethodNotAllowedResponse)
 
@@ -53,14 +51,12 @@ def test_graphql_view__method_not_allowed(method: HttpMethod, undine_settings) -
 def test_graphql_view__content_negotiation__get_request(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="GET",
         accepted_types=[MediaType("*/*")],
     )
     request.GET.appendlist("query", "query { hello }")
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -72,14 +68,12 @@ def test_graphql_view__content_negotiation__get_request(undine_settings) -> None
 def test_graphql_view__content_negotiation__all_types(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         accepted_types=[MediaType("*/*")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -91,14 +85,12 @@ def test_graphql_view__content_negotiation__all_types(undine_settings) -> None:
 def test_graphql_view__content_negotiation__graphql_json(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         accepted_types=[MediaType("application/graphql-response+json")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -110,14 +102,12 @@ def test_graphql_view__content_negotiation__graphql_json(undine_settings) -> Non
 def test_graphql_view__content_negotiation__application_json(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         accepted_types=[MediaType("application/json")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -129,14 +119,12 @@ def test_graphql_view__content_negotiation__application_json(undine_settings) ->
 def test_graphql_view__content_negotiation__application_xml(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         accepted_types=[MediaType("application/xml")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -147,8 +135,6 @@ def test_graphql_view__content_negotiation__application_xml(undine_settings) -> 
 
 def test_graphql_view__content_negotiation__form_urlencoded(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
-
-    view = GraphQLView.as_view()
 
     data = {"query": "query { hello }"}
     body = urllib.parse.urlencode(data, quote_via=urllib.parse.quote).encode("utf-8")
@@ -161,7 +147,7 @@ def test_graphql_view__content_negotiation__form_urlencoded(undine_settings) -> 
         POST=QueryDict(body, encoding="utf-8"),
     )
 
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -173,12 +159,10 @@ def test_graphql_view__content_negotiation__form_urlencoded(undine_settings) -> 
 def test_graphql_view__content_negotiation__multipart_form_data(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     data: dict[str, str | bytes] = {"query": "query { hello }"}
     request = create_multipart_form_data_request(data=data)
 
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -190,8 +174,6 @@ def test_graphql_view__content_negotiation__multipart_form_data(undine_settings)
 def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.GRAPHIQL_ENABLED = True
-
-    view = GraphQLView.as_view()
 
     request = MockRequest(
         method="POST",
@@ -207,7 +189,7 @@ def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
         return csrf
 
     with patch("django.template.context_processors.get_token", side_effect=hook):
-        response = view(request=request)
+        response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 
@@ -245,14 +227,12 @@ def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
 def test_graphql_view__content_negotiation__unsupported_type(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         accepted_types=[MediaType("text/plain")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpUnsupportedContentTypeResponse)
 
@@ -264,15 +244,13 @@ def test_graphql_view__content_negotiation__unsupported_type(undine_settings) ->
 def test_graphql_view__content_negotiation__multiple_types(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    view = GraphQLView.as_view()
-
     request = MockRequest(
         method="POST",
         # First type is not supported, so the second type is used.
         accepted_types=[MediaType("text/plain"), MediaType("application/json")],
         body=b'{"query": "query { hello }"}',
     )
-    response = view(request=request)
+    response = graphql_view(request=request)  # type: ignore[arg-type]
 
     assert isinstance(response, HttpResponse)
 

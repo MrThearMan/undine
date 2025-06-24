@@ -8,7 +8,6 @@ from graphql import ExecutionContext, ExecutionResult, GraphQLError, execute_syn
 
 from undine.exceptions import GraphQLErrorGroup, GraphQLNoExecutionResultError, GraphQLUnexpectedError
 from undine.hooks import LifecycleHookContext, use_lifecycle_hooks
-from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import validate_get_request_operation
 from undine.utils.graphql.validation_rules import get_validation_rules
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLOutputType
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, P
+    from undine.typing import P
 
 
 __all__ = [
@@ -72,11 +71,6 @@ def raised_exceptions_as_execution_results(func: Callable[P, ExecutionResult]) -
 
 
 @raised_exceptions_as_execution_results
-def execute_graphql_from_request(request: DjangoRequestProtocol) -> ExecutionResult:
-    params = GraphQLRequestParamsParser.run(request)
-    return execute_graphql(params, request)
-
-
 def execute_graphql(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
     """
     Executes a GraphQL query received from an HTTP request.
@@ -97,7 +91,7 @@ def execute_graphql(params: GraphQLHttpParams, context_value: Any) -> ExecutionR
 
     _run_operation(context)
     if context.result is None:  # pragma: no cover
-        return ExecutionResult(errors=[GraphQLNoExecutionResultError()])
+        raise GraphQLNoExecutionResultError
 
     return context.result
 

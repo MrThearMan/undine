@@ -10,7 +10,6 @@ if not settings.configured:  # pragma: no cover
 from .calculation import Calculation, CalculationArgument
 from .entrypoint import Entrypoint, RootType
 from .filtering import Filter, FilterSet
-from .http.views import GraphQLView
 from .interface import InterfaceField, InterfaceType
 from .mutation import Input, MutationType
 from .ordering import Order, OrderSet
@@ -28,7 +27,6 @@ __all__ = [
     "Filter",
     "FilterSet",
     "GQLInfo",
-    "GraphQLView",
     "Input",
     "InterfaceField",
     "InterfaceType",
