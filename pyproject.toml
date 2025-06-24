@@ -65,6 +65,7 @@ django-debug-toolbar = { version = ">=5.2.0", optional = true }
 [tool.poetry.group.test.dependencies]
 pytest = "8.4.1"
 pytest-django = "4.11.1"
+pytest-asyncio = "1.0.0"
 coverage = "7.9.1"
 hypothesis = "6.135.11"
 freezegun = "1.5.2"
@@ -267,6 +268,7 @@ ignore = [
 
 [tool.ruff.lint.extend-per-file-ignores]
 "**/*/test_*.py" = [
+    "FBT001",   # Boolean positional arguments are fine in tests
     "ANN",      # No need to annotate tests
     "E721",     # No need to compare to True
     "N801",     # Allow whatever class names in tests

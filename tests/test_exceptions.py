@@ -25,6 +25,7 @@ from undine.exceptions import (
     FunctionDispatcherUnionTypeError,
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
+    GraphQLAsyncNotSupportedError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
     GraphQLFileNotFoundError,
@@ -346,6 +347,12 @@ class GQLErrorParams(NamedTuple):
 
 @pytest.mark.parametrize(
     **parametrize_helper({
+        "GraphQLAsyncNotSupportedError": GQLErrorParams(
+            cls=GraphQLAsyncNotSupportedError,
+            args={},
+            message="GraphQL execution failed to complete synchronously.",
+            extensions={"error_code": "ASYNC_NOT_SUPPORTED", "status_code": 500},
+        ),
         "GraphQLDuplicateTypeError": GQLErrorParams(
             cls=GraphQLDuplicateTypeError,
             args={"name": "foo", "type_existing": Project, "type_new": Task},

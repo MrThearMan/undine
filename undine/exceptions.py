@@ -414,6 +414,14 @@ class GraphQLErrorGroup(ExceptionGroup):
         return self
 
 
+class GraphQLAsyncNotSupportedError(GraphQLStatusError):
+    """Error raised when a GraphQL request is made asynchronously."""
+
+    msg = "GraphQL execution failed to complete synchronously."
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.ASYNC_NOT_SUPPORTED
+
+
 class GraphQLDuplicateTypeError(GraphQLStatusError):
     """Error raised when trying to create a type in the GraphQL schema with the same name as an existing type."""
 

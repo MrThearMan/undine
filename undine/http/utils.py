@@ -1,25 +1,31 @@
 from __future__ import annotations
 
 import json
+from asyncio import iscoroutinefunction
+from collections.abc import Awaitable, Callable
 from functools import wraps
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, ParamSpec, Protocol
+from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse
 from django.http.request import MediaType
+from django.shortcuts import render
+from graphql import ExecutionResult
 
 from undine.exceptions import (
     GraphQLMissingContentTypeError,
     GraphQLRequestDecodingError,
     GraphQLUnsupportedContentTypeError,
 )
+from undine.settings import undine_settings
+from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from django.http.request import HttpRequest
     from graphql import GraphQLError
 
+    from undine.exceptions import GraphQLErrorGroup
     from undine.typing import HttpMethod
 
 __all__ = [
@@ -27,9 +33,13 @@ __all__ = [
     "HttpUnsupportedContentTypeResponse",
     "decode_body",
     "get_preferred_response_content_type",
+    "graphql_error_group_response",
+    "graphql_error_response",
+    "graphql_result_response",
     "load_json_dict",
     "parse_json_body",
-    "require_json",
+    "require_graphql_request",
+    "require_persisted_documents_request",
 ]
 
 
@@ -109,31 +119,136 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
     return data
 
 
-P = ParamSpec("P")
+def graphql_result_response(
+    result: ExecutionResult,
+    *,
+    status: int = HTTPStatus.OK,
+    content_type: str = "application/json",
+) -> DjangoResponseProtocol:
+    """Serialize the given execution result to an HTTP response."""
+    content = json.dumps(result.formatted, separators=(",", ":"))
+    return HttpResponse(content=content, status=status, content_type=content_type)  # type: ignore[return-value]
 
 
-class FunctionView(Protocol[P]):
-    def __call__(self, request: HttpRequest, *args: P.args, **kwargs: P.kwargs) -> HttpResponse: ...
+def graphql_error_response(
+    error: GraphQLError,
+    *,
+    status: int = HTTPStatus.OK,
+    content_type: str = "application/json",
+) -> DjangoResponseProtocol:
+    """Serialize the given GraphQL error to an HTTP response."""
+    result = ExecutionResult(errors=[error])
+    return graphql_result_response(result, status=status, content_type=content_type)
 
 
-def require_json(func: FunctionView[P]) -> FunctionView[P]:
-    """Decorated view requires 'application/json' content type for both input and output data."""
-    content_type = "application/json"
+def graphql_error_group_response(
+    error: GraphQLErrorGroup,
+    *,
+    status: int = HTTPStatus.OK,
+    content_type: str = "application/json",
+) -> DjangoResponseProtocol:
+    """Serialize the given GraphQL error group to an HTTP response."""
+    result = ExecutionResult(errors=list(error.flatten()))
+    return graphql_result_response(result, status=status, content_type=content_type)
+
+
+SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
+AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
+
+SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
+AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
+
+
+@overload
+def require_graphql_request(func: SyncViewIn) -> SyncViewOut: ...
+
+
+@overload
+def require_graphql_request(func: AsyncViewIn) -> AsyncViewOut: ...
+
+
+def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | AsyncViewOut:
+    """
+    Perform various checks on the request to ensure it's suitable for GraphQL operations.
+    Can also return early to display GraphiQL.
+    """
+    methods: list[HttpMethod] = ["GET", "POST"]
+
+    def get_supported_types() -> list[str]:
+        supported_types = ["application/graphql-response+json", "application/json"]
+        if undine_settings.GRAPHIQL_ENABLED:
+            supported_types.append("text/html")
+        return supported_types
+
+    if iscoroutinefunction(func):
+
+        @wraps(func)
+        async def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
+            if request.method not in methods:
+                return HttpMethodNotAllowedResponse(allowed_methods=methods)
+
+            supported_types = get_supported_types()
+            media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
+            if media_type is None:
+                return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
+
+            if media_type == "text/html":
+                return render(request, "undine/graphiql.html")  # type: ignore[arg-type]
+
+            request.response_content_type = media_type
+            return await func(request)
+
+    else:
+
+        @wraps(func)
+        def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
+            if request.method not in methods:
+                return HttpMethodNotAllowedResponse(allowed_methods=methods)
+
+            supported_types = get_supported_types()
+            media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
+            if media_type is None:
+                return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
+
+            if media_type == "text/html":
+                return render(request, "undine/graphiql.html")  # type: ignore[arg-type]
+
+            request.response_content_type = media_type
+            return func(request)  # type: ignore[return-value]
+
+    return wrapper  # type: ignore[return-value]
+
+
+def require_persisted_documents_request(func: SyncViewIn) -> SyncViewOut:
+    """Perform various checks on the request to ensure that it's suitable for registering persisted documents."""
+    content_type: str = "application/json"
+    methods: list[HttpMethod] = ["POST"]
 
     @wraps(func)
-    def wrapper(request: HttpRequest, *args: P.args, **kwargs: P.kwargs) -> HttpResponse:
+    def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
+        if request.method not in methods:
+            return HttpMethodNotAllowedResponse(allowed_methods=methods)
+
         media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=[content_type])
         if media_type is None:
             return HttpUnsupportedContentTypeResponse(supported_types=[content_type])
 
+        request.response_content_type = media_type
+
         if request.content_type is None:  # pragma: no cover
-            error: GraphQLError = GraphQLMissingContentTypeError()
-            return JsonResponse(data={"errors": [error.formatted]}, status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+            return graphql_error_response(
+                error=GraphQLMissingContentTypeError(),
+                status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                content_type=media_type,
+            )
 
         if not MediaType(request.content_type).match(content_type):
-            error = GraphQLUnsupportedContentTypeError(content_type=request.content_type)
-            return JsonResponse(data={"errors": [error.formatted]}, status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+            return graphql_error_response(
+                error=GraphQLUnsupportedContentTypeError(content_type=request.content_type),
+                status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                content_type=media_type,
+            )
 
-        return func(request, *args, **kwargs)
+        return func(request)
 
-    return wrapper
+    return wrapper  # type: ignore[return-value]

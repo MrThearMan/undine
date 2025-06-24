@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -142,6 +143,7 @@ UNDINE = {
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,
     "NO_ERROR_LOCATION": True,
+    "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     "MIDDLEWARE": [
         "example_project.app.middleware.error_logging_middleware",
     ],

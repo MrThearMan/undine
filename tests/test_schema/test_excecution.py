@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from inspect import isawaitable
 from typing import Any
 
 from graphql import ExecutionResult, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -7,7 +8,7 @@ from graphql.type.definition import GraphQLField, GraphQLNonNull
 
 from tests.helpers import MockRequest
 from undine.dataclasses import GraphQLHttpParams
-from undine.execution import execute_graphql
+from undine.execution import execute_graphql_sync
 from undine.settings import example_schema
 
 
@@ -30,7 +31,9 @@ def test_execute_graphql(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql(params=params, context_value=MockRequest(method="POST"))
+    result = execute_graphql_sync(params=params, context_value=MockRequest(method="POST"))
+
+    assert not isawaitable(result)
 
     assert result == ExecutionResult(data={"hello": "Hello, World!"})
 
@@ -44,7 +47,9 @@ def test_execute_graphql__parse_error(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql(params=params, context_value=MockRequest(method="POST"))
+    result = execute_graphql_sync(params=params, context_value=MockRequest(method="POST"))
+
+    assert not isawaitable(result)
 
     assert result.data is None
     assert result.errors is not None
@@ -60,7 +65,9 @@ def test_execute_graphql__non_query_operation_on_get_request(undine_settings) ->
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql(params=params, context_value=MockRequest(method="GET"))
+    result = execute_graphql_sync(params=params, context_value=MockRequest(method="GET"))
+
+    assert not isawaitable(result)
 
     assert result.data is None
     assert result.errors is not None
@@ -77,7 +84,9 @@ def test_execute_graphql__validation_error(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql(params=params, context_value=MockRequest(method="POST"))
+    result = execute_graphql_sync(params=params, context_value=MockRequest(method="POST"))
+
+    assert not isawaitable(result)
 
     assert result.data is None
     assert result.errors is not None
@@ -109,7 +118,9 @@ def test_execute_graphql__error_raised(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql(params=params, context_value=MockRequest(method="POST"))
+    result = execute_graphql_sync(params=params, context_value=MockRequest(method="POST"))
+
+    assert not isawaitable(result)
 
     assert result.data is None
     assert result.errors is not None

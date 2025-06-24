@@ -5,13 +5,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from undine.persisted_documents.views import PersistedDocumentsView
+from undine.http.views import graphql_view_async
 
 urlpatterns = [
     path("", include("undine.http.urls")),
-    path("persisted-documents/", PersistedDocumentsView.as_view(), name="persisted_documents"),
+    path("", include("undine.persisted_documents.urls")),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
+    path("graphql/async/", graphql_view_async, name="graphql_async"),
 ]
 
 

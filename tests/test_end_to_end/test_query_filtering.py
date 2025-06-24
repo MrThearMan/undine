@@ -462,10 +462,8 @@ def test_end_to_end__filtering__q_value__negated(graphql, undine_settings) -> No
 def test_end_to_end__filtering__function(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
         @Filter(distinct=True)
-        def has_commented(self: Filter, info: GQLInfo, value: bool) -> Q:  # noqa: FBT001
+        def has_commented(self, info: GQLInfo, value: bool) -> Q:
             user = info.context.user
-            if user.is_anonymous:  # pragma: no cover
-                raise EmptyFilterResult
             condition = Q(comments__commenter__name=user.username)
             return condition if value else ~condition
 
@@ -509,8 +507,9 @@ def test_end_to_end__filtering__function(graphql, undine_settings) -> None:
 def test_end_to_end__filtering__function__empty_filter_results(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
         @Filter
-        def none(self: Filter, value: bool) -> Q:  # noqa: FBT001
-            raise EmptyFilterResult
+        def none(self, info: GQLInfo, value: bool) -> Q:
+            if info.context.user.is_anonymous:
+                raise EmptyFilterResult
 
     class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
         name = Field()

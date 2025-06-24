@@ -1,28 +1,37 @@
 from __future__ import annotations
 
+from asyncio import ensure_future, iscoroutinefunction
 from functools import wraps
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any
+from inspect import isawaitable
+from typing import TYPE_CHECKING, Any, overload
 
-from graphql import ExecutionContext, ExecutionResult, GraphQLError, execute_sync, is_non_null_type, parse, validate
+from graphql import ExecutionContext, ExecutionResult, GraphQLError, execute, is_non_null_type, parse, validate
 
-from undine.exceptions import GraphQLErrorGroup, GraphQLNoExecutionResultError, GraphQLUnexpectedError
+from undine.exceptions import (
+    GraphQLAsyncNotSupportedError,
+    GraphQLErrorGroup,
+    GraphQLNoExecutionResultError,
+    GraphQLUnexpectedError,
+)
 from undine.hooks import LifecycleHookContext, use_lifecycle_hooks
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import validate_get_request_operation
 from undine.utils.graphql.validation_rules import get_validation_rules
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     from graphql import GraphQLOutputType
+    from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import P
 
 
 __all__ = [
-    "execute_graphql",
+    "execute_graphql_async",
+    "execute_graphql_sync",
 ]
 
 
@@ -50,30 +59,61 @@ class UndineExecutionContext(ExecutionContext):
         return ExecutionContext.build_response(data, errors)
 
 
-def raised_exceptions_as_execution_results(func: Callable[P, ExecutionResult]) -> Callable[P, ExecutionResult]:
+@overload
+def raised_exceptions_as_execution_results(
+    func: Callable[P, ExecutionResult],
+) -> Callable[P, ExecutionResult]: ...
+
+
+@overload
+def raised_exceptions_as_execution_results(
+    func: Callable[P, Awaitable[ExecutionResult]],
+) -> Callable[P, Awaitable[ExecutionResult]]: ...
+
+
+def raised_exceptions_as_execution_results(
+    func: Callable[P, AwaitableOrValue[ExecutionResult]],
+) -> Callable[P, AwaitableOrValue[ExecutionResult]]:
     """Wraps raised exceptions as GraphQL ExecutionResults if they happen in `execute_graphql`."""
+    if iscoroutinefunction(func):
 
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
-        try:
-            return func(*args, **kwargs)
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
+            try:
+                return await func(*args, **kwargs)
 
-        except GraphQLError as error:
-            return ExecutionResult(errors=[error])
+            except GraphQLError as error:
+                return ExecutionResult(errors=[error])
 
-        except GraphQLErrorGroup as error:
-            return ExecutionResult(errors=list(error.flatten()))
+            except GraphQLErrorGroup as error:
+                return ExecutionResult(errors=list(error.flatten()))
 
-        except Exception as error:  # noqa: BLE001
-            return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
+            except Exception as error:  # noqa: BLE001
+                return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
+
+    else:
+
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
+            try:
+                return func(*args, **kwargs)  # type: ignore[return-value]
+
+            except GraphQLError as error:
+                return ExecutionResult(errors=[error])
+
+            except GraphQLErrorGroup as error:
+                return ExecutionResult(errors=list(error.flatten()))
+
+            except Exception as error:  # noqa: BLE001
+                return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
 
     return wrapper
 
 
 @raised_exceptions_as_execution_results
-def execute_graphql(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
+def execute_graphql_sync(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
     """
-    Executes a GraphQL query received from an HTTP request.
+    Executes a GraphQL query received from an HTTP request synchronously.
     Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
 
     :param params: GraphQL request parameters.
@@ -92,6 +132,39 @@ def execute_graphql(params: GraphQLHttpParams, context_value: Any) -> ExecutionR
     _run_operation(context)
     if context.result is None:  # pragma: no cover
         raise GraphQLNoExecutionResultError
+
+    if isawaitable(context.result):
+        ensure_future(context.result).cancel()
+        raise GraphQLAsyncNotSupportedError
+
+    return context.result
+
+
+@raised_exceptions_as_execution_results
+async def execute_graphql_async(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
+    """
+    Executes a GraphQL query received from an HTTP request asynchronously.
+    Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
+
+    :param params: GraphQL request parameters.
+    :param context_value: The context value for the GraphQL execution. Usually the Django `HttpRequest` object.
+    """
+    context = LifecycleHookContext(
+        source=params.document,
+        document=None,
+        variables=params.variables,
+        operation_name=params.operation_name,
+        extensions=params.extensions,
+        request=context_value,
+        result=None,
+    )
+
+    _run_operation(context)
+    if context.result is None:  # pragma: no cover
+        raise GraphQLNoExecutionResultError
+
+    if isawaitable(context.result):
+        return await context.result
 
     return context.result
 
@@ -141,7 +214,7 @@ def _validate_document(context: LifecycleHookContext) -> None:
 
 @use_lifecycle_hooks(hooks=undine_settings.EXECUTION_HOOKS)
 def _execute_request(context: LifecycleHookContext) -> None:
-    context.result = execute_sync(
+    context.result = execute(
         schema=undine_settings.SCHEMA,
         document=context.document,  # type: ignore[arg-type]
         root_value=undine_settings.ROOT_VALUE,

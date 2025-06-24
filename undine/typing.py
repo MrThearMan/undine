@@ -105,9 +105,9 @@ __all__ = [
     "ConnectionInitMessage",
     "DispatchProtocol",
     "DjangoExpression",
-    "DjangoHttpResponseProtocol",
     "DjangoRequestProtocol",
-    "DjangoTestClientHttpResponseProtocol",
+    "DjangoResponseProtocol",
+    "DjangoTestClientResponseProtocol",
     "DocstringParserProtocol",
     "ErrorMessage",
     "GQLInfo",
@@ -274,6 +274,9 @@ class DjangoRequestProtocol(Protocol[TUser]):
     def user(self) -> TUser | AnonymousUser:
         """The user associated with the request."""
 
+    async def auser(self) -> TUser | AnonymousUser:
+        """The user associated with the request."""
+
     @property
     def session(self) -> SessionBase:
         """A readable and writable, dictionary-like object that represents the current session."""
@@ -290,8 +293,16 @@ class DjangoRequestProtocol(Protocol[TUser]):
     def accepted_types(self) -> list[MediaType]:
         """A list of 'MediaType' objects representing the accepted content types of the request."""
 
+    @property
+    def response_content_type(self) -> str:
+        """Response content type as determined from 'accepted_types' in relation to the endpoint's supported types."""
 
-class DjangoHttpResponseProtocol(Protocol):
+    @response_content_type.setter
+    def response_content_type(self, value: str) -> None:
+        """Set by decorators in 'undine.http.utils'."""
+
+
+class DjangoResponseProtocol(Protocol):
     """Protocol of a Django 'HttpResponse' object. Abbreviated to the most useful properties."""
 
     @property
@@ -323,7 +334,7 @@ class DjangoHttpResponseProtocol(Protocol):
         """Whether the response is a streaming response."""
 
 
-class DjangoTestClientHttpResponseProtocol(DjangoHttpResponseProtocol, Protocol):
+class DjangoTestClientResponseProtocol(DjangoResponseProtocol, Protocol):
     """Protocol of a Django 'HttpResponse' object for testing. Abbreviated to the most useful properties."""
 
     @property
@@ -577,6 +588,7 @@ class UndineErrorCodes(StrEnum):
     def _generate_next_value_(name: str, start: Any, count: int, last_values: list[Any]) -> Any:  # noqa: ARG004
         return name
 
+    ASYNC_NOT_SUPPORTED = auto()
     CONTENT_TYPE_MISSING = auto()
     DUPLICATE_TYPE = auto()
     FIELD_NOT_NULLABLE = auto()
@@ -921,6 +933,7 @@ GraphQLFilterResolver: TypeAlias = Callable[..., Q]
 
 QuerySetCallback: TypeAlias = Callable[[GQLInfo], QuerySet]
 FilterCallback: TypeAlias = Callable[[QuerySet, GQLInfo], QuerySet]
+PersistedDocumentsPermissionsCallback: TypeAlias = Callable[[DjangoRequestProtocol, dict[str, str]], None]
 
 
 def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: dict[str, Any] | None = None) -> Any:

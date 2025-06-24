@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from inspect import isawaitable
 from itertools import count
 from typing import Any
 
@@ -33,7 +34,9 @@ from undine.resolvers import BulkCreateResolver
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver() -> None:
+def test_bulk_create_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -70,7 +73,9 @@ def test_bulk_create_resolver() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__related_object_not_found() -> None:
+def test_bulk_create_resolver__related_object_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -93,7 +98,9 @@ def test_bulk_create_resolver__related_object_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_one_to_one() -> None:
+def test_bulk_create_resolver__forward_one_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -126,7 +133,9 @@ def test_bulk_create_resolver__forward_one_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_one_to_one__pk() -> None:
+def test_bulk_create_resolver__forward_one_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     request = ServiceRequestFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -157,7 +166,9 @@ def test_bulk_create_resolver__forward_one_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_many_to_one() -> None:
+def test_bulk_create_resolver__forward_many_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     team = TeamFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -193,7 +204,9 @@ def test_bulk_create_resolver__forward_many_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_many_to_one__pk() -> None:
+def test_bulk_create_resolver__forward_many_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     project = ProjectFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -224,7 +237,9 @@ def test_bulk_create_resolver__forward_many_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_many_to_many() -> None:
+def test_bulk_create_resolver__forward_many_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -260,7 +275,9 @@ def test_bulk_create_resolver__forward_many_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__forward_many_to_many__pk() -> None:
+def test_bulk_create_resolver__forward_many_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     assignee = PersonFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -291,7 +308,9 @@ def test_bulk_create_resolver__forward_many_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_one_to_one() -> None:
+def test_bulk_create_resolver__reverse_one_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -325,7 +344,9 @@ def test_bulk_create_resolver__reverse_one_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_one_to_one__pk() -> None:
+def test_bulk_create_resolver__reverse_one_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     result = TaskResultFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -356,7 +377,9 @@ def test_bulk_create_resolver__reverse_one_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_one_to_many() -> None:
+def test_bulk_create_resolver__reverse_one_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -391,7 +414,9 @@ def test_bulk_create_resolver__reverse_one_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_one_to_many__pk() -> None:
+def test_bulk_create_resolver__reverse_one_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     step = TaskStepFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -422,7 +447,9 @@ def test_bulk_create_resolver__reverse_one_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_many_to_many() -> None:
+def test_bulk_create_resolver__reverse_many_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -458,7 +485,9 @@ def test_bulk_create_resolver__reverse_many_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__reverse_many_to_many__pk() -> None:
+def test_bulk_create_resolver__reverse_many_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     report = ReportFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -489,7 +518,9 @@ def test_bulk_create_resolver__reverse_many_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__generic_relation() -> None:
+def test_bulk_create_resolver__generic_relation(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     commenter = PersonFactory.create()
 
     class TaskType(QueryType[Task]): ...
@@ -522,7 +553,9 @@ def test_bulk_create_resolver__generic_relation() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_create_resolver__mutation_hooks() -> None:
+def test_bulk_create_resolver__mutation_hooks(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     counter = count()
 
     input_validate_called: int = -1
@@ -537,12 +570,12 @@ def test_bulk_create_resolver__mutation_hooks() -> None:
         name = Input()
 
         @name.validate
-        def _(self: Task, info: GQLInfo, value: str) -> None:
+        def _(self, info: GQLInfo, value: str) -> None:
             nonlocal input_validate_called
             input_validate_called = next(counter)
 
         @name.permissions
-        def _(self: Task, info: GQLInfo, value: str) -> None:
+        def _(self, info: GQLInfo, value: str) -> None:
             nonlocal input_permission_called
             input_permission_called = next(counter)
 
@@ -581,3 +614,46 @@ def test_bulk_create_resolver__mutation_hooks() -> None:
     assert input_validate_called == 2
     assert validate_called == 3
     assert after_called == 4
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_bulk_create_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        bulk_create_tasks = Entrypoint(TaskCreateMutation)
+
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.bulk_create_tasks)
+
+    data = [
+        {
+            "name": "Test task 1",
+            "type": TaskTypeChoices.STORY.value,
+        },
+        {
+            "name": "Test task 2",
+            "type": TaskTypeChoices.BUG_FIX.value,
+        },
+    ]
+
+    with patch_optimizer():
+        results = resolver(root=None, info=mock_gql_info(), input=data)
+        assert isawaitable(results)
+
+        results = await results
+
+    assert isinstance(results, list)
+    assert len(results) == 2
+
+    assert isinstance(results[0], Task)
+    assert results[0].name == "Test task 1"
+    assert results[0].type == TaskTypeChoices.STORY
+
+    assert isinstance(results[1], Task)
+    assert results[1].name == "Test task 2"
+    assert results[1].type == TaskTypeChoices.BUG_FIX

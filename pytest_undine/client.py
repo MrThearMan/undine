@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files import File
 
-    from undine.typing import DjangoTestClientHttpResponseProtocol
+    from undine.typing import DjangoTestClientResponseProtocol
 
     from .query_logging import DBQueryData
 
@@ -105,7 +105,7 @@ class GraphQLClient(Client):
         data: dict[str, Any],
         content_type: str = "application/json",
         headers: dict[str, Any] | None = None,
-    ) -> DjangoTestClientHttpResponseProtocol:
+    ) -> DjangoTestClientResponseProtocol:
         return self.post(  # type: ignore[return-value]
             path=f"/{undine_settings.GRAPHQL_PATH}",
             data=data,
@@ -130,7 +130,7 @@ class GraphQLClient(Client):
 class GraphQLClientResponse:
     """A response from a GraphQL client."""
 
-    def __init__(self, response: DjangoTestClientHttpResponseProtocol, database_queries: DBQueryData) -> None:
+    def __init__(self, response: DjangoTestClientResponseProtocol, database_queries: DBQueryData) -> None:
         self.response = response
         self.database_queries = database_queries
 

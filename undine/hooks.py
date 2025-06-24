@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from graphql import DocumentNode
+    from graphql.pyutils import AwaitableOrValue
 
     from undine.typing import DjangoRequestProtocol
 
@@ -46,7 +47,7 @@ class LifecycleHookContext:
     request: DjangoRequestProtocol
     """Django request during which the GraphQL request is being executed."""
 
-    result: ExecutionResult | None
+    result: AwaitableOrValue[ExecutionResult] | None
     """Execution result of the GraphQL operation. Adding a result here will cause an early exit."""
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from inspect import isawaitable
 from itertools import count
 from typing import Any
 
@@ -32,7 +33,9 @@ from undine.typing import GQLInfo
 
 
 @pytest.mark.django_db
-def test_create_resolver() -> None:
+def test_create_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -56,7 +59,9 @@ def test_create_resolver() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_one_to_one() -> None:
+def test_create_resolver__forward_one_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -84,7 +89,9 @@ def test_create_resolver__forward_one_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_one_to_one__pk() -> None:
+def test_create_resolver__forward_one_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     request = ServiceRequestFactory.create(details="Test request")
 
     class TaskType(QueryType[Task]): ...
@@ -110,7 +117,9 @@ def test_create_resolver__forward_one_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_many_to_one() -> None:
+def test_create_resolver__forward_many_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     team = TeamFactory.create(name="Test team")
 
     class TaskType(QueryType[Task]): ...
@@ -141,7 +150,9 @@ def test_create_resolver__forward_many_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_many_to_one__pk() -> None:
+def test_create_resolver__forward_many_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     project = ProjectFactory.create(name="Test project")
 
     class TaskType(QueryType[Task]): ...
@@ -167,7 +178,9 @@ def test_create_resolver__forward_many_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_many_to_many() -> None:
+def test_create_resolver__forward_many_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -198,7 +211,9 @@ def test_create_resolver__forward_many_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__forward_many_to_many__pk() -> None:
+def test_create_resolver__forward_many_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     person = PersonFactory.create(name="Test assignee")
 
     class TaskType(QueryType[Task]): ...
@@ -224,7 +239,9 @@ def test_create_resolver__forward_many_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_one_to_one() -> None:
+def test_create_resolver__reverse_one_to_one(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -253,7 +270,9 @@ def test_create_resolver__reverse_one_to_one() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_one_to_one__pk() -> None:
+def test_create_resolver__reverse_one_to_one__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     result = TaskResultFactory.create(details="Test result")
 
     class TaskType(QueryType[Task]): ...
@@ -279,7 +298,9 @@ def test_create_resolver__reverse_one_to_one__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_one_to_many() -> None:
+def test_create_resolver__reverse_one_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -309,7 +330,9 @@ def test_create_resolver__reverse_one_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_one_to_many__pk() -> None:
+def test_create_resolver__reverse_one_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     step = TaskStepFactory.create(name="Test step")
 
     class TaskType(QueryType[Task]): ...
@@ -335,7 +358,9 @@ def test_create_resolver__reverse_one_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_many_to_many() -> None:
+def test_create_resolver__reverse_many_to_many(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
@@ -366,7 +391,9 @@ def test_create_resolver__reverse_many_to_many() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__reverse_many_to_many__pk() -> None:
+def test_create_resolver__reverse_many_to_many__pk(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     report = ReportFactory.create(name="Test report")
 
     class TaskType(QueryType[Task]): ...
@@ -392,7 +419,9 @@ def test_create_resolver__reverse_many_to_many__pk() -> None:
 
 
 @pytest.mark.django_db
-def test_create_resolver__mutation_hooks() -> None:
+def test_create_resolver__mutation_hooks(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     counter = count()
 
     input_validate_called: int = -1
@@ -449,3 +478,33 @@ def test_create_resolver__mutation_hooks() -> None:
     assert input_validate_called == 2
     assert validate_called == 3
     assert after_called == 4
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_create_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    resolver = CreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.create_task)
+
+    data = {
+        "name": "Test task",
+        "type": TaskTypeChoices.STORY.value,
+    }
+
+    with patch_optimizer():
+        tasks = resolver(root=None, info=mock_gql_info(), input=data)
+        assert isawaitable(tasks)
+
+        tasks = await tasks
+
+    assert isinstance(tasks, Task)
+    assert tasks.name == "Test task"
+    assert tasks.type == TaskTypeChoices.STORY

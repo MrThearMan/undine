@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from inspect import isawaitable
 from itertools import count
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
@@ -15,7 +17,9 @@ from undine.typing import GQLInfo
 
 
 @pytest.mark.django_db
-def test_update_resolver() -> None:
+def test_update_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     task = TaskFactory.create(name="Test task")
 
     class TaskType(QueryType[Task]): ...
@@ -35,7 +39,9 @@ def test_update_resolver() -> None:
 
 
 @pytest.mark.django_db
-def test_update_resolver__instance_not_found() -> None:
+def test_update_resolver__instance_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskUpdateMutation(MutationType[Task]): ...
@@ -50,7 +56,9 @@ def test_update_resolver__instance_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_update_resolver__lookup_field_not_found() -> None:
+def test_update_resolver__lookup_field_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     class TaskType(QueryType[Task]): ...
 
     class TaskUpdateMutation(MutationType[Task]): ...
@@ -65,7 +73,9 @@ def test_update_resolver__lookup_field_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_update_resolver__mutation_hooks() -> None:
+def test_update_resolver__mutation_hooks(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     counter = count()
 
     input_validate_called: int = -1
@@ -124,3 +134,29 @@ def test_update_resolver__mutation_hooks() -> None:
     assert input_validate_called == 2
     assert validate_called == 3
     assert after_called == 4
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_update_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    resolver = UpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.update_task)
+
+    with patch_optimizer():
+        result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk, "name": "New task"})
+
+        assert isawaitable(result)
+        result = await result
+
+    assert isinstance(result, Task)
+    assert result.name == "New task"

@@ -11,7 +11,7 @@ from undine.settings import example_schema
 def test_register_persisted_documents_view(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "documents": {
@@ -23,8 +23,10 @@ def test_register_persisted_documents_view(client: Client, undine_settings) -> N
 
     assert response.status_code == 200, response.content
     assert response.json() == {
-        "documents": {
-            "foo": "sha256:75d3580309f2b2bbe92cecc1ff4faf7533e038f565895c8eef25dc23e6491b8d",
+        "data": {
+            "documents": {
+                "foo": "sha256:75d3580309f2b2bbe92cecc1ff4faf7533e038f565895c8eef25dc23e6491b8d",
+            }
         }
     }
 
@@ -33,7 +35,7 @@ def test_register_persisted_documents_view(client: Client, undine_settings) -> N
 def test_register_persisted_documents_view__doesnt_accept_json(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "documents": {
@@ -51,12 +53,13 @@ def test_register_persisted_documents_view__doesnt_accept_json(client: Client, u
 def test_register_persisted_documents_view__doesnt_have_json(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     response = client.post(path=url, data="data", content_type="text/plain")
 
     assert response.status_code == 415, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "'text/plain' is not a supported content type.",
@@ -65,7 +68,7 @@ def test_register_persisted_documents_view__doesnt_have_json(client: Client, und
                     "status_code": 415,
                 },
             }
-        ]
+        ],
     }
 
 
@@ -73,12 +76,13 @@ def test_register_persisted_documents_view__doesnt_have_json(client: Client, und
 def test_register_persisted_documents_view__REQUEST_DECODING_ERROR(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     response = client.post(path=url, data="data", content_type="application/json")
 
     assert response.status_code == 400, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "Could not load JSON body.",
@@ -87,7 +91,7 @@ def test_register_persisted_documents_view__REQUEST_DECODING_ERROR(client: Clien
                     "status_code": 400,
                 },
             }
-        ]
+        ],
     }
 
 
@@ -95,7 +99,7 @@ def test_register_persisted_documents_view__REQUEST_DECODING_ERROR(client: Clien
 def test_register_persisted_documents_view__documents_not_found(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "document": "query { testing }",
@@ -105,6 +109,7 @@ def test_register_persisted_documents_view__documents_not_found(client: Client, 
 
     assert response.status_code == 400, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "Missing key.",
@@ -114,7 +119,7 @@ def test_register_persisted_documents_view__documents_not_found(client: Client, 
                     "status_code": 400,
                 },
             }
-        ]
+        ],
     }
 
 
@@ -122,7 +127,7 @@ def test_register_persisted_documents_view__documents_not_found(client: Client, 
 def test_register_persisted_documents_view__documents_not_dict(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "documents": "query { testing }",
@@ -132,6 +137,7 @@ def test_register_persisted_documents_view__documents_not_dict(client: Client, u
 
     assert response.status_code == 400, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "Value is not a dictionary.",
@@ -149,7 +155,7 @@ def test_register_persisted_documents_view__documents_not_dict(client: Client, u
 def test_register_persisted_documents_view__documents_not_dict_of_strings(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "documents": {
@@ -162,6 +168,7 @@ def test_register_persisted_documents_view__documents_not_dict_of_strings(client
 
     assert response.status_code == 400, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "Value is not a string.",
@@ -179,7 +186,7 @@ def test_register_persisted_documents_view__documents_not_dict_of_strings(client
                     "status_code": 400,
                 },
             },
-        ]
+        ],
     }
 
 
@@ -187,7 +194,7 @@ def test_register_persisted_documents_view__documents_not_dict_of_strings(client
 def test_register_persisted_documents_view__errors_in_document(client: Client, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
-    url = reverse("persisted_documents")
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
 
     data = {
         "documents": {
@@ -199,6 +206,7 @@ def test_register_persisted_documents_view__errors_in_document(client: Client, u
 
     assert response.status_code == 400, response.content
     assert response.json() == {
+        "data": None,
         "errors": [
             {
                 "message": "Syntax Error: Expected Name, found <EOF>.",
@@ -208,5 +216,10 @@ def test_register_persisted_documents_view__errors_in_document(client: Client, u
                     "status_code": 400,
                 },
             }
-        ]
+        ],
     }
+
+
+def test_register_persisted_documents_view__reverse(undine_settings) -> None:
+    path = reverse(f"undine.persisted_documents:{undine_settings.PERSISTED_DOCUMENTS_VIEW_NAME}")
+    assert path == f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"

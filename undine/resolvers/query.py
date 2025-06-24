@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Any, Generic, Optional
+from asyncio import iscoroutinefunction
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeAlias
 
-from django.db.models import Manager
+from asgiref.sync import sync_to_async
+from django.db.models import Manager, QuerySet
 from graphql import GraphQLID, GraphQLObjectType
 
+from undine import QueryType
+from undine.dataclasses import OptimizationWithPagination
 from undine.exceptions import (
     GraphQLNodeIDFieldTypeError,
     GraphQLNodeInterfaceMissingError,
@@ -15,23 +19,24 @@ from undine.exceptions import (
     GraphQLNodeQueryTypeMissingError,
     GraphQLNodeTypeNotObjectTypeError,
 )
-from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack
+from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack, evaluate_with_prefetch_hack_async
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
 from undine.utils.graphql.undine_extensions import get_undine_query_type
-from undine.utils.graphql.utils import get_queried_field_name, get_underlying_type
+from undine.utils.graphql.utils import get_queried_field_name, get_underlying_type, pre_evaluate_request_user
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import FunctionType
 
-    from django.db.models import Model, Q, QuerySet
+    from django.db.models import Model, Q
+    from graphql.pyutils import AwaitableOrValue
 
-    from undine import Entrypoint, Field, InterfaceType, QueryType, UnionType
+    from undine import Entrypoint, Field, InterfaceType, UnionType
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.relay import Connection
+    from undine.relay import Connection, PaginationHandler
     from undine.typing import GQLInfo, RelatedManager
 
 __all__ = [
@@ -69,21 +74,37 @@ class EntrypointFunctionResolver:
         object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        if undine_settings.ASYNC and iscoroutinefunction(self.func):
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        self.set_kwargs(kwargs, root, info)
+        result = self.func(**kwargs)
+        self.check_permissions(root, info, result)
+        return result
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+
+        self.set_kwargs(kwargs, root, info)
+        result = await self.func(**kwargs)
+        self.check_permissions(root, info, result)
+        return result
+
+    def set_kwargs(self, kwargs: dict[str, Any], root: Any, info: GQLInfo) -> None:
         if self.root_param is not None:
             kwargs[self.root_param] = root
         if self.info_param is not None:
             kwargs[self.info_param] = info
 
-        result = self.func(**kwargs)
-
+    def check_permissions(self, root: Any, info: GQLInfo, result: Any) -> None:
         if self.entrypoint.permissions_func is not None:
             if self.entrypoint.many:
                 for item in result:
                     self.entrypoint.permissions_func(root, info, item)
             else:
                 self.entrypoint.permissions_func(root, info, result)
-
-        return result
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -212,24 +233,48 @@ class QueryTypeSingleResolver(Generic[TModel]):
     query_type: type[QueryType[TModel]]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        queryset = self.query_type.__get_queryset__(info)
-        queryset = queryset.filter(**kwargs)
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
 
-        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=self.query_type.__model__, info=info)
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+        queryset = self.run_optimizer(info, **kwargs)
+        instances = evaluate_with_prefetch_hack(queryset)
 
-        optimizations = optimizer.compile()
-        optimized_queryset = optimizations.apply(queryset, info)
-        instances = evaluate_with_prefetch_hack(optimized_queryset)
         instance = next(iter(instances), None)
-
         if instance is not None:
-            if self.entrypoint.permissions_func is not None:
-                self.entrypoint.permissions_func(root, info, instance)
-            else:
-                self.query_type.__permissions__(instance, info)
+            self.check_permissions(root, info, instance)
 
         return instance
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+
+        queryset = self.run_optimizer(info, **kwargs)
+        instances = await evaluate_with_prefetch_hack_async(queryset)
+
+        instance = next(iter(instances), None)
+        if instance is not None:
+            self.check_permissions(root, info, instance)
+
+        return instance
+
+    def get_queryset(self, info: GQLInfo, **kwargs: Any) -> QuerySet[TModel]:
+        queryset = self.query_type.__get_queryset__(info)
+        return queryset.filter(**kwargs)
+
+    def run_optimizer(self, info: GQLInfo, **kwargs: Any) -> QuerySet[TModel]:
+        queryset = self.get_queryset(info, **kwargs)
+        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=self.query_type.__model__, info=info)
+        optimizations = optimizer.compile()
+        return optimizations.apply(queryset, info)
+
+    def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+        if self.entrypoint.permissions_func is not None:
+            self.entrypoint.permissions_func(root, info, instance)
+        else:
+            self.query_type.__permissions__(instance, info)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -241,24 +286,43 @@ class QueryTypeManyResolver(Generic[TModel]):
 
     additional_filter: Optional[Q] = None  # noqa: UP045
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        optimized_queryset = self.run_optimizer(info)
+        instances = evaluate_with_prefetch_hack(optimized_queryset)
+        self.check_permissions(root, info, instances)
+        return instances
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+
+        queryset = self.run_optimizer(info)
+        instances = await evaluate_with_prefetch_hack_async(queryset)
+        self.check_permissions(root, info, instances)
+        return instances
+
+    def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
         queryset = self.query_type.__get_queryset__(info)
         if self.additional_filter is not None:
             queryset = queryset.filter(self.additional_filter)
+        return queryset
 
+    def run_optimizer(self, info: GQLInfo) -> QuerySet[TModel]:
+        queryset = self.get_queryset(info)
         optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=self.query_type.__model__, info=info)
-
         optimizations = optimizer.compile()
-        optimized_queryset = optimizations.apply(queryset, info)
-        instances = evaluate_with_prefetch_hack(optimized_queryset)
+        return optimizations.apply(queryset, info)
 
+    def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
             else:
                 self.query_type.__permissions__(instance, info)
-
-        return instances
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -322,7 +386,7 @@ class NodeResolver(Generic[TModel]):
 
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
         try:
             typename, object_id = from_global_id(kwargs["id"])
         except Exception as error:
@@ -364,40 +428,76 @@ class ConnectionResolver(Generic[TModel]):
     connection: Connection
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        queryset = self.connection.query_type.__get_queryset__(info)
-        model = self.connection.query_type.__model__
-        typename = self.connection.query_type.__schema_name__
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
 
-        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
+    def run_sync(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
+        results = self.run_optimizer(info)
+        instances = evaluate_with_prefetch_hack(results.queryset)
+        self.check_permissions(root, info, instances)
+        return self.to_connection(instances, pagination=results.pagination)
 
+    async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
+        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+
+        results = await self.run_optimizer_async(info)
+        instances = await evaluate_with_prefetch_hack_async(results.queryset)
+        self.check_permissions(root, info, instances)
+        return self.to_connection(instances, pagination=results.pagination)
+
+    def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
+        return self.connection.query_type.__get_queryset__(info)
+
+    def run_optimizer(self, info: GQLInfo) -> OptimizationWithPagination[TModel]:
+        queryset = self.get_queryset(info)
+        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
         optimizations = optimizer.compile()
         optimized_queryset = optimizations.apply(queryset, info)
+        return OptimizationWithPagination(
+            queryset=optimized_queryset,
+            pagination=optimizations.pagination,  # type: ignore[arg-type]
+        )
 
-        total_count = optimizations.pagination.total_count  # type: ignore[union-attr]
-        start = optimizations.pagination.start  # type: ignore[union-attr]
-        stop = optimizations.pagination.stop  # type: ignore[union-attr]
+    async def run_optimizer_async(self, info: GQLInfo) -> OptimizationWithPagination[TModel]:
+        queryset = self.get_queryset(info)
+        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
+        optimizations = optimizer.compile()
+        # Applying may call 'queryset.count()'.
+        optimized_queryset = await sync_to_async(optimizations.apply)(queryset, info)
+        return OptimizationWithPagination(
+            queryset=optimized_queryset,
+            pagination=optimizations.pagination,  # type: ignore[arg-type]
+        )
 
-        instances: list[TModel] = evaluate_with_prefetch_hack(optimized_queryset)  # type: ignore[assignment]
-
+    def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
             else:
                 self.connection.query_type.__permissions__(instance, info)
 
+    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
+        typename = self.connection.query_type.__schema_name__
         edges = [
             NodeDict(
-                cursor=offset_to_cursor(typename, start + index),
+                cursor=offset_to_cursor(typename, pagination.start + index),
                 node=instance,
             )
             for index, instance in enumerate(instances)
         ]
         return ConnectionDict(
-            totalCount=total_count or 0,
+            totalCount=pagination.total_count or 0,
             pageInfo=PageInfoDict(
-                hasNextPage=(False if stop is None else True if total_count is None else stop < total_count),
-                hasPreviousPage=start > 0,
+                hasNextPage=(
+                    False
+                    if pagination.stop is None
+                    else True
+                    if pagination.total_count is None
+                    else pagination.stop < pagination.total_count
+                ),
+                hasPreviousPage=pagination.start > 0,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
             ),
@@ -458,6 +558,9 @@ class NestedConnectionResolver(Generic[TModel]):
 # UnionType
 
 
+QuerySetMap: TypeAlias = dict[type[QueryType[TModel]], QuerySet[TModel]]
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class UnionTypeResolver(Generic[TModel]):
     """Top-level resolver for fetching a set of model objects from a `UnionType`."""
@@ -465,26 +568,56 @@ class UnionTypeResolver(Generic[TModel]):
     union_type: type[UnionType]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        queryset_map = self.optimize(info, **kwargs)
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
 
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        queryset_map = self.optimize(info, **kwargs)
+        all_instances = self.fetch_instances(root, info, queryset_map)
+        return self.union_type.__process_results__(all_instances, info)
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        queryset_map = self.optimize(info, **kwargs)
+        all_instances = await self.fetch_instances_async(root, info, queryset_map)
+        return self.union_type.__process_results__(all_instances, info)
+
+    def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
             instances = evaluate_with_prefetch_hack(queryset)
-
-            for instance in instances:
-                if self.entrypoint.permissions_func is not None:
-                    self.entrypoint.permissions_func(root, info, instance)
-                else:
-                    query_type.__permissions__(instance, info)
-
+            self.check_permissions(root, info, query_type, instances)
             all_instances.extend(instances)
 
-        return self.union_type.__process_results__(all_instances, info)
+        return all_instances
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> dict[type[QueryType[TModel]], QuerySet[TModel]]:
-        queryset_map: dict[type[QueryType], QuerySet] = {}
+    async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+        all_instances: list[TModel] = []
+
+        for query_type, queryset in queryset_map.items():
+            instances = await evaluate_with_prefetch_hack_async(queryset)
+            self.check_permissions(root, info, query_type, instances)
+            all_instances.extend(instances)
+
+        return all_instances
+
+    def check_permissions(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap[TModel]:
+        queryset_map: QuerySetMap[TModel] = {}
 
         for model, query_type in self.union_type.__query_types_by_model__.items():
             optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
@@ -535,26 +668,54 @@ class InterfaceResolver(Generic[TModel]):
     interface: type[InterfaceType]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_sync_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset_map = self.optimize(info, **kwargs)
-
-        all_instances: list[TModel] = []
-
-        for query_type, queryset in queryset_map.items():
-            instances = evaluate_with_prefetch_hack(queryset)
-
-            for instance in instances:
-                if self.entrypoint.permissions_func is not None:
-                    self.entrypoint.permissions_func(root, info, instance)
-                else:
-                    query_type.__permissions__(instance, info)
-
-            all_instances.extend(instances)
-
+        all_instances = self.fetch_instances(info, root, queryset_map)
         return self.interface.__process_results__(all_instances, info)
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> dict[type[QueryType[TModel]], QuerySet[TModel]]:
-        queryset_map: dict[type[QueryType], QuerySet] = {}
+    async def run_sync_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+        queryset_map = self.optimize(info, **kwargs)
+        all_instances = await self.fetch_instances_async(info, root, queryset_map)
+        return self.interface.__process_results__(all_instances, info)
+
+    def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+        all_instances: list[TModel] = []
+        for query_type, queryset in queryset_map.items():
+            instances = evaluate_with_prefetch_hack(queryset)
+            self.check_permissions(info, root, query_type, instances)
+            all_instances.extend(instances)
+
+        return all_instances
+
+    async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+        all_instances: list[TModel] = []
+        for query_type, queryset in queryset_map.items():
+            instances = await evaluate_with_prefetch_hack_async(queryset)
+            self.check_permissions(info, root, query_type, instances)
+            all_instances.extend(instances)
+
+        return all_instances
+
+    def check_permissions(
+        self,
+        info: GQLInfo,
+        root: Any,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap[TModel]:
+        queryset_map: QuerySetMap[TModel] = {}
 
         for query_type in self.interface.__concrete_implementations__():
             model = query_type.__model__

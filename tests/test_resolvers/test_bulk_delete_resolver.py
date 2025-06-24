@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from inspect import isawaitable
 from itertools import count
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.db.models import Model
 
 from example_project.app.models import Task
@@ -15,7 +17,9 @@ from undine.resolvers import BulkDeleteResolver
 
 
 @pytest.mark.django_db
-def test_bulk_delete_resolver() -> None:
+def test_bulk_delete_resolver(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     task_1 = TaskFactory.create()
     task_2 = TaskFactory.create()
 
@@ -35,7 +39,9 @@ def test_bulk_delete_resolver() -> None:
 
 
 @pytest.mark.django_db
-def test_bulk_delete_resolver__mutation_hooks() -> None:
+def test_bulk_delete_resolver__mutation_hooks(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
     task = TaskFactory.create()
 
     counter = count()
@@ -67,3 +73,29 @@ def test_bulk_delete_resolver__mutation_hooks() -> None:
     assert permission_called == 0
     assert validate_called == 1
     assert after_called == 2
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_bulk_delete_resolver__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    task_1 = await sync_to_async(TaskFactory.create)()
+    task_2 = await sync_to_async(TaskFactory.create)()
+
+    assert (await Task.objects.all().acount()) == 2
+
+    class TaskDeleteMutation(MutationType[Task]): ...
+
+    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(mutation_type=TaskDeleteMutation)
+
+    data = [{"pk": task_1.pk}, {"pk": task_2.pk}]
+
+    results = resolver(root=None, info=mock_gql_info(), input=data)
+    assert isawaitable(results)
+
+    results = await results
+
+    assert results == [SimpleNamespace(pk=task_1.pk), SimpleNamespace(pk=task_2.pk)]
+
+    assert (await Task.objects.all().acount()) == 0

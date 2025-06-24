@@ -1,50 +1,41 @@
 from __future__ import annotations
 
-import json
-from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-from django.http import HttpResponse
-from django.shortcuts import render
 from graphql import ExecutionResult, GraphQLError
 
-from undine.execution import execute_graphql
+from undine.execution import execute_graphql_async, execute_graphql_sync
+from undine.http.utils import graphql_result_response, require_graphql_request
 from undine.parsers import GraphQLRequestParamsParser
-from undine.settings import undine_settings
-
-from .utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse, get_preferred_response_content_type
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
-
+    from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
 
 __all__ = [
-    "graphql_view",
+    "graphql_view_async",
+    "graphql_view_sync",
 ]
 
 
-def graphql_view(request: HttpRequest) -> HttpResponse:
-    """A view for GraphQL requests."""
-    if request.method not in {"GET", "POST"}:
-        return HttpMethodNotAllowedResponse(allowed_methods=["GET", "POST"])
-
-    supported_types = ["application/graphql-response+json", "application/json"]
-    if undine_settings.GRAPHIQL_ENABLED:
-        supported_types.append("text/html")
-
-    media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
-    if media_type is None:
-        return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
-
-    if media_type == "text/html":
-        return render(request, "undine/graphiql.html")
-
+@require_graphql_request
+def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
+    """A sync view for GraphQL requests."""
     try:
         params = GraphQLRequestParamsParser.run(request)  # type: ignore[arg-type]
+        result = execute_graphql_sync(params, request)
     except GraphQLError as error:
         result = ExecutionResult(errors=[error])
-    else:
-        result = execute_graphql(params, request)
 
-    content = json.dumps(result.formatted, separators=(",", ":"))
-    return HttpResponse(content=content, status=HTTPStatus.OK, content_type=media_type)
+    return graphql_result_response(result, content_type=request.response_content_type)
+
+
+@require_graphql_request
+async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
+    """A async view for GraphQL requests."""
+    try:
+        params = GraphQLRequestParamsParser.run(request)  # type: ignore[arg-type]
+        result = await execute_graphql_async(params, request)
+    except GraphQLError as error:
+        result = ExecutionResult(errors=[error])
+
+    return graphql_result_response(result, content_type=request.response_content_type)
