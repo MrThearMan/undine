@@ -74,6 +74,7 @@ nox = "2025.5.1"
 urllib3 = "2.5.0"
 psycopg = { version = "3.2.9", extras = ["binary", "pool"] }
 django-modeltranslation = "0.19.15"
+uvicorn = "0.34.3"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
