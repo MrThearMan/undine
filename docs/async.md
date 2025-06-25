@@ -42,3 +42,8 @@ error due to using the Django ORM directly in an async context.
 
 Asynchronous execution is also _slightly_ slower than synchronous execution
 due to inherent overhead of the asyncio event loop.
+
+See Django's [async documentation]{:target="_blank"} for changes that need to be made
+for Django to work in async context.
+
+[async documentation]: https://docs.djangoproject.com/en/stable/topics/async/

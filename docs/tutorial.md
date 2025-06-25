@@ -115,7 +115,7 @@ UNDINE = {
 /// details | How do I determine the value for `SCHEMA`?
 
 The value for `SCHEMA` is a "dotted import path" — a string that can be imported with Django's
-[`import_string`](https://docs.djangoproject.com/en/dev/ref/utils/#django.utils.module_loading.import_string)
+[`import_string`](https://docs.djangoproject.com/en/stable/ref/utils/#django.utils.module_loading.import_string)
 utility. In other words, `"service.schema.schema"` points to a file `service/schema.py`
 with a variable `schema`.
 
