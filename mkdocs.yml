@@ -19,6 +19,7 @@ nav:
   - Directives: directives.md
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
+  - Async Support: async.md
   - Lifecycle Hooks: lifecycle-hooks.md
   - Integrations: integrations.md
   - Settings: settings.md
