@@ -19,9 +19,9 @@ nav:
   - Directives: directives.md
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
-  - Settings: settings.md
   - Lifecycle Hooks: lifecycle-hooks.md
   - Integrations: integrations.md
+  - Settings: settings.md
   - FAQ: faq.md
   - Contributing: contributing.md
 

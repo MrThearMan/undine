@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from undine.typing import PrefetchHackCacheType, TModel
 
 __all__ = [
-    "evaluate_with_prefetch_hack",
+    "evaluate_with_prefetch_hack_sync",
     "register_for_prefetch_hack",
 ]
 
@@ -25,7 +25,7 @@ __all__ = [
 _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}"
 
 
-def evaluate_with_prefetch_hack(queryset: QuerySet[TModel]) -> list[TModel]:
+def evaluate_with_prefetch_hack_sync(queryset: QuerySet[TModel]) -> list[TModel]:
     """Evaluates the given queryset with the prefetch hack applied."""
     with patch(_PATH, side_effect=_prefetch_hack):
         return list(queryset)  # If the optimizer did its job, the database query is executed here

@@ -289,6 +289,14 @@ details {
     p {
         margin: 16px 0;
     }
+
+    blockquote {
+        margin-bottom: 16px!important;
+
+        p {
+            margin-top: 0;
+        }
+    }
 }
 
 /*

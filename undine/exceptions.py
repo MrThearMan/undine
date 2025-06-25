@@ -573,6 +573,14 @@ class GraphQLMissingQueryAndDocumentIDError(GraphQLStatusError):
     code = UndineErrorCodes.MISSING_GRAPHQL_QUERY_AND_DOCUMENT_PARAMETERS
 
 
+class GraphQLMissingInstancesToDeleteError(GraphQLStatusError):
+    """Error raised when bulk delete cannot find all instances given to it for deletion."""
+
+    msg = "Expected {given} instances to delete, but found {to_delete}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_INSTANCES_TO_DELETE
+
+
 class GraphQLModelConstraintViolationError(GraphQLStatusError):
     """Error raised when a request is made with an unsupported content type."""
 

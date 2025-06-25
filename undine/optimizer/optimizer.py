@@ -215,7 +215,6 @@ class QueryOptimizer(GraphQLASTWalker):
         related_field: GenericForeignKey,
     ) -> None:
         name = get_related_field_name(related_field)
-        alias = field_node.alias.value if field_node.alias else None
 
         self.optimization_data.only_fields.add(related_field.ct_field)
         self.optimization_data.only_fields.add(related_field.fk_field)
@@ -246,7 +245,7 @@ class QueryOptimizer(GraphQLASTWalker):
             if fragment_model is None:  # pragma: no cover
                 continue
 
-            data = self.optimization_data.add_generic_prefetch_related(name, fragment_model, to_attr=alias)
+            data = self.optimization_data.add_generic_prefetch_related(name, fragment_model)
             data.info = self.info
 
             with self.use_data(data):
