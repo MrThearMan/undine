@@ -683,7 +683,7 @@ Type: `type[Model]` | Default: `"undine.persisted_documents.models.PersistedDocu
 **NOTE**: This setting should be set in the top level of the settings file, not in the `UNDINE` dictionary!
 
 The model to use for the `PersistedDocument` model. Works similarly to
-[`AUTH_USER_MODEL`](https://docs.djangoproject.com/en/5.2/topics/auth/customizing/#substituting-a-custom-user-model){:target="_blank"},
+[`AUTH_USER_MODEL`](https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model){:target="_blank"},
 so must be set before running migrations for the persisted documents app.
 
 ///

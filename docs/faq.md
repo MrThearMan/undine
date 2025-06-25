@@ -21,6 +21,6 @@ Here are some features that are planned for the future:
 - Optimizations for bulk and nested mutations
 - `@defer` and `@stream` using [StreamingHttpResponse]{:target="_blank"} (requires `graphql-core` >= 3.3.0)
 
-[StreamingHttpResponse]: https://docs.djangoproject.com/en/5.2/ref/request-response/#django.http.StreamingHttpResponse
+[StreamingHttpResponse]: https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.StreamingHttpResponse
 
 If you have a feature request, please [open an issue](contributing.md#i-have-a-feature-request)!

@@ -14,7 +14,7 @@ first to get a better understanding of what GraphQL is and how it works, and use
 We recommend going though the [official Django tutorial]{:target="_blank"}
 first before diving into Undine, since we'll assume you have some familiarity with Django.
 
-[official Django tutorial]: https://docs.djangoproject.com/en/dev/intro/
+[official Django tutorial]: https://docs.djangoproject.com/en/stable/intro/
 
 ## New to Undine?
 

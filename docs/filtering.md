@@ -245,7 +245,7 @@ and is required to be a keyword only argument.
 By default, when defining a `Filter` on a `FilterSet`, the "exact" [lookup expression]
 is used. This can be changed by providing the `lookup` argument to the `Filter`.
 
-[lookup expression]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#field-lookups
+[lookup expression]: https://docs.djangoproject.com/en/stable/ref/models/querysets/#field-lookups
 
 ```python
 -8<- "filtering/filter_lookup.py"
