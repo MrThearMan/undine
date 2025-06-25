@@ -55,6 +55,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - Built-in permission and validation hooks
 - Support for Relay Global object IDs and Connection pagination
 - File uploads based on GraphQL multipart request specification
+- Support for asynchronous execution
 - Optional persisted documents support
 - Lifecycle hooks for customizing the GraphQL request cycle
 - Built-in testing tools
