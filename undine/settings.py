@@ -49,7 +49,7 @@ class UndineDefaultSettings(NamedTuple):
     """Whether schema introspection queries are allowed or not."""
 
     ASYNC: bool = False
-    """Whether to use async views or not."""
+    """Whether to use an async view for the GraphQL endpoint or not."""
 
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from 'snake_case' to 'camelCase' for the GraphQL schema?"""

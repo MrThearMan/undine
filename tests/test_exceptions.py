@@ -40,6 +40,7 @@ from undine.exceptions import (
     GraphQLMissingContentTypeError,
     GraphQLMissingDocumentIDError,
     GraphQLMissingFileMapError,
+    GraphQLMissingInstancesToDeleteError,
     GraphQLMissingLookupFieldError,
     GraphQLMissingOperationsError,
     GraphQLMissingQueryAndDocumentIDError,
@@ -467,6 +468,12 @@ class GQLErrorParams(NamedTuple):
                 "or a `documentId` string identifying a persisted document."
             ),
             extensions={"error_code": "MISSING_GRAPHQL_QUERY_AND_DOCUMENT_PARAMETERS", "status_code": 400},
+        ),
+        "GraphQLMissingInstancesToDeleteError": GQLErrorParams(
+            cls=GraphQLMissingInstancesToDeleteError,
+            args={"given": 1, "to_delete": 0},
+            message="Expected 1 instances to delete, but found 0.",
+            extensions={"error_code": "MISSING_INSTANCES_TO_DELETE", "status_code": 400},
         ),
         "GraphQLModelConstraintViolationError": GQLErrorParams(
             cls=GraphQLModelConstraintViolationError,

@@ -537,9 +537,7 @@ def test_optimizer__aliases__related_field__generic_foreign_key__multiple(graphq
         ]
     }
 
-    # Need to make additional generic prefetches for the aliased generic foreign keys,
-    # since they might have different filtering/ordering applied.
-    response.assert_query_count(5)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db

@@ -1,7 +1,14 @@
 # Settings
 
 In this section, we'll cover the settings that can be used to customize Undine.
+Settings should be set in a dictionary named `UNDINE` in your settings file, unless otherwise specified.
 The settings can also be found in the [settings file]{:target="_blank"}.
+
+```python
+UNDINE = {
+    # Settings go here
+}
+```
 
 [settings file]: https://github.com/MrThearMan/undine/blob/main/undine/settings.py
 
@@ -39,7 +46,8 @@ if using GraphiQL.
 
 Type `bool` | Default: `False`
 
-Whether to use async views or not.
+Whether to use async view for the GraphQL endpoint or not. Allows using async resolvers
+for `Fields` and `Entrypoints`. See [Async Support](async.md) for more information.
 
 ///
 
@@ -672,7 +680,10 @@ total number of items that can be queried from the connection.
 
 Type: `type[Model]` | Default: `"undine.persisted_documents.models.PersistedDocument"`
 
-The model to use for the `PersistedDocument` model. Works similarly to `AUTH_USER_MODEL`,
+**NOTE**: This setting should be set in the top level of the settings file, not in the `UNDINE` dictionary!
+
+The model to use for the `PersistedDocument` model. Works similarly to
+[`AUTH_USER_MODEL`](https://docs.djangoproject.com/en/5.2/topics/auth/customizing/#substituting-a-custom-user-model){:target="_blank"},
 so must be set before running migrations for the persisted documents app.
 
 ///

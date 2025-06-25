@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import deque
 from types import FunctionType
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Generic, Unpack
 
@@ -66,9 +65,6 @@ class MutationTypeMeta(type):
     __directives__: list[Directive]
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
-
-    # Stores the models from generics so that they can be accesses in '__new__'
-    __model_deque__: deque[type[Model]] = deque()
 
     def __new__(  # noqa: PLR0912, C901
         cls,
@@ -372,14 +368,14 @@ class Input:
     def validate(self, func: ValidatorFunc | None = None, /) -> ValidatorFunc:
         """Decorate a function to add validation for this input."""
         if func is None:  # Allow `@<input_name>.validate()`
-            return self.validate
+            return self.validate  # type: ignore[return-value]
         self.validator_func = get_wrapped_func(func)
         return func
 
     def permissions(self, func: InputPermFunc | None = None, /) -> InputPermFunc:
         """Decorate a function to add it as a permission check for this input."""
         if func is None:  # Allow `@<input_name>.permissions()`
-            return self.permissions
+            return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func
 

@@ -13,8 +13,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  # TODO: Run async tests (v0.4.16)
   test:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.4.15
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.4.16
     with:
       python-version: '["3.11", "3.12", "3.13"]'
+
+  test-async:
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.4.16
+    with:
+      python-version: '["3.11", "3.12", "3.13"]'
+      env: '{"ASYNC": "true"}'
+      coveralls: false

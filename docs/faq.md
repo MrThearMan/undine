@@ -15,8 +15,7 @@ so by this logic, all dunder methods cannot collide with any fields you might wa
 
 Here are some features that are planned for the future:
 
-- Async support
-- Subscriptions (requires async support)
+- Subscriptions
 - `UnionType` and `InterfaceType` `Entrypoint` pagination using `Connections`
 - `UnionType` and `InterfaceType` filtering and ordering across types
 - Optimizations for bulk and nested mutations

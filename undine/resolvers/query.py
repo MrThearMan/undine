@@ -19,7 +19,7 @@ from undine.exceptions import (
     GraphQLNodeQueryTypeMissingError,
     GraphQLNodeTypeNotObjectTypeError,
 )
-from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack, evaluate_with_prefetch_hack_async
+from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack_async, evaluate_with_prefetch_hack_sync
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
@@ -85,7 +85,8 @@ class EntrypointFunctionResolver:
         return result
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        await pre_evaluate_request_user(info)
 
         self.set_kwargs(kwargs, root, info)
         result = await self.func(**kwargs)
@@ -123,21 +124,35 @@ class FieldFunctionResolver:
         object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        if undine_settings.ASYNC and iscoroutinefunction(self.func):
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        self.set_kwargs(kwargs, root, info)
+        result = self.func(**kwargs)
+        self.check_permissions(root, info, result)
+        return result
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        self.set_kwargs(kwargs, root, info)
+        result = await self.func(**kwargs)
+        self.check_permissions(root, info, result)
+        return result
+
+    def set_kwargs(self, kwargs: dict[str, Any], root: Any, info: GQLInfo) -> None:
         if self.root_param is not None:
             kwargs[self.root_param] = root
         if self.info_param is not None:
             kwargs[self.info_param] = info
 
-        result = self.func(**kwargs)
-
+    def check_permissions(self, root: Any, info: GQLInfo, result: Any) -> None:
         if self.field.permissions_func is not None:
             if self.field.many:
                 for item in result:
                     self.field.permissions_func(root, info, item)
             else:
                 self.field.permissions_func(root, info, result)
-
-        return result
 
 
 # Model field resolvers
@@ -211,8 +226,7 @@ class ModelGenericForeignKeyResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        field_name = get_queried_field_name(self.field.name, info)
-        value: TModel | None = getattr(root, field_name, None)
+        value: TModel | None = getattr(root, self.field.name, None)
 
         if value is None:
             return None
@@ -240,7 +254,7 @@ class QueryTypeSingleResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
         queryset = self.run_optimizer(info, **kwargs)
-        instances = evaluate_with_prefetch_hack(queryset)
+        instances = evaluate_with_prefetch_hack_sync(queryset)
 
         instance = next(iter(instances), None)
         if instance is not None:
@@ -249,7 +263,8 @@ class QueryTypeSingleResolver(Generic[TModel]):
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        await pre_evaluate_request_user(info)
 
         queryset = self.run_optimizer(info, **kwargs)
         instances = await evaluate_with_prefetch_hack_async(queryset)
@@ -293,12 +308,13 @@ class QueryTypeManyResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         optimized_queryset = self.run_optimizer(info)
-        instances = evaluate_with_prefetch_hack(optimized_queryset)
+        instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
         self.check_permissions(root, info, instances)
         return instances
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        await pre_evaluate_request_user(info)
 
         queryset = self.run_optimizer(info)
         instances = await evaluate_with_prefetch_hack_async(queryset)
@@ -414,10 +430,7 @@ class NodeResolver(Generic[TModel]):
         if field_type is not GraphQLID:
             raise GraphQLNodeIDFieldTypeError(typename=typename)
 
-        resolver: QueryTypeSingleResolver[TModel] = QueryTypeSingleResolver(
-            query_type=query_type,
-            entrypoint=self.entrypoint,
-        )
+        resolver = QueryTypeSingleResolver(query_type=query_type, entrypoint=self.entrypoint)
         return resolver(root, info, pk=object_id)
 
 
@@ -435,12 +448,13 @@ class ConnectionResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
         results = self.run_optimizer(info)
-        instances = evaluate_with_prefetch_hack(results.queryset)
+        instances = evaluate_with_prefetch_hack_sync(results.queryset)
         self.check_permissions(root, info, instances)
         return self.to_connection(instances, pagination=results.pagination)
 
     async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
-        await pre_evaluate_request_user(info)  # TODO: Should only call when needed, how to detect?
+        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        await pre_evaluate_request_user(info)
 
         results = await self.run_optimizer_async(info)
         instances = await evaluate_with_prefetch_hack_async(results.queryset)
@@ -513,13 +527,25 @@ class NestedConnectionResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        typename = self.connection.query_type.__schema_name__
         field_name = get_queried_field_name(self.field.name, info)
+        instances = self.get_instances(root, field_name)
+        self.check_permissions(root, info, instances)
+        return self.to_connection(instances)
 
+    def get_instances(self, root: Model, field_name: str) -> list[TModel]:
         instances: list[TModel] = getattr(root, field_name)
         if isinstance(instances, Manager):
             instances = list(instances.get_queryset())
+        return instances
 
+    def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+        for instance in instances:
+            if self.field.permissions_func is not None:
+                self.field.permissions_func(root, info, instance)
+            else:
+                self.connection.query_type.__permissions__(instance, info)
+
+    def get_pagination_params(self, instances: list[TModel]) -> tuple[int, int | None, int | None]:
         total_count: int | None = None
         start: int = 0
         stop: int | None = None
@@ -530,12 +556,12 @@ class NestedConnectionResolver(Generic[TModel]):
             start = getattr(instances[0], undine_settings.CONNECTION_START_INDEX_KEY, 0)
             stop = getattr(instances[0], undine_settings.CONNECTION_STOP_INDEX_KEY, None)
 
-        for instance in instances:
-            if self.field.permissions_func is not None:
-                self.field.permissions_func(root, info, instance)
-            else:
-                self.connection.query_type.__permissions__(instance, info)
+        return start, stop, total_count
 
+    def to_connection(self, instances: list[TModel]) -> ConnectionDict[TModel]:
+        start, stop, total_count = self.get_pagination_params(instances)
+
+        typename = self.connection.query_type.__schema_name__
         edges = [
             NodeDict(
                 cursor=offset_to_cursor(typename, start + index),
@@ -587,7 +613,7 @@ class UnionTypeResolver(Generic[TModel]):
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
-            instances = evaluate_with_prefetch_hack(queryset)
+            instances = evaluate_with_prefetch_hack_sync(queryset)
             self.check_permissions(root, info, query_type, instances)
             all_instances.extend(instances)
 
@@ -685,8 +711,9 @@ class InterfaceResolver(Generic[TModel]):
 
     def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
         all_instances: list[TModel] = []
+
         for query_type, queryset in queryset_map.items():
-            instances = evaluate_with_prefetch_hack(queryset)
+            instances = evaluate_with_prefetch_hack_sync(queryset)
             self.check_permissions(info, root, query_type, instances)
             all_instances.extend(instances)
 
@@ -694,6 +721,7 @@ class InterfaceResolver(Generic[TModel]):
 
     async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
         all_instances: list[TModel] = []
+
         for query_type, queryset in queryset_map.items():
             instances = await evaluate_with_prefetch_hack_async(queryset)
             self.check_permissions(info, root, query_type, instances)
