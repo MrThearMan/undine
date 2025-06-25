@@ -1,0 +1,21 @@
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Need to be logged in to access Tasks.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "tasks"
+      ],
+      "extensions": {
+        "status_code": 403,
+        "error_code": "PERMISSION_DENIED"
+      }
+    }
+  ]
+}

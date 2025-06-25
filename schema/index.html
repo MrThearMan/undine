@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Schema - Undine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+        <link href="../css/pygments.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Schema";
+        var mkdocs_page_input_path = "schema.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Undine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Schema</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#roottypes">RootTypes</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#schema-name">Schema name</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#description">Description</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#directives">Directives</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphql-extensions">GraphQL extensions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#entrypoints">Entrypoints</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#function-references">Function references</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#querytype-references">QueryType references</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mutationtype-references">MutationType references</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#schema-name_1">Schema name</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#description_1">Description</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#many">Many</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#nullable">Nullable</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#limit">Limit</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#permissions">Permissions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#deprecation-reason">Deprecation reason</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#directives_1">Directives</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#graphql-extensions_1">GraphQL extensions</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Undine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Schema</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover how you can set up entrypoints
+to you GraphQL schema in Undine, expanding on the basics introduced
+in the <a href="../tutorial/">Tutorial</a>.</p>
+<h2 id="roottypes">RootTypes<a class="headerlink" href="#roottypes" title="Permanent link">🔗</a></h2>
+<p>A GraphQL schema defines a <code>RootType</code> for each kind of operation that it supports.
+In GraphQL terms, a <code>RootType</code> is just a regular <code>ObjectType</code> that just happens
+to be the root of the GraphQL Schema.</p>
+<p>Let's take a look at the basic setup from the <a href="../tutorial/#part-2-creating-the-schema">Tutorial</a>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>        <span class="k">return</span> <span class="s2">&quot;Hello, World!&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Here you created the <code>Query</code> <code>RootType</code>. The <code>Query</code> <code>RootType</code> is
+required to be able to crate a GraphQL schema. Each <code>RootType</code> must also have at
+least one <a href="#entrypoints"><code>Entrypoint</code></a> in its class body.</p>
+<p>As the name implies, the <code>Query</code> <code>RootType</code> is for querying data.
+For mutating data, you'd create a <code>Mutation</code> <code>RootType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span>
+<span class="normal"><a href="#__codelineno-1-16">16</a></span>
+<span class="normal"><a href="#__codelineno-1-17">17</a></span>
+<span class="normal"><a href="#__codelineno-1-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+</span><a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>        <span class="k">return</span> <span class="s2">&quot;Hello, World!&quot;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+</span><a id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="hll">    <span class="nd">@Entrypoint</span>
+</span><a id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><a id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="hll">        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;foo.txt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;Hello, World!&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+</span><a id="__codelineno-1-16" name="__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="hll"><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span> <span class="n">mutation</span><span class="o">=</span><span class="n">Mutation</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>The <code>Mutation</code> <code>RootType</code> is optional, but if created, it must also include at least
+one <code>Entrypoint</code>, just like the <code>Query</code> <code>RootType</code>.</p>
+<details>
+<summary>What about <code>Subscriptions</code>?</summary>
+<p>Undine does not support have support for subscriptions, but it's on the roadmap.</p>
+</details>
+<h3 id="schema-name">Schema name<a class="headerlink" href="#schema-name" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the <code>RootType</code> type is the name of the created class.
+If you need to change this without changing the class name,
+you can do so by providing the <code>schema_name</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RootType</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;MyQuery&quot;</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="description">Description<a class="headerlink" href="#description" title="Permanent link">🔗</a></h3>
+<p>To provide a description for the <code>RootType</code>, you can add a docstring to the class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RootType</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Operations for querying.&quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="directives">Directives<a class="headerlink" href="#directives" title="Permanent link">🔗</a></h3>
+<p>You can add directives to the <code>RootType</code> by providing them using the <code>directives</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RootType</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="graphql-extensions">GraphQL extensions<a class="headerlink" href="#graphql-extensions" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>RootType</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>RootType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">RootType</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p><code>RootType</code> extensions are made available in the GraphQL <code>ObjectType</code> extensions
+after the schema is created. The <code>RootType</code> itself is found in the <code>extensions</code>
+under a key defined by the <a href="../settings/#root_type_extensions_key"><code>ROOT_TYPE_EXTENSIONS_KEY</code></a>
+setting.</p>
+<h2 id="entrypoints">Entrypoints<a class="headerlink" href="#entrypoints" title="Permanent link">🔗</a></h2>
+<p><code>Entrypoints</code> can be thought of as the <em>"API endpoints inside the GraphQL schema"</em>.
+They are the fields in a <code>RootType</code> from which you can execute operations like queries
+or mutations.</p>
+<p>An <code>Entrypoint</code> always requires a <em><strong>reference</strong></em> from which it will create the
+proper GraphQL resolver, output type, and arguments for the operation.</p>
+<h3 id="function-references">Function references<a class="headerlink" href="#function-references" title="Permanent link">🔗</a></h3>
+<p>Using a function/method as a reference is the most basic way of creating an <code>Entrypoint</code>.</p>
+<p>Function references can be used for both query and mutation <code>Entrypoints</code>.
+See the example from the <a href="../tutorial/#part-1-setup">Tutorial</a>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span>
+<span class="normal"><a href="#__codelineno-6-6">6</a></span>
+<span class="normal"><a href="#__codelineno-6-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a>        <span class="k">return</span> <span class="s2">&quot;Hello World!&quot;</span>
+</code></pre></div></td></tr></table></div>
+<p>With a function reference, the <code>Entrypoint</code> will use the decorated function as its GraphQL resolver.
+The function's return type will be used as the <code>Entrypoint's</code> output type, so typing it is required.
+You can even use a TypedDict to return an object with multiple fields.</p>
+<details>
+<summary>About method signature</summary>
+<p>A method decorated with <code>@Entrypoint</code> is treated as a static method by the <code>Entrypoint</code>.</p>
+<p>The <code>self</code> argument is not an instance of the <code>RootType</code>,
+but <code>root</code> argument of the <code>GraphQLField</code> resolver. To clarify this,
+it's recommended to change the argument's name to <code>root</code>,
+as defined by the <a href="../settings/#resolver_root_param_name"><code>RESOLVER_ROOT_PARAM_NAME</code></a>
+setting.</p>
+<p>The value of the <code>root</code> argument for an <code>Entrypoint</code> is <code>None</code> by default,
+but can be configured using the <a href="../settings/#root_value"><code>ROOT_VALUE</code></a>
+setting if desired.</p>
+<p>The <code>info</code> argument can be left out, but if it's included, it should always
+have the <code>GQLInfo</code> type annotation.</p>
+</details>
+<p>You can add arguments to the <code>Entrypoint</code> by adding them to the function signature.
+Typing these arguments is required to determine their input type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span>
+<span class="normal"><a href="#__codelineno-7-5">5</a></span>
+<span class="normal"><a href="#__codelineno-7-6">6</a></span>
+<span class="normal"><a href="#__codelineno-7-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span>
+</code></pre></div></td></tr></table></div>
+<p>This will add a non-null <code>name</code> string argument to the <code>Entrypoint</code>.
+Note that non-null arguments are required by GraphQL, so if you wanted to make the argument
+optional, you'd need to make it nullable (in which case it will be <code>None</code> by default)
+or add a default value ourselves.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
+<span class="normal"><a href="#__codelineno-8-2">2</a></span>
+<span class="normal"><a href="#__codelineno-8-3">3</a></span>
+<span class="normal"><a href="#__codelineno-8-4">4</a></span>
+<span class="normal"><a href="#__codelineno-8-5">5</a></span>
+<span class="normal"><a href="#__codelineno-8-6">6</a></span>
+<span class="normal"><a href="#__codelineno-8-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;World&#39;</span><span class="si">}</span><span class="s2">!&quot;</span>
+</code></pre></div></td></tr></table></div>
+<p>You can add a description to the <code>Entrypoint</code> by adding a docstring to the method.
+If the method has arguments, you can add descriptions to those arguments by using
+<a href="https://peps.python.org/pep-0287/" target="_blank">reStructuredText docstrings format</a>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="sd">        Return a greeting.</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a><span class="sd">        :param name: The name to greet.</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>What about other docstring formats?</summary>
+<p>Other types of docstrings can be used by parsed by providing a custom parser to the
+<a href="../settings/#docstring_parser"><code>DOCSTRING_PARSER</code></a> setting that conforms to the
+<code>DocstringParserProtocol</code> from <code>undine.typing</code>.</p>
+</details>
+<h3 id="querytype-references">QueryType references<a class="headerlink" href="#querytype-references" title="Permanent link">🔗</a></h3>
+<p>A <code>QueryType</code> represents a GraphQL <code>ObjectType</code> for querying data from a Django model
+in the GraphQL schema. You should read more on <code>QueryTypes</code> in the <a href="../queries/">Queries</a> section
+since this section will only cover using them in <code>Entrypoints</code>.</p>
+<p>For querying a single model instance, simply use the <code>QueryType</code> class
+as the reference for the <code>Entrypoint</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-10-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a>
+<a id="__codelineno-10-8" name="__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This would create the following field in the <code>Query</code> <code>RootType</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">    </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="no">Int</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">TaskType</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>To query a list of model instances, simply add the <code>many</code> argument
+to the <code>Entrypoint</code> in addition to the <code>QueryType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This would create the following field in the <code>Query</code> <code>RootType</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
+<span class="normal"><a href="#__codelineno-13-2">2</a></span>
+<span class="normal"><a href="#__codelineno-13-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">    </span><span class="nl">tasks</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">TaskType</span><span class="err">!]!</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="mutationtype-references">MutationType references<a class="headerlink" href="#mutationtype-references" title="Permanent link">🔗</a></h3>
+<p>A <code>MutationType</code> represents a possible mutation operation based on a Django model.
+You should read more on <code>MutationTypes</code> in the <a href="../mutations/">Mutations</a> section
+since this section will only cover using them in <code>Entrypoints</code>.</p>
+<p>To create a mutation for a model instance (a create mutation in this example),
+simply use the <code>MutationType</code> class as the reference for the <code>Entrypoint</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span>
+<span class="normal"><a href="#__codelineno-14-11">11</a></span>
+<span class="normal"><a href="#__codelineno-14-12">12</a></span>
+<span class="normal"><a href="#__codelineno-14-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7"></a>
+<a id="__codelineno-14-8" name="__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10"></a>
+<a id="__codelineno-14-11" name="__codelineno-14-11"></a>
+<a id="__codelineno-14-12" name="__codelineno-14-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13"></a>    <span class="n">create_task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This would create the following field in the <code>Mutation</code> <code>RootType</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span>
+<span class="normal"><a href="#__codelineno-15-2">2</a></span>
+<span class="normal"><a href="#__codelineno-15-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="w">    </span><span class="n">createTask</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="no">TaskCreateMutation</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">TaskType</span><span class="err">!</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>To make this a bulk mutation, you can add the <code>many</code> argument to the <code>Entrypoint</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-16-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-16-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-16-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-16-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-16-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-16-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-16-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-16-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-16-10">10</a></span>
+<span class="normal"><a href="#__codelineno-16-11">11</a></span>
+<span class="normal"><a href="#__codelineno-16-12">12</a></span>
+<span class="normal"><a href="#__codelineno-16-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a>
+<a id="__codelineno-16-8" name="__codelineno-16-8"></a>
+<a id="__codelineno-16-9" name="__codelineno-16-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10"></a>
+<a id="__codelineno-16-11" name="__codelineno-16-11"></a>
+<a id="__codelineno-16-12" name="__codelineno-16-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13"></a>    <span class="n">bulk_create_tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This would create the following field in the <code>Mutation</code> <code>RootType</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span>
+<span class="normal"><a href="#__codelineno-17-2">2</a></span>
+<span class="normal"><a href="#__codelineno-17-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="k">type</span><span class="w"> </span><span class="err">Mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">    </span><span class="n">bulkCreateTask</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="no">TaskCreateMutation</span><span class="err">!]!):</span><span class="w"> </span><span class="p">[</span><span class="no">TaskType</span><span class="err">!]!</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="schema-name_1">Schema name<a class="headerlink" href="#schema-name_1" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the <code>Entrypoint</code> is the name of the method or class attribute
+it's defined in. If you need to change this without changing the method or class attribute name,
+for example if the desired name is a Python keyword (e.g. <code>if</code> or <code>from</code>),
+you can do so by providing the <code>schema_name</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-18-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-18-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-18-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-18-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-18-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-18-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-18-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-18-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-18-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a>
+<a id="__codelineno-18-8" name="__codelineno-18-8"></a>
+<a id="__codelineno-18-9" name="__codelineno-18-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;singleTask&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="description_1">Description<a class="headerlink" href="#description_1" title="Permanent link">🔗</a></h3>
+<p>You can provide a description using the <code>description</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-19-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-19-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-19-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-19-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-19-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-19-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-19-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-19-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-19-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8"></a>
+<a id="__codelineno-19-9" name="__codelineno-19-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10"></a><span class="hll">    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Fetch a single Task.&quot;</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>You can also provide the description as a "class attribute docstring".</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-20-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-20-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-20-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-20-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-20-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-20-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-20-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-20-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-20-10">10</a></span>
+<span class="normal"><a href="#__codelineno-20-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a>
+<a id="__codelineno-20-8" name="__codelineno-20-8"></a>
+<a id="__codelineno-20-9" name="__codelineno-20-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11"></a><span class="hll"><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch a single Task.&quot;&quot;&quot;</span>
+</span></code></pre></div></td></tr></table></div>
+<p>If a description is not provided in these ways, the <code>Entrypoint</code> will try
+to determine a description from the given reference, e.g., for a method
+reference, it will use the method's docstring, or for a <code>QueryType</code> reference,
+it will use the <code>QueryType's</code> docstring.</p>
+<h3 id="many">Many<a class="headerlink" href="#many" title="Permanent link">🔗</a></h3>
+<p>As seen in this section, the <code>many</code> argument is used to indicate whether the <code>Entrypoint</code>
+should return a non-null list of the referenced type. However, for for <a href="#function-references">function references</a>,
+the <code>many</code> argument is not required, as the <code>Entrypoint</code> can determine the this
+from the function's signature (i.e. whether it returns a list or not).</p>
+<h3 id="nullable">Nullable<a class="headerlink" href="#nullable" title="Permanent link">🔗</a></h3>
+<p>By default, all <code>Entrypoints</code> are non-null (except for <a href="#function-references">function references</a>,
+which determine nullability from the function's signature). However, you can
+make an <code>Entrypoint</code> nullable explicitly by adding the <code>nullable</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-21-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-21-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-21-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-21-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-21-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-21-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-21-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-21-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-21-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4"></a>
+<a id="__codelineno-21-5" name="__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8"></a>
+<a id="__codelineno-21-9" name="__codelineno-21-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10"></a><span class="hll">    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="limit">Limit<a class="headerlink" href="#limit" title="Permanent link">🔗</a></h3>
+<p>The <code>limit</code> argument is used by <a href="../unions/#uniontype">UnionTypes</a> and
+<a href="../interfaces/#interfacetype">InterfaceTypes</a> to limit the number of objects
+that are fetched when those types are used in <code>Entrypoints</code>. It has no effect
+on other <code>Entrypoint</code> references.</p>
+<h3 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">🔗</a></h3>
+<p>Usually, permissions for <code>Entrypoints</code> are checked using the <code>QueryType</code> or <code>MutationType</code>
+that the <code>Entrypoint</code> is added for. However, you can override these by decorating a method
+using the <code>@&lt;entrypoint_name&gt;.permissions</code> decorator.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-22-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-22-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-22-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-22-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-22-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-22-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-22-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-22-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-22-10">10</a></span>
+<span class="normal"><a href="#__codelineno-22-11">11</a></span>
+<span class="normal"><a href="#__codelineno-22-12">12</a></span>
+<span class="normal"><a href="#__codelineno-22-13">13</a></span>
+<span class="normal"><a href="#__codelineno-22-14">14</a></span>
+<span class="normal"><a href="#__codelineno-22-15">15</a></span>
+<span class="normal"><a href="#__codelineno-22-16">16</a></span>
+<span class="normal"><a href="#__codelineno-22-17">17</a></span>
+<span class="normal"><a href="#__codelineno-22-18">18</a></span>
+<span class="normal"><a href="#__codelineno-22-19">19</a></span>
+<span class="normal"><a href="#__codelineno-22-20">20</a></span>
+<span class="normal"><a href="#__codelineno-22-21">21</a></span>
+<span class="normal"><a href="#__codelineno-22-22">22</a></span>
+<span class="normal"><a href="#__codelineno-22-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a>
+<a id="__codelineno-22-6" name="__codelineno-22-6"></a>
+<a id="__codelineno-22-7" name="__codelineno-22-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10"></a>        <span class="c1"># Not called if &#39;TaskType&#39; is accessed from &#39;Query.task&#39;</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11"></a>        <span class="c1"># because it has a permissions check already</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span><span class="p">:</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14"></a>
+<a id="__codelineno-22-15" name="__codelineno-22-15"></a>
+<a id="__codelineno-22-16" name="__codelineno-22-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-22-17" name="__codelineno-22-17"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-22-18" name="__codelineno-22-18"></a>
+<a id="__codelineno-22-19" name="__codelineno-22-19"></a>    <span class="nd">@task</span><span class="o">.</span><span class="n">permissions</span>
+<a id="__codelineno-22-20" name="__codelineno-22-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">task_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-22-21" name="__codelineno-22-21"></a>        <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-22-22" name="__codelineno-22-22"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Need to be logged in to access Tasks.&quot;</span>
+<a id="__codelineno-22-23" name="__codelineno-22-23"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="deprecation-reason">Deprecation reason<a class="headerlink" href="#deprecation-reason" title="Permanent link">🔗</a></h3>
+<p>A <code>deprecation_reason</code> can be provided to mark the <code>Entrypoint</code> as deprecated.
+This is for documentation purposes only and does not affect the use of the <code>Entrypoint</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-23-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-23-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-23-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-23-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-23-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-23-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-23-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-23-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-23-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a>
+<a id="__codelineno-23-6" name="__codelineno-23-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7"></a>
+<a id="__codelineno-23-8" name="__codelineno-23-8"></a>
+<a id="__codelineno-23-9" name="__codelineno-23-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">deprecation_reason</span><span class="o">=</span><span class="s2">&quot;Use something else.&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="directives_1">Directives<a class="headerlink" href="#directives_1" title="Permanent link">🔗</a></h3>
+<p>You can add directives to the <code>Entrypoint</code> by providing them using the <code>directives</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-24-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-24-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-24-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-24-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-24-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-24-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-24-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-24-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-24-10">10</a></span>
+<span class="normal"><a href="#__codelineno-24-11">11</a></span>
+<span class="normal"><a href="#__codelineno-24-12">12</a></span>
+<span class="normal"><a href="#__codelineno-24-13">13</a></span>
+<span class="normal"><a href="#__codelineno-24-14">14</a></span>
+<span class="normal"><a href="#__codelineno-24-15">15</a></span>
+<span class="normal"><a href="#__codelineno-24-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7"></a>
+<a id="__codelineno-24-8" name="__codelineno-24-8"></a>
+<a id="__codelineno-24-9" name="__codelineno-24-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10"></a>
+<a id="__codelineno-24-11" name="__codelineno-24-11"></a>
+<a id="__codelineno-24-12" name="__codelineno-24-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13"></a>
+<a id="__codelineno-24-14" name="__codelineno-24-14"></a>
+<a id="__codelineno-24-15" name="__codelineno-24-15"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-24-16" name="__codelineno-24-16"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()])</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="graphql-extensions_1">GraphQL extensions<a class="headerlink" href="#graphql-extensions_1" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>Entrypoint</code> by providing a extensions
+argument with a dictionary containing them. These can then be used however you wish to
+extend the functionality of the <code>Entrypoint</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-25-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-25-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-25-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-25-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-25-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-25-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-25-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-25-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-25-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5"></a>
+<a id="__codelineno-25-6" name="__codelineno-25-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7"></a>
+<a id="__codelineno-25-8" name="__codelineno-25-8"></a>
+<a id="__codelineno-25-9" name="__codelineno-25-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<p><code>Entrypoint</code> extensions are made available in the GraphQL field extensions
+after the schema is created. The <code>Entrypoint</code> itself is found in the <code>extensions</code>
+under a key defined by the <a href="../settings/#entrypoint_extensions_key"><code>ENTRYPOINT_EXTENSIONS_KEY</code></a>
+setting.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../tutorial/" class="btn btn-neutral float-left" title="Tutorial"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../queries/" class="btn btn-neutral float-right" title="Queries">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../tutorial/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../queries/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/docs.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
