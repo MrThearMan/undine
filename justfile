@@ -6,6 +6,9 @@ help:
 dev port="8000":
     @poetry run python manage.py runserver localhost:{{port}}
 
+dev-async port="8000":
+    @poetry run uvicorn example_project.project.asgi:application --reload --host localhost --port {{port}}
+
 # Start the docs server
 docs port="8080":
     @poetry run mkdocs serve -a localhost:{{port}}
