@@ -119,6 +119,7 @@ STATIC_ROOT = BASE_DIR / "static"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# If you want to run "collectstatic", comment out this for the duration of the command.
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.memory.InMemoryStorage",

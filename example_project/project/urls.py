@@ -10,6 +10,7 @@ from undine.http.views import graphql_view_async
 urlpatterns = [
     path("", include("undine.http.urls")),
     path("", include("undine.persisted_documents.urls")),
+    path("", include("example_project.app.urls")),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
     path("graphql/async/", graphql_view_async, name="graphql_async"),
