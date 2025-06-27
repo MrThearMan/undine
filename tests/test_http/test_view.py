@@ -17,7 +17,7 @@ from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLStrin
 from tests.helpers import MockRequest, create_multipart_form_data_request
 from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 from undine.http.views import graphql_view_async, graphql_view_sync
-from undine.typing import GQLInfo, HttpMethod
+from undine.typing import GQLInfo, RequestMethod
 
 
 def sync_resolver(obj: Any, info: GQLInfo) -> str:
@@ -55,7 +55,7 @@ example_async_schema = GraphQLSchema(
 
 
 @pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"])
-def test_graphql_view__method_not_allowed(method: HttpMethod, undine_settings) -> None:
+def test_graphql_view__method_not_allowed(method: RequestMethod, undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
     request = MockRequest(

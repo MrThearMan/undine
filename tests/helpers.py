@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from django.core.files.uploadedfile import UploadedFile
     from graphql import FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
 
-    from undine.typing import HttpMethod
+    from undine.typing import RequestMethod
 
 __all__ = [
     "MockRequest",
@@ -176,7 +176,7 @@ class MockRequest:
     META: dict[str, Any] = dataclasses.field(default_factory=dict)
     scheme: str = "http"
     path: str = "/"
-    method: HttpMethod = "GET"
+    method: RequestMethod = "GET"
     headers: HttpHeaders = dataclasses.field(default_factory=lambda: HttpHeaders({}))
     body: bytes = b""
     encoding: str | None = "utf-8"

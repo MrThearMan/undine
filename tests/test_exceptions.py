@@ -98,7 +98,30 @@ from undine.exceptions import (
     UndineError,
     UndineErrorGroup,
     UnexpectedDirectiveArgumentError,
+    WebSocketConnectionInitAlreadyInProgressError,
+    WebSocketConnectionInitForbiddenError,
+    WebSocketConnectionInitTimeoutError,
+    WebSocketEmptyMessageError,
+    WebSocketError,
+    WebSocketInternalServerError,
+    WebSocketInvalidCompleteMessageOperationIdError,
+    WebSocketInvalidConnectionInitPayloadError,
+    WebSocketInvalidJSONError,
+    WebSocketInvalidPingPayloadError,
+    WebSocketInvalidPongPayloadError,
+    WebSocketInvalidSubscribeOperationIdError,
+    WebSocketInvalidSubscribePayloadError,
+    WebSocketMissingCompleteMessageOperationIdError,
+    WebSocketMissingSubscribeOperationIdError,
+    WebSocketMissingSubscribePayloadError,
+    WebSocketSubscriberForOperationIdAlreadyExistsError,
+    WebSocketTooManyInitialisationRequestsError,
+    WebSocketTypeMissingError,
+    WebSocketUnauthorizedError,
+    WebSocketUnknownMessageTypeError,
+    WebSocketUnsupportedSubProtocolError,
 )
+from undine.typing import GraphQLWebSocketCloseCode
 
 # Testing error message formatter
 
@@ -337,6 +360,18 @@ class UndineErrorParams(NamedTuple):
 def test_undine_error(cls, args, message) -> None:
     error = cls(**args)
     assert error.args[0] == message
+
+
+def test_undine_error_group() -> None:
+    error_1 = ValueError("foo")
+    error_2 = ValueError("bar")
+    error_3 = ValueError("baz")
+
+    group_1 = UndineErrorGroup(errors=[error_1, error_2])
+    group_2 = UndineErrorGroup(errors=[group_1, error_3])
+
+    assert list(group_1.flatten()) == [error_1, error_2]
+    assert list(group_2.flatten()) == [error_1, error_2, error_3]
 
 
 class GQLErrorParams(NamedTuple):
@@ -691,18 +726,6 @@ def test_graphql_error(cls, args, message, extensions) -> None:
     assert error.extensions == extensions
 
 
-def test_undine_error_group() -> None:
-    error_1 = ValueError("foo")
-    error_2 = ValueError("bar")
-    error_3 = ValueError("baz")
-
-    group_1 = UndineErrorGroup(errors=[error_1, error_2])
-    group_2 = UndineErrorGroup(errors=[group_1, error_3])
-
-    assert list(group_1.flatten()) == [error_1, error_2]
-    assert list(group_2.flatten()) == [error_1, error_2, error_3]
-
-
 def test_graphql_error_group() -> None:
     error_1 = GraphQLError("foo")
     error_2 = GraphQLError("bar")
@@ -721,3 +744,146 @@ def test_graphql_error_group() -> None:
     assert error_1.path == ["buzz"]
     assert error_2.path == ["buzz"]
     assert error_3.path == ["buzz"]
+
+
+class WebsocketErrorParams(NamedTuple):
+    cls: type[WebSocketError]
+    args: dict[str, Any]
+    reason: str
+    code: GraphQLWebSocketCloseCode
+
+
+@pytest.mark.parametrize(
+    **parametrize_helper({
+        "WebSocketConnectionInitAlreadyInProgressError": WebsocketErrorParams(
+            cls=WebSocketConnectionInitAlreadyInProgressError,
+            args={},
+            reason="Connection initialisation already in progress",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketConnectionInitForbiddenError": WebsocketErrorParams(
+            cls=WebSocketConnectionInitForbiddenError,
+            args={},
+            reason="Forbidden",
+            code=GraphQLWebSocketCloseCode.FORBIDDEN,
+        ),
+        "WebSocketConnectionInitTimeoutError": WebsocketErrorParams(
+            cls=WebSocketConnectionInitTimeoutError,
+            args={},
+            reason="Connection initialisation timeout",
+            code=GraphQLWebSocketCloseCode.CONNECTION_INITIALISATION_TIMEOUT,
+        ),
+        "WebSocketEmptyMessageError": WebsocketErrorParams(
+            cls=WebSocketEmptyMessageError,
+            args={},
+            reason="Received empty message from client",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInternalServerError": WebsocketErrorParams(
+            cls=WebSocketInternalServerError,
+            args={},
+            reason="Internal server error",
+            code=GraphQLWebSocketCloseCode.INTERNAL_SERVER_ERROR,
+        ),
+        "WebSocketInvalidCompleteMessageOperationIdError": WebsocketErrorParams(
+            cls=WebSocketInvalidCompleteMessageOperationIdError,
+            args={},
+            reason="Complete message 'id' must be a string",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidConnectionInitPayloadError": WebsocketErrorParams(
+            cls=WebSocketInvalidConnectionInitPayloadError,
+            args={},
+            reason="ConnectionInit 'payload' must be a valid JSON object",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidJSONError": WebsocketErrorParams(
+            cls=WebSocketInvalidJSONError,
+            args={},
+            reason="WebSocket message must be a valid JSON object",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidPingPayloadError": WebsocketErrorParams(
+            cls=WebSocketInvalidPingPayloadError,
+            args={},
+            reason="Ping 'payload' must be a valid JSON object",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidPongPayloadError": WebsocketErrorParams(
+            cls=WebSocketInvalidPongPayloadError,
+            args={},
+            reason="Pong 'payload' must be a valid JSON object",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidSubscribeOperationIdError": WebsocketErrorParams(
+            cls=WebSocketInvalidSubscribeOperationIdError,
+            args={},
+            reason="Subscription 'id' must be a string",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketInvalidSubscribePayloadError": WebsocketErrorParams(
+            cls=WebSocketInvalidSubscribePayloadError,
+            args={},
+            reason="Subscription 'payload' must be a valid JSON object",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketMissingCompleteMessageOperationIdError": WebsocketErrorParams(
+            cls=WebSocketMissingCompleteMessageOperationIdError,
+            args={},
+            reason="Complete message must contain an 'id' field",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketMissingSubscribeOperationIdError": WebsocketErrorParams(
+            cls=WebSocketMissingSubscribeOperationIdError,
+            args={},
+            reason="Subscribe message must contain an 'id' field",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketMissingSubscribePayloadError": WebsocketErrorParams(
+            cls=WebSocketMissingSubscribePayloadError,
+            args={},
+            reason="Subscribe message must contain an 'payload' field",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketTooManyInitialisationRequestsError": WebsocketErrorParams(
+            cls=WebSocketTooManyInitialisationRequestsError,
+            args={},
+            reason="Too many initialisation requests",
+            code=GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS,
+        ),
+        "WebSocketSubscriberForOperationIdAlreadyExistsError": WebsocketErrorParams(
+            cls=WebSocketSubscriberForOperationIdAlreadyExistsError,
+            args={"id": "foo"},
+            reason="Subscriber for foo already exists",
+            code=GraphQLWebSocketCloseCode.SUBSCRIBER_ALREADY_EXISTS,
+        ),
+        "WebSocketTypeMissingError": WebsocketErrorParams(
+            cls=WebSocketTypeMissingError,
+            args={},
+            reason="WebSocket message must contain a 'type' field",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketUnauthorizedError": WebsocketErrorParams(
+            cls=WebSocketUnauthorizedError,
+            args={},
+            reason="Unauthorized",
+            code=GraphQLWebSocketCloseCode.UNAUTHORIZED,
+        ),
+        "WebSocketUnknownMessageTypeError": WebsocketErrorParams(
+            cls=WebSocketUnknownMessageTypeError,
+            args={"type": "foo"},
+            reason="Unknown message type: 'foo'",
+            code=GraphQLWebSocketCloseCode.BAD_REQUEST,
+        ),
+        "WebSocketUnsupportedSubProtocolError": WebsocketErrorParams(
+            cls=WebSocketUnsupportedSubProtocolError,
+            args={},
+            reason="Subprotocol not acceptable",
+            code=GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE,
+        ),
+    })
+)
+def test_websocket_error(cls, args, reason, code) -> None:
+    error = cls(**args)
+    assert error.reason == reason
+    assert error.code == code

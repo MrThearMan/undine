@@ -21,7 +21,7 @@ __all__ = [
 def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """A sync view for GraphQL requests."""
     try:
-        params = GraphQLRequestParamsParser.run(request)  # type: ignore[arg-type]
+        params = GraphQLRequestParamsParser.run(request)
         result = execute_graphql_sync(params, request)
     except GraphQLError as error:
         result = ExecutionResult(errors=[error])
@@ -33,7 +33,7 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
 async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """A async view for GraphQL requests."""
     try:
-        params = GraphQLRequestParamsParser.run(request)  # type: ignore[arg-type]
+        params = GraphQLRequestParamsParser.run(request)
         result = await execute_graphql_async(params, request)
     except GraphQLError as error:
         result = ExecutionResult(errors=[error])
