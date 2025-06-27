@@ -20,7 +20,9 @@ Here are some features that are planned for the future:
 - `UnionType` and `InterfaceType` filtering and ordering across types
 - Optimizations for bulk and nested mutations
 - `@defer` and `@stream` using [StreamingHttpResponse]{:target="_blank"} (requires `graphql-core` >= 3.3.0)
+- [Multipart HTTP protocol for GraphQL Subscriptions]{:target="_blank"}
 
 [StreamingHttpResponse]: https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.StreamingHttpResponse
+[Multipart HTTP protocol for GraphQL Subscriptions]: https://www.apollographql.com/docs/graphos/routing/operations/subscriptions/multipart-protocol
 
 If you have a feature request, please [open an issue](contributing.md#i-have-a-feature-request)!
