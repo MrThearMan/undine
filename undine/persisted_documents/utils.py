@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 
 from undine.exceptions import GraphQLErrorGroup, GraphQLRequestParseError, GraphQLValidationError
 
 from .models import PersistedDocument
+
+if TYPE_CHECKING:
+    from undine.typing import DjangoRequestProtocol
 
 __all__ = [
     "parse_document_map",
@@ -87,3 +90,7 @@ def parse_document_map(json_data: dict[str, Any]) -> dict[str, str]:
         raise GraphQLErrorGroup(errors)
 
     return documents
+
+
+def default_permission_callback(request: DjangoRequestProtocol, document_map: dict[str, str]) -> None:
+    """Default permission callback for persisted documents."""

@@ -537,7 +537,7 @@ The path where the persisted documents registration endpoint is located by defau
 /// details | `PERSISTED_DOCUMENTS_PERMISSION_CALLBACK`
     attrs: {id: persisted_documents_permission_callback}
 
-Type: `PersistedDocumentsPermissionsCallback` | Default: `None`
+Type: `PersistedDocumentsPermissionsCallback` | Default: `undine.persisted_documents.utils.default_permission_callback`
 
 The function to use for permission checks for registration of persisted documents.
 
