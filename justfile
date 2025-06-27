@@ -6,6 +6,7 @@ help:
 dev port="8000":
     @poetry run python manage.py runserver localhost:{{port}}
 
+# Start the development server using uvicorn
 dev-async port="8000":
     @poetry run uvicorn example_project.project.asgi:application --reload --host localhost --port {{port}}
 
@@ -28,6 +29,10 @@ get-static:
 # Install pre-commit hooks
 hook:
     @poetry run pre-commit install
+
+# Install dependencies
+install:
+    @poetry install --all-extras
 
 # Run pre-commit hooks
 lint:
@@ -52,6 +57,10 @@ print-schema:
 # Run py-spy to profiler on a given process
 profile pid:
     @poetry run py-spy --threads --subprocesses --output profile.svg --pid "{{pid}}"
+
+# Sync dependencies
+sync:
+    @poetry sync --all-extras
 
 # Run a specific test by name
 test name:
