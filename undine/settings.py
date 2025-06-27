@@ -150,7 +150,9 @@ class UndineDefaultSettings(NamedTuple):
     PERSISTED_DOCUMENTS_PATH: str = "persisted-documents/"
     """The path where the persisted documents registration endpoint is located by default."""
 
-    PERSISTED_DOCUMENTS_PERMISSION_CALLBACK: PersistedDocumentsPermissionsCallback | None = None
+    PERSISTED_DOCUMENTS_PERMISSION_CALLBACK: PersistedDocumentsPermissionsCallback = (
+        "undine.persisted_documents.utils.default_permission_callback"  # type: ignore[assignment]
+    )
     """The function to use for permission checks for registration of persisted documents."""
 
     PERSISTED_DOCUMENTS_VIEW_NAME: str = "persisted_documents"
