@@ -707,4 +707,53 @@ Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
 
+/// details | `WEBSOCKET_CONNECTION_INIT_HOOK`
+    attrs: {id: websocket_connection_init_hook}
+
+Type: `WebSocketConnectionInitHook` | Default: `"undine.utils.graphql.websocket.connection_init_hook"`
+
+The function to use for custom `ConnectionInit` logic.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `WEBSOCKET_CONNECTION_INIT_TIMEOUT_SECONDS`
+    attrs: {id: websocket_connection_init_timeout_seconds}
+
+Type: `int` | Default: `3`
+
+The number of seconds to wait for the `ConnectionInit` message after opening a WebSocket before closing it.
+
+///
+
+/// details | `WEBSOCKET_PATH`
+    attrs: {id: websocket_path}
+
+Type: `str` | Default: `"ws/$"`
+
+The (regex) path where the GraphQL over WebSocket endpoint is located
+if using `undine.integrations.channels.get_websocket_enabled_app`.
+
+///
+
+/// details | `WEBSOCKET_PING_HOOK`
+    attrs: {id: websocket_ping_hook}
+
+Type: `WebSocketConnectionPingHook` | Default: `"undine.utils.graphql.websocket.ping_hook"`
+
+The function for specifying custom `Ping` message logic.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `WEBSOCKET_PONG_HOOK`
+    attrs: {id: websocket_pong_hook}
+
+Type: `WebSocketConnectionPongHook` | Default: `"undine.utils.graphql.websocket.pong_hook"`
+
+The function to for specifying custom `Pong` message logic.
+Value should be given as the dotted path to the function.
+
+///
+
 ---

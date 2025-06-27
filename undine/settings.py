@@ -14,7 +14,13 @@ if TYPE_CHECKING:
     from undine.execution import UndineExecutionContext
     from undine.hooks import LifecycleHook
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.typing import DocstringParserProtocol, PersistedDocumentsPermissionsCallback
+    from undine.typing import (
+        DocstringParserProtocol,
+        PersistedDocumentsPermissionsCallback,
+        WebSocketConnectionInitHook,
+        WebSocketConnectionPingHook,
+        WebSocketConnectionPongHook,
+    )
     from undine.utils.graphql.sdl_printer import SDLPrinter
 
 
@@ -158,6 +164,23 @@ class UndineDefaultSettings(NamedTuple):
     PERSISTED_DOCUMENTS_VIEW_NAME: str = "persisted_documents"
     """The name of given to the persisted documents registration view in the URLconf."""
 
+    # WebSocket
+
+    WEBSOCKET_CONNECTION_INIT_HOOK: WebSocketConnectionInitHook = "undine.utils.graphql.websocket.connection_init_hook"  # type: ignore[assignment]
+    """The function to use for custom `ConnectionInit` logic."""
+
+    WEBSOCKET_CONNECTION_INIT_TIMEOUT_SECONDS: int = 3
+    """The number of seconds to wait for the `ConnectionInit` message after opening a WebSocket before closing it."""
+
+    WEBSOCKET_PATH: str = "ws/$"
+    """The (regex) path where the GraphQL over WebSocket endpoint is located."""
+
+    WEBSOCKET_PING_HOOK: WebSocketConnectionPingHook = "undine.utils.graphql.websocket.ping_hook"  # type: ignore[assignment]
+    """The function for specifying custom `Ping` message logic."""
+
+    WEBSOCKET_PONG_HOOK: WebSocketConnectionPongHook = "undine.utils.graphql.websocket.pong_hook"  # type: ignore[assignment]
+    """The function to for specifying custom `Pong` message logic."""
+
     # Django-modeltranslation
 
     MODELTRANSLATION_INCLUDE_TRANSLATABLE: bool = False
@@ -285,10 +308,13 @@ IMPORT_STRINGS: set[str | bytes] = {
     "OPERATION_HOOKS.0",
     "OPTIMIZER_CLASS",
     "PARSE_HOOKS.0",
-    "PERSISTED_DOCUMENTS_PERMISSION_FUNC",
+    "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
     "SCHEMA",
     "SDL_PRINTER",
     "VALIDATION_HOOKS.0",
+    "WEBSOCKET_CONNECTION_INIT_HOOK",
+    "WEBSOCKET_PING_HOOK",
+    "WEBSOCKET_PONG_HOOK",
 }
 
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]

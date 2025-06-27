@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from undine.typing import PrefetchHackCacheType, TModel
 
 __all__ = [
+    "evaluate_with_prefetch_hack_async",
     "evaluate_with_prefetch_hack_sync",
     "register_for_prefetch_hack",
 ]

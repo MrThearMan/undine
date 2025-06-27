@@ -137,6 +137,12 @@ STORAGES = {
     },
 }
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
     "GRAPHIQL_ENABLED": True,

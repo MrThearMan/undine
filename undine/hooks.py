@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from graphql import DocumentNode
     from graphql.pyutils import AwaitableOrValue
 
+    from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol
 
 __all__ = [
@@ -49,6 +50,18 @@ class LifecycleHookContext:
 
     result: AwaitableOrValue[ExecutionResult] | None
     """Execution result of the GraphQL operation. Adding a result here will cause an early exit."""
+
+    @classmethod
+    def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
+        return cls(
+            source=params.document,
+            document=None,
+            variables=params.variables,
+            operation_name=params.operation_name,
+            extensions=params.extensions,
+            request=request,
+            result=None,
+        )
 
 
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
