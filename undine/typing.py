@@ -66,12 +66,14 @@ from graphql import (
     SelectionNode,
     UndefinedType,
 )
+from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping
     from http.cookies import SimpleCookie
 
-    from django.contrib.auth.models import AbstractUser, AnonymousUser
+    from asgiref.typing import ASGISendEvent
+    from django.contrib.auth.models import AbstractUser, AnonymousUser, User
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
     from django.contrib.sessions.backends.base import SessionBase
     from django.core.files.uploadedfile import UploadedFile
@@ -83,6 +85,7 @@ if TYPE_CHECKING:
     from django.utils.datastructures import MultiValueDict
     from graphql import (
         DirectiveLocation,
+        FormattedExecutionResult,
         FragmentDefinitionNode,
         GraphQLArgumentMap,
         GraphQLFormattedError,
@@ -94,10 +97,12 @@ if TYPE_CHECKING:
 
     from undine import FilterSet, InterfaceType, OrderSet
     from undine.directives import Directive
+    from undine.integrations.channels import WebSocketRequest
     from undine.optimizer.optimizer import OptimizationData
 
 __all__ = [
     "Annotatable",
+    "ClientMessage",
     "CombinableExpression",
     "CompleteMessage",
     "ConnectionAckMessage",
@@ -112,18 +117,15 @@ __all__ = [
     "ErrorMessage",
     "GQLInfo",
     "GraphQLFilterResolver",
-    "HttpMethod",
     "InputPermFunc",
     "JsonObject",
     "Lambda",
     "LiteralArg",
     "ManyMatch",
-    "Message",
     "ModelField",
     "ModelManager",
     "MutationKind",
     "NextMessage",
-    "NextMessagePayload",
     "NodeDict",
     "ObjectSelections",
     "OptimizerFunc",
@@ -135,15 +137,20 @@ __all__ = [
     "ProtocolType",
     "RelatedField",
     "RelatedManager",
+    "RequestMethod",
     "Selections",
     "Self",
+    "ServerMessage",
     "SubscribeMessage",
-    "SubscribeMessagePayload",
     "SupportsLookup",
     "ToManyField",
     "ToOneField",
     "UndineErrorCodes",
     "ValidatorFunc",
+    "WebSocketConnectionInitHook",
+    "WebSocketConnectionPingHook",
+    "WebSocketConnectionPongHook",
+    "WebSocketProtocol",
 ]
 
 # Misc.
@@ -174,7 +181,7 @@ TQueryTypes = TypeVarTuple("TQueryTypes")
 
 # Literals
 
-HttpMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD"]
+RequestMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD", "WEBSOCKET"]
 
 # NewTypes
 
@@ -255,7 +262,7 @@ class DjangoRequestProtocol(Protocol[TUser]):
         """A string representing the full request path, not including the scheme, domain, or query string."""
 
     @property
-    def method(self) -> HttpMethod:
+    def method(self) -> RequestMethod:
         """A string representing the HTTP method used in the request."""
 
     @property
@@ -946,181 +953,183 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
     return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover
 
 
-# TODO: Subscriptions
-# See: https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md
+# Subscriptions
 
 
 class ConnectionInitMessage(TypedDict):
-    """
-    Direction: Client -> Server.
-
-    Indicates that the client wants to establish a connection within the existing socket.
-    This connection is not the actual WebSocket communication channel, but is rather a frame
-    within it asking the server to allow future operation requests.
-
-    The server must receive the connection initialisation message within the allowed waiting
-    time specified in the connectionInitWaitTimeout parameter during the server setup.
-    If the client does not request a connection within the allowed timeout, the server will
-    close the socket with the event: 4408: Connection initialisation timeout.
-
-    If the server receives more than one ConnectionInit message at any given time, the server
-    will close the socket with the event 4429: Too many initialisation requests.
-
-    If the server wishes to reject the connection, for example during authentication,
-    it is recommended to close the socket with 4403: Forbidden.
-    """
-
     type: Literal["connection_init"]
     payload: NotRequired[dict[str, Any] | None]
 
 
 class ConnectionAckMessage(TypedDict):
-    """
-    Direction: Server -> Client.
-
-    Expected response to the ConnectionInit message from the client acknowledging
-    a successful connection with the server.
-
-    The server can use the optional payload field to transfer additional details about the connection.
-    """
-
     type: Literal["connection_ack"]
     payload: NotRequired[dict[str, Any] | None]
 
 
 class PingMessage(TypedDict):
-    """
-    Direction: bidirectional.
-
-    Useful for detecting failed connections, displaying latency metrics or other types of network probing.
-
-    A Pong must be sent in response from the receiving party as soon as possible.
-
-    The Ping message can be sent at any time within the established socket.
-
-    The optional payload field can be used to transfer additional details about the ping.
-    """
-
     type: Literal["ping"]
     payload: NotRequired[dict[str, Any] | None]
 
 
 class PongMessage(TypedDict):
-    """
-    Direction: bidirectional.
-
-    The response to the Ping message. Must be sent as soon as the Ping message is received.
-
-    The Pong message can be sent at any time within the established socket.
-    Furthermore, the Pong message may even be sent unsolicited as an unidirectional heartbeat.
-
-    The optional payload field can be used to transfer additional details about the pong.
-    """
-
     type: Literal["pong"]
     payload: NotRequired[dict[str, Any] | None]
 
 
-class SubscribeMessagePayload(TypedDict):
-    """Payload for the `SubscribeMessage`."""
-
-    operationName: NotRequired[str | None]
-    query: str
-    variables: NotRequired[dict[str, Any] | None]
-    extensions: NotRequired[dict[str, Any] | None]
-
-
 class SubscribeMessage(TypedDict):
-    """
-    Direction: Client -> Server.
-
-    Requests an operation specified in the message payload. This message provides a unique ID
-    field to connect published messages to the operation requested by this message.
-
-    If there is already an active subscriber for an operation matching the provided ID,
-    regardless of the operation type, the server must close the socket immediately with the
-    event 4409: Subscriber for <unique-operation-id> already exists.
-
-    The server needs only keep track of IDs for as long as the subscription is active.
-    Once a client completes an operation, it is free to re-use that ID.
-
-    Executing operations is allowed only after the server has acknowledged the connection
-    through the ConnectionAck message, if the connection is not acknowledged,
-    the socket will be closed immediately with the event 4401: Unauthorized.
-    """
-
-    id: str
     type: Literal["subscribe"]
-    payload: SubscribeMessagePayload
-
-
-class NextMessagePayload(TypedDict):
-    """Payload for the `NextMessage`."""
-
-    errors: NotRequired[list[GraphQLFormattedError]]
-    data: NotRequired[dict[str, Any] | None]
-    extensions: NotRequired[dict[str, Any]]
+    id: str
+    payload: dict[str, Any]  # GraphQL operation params
 
 
 class NextMessage(TypedDict):
-    """
-    Direction: Server -> Client
-
-    Operation execution result(s) from the source stream created by the binding Subscribe message.
-    After all results have been emitted, the Complete message will follow indicating stream completion.
-    """
-
-    id: str
     type: Literal["next"]
-    payload: NextMessagePayload
+    id: str
+    payload: FormattedExecutionResult
 
 
 class ErrorMessage(TypedDict):
-    """
-    Direction: Server -> Client
-
-    Operation execution error(s) in response to the Subscribe message.
-    This can occur before execution starts, usually due to validation errors,
-    or during the execution of the request. This message terminates the operation
-    and no further messages will be sent.
-    """
-
-    id: str
     type: Literal["error"]
+    id: str
     payload: list[GraphQLFormattedError]
 
 
 class CompleteMessage(TypedDict):
-    """
-    Direction: bidirectional
-
-    Server -> Client indicates that the requested operation execution has completed.
-    If the server dispatched the Error message relative to the original Subscribe message,
-    no Complete message will be emitted.
-
-    Client -> Server indicates that the client has stopped listening and wants to complete
-    the subscription. No further events, relevant to the original subscription, should be sent through.
-    Even if the client sent a Complete message for a single-result-operation before it resolved,
-    the result should not be sent through once it does.
-
-    Note: The asynchronous nature of the full-duplex connection means that a client can send
-    a Complete message to the server even when messages are in-flight to the client,
-    or when the server has itself completed the operation (via a Error or Complete message).
-    Both client and server must therefore be prepared to receive (and ignore) messages for
-    operations that they consider already completed.
-    """
-
-    id: str
     type: Literal["complete"]
+    id: str
 
 
-Message = (
-    ConnectionInitMessage
-    | ConnectionAckMessage
-    | PingMessage
-    | PongMessage
-    | SubscribeMessage
-    | NextMessage
-    | ErrorMessage
-    | CompleteMessage
+ClientMessage: TypeAlias = ConnectionInitMessage | PingMessage | PongMessage | SubscribeMessage | CompleteMessage
+"""Messages sent by the client."""
+
+ServerMessage: TypeAlias = (
+    ConnectionAckMessage | PingMessage | PongMessage | NextMessage | ErrorMessage | CompleteMessage
 )
+"""Messages sent by the server."""
+
+
+class UrlRoute(TypedDict):
+    args: tuple[str, ...]
+    kwargs: dict[str, str]
+
+
+class WebSocketASGIScope(TypedDict):
+    type: str
+    asgi: dict[str, str]
+    http_version: str
+    scheme: str
+    server: tuple[str, int]
+    client: tuple[str, int]
+    root_path: str
+    path: str
+    raw_path: bytes
+    query_string: bytes
+    headers: list[tuple[bytes, bytes]]
+    subprotocols: list[str]
+    state: dict[str, Any]
+    extensions: dict[str, Any]
+    cookies: dict[str, str]
+    session: SessionBase
+    user: User | AnonymousUser
+    path_remaining: str
+    url_route: UrlRoute
+
+
+class GraphQLWebSocketCloseCode(enum.IntEnum):
+    """Possible WebSocket close codes."""
+
+    # WebSocket Protocol.
+    # See: https://datatracker.ietf.org/doc/html/rfc6455#section-7.4.1
+
+    NORMAL_CLOSURE = 1000
+    """Client has closed the connection normally."""
+
+    GOING_AWAY = 1001
+    """Browser tab closing, graceful server shutdown."""
+
+    PROTOCOL_ERROR = 1002
+    """Endpoint received malformed frame."""
+
+    UNSUPPORTED_DATA = 1003
+    """Endpoint received unsupported frame."""
+
+    NO_STATUS_RCVD = 1005
+    """Got no close status but transport layer finished normally."""
+
+    ABNORMAL_CLOSURE = 1006
+    """Transport layer broke."""
+
+    INVALID_FRAME_PAYLOAD_DATA = 1007
+    """Data in endpoint's frame is not consistent."""
+
+    POLICY_VIOLATION = 1008
+    """Generic code not applicable to any other."""
+
+    MESSAGE_TOO_BIG = 1009
+    """Endpoint won't process large message."""
+
+    MANDATORY_EXTENSION = 1010
+    """Client wanted extension(s) that server did not negotiate."""
+
+    INTERNAL_ERROR = 1011
+    """Unexpected server problem while operating."""
+
+    SERVICE_RESTART = 1012
+    """Server/service is restarting."""
+
+    TRY_AGAIN_LATER = 1013
+    """Temporary server condition forced blocking client's application-based request."""
+
+    BAD_GATEWAY = 1014
+    """Server acting as gateway/proxy got invalid response."""
+
+    TLS_HANDSHAKE = 1015
+    """Transport layer broke because TLS handshake failed."""
+
+    # GraphQL over WebSocket Protocol.
+    # See: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
+
+    BAD_REQUEST = 4400
+    """Client has sent and invalid message to the Server."""
+
+    UNAUTHORIZED = 4401
+    """Client has not received a ConnectionAck response before attempting to sent a Subscribe message."""
+
+    FORBIDDEN = 4403
+    """Server has rejected the connection init attempt."""
+
+    BAD_RESPONSE = 4004
+    """Client received an invalid message from the Server."""
+
+    INTERNAL_CLIENT_ERROR = 4005
+    """An unexpected error occurred on the Client."""
+
+    SUBPROTOCOL_NOT_ACCEPTABLE = 4406
+    """Server does not support the websocket sub-protocol requested by the Client."""
+
+    CONNECTION_INITIALISATION_TIMEOUT = 4408
+    """Server did not receive a valid ConnectionInit message from the Client in the specified time."""
+
+    SUBSCRIBER_ALREADY_EXISTS = 4409
+    """A Subscribe operation already exists for the ID given by the Client."""
+
+    TOO_MANY_INITIALISATION_REQUESTS = 4429
+    """More than one ConnectionInit request made by the Client."""
+
+    INTERNAL_SERVER_ERROR = 4500
+    """An unexpected error occurred on the Server."""
+
+    CONNECTION_ACKNOWLEDGEMENT_TIMEOUT = 4504
+    """Server did not send the ConnectionAck message to the Client in the specified time."""
+
+
+WebSocketConnectionInitHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
+WebSocketConnectionPingHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
+WebSocketConnectionPongHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[None]]
+
+
+class WebSocketProtocol(Protocol):
+    @property
+    def scope(self) -> WebSocketASGIScope: ...
+
+    async def send(self, message: ASGISendEvent) -> None: ...
