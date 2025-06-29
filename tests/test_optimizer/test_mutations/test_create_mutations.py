@@ -58,7 +58,7 @@ def test_mutation_optimization__create(graphql, undine_settings) -> None:
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -129,7 +129,7 @@ def test_mutation_optimization__create__forward__one_to_one(graphql, undine_sett
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -357,7 +357,7 @@ def test_mutation_optimization__create__reverse__one_to_one(graphql, undine_sett
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.has_errors is False, response.errors
     assert response.data == {
