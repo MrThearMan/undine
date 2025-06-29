@@ -3,7 +3,35 @@
 In this section, we'll cover the integrations to other libraries that
 Undine includes.
 
+## channels
+
+```
+pip install undine[channels]
+```
+
+Undine provides support for the [GraphQL over WebSocket]{:target="_blank"} protocol
+by integrating with [channels]{:target="_blank"} library. Using the channels integration
+requires turning on Undine's [Async Support](async.md).
+
+[channels]: https://github.com/django/channels
+[GraphQL over WebSocket]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
+
+Additionally, you need to configure the Django in `asgi.py` so that
+websocket requests are sent to Undine's channels consumer.
+
+```python
+-8<- "integrations/channels.py"
+```
+
+This will add a new route to the Django application that will handle
+the WebSocket requests. The path for this route is defined using the
+[`WEBSOCKET_PATH`](settings.md#websocket_path) setting.
+
 ## django-debug-toolbar
+
+```
+pip install undine[debug]
+```
 
 Undine integrates with [django-debug-toolbar]{:target="_blank"}
 by modifying the debug toolbar so that it works with [GraphiQL].
@@ -44,7 +72,7 @@ You can of course always add the translatable fields manually.
 
 ## pytest
 
-Undine ships with a pytest plugin that includes a testing client and few fixtures
+Undine comes with a pytest plugin that includes a testing client and few fixtures
 to help you write tests for your GraphQL APIs.
 
 The `GraphQLClient` class is wrapper around Django's test client that
@@ -70,3 +98,10 @@ GraphQL API.
 
 The plugin also includes a `undine_settings` fixture that allows modifying
 Undine's settings during testing more easily.
+
+If the [channels](#channels) integration is installed, the test client can
+also send GraphQL over WebSocket requests using the `over_websocket` method.
+
+```python
+-8<- "integrations/graphql_test_client_over_websocket.py"
+```

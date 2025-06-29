@@ -1,12 +1,6 @@
 def test_graphql(graphql) -> None:
-    # Setup goes here...
+    # Setup...
 
-    query = """
-        query {
-          hello
-        }
-    """
-
+    query = "query { test }"
     response = graphql(query)
-
     assert response.data == {"hello": "Hello, World!"}
