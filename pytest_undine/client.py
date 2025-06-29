@@ -69,12 +69,14 @@ class GraphQLClient(Client):
         content_type = MULTIPART_CONTENT if files else "application/json"
 
         with capture_database_queries() as results:
-            response = self._graphql_request(data, content_type, headers)
+            response: DjangoTestClientResponseProtocol = self.post(  # type: ignore[assignment]
+                path=f"/{undine_settings.GRAPHQL_PATH}",
+                data=data,
+                content_type=content_type,
+                headers=headers,
+            )
 
         return GraphQLClientResponse(response, results)
-
-    query = __call__
-    mutation = __call__
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         """Create a superuser and log in as that user."""
@@ -99,19 +101,6 @@ class GraphQLClient(Client):
         user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
         self.force_login(user)
         return user
-
-    def _graphql_request(
-        self,
-        data: dict[str, Any],
-        content_type: str = "application/json",
-        headers: dict[str, Any] | None = None,
-    ) -> DjangoTestClientResponseProtocol:
-        return self.post(  # type: ignore[return-value]
-            path=f"/{undine_settings.GRAPHQL_PATH}",
-            data=data,
-            content_type=content_type,
-            headers=headers,
-        )
 
     def _create_multipart_data(self, body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
         path_map: dict[str, list[str]] = {}

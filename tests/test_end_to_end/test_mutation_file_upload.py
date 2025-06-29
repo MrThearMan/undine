@@ -54,7 +54,7 @@ def test_end_to_end__mutation__file_upload(graphql, undine_settings) -> None:
         "attachment": file,
     }
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.has_errors is False, response.errors
 
@@ -112,7 +112,7 @@ def test_end_to_end__mutation__image_upload(graphql, undine_settings) -> None:
         "image": image,
     }
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.has_errors is False, response.errors
 
@@ -170,7 +170,7 @@ def test_end_to_end__mutation__image_upload__not_image(graphql, undine_settings)
         "image": image,
     }
 
-    response = graphql.query(query, variables={"input": data})
+    response = graphql(query, variables={"input": data})
 
     assert response.error_message(0) == (
         "Variable '$input' got invalid value <InMemoryUploadedFile instance> at 'input.image'; "
