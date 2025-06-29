@@ -1,31 +1,46 @@
 from __future__ import annotations
 
 import json
+from abc import ABC, abstractmethod
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, Client
+from graphql import FormattedExecutionResult
 
 from undine.http.files import extract_files
 from undine.persisted_documents.utils import to_document_id
 from undine.settings import undine_settings
+from undine.typing import WebSocketASGIScope
 
 from .query_logging import capture_database_queries
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from django.contrib.auth.models import User
     from django.core.files import File
+    from graphql import GraphQLFormattedError
 
     from undine.typing import DjangoTestClientResponseProtocol
 
     from .query_logging import DBQueryData
+    from .websocket import WebSocketContextManager
+
+with suppress(ImportError):
+    from .websocket import WebSocketContextManager
 
 
 __all__ = [
     "GraphQLClient",
-    "GraphQLClientResponse",
+    "GraphQLClientHTTPResponse",
+    "GraphQLClientWebSocketResponse",
 ]
+
+
+IS_CHANNELS_INSTALLED: bool = "WebSocketContextManager" in globals()
 
 
 class GraphQLClient(Client):
@@ -39,7 +54,7 @@ class GraphQLClient(Client):
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
         use_persisted_document: bool = False,
-    ) -> GraphQLClientResponse:
+    ) -> GraphQLClientHTTPResponse:
         """
         Execute a GraphQL operation.
 
@@ -76,7 +91,92 @@ class GraphQLClient(Client):
                 headers=headers,
             )
 
-        return GraphQLClientResponse(response, results)
+        return GraphQLClientHTTPResponse(response, results)
+
+    async def over_websocket(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+    ) -> AsyncGenerator[GraphQLClientWebSocketResponse, None]:
+        """
+        Send a GraphQL over WebSocket request and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        websocket = self.websocket()
+
+        if headers is not None:
+            websocket.scope["headers"] += [
+                (name.encode("ascii"), value.encode("ascii")) for name, value in headers.items()
+            ]
+
+        async with websocket:
+            await websocket.connection_init()
+
+            with capture_database_queries() as queries:
+                initial_result = await websocket.subscribe(body)
+
+            if initial_result["type"] == "error":
+                result = FormattedExecutionResult(data=None, errors=initial_result["payload"])
+                yield GraphQLClientWebSocketResponse(result=result, database_queries=queries)
+                return
+
+            yield GraphQLClientWebSocketResponse(result=initial_result["payload"], database_queries=queries)
+
+            while True:
+                with capture_database_queries() as queries:
+                    message = await websocket.receive()
+
+                match message["type"]:
+                    case "complete":
+                        return
+
+                    case "next":
+                        yield GraphQLClientWebSocketResponse(result=message["payload"], database_queries=queries)
+                        continue
+
+                    case "error":
+                        result = FormattedExecutionResult(data=None, errors=message["payload"])
+                        yield GraphQLClientWebSocketResponse(result=result, database_queries=queries)
+                        return
+
+                    case _:  # pragma: no cover
+                        msg = f"Unexpected message type: {message['type']}"
+                        raise RuntimeError(msg)
+
+    def websocket(self, **kwargs: Any) -> WebSocketContextManager:
+        """Create a context manager for handling a WebSocket to the GraphQL schema."""
+        if not IS_CHANNELS_INSTALLED:  # pragma: no cover
+            msg = "The `channels` library is not installed. Cannot create websocket."
+            raise RuntimeError(msg)
+
+        scope = self._get_default_scope()
+        scope.update(kwargs)  # type: ignore[typeddict-item]
+
+        return WebSocketContextManager(client=self, scope=scope)
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         """Create a superuser and log in as that user."""
@@ -115,13 +215,53 @@ class GraphQLClient(Client):
             **files_map,
         }
 
+    def _get_default_scope(self) -> WebSocketASGIScope:
+        # From 'django.test.client.AsyncRequestFactory._base_scope'
+        cookies = (f"{morsel.key}={morsel.coded_value}".encode("ascii") for morsel in self.cookies.values())
+        path = f"/{undine_settings.WEBSOCKET_PATH}"
+        return WebSocketASGIScope(  # type: ignore[typeddict-item]
+            type="websocket",
+            asgi={"version": "3.0"},
+            http_version="1.1",
+            scheme="ws",
+            server=("testserver", 80),
+            client=("127.0.0.1", 0),
+            root_path="",
+            path=path,
+            raw_path=path.encode("ascii"),
+            query_string=b"",
+            headers=[
+                (b"cookie", b"; ".join(sorted(cookies))),
+                (b"host", b"testserver"),
+                (b"connection", b"Upgrade"),
+                (b"upgrade", b"websocket"),
+                (b"sec-websocket-version", b"13"),
+                (b"sec-websocket-key", b"RKr31GF3kXZqsXjVT7s3Mg=="),
+                (b"sec-websocket-protocol", b"graphql-transport-ws"),
+            ],
+            subprotocols=["graphql-transport-ws"],
+            state={},
+            extensions={"websocket.http.response": {}},
+            cookies={k: str(v) for k, v in self.cookies.items()},
+            path_remaining="",
+            url_route={"args": (), "kwargs": {}},
+            #
+            # 'user' and 'session' are set in the `WebSocketContextManager` `AuthMiddlewareStack`.
+        )  # type: ignore[typeddict-item]
 
-class GraphQLClientResponse:
-    """A response from a GraphQL client."""
 
-    def __init__(self, response: DjangoTestClientResponseProtocol, database_queries: DBQueryData) -> None:
-        self.response = response
+class BaseGraphQLClientResponse(ABC):
+    """Base class for GraphQLClient responses."""
+
+    def __init__(self, database_queries: DBQueryData) -> None:
         self.database_queries = database_queries
+
+    @property
+    @abstractmethod
+    def json(self) -> FormattedExecutionResult:
+        """Return the JSON content of the response."""
+
+    # Concrete methods
 
     def __str__(self) -> str:
         return json.dumps(self.json, indent=2, sort_keys=True, default=str)
@@ -129,8 +269,8 @@ class GraphQLClientResponse:
     def __repr__(self) -> str:
         return repr(self.json)
 
-    def __getitem__(self, item: str) -> dict[str, Any] | None:
-        return self.json[item]
+    def __getitem__(self, item: str) -> Any:
+        return self.json[item]  # type: ignore[literal-required]
 
     def __contains__(self, item: str) -> bool:
         return item in self.json
@@ -149,16 +289,6 @@ class GraphQLClientResponse:
     def query_log(self) -> str:
         """Return a string representation of the database queries that were executed."""
         return self.database_queries.log
-
-    @property
-    def status_code(self) -> int:
-        """Return the status code of the response."""
-        return self.response.status_code
-
-    @property
-    def json(self) -> dict[str, Any]:
-        """Return the JSON content of the response."""
-        return self.response.json()
 
     @property
     def data(self) -> dict[str, Any] | None:
@@ -224,7 +354,7 @@ class GraphQLClientResponse:
         return "errors" in self.json and self.json.get("errors") is not None
 
     @property
-    def errors(self) -> list[dict[str, Any]]:
+    def errors(self) -> list[GraphQLFormattedError]:
         """
         Return all errors.
 
@@ -274,3 +404,34 @@ class GraphQLClientResponse:
         if self.query_count != count:
             msg = f"Expected {count} queries, got {self.query_count}.\n{self.query_log}"
             pytest.fail(msg, pytrace=False)
+
+
+class GraphQLClientHTTPResponse(BaseGraphQLClientResponse):
+    """An HTTP response from the GraphQLClient."""
+
+    def __init__(self, response: DjangoTestClientResponseProtocol, database_queries: DBQueryData) -> None:
+        self.response = response
+        super().__init__(database_queries=database_queries)
+
+    @property
+    def json(self) -> FormattedExecutionResult:
+        """Return the JSON content of the response."""
+        return self.response.json()  # type: ignore[return-value]
+
+    @property
+    def status_code(self) -> int:
+        """Return the status code of the response."""
+        return self.response.status_code
+
+
+class GraphQLClientWebSocketResponse(BaseGraphQLClientResponse):
+    """A WebSocket response from the GraphQLClient."""
+
+    def __init__(self, result: FormattedExecutionResult, database_queries: DBQueryData) -> None:
+        self.result = result
+        super().__init__(database_queries=database_queries)
+
+    @property
+    def json(self) -> FormattedExecutionResult:
+        """Return the JSON content of the response."""
+        return self.result
