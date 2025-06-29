@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from graphql import GraphQLError
 
-from undine.typing import UndineErrorCodes
+from undine.typing import GraphQLWebSocketCloseCode, UndineErrorCodes
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Sequence
@@ -846,3 +846,123 @@ class GraphQLValidationError(GraphQLStatusError):
     msg = "Validation error."  # Users should add their own message.
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.VALIDATION_ERROR
+
+
+# WebSocket errors
+
+
+class WebSocketError(Exception):
+    """Base class for all websocket errors."""
+
+    reason: str
+    code: GraphQLWebSocketCloseCode
+
+    error_formatter = ErrorMessageFormatter()
+
+    def __init__(self, reason: str = "", **kwargs: Any) -> None:
+        self.reason = self.error_formatter.format(reason or self.reason, **kwargs)
+
+
+class WebSocketConnectionInitAlreadyInProgressError(WebSocketError):
+    reason = "Connection initialisation already in progress"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketConnectionInitForbiddenError(WebSocketError):
+    reason = "Forbidden"
+    code = GraphQLWebSocketCloseCode.FORBIDDEN
+
+
+class WebSocketConnectionInitTimeoutError(WebSocketError):
+    reason = "Connection initialisation timeout"
+    code = GraphQLWebSocketCloseCode.CONNECTION_INITIALISATION_TIMEOUT
+
+
+class WebSocketEmptyMessageError(WebSocketError):
+    reason = "Received empty message from client"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInternalServerError(WebSocketError):
+    reason = "Internal server error"
+    code = GraphQLWebSocketCloseCode.INTERNAL_SERVER_ERROR
+
+
+class WebSocketInvalidCompleteMessageOperationIdError(WebSocketError):
+    reason = "Complete message 'id' must be a string"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidConnectionInitPayloadError(WebSocketError):
+    reason = "ConnectionInit 'payload' must be a valid JSON object"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidJSONError(WebSocketError):
+    reason = "WebSocket message must be a valid JSON object"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidPingPayloadError(WebSocketError):
+    reason = "Ping 'payload' must be a valid JSON object"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidPongPayloadError(WebSocketError):
+    reason = "Pong 'payload' must be a valid JSON object"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidSubscribeOperationIdError(WebSocketError):
+    reason = "Subscription 'id' must be a string"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketInvalidSubscribePayloadError(WebSocketError):
+    reason = "Subscription 'payload' must be a valid JSON object"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketMissingCompleteMessageOperationIdError(WebSocketError):
+    reason = "Complete message must contain an 'id' field"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketMissingSubscribeOperationIdError(WebSocketError):
+    reason = "Subscribe message must contain an 'id' field"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketMissingSubscribePayloadError(WebSocketError):
+    reason = "Subscribe message must contain an 'payload' field"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketTooManyInitialisationRequestsError(WebSocketError):
+    reason = "Too many initialisation requests"
+    code = GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS
+
+
+class WebSocketSubscriberForOperationIdAlreadyExistsError(WebSocketError):
+    reason = "Subscriber for {id} already exists"
+    code = GraphQLWebSocketCloseCode.SUBSCRIBER_ALREADY_EXISTS
+
+
+class WebSocketTypeMissingError(WebSocketError):
+    reason = "WebSocket message must contain a 'type' field"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketUnauthorizedError(WebSocketError):
+    reason = "Unauthorized"
+    code = GraphQLWebSocketCloseCode.UNAUTHORIZED
+
+
+class WebSocketUnknownMessageTypeError(WebSocketError):
+    reason = "Unknown message type: {type!r}"
+    code = GraphQLWebSocketCloseCode.BAD_REQUEST
+
+
+class WebSocketUnsupportedSubProtocolError(WebSocketError):
+    reason = "Subprotocol not acceptable"
+    code = GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE

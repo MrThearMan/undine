@@ -109,7 +109,7 @@ class GraphQLRequestParamsParser:
         return files_map
 
     @classmethod
-    def get_graphql_params(cls, data: dict[str, str]) -> GraphQLHttpParams:
+    def get_graphql_params(cls, data: dict[str, Any]) -> GraphQLHttpParams:
         document = cls.parse_document(data)
 
         operation_name: str | None = data.get("operationName") or None
@@ -138,7 +138,7 @@ class GraphQLRequestParamsParser:
         )
 
     @classmethod
-    def parse_document(cls, data: dict[str, str]) -> str:
+    def parse_document(cls, data: dict[str, Any]) -> str:
         persisted_documents_installed = "undine.persisted_documents" in settings.INSTALLED_APPS
 
         if not undine_settings.PERSISTED_DOCUMENTS_ONLY:

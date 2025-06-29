@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLError
 
     from undine.exceptions import GraphQLErrorGroup
-    from undine.typing import HttpMethod
+    from undine.typing import RequestMethod
 
 __all__ = [
     "HttpMethodNotAllowedResponse",
@@ -44,7 +44,7 @@ __all__ = [
 
 
 class HttpMethodNotAllowedResponse(HttpResponse):
-    def __init__(self, allowed_methods: Iterable[HttpMethod]) -> None:
+    def __init__(self, allowed_methods: Iterable[RequestMethod]) -> None:
         msg = "Method not allowed"
         super().__init__(content=msg, status=HTTPStatus.METHOD_NOT_ALLOWED, content_type="text/plain; charset=utf-8")
         self["Allow"] = ", ".join(allowed_methods)
@@ -172,7 +172,7 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
     Perform various checks on the request to ensure it's suitable for GraphQL operations.
     Can also return early to display GraphiQL.
     """
-    methods: list[HttpMethod] = ["GET", "POST"]
+    methods: list[RequestMethod] = ["GET", "POST"]
 
     def get_supported_types() -> list[str]:
         supported_types = ["application/graphql-response+json", "application/json"]
@@ -222,7 +222,7 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
 def require_persisted_documents_request(func: SyncViewIn) -> SyncViewOut:
     """Perform various checks on the request to ensure that it's suitable for registering persisted documents."""
     content_type: str = "application/json"
-    methods: list[HttpMethod] = ["POST"]
+    methods: list[RequestMethod] = ["POST"]
 
     @wraps(func)
     def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:

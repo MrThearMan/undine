@@ -6,20 +6,35 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, Client
+from graphql import FormattedExecutionResult
 
 from undine.http.files import extract_files
 from undine.persisted_documents.utils import to_document_id
 from undine.settings import undine_settings
+from undine.typing import WebSocketASGIScope
 
 from .query_logging import capture_database_queries
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from django.contrib.auth.models import User
     from django.core.files import File
 
     from undine.typing import DjangoTestClientResponseProtocol
 
     from .query_logging import DBQueryData
+    from .websocket import WebSocketContextManager
+
+
+try:
+    from .websocket import WebSocketContextManager
+
+    is_channels_installed = True
+
+except ImportError:
+    WebSocketContextManager = type("WebSocketContextManager", (), {})  # type: ignore[misc,assignment]
+    is_channels_installed = False
 
 
 __all__ = [
@@ -69,12 +84,95 @@ class GraphQLClient(Client):
         content_type = MULTIPART_CONTENT if files else "application/json"
 
         with capture_database_queries() as results:
-            response = self._graphql_request(data, content_type, headers)
+            response: DjangoTestClientResponseProtocol = self.post(  # type: ignore[assignment]
+                path=f"/{undine_settings.GRAPHQL_PATH}",
+                data=data,
+                content_type=content_type,
+                headers=headers,
+            )
 
         return GraphQLClientResponse(response, results)
 
-    query = __call__
-    mutation = __call__
+    async def over_websocket(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+    ) -> AsyncGenerator[FormattedExecutionResult, None]:
+        """
+        Send a GraphQL over WebSocket request and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        websocket = self.websocket()
+
+        if headers is not None:
+            websocket.scope["headers"] += [
+                (name.encode("ascii"), value.encode("ascii")) for name, value in headers.items()
+            ]
+
+        async with websocket:
+            await websocket.connection_init()
+
+            initial_result = await websocket.subscribe(body)
+
+            if initial_result["type"] == "error":
+                yield FormattedExecutionResult(data=None, errors=initial_result["payload"])
+                return
+
+            yield initial_result["payload"]
+
+            while True:
+                result = await websocket.receive()
+
+                match result["type"]:
+                    case "complete":
+                        return
+
+                    case "next":
+                        yield result["payload"]
+                        continue
+
+                    case "error":
+                        yield FormattedExecutionResult(data=None, errors=result["payload"])
+                        return
+
+                    case _:  # pragma: no cover
+                        msg = f"Unexpected message type: {result['type']}"
+                        raise RuntimeError(msg)
+
+    def websocket(self, **kwargs: Any) -> WebSocketContextManager:
+        """Create a context manager for handling a WebSocket to the GraphQL schema."""
+        if not is_channels_installed:  # pragma: no cover
+            msg = "The `channels` library is not installed. Cannot create websocket."
+            raise RuntimeError(msg)
+
+        scope = self._get_default_scope()
+        scope.update(kwargs)  # type: ignore[typeddict-item]
+
+        return WebSocketContextManager(client=self, scope=scope)
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         """Create a superuser and log in as that user."""
@@ -100,19 +198,6 @@ class GraphQLClient(Client):
         self.force_login(user)
         return user
 
-    def _graphql_request(
-        self,
-        data: dict[str, Any],
-        content_type: str = "application/json",
-        headers: dict[str, Any] | None = None,
-    ) -> DjangoTestClientResponseProtocol:
-        return self.post(  # type: ignore[return-value]
-            path=f"/{undine_settings.GRAPHQL_PATH}",
-            data=data,
-            content_type=content_type,
-            headers=headers,
-        )
-
     def _create_multipart_data(self, body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
         path_map: dict[str, list[str]] = {}
         files_map: dict[str, File] = {}
@@ -125,6 +210,40 @@ class GraphQLClient(Client):
             "map": json.dumps(path_map),
             **files_map,
         }
+
+    def _get_default_scope(self) -> WebSocketASGIScope:
+        # From 'django.test.client.AsyncRequestFactory._base_scope'
+        cookies = (f"{morsel.key}={morsel.coded_value}".encode("ascii") for morsel in self.cookies.values())
+        path = f"/{undine_settings.WEBSOCKET_PATH}"
+        return WebSocketASGIScope(  # type: ignore[typeddict-item]
+            type="websocket",
+            asgi={"version": "3.0"},
+            http_version="1.1",
+            scheme="ws",
+            server=("testserver", 80),
+            client=("127.0.0.1", 0),
+            root_path="",
+            path=path,
+            raw_path=path.encode("ascii"),
+            query_string=b"",
+            headers=[
+                (b"cookie", b"; ".join(sorted(cookies))),
+                (b"host", b"testserver"),
+                (b"connection", b"Upgrade"),
+                (b"upgrade", b"websocket"),
+                (b"sec-websocket-version", b"13"),
+                (b"sec-websocket-key", b"RKr31GF3kXZqsXjVT7s3Mg=="),
+                (b"sec-websocket-protocol", b"graphql-transport-ws"),
+            ],
+            subprotocols=["graphql-transport-ws"],
+            state={},
+            extensions={"websocket.http.response": {}},
+            cookies={k: str(v) for k, v in self.cookies.items()},
+            path_remaining="",
+            url_route={"args": (), "kwargs": {}},
+            #
+            # 'user' and 'session' are set in the `WebSocketContextManager` `AuthMiddlewareStack`.
+        )  # type: ignore[typeddict-item]
 
 
 class GraphQLClientResponse:

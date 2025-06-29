@@ -9,6 +9,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import sqlparse
 from django import db
 from django.conf import settings
 
@@ -39,8 +40,6 @@ class DBQueryData:
 
     @property
     def log(self) -> str:
-        import sqlparse  # type: ignore[import-untyped]  # noqa: PLC0415
-
         message = "\n" + "-" * 75
         message += f"\n\n>>> Queries: ({len(self.queries)})"
 

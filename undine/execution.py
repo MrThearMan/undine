@@ -26,8 +26,7 @@ if TYPE_CHECKING:
     from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import P
-
+    from undine.typing import DjangoRequestProtocol, P
 
 __all__ = [
     "execute_graphql_async",
@@ -111,23 +110,15 @@ def raised_exceptions_as_execution_results(
 
 
 @raised_exceptions_as_execution_results
-def execute_graphql_sync(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
+def execute_graphql_sync(params: GraphQLHttpParams, request: DjangoRequestProtocol) -> ExecutionResult:
     """
     Executes a GraphQL query received from an HTTP request synchronously.
     Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
 
     :param params: GraphQL request parameters.
-    :param context_value: The context value for the GraphQL execution. Usually the Django `HttpRequest` object.
+    :param request: The Django request object to use as the GraphQL execution context value.
     """
-    context = LifecycleHookContext(
-        source=params.document,
-        document=None,
-        variables=params.variables,
-        operation_name=params.operation_name,
-        extensions=params.extensions,
-        request=context_value,
-        result=None,
-    )
+    context = LifecycleHookContext.from_graphql_params(params=params, request=request)
 
     _run_operation(context)
     if context.result is None:  # pragma: no cover
@@ -141,23 +132,15 @@ def execute_graphql_sync(params: GraphQLHttpParams, context_value: Any) -> Execu
 
 
 @raised_exceptions_as_execution_results
-async def execute_graphql_async(params: GraphQLHttpParams, context_value: Any) -> ExecutionResult:
+async def execute_graphql_async(params: GraphQLHttpParams, request: DjangoRequestProtocol) -> ExecutionResult:
     """
     Executes a GraphQL query received from an HTTP request asynchronously.
     Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
 
     :param params: GraphQL request parameters.
-    :param context_value: The context value for the GraphQL execution. Usually the Django `HttpRequest` object.
+    :param request: The Django request object to use as the GraphQL execution context value.
     """
-    context = LifecycleHookContext(
-        source=params.document,
-        document=None,
-        variables=params.variables,
-        operation_name=params.operation_name,
-        extensions=params.extensions,
-        request=context_value,
-        result=None,
-    )
+    context = LifecycleHookContext.from_graphql_params(params=params, request=request)
 
     _run_operation(context)
     if context.result is None:  # pragma: no cover
