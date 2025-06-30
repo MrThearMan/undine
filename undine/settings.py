@@ -134,6 +134,9 @@ class UndineDefaultSettings(NamedTuple):
     TESTING_CLIENT_FULL_STACKTRACE: bool = False
     """Whether to include the full stacktrace in testing client instead of just the relevant frames."""
 
+    TESTING_CLIENT_NO_ASYNC_TIMEOUT: bool = False
+    """Whether to disable the websocket timeouts in testing client."""
+
     # GraphiQL
 
     GRAPHIQL_ENABLED: bool = False
