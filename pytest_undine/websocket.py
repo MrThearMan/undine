@@ -10,6 +10,7 @@ from asgiref.typing import WebSocketConnectEvent, WebSocketReceiveEvent
 from channels.auth import AuthMiddlewareStack
 
 from undine.integrations.channels import GraphQLWebSocketConsumer
+from undine.settings import undine_settings
 from undine.typing import ConnectionInitMessage, SubscribeMessage
 
 if TYPE_CHECKING:
@@ -48,9 +49,6 @@ class WebSocketContextManager:
         self.client = client
         self.scope = scope
 
-        self.timeout: float = 10
-        """Timeout in seconds for receiving new messages to send."""
-
         self.consumer = GraphQLWebSocketConsumer()
         self.execute = AuthMiddlewareStack(self.consumer)
         self.task: asyncio.Task | None = None
@@ -65,7 +63,7 @@ class WebSocketContextManager:
         self,
         payload: dict[str, Any] | None = None,
         *,
-        timeout: float = 3,
+        timeout: float | None = 3,
     ) -> ConnectionAckMessage:
         """
         Send a ConnectionInit message to the server.
@@ -84,7 +82,7 @@ class WebSocketContextManager:
         payload: dict[str, Any],
         *,
         operation_id: str | None = None,
-        timeout: float = 3,
+        timeout: float | None = 3,
     ) -> NextMessage | ErrorMessage:
         """
         Send a Subscribe message to the server.
@@ -99,7 +97,7 @@ class WebSocketContextManager:
         message = SubscribeMessage(type="subscribe", id=operation_id, payload=payload)
         return await self.send_and_receive(message=message, timeout=timeout)  # type: ignore[return-value]
 
-    async def send_and_receive(self, message: ClientMessage, *, timeout: float = 3) -> ServerMessage:
+    async def send_and_receive(self, message: ClientMessage, *, timeout: float | None = 3) -> ServerMessage:
         """
         Send a message to the server and wait for the response.
         Note that this manager can only send a single message at a time.
@@ -124,7 +122,7 @@ class WebSocketContextManager:
             raise WebSocketConnectionClosedError
         await self.messages.put(json.dumps(message))
 
-    async def receive(self, *, timeout: float = 3) -> ServerMessage:
+    async def receive(self, *, timeout: float | None = 3) -> ServerMessage:
         """
         Receive the next message from the server.
 
@@ -134,6 +132,8 @@ class WebSocketContextManager:
         """
         if self.closed.is_set():
             raise WebSocketConnectionClosedError
+
+        timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else timeout
 
         try:
             data = await asyncio.wait_for(self.responses.get(), timeout)
@@ -185,8 +185,10 @@ class WebSocketContextManager:
         if self.closed.is_set():
             raise WebSocketConnectionClosedError
 
+        timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else 10
+
         try:
-            message = await asyncio.wait_for(self.messages.get(), timeout=self.timeout)
+            message = await asyncio.wait_for(self.messages.get(), timeout=timeout)
         except TimeoutError as error:
             msg = "Timeout waiting for message from client."
             raise TimeoutError(msg) from error
