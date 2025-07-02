@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any
 
 from channels.auth import AuthMiddlewareStack
 from channels.consumer import AsyncConsumer
+from channels.db import aclose_old_connections
+from channels.exceptions import StopConsumer
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.urls import re_path
@@ -34,6 +36,8 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
 
     async def websocket_disconnect(self, message: WebSocketDisconnectEvent) -> None:
         await self.handler.disconnect()
+        await aclose_old_connections()
+        raise StopConsumer
 
     async def websocket_receive(self, message: WebSocketReceiveEvent) -> None:
         await self.handler.receive(data=message["text"])
