@@ -34,13 +34,13 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
     async def websocket_connect(self, message: WebSocketConnectEvent) -> None:
         await self.handler.connect()
 
+    async def websocket_receive(self, message: WebSocketReceiveEvent) -> None:
+        await self.handler.receive(data=message["text"])
+
     async def websocket_disconnect(self, message: WebSocketDisconnectEvent) -> None:
         await self.handler.disconnect()
         await aclose_old_connections()
         raise StopConsumer
-
-    async def websocket_receive(self, message: WebSocketReceiveEvent) -> None:
-        await self.handler.receive(data=message["text"])
 
 
 def get_websocket_enabled_app(asgi_application: ASGIHandler) -> ProtocolTypeRouter:  # pragma: no cover

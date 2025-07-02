@@ -133,25 +133,6 @@ class GraphQLOverWebSocketHandler:
         await self.accept()
 
     @close_websocket_on_error
-    async def disconnect(self) -> None:
-        """Await all done tasks and cancel all pending tasks before closing the websocket."""
-        if self.connection_init_timeout_task is not None:
-            if not self.connection_init_timeout_task.done():
-                self.connection_init_timeout_task.cancel()
-
-            with suppress(BaseException):
-                await self.connection_init_timeout_task
-
-        for operation in self.operations.values():
-            if not operation.task.done():
-                operation.task.cancel()
-
-            with suppress(BaseException):
-                await operation.task
-
-        self.operations.clear()
-
-    @close_websocket_on_error
     async def receive(self, data: str | None = None) -> None:
         """Process a message received from the websocket."""
         message = self.validate_message(data)
@@ -179,6 +160,24 @@ class GraphQLOverWebSocketHandler:
 
             case _:
                 raise WebSocketUnknownMessageTypeError(type=message["type"])
+
+    async def disconnect(self) -> None:
+        """Await all done tasks and cancel all pending tasks before closing the websocket."""
+        if self.connection_init_timeout_task is not None:
+            if not self.connection_init_timeout_task.done():
+                self.connection_init_timeout_task.cancel()
+
+            with suppress(BaseException):
+                await self.connection_init_timeout_task
+
+        for operation in self.operations.values():
+            if not operation.task.done():
+                operation.task.cancel()
+
+            with suppress(BaseException):
+                await operation.task
+
+        self.operations.clear()
 
     async def accept(self) -> None:
         event = WebSocketAcceptEvent(type="websocket.accept", subprotocol=GRAPHQL_TRANSPORT_WS_PROTOCOL, headers=[])
@@ -348,6 +347,9 @@ class GraphQLOverWebSocketHandler:
         if operation is not None:
             operation.set_completed()
             operation.task.cancel()
+
+            with suppress(BaseException):
+                await operation.task
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
