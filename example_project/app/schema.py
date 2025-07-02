@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+from typing import TYPE_CHECKING
+
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
 from example_project.app.mutations import CommentCreateMutationType, TaskCreateMutationType
@@ -7,6 +10,9 @@ from example_project.app.types import Commentable, CommentType, Named, ReportTyp
 from undine import Entrypoint, RootType, create_schema
 from undine.directives import Directive, DirectiveArgument
 from undine.relay import Connection, Node
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 
 class VersionDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="version"):
@@ -45,8 +51,17 @@ class Mutation(RootType):
     bulk_create_task = Entrypoint(TaskCreateMutationType, many=True)
 
 
+class Subscription(RootType):
+    @Entrypoint
+    async def countdown(self) -> AsyncGenerator[int, None]:
+        for i in range(10, 0, -1):
+            await asyncio.sleep(1)
+            yield i
+
+
 schema = create_schema(
     query=Query,
     mutation=Mutation,
+    subscription=Subscription,
     schema_definition_directives=[VersionDirective(value="v1.0.0")],
 )

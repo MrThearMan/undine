@@ -6,19 +6,25 @@
 </head>
 <body>
 
-<textarea id="log" cols="100" rows="20"></textarea>
+<textarea id="log" cols="120" rows="50"></textarea>
 <br>
 <button id="create-websocket">Create WebSocket</button>
 <button id="send-connection-init">Connection Init</button>
 <button id="send-ping">Send Ping</button>
 <button id="send-pong">Send Pong</button>
+<button id="send-query">Query</button>
 <button id="send-subscribe">Subscribe</button>
 <button id="send-complete-message">Complete Message</button>
 <button id="send-close-connection">Close Connection</button>
+<button id="clear">Clear</button>
 
 <script>
   function createWebSocket() {
-    const url = 'ws://' + window.location.host + '/ws/';
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/{{ ws_path }}";
+    const url = currentURL.href;
+
     console.log('Connecting to', url);
     const webSocket = new WebSocket(url, "graphql-transport-ws");
     console.log("Connected to", url);
@@ -91,7 +97,7 @@
     send(message);
   };
 
-  document.querySelector('#send-subscribe').onclick = (e) => {
+  document.querySelector('#send-query').onclick = (e) => {
     const message = {
       type: 'subscribe',
       id: '1',
@@ -105,10 +111,24 @@
     send(message);
   };
 
+  document.querySelector('#send-subscribe').onclick = (e) => {
+    const message = {
+      type: 'subscribe',
+      id: '2',
+      payload: {
+        operationName: null,
+        query: 'subscription { countdown }',
+        variables: {},
+        extensions: {},
+      },
+    }
+    send(message);
+  };
+
   document.querySelector('#send-complete-message').onclick = (e) => {
     const message = {
       type: 'complete',
-      id: '1',
+      id: '2',
     }
     send(message);
   };
@@ -116,6 +136,10 @@
   document.querySelector('#send-close-connection').onclick = (e) => {
     console.log('Closing socket normally');
     webSocket.close(1000, 'Normal closure');
+  };
+
+  document.querySelector('#clear').onclick = (e) => {
+    document.querySelector('#log').value = '';
   };
 
   function send(message) {
