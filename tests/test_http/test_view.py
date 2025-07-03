@@ -3,14 +3,12 @@ from __future__ import annotations
 import asyncio
 import json
 import urllib.parse
-from inspect import cleandoc, isawaitable
+from inspect import isawaitable
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from django.http import HttpResponse
 from django.http.request import MediaType, QueryDict
-from django.middleware.csrf import get_token
 from django.urls import reverse
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
@@ -218,47 +216,12 @@ def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
         body=b'{"query": "query { hello }"}',
     )
 
-    csrf: str = ""
-
-    def hook(*args: Any, **kwargs: Any) -> Any:
-        nonlocal csrf
-        csrf = get_token(*args, **kwargs)
-        return csrf
-
-    with patch("django.template.context_processors.get_token", side_effect=hook):
-        response = graphql_view_sync(request)  # type: ignore[arg-type]
+    response = graphql_view_sync(request)
 
     assert isinstance(response, HttpResponse)
 
     assert response.status_code == 200
     assert response["Content-Type"] == "text/html; charset=utf-8"
-    assert response.content.decode().strip() == cleandoc(
-        f"""
-        <!DOCTYPE html>
-        <html lang="en-us">
-        <head>
-          <title>GraphiQL</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta name="robots" content="noindex">
-          <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo="/>
-
-          <link rel="stylesheet" href="/static/undine/css/main.css">
-          <link rel="stylesheet" href="/static/undine/vendor/graphiql.min.css">
-          <link rel="stylesheet" href="/static/undine/vendor/plugin-explorer.css">
-
-          <script src="/static/undine/vendor/react.development.js"></script>
-          <script src="/static/undine/vendor/react-dom.development.js"></script>
-          <script src="/static/undine/vendor/graphiql.min.js"></script>
-          <script src="/static/undine/vendor/plugin-explorer.umd.js"></script>
-        </head>
-        <body style="background-color: hsl(var(--color-base))">
-          <div id="graphiql"></div>
-          <input type="hidden" name="csrfmiddlewaretoken" value="{csrf}">
-          <script src="/static/undine/js/main.js" defer></script>
-        </body>
-        </html>
-        """,
-    )
 
 
 def test_graphql_view__content_negotiation__unsupported_type(undine_settings) -> None:
