@@ -95,6 +95,17 @@ Arguments:
 `caller: Entrypoint`: The Entrypoint instance that is calling this function.
 """
 
+convert_to_entrypoint_subscription: FunctionDispatcher[GraphQLFieldResolver | None] = FunctionDispatcher()
+"""
+Convert the given reference to a GraphQL subscription resolver for an Entrypoint.
+
+Arguments:
+
+`ref: Any`: The reference to convert.
+
+`caller: Entrypoint`: The Entrypoint instance that is calling this function.
+"""
+
 convert_to_field_complexity: FunctionDispatcher[int] = FunctionDispatcher()
 """
 Determine the complexity of resolving the given reference.

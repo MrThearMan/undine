@@ -2,18 +2,15 @@ from __future__ import annotations
 
 import dataclasses
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from contextlib import ExitStack, contextmanager
+from collections.abc import Awaitable, Callable
+from contextlib import AsyncExitStack, ExitStack, aclosing, asynccontextmanager, contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 
-from graphql import ExecutionResult, GraphQLError
-
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import AsyncGenerator, AsyncIterator, Generator
 
-    from graphql import DocumentNode
-    from graphql.pyutils import AwaitableOrValue
+    from graphql import DocumentNode, ExecutionResult
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol
@@ -22,7 +19,8 @@ __all__ = [
     "LifecycleHook",
     "LifecycleHookContext",
     "LifecycleHookManager",
-    "use_lifecycle_hooks",
+    "use_lifecycle_hooks_async",
+    "use_lifecycle_hooks_sync",
 ]
 
 
@@ -48,7 +46,7 @@ class LifecycleHookContext:
     request: DjangoRequestProtocol
     """Django request during which the GraphQL request is being executed."""
 
-    result: AwaitableOrValue[ExecutionResult] | None
+    result: ExecutionResult | Awaitable[ExecutionResult | AsyncIterator[ExecutionResult]] | None
     """Execution result of the GraphQL operation. Adding a result here will cause an early exit."""
 
     @classmethod
@@ -71,8 +69,15 @@ class LifecycleHook(ABC):
     context: LifecycleHookContext
 
     @contextmanager
-    def use(self) -> Generator[None, None, None]:
+    def use_sync(self) -> Generator[None, None, None]:
         yield from self.run()
+
+    @asynccontextmanager
+    async def use_async(self) -> AsyncGenerator[None, None]:
+        gen = self.run_async()
+        async with aclosing(gen):
+            async for _ in gen:
+                yield
 
     @abstractmethod
     def run(self) -> Generator[None, None, None]:
@@ -83,12 +88,20 @@ class LifecycleHook(ABC):
         """
         yield
 
+    async def run_async(self) -> AsyncGenerator[None, None]:
+        """
+        Override this method to define how the hook should be executed in an async context.
+        Uses the `run` method by default.
+        """
+        for _ in self.run():
+            yield
+
 
 TLifecycleHook = TypeVar("TLifecycleHook", bound=LifecycleHook)
 
 
-class LifecycleHookManager(ExitStack):
-    """Executes multiple lifecycle hooks at once."""
+class LifecycleHookManager(ExitStack, AsyncExitStack):
+    """Allows executing multiple lifecycle hooks at once."""
 
     def __init__(self, *, hooks: list[type[TLifecycleHook]], context: LifecycleHookContext) -> None:
         self.hooks: list[TLifecycleHook] = [hook(context=context) for hook in hooks]
@@ -96,28 +109,42 @@ class LifecycleHookManager(ExitStack):
 
     def __enter__(self) -> Self:
         for hook in self.hooks:
-            self.enter_context(hook.use())
+            self.enter_context(hook.use_sync())
         return super().__enter__()
 
+    async def __aenter__(self) -> Self:
+        for hook in self.hooks:
+            await self.enter_async_context(hook.use_async())
+        return await super().__aenter__()
 
-Hookable = Callable[[LifecycleHookContext], None]
+
+R = TypeVar("R")
+HookableSync = Callable[[LifecycleHookContext], R]
+HookableAsync = Callable[[LifecycleHookContext], Awaitable[R]]
 
 
-def use_lifecycle_hooks(hooks: list[type[TLifecycleHook]]) -> Callable[[Hookable], Hookable]:
+def use_lifecycle_hooks_sync(hooks: list[type[TLifecycleHook]]) -> Callable[[HookableSync[R]], HookableSync[R]]:
     """Run given function using the given lifecycle hooks."""
 
-    def decorator(func: Hookable) -> Hookable:
+    def decorator(func: HookableSync[R]) -> HookableSync[R]:
         @wraps(func)
-        def wrapper(context: LifecycleHookContext) -> None:
+        def wrapper(context: LifecycleHookContext) -> R:
             with LifecycleHookManager(hooks=hooks, context=context):
-                if context.result is not None:
-                    return
+                return func(context)
 
-                try:
-                    func(context)
-                except GraphQLError as error:
-                    context.result = ExecutionResult(errors=[error])
-                    return
+        return wrapper
+
+    return decorator
+
+
+def use_lifecycle_hooks_async(hooks: list[type[TLifecycleHook]]) -> Callable[[HookableAsync[R]], HookableAsync[R]]:
+    """Run given function using the given lifecycle hooks."""
+
+    def decorator(func: HookableAsync[R]) -> HookableAsync[R]:
+        @wraps(func)
+        async def wrapper(context: LifecycleHookContext) -> R:  # type: ignore[return]
+            async with LifecycleHookManager(hooks=hooks, context=context):
+                return await func(context)
 
         return wrapper
 

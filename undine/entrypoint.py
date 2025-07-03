@@ -8,6 +8,7 @@ from graphql import DirectiveLocation, GraphQLField, Undefined
 from undine.converters import (
     convert_to_description,
     convert_to_entrypoint_resolver,
+    convert_to_entrypoint_subscription,
     convert_to_graphql_argument_map,
     convert_to_graphql_type,
     is_many,
@@ -197,6 +198,7 @@ class Entrypoint:
             type_=self.get_field_type(),
             args=self.get_field_arguments(),
             resolve=self.get_resolver(),
+            subscribe=self.get_subscription(),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
@@ -211,6 +213,9 @@ class Entrypoint:
 
     def get_resolver(self) -> GraphQLFieldResolver:
         return convert_to_entrypoint_resolver(self.ref, caller=self)
+
+    def get_subscription(self) -> GraphQLFieldResolver | None:
+        return convert_to_entrypoint_subscription(self.ref, caller=self)
 
     def permissions(self, func: PermissionFunc | None = None, /) -> PermissionFunc:
         """Decorate a function to add it as a permission check for this Entrypoint."""

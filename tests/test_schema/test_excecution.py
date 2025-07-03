@@ -8,7 +8,7 @@ from graphql.type.definition import GraphQLField, GraphQLNonNull
 
 from tests.helpers import MockRequest
 from undine.dataclasses import GraphQLHttpParams
-from undine.execution import execute_graphql_sync
+from undine.execution import execute_graphql_http_sync
 from undine.settings import example_schema
 
 
@@ -31,7 +31,7 @@ def test_execute_graphql(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql_sync(params=params, request=MockRequest(method="POST"))
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
 
     assert not isawaitable(result)
 
@@ -47,7 +47,7 @@ def test_execute_graphql__parse_error(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql_sync(params=params, request=MockRequest(method="POST"))
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
 
     assert not isawaitable(result)
 
@@ -65,7 +65,7 @@ def test_execute_graphql__non_query_operation_on_get_request(undine_settings) ->
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql_sync(params=params, request=MockRequest(method="GET"))
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="GET"))
 
     assert not isawaitable(result)
 
@@ -84,7 +84,7 @@ def test_execute_graphql__validation_error(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql_sync(params=params, request=MockRequest(method="POST"))
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
 
     assert not isawaitable(result)
 
@@ -118,7 +118,7 @@ def test_execute_graphql__error_raised(undine_settings) -> None:
         operation_name=None,
         extensions={},
     )
-    result = execute_graphql_sync(params=params, request=MockRequest(method="POST"))
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
 
     assert not isawaitable(result)
 

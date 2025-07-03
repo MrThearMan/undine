@@ -78,6 +78,7 @@ from undine.exceptions import (
     GraphQLUnionResolveTypeInvalidValueError,
     GraphQLUnionResolveTypeModelNotFoundError,
     GraphQLUnsupportedContentTypeError,
+    GraphQLUseWebSocketsForSubscriptionsError,
     GraphQLValidationError,
     InvalidDocstringParserError,
     InvalidEntrypointMutationTypeError,
@@ -711,6 +712,12 @@ class GQLErrorParams(NamedTuple):
             args={"content_type": "application/example"},
             message="'application/example' is not a supported content type.",
             extensions={"error_code": "UNSUPPORTED_CONTENT_TYPE", "status_code": 415},
+        ),
+        "GraphQLUseWebSocketsForSubscriptionsError": GQLErrorParams(
+            cls=GraphQLUseWebSocketsForSubscriptionsError,
+            args={},
+            message="Subscriptions do not support HTTP. Please use WebSockets.",
+            extensions={"error_code": "USE_WEBSOCKETS_FOR_SUBSCRIPTIONS", "status_code": 400},
         ),
         "GraphQLValidationError": GQLErrorParams(
             cls=GraphQLValidationError,

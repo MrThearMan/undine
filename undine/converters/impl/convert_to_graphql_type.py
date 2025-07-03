@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import datetime
+import types
 import uuid
+from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import suppress
 from decimal import Decimal
 from enum import Enum
 from functools import partial
 from importlib import import_module
 from types import FunctionType
-from typing import Any, get_args, is_typeddict
+from typing import Any, Union, get_args, get_origin, is_typeddict
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 from django.db.models import (
@@ -67,7 +69,7 @@ from graphql import (
 from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_lookup_to_graphql_type, convert_to_graphql_type, convert_to_python_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
-from undine.exceptions import RegistryMissingTypeError
+from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
 from undine.relay import Connection, PageInfoType
@@ -249,6 +251,26 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     is_input = kwargs.get("is_input", False)
     annotation = parse_first_param_type(ref) if is_input else parse_return_annotation(ref)
     return convert_to_graphql_type(annotation, **kwargs)
+
+
+@convert_to_graphql_type.register  # TODO: Test
+def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if hasattr(ref, "__args__"):
+        return_type = ref.__args__[0]
+
+        origin = get_origin(return_type)
+        if origin not in {types.UnionType, Union}:
+            return convert_to_graphql_type(return_type)
+
+        # Returning exceptions can be used to emit errors without closing the subscription.
+        return_types = [arg for arg in get_args(return_type) if not issubclass(arg, BaseException)]
+        if len(return_types) != 1:
+            return GraphQLAny
+
+        return convert_to_graphql_type(return_types[0])
+
+    msg = f"Cannot convert {ref!r} to GraphQL type without generic type arguments."
+    raise FunctionDispatcherError(msg)
 
 
 # --- Model fields -------------------------------------------------------------------------------------------------

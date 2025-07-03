@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from inspect import isasyncgenfunction
 from types import FunctionType
 from typing import Any
 
@@ -18,23 +19,23 @@ from undine.resolvers import (
     CustomResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
+    InterfaceResolver,
     NodeResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
+    SubscriptionValueResolver,
+    UnionTypeResolver,
     UpdateResolver,
 )
-from undine.resolvers.query import (
-    InterfaceResolver,
-    UnionTypeResolver,
-    _InterfaceConnectionResolver,
-    _UnionTypeConnectionResolver,
-)
+from undine.resolvers.query import _InterfaceConnectionResolver, _UnionTypeConnectionResolver
 from undine.typing import MutationKind
 
 
 @convert_to_entrypoint_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
+    if isasyncgenfunction(ref):
+        return SubscriptionValueResolver()
     return EntrypointFunctionResolver(func=ref, entrypoint=caller)
 
 

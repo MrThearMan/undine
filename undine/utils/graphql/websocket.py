@@ -4,6 +4,7 @@ import asyncio
 import dataclasses
 import io
 import json
+from collections.abc import AsyncIterator
 from contextlib import suppress
 from functools import cached_property, wraps
 from inspect import isawaitable
@@ -14,6 +15,8 @@ from django.core.handlers.asgi import ASGIRequest
 from graphql import GraphQLError
 
 from undine.exceptions import (
+    GraphQLErrorGroup,
+    GraphQLUnexpectedError,
     WebSocketConnectionInitAlreadyInProgressError,
     WebSocketConnectionInitForbiddenError,
     WebSocketConnectionInitTimeoutError,
@@ -37,7 +40,7 @@ from undine.exceptions import (
     WebSocketUnknownMessageTypeError,
     WebSocketUnsupportedSubProtocolError,
 )
-from undine.execution import execute_graphql_async
+from undine.execution import execute_graphql_websocket
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
 from undine.typing import CompleteMessage, ConnectionAckMessage, ErrorMessage, NextMessage, PongMessage
@@ -170,14 +173,13 @@ class GraphQLOverWebSocketHandler:
             with suppress(BaseException):
                 await self.connection_init_timeout_task
 
-        for operation in self.operations.values():
+        for operation_id in list(self.operations):
+            operation = self.operations.pop(operation_id)
             if not operation.task.done():
                 operation.task.cancel()
 
             with suppress(BaseException):
                 await operation.task
-
-        self.operations.clear()
 
     async def accept(self) -> None:
         event = WebSocketAcceptEvent(type="websocket.accept", subprotocol=GRAPHQL_TRANSPORT_WS_PROTOCOL, headers=[])
@@ -375,12 +377,43 @@ class WebSocketOperation:
         self.handler.operations.pop(self.operation_id, None)
 
     async def run(self) -> None:
-        result = await execute_graphql_async(self.params, self.request)
+        result = await execute_graphql_websocket(self.params, self.request)
 
+        if isinstance(result, AsyncIterator):
+            await self.execute_subscription(result)
+            return
+
+        await self.execute_singe_result_operation(result)
+
+    async def execute_singe_result_operation(self, result: ExecutionResult) -> None:
         if result.errors:
             await self.send_errors(errors=result.errors)
+            return
+
+        await self.send_next(result=result)
+        await self.send_complete()
+
+    async def execute_subscription(self, source: AsyncIterator[ExecutionResult]) -> None:
+        initial = True
+        try:
+            async for result in source:
+                if initial and result.errors:
+                    await self.send_errors(errors=result.errors)
+                    return
+
+                initial = False
+                await self.send_next(result=result)
+
+        except GraphQLError as error:
+            await self.send_errors(errors=[error])
+
+        except GraphQLErrorGroup as error:
+            await self.send_errors(errors=list(error.flatten()))
+
+        except Exception as error:  # noqa: BLE001
+            await self.send_errors(errors=[GraphQLUnexpectedError(message=str(error))])
+
         else:
-            await self.send_next(result=result)
             await self.send_complete()
 
     async def send_errors(self, errors: list[GraphQLError]) -> None:

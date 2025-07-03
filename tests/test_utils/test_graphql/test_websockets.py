@@ -854,8 +854,8 @@ async def test_websocket_handler__receive__complete(undine_settings) -> None:
     complete_message = CompleteMessage(type="complete", id="1")
     await handler.receive(data=json.dumps(complete_message))
 
-    assert operation.task.done() is False
-    assert operation.task.cancelled() is False
+    assert operation.task.done() is True
+    assert operation.task.cancelled() is True
     assert operation.is_completed is True
 
     with pytest.raises(asyncio.CancelledError):

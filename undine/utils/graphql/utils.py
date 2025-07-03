@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
 from django.db.models import ForeignKey
 from graphql import (
+    DocumentNode,
     FieldNode,
     GraphQLEnumType,
     GraphQLError,
@@ -59,6 +60,7 @@ __all__ = [
     "is_node_interface",
     "is_page_info",
     "is_relation_id",
+    "is_subscription_operation",
     "should_skip_node",
     "with_graphql_error_path",
 ]
@@ -163,6 +165,17 @@ def is_typename_metafield(field_node: SelectionNode) -> TypeGuard[FieldNode]:
 
 def is_relation_id(field: ModelField, field_node: FieldNode) -> TypeGuard[Field]:
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
+
+
+def is_subscription_operation(document: DocumentNode) -> bool:
+    if len(document.definitions) != 1:
+        return False
+
+    operation_definition = document.definitions[0]
+    if not isinstance(operation_definition, OperationDefinitionNode):
+        return False
+
+    return operation_definition.operation == OperationType.SUBSCRIPTION
 
 
 def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -> bool:
