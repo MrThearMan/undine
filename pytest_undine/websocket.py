@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import json
 import uuid
 from contextlib import suppress
@@ -9,12 +10,13 @@ from typing import TYPE_CHECKING, Any, Self
 from asgiref.typing import WebSocketConnectEvent, WebSocketReceiveEvent
 from channels.auth import AuthMiddlewareStack
 
+from undine.exceptions import WebSocketConnectionClosedError
 from undine.integrations.channels import GraphQLWebSocketConsumer
 from undine.settings import undine_settings
-from undine.typing import ConnectionInitMessage, SubscribeMessage
+from undine.typing import CompleteMessage, ConnectionInitMessage, SubscribeMessage
 
 if TYPE_CHECKING:
-    from asgiref.typing import ASGISendEvent, WebSocketDisconnectEvent
+    from asgiref.typing import ASGISendEvent, WebSocketCloseEvent, WebSocketDisconnectEvent
 
     from undine.typing import (
         ClientMessage,
@@ -25,39 +27,36 @@ if TYPE_CHECKING:
         WebSocketASGIScope,
     )
 
-    from .client import GraphQLClient
-
 
 __all__ = [
-    "WebSocketConnectionClosedError",
-    "WebSocketContextManager",
+    "TestWebSocket",
 ]
 
 
-class WebSocketConnectionClosedError(Exception):
-    """Raised when a test client WebSocket is closed."""
+@dataclasses.dataclass(slots=True, kw_only=True)
+class TestWebSocket:
+    """A testing utility for sending and receiving messages from the given consumer."""
 
-    def __init__(self, msg: str = "") -> None:
-        msg = msg or "Websocket connection closed"
-        super().__init__(msg)
+    scope: WebSocketASGIScope
+    """ASGI scope for the WebSocket request."""
 
+    consumer: GraphQLWebSocketConsumer = dataclasses.field(default_factory=GraphQLWebSocketConsumer)
+    """Consumer for the WebSocket."""
 
-class WebSocketContextManager:
-    """A context manager for testing WebSockets to the GraphQL schema."""
+    task: asyncio.Task | None = None
+    """Consumer task with AuthMiddlewareStack applied. Added on context enter."""
 
-    def __init__(self, client: GraphQLClient, scope: WebSocketASGIScope) -> None:
-        self.client = client
-        self.scope = scope
+    messages: asyncio.Queue[ClientMessage] = dataclasses.field(default_factory=asyncio.Queue)
+    """Messages placed here are picked up by the consumer."""
 
-        self.consumer = GraphQLWebSocketConsumer()
-        self.execute = AuthMiddlewareStack(self.consumer)
-        self.task: asyncio.Task | None = None
+    responses: asyncio.Queue[ServerMessage | None] = dataclasses.field(default_factory=asyncio.Queue)
+    """Messages from the consumer are placed here."""
 
-        self.messages: asyncio.Queue[str] = asyncio.Queue()
-        self.responses: asyncio.Queue[str | None] = asyncio.Queue()
+    accepted: asyncio.Event = dataclasses.field(default_factory=asyncio.Event)
+    """Set if the connection is accepted after 'ConnectionInit' message is sent."""
 
-        self.accepted = asyncio.Event()
-        self.closed = asyncio.Event()
+    close_event: WebSocketCloseEvent | None = None
+    """Set if the connection is closed."""
 
     async def connection_init(
         self,
@@ -85,9 +84,10 @@ class WebSocketContextManager:
         timeout: float | None = 3,
     ) -> NextMessage | ErrorMessage:
         """
-        Send a Subscribe message to the server.
+        Create a subscription for the given payload.
+
         If Next message is received, should wait for subsequent messages until receiving a Complete message.
-        If Error message is received, no more messages will be sent.
+        If Error message is received (at any point), no more messages will be sent.
 
         :param payload: The subscription payload.
         :param operation_id: The ID of the subscription operation.
@@ -97,10 +97,24 @@ class WebSocketContextManager:
         message = SubscribeMessage(type="subscribe", id=operation_id, payload=payload)
         return await self.send_and_receive(message=message, timeout=timeout)  # type: ignore[return-value]
 
+    async def unsubscribe(self, *, operation_id: str) -> None:
+        """
+        Unsubscribes from a subscription early.
+
+        Requires that some part of the subscription delays execution with
+        some form of `loop.call_later`, (e.g. `asyncio.sleep` with a positive delay).
+        Does not guarantee how many subscription messages will still be sent.
+        Should manually fetch the operation from `consumer.handler.operations` and
+        await its `.task` to complete with a `asyncio.CancelledError`.
+
+        :param operation_id: The ID of the subscription operation.
+        """
+        message = CompleteMessage(type="complete", id=operation_id)
+        await self.send(message=message)
+
     async def send_and_receive(self, message: ClientMessage, *, timeout: float | None = 3) -> ServerMessage:
         """
         Send a message to the server and wait for the response.
-        Note that this manager can only send a single message at a time.
 
         :param message: The message to send.
         :param timeout: Timeout in seconds for receiving the response.
@@ -113,25 +127,25 @@ class WebSocketContextManager:
     async def send(self, message: ClientMessage) -> None:
         """
         Send a message to the server.
-        Note that this manager can only send a single message at a time.
 
         :param message: The message to send.
         :raises WebSocketConnectionClosedError: Connection is closed.
         """
-        if self.closed.is_set():
-            raise WebSocketConnectionClosedError
-        await self.messages.put(json.dumps(message))
+        if self.close_event is not None:
+            raise WebSocketConnectionClosedError(reason=self.close_event["reason"], code=self.close_event["code"])
+
+        await self.messages.put(message)
 
     async def receive(self, *, timeout: float | None = 3) -> ServerMessage:
         """
-        Receive the next message from the server.
+        Receive a message from the server.
 
         :param timeout: Timeout for receiving the message.
         :raises WebSocketConnectionClosedError: Connection is closed.
         :raises TimeoutError: Timeout reached.
         """
-        if self.closed.is_set():
-            raise WebSocketConnectionClosedError
+        if self.close_event is not None:
+            raise WebSocketConnectionClosedError(reason=self.close_event["reason"], code=self.close_event["code"])
 
         timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else timeout
 
@@ -141,38 +155,47 @@ class WebSocketContextManager:
             msg = "Timeout waiting for message from server."
             raise TimeoutError(msg) from error
 
+        if self.close_event is not None:
+            raise WebSocketConnectionClosedError(reason=self.close_event["reason"], code=self.close_event["code"])
+
         if data is None:
             raise WebSocketConnectionClosedError
 
-        return json.loads(data)
+        return data
 
     async def __aenter__(self) -> Self:
         """Start the WebSocket connection."""
-        self.task = asyncio.create_task(self.execute(self.scope, self._to_consumer, self._from_consumer))
+        self.accepted.clear()
+        self.close_event = None
+
+        stack = AuthMiddlewareStack(self.consumer)
+        self.task = asyncio.create_task(stack(self.scope, self._to_consumer, self._from_consumer))
+
         await self.accepted.wait()
         return self
 
     async def __aexit__(self, *args: object) -> None:
         """Terminate the WebSocket connection."""
-        self.accepted.clear()
-        self.closed.clear()
+        # Cancel pending tasks in the consumer
+        await self.consumer.handler.disconnect()
 
         # Shouldn't happen, but just in case.
         if self.task is None:  # pragma: no cover
             return
 
-        # Cancel pending tasks in the consumer
-        await self.consumer.handler.disconnect()
-
         # Make sure the task is done.
         if not self.task.done():
             self.task.cancel()
+
+        timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else 3
+
         with suppress(BaseException):
-            await self.task
+            # IDK why, but we need to wrap the task with `asyncio.wait` or we might wait here forever...
+            await asyncio.wait(self.task, timeout=timeout)
 
     async def _to_consumer(self) -> WebSocketConnectEvent | WebSocketReceiveEvent | WebSocketDisconnectEvent:
         """
-        Send an event to the consumer.
+        Send an event to the consumer. Called automatically by `self.task`.
         Will wait for new messages until the connection is closed, or specified timeout is reached.
 
         :returns: The event to send to the consumer.
@@ -182,10 +205,10 @@ class WebSocketContextManager:
         if not self.accepted.is_set():
             return WebSocketConnectEvent(type="websocket.connect")
 
-        if self.closed.is_set():
-            raise WebSocketConnectionClosedError
+        if self.close_event is not None:
+            raise WebSocketConnectionClosedError(reason=self.close_event["reason"], code=self.close_event["code"])
 
-        timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else 10
+        timeout = None if undine_settings.TESTING_CLIENT_NO_ASYNC_TIMEOUT else 3
 
         try:
             message = await asyncio.wait_for(self.messages.get(), timeout=timeout)
@@ -193,11 +216,11 @@ class WebSocketContextManager:
             msg = "Timeout waiting for message from client."
             raise TimeoutError(msg) from error
 
-        return WebSocketReceiveEvent(type="websocket.receive", text=message, bytes=None)
+        return WebSocketReceiveEvent(type="websocket.receive", text=json.dumps(message), bytes=None)
 
     async def _from_consumer(self, event: ASGISendEvent) -> None:
         """
-        Event received from the consumer.
+        Event received from the consumer. Called automatically by `self.task`.
 
         :param event: The event received from the consumer.
         :raises RuntimeError: Unexpected event.
@@ -209,10 +232,10 @@ class WebSocketContextManager:
             case "websocket.close":
                 # Set 'None' to prevent receive from timing out.
                 await self.responses.put(None)
-                self.closed.set()
+                self.close_event = event
 
             case "websocket.send" if event["text"] is not None:
-                await self.responses.put(event["text"])
+                await self.responses.put(json.loads(event["text"]))
 
             case _:
                 # Set 'None' to prevent receive from timing out.
