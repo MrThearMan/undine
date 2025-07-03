@@ -38,6 +38,7 @@ __all__ = [
     "graphql_result_response",
     "load_json_dict",
     "parse_json_body",
+    "render_graphiql",
     "require_graphql_request",
     "require_persisted_documents_request",
 ]
@@ -193,7 +194,7 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
                 return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
             if media_type == "text/html":
-                return render(request, "undine/graphiql.html")  # type: ignore[arg-type]
+                return render_graphiql(request)  # type: ignore[arg-type]
 
             request.response_content_type = media_type
             return await func(request)
@@ -211,7 +212,7 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
                 return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
             if media_type == "text/html":
-                return render(request, "undine/graphiql.html")  # type: ignore[arg-type]
+                return render_graphiql(request)  # type: ignore[arg-type]
 
             request.response_content_type = media_type
             return func(request)  # type: ignore[return-value]
@@ -252,3 +253,71 @@ def require_persisted_documents_request(func: SyncViewIn) -> SyncViewOut:
         return func(request)
 
     return wrapper  # type: ignore[return-value]
+
+
+def render_graphiql(request: HttpRequest) -> HttpResponse:
+    """Render GraphiQL."""
+    return render(request, "undine/graphiql.html", context=get_graphiql_context())
+
+
+def get_graphiql_context() -> dict[str, Any]:
+    """Get the GraphiQL context."""
+    return {
+        "http_path": undine_settings.GRAPHQL_PATH,
+        "ws_path": undine_settings.WEBSOCKET_PATH,
+        "importmap": get_importmap(),
+        # Note that changing the versions here will break integrity checks! Regenerate: https://www.srihash.org/
+        "graphiql_css": "https://esm.sh/graphiql@5.0.3/dist/style.css",
+        "explorer_css": "https://esm.sh/@graphiql/plugin-explorer@5.0.0/dist/style.css",
+        "graphiql_css_integrity": "sha384-lixdMC836B3JdnFulLFPKjIN0gr85IffJ5qBAoYmKxoeNXlkn+JgibHqHBD6N9ef",
+        "explorer_css_integrity": "sha384-vTFGj0krVqwFXLB7kq/VHR0/j2+cCT/B63rge2mULaqnib2OX7DVLUVksTlqvMab",
+    }
+
+
+def get_importmap() -> str:
+    """Get the importmap for GraphiQL."""
+    # Note that changing the versions here will break integrity checks! Regenerate: https://www.srihash.org/
+    react = "https://esm.sh/react@19.1.0"
+    react_jsx = "https://esm.sh/react@19.1.0/jsx-runtime"
+    react_dom = "https://esm.sh/react-dom@19.1.0"
+    react_dom_client = "https://esm.sh/react-dom@19.1.0/client"
+    graphiql = "https://esm.sh/graphiql@5.0.3?standalone&external=react,react-dom,@graphiql/react,graphql"
+    explorer = "https://esm.sh/@graphiql/plugin-explorer@5.0.0?standalone&external=react,@graphiql/react,graphql"
+    graphiql_react = "https://esm.sh/@graphiql/react@0.35.4?standalone&external=react,react-dom,graphql"
+    graphiql_toolkit = "https://esm.sh/@graphiql/toolkit@0.11.3?standalone&external=graphql"
+    graphql = "https://esm.sh/graphql@16.11.0"
+    json_worker = "https://esm.sh/monaco-editor@0.52.2/esm/vs/language/json/json.worker.js?worker"
+    editor_worker = "https://esm.sh/monaco-editor@0.52.2/esm/vs/editor/editor.worker.js?worker"
+    graphql_worker = "https://esm.sh/monaco-graphql@1.7.1/esm/graphql.worker.js?worker"
+
+    importmap = {
+        "imports": {
+            "react": react,
+            "react/jsx-runtime": react_jsx,
+            "react-dom": react_dom,
+            "react-dom/client": react_dom_client,
+            "graphiql": graphiql,
+            "@graphiql/plugin-explorer": explorer,
+            "@graphiql/react": graphiql_react,
+            "@graphiql/toolkit": graphiql_toolkit,
+            "graphql": graphql,
+            "monaco-editor/json-worker": json_worker,
+            "monaco-editor/editor-worker": editor_worker,
+            "monaco-graphql/graphql-worker": graphql_worker,
+        },
+        "integrity": {
+            react: "sha384-C3ApUaeHIj1v0KX4cY/+K3hQZ/8HcAbbmkw1gBK8H5XN4LCEguY7+A3jga11SaHF",
+            react_jsx: "sha384-ISrauaZAJlw0FRGhk9DBbU+2n4Bs1mrmh1kkJ63lTmkLTXYqpWTNFkGLPcK9C9BX",
+            react_dom: "sha384-CKiqgCWLo5oVMbiCv36UR0pLRrzeRKhw1jFUpx0j/XdZOpZ43zOHhjf8yjLNuLEy",
+            react_dom_client: "sha384-QH8CM8CiVIQ+RoTOjDp6ktXLkc0ix+qbx2mo7SSnwMeUQEoM4XJffjoSPY85X6VH",
+            graphiql: "sha384-Vxuid6El2THg0+qYzVT1pHMOPQe1KZHNpxKaxqMqK4lbqokaJ0H+iKZR1zFhQzBN",
+            explorer: "sha384-nrr4ZBQS9iyn0dn60BH3wtgG6YCSsQsuTPLgWDrUvvGvLvz0nE7LxnWWxEicmKHm",
+            graphiql_react: "sha384-EnyV8FGnqfde43nPpmKz4yVI0VxlcwLVQe6P2r/cc24UcTmAzPU6SAabBonnSrT/",
+            graphiql_toolkit: "sha384-ZsnupyYmzpNjF1Z/81zwi4nV352n4P7vm0JOFKiYnAwVGOf9twnEMnnxmxabMBXe",
+            graphql: "sha384-uhRXaGfgCFqosYlwSLNd7XpDF9kcSUycv5yVbjjhH5OrE675kd0+MNIAAaSc+1Pi",
+            json_worker: "sha384-8UXA1aePGFu/adc7cEQ8PPlVJityyzV0rDqM9Tjq1tiFFT0E7jIDQlOS4X431c+O",
+            editor_worker: "sha384-lvRBk9hT6IKcVMAynOrBJUj/OCVkEaWBvzZdzvpPUqdrPW5bPsIBF7usVLLkQQxa",
+            graphql_worker: "sha384-74lJ0Y2S6U0jkJAi5ijRRWnLiF0Fugr65EE1DVtJn/LHWmXJq9cVDFfC0eRjFkm1",
+        },
+    }
+    return json.dumps(importmap, indent=2)

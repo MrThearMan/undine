@@ -57,12 +57,6 @@ UNDINE = {
 }
 ```
 
-You'll also need to fetch static files for GraphiQL, so run the following command:
-
-```shell
-python manage.py fetch_graphiql_static_for_undine
-```
-
 Now start the Django server and navigate to `/graphql/` to see the GraphiQL UI.
 Make the following request:
 

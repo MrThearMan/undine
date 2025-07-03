@@ -1,25 +1,92 @@
-{% load i18n static %}
-{% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE|default:"en-us" }}">
+<html lang="en">
 <head>
   <title>GraphiQL</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content={% block robots %}"noindex"{% endblock %}>
-  <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo="/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content={% block robots %}"noindex"{% endblock %} />
+  <link rel="shortcut icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=" />
 
-  <link rel="stylesheet" href="{% static "undine/css/main.css" %}">
-  <link rel="stylesheet" href="{% static "undine/vendor/graphiql.min.css" %}">
-  <link rel="stylesheet" href="{% static "undine/vendor/plugin-explorer.css" %}">
+  <link rel="stylesheet" href="{{ graphiql_css }}" integrity="{{ graphiql_css_integrity }}" crossorigin="anonymous" />
+  <link rel="stylesheet" href="{{ explorer_css }}" integrity="{{ explorer_css_integrity }}" crossorigin="anonymous" />
 
-  <script src="{% static 'undine/vendor/react.development.js' %}"></script>
-  <script src="{% static 'undine/vendor/react-dom.development.js' %}"></script>
-  <script src="{% static 'undine/vendor/graphiql.min.js' %}"></script>
-  <script src="{% static 'undine/vendor/plugin-explorer.umd.js' %}"></script>
+{% block style %}
+  <style>
+    body {
+      margin: 0;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: hsl(219, 28%, 18%);
+      }
+      @media (prefers-color-scheme: light) {
+        background-color: hsl(0, 0%, 100%);
+      }
+    }
+    #graphiql {
+      height: 100dvh;
+    }
+  </style>
+{% endblock %}
+
+  <script type="importmap">
+{{ importmap | safe }}
+  </script>
+
+{% block js %}
+  <script type="module">
+    import React from 'react';
+    import ReactDOM from 'react-dom/client';
+
+    import { GraphiQL, HISTORY_PLUGIN } from 'graphiql';
+    import { createGraphiQLFetcher } from '@graphiql/toolkit';
+    import { explorerPlugin } from '@graphiql/plugin-explorer';
+
+    import createJSONWorker from 'monaco-editor/json-worker';
+    import createEditorWorker from 'monaco-editor/editor-worker';
+    import createGraphQLWorker from 'monaco-graphql/graphql-worker';
+
+    globalThis.MonacoEnvironment = {
+      getWorker(_workerId, label) {
+        switch (label) {
+          case 'json':
+            return createJSONWorker();
+          case 'graphql':
+            return createGraphQLWorker();
+        }
+        return createEditorWorker();
+      },
+    };
+
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/{{ http_path }}"
+    const url = currentURL.href;
+
+    currentURL.protocol = location.protocol.replace('/^http/', 'ws');
+    currentURL.pathname = "/{{ ws_path }}";
+    const subscriptionUrl = currentURL.href;
+
+    const headers = {}
+    const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+
+    function App() {
+      return React.createElement(GraphiQL, {
+        fetcher: createGraphiQLFetcher({ url, subscriptionUrl, headers }),
+        plugins: [HISTORY_PLUGIN, explorerPlugin()],
+        defaultEditorToolsVisibility: true,
+      });
+    }
+
+    const container = document.getElementById('graphiql');
+    const root = ReactDOM.createRoot(container);
+    root.render(React.createElement(App));
+  </script>
+{% endblock %}
+
 </head>
-<body style="background-color: hsl(var(--color-base))">
+<body>
   <div id="graphiql"></div>
   {% csrf_token %}
-  <script src="{% static 'undine/js/main.js' %}" defer></script>
 </body>
 </html>

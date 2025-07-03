@@ -247,33 +247,6 @@ to `True`, so that GraphiQL can introspect the GraphQL schema.
 
 ///
 
-/// details | `GRAPHIQL_PLUGIN_EXPLORER_VERSION`
-    attrs: {id: graphiql_plugin_explorer_version}
-
-Type: `str` | Default: `"3.2.5"`
-
-Version of the plugin explorer to use for GraphiQL.
-
-///
-
-/// details | `GRAPHIQL_REACT_VERSION`
-    attrs: {id: graphiql_react_version}
-
-Type: `str` | Default: `"18.3.1"`
-
-Version of React to use for GraphiQL.
-
-///
-
-/// details | `GRAPHIQL_VERSION`
-    attrs: {id: graphiql_version}
-
-Type: `str` | Default: `"3.8.3"`
-
-Version of GraphiQL to use.
-
-///
-
 /// details | `GRAPHQL_PATH`
     attrs: {id: graphql_path}
 
@@ -731,7 +704,7 @@ The number of seconds to wait for the `ConnectionInit` message after opening a W
 
 Type: `str` | Default: `"ws/$"`
 
-The (regex) path where the GraphQL over WebSocket endpoint is located
+The path where the GraphQL over WebSocket endpoint is located
 if using `undine.integrations.channels.get_websocket_enabled_app`.
 
 ///

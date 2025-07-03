@@ -142,15 +142,6 @@ class UndineDefaultSettings(NamedTuple):
     GRAPHIQL_ENABLED: bool = False
     """Is GraphiQL enabled?"""
 
-    GRAPHIQL_PLUGIN_EXPLORER_VERSION: str = "3.2.5"
-    """The version of the plugin explorer to use for GraphiQL."""
-
-    GRAPHIQL_REACT_VERSION: str = "18.3.1"
-    """The version of React to use for GraphiQL."""
-
-    GRAPHIQL_VERSION: str = "3.8.3"
-    """The version of GraphiQL to use."""
-
     # Persisted documents
 
     PERSISTED_DOCUMENTS_ONLY: bool = False
@@ -175,8 +166,8 @@ class UndineDefaultSettings(NamedTuple):
     WEBSOCKET_CONNECTION_INIT_TIMEOUT_SECONDS: int = 3
     """The number of seconds to wait for the `ConnectionInit` message after opening a WebSocket before closing it."""
 
-    WEBSOCKET_PATH: str = "ws/$"
-    """The (regex) path where the GraphQL over WebSocket endpoint is located."""
+    WEBSOCKET_PATH: str = "graphql/"
+    """The path where the GraphQL over WebSocket endpoint is located."""
 
     WEBSOCKET_PING_HOOK: WebSocketConnectionPingHook = "undine.utils.graphql.websocket.ping_hook"  # type: ignore[assignment]
     """The function for specifying custom `Ping` message logic."""
