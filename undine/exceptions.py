@@ -400,6 +400,13 @@ class GraphQLErrorGroup(ExceptionGroup):
             elif isinstance(error, GraphQLError):
                 yield error
 
+    def located(self, path: list[str | int]) -> Self:
+        """Set path information to all errors inside the `GraphQLExceptionGroup`."""
+        for error in self.flatten():
+            if not error.path:
+                error.path = path
+        return self
+
     def located_by(self, error: GraphQLError) -> Self:
         """Set location information to all errors inside the `GraphQLExceptionGroup` based on the given error."""
         for err in self.flatten():
@@ -840,6 +847,14 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     code = UndineErrorCodes.UNSUPPORTED_CONTENT_TYPE
 
 
+class GraphQLUseWebSocketsForSubscriptionsError(GraphQLStatusError):
+    """Error raised when a subscription request is made using HTTP."""
+
+    msg = "Subscriptions do not support HTTP. Please use WebSockets."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.USE_WEBSOCKETS_FOR_SUBSCRIPTIONS
+
+
 class GraphQLValidationError(GraphQLStatusError):
     """Error meant to be raised for validation errors during mutations."""
 
@@ -859,8 +874,14 @@ class WebSocketError(Exception):
 
     error_formatter = ErrorMessageFormatter()
 
-    def __init__(self, reason: str = "", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        reason: str | None = None,
+        code: GraphQLWebSocketCloseCode | int | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.reason = self.error_formatter.format(reason or self.reason, **kwargs)
+        self.code = GraphQLWebSocketCloseCode(code or self.code)
 
 
 class WebSocketConnectionInitAlreadyInProgressError(WebSocketError):
@@ -966,3 +987,8 @@ class WebSocketUnknownMessageTypeError(WebSocketError):
 class WebSocketUnsupportedSubProtocolError(WebSocketError):
     reason = "Subprotocol not acceptable"
     code = GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE
+
+
+class WebSocketConnectionClosedError(WebSocketError):
+    reason = "Connection closed"
+    code = GraphQLWebSocketCloseCode.NORMAL_CLOSURE

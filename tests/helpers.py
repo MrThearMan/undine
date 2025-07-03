@@ -55,7 +55,7 @@ PNG = base64.b64decode(b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR
 
 class ParametrizeArgs(TypedDict):
     argnames: list[str]
-    argvalues: list[TNamedTuple]
+    argvalues: list[TNamedTuple]  # type: ignore[valid-type]
     ids: list[str]
 
 
@@ -186,7 +186,7 @@ class MockRequest:
     content_params: dict[str, str] | None = dataclasses.field(default_factory=dict)
     accepted_types: list[MediaType] = dataclasses.field(default_factory=list)
 
-    async def auser(self) -> User:
+    async def auser(self) -> User | AnonymousUser:
         return self.user
 
 

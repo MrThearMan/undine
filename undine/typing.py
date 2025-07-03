@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 import operator as op
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from enum import Enum, StrEnum, auto
 from functools import cache
 from types import FunctionType, GenericAlias, UnionType
@@ -52,6 +52,7 @@ from django.db.models import (
 )
 from django.db.models.query_utils import RegisterLookupMixin
 from graphql import (
+    ExecutionResult,
     FieldNode,
     FragmentSpreadNode,
     GraphQLDirective,
@@ -97,8 +98,8 @@ if TYPE_CHECKING:
 
     from undine import FilterSet, InterfaceType, OrderSet
     from undine.directives import Directive
-    from undine.integrations.channels import WebSocketRequest
     from undine.optimizer.optimizer import OptimizationData
+    from undine.utils.graphql.websocket import WebSocketRequest
 
 __all__ = [
     "Annotatable",
@@ -115,6 +116,7 @@ __all__ = [
     "DjangoTestClientResponseProtocol",
     "DocstringParserProtocol",
     "ErrorMessage",
+    "ExecutionResultGen",
     "GQLInfo",
     "GraphQLFilterResolver",
     "InputPermFunc",
@@ -151,6 +153,7 @@ __all__ = [
     "WebSocketConnectionPingHook",
     "WebSocketConnectionPongHook",
     "WebSocketProtocol",
+    "WebSocketResult",
 ]
 
 # Misc.
@@ -164,6 +167,8 @@ LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
 TypeHint: TypeAlias = type | UnionType | GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
+WebSocketResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
+ExecutionResultGen: TypeAlias = AsyncGenerator[ExecutionResult, None]
 
 # TypeVars
 
@@ -636,12 +641,14 @@ class UndineErrorCodes(StrEnum):
     SCALAR_CONVERSION_ERROR = auto()
     SCALAR_INVALID_VALUE = auto()
     SCALAR_TYPE_NOT_SUPPORTED = auto()
+    SUBSCRIPTION_EARLY_EXIT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()
     UNEXPECTED_ERROR = auto()
     UNION_RESOLVE_TYPE_INVALID_VALUE = auto()
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
+    USE_WEBSOCKETS_FOR_SUBSCRIPTIONS = auto()
     VALIDATION_ERROR = auto()
 
 
@@ -665,7 +672,7 @@ class GQLInfo(Generic[TUser], GraphQLResolveInfo):
     field_name: str
     """Name of the field being resolved."""
 
-    field_nodes: list[FieldNode]
+    v: list[FieldNode]
     """
     GraphQL AST Field Nodes in the GraphQL operation for which this field is being resolved for.
     If the same field is queried with a different alias, it will be resolved separately.

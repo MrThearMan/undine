@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import sys
+from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
 from types import FunctionType, GenericAlias, LambdaType
 from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar
@@ -124,6 +125,9 @@ class _SignatureParser:
         # Add some common stuff to globals so that we don't encounter as many NameErrors
         # when parsing signatures if these type hints are in a `TYPE_CHECKING` block.
         extra_globals: dict[str, Any] = {
+            "AsyncIterable": AsyncIterable,
+            "AsyncIterator": AsyncIterator,
+            "AsyncGenerator": AsyncGenerator,
             "GraphQLResolveInfo": GraphQLResolveInfo,
             "GQLInfo": GQLInfo,
             "Any": Any,

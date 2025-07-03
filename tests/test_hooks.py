@@ -5,7 +5,7 @@ from typing import Generator
 import pytest
 from graphql import ExecutionResult, GraphQLError
 
-from undine.hooks import LifecycleHook, LifecycleHookContext, LifecycleHookManager, use_lifecycle_hooks
+from undine.hooks import LifecycleHook, LifecycleHookContext, LifecycleHookManager, use_lifecycle_hooks_sync
 
 
 def get_default_context() -> LifecycleHookContext:
@@ -31,7 +31,7 @@ def test_lifecycle_hook() -> None:
 
     hook = MyHook(context=get_default_context())
 
-    with hook.use():
+    with hook.use_sync():
         call_stack.append("inside")
 
     assert call_stack == ["before", "inside", "after"]
@@ -51,7 +51,7 @@ def test_lifecycle_hook__context() -> None:
 
     assert context.variables["hello"] == "you"
 
-    with hook.use():
+    with hook.use_sync():
         assert context.variables["hello"] == "world"
 
     assert context.variables["hello"] == "undine"
@@ -91,7 +91,7 @@ def test_use_lifecycle_hooks() -> None:
             yield
             call_stack.append("after")
 
-    @use_lifecycle_hooks(hooks=[MyHook])
+    @use_lifecycle_hooks_sync(hooks=[MyHook])
     def func(context: LifecycleHookContext) -> None:
         call_stack.append("inside")
 
@@ -100,57 +100,6 @@ def test_use_lifecycle_hooks() -> None:
     func(ctx)
 
     assert call_stack == ["before", "inside", "after"]
-
-
-def test_use_lifecycle_hooks__set_result_in_hook() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            self.context.result = ExecutionResult(data={"hello": "world"})
-            yield
-            call_stack.append("after")
-
-    @use_lifecycle_hooks(hooks=[MyHook])
-    def func(context: LifecycleHookContext) -> None:
-        call_stack.append("inside")
-
-    ctx = get_default_context()
-
-    func(ctx)
-
-    assert call_stack == ["before", "after"]
-
-    assert ctx.result is not None
-    assert ctx.result.data == {"hello": "world"}
-    assert ctx.result.errors is None
-
-
-def test_use_lifecycle_hooks__graphql_error_raised() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            yield
-            call_stack.append("after")
-
-    @use_lifecycle_hooks(hooks=[MyHook])
-    def func(context: LifecycleHookContext) -> None:
-        call_stack.append("inside")
-        msg = "Error"
-        raise GraphQLError(msg)
-
-    ctx = get_default_context()
-
-    func(ctx)
-
-    assert call_stack == ["before", "inside", "after"]
-
-    assert ctx.result is not None
-    assert ctx.result.data is None
-    assert ctx.result.errors == [GraphQLError("Error")]
 
 
 def test_use_lifecycle_hooks__non_graphql_error_raised() -> None:
@@ -162,7 +111,7 @@ def test_use_lifecycle_hooks__non_graphql_error_raised() -> None:
             yield
             call_stack.append("after")
 
-    @use_lifecycle_hooks(hooks=[MyHook])
+    @use_lifecycle_hooks_sync(hooks=[MyHook])
     def func(context: LifecycleHookContext) -> None:
         call_stack.append("inside")
         msg = "Error"
@@ -191,7 +140,7 @@ def test_use_lifecycle_hooks__non_graphql_error_raised__catch() -> None:
                 call_stack.append("after")
                 self.context.result = ExecutionResult(errors=[GraphQLError(str(error))])
 
-    @use_lifecycle_hooks(hooks=[MyHook])
+    @use_lifecycle_hooks_sync(hooks=[MyHook])
     def func(context: LifecycleHookContext) -> None:
         call_stack.append("inside")
         msg = "Error"

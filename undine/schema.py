@@ -35,6 +35,7 @@ def create_schema(
     *,
     query: type[RootType],
     mutation: type[RootType] | None = None,
+    subscription: type[RootType] | None = None,
     description: str | None = None,
     schema_definition_directives: list[Directive] | None = None,
     extensions: dict[str, Any] | None = None,
@@ -44,6 +45,7 @@ def create_schema(
 
     :param query: The `RootType` for the `Query` operations.
     :param mutation: The `RootType` for the `Mutation` operations.
+    :param subscription: The `RootType` for the `Subscription` operations.
     :param description: The description for the schema.
     :param schema_definition_directives: The directives to add to the schema definition.
     :param extensions: The extensions for the schema.
@@ -58,10 +60,12 @@ def create_schema(
 
     query_object_type = query.__output_type__()
     mutation_object_type = mutation.__output_type__() if mutation is not None else None
+    subscription_object_type = subscription.__output_type__() if subscription is not None else None
 
     schema = GraphQLSchema(
         query=query_object_type,
         mutation=mutation_object_type,
+        subscription=subscription_object_type,
         directives=directives,
         description=description,
         extensions=extensions,
