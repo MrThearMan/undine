@@ -58,6 +58,10 @@ print-schema:
 profile pid:
     @poetry run py-spy --threads --subprocesses --output profile.svg --pid "{{pid}}"
 
+# Collect static files
+static:
+    @poetry run python manage.py collectstatic --no-input
+
 # Sync dependencies
 sync:
     @poetry sync --all-extras
