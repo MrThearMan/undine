@@ -27,3 +27,11 @@ profile.svg
 .vscode
 pytest.ini
 mypy.ini
+
+# venv
+/.venv/
+
+# Node
+/node_modules/
+package.json
+package-lock.json
