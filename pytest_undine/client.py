@@ -27,10 +27,10 @@ if TYPE_CHECKING:
     from undine.typing import DjangoTestClientResponseProtocol
 
     from .query_logging import DBQueryData
-    from .websocket import WebSocketContextManager
+    from .websocket import TestWebSocket
 
 with suppress(ImportError):
-    from .websocket import WebSocketContextManager
+    from .websocket import TestWebSocket
 
 
 __all__ = [
@@ -40,7 +40,7 @@ __all__ = [
 ]
 
 
-IS_CHANNELS_INSTALLED: bool = "WebSocketContextManager" in globals()
+IS_CHANNELS_INSTALLED: bool = "TestWebSocket" in globals()
 
 
 class GraphQLClient(Client):
@@ -167,8 +167,8 @@ class GraphQLClient(Client):
                         msg = f"Unexpected message type: {message['type']}"
                         raise RuntimeError(msg)
 
-    def websocket(self, **kwargs: Any) -> WebSocketContextManager:
-        """Create a context manager for handling a WebSocket to the GraphQL schema."""
+    def websocket(self, **kwargs: Any) -> TestWebSocket:
+        """Create a testing websocket."""
         if not IS_CHANNELS_INSTALLED:  # pragma: no cover
             msg = "The `channels` library is not installed. Cannot create websocket."
             raise RuntimeError(msg)
@@ -176,7 +176,7 @@ class GraphQLClient(Client):
         scope = self._get_default_scope()
         scope.update(kwargs)  # type: ignore[typeddict-item]
 
-        return WebSocketContextManager(client=self, scope=scope)
+        return TestWebSocket(scope=scope)
 
     def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
         """Create a superuser and log in as that user."""
