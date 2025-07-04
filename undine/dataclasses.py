@@ -91,6 +91,9 @@ class TypeRef:
 
     value: TypeHint
 
+    total: bool = True
+    """If the type hint is in a TypedDict, whether the TypedDict has totality of not."""
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class MaybeManyOrNonNull:

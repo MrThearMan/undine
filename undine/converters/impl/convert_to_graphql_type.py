@@ -10,7 +10,7 @@ from enum import Enum
 from functools import partial
 from importlib import import_module
 from types import FunctionType
-from typing import Any, Union, get_args, get_origin, is_typeddict
+from typing import Any, Union, get_origin, is_typeddict
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 from django.db.models import (
@@ -104,7 +104,7 @@ from undine.utils.graphql.validation_rules.one_of_input_object import (
 )
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
-from undine.utils.reflection import FunctionEqualityWrapper, is_generic_list, is_required_type
+from undine.utils.reflection import FunctionEqualityWrapper, get_flattened_generic_params, is_generic_list
 from undine.utils.text import get_docstring, to_camel_case, to_pascal_case
 
 # --- Python types -------------------------------------------------------------------------------------------------
@@ -191,16 +191,18 @@ def _(_: type, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 @convert_to_graphql_type.register
 def _(ref: type[list], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    args = get_args(ref)
+    args = get_flattened_generic_params(ref)
+    nullable = types.NoneType in args
+    args = tuple(arg for arg in args if arg is not types.NoneType)
+
     # For lists without type, or with a union type, default to any.
     if len(args) != 1:
         return GraphQLList(GraphQLAny)
 
-    graphql_type = convert_to_graphql_type(args[0], **kwargs)
-    nullable = parse_is_nullable(args[0], is_input=kwargs.get("is_input", False))
+    graphql_type = convert_to_graphql_type(TypeRef(args[0]), **kwargs)
+    if nullable and isinstance(graphql_type, GraphQLNonNull):
+        graphql_type = graphql_type.of_type
 
-    if not nullable:
-        graphql_type = GraphQLNonNull(graphql_type)
     return GraphQLList(graphql_type)
 
 
@@ -216,14 +218,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     fields: dict[str, GraphQLField | GraphQLInputField] = {}
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
-        graphql_type = convert_to_graphql_type(evaluated_type, **kwargs)
-        nullable = parse_is_nullable(evaluated_type, is_input=kwargs.get("is_input", False))
-
-        if not total and not is_required_type(evaluated_type):
-            nullable = True
-
-        if not nullable:
-            graphql_type = GraphQLNonNull(graphql_type)
+        graphql_type = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)
 
         if is_input:
             fields[key] = GraphQLInputField(graphql_type)
@@ -253,24 +248,32 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return convert_to_graphql_type(annotation, **kwargs)
 
 
-@convert_to_graphql_type.register  # TODO: Test
+@convert_to_graphql_type.register
 def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    if hasattr(ref, "__args__"):
-        return_type = ref.__args__[0]
+    if not hasattr(ref, "__args__"):
+        msg = f"Cannot convert {ref!r} to GraphQL type without generic type arguments."
+        raise FunctionDispatcherError(msg)
 
-        origin = get_origin(return_type)
-        if origin not in {types.UnionType, Union}:
-            return convert_to_graphql_type(return_type)
+    return_type = ref.__args__[0]  # type: ignore[attr-defined]
 
-        # Returning exceptions can be used to emit errors without closing the subscription.
-        return_types = [arg for arg in get_args(return_type) if not issubclass(arg, BaseException)]
-        if len(return_types) != 1:
-            return GraphQLAny
+    origin = get_origin(return_type)
+    if origin not in {types.UnionType, Union}:
+        return convert_to_graphql_type(TypeRef(return_type))
 
-        return convert_to_graphql_type(return_types[0])
+    args = get_flattened_generic_params(return_type)
+    nullable = types.NoneType in args
 
-    msg = f"Cannot convert {ref!r} to GraphQL type without generic type arguments."
-    raise FunctionDispatcherError(msg)
+    # Returning exceptions can be used to emit errors without closing the subscription.
+    args = tuple(arg for arg in args if arg is not types.NoneType and not issubclass(arg, BaseException))
+
+    if len(args) != 1:
+        return GraphQLAny
+
+    graphql_type = convert_to_graphql_type(TypeRef(args[0]))
+    if nullable and isinstance(graphql_type, GraphQLNonNull):
+        graphql_type = graphql_type.of_type
+
+    return graphql_type
 
 
 # --- Model fields -------------------------------------------------------------------------------------------------
@@ -605,7 +608,7 @@ def _(ref: LazyLambda, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 @convert_to_graphql_type.register
 def _(ref: TypeRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     value = convert_to_graphql_type(ref.value, **kwargs)
-    nullable = parse_is_nullable(ref.value, is_input=kwargs.get("is_input", False))
+    nullable = parse_is_nullable(ref.value, is_input=kwargs.get("is_input", False), total=ref.total)
     if not nullable:
         value = GraphQLNonNull(value)
     return value
@@ -629,11 +632,7 @@ def _(ref: MaybeManyOrNonNull, **kwargs: Any) -> GraphQLInputType | GraphQLOutpu
 
 @convert_to_graphql_type.register
 def _(ref: type[Calculation], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    value = convert_to_graphql_type(ref.__returns__, **kwargs)
-    nullable = parse_is_nullable(ref.__returns__, is_input=kwargs.get("is_input", False))
-    if not nullable:
-        value = GraphQLNonNull(value)
-    return value
+    return convert_to_graphql_type(TypeRef(ref.__returns__), **kwargs)
 
 
 @convert_to_graphql_type.register

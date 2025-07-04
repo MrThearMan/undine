@@ -35,7 +35,7 @@ from .query import (
     QueryTypeSingleResolver,
     UnionTypeResolver,
 )
-from .subscription import SubscriptionValueResolver
+from .subscription import EntrypointFunctionSubscription, SubscriptionValueResolver
 
 __all__ = [
     "BulkCreateResolver",
@@ -47,6 +47,7 @@ __all__ = [
     "DeleteResolver",
     "EntrypointFunctionResolver",
     "EntrypointFunctionResolver",
+    "EntrypointFunctionSubscription",
     "FieldFunctionResolver",
     "FilterFunctionResolver",
     "FilterModelFieldResolver",

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import dataclasses
-from contextlib import aclosing
+from collections.abc import AsyncGenerator
+from contextlib import aclosing, nullcontext
+from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLError, located_error
@@ -11,7 +13,7 @@ from undine.utils.graphql.utils import pre_evaluate_request_user
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Callable
+    from collections.abc import AsyncIterable, Callable, Coroutine
 
     from undine import Entrypoint, GQLInfo
 
@@ -23,7 +25,7 @@ __all__ = [
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class SubscriptionValueResolver:  # TODO: Test
+class SubscriptionValueResolver:
     """Resolves a value for a subscription."""
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
@@ -31,10 +33,10 @@ class SubscriptionValueResolver:  # TODO: Test
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class EntrypointFunctionSubscription:  # TODO: Test
+class EntrypointFunctionSubscription:
     """Subscribes to an `Entrypoint` using the given function."""
 
-    func: Callable[..., AsyncGenerator[Any, None]]
+    func: Callable[..., AsyncGenerator[Any, None] | Coroutine[Any, Any, AsyncIterable[Any]]]
     entrypoint: Entrypoint
 
     root_param: str | None = dataclasses.field(default=None, init=False)
@@ -45,10 +47,10 @@ class EntrypointFunctionSubscription:  # TODO: Test
         object.__setattr__(self, "root_param", params.root_param)
         object.__setattr__(self, "info_param", params.info_param)
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
         return self.run_async_gen(root, info, **kwargs)
 
-    async def run_async_gen(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncGenerator[Any, None]:
+    async def run_async_gen(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
         # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -58,8 +60,12 @@ class EntrypointFunctionSubscription:  # TODO: Test
             kwargs[self.info_param] = info
 
         gen = self.func(**kwargs)
+        if isawaitable(gen):
+            gen = await gen
 
-        async with aclosing(gen):
+        manager = aclosing(gen) if isinstance(gen, AsyncGenerator) else nullcontext(gen)
+
+        async with manager:
             try:
                 async for result in gen:
                     if isinstance(result, GraphQLError):

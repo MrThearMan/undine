@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Hashable
 from types import FunctionType, NoneType, UnionType
-from typing import TYPE_CHECKING, Any, Generic, Literal, Union, get_args, get_origin
+from typing import TYPE_CHECKING, Any, Generic, Literal, Union, get_origin
 
 from graphql import Undefined
 
@@ -22,6 +22,7 @@ from undine.typing import Lambda, LiteralArg, T
 
 from .reflection import (
     can_be_literal_arg,
+    get_flattened_generic_params,
     get_instance_name,
     get_signature,
     is_lambda,
@@ -155,14 +156,15 @@ class FunctionDispatcher(Generic[T]):
         return func
 
     def _remove_null(self, key: Any) -> Any:
+        bare_key = key
         if is_required_type(key) or is_not_required_type(key):
-            return key.__args__[0]
+            bare_key = key.__args__[0]
 
-        origin = get_origin(key)
+        origin = get_origin(bare_key)
         if origin not in {UnionType, Union}:
-            return key
+            return bare_key
 
-        args = get_args(key)
+        args = get_flattened_generic_params(bare_key)
         if NoneType in args:
             args = tuple(arg for arg in args if arg is not NoneType)
 
@@ -188,7 +190,7 @@ class FunctionDispatcher(Generic[T]):
     def _iter_args(self, annotation: Any) -> Generator[tuple[str, Any], None, None]:
         origin = get_origin(annotation)
 
-        for arg in get_args(annotation):
+        for arg in get_flattened_generic_params(annotation):
             arg_origin = get_origin(arg)
 
             # Example: "str | int" or "Union[str, int]"

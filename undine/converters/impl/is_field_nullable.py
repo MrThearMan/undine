@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import FunctionType, NoneType, UnionType
-from typing import Any, get_args, get_origin
+from typing import Any, get_origin
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import F, Field, ManyToManyRel, ManyToOneRel, OneToOneRel, Q
@@ -15,6 +15,7 @@ from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression
 from undine.utils.model_utils import get_model_field
+from undine.utils.reflection import get_flattened_generic_params
 
 
 @is_field_nullable.register
@@ -67,12 +68,9 @@ def _(_: LazyLambda, **kwargs: Any) -> bool:
 @is_field_nullable.register
 def _(ref: TypeRef, **kwargs: Any) -> bool:
     origin = get_origin(ref.value)
-
     if origin is not UnionType:
         return False
-
-    args = get_args(ref.value)
-    return NoneType in args
+    return NoneType in get_flattened_generic_params(ref.value)
 
 
 @is_field_nullable.register
@@ -90,7 +88,7 @@ def _(ref: FunctionType, **kwargs: Any) -> bool:
     annotation = parse_return_annotation(ref)
     if not isinstance(annotation, UnionType):
         return False
-    return NoneType in get_args(annotation)
+    return NoneType in get_flattened_generic_params(annotation)
 
 
 @is_field_nullable.register
