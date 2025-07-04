@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import dataclasses
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
-from contextlib import AsyncExitStack, ExitStack, aclosing, asynccontextmanager, contextmanager
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Generator
+    from collections.abc import AsyncIterator
+    from types import TracebackType
 
     from graphql import DocumentNode, ExecutionResult
 
@@ -19,6 +20,7 @@ __all__ = [
     "LifecycleHook",
     "LifecycleHookContext",
     "LifecycleHookManager",
+    "delegate_to_subgenerator",
     "use_lifecycle_hooks_async",
     "use_lifecycle_hooks_sync",
 ]
@@ -75,7 +77,7 @@ class LifecycleHook(ABC):
     @asynccontextmanager
     async def use_async(self) -> AsyncGenerator[None, None]:
         gen = self.run_async()
-        async with aclosing(gen):
+        async with delegate_to_subgenerator(gen):
             async for _ in gen:
                 yield
 
@@ -93,8 +95,9 @@ class LifecycleHook(ABC):
         Override this method to define how the hook should be executed in an async context.
         Uses the `run` method by default.
         """
-        for _ in self.run():
-            yield
+        with delegate_to_subgenerator(self.run()) as gen:
+            for _ in gen:
+                yield
 
 
 TLifecycleHook = TypeVar("TLifecycleHook", bound=LifecycleHook)
@@ -149,3 +152,143 @@ def use_lifecycle_hooks_async(hooks: list[type[TLifecycleHook]]) -> Callable[[Ho
         return wrapper
 
     return decorator
+
+
+class delegate_to_subgenerator:  # noqa: N801
+    """
+    Allows delegating how a generator exists to a subgenerator.
+
+    >>> def subgenerator():
+    ...     for _ in range(2):
+    ...         yield
+    >>>
+    >>> def generator():
+    >>>     with delegate_to_subgenerator(subgenerator()) as sub:
+    ...         for _ in sub:
+    ...             yield
+    >>>
+    >>> for item in generator():
+    ...     pass
+
+    If the generator exists normally, the subgenerator will be closed.
+    If the generator exists with an exception, the error is propagated to the subgenerator
+    so that it may handle the error.
+    """
+
+    def __init__(self, gen: Generator[None, None, None] | AsyncGenerator[None, None]) -> None:
+        """
+        Allows delegating how a generator exists to a subgenerator.
+
+        :param gen: The generator to delegate to. If generator is an async generator,
+                    must use `async with` syntax to delegate. For regular generators,
+                    plain `with` syntax must be used.
+        """
+        self.gen = gen
+
+    def __enter__(self) -> Generator[None, None, None]:
+        if not isinstance(self.gen, Generator):
+            msg = "Given object is not a Generator"
+            raise TypeError(msg)
+
+        return self.gen
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if not isinstance(self.gen, Generator):  # type: ignore[unreachable]
+            msg = "Given object is not a Generator"
+            raise TypeError(msg)
+
+        # If no exception was raised, close the generator.
+        if exc_type is None:
+            self.gen.close()
+            return False
+
+        # Otherwise, allow the subgenerator to handle the exception.
+        # This has mostly been copied from `contextlib._GeneratorContextManager.__exit__`.
+        if exc_value is None:
+            exc_value = exc_type()
+
+        try:
+            self.gen.throw(exc_value)
+
+        except StopIteration as error:
+            return error is not exc_value
+
+        except RuntimeError as error:
+            if error is exc_value:
+                error.__traceback__ = traceback
+                return False
+            if isinstance(exc_value, StopIteration) and error.__cause__ is exc_value:
+                exc_value.__traceback__ = traceback
+                return False
+            raise
+
+        except BaseException as error:
+            if error is not exc_value:
+                raise
+            error.__traceback__ = traceback
+            return False
+
+        try:
+            msg = "generator didn't stop after throw()"
+            raise RuntimeError(msg)
+        finally:
+            self.gen.close()
+
+    async def __aenter__(self) -> AsyncGenerator[None, None]:
+        if not isinstance(self.gen, AsyncGenerator):
+            msg = "Given object is not an AsyncGenerator"
+            raise TypeError(msg)
+
+        return self.gen
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        if not isinstance(self.gen, AsyncGenerator):
+            msg = "Given object is not an AsyncGenerator"
+            raise TypeError(msg)
+
+        # If no exception was raised, close the generator.
+        if exc_type is None:
+            await self.gen.aclose()
+            return False
+
+        # Otherwise, allow the subgenerator to handle the exception.
+        # This has mostly been copied from `contextlib._AsyncGeneratorContextManager.__aexit__`.
+        if exc_value is None:
+            exc_value = exc_type()
+
+        try:
+            await self.gen.athrow(exc_value)
+
+        except StopAsyncIteration as error:
+            return error is not exc_value
+
+        except RuntimeError as error:
+            if error is exc_value:
+                error.__traceback__ = traceback
+                return False
+            if isinstance(exc_value, (StopIteration, StopAsyncIteration)) and error.__cause__ is exc_value:
+                exc_value.__traceback__ = traceback
+                return False
+            raise
+
+        except BaseException as error:
+            if error is not exc_value:
+                raise
+            error.__traceback__ = traceback
+            return False
+
+        try:
+            msg = "generator didn't stop after athrow()"
+            raise RuntimeError(msg)
+        finally:
+            await self.gen.aclose()
