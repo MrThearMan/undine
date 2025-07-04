@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import inspect
 import sys
+import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
 from types import FunctionType, GenericAlias, LambdaType
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar, get_args
 
 from graphql import GraphQLResolveInfo
 
@@ -25,6 +26,7 @@ __all__ = [
     "FunctionEqualityWrapper",
     "cache_signature_if_function",
     "can_be_literal_arg",
+    "get_flattened_generic_params",
     "get_instance_name",
     "get_members",
     "get_root_and_info_params",
@@ -81,6 +83,14 @@ def get_wrapped_func(func: Callable[..., Any]) -> Callable[..., Any]:
             continue
         break
     return func
+
+
+def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
+    """
+    Get all generic parameters of the given type.
+    Flattens any union types.
+    """
+    return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, types.UnionType) else (arg,)))
 
 
 def cache_signature_if_function(value: Callable[..., Any], *, depth: int = 0) -> Callable[..., Any]:
@@ -178,12 +188,12 @@ def is_lambda(func: Callable[..., Any]) -> TypeGuard[Lambda]:
 
 def is_required_type(type_: Any) -> bool:
     """Check if the given type is a TypedDict `Required` type."""
-    return isinstance(type_, ParametrizedType) and type_.__origin__._name == "Required"  # type: ignore[misc]  # noqa: SLF001
+    return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "Required"  # type: ignore[misc]
 
 
 def is_not_required_type(type_: Any) -> bool:
     """Check if the given type is a TypedDict `Required` type."""
-    return isinstance(type_, ParametrizedType) and type_.__origin__._name == "NotRequired"  # type: ignore[misc]  # noqa: SLF001
+    return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
 
 
 def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType | Callable[..., Any], /) -> bool:

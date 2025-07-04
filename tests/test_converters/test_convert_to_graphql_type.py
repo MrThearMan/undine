@@ -5,7 +5,7 @@ import uuid
 from contextlib import suppress
 from decimal import Decimal
 from enum import Enum
-from typing import Any, NamedTuple, NotRequired, Required, TypedDict
+from typing import Any, AsyncGenerator, AsyncIterable, AsyncIterator, NamedTuple, NotRequired, Required, TypedDict
 
 import pytest
 from django.db.models import (
@@ -156,6 +156,54 @@ class Params(NamedTuple):
             input_type=dict[str, int],
             output_type=GraphQLJSON,
         ),
+        "AsyncGenerator[int, None]": Params(
+            input_type=AsyncGenerator[int, None],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncGenerator[int | Exception, None]": Params(
+            input_type=AsyncGenerator[int | Exception, None],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncGenerator[int | None, None]": Params(
+            input_type=AsyncGenerator[int | None, None],
+            output_type=GraphQLInt,
+        ),
+        "AsyncGenerator[int | Exception | None, None]": Params(
+            input_type=AsyncGenerator[int | Exception | None, None],
+            output_type=GraphQLInt,
+        ),
+        "AsyncIterator[int]": Params(
+            input_type=AsyncIterator[int],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncIterator[int | Exception]": Params(
+            input_type=AsyncIterator[int | Exception],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncIterator[int | None]": Params(
+            input_type=AsyncIterator[int | None],
+            output_type=GraphQLInt,
+        ),
+        "AsyncIterator[int | Exception | None]": Params(
+            input_type=AsyncIterator[int | Exception | None],
+            output_type=GraphQLInt,
+        ),
+        "AsyncIterable[int]": Params(
+            input_type=AsyncIterable[int],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncIterable[int | Exception]": Params(
+            input_type=AsyncIterable[int | Exception],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "AsyncIterable[int | None]": Params(
+            input_type=AsyncIterable[int | None],
+            output_type=GraphQLInt,
+        ),
+        "AsyncIterable[int | Exception | None]": Params(
+            input_type=AsyncIterable[int | Exception | None],
+            output_type=GraphQLInt,
+        ),
     }),
 )
 def test_convert_to_graphql_type__type(input_type, output_type) -> None:
@@ -232,8 +280,10 @@ def test_convert_to_graphql_type__typed_dict__input() -> None:
 
 
 class RequiredTypedDict(TypedDict, total=False):
-    foo: int
-    bar: Required[str]
+    foo: str
+    bar: str | None
+    fizz: Required[str]
+    buzz: Required[str | None]
 
 
 def test_convert_to_graphql_type__typed_dict__required() -> None:
@@ -241,14 +291,18 @@ def test_convert_to_graphql_type__typed_dict__required() -> None:
 
     assert isinstance(result, GraphQLObjectType)
     assert result.fields == {
-        "foo": GraphQLField(GraphQLInt),
-        "bar": GraphQLField(GraphQLNonNull(GraphQLString)),
+        "foo": GraphQLField(GraphQLString),
+        "bar": GraphQLField(GraphQLString),
+        "fizz": GraphQLField(GraphQLNonNull(GraphQLString)),
+        "buzz": GraphQLField(GraphQLString),
     }
 
 
 class NotRequiredTypedDict(TypedDict):
-    foo: int
-    bar: NotRequired[str]
+    foo: str
+    bar: str | None
+    fizz: NotRequired[str]
+    buzz: NotRequired[str | None]
 
 
 def test_convert_to_graphql_type__typed_dict__not_required() -> None:
@@ -256,8 +310,10 @@ def test_convert_to_graphql_type__typed_dict__not_required() -> None:
 
     assert isinstance(result, GraphQLObjectType)
     assert result.fields == {
-        "foo": GraphQLField(GraphQLNonNull(GraphQLInt)),
+        "foo": GraphQLField(GraphQLNonNull(GraphQLString)),
         "bar": GraphQLField(GraphQLString),
+        "fizz": GraphQLField(GraphQLString),
+        "buzz": GraphQLField(GraphQLString),
     }
 
 
