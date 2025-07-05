@@ -1,12 +1,5 @@
 from __future__ import annotations
 
-from django.conf import settings
-
-# Configure Django settings if not configured.
-# This is required for `__main__.py` to work when calling `python -m undine`.
-if not settings.configured:  # pragma: no cover
-    settings.configure()
-
 from .calculation import Calculation, CalculationArgument
 from .entrypoint import Entrypoint, RootType
 from .filtering import Filter, FilterSet

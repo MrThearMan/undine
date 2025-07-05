@@ -2,6 +2,10 @@
 help:
     @just -l
 
+# Check undine is installed correctly
+check:
+    @poetry run python manage.py check undine
+
 # Start the development server
 dev port="8000":
     @poetry run python manage.py runserver localhost:{{port}}
