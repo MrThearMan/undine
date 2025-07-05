@@ -1,0 +1,21 @@
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Cannot create a done task.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "createTask"
+      ],
+      "extensions": {
+        "status_code": 400,
+        "error_code": "VALIDATION_ERROR"
+      }
+    }
+  ]
+}
