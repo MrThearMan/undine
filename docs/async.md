@@ -2,6 +2,10 @@
 
 In this section, we'll look at how you can make you schema support async operations.
 
+> Note that asynchronous execution will require an [ASGI capable web server]{:target="_blank"}.
+
+[ASGI capable web server]: https://asgi.readthedocs.io/en/latest/implementations.html
+
 ## Setup
 
 To enable async support, you need to set the [`ASYNC`](settings.md#async) setting to `True`.

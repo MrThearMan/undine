@@ -10,6 +10,7 @@ nav:
   - Filtering: filtering.md
   - Ordering: ordering.md
   - Pagination: pagination.md
+  - Subscriptions: subscriptions.md
   - Global Object IDs: global-object-ids.md
   - File Upload: file-upload.md
   - Persisted Documents: persisted-documents.md
