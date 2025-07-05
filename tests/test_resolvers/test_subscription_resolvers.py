@@ -6,7 +6,7 @@ import pytest
 
 from tests.helpers import mock_gql_info
 from undine import Entrypoint, GQLInfo, RootType
-from undine.resolvers import EntrypointFunctionSubscription, SubscriptionValueResolver
+from undine.resolvers import FunctionSubscriptionResolver, SubscriptionValueResolver
 
 
 @pytest.mark.parametrize("value", [None, 42, "abc"])
@@ -24,7 +24,7 @@ async def test_entrypoint_function_subscription__async_generator() -> None:
             for i in range(2):
                 yield i
 
-    resolver = EntrypointFunctionSubscription(func=Subscription.func.ref, entrypoint=Subscription.func)
+    resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 
     result = [item async for item in resolver(None, mock_gql_info())]
     assert result == [0, 1]
@@ -52,7 +52,7 @@ async def test_entrypoint_function_subscription__async_iterator() -> None:
         async def func(self, info: GQLInfo) -> AsyncIterable[int]:
             return ExampleIterator()
 
-    resolver = EntrypointFunctionSubscription(func=Subscription.func.ref, entrypoint=Subscription.func)
+    resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 
     result = [item async for item in resolver(None, mock_gql_info())]
     assert result == [0, 1]
@@ -73,7 +73,7 @@ async def test_entrypoint_function_subscription__async_iterable() -> None:
         async def func(self, info: GQLInfo) -> AsyncIterable[int]:
             return ExampleIterable()
 
-    resolver = EntrypointFunctionSubscription(func=Subscription.func.ref, entrypoint=Subscription.func)
+    resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 
     result = [item async for item in resolver(None, mock_gql_info())]
     assert result == [0, 1]

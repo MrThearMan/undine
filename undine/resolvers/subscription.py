@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
-    "EntrypointFunctionSubscription",
+    "FunctionSubscriptionResolver",
     "SubscriptionValueResolver",
 ]
 
@@ -33,8 +33,8 @@ class SubscriptionValueResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class EntrypointFunctionSubscription:
-    """Subscribes to an `Entrypoint` using the given function."""
+class FunctionSubscriptionResolver:
+    """Subscription resolver for a async generator function or async iterable coroutine."""
 
     func: Callable[..., AsyncGenerator[Any, None] | Coroutine[Any, Any, AsyncIterable[Any]]]
     entrypoint: Entrypoint
@@ -48,9 +48,9 @@ class EntrypointFunctionSubscription:
         object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
-        return self.run_async_gen(root, info, **kwargs)
+        return self.gen(root, info, **kwargs)
 
-    async def run_async_gen(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
+    async def gen(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
         # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -59,15 +59,13 @@ class EntrypointFunctionSubscription:
         if self.info_param is not None:
             kwargs[self.info_param] = info
 
-        gen = self.func(**kwargs)
-        if isawaitable(gen):
-            gen = await gen
-
-        manager = aclosing(gen) if isinstance(gen, AsyncGenerator) else nullcontext(gen)
+        value = self.func(**kwargs)
+        iterable = await value if isawaitable(value) else value
+        manager = aclosing(iterable) if isinstance(iterable, AsyncGenerator) else nullcontext(iterable)
 
         async with manager:
             try:
-                async for result in gen:
+                async for result in iterable:
                     if isinstance(result, GraphQLError):
                         yield located_error(result, nodes=info.field_nodes, path=info.path.as_list())
                         continue

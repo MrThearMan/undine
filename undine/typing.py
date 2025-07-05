@@ -103,23 +103,33 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Annotatable",
+    "CalculationArgumentParams",
     "ClientMessage",
     "CombinableExpression",
     "CompleteMessage",
     "ConnectionAckMessage",
     "ConnectionDict",
     "ConnectionInitMessage",
+    "DirectiveArgumentParams",
+    "DirectiveParams",
     "DispatchProtocol",
     "DjangoExpression",
     "DjangoRequestProtocol",
     "DjangoResponseProtocol",
     "DjangoTestClientResponseProtocol",
     "DocstringParserProtocol",
+    "EntrypointParams",
     "ErrorMessage",
     "ExecutionResultGen",
+    "FieldParams",
+    "FilterParams",
+    "FilterSetParams",
     "GQLInfo",
     "GraphQLFilterResolver",
+    "InputParams",
     "InputPermFunc",
+    "InterfaceFieldParams",
+    "InterfaceTypeParams",
     "JsonObject",
     "Lambda",
     "LiteralArg",
@@ -127,19 +137,24 @@ __all__ = [
     "ModelField",
     "ModelManager",
     "MutationKind",
+    "MutationTypeParams",
     "NextMessage",
     "NodeDict",
     "ObjectSelections",
     "OptimizerFunc",
+    "OrderParams",
+    "OrderSetParams",
     "PageInfoDict",
     "ParametrizedType",
     "PermissionFunc",
     "PingMessage",
     "PongMessage",
     "ProtocolType",
+    "QueryTypeParams",
     "RelatedField",
     "RelatedManager",
     "RequestMethod",
+    "RootTypeParams",
     "Selections",
     "Self",
     "ServerMessage",
@@ -148,6 +163,7 @@ __all__ = [
     "ToManyField",
     "ToOneField",
     "UndineErrorCodes",
+    "UnionTypeParams",
     "ValidatorFunc",
     "WebSocketConnectionInitHook",
     "WebSocketConnectionPingHook",
@@ -618,6 +634,7 @@ class UndineErrorCodes(StrEnum):
     MISSING_INSTANCES_TO_DELETE = auto()
     MISSING_OPERATION_NAME = auto()
     MISSING_OPERATIONS = auto()
+    MISSING_SUBSCRIPTION_ARGUMENT = auto()
     MODEL_CONSTRAINT_VIOLATION = auto()
     MODEL_NOT_FOUND = auto()
     MUTATION_TOO_MANY_OBJECTS = auto()
@@ -641,10 +658,11 @@ class UndineErrorCodes(StrEnum):
     SCALAR_CONVERSION_ERROR = auto()
     SCALAR_INVALID_VALUE = auto()
     SCALAR_TYPE_NOT_SUPPORTED = auto()
-    SUBSCRIPTION_EARLY_EXIT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()
+    UNEXPECTED_CALCULATION_ARGUMENT = auto()
     UNEXPECTED_ERROR = auto()
+    UNEXPECTED_SUBSCRIPTION_ARGUMENT = auto()
     UNION_RESOLVE_TYPE_INVALID_VALUE = auto()
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
@@ -672,7 +690,7 @@ class GQLInfo(Generic[TUser], GraphQLResolveInfo):
     field_name: str
     """Name of the field being resolved."""
 
-    v: list[FieldNode]
+    field_nodes: list[FieldNode]
     """
     GraphQL AST Field Nodes in the GraphQL operation for which this field is being resolved for.
     If the same field is queried with a different alias, it will be resolved separately.

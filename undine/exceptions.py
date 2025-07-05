@@ -836,7 +836,7 @@ class GraphQLUnexpectedCalculationArgumentError(GraphQLStatusError):
 
     msg = "Unexpected calculation arguments for field '{name}': {kwargs}."
     status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_CALCULATION_ARGUMENT
+    code = UndineErrorCodes.UNEXPECTED_CALCULATION_ARGUMENT
 
 
 class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
