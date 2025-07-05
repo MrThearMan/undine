@@ -30,11 +30,7 @@ For mutating data, you'd create a `Mutation` `RootType`.
 The `Mutation` `RootType` is optional, but if created, it must also include at least
 one `Entrypoint`, just like the `Query` `RootType`.
 
-/// details | What about `Subscriptions`?
-
-Undine does not support have support for subscriptions, but it's on the roadmap.
-
-///
+For subscription support, see the [Subscriptions](subscriptions.md) section.
 
 ### Schema name
 
