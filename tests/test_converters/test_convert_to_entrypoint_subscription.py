@@ -6,7 +6,7 @@ from example_project.app.models import Project, Task
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, RootType, UnionType
 from undine.converters import convert_to_entrypoint_subscription
 from undine.relay import Connection, Node
-from undine.resolvers import EntrypointFunctionSubscription
+from undine.resolvers import FunctionSubscriptionResolver
 
 
 def test_convert_to_entrypoint_subscription__async_generator() -> None:
@@ -17,7 +17,7 @@ def test_convert_to_entrypoint_subscription__async_generator() -> None:
     class Subscription(RootType):
         fn = Entrypoint(func)
 
-    resolver = EntrypointFunctionSubscription(func=func, entrypoint=Subscription.fn)
+    resolver = FunctionSubscriptionResolver(func=func, entrypoint=Subscription.fn)
 
     assert convert_to_entrypoint_subscription(func, caller=Subscription.fn) == resolver
 
@@ -44,7 +44,7 @@ def test_convert_to_entrypoint_subscription__coroutine_returning_async_iterator(
     class Subscription(RootType):
         fn = Entrypoint(func)
 
-    resolver = EntrypointFunctionSubscription(func=func, entrypoint=Subscription.fn)
+    resolver = FunctionSubscriptionResolver(func=func, entrypoint=Subscription.fn)
 
     assert convert_to_entrypoint_subscription(func, caller=Subscription.fn) == resolver
 
@@ -64,7 +64,7 @@ def test_convert_to_entrypoint_subscription__coroutine_returning_async_iterable(
     class Subscription(RootType):
         fn = Entrypoint(func)
 
-    resolver = EntrypointFunctionSubscription(func=func, entrypoint=Subscription.fn)
+    resolver = FunctionSubscriptionResolver(func=func, entrypoint=Subscription.fn)
 
     assert convert_to_entrypoint_subscription(func, caller=Subscription.fn) == resolver
 

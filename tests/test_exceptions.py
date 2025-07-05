@@ -705,7 +705,7 @@ class GQLErrorParams(NamedTuple):
             cls=GraphQLUnexpectedCalculationArgumentError,
             args={"name": "foo", "kwargs": {"bar": "baz"}},
             message="Unexpected calculation arguments for field 'foo': {'bar': 'baz'}.",
-            extensions={"error_code": "MISSING_CALCULATION_ARGUMENT", "status_code": 400},
+            extensions={"error_code": "UNEXPECTED_CALCULATION_ARGUMENT", "status_code": 400},
         ),
         "GraphQLUnsupportedContentTypeError": GQLErrorParams(
             cls=GraphQLUnsupportedContentTypeError,

@@ -9,7 +9,7 @@ from graphql import GraphQLFieldResolver
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_entrypoint_subscription
 from undine.relay import Connection, Node
-from undine.resolvers import EntrypointFunctionSubscription
+from undine.resolvers import FunctionSubscriptionResolver
 
 
 @convert_to_entrypoint_subscription.register
@@ -21,7 +21,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver | None:
     # or if it returns a something that can be used for subscriptions,
     # but there is no harm in creating the resolver anyway.
     caller: Entrypoint = kwargs["caller"]
-    return EntrypointFunctionSubscription(func=ref, entrypoint=caller)
+    return FunctionSubscriptionResolver(func=ref, entrypoint=caller)
 
 
 @convert_to_entrypoint_subscription.register

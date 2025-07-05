@@ -14,6 +14,8 @@ from undine.relay import Connection, Node
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+    from undine import GQLInfo
+
 
 class VersionDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="version"):
     value = DirectiveArgument(GraphQLNonNull(GraphQLString))
@@ -53,8 +55,8 @@ class Mutation(RootType):
 
 class Subscription(RootType):
     @Entrypoint
-    async def countdown(self) -> AsyncGenerator[int, None]:
-        for i in range(10, 0, -1):
+    async def countdown(self, info: GQLInfo, start: int = 10) -> AsyncGenerator[int, None]:
+        for i in range(start, 0, -1):
             await asyncio.sleep(1)
             yield i
 
