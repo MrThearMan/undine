@@ -109,5 +109,5 @@ You can provide custom extensions for the `UnionType` by providing a
 
 `UnionType` extensions are made available in the GraphQL `UnionType` extensions
 after the schema is created. The `UnionType` itself is found in the `extensions`
-under a key defined by the [`QUERY_TYPE_UNION_EXTENSIONS_KEY`](settings.md#query_type_union_extensions_key)
+under a key defined by the [`UNION_TYPE_EXTENSIONS_KEY`](settings.md#union_type_extensions_key)
 setting.
