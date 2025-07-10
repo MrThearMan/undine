@@ -20,7 +20,8 @@ Here are some features that are planned for the future:
 - Optimizations for bulk and nested mutations
 - `@defer` and `@stream` using [StreamingHttpResponse]{:target="_blank"} (requires `graphql-core` >= 3.3.0)
 - [Multipart HTTP protocol for GraphQL Subscriptions]{:target="_blank"}
-- [Server-side events]{:target="_blank"}
+- [Server-sent events]{:target="_blank"}
+- Field visibility
 
 [StreamingHttpResponse]: https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.StreamingHttpResponse
 [Multipart HTTP protocol for GraphQL Subscriptions]: https://www.apollographql.com/docs/graphos/routing/operations/subscriptions/multipart-protocol
