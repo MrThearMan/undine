@@ -46,6 +46,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - Support for Relay Global object IDs and Connection pagination
 - File uploads based on GraphQL multipart request specification
 - Support for asynchronous execution
+- Subscriptions with websockets
 - Optional persisted documents support
 - Lifecycle hooks for customizing the GraphQL request cycle
 - Built-in testing tools
