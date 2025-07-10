@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Directives - Undine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+        <link href="../css/pygments.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Directives";
+        var mkdocs_page_input_path = "directives.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Undine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Directives</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#directive">Directive</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#executable-locations">Executable locations</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#query">QUERY</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#mutation">MUTATION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#subscription">SUBSCRIPTION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#field">FIELD</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#fragment_definition">FRAGMENT_DEFINITION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#fragment_spread">FRAGMENT_SPREAD</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#inline_fragment">INLINE_FRAGMENT</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#variable_definition">VARIABLE_DEFINITION</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#type-system-locations">Type system locations</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#schema">SCHEMA</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#scalar">SCALAR</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#object">OBJECT</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#field_definition">FIELD_DEFINITION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#argument_definition">ARGUMENT_DEFINITION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#interface">INTERFACE</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#union">UNION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#enum">ENUM</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#enum_value">ENUM_VALUE</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#input_object">INPUT_OBJECT</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#input_field_definition">INPUT_FIELD_DEFINITION</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#is-repeatable">Is repeatable</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#schema-name">Schema name</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extensions">Extensions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#directiveargument">DirectiveArgument</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#schema-name_1">Schema name</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#description">Description</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#default-value">Default value</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#deprecation-reason">Deprecation reason</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#extensions_1">Extensions</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Undine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Directives</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="directives">Directives<a class="headerlink" href="#directives" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the GraphQL directives in Undine.
+Directives are a way to add metadata to your GraphQL schema,
+which can be accessed during query execution or by clients consuming your schema.</p>
+<h2 id="directive">Directive<a class="headerlink" href="#directive" title="Permanent link">🔗</a></h2>
+<p>In Undine, a GraphQL directive is implemented by subclassing the <code>Directive</code> class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">4</a></span>
+<span class="normal"><a href="#__codelineno-0-5">5</a></span>
+<span class="normal"><a href="#__codelineno-0-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">NewDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>Note that a <code>Directive</code> by itself does not do anything. It is only used as a way to define
+additional metadata, which the GraphQL server can use at runtime.
+If the directive implies some behavior, you'll need to add it, e.g., using a <code>ValidationRule</code>.
+See the <code>ValidationRules</code> in the <a href="https://github.com/graphql-python/graphql-core/tree/main/src/graphql/validation/rules" target="_blank">graphql-core repository</a>
+for examples. Custom <code>ValidationRules</code> should be registered using the <code>ADDITIONAL_VALIDATION_RULES</code>
+setting.</p>
+<p>Note that declared <code>Directives</code> are automatically added to the schema, even if they are not used.</p>
+<p>A <code>Directive</code> always requires the <em><strong>locations</strong></em> it will be used in to be set using the <code>locations</code> argument.
+The locations can be divided into two categories: <a href="#executable-locations"><em>executable locations</em></a>
+and <a href="#type-system-locations"><em>type system locations</em></a>.</p>
+<h3 id="executable-locations">Executable locations<a class="headerlink" href="#executable-locations" title="Permanent link">🔗</a></h3>
+<p>Executable locations identify places in a GraphQL <em>document</em> (i.e. "request") where a directive can be used.
+See the example below on what these locations are.</p>
+<h4 id="query"><code>QUERY</code><a class="headerlink" href="#query" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span>
+<span class="normal"><a href="#__codelineno-1-5">5</a></span>
+<span class="normal"><a href="#__codelineno-1-6">6</a></span>
+<span class="normal"><a href="#__codelineno-1-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">query</span><span class="w"> </span><span class="p">(</span><span class="nv">$pk</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">!)</span><span class="w"> </span><span class="err">@</span><span class="nf">new</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="nv">$pk</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">    </span><span class="n">done</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="mutation"><code>MUTATION</code><a class="headerlink" href="#mutation" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">(</span><span class="nv">$input</span><span class="p">:</span><span class="w"> </span><span class="nc">CreateTaskMutation</span><span class="p">!)</span><span class="w"> </span><span class="err">@</span><span class="nf">new</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="nv">$input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="subscription"><code>SUBSCRIPTION</code><a class="headerlink" href="#subscription" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">subscription</span><span class="w"> </span><span class="err">@</span><span class="nf">new</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">    </span><span class="n">username</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">    </span><span class="n">message</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="field"><code>FIELD</code><a class="headerlink" href="#field" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span>
+<span class="normal"><a href="#__codelineno-4-6">6</a></span>
+<span class="normal"><a href="#__codelineno-4-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="n">pk</span><span class="w"> </span><span class="nd">@new</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">    </span><span class="err">name</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">    </span><span class="err">done</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">  </span><span class="err">}</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="fragment_definition"><code>FRAGMENT_DEFINITION</code><a class="headerlink" href="#fragment_definition" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="w">  </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">    </span><span class="p">...</span><span class="n">taskFragment</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="p">}</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">taskFragment</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">TaskType</span><span class="w"> </span><span class="nd">@new</span><span class="w"> </span><span class="err">{</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="w">  </span><span class="err">pk</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="w">  </span><span class="err">name</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="w">  </span><span class="err">done</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="fragment_spread"><code>FRAGMENT_SPREAD</code><a class="headerlink" href="#fragment_spread" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-6-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-6-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-6-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-6-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-6-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-6-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-6-10">10</a></span>
+<span class="normal"><a href="#__codelineno-6-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="p">...</span><span class="n">taskFragment</span><span class="w"> </span><span class="nd">@new</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">  </span><span class="err">}</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="err">}</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="err">fragment</span><span class="w"> </span><span class="err">taskFragment</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">  </span><span class="err">pk</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">  </span><span class="err">name</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="w">  </span><span class="err">done</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="inline_fragment"><code>INLINE_FRAGMENT</code><a class="headerlink" href="#inline_fragment" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span>
+<span class="normal"><a href="#__codelineno-7-5">5</a></span>
+<span class="normal"><a href="#__codelineno-7-6">6</a></span>
+<span class="normal"><a href="#__codelineno-7-7">7</a></span>
+<span class="normal"><a href="#__codelineno-7-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span><span class="n">node</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;U3Vyc29yOnVzZXJuYW1lOjE=&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">    </span><span class="n">id</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">TaskType</span><span class="w"> </span><span class="nd">@new</span><span class="w"> </span><span class="err">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">      </span><span class="err">name</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="w">    </span><span class="err">}</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">  </span><span class="err">}</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="variable_definition"><code>VARIABLE_DEFINITION</code><a class="headerlink" href="#variable_definition" title="Permanent link">🔗</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
+<span class="normal"><a href="#__codelineno-8-2">2</a></span>
+<span class="normal"><a href="#__codelineno-8-3">3</a></span>
+<span class="normal"><a href="#__codelineno-8-4">4</a></span>
+<span class="normal"><a href="#__codelineno-8-5">5</a></span>
+<span class="normal"><a href="#__codelineno-8-6">6</a></span>
+<span class="normal"><a href="#__codelineno-8-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">query</span><span class="w"> </span><span class="p">(</span><span class="nv">$pk</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">!</span><span class="w"> </span><span class="err">@new</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="w">  </span><span class="n">task</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="nv">$pk</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">    </span><span class="n">done</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="type-system-locations">Type system locations<a class="headerlink" href="#type-system-locations" title="Permanent link">🔗</a></h3>
+<p>Type system locations identify places in a GraphQL <em>schema</em> (i.e. "API") where a directive can be used.
+Since Undine is used to define the schema, each type system location corresponds to an Undine
+object that accepts that type of directive.</p>
+<h4 id="schema"><code>SCHEMA</code><a class="headerlink" href="#schema" title="Permanent link">🔗</a></h4>
+<p>The <code>SCHEMA</code> location corresponds to the schema definition itself.
+Directives can be added here by using the <code>schema_definition_directives</code> argument
+in the <code>create_schema</code> function.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span>
+<span class="normal"><a href="#__codelineno-9-13">13</a></span>
+<span class="normal"><a href="#__codelineno-9-14">14</a></span>
+<span class="normal"><a href="#__codelineno-9-15">15</a></span>
+<span class="normal"><a href="#__codelineno-9-16">16</a></span>
+<span class="normal"><a href="#__codelineno-9-17">17</a></span>
+<span class="normal"><a href="#__codelineno-9-18">18</a></span>
+<span class="normal"><a href="#__codelineno-9-19">19</a></span>
+<span class="normal"><a href="#__codelineno-9-20">20</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">SCHEMA</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">example</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14"></a>        <span class="k">return</span> <span class="n">value</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15"></a>
+<a id="__codelineno-9-16" name="__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18"></a>    <span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19"></a>    <span class="n">schema_definition_directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)],</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20"></a><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">5</a></span>
+<span class="normal"><a href="#__codelineno-10-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">SCHEMA</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="k">schema</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">  </span><span class="nl">query</span><span class="p">:</span><span class="w"> </span><span class="n">Query</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="w">  </span><span class="nl">mutation</span><span class="p">:</span><span class="w"> </span><span class="n">Mutation</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="scalar"><code>SCALAR</code><a class="headerlink" href="#scalar" title="Permanent link">🔗</a></h4>
+<p>The <code>SCALAR</code> location corresponds to the scalars defined in the schema.
+In Undine, <code>ScalarType</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-11-10">10</a></span>
+<span class="normal"><a href="#__codelineno-11-11">11</a></span>
+<span class="normal"><a href="#__codelineno-11-12">12</a></span>
+<span class="normal"><a href="#__codelineno-11-13">13</a></span>
+<span class="normal"><a href="#__codelineno-11-14">14</a></span>
+<span class="normal"><a href="#__codelineno-11-15">15</a></span>
+<span class="normal"><a href="#__codelineno-11-16">16</a></span>
+<span class="normal"><a href="#__codelineno-11-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.scalars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScalarType</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">SCALAR</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10"></a>
+<a id="__codelineno-11-11" name="__codelineno-11-11"></a><span class="n">Vector3</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12"></a>
+<a id="__codelineno-11-13" name="__codelineno-11-13"></a><span class="n">vector3_scalar</span><span class="p">:</span> <span class="n">ScalarType</span><span class="p">[</span><span class="n">Vector3</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">ScalarType</span><span class="p">(</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Vector3&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Represents a 3D vector as a string in format &#39;X,Y,Z&#39;.&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16"></a>    <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)],</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
+<span class="normal"><a href="#__codelineno-12-2">2</a></span>
+<span class="normal"><a href="#__codelineno-12-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">SCALAR</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="k">scalar</span><span class="w"> </span><span class="err">Vector3</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;1.0.0&quot;)</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="object"><code>OBJECT</code><a class="headerlink" href="#object" title="Permanent link">🔗</a></h4>
+<p>The <code>OBJECT</code> location corresponds to the ObjectTypes defined in the schema.
+In Undine, <code>QueryTypes</code> and <code>RootTypes</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-13-10">10</a></span>
+<span class="normal"><a href="#__codelineno-13-11">11</a></span>
+<span class="normal"><a href="#__codelineno-13-12">12</a></span>
+<span class="normal"><a href="#__codelineno-13-13">13</a></span>
+<span class="normal"><a href="#__codelineno-13-14">14</a></span>
+<span class="normal"><a href="#__codelineno-13-15">15</a></span>
+<span class="normal"><a href="#__codelineno-13-16">16</a></span>
+<span class="normal"><a href="#__codelineno-13-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11"></a>
+<a id="__codelineno-13-12" name="__codelineno-13-12"></a>
+<a id="__codelineno-13-13" name="__codelineno-13-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span> <span class="o">...</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14"></a>
+<a id="__codelineno-13-15" name="__codelineno-13-15"></a>
+<a id="__codelineno-13-16" name="__codelineno-13-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v2.0.0&quot;</span><span class="p">)]):</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span>
+<span class="normal"><a href="#__codelineno-14-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">OBJECT</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a><span class="w">  </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="p">}</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10"></a><span class="w">  </span><span class="nl">tasks</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">TaskType</span><span class="err">!]!</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="field_definition"><code>FIELD_DEFINITION</code><a class="headerlink" href="#field_definition" title="Permanent link">🔗</a></h4>
+<p>The <code>FIELD_DEFINITION</code> location corresponds to the fields defined in the schema.
+In Undine, <code>Fields</code>, <code>InterfaceFields</code> and <code>Entrypoints</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-15-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-15-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-15-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-15-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-15-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-15-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-15-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-15-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-15-10">10</a></span>
+<span class="normal"><a href="#__codelineno-15-11">11</a></span>
+<span class="normal"><a href="#__codelineno-15-12">12</a></span>
+<span class="normal"><a href="#__codelineno-15-13">13</a></span>
+<span class="normal"><a href="#__codelineno-15-14">14</a></span>
+<span class="normal"><a href="#__codelineno-15-15">15</a></span>
+<span class="normal"><a href="#__codelineno-15-16">16</a></span>
+<span class="normal"><a href="#__codelineno-15-17">17</a></span>
+<span class="normal"><a href="#__codelineno-15-18">18</a></span>
+<span class="normal"><a href="#__codelineno-15-19">19</a></span>
+<span class="normal"><a href="#__codelineno-15-20">20</a></span>
+<span class="normal"><a href="#__codelineno-15-21">21</a></span>
+<span class="normal"><a href="#__codelineno-15-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">InterfaceField</span><span class="p">,</span> <span class="n">InterfaceType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7"></a>
+<a id="__codelineno-15-8" name="__codelineno-15-8"></a>
+<a id="__codelineno-15-9" name="__codelineno-15-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AddedInDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;addedIn&quot;</span><span class="p">):</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10"></a>    <span class="n">version</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11"></a>
+<a id="__codelineno-15-12" name="__codelineno-15-12"></a>
+<a id="__codelineno-15-13" name="__codelineno-15-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">Named</span><span class="p">(</span><span class="n">InterfaceType</span><span class="p">):</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">InterfaceField</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15"></a>
+<a id="__codelineno-15-16" name="__codelineno-15-16"></a>
+<a id="__codelineno-15-17" name="__codelineno-15-17"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">interfaces</span><span class="o">=</span><span class="p">[</span><span class="n">Named</span><span class="p">]):</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19"></a>
+<a id="__codelineno-15-20" name="__codelineno-15-20"></a>
+<a id="__codelineno-15-21" name="__codelineno-15-21"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-16-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-16-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-16-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-16-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-16-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-16-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-16-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-16-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-16-10">10</a></span>
+<span class="normal"><a href="#__codelineno-16-11">11</a></span>
+<span class="normal"><a href="#__codelineno-16-12">12</a></span>
+<span class="normal"><a href="#__codelineno-16-13">13</a></span>
+<span class="normal"><a href="#__codelineno-16-14">14</a></span>
+<span class="normal"><a href="#__codelineno-16-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@addedIn(version:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">FIELD_DEFINITION</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="k">interface</span><span class="w"> </span><span class="err">Named</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="p">}</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="err">Named</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9"></a><span class="w">  </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10"></a><span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11"></a><span class="p">}</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12"></a>
+<a id="__codelineno-16-13" name="__codelineno-16-13"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14"></a><span class="w">  </span><span class="nl">tasks</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">TaskType</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="argument_definition"><code>ARGUMENT_DEFINITION</code><a class="headerlink" href="#argument_definition" title="Permanent link">🔗</a></h4>
+<p>The <code>ARGUMENT_DEFINITION</code> location corresponds to the field arguments defined in the schema.
+In Undine, <code>CalculationArguments</code> and <code>DirectiveArguments</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-17-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-17-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-17-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-17-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-17-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-17-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-17-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-17-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-17-10">10</a></span>
+<span class="normal"><a href="#__codelineno-17-11">11</a></span>
+<span class="normal"><a href="#__codelineno-17-12">12</a></span>
+<span class="normal"><a href="#__codelineno-17-13">13</a></span>
+<span class="normal"><a href="#__codelineno-17-14">14</a></span>
+<span class="normal"><a href="#__codelineno-17-15">15</a></span>
+<span class="normal"><a href="#__codelineno-17-16">16</a></span>
+<span class="normal"><a href="#__codelineno-17-17">17</a></span>
+<span class="normal"><a href="#__codelineno-17-18">18</a></span>
+<span class="normal"><a href="#__codelineno-17-19">19</a></span>
+<span class="normal"><a href="#__codelineno-17-20">20</a></span>
+<span class="normal"><a href="#__codelineno-17-21">21</a></span>
+<span class="normal"><a href="#__codelineno-17-22">22</a></span>
+<span class="normal"><a href="#__codelineno-17-23">23</a></span>
+<span class="normal"><a href="#__codelineno-17-24">24</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Value</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">CalculationArgument</span><span class="p">,</span> <span class="n">DjangoExpression</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7"></a>
+<a id="__codelineno-17-8" name="__codelineno-17-8"></a><span class="c1"># Actual directive can be defined in multiple locations, but omit those for brevity.</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AddedInDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">ARGUMENT_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;addedIn&quot;</span><span class="p">):</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10"></a>    <span class="n">version</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11"></a>
+<a id="__codelineno-17-12" name="__codelineno-17-12"></a>
+<a id="__codelineno-17-13" name="__codelineno-17-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">NewDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;new&quot;</span><span class="p">):</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14"></a>    <span class="n">version</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15"></a>        <span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16"></a>        <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)],</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17"></a>    <span class="p">)</span>
+<a id="__codelineno-17-18" name="__codelineno-17-18"></a>
+<a id="__codelineno-17-19" name="__codelineno-17-19"></a>
+<a id="__codelineno-17-20" name="__codelineno-17-20"></a><span class="k">class</span><span class="w"> </span><span class="nc">Calc</span><span class="p">(</span><span class="n">Calculation</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<a id="__codelineno-17-21" name="__codelineno-17-21"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">CalculationArgument</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+<a id="__codelineno-17-22" name="__codelineno-17-22"></a>
+<a id="__codelineno-17-23" name="__codelineno-17-23"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DjangoExpression</span><span class="p">:</span>
+<a id="__codelineno-17-24" name="__codelineno-17-24"></a>        <span class="k">return</span> <span class="n">Value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-18-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-18-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-18-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-18-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-18-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-18-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-18-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-18-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-18-10">10</a></span>
+<span class="normal"><a href="#__codelineno-18-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@addedIn(version:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">ARGUMENT_DEFINITION</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="k">directive</span><span class="w"> </span><span class="err">@new</span><span class="w"> </span><span class="err">(</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a><span class="w">  </span><span class="err">version:</span><span class="w"> </span><span class="err">String!</span><span class="w"> </span><span class="err">@addedIn(version:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a><span class="err">)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">FIELD_DEFINITION</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8"></a><span class="w">  </span><span class="n">calc</span><span class="p">(</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9"></a><span class="w">    </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="no">Int</span><span class="err">!</span><span class="w"> </span><span class="err">@</span><span class="n">addedIn</span><span class="err">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10"></a><span class="w">  </span><span class="err">):</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="interface"><code>INTERFACE</code><a class="headerlink" href="#interface" title="Permanent link">🔗</a></h4>
+<p>The <code>INTERFACE</code> location corresponds to the interfaces defined in the schema.
+In Undine, <code>InterfaceType</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-19-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-19-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-19-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-19-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-19-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-19-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-19-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-19-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-19-10">10</a></span>
+<span class="normal"><a href="#__codelineno-19-11">11</a></span>
+<span class="normal"><a href="#__codelineno-19-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterfaceField</span><span class="p">,</span> <span class="n">InterfaceType</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6"></a>
+<a id="__codelineno-19-7" name="__codelineno-19-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INTERFACE</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9"></a>
+<a id="__codelineno-19-10" name="__codelineno-19-10"></a>
+<a id="__codelineno-19-11" name="__codelineno-19-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">Named</span><span class="p">(</span><span class="n">InterfaceType</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">InterfaceField</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
+<span class="normal"><a href="#__codelineno-20-2">2</a></span>
+<span class="normal"><a href="#__codelineno-20-3">3</a></span>
+<span class="normal"><a href="#__codelineno-20-4">4</a></span>
+<span class="normal"><a href="#__codelineno-20-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">INTERFACE</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="k">interface</span><span class="w"> </span><span class="err">Named</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="union"><code>UNION</code><a class="headerlink" href="#union" title="Permanent link">🔗</a></h4>
+<p>The <code>UNION</code> location corresponds to the unions defined in the schema.
+In Undine, <code>UnionType</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-21-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-21-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-21-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-21-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-21-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-21-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-21-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-21-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-21-10">10</a></span>
+<span class="normal"><a href="#__codelineno-21-11">11</a></span>
+<span class="normal"><a href="#__codelineno-21-12">12</a></span>
+<span class="normal"><a href="#__codelineno-21-13">13</a></span>
+<span class="normal"><a href="#__codelineno-21-14">14</a></span>
+<span class="normal"><a href="#__codelineno-21-15">15</a></span>
+<span class="normal"><a href="#__codelineno-21-16">16</a></span>
+<span class="normal"><a href="#__codelineno-21-17">17</a></span>
+<span class="normal"><a href="#__codelineno-21-18">18</a></span>
+<span class="normal"><a href="#__codelineno-21-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">UnionType</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8"></a>
+<a id="__codelineno-21-9" name="__codelineno-21-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">UNION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11"></a>
+<a id="__codelineno-21-12" name="__codelineno-21-12"></a>
+<a id="__codelineno-21-13" name="__codelineno-21-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14"></a>
+<a id="__codelineno-21-15" name="__codelineno-21-15"></a>
+<a id="__codelineno-21-16" name="__codelineno-21-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17"></a>
+<a id="__codelineno-21-18" name="__codelineno-21-18"></a>
+<a id="__codelineno-21-19" name="__codelineno-21-19"></a><span class="k">class</span><span class="w"> </span><span class="nc">SearchObject</span><span class="p">(</span><span class="n">UnionType</span><span class="p">[</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">ProjectType</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span>
+<span class="normal"><a href="#__codelineno-22-2">2</a></span>
+<span class="normal"><a href="#__codelineno-22-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">UNION</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="k">union</span><span class="w"> </span><span class="err">SearchObject</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">ProjectType</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="enum"><code>ENUM</code><a class="headerlink" href="#enum" title="Permanent link">🔗</a></h4>
+<p>The <code>ENUM</code> location corresponds to the enums defined in the schema.
+In Undine, <code>OrderSet</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-23-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-23-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-23-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-23-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-23-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-23-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-23-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-23-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-23-10">10</a></span>
+<span class="normal"><a href="#__codelineno-23-11">11</a></span>
+<span class="normal"><a href="#__codelineno-23-12">12</a></span>
+<span class="normal"><a href="#__codelineno-23-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderSet</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a>
+<a id="__codelineno-23-6" name="__codelineno-23-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7"></a>
+<a id="__codelineno-23-8" name="__codelineno-23-8"></a>
+<a id="__codelineno-23-9" name="__codelineno-23-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">ENUM</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11"></a>
+<a id="__codelineno-23-12" name="__codelineno-23-12"></a>
+<a id="__codelineno-23-13" name="__codelineno-23-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskOrderSet</span><span class="p">(</span><span class="n">OrderSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span>
+<span class="normal"><a href="#__codelineno-24-2">2</a></span>
+<span class="normal"><a href="#__codelineno-24-3">3</a></span>
+<span class="normal"><a href="#__codelineno-24-4">4</a></span>
+<span class="normal"><a href="#__codelineno-24-5">5</a></span>
+<span class="normal"><a href="#__codelineno-24-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">ENUM</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="k">enum</span><span class="w"> </span><span class="err">TaskOrderSet</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="w">  </span><span class="n">nameAsc</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a><span class="w">  </span><span class="n">nameDesc</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="enum_value"><code>ENUM_VALUE</code><a class="headerlink" href="#enum_value" title="Permanent link">🔗</a></h4>
+<p>The <code>ENUM_VALUE</code> location corresponds to the enum values defined in the schema.
+In Undine, <code>Order</code> accepts <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-25-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-25-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-25-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-25-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-25-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-25-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-25-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-25-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-25-10">10</a></span>
+<span class="normal"><a href="#__codelineno-25-11">11</a></span>
+<span class="normal"><a href="#__codelineno-25-12">12</a></span>
+<span class="normal"><a href="#__codelineno-25-13">13</a></span>
+<span class="normal"><a href="#__codelineno-25-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Order</span><span class="p">,</span> <span class="n">OrderSet</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5"></a>
+<a id="__codelineno-25-6" name="__codelineno-25-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7"></a>
+<a id="__codelineno-25-8" name="__codelineno-25-8"></a>
+<a id="__codelineno-25-9" name="__codelineno-25-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AddedInDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">ENUM_VALUE</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;addedIn&quot;</span><span class="p">):</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10"></a>    <span class="n">version</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11"></a>
+<a id="__codelineno-25-12" name="__codelineno-25-12"></a>
+<a id="__codelineno-25-13" name="__codelineno-25-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskOrderSet</span><span class="p">(</span><span class="n">OrderSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-25-14" name="__codelineno-25-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Order</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span>
+<span class="normal"><a href="#__codelineno-26-2">2</a></span>
+<span class="normal"><a href="#__codelineno-26-3">3</a></span>
+<span class="normal"><a href="#__codelineno-26-4">4</a></span>
+<span class="normal"><a href="#__codelineno-26-5">5</a></span>
+<span class="normal"><a href="#__codelineno-26-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@addedIn(version:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">ENUM_VALUE</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a>
+<a id="__codelineno-26-3" name="__codelineno-26-3"></a><span class="k">enum</span><span class="w"> </span><span class="err">TaskOrderSet</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a><span class="w">  </span><span class="n">nameAsc</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a><span class="w">  </span><span class="n">nameDesc</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a><span class="p">}</span><span class="w">  </span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="input_object"><code>INPUT_OBJECT</code><a class="headerlink" href="#input_object" title="Permanent link">🔗</a></h4>
+<p>The <code>INPUT_OBJECT</code> location corresponds to the input objects defined in the schema.
+In Undine, <code>MutationType</code> and <code>FilterSet</code> accept <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-27-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-27-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-27-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-27-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-27-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-27-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-27-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-27-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-27-10">10</a></span>
+<span class="normal"><a href="#__codelineno-27-11">11</a></span>
+<span class="normal"><a href="#__codelineno-27-12">12</a></span>
+<span class="normal"><a href="#__codelineno-27-13">13</a></span>
+<span class="normal"><a href="#__codelineno-27-14">14</a></span>
+<span class="normal"><a href="#__codelineno-27-15">15</a></span>
+<span class="normal"><a href="#__codelineno-27-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a>
+<a id="__codelineno-27-3" name="__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5"></a>
+<a id="__codelineno-27-6" name="__codelineno-27-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7"></a>
+<a id="__codelineno-27-8" name="__codelineno-27-8"></a>
+<a id="__codelineno-27-9" name="__codelineno-27-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_OBJECT</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11"></a>
+<a id="__codelineno-27-12" name="__codelineno-27-12"></a>
+<a id="__codelineno-27-13" name="__codelineno-27-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span> <span class="o">...</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14"></a>
+<a id="__codelineno-27-15" name="__codelineno-27-15"></a>
+<a id="__codelineno-27-16" name="__codelineno-27-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">CreateTaskMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span>
+<span class="normal"><a href="#__codelineno-28-2">2</a></span>
+<span class="normal"><a href="#__codelineno-28-3">3</a></span>
+<span class="normal"><a href="#__codelineno-28-4">4</a></span>
+<span class="normal"><a href="#__codelineno-28-5">5</a></span>
+<span class="normal"><a href="#__codelineno-28-6">6</a></span>
+<span class="normal"><a href="#__codelineno-28-7">7</a></span>
+<span class="normal"><a href="#__codelineno-28-8">8</a></span>
+<span class="normal"><a href="#__codelineno-28-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">INPUT_OBJECT</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a>
+<a id="__codelineno-28-3" name="__codelineno-28-3"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskFilterSet</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5"></a><span class="p">}</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6"></a>
+<a id="__codelineno-28-7" name="__codelineno-28-7"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskCreateMutation</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">&quot;v1.0.0&quot;)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h4 id="input_field_definition"><code>INPUT_FIELD_DEFINITION</code><a class="headerlink" href="#input_field_definition" title="Permanent link">🔗</a></h4>
+<p>The <code>INPUT_FIELD_DEFINITION</code> location corresponds to the input field definitions defined in the schema.
+In Undine, <code>Input</code> and <code>Filter</code> accept <code>Directives</code> declared for this location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-29-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-29-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-29-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-29-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-29-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-29-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-29-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-29-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-29-10">10</a></span>
+<span class="normal"><a href="#__codelineno-29-11">11</a></span>
+<span class="normal"><a href="#__codelineno-29-12">12</a></span>
+<span class="normal"><a href="#__codelineno-29-13">13</a></span>
+<span class="normal"><a href="#__codelineno-29-14">14</a></span>
+<span class="normal"><a href="#__codelineno-29-15">15</a></span>
+<span class="normal"><a href="#__codelineno-29-16">16</a></span>
+<span class="normal"><a href="#__codelineno-29-17">17</a></span>
+<span class="normal"><a href="#__codelineno-29-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5"></a>
+<a id="__codelineno-29-6" name="__codelineno-29-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7"></a>
+<a id="__codelineno-29-8" name="__codelineno-29-8"></a>
+<a id="__codelineno-29-9" name="__codelineno-29-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AddedInDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;addedIn&quot;</span><span class="p">):</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-29-11" name="__codelineno-29-11"></a>
+<a id="__codelineno-29-12" name="__codelineno-29-12"></a>
+<a id="__codelineno-29-13" name="__codelineno-29-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-29-14" name="__codelineno-29-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+<a id="__codelineno-29-15" name="__codelineno-29-15"></a>
+<a id="__codelineno-29-16" name="__codelineno-29-16"></a>
+<a id="__codelineno-29-17" name="__codelineno-29-17"></a><span class="k">class</span><span class="w"> </span><span class="nc">CreateTaskMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-29-18" name="__codelineno-29-18"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">AddedInDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)])</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1">1</a></span>
+<span class="normal"><a href="#__codelineno-30-2">2</a></span>
+<span class="normal"><a href="#__codelineno-30-3">3</a></span>
+<span class="normal"><a href="#__codelineno-30-4">4</a></span>
+<span class="normal"><a href="#__codelineno-30-5">5</a></span>
+<span class="normal"><a href="#__codelineno-30-6">6</a></span>
+<span class="normal"><a href="#__codelineno-30-7">7</a></span>
+<span class="normal"><a href="#__codelineno-30-8">8</a></span>
+<span class="normal"><a href="#__codelineno-30-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@addedIn(version:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">INPUT_FIELD_DEFINITION</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a>
+<a id="__codelineno-30-3" name="__codelineno-30-3"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskFilterSet</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a><span class="p">}</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskCreateMutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nd">@addedIn</span><span class="p">(</span><span class="n">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h3 id="is-repeatable">Is repeatable<a class="headerlink" href="#is-repeatable" title="Permanent link">🔗</a></h3>
+<p>A directive can be declared as repeatable using the <code>is_repeatable</code> argument.
+This means that the directive can be used multiple times in the same location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-31-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-31-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-31-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-31-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-31-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-31-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-31-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-31-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-31-10">10</a></span>
+<span class="normal"><a href="#__codelineno-31-11">11</a></span>
+<span class="normal"><a href="#__codelineno-31-12">12</a></span>
+<span class="normal"><a href="#__codelineno-31-13">13</a></span>
+<span class="normal"><a href="#__codelineno-31-14">14</a></span>
+<span class="normal"><a href="#__codelineno-31-15">15</a></span>
+<span class="normal"><a href="#__codelineno-31-16">16</a></span>
+<span class="normal"><a href="#__codelineno-31-17">17</a></span>
+<span class="normal"><a href="#__codelineno-31-18">18</a></span>
+<span class="normal"><a href="#__codelineno-31-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5"></a>
+<a id="__codelineno-31-6" name="__codelineno-31-6"></a>
+<a id="__codelineno-31-7" name="__codelineno-31-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8"></a>    <span class="n">Directive</span><span class="p">,</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9"></a>    <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10"></a>    <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11"></a>    <span class="n">is_repeatable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12"></a><span class="p">):</span>
+<a id="__codelineno-31-13" name="__codelineno-31-13"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-31-14" name="__codelineno-31-14"></a>
+<a id="__codelineno-31-15" name="__codelineno-31-15"></a>
+<a id="__codelineno-31-16" name="__codelineno-31-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-31-17" name="__codelineno-31-17"></a>    <span class="nd">@Entrypoint</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">),</span> <span class="n">VersionDirective</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s2">&quot;v2.0.0&quot;</span><span class="p">)])</span>
+<a id="__codelineno-31-18" name="__codelineno-31-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">example</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-31-19" name="__codelineno-31-19"></a>        <span class="k">return</span> <span class="s2">&quot;Example&quot;</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>In schema definition</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1">1</a></span>
+<span class="normal"><a href="#__codelineno-32-2">2</a></span>
+<span class="normal"><a href="#__codelineno-32-3">3</a></span>
+<span class="normal"><a href="#__codelineno-32-4">4</a></span>
+<span class="normal"><a href="#__codelineno-32-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="k">directive</span><span class="w"> </span><span class="err">@version(value:</span><span class="w"> </span><span class="err">String!)</span><span class="w"> </span><span class="err">repeatable</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="k">FIELD_DEFINITION</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a>
+<a id="__codelineno-32-3" name="__codelineno-32-3"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4"></a><span class="w">  </span><span class="nl">example</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@version</span><span class="p">(</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.0.0&quot;</span><span class="p">)</span><span class="w"> </span><span class="nd">@version</span><span class="p">(</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v2.0.0&quot;</span><span class="p">)</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<h3 id="schema-name">Schema name<a class="headerlink" href="#schema-name" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the generated <code>Directive</code> is the same as the name of the <code>Directive</code> class.
+You can change this by setting the <code>schema_name</code> argument to the <code>Directive</code> class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1">1</a></span>
+<span class="normal"><a href="#__codelineno-33-2">2</a></span>
+<span class="normal"><a href="#__codelineno-33-3">3</a></span>
+<span class="normal"><a href="#__codelineno-33-4">4</a></span>
+<span class="normal"><a href="#__codelineno-33-5">5</a></span>
+<span class="normal"><a href="#__codelineno-33-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a>
+<a id="__codelineno-33-3" name="__codelineno-33-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">NewDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>Directive</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>Directive</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1">1</a></span>
+<span class="normal"><a href="#__codelineno-34-2">2</a></span>
+<span class="normal"><a href="#__codelineno-34-3">3</a></span>
+<span class="normal"><a href="#__codelineno-34-4">4</a></span>
+<span class="normal"><a href="#__codelineno-34-5">5</a></span>
+<span class="normal"><a href="#__codelineno-34-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2"></a>
+<a id="__codelineno-34-3" name="__codelineno-34-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4"></a>
+<a id="__codelineno-34-5" name="__codelineno-34-5"></a>
+<a id="__codelineno-34-6" name="__codelineno-34-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">NewDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">}):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p><code>Directive</code> extensions are made available in the GraphQL <code>Directive</code> extensions
+after the schema is created. The <code>Directive</code> itself is found in the <code>extensions</code>
+under a key defined by the <code>DIRECTIVE_EXTENSIONS_KEY</code> setting.</p>
+<h2 id="directiveargument">DirectiveArgument<a class="headerlink" href="#directiveargument" title="Permanent link">🔗</a></h2>
+<p>A <code>Directive</code> can optionally have a number of <a href="#directiveargument"><code>DirectiveArguments</code></a>
+defined in the class body. These define the arguments that can or must be used with the directive.
+A <code>DirectiveArgument</code> always requires <em>input type</em> of the argument, which needs to be a GraphQL input type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1">1</a></span>
+<span class="normal"><a href="#__codelineno-35-2">2</a></span>
+<span class="normal"><a href="#__codelineno-35-3">3</a></span>
+<span class="normal"><a href="#__codelineno-35-4">4</a></span>
+<span class="normal"><a href="#__codelineno-35-5">5</a></span>
+<span class="normal"><a href="#__codelineno-35-6">6</a></span>
+<span class="normal"><a href="#__codelineno-35-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2"></a>
+<a id="__codelineno-35-3" name="__codelineno-35-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4"></a>
+<a id="__codelineno-35-5" name="__codelineno-35-5"></a>
+<a id="__codelineno-35-6" name="__codelineno-35-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="schema-name_1">Schema name<a class="headerlink" href="#schema-name_1" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the argument is the same as the name of the attribute
+to which the <code>DirectiveArgument</code> was defined to in the <code>Directive</code> class.
+You can change this by setting the <code>schema_name</code> argument to the <code>DirectiveArgument</code> class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span>
+<span class="normal"><a href="#__codelineno-36-2">2</a></span>
+<span class="normal"><a href="#__codelineno-36-3">3</a></span>
+<span class="normal"><a href="#__codelineno-36-4">4</a></span>
+<span class="normal"><a href="#__codelineno-36-5">5</a></span>
+<span class="normal"><a href="#__codelineno-36-6">6</a></span>
+<span class="normal"><a href="#__codelineno-36-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2"></a>
+<a id="__codelineno-36-3" name="__codelineno-36-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4"></a>
+<a id="__codelineno-36-5" name="__codelineno-36-5"></a>
+<a id="__codelineno-36-6" name="__codelineno-36-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="description">Description<a class="headerlink" href="#description" title="Permanent link">🔗</a></h3>
+<p>A description for a <code>DirectiveArgument</code> can be provided in on of two ways:</p>
+<p>1) By setting the <code>description</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1">1</a></span>
+<span class="normal"><a href="#__codelineno-37-2">2</a></span>
+<span class="normal"><a href="#__codelineno-37-3">3</a></span>
+<span class="normal"><a href="#__codelineno-37-4">4</a></span>
+<span class="normal"><a href="#__codelineno-37-5">5</a></span>
+<span class="normal"><a href="#__codelineno-37-6">6</a></span>
+<span class="normal"><a href="#__codelineno-37-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4"></a>
+<a id="__codelineno-37-5" name="__codelineno-37-5"></a>
+<a id="__codelineno-37-6" name="__codelineno-37-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Version value.&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>2) As class attribute docstring.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1">1</a></span>
+<span class="normal"><a href="#__codelineno-38-2">2</a></span>
+<span class="normal"><a href="#__codelineno-38-3">3</a></span>
+<span class="normal"><a href="#__codelineno-38-4">4</a></span>
+<span class="normal"><a href="#__codelineno-38-5">5</a></span>
+<span class="normal"><a href="#__codelineno-38-6">6</a></span>
+<span class="normal"><a href="#__codelineno-38-7">7</a></span>
+<span class="normal"><a href="#__codelineno-38-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2"></a>
+<a id="__codelineno-38-3" name="__codelineno-38-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4"></a>
+<a id="__codelineno-38-5" name="__codelineno-38-5"></a>
+<a id="__codelineno-38-6" name="__codelineno-38-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-38-7" name="__codelineno-38-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">))</span>
+<a id="__codelineno-38-8" name="__codelineno-38-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Version value.&quot;&quot;&quot;</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="default-value">Default value<a class="headerlink" href="#default-value" title="Permanent link">🔗</a></h3>
+<p>A <code>default_value</code> can be provided to set the default value for the <code>DirectiveArgument</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1">1</a></span>
+<span class="normal"><a href="#__codelineno-39-2">2</a></span>
+<span class="normal"><a href="#__codelineno-39-3">3</a></span>
+<span class="normal"><a href="#__codelineno-39-4">4</a></span>
+<span class="normal"><a href="#__codelineno-39-5">5</a></span>
+<span class="normal"><a href="#__codelineno-39-6">6</a></span>
+<span class="normal"><a href="#__codelineno-39-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2"></a>
+<a id="__codelineno-39-3" name="__codelineno-39-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4"></a>
+<a id="__codelineno-39-5" name="__codelineno-39-5"></a>
+<a id="__codelineno-39-6" name="__codelineno-39-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">default_value</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="deprecation-reason">Deprecation reason<a class="headerlink" href="#deprecation-reason" title="Permanent link">🔗</a></h3>
+<p>A <code>deprecation_reason</code> can be provided to mark the <code>DirectiveArgument</code> as deprecated.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1">1</a></span>
+<span class="normal"><a href="#__codelineno-40-2">2</a></span>
+<span class="normal"><a href="#__codelineno-40-3">3</a></span>
+<span class="normal"><a href="#__codelineno-40-4">4</a></span>
+<span class="normal"><a href="#__codelineno-40-5">5</a></span>
+<span class="normal"><a href="#__codelineno-40-6">6</a></span>
+<span class="normal"><a href="#__codelineno-40-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2"></a>
+<a id="__codelineno-40-3" name="__codelineno-40-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4"></a>
+<a id="__codelineno-40-5" name="__codelineno-40-5"></a>
+<a id="__codelineno-40-6" name="__codelineno-40-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-40-7" name="__codelineno-40-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">deprecation_reason</span><span class="o">=</span><span class="s2">&quot;Use something else.&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="extensions_1">Extensions<a class="headerlink" href="#extensions_1" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>DirectiveArgument</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>DirectiveArgument</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1">1</a></span>
+<span class="normal"><a href="#__codelineno-41-2">2</a></span>
+<span class="normal"><a href="#__codelineno-41-3">3</a></span>
+<span class="normal"><a href="#__codelineno-41-4">4</a></span>
+<span class="normal"><a href="#__codelineno-41-5">5</a></span>
+<span class="normal"><a href="#__codelineno-41-6">6</a></span>
+<span class="normal"><a href="#__codelineno-41-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2"></a>
+<a id="__codelineno-41-3" name="__codelineno-41-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4"></a>
+<a id="__codelineno-41-5" name="__codelineno-41-5"></a>
+<a id="__codelineno-41-6" name="__codelineno-41-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VersionDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">):</span>
+<a id="__codelineno-41-7" name="__codelineno-41-7"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span><span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<p><code>DirectiveArgument</code> extensions are made available in the GraphQL <code>Argument</code> extensions
+after the schema is created. The <code>DirectiveArgument</code> itself is found in the <code>extensions</code>
+under a key defined by the <code>DIRECTIVE_ARGUMENT_EXTENSIONS_KEY</code> setting.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../scalars/" class="btn btn-neutral float-left" title="Scalars"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../hacking-undine/" class="btn btn-neutral float-right" title="Hacking Undine">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../scalars/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../hacking-undine/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/docs.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
