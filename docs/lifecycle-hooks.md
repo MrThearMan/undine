@@ -41,6 +41,16 @@ in the order they are registered. This means that the first hook registered will
 have its "before" portion run first and its "after" portion run last. You can think
 of them as a stack of context managers.
 
+Lifecycle hooks can have a different implementation in [async context](async.md)
+using the `run_async` method. If no async implementation is provided,
+the synchronous version will be used.
+
+```python
+-8<- "lifecycle_hooks/example_hook_async.py"
+```
+
+Async hooks are also used for [subscriptions](subscriptions.md).
+
 ## LifecycleHookContext
 
 Each hook is passed a `LifecycleHookContext` object (`self.context`),
