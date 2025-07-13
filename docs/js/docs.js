@@ -40,3 +40,13 @@ document.addEventListener("click", event => {
     elem.open = true;
   }
 });
+
+
+// Register the service worker for caching docs offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/undine/service-worker.js', { scope: '/undine/' })
+      .then(reg => console.log('Service Worker registered:', reg.scope))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  });
+}
