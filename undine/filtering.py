@@ -178,7 +178,7 @@ class FilterSetMeta(type):
             fields=FunctionEqualityWrapper(fields, context=cls),
             extensions=cls.__extensions__,
         )
-        return input_object_type  # noqa: RET504
+        return input_object_type
 
     def __input_fields__(cls) -> dict[str, GraphQLInputField]:
         """Defer creating fields until all QueryTypes have been registered."""
