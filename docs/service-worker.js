@@ -5,6 +5,7 @@ const urlsToCache = __URLS_TO_CACHE__;
 
 // Install and cache resources
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(cacheName)
       .then(cache => cache.addAll(urlsToCache))
@@ -21,6 +22,7 @@ self.addEventListener('fetch', event => {
 
 // Clean old caches when new service worker is installed
 self.addEventListener('activate', event => {
+  clients.claim();
   const cacheWhitelist = [cacheName];
   event.waitUntil(
     caches.keys()
