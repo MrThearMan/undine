@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 from typing import NotRequired, TypedDict
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from example_project.app.models import Person, Task
@@ -21,6 +23,7 @@ from undine import (
     create_schema,
 )
 from undine.exceptions import EmptyFilterResult
+from undine.optimizer.optimizer import optimize_async, optimize_sync
 from undine.utils.graphql.utils import get_arguments
 
 
@@ -50,6 +53,46 @@ def test_end_to_end__filtering(graphql, undine_settings) -> None:
     """
 
     response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "tasks": [
+            {"name": "bar"},
+            {"name": "baz"},
+        ],
+    }
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_end_to_end__filtering__async(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name_startswith = Filter("name", lookup="startswith")
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo")
+    await sync_to_async(TaskFactory.create)(name="bar")
+    await sync_to_async(TaskFactory.create)(name="baz")
+
+    query = """
+        query {
+          tasks(filter: {nameStartswith: "b"}) {
+            name
+          }
+        }
+    """
+
+    response = await graphql_async(query)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -759,3 +802,86 @@ def test_end_to_end__filtering__max_filters(graphql, undine_settings) -> None:
             "path": ["tasks"],
         }
     ]
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Only running async version of this test")
+def test_end_to_end__filtering__custom_resolver(graphql, undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+        @tasks.resolve
+        def resolve_tasks(self, info: GQLInfo, name: str) -> list[Task]:
+            qs = Task.objects.filter(name__icontains=name)
+            return optimize_sync(qs, info)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    query = """
+        query {
+          tasks(name: "b") {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "tasks": [
+            {"name": "bar"},
+            {"name": "baz"},
+        ],
+    }
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_end_to_end__filtering__custom_resolver__async(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+        @tasks.resolve
+        async def resolve_tasks(self, info: GQLInfo, name: str) -> list[Task]:
+            qs = Task.objects.filter(name__icontains=name)
+            return await optimize_async(qs, info)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo")
+    await sync_to_async(TaskFactory.create)(name="bar")
+    await sync_to_async(TaskFactory.create)(name="baz")
+
+    query = """
+        query {
+          tasks(name: "b") {
+            name
+          }
+        }
+    """
+
+    response = await graphql_async(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "tasks": [
+            {"name": "bar"},
+            {"name": "baz"},
+        ],
+    }

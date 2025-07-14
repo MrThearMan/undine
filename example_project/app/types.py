@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
 from django.db.models import Count, F, Q
 from django.db.models.functions import Coalesce, Length, Now, Upper
@@ -24,9 +24,7 @@ from undine.filtering import FilterSet
 from undine.ordering import OrderSet
 from undine.query import QueryType
 from undine.relay import Connection, Node
-
-if TYPE_CHECKING:
-    from undine.typing import GQLInfo
+from undine.typing import GQLInfo
 
 
 class Named(InterfaceType):

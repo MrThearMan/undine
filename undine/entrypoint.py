@@ -161,6 +161,7 @@ class Entrypoint:
         check_directives(self.directives, location=DirectiveLocation.FIELD_DEFINITION)
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
+        self.resolver_func: GraphQLFieldResolver | None = None
         self.permissions_func: PermissionFunc | None = None
 
     def __connect__(self, root_type: type[RootType], name: str) -> None:
@@ -209,13 +210,24 @@ class Entrypoint:
         return convert_to_graphql_type(value)  # type: ignore[return-value]
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
+        if self.resolver_func is not None:
+            return convert_to_graphql_argument_map(self.resolver_func, many=self.many, entrypoint=True)
         return convert_to_graphql_argument_map(self.ref, many=self.many, entrypoint=True)
 
     def get_resolver(self) -> GraphQLFieldResolver:
+        if self.resolver_func is not None:
+            return convert_to_entrypoint_resolver(self.resolver_func, caller=self)
         return convert_to_entrypoint_resolver(self.ref, caller=self)
 
     def get_subscription(self) -> GraphQLFieldResolver | None:
         return convert_to_entrypoint_subscription(self.ref, caller=self)
+
+    def resolve(self, func: GraphQLFieldResolver | None = None, /) -> GraphQLFieldResolver:
+        """Decorate a function to add a custom resolver for this Entrypoint."""
+        if func is None:  # Allow `@<entrypoint_name>.resolve()`
+            return self.resolve
+        self.resolver_func = cache_signature_if_function(func, depth=1)
+        return func
 
     def permissions(self, func: PermissionFunc | None = None, /) -> PermissionFunc:
         """Decorate a function to add it as a permission check for this Entrypoint."""

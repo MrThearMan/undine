@@ -340,7 +340,7 @@ def test_resolvers__query_type_single_resolver(undine_settings) -> None:
     task = TaskFactory.create()
 
     with patch_optimizer():
-        assert resolver(root=task, info=mock_gql_info()) == task
+        assert resolver(root=task, info=mock_gql_info(), pk=task.pk) == task
 
 
 @pytest.mark.django_db(transaction=True)
@@ -361,7 +361,7 @@ async def test_resolvers__query_type_single_resolver__async(undine_settings) -> 
     task = await sync_to_async(TaskFactory.create)()
 
     with patch_optimizer():
-        coroutine = resolver(root=task, info=mock_gql_info())
+        coroutine = resolver(root=task, info=mock_gql_info(), pk=task.pk)
         assert isawaitable(coroutine)
 
         result = await coroutine

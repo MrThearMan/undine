@@ -11,12 +11,14 @@ from graphql import (
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
+    GraphQLString,
 )
 
 from example_project.app.models import Task
-from undine import Entrypoint, FilterSet, OrderSet, QueryType, RootType
+from undine import Entrypoint, FilterSet, GQLInfo, OrderSet, QueryType, RootType
 from undine.exceptions import MissingEntrypointRefError
-from undine.resolvers import QueryTypeManyResolver, QueryTypeSingleResolver
+from undine.optimizer.optimizer import optimize_sync
+from undine.resolvers import EntrypointFunctionResolver, QueryTypeManyResolver, QueryTypeSingleResolver
 
 
 def test_entrypoint__missing_reference() -> None:
@@ -201,3 +203,21 @@ def test_entrypoint__query__many__get_resolver() -> None:
 
     resolver = Query.task.get_resolver()
     assert isinstance(resolver, QueryTypeManyResolver)
+
+
+def test_entrypoint__query__custom_resolver() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+        @task.resolve
+        def resolve_task(self, info: GQLInfo, name: str) -> list[Task]:
+            qs = Task.objects.filter(name__icontains=name)
+            return optimize_sync(qs, info)
+
+    resolver = Query.task.get_resolver()
+    assert isinstance(resolver, EntrypointFunctionResolver)
+
+    args = Query.task.get_field_arguments()
+    assert args == {"name": GraphQLArgument(GraphQLNonNull(GraphQLString), out_name="name")}

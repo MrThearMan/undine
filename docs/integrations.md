@@ -96,6 +96,9 @@ The response object also has details on the database queries that were executed
 during the request, which can be useful for debugging the performance of your
 GraphQL API.
 
+An async version of the client is also available, which can be accessed from
+the `graphql_async` fixture.
+
 The plugin also includes a `undine_settings` fixture that allows modifying
 Undine's settings during testing more easily.
 

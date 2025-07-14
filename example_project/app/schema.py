@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from collections.abc import AsyncGenerator
 
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
+from example_project.app.models import Task
 from example_project.app.mutations import CommentCreateMutationType, TaskCreateMutationType
 from example_project.app.types import Commentable, CommentType, Named, ReportType, TaskType
-from undine import Entrypoint, RootType, create_schema
+from undine import Entrypoint, GQLInfo, RootType, create_schema
 from undine.directives import Directive, DirectiveArgument
+from undine.optimizer.optimizer import optimize_sync
 from undine.relay import Connection, Node
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-
-    from undine import GQLInfo
 
 
 class VersionDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="version"):
@@ -44,6 +41,12 @@ class Query(RootType):
         :param arg: Argument docstring.
         """
         return [arg]
+
+    task_by_name = Entrypoint(TaskType, nullable=True)
+
+    @task_by_name.resolve
+    def resolve_task_by_name(self, info: GQLInfo, name: str) -> Task | None:
+        return optimize_sync(Task.objects.all(), info, name=name)
 
 
 class Mutation(RootType):

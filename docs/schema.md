@@ -287,6 +287,46 @@ using the `@<entrypoint_name>.permissions` decorator.
 -8<- "schema/entrypoint_permissions.py"
 ```
 
+### Custom resolver
+
+> Before overriding an `Entrypoint`'s resolver, you should check if
+> [QueryType filtering](queries.md#filtering) can be used instead.
+
+You can override the resolver for an `Entrypoint` by decorating
+a method using the `@<entrypoint_name>.resolve` decorator. This
+can be used, e.g., to add special-case `Entrypoints` for `QueryTypes`.
+
+```python
+-8<- "schema/entrypoint_resolve.py"
+```
+
+/// details | About method signature
+
+The decorated method is treated as a static method by the `Entrypoint`.
+
+The `self` argument is not an instance of the `RootType`,
+but `root` argument of the `GraphQLField` resolver. To clarify this,
+it's recommended to change the argument's name to `root`,
+as defined by the [`RESOLVER_ROOT_PARAM_NAME`](settings.md#resolver_root_param_name)
+setting.
+
+The value of the `root` argument for an `Entrypoint` is `None` by default,
+but can be configured using the [`ROOT_VALUE`](settings.md#root_value)
+setting if desired.
+
+The `info` argument can be left out, but if it's included, it should always
+have the `GQLInfo` type annotation.
+
+///
+
+Note that using this decorator, you'll override the resolver
+and arguments based on the reference used in the `Entrypoint`.
+Arguments will be taken from the additional arguments passed to the resolver,
+e.g., "name" in the example above.
+
+Be sure to call the optimizer, either directly or using the `optimize_sync` or `optimize_async`
+helper functions, to queries are optimized.
+
 ### Deprecation reason
 
 A `deprecation_reason` can be provided to mark the `Entrypoint` as deprecated.

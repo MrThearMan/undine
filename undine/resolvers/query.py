@@ -19,6 +19,7 @@ from undine.exceptions import (
     GraphQLNodeQueryTypeMissingError,
     GraphQLNodeTypeNotObjectTypeError,
 )
+from undine.optimizer.optimizer import optimize_async, optimize_sync
 from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack_async, evaluate_with_prefetch_hack_sync
 from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
@@ -253,37 +254,23 @@ class QueryTypeSingleResolver(Generic[TModel]):
         return self.run_sync(root, info, **kwargs)
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        queryset = self.run_optimizer(info, **kwargs)
-        instances = evaluate_with_prefetch_hack_sync(queryset)
+        queryset = self.query_type.__get_queryset__(info)
+        instance = optimize_sync(queryset, info, **kwargs)
 
-        instance = next(iter(instances), None)
         if instance is not None:
             self.check_permissions(root, info, instance)
-
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
         # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
-        queryset = self.run_optimizer(info, **kwargs)
-        instances = await evaluate_with_prefetch_hack_async(queryset)
+        queryset = self.query_type.__get_queryset__(info)
+        instance = await optimize_async(queryset, info, **kwargs)
 
-        instance = next(iter(instances), None)
         if instance is not None:
             self.check_permissions(root, info, instance)
-
         return instance
-
-    def get_queryset(self, info: GQLInfo, **kwargs: Any) -> QuerySet[TModel]:
-        queryset = self.query_type.__get_queryset__(info)
-        return queryset.filter(**kwargs)
-
-    def run_optimizer(self, info: GQLInfo, **kwargs: Any) -> QuerySet[TModel]:
-        queryset = self.get_queryset(info, **kwargs)
-        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=self.query_type.__model__, info=info)
-        optimizations = optimizer.compile()
-        return optimizations.apply(queryset, info)
 
     def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
         if self.entrypoint.permissions_func is not None:
@@ -307,8 +294,8 @@ class QueryTypeManyResolver(Generic[TModel]):
         return self.run_sync(root, info, **kwargs)
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        optimized_queryset = self.run_optimizer(info)
-        instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
+        queryset = self.get_queryset(info)
+        instances = optimize_sync(queryset, info)
         self.check_permissions(root, info, instances)
         return instances
 
@@ -316,8 +303,8 @@ class QueryTypeManyResolver(Generic[TModel]):
         # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
-        queryset = self.run_optimizer(info)
-        instances = await evaluate_with_prefetch_hack_async(queryset)
+        queryset = self.get_queryset(info)
+        instances = await optimize_async(queryset, info)
         self.check_permissions(root, info, instances)
         return instances
 
@@ -326,12 +313,6 @@ class QueryTypeManyResolver(Generic[TModel]):
         if self.additional_filter is not None:
             queryset = queryset.filter(self.additional_filter)
         return queryset
-
-    def run_optimizer(self, info: GQLInfo) -> QuerySet[TModel]:
-        queryset = self.get_queryset(info)
-        optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=self.query_type.__model__, info=info)
-        optimizations = optimizer.compile()
-        return optimizations.apply(queryset, info)
 
     def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:

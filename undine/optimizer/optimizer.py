@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from django.contrib.contenttypes.prefetch import GenericPrefetch
 from django.db.models import ForeignKey, ManyToOneRel, OneToOneRel, Prefetch
@@ -18,6 +18,7 @@ from undine.utils.model_utils import get_default_manager, get_related_field_name
 from undine.utils.reflection import is_same_func
 
 from .ast_walker import GraphQLASTWalker
+from .prefetch_hack import evaluate_with_prefetch_hack_async, evaluate_with_prefetch_hack_sync
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -44,7 +45,71 @@ __all__ = [
     "OptimizationData",
     "OptimizationResults",
     "QueryOptimizer",
+    "optimize_async",
+    "optimize_sync",
 ]
+
+
+@overload
+def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo) -> list[TModel]: ...
+
+
+@overload
+def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
+
+
+def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> list[TModel] | TModel | None:
+    """
+    Optimize a queryset and return the results synchronously.
+
+    :param queryset: The queryset to optimize.
+    :param info: The GraphQL resolve info for the request.
+    :param kwargs: Filtering that will result in a single item being returned.
+    """
+    optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
+    optimizations = optimizer.compile()
+    optimized_queryset = optimizations.apply(queryset, info)
+
+    if kwargs:
+        optimized_queryset = optimized_queryset.filter(**kwargs)
+
+    instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
+
+    if kwargs:
+        return next(iter(instances), None)
+
+    return instances
+
+
+@overload
+async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo) -> list[TModel]: ...
+
+
+@overload
+async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
+
+
+async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> list[TModel] | TModel | None:
+    """
+    Optimize a queryset and return the results asynchronously.
+
+    :param queryset: The queryset to optimize.
+    :param info: The GraphQL resolve info for the request.
+    :param kwargs: Filtering that will result in a single item being returned.
+    """
+    optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
+    optimizations = optimizer.compile()
+    optimized_queryset = optimizations.apply(queryset, info)
+
+    if kwargs:
+        optimized_queryset = optimized_queryset.filter(**kwargs)
+
+    instances = await evaluate_with_prefetch_hack_async(optimized_queryset)
+
+    if kwargs:
+        return next(iter(instances), None)
+
+    return instances
 
 
 class QueryOptimizer(GraphQLASTWalker):

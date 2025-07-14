@@ -128,16 +128,14 @@ Undine includes two hooks for adding additional manual optimizations your schema
 ```
 
 The `QueryType.__optimizations__` method is called by the optimizer when it encounters
-a new `QueryType` during optimizations. See [order of optimizations](#order-of-optimizations)
-for when this is called. See [optimization data](#optimization-data) for how optimization itself works.
+a new `QueryType` during optimizations. See [optimization data](#optimization-data) on how to add the optimizations.
 
 ```python
 -8<- "optimizer/field_optimize.py"
 ```
 
 The `<field_name>.optimize` method is called by the optimizer when it encounters
-a new `Field` during optimizations. See [order of optimizations](#order-of-optimizations)
-for when this is called. See [optimization data](#optimization-data) for how optimization itself works.
+a new `Field` during optimizations. See [optimization data](#optimization-data) on how to add the optimizations.
 
 ### Optimization data
 

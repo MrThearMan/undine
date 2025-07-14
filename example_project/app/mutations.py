@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
 from example_project.app.models import (
     Comment,
@@ -15,9 +15,7 @@ from example_project.app.models import (
 )
 from undine import Input
 from undine.mutation import MutationType
-
-if TYPE_CHECKING:
-    from undine.typing import GQLInfo
+from undine.typing import GQLInfo
 
 
 class TeamInput(MutationType[Team], kind="related"): ...

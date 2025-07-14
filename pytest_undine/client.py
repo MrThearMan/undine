@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test.client import MULTIPART_CONTENT, Client
+from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
 from graphql import FormattedExecutionResult
 
 from undine.http.files import extract_files
@@ -19,6 +19,7 @@ from .query_logging import capture_database_queries
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+    from http.cookies import SimpleCookie
 
     from django.contrib.auth.models import User
     from django.core.files import File
@@ -34,6 +35,7 @@ with suppress(ImportError):
 
 
 __all__ = [
+    "AsyncGraphQLClient",
     "GraphQLClient",
     "GraphQLClientHTTPResponse",
     "GraphQLClientWebSocketResponse",
@@ -43,55 +45,10 @@ __all__ = [
 IS_CHANNELS_INSTALLED: bool = "TestWebSocket" in globals()
 
 
-class GraphQLClient(Client):
-    """A GraphQL client for testing."""
+class WebSocketMixin:
+    """Mixin to support GraphQL over WebSocket requests."""
 
-    def __call__(
-        self,
-        document: str,
-        *,
-        variables: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        operation_name: str | None = None,
-        use_persisted_document: bool = False,
-    ) -> GraphQLClientHTTPResponse:
-        """
-        Execute a GraphQL operation.
-
-        :param document: GraphQL document string to send in the request.
-        :param variables: GraphQL variables for the document.
-        :param headers: Headers for the request.
-        :param operation_name: If given document includes multiple operations,
-                               this is required to select the operation to execute.
-        :param use_persisted_document: Instead of sending the whole document,
-                                       convert it to a persisted document ID and send that.
-        """
-        variables = variables or {}
-        body: dict[str, Any] = {}
-
-        if use_persisted_document:
-            body["documentId"] = to_document_id(document)
-        else:
-            body["query"] = document
-
-        if variables:
-            body["variables"] = variables
-        if operation_name is not None:
-            body["operationName"] = operation_name
-
-        files = extract_files(variables)
-        data = self._create_multipart_data(body, files) if files else body
-        content_type = MULTIPART_CONTENT if files else "application/json"
-
-        with capture_database_queries() as results:
-            response: DjangoTestClientResponseProtocol = self.post(  # type: ignore[assignment]
-                path=f"/{undine_settings.GRAPHQL_PATH}",
-                data=data,
-                content_type=content_type,
-                headers=headers,
-            )
-
-        return GraphQLClientHTTPResponse(response, results)
+    cookies: SimpleCookie
 
     async def over_websocket(
         self,
@@ -178,43 +135,6 @@ class GraphQLClient(Client):
 
         return TestWebSocket(scope=scope)
 
-    def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
-        """Create a superuser and log in as that user."""
-        defaults = {
-            "is_staff": True,
-            "is_superuser": True,
-            "email": "superuser@django.com",
-            **kwargs,
-        }
-        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
-        self.force_login(user)
-        return user
-
-    def login_with_regular_user(self, username: str = "user", **kwargs: Any) -> User:
-        """Create a regular user and log in as that user."""
-        defaults = {
-            "is_staff": False,
-            "is_superuser": False,
-            "email": "user@django.com",
-            **kwargs,
-        }
-        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
-        self.force_login(user)
-        return user
-
-    def _create_multipart_data(self, body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
-        path_map: dict[str, list[str]] = {}
-        files_map: dict[str, File] = {}
-        for i, (file, path) in enumerate(files.items()):
-            path_map[str(i)] = path
-            files_map[str(i)] = file
-
-        return {
-            "operations": json.dumps(body),
-            "map": json.dumps(path_map),
-            **files_map,
-        }
-
     def _get_default_scope(self) -> WebSocketASGIScope:
         # From 'django.test.client.AsyncRequestFactory._base_scope'
         cookies = (f"{morsel.key}={morsel.coded_value}".encode("ascii") for morsel in self.cookies.values())
@@ -248,6 +168,156 @@ class GraphQLClient(Client):
             #
             # 'user' and 'session' are set in the `WebSocketContextManager` `AuthMiddlewareStack`.
         )  # type: ignore[typeddict-item]
+
+
+class GraphQLClient(WebSocketMixin, Client):
+    """A GraphQL client for testing."""
+
+    def __call__(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+    ) -> GraphQLClientHTTPResponse:
+        """
+        Execute a GraphQL operation synchronously.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        files = extract_files(variables)
+        data = _create_multipart_data(body, files) if files else body
+        content_type = MULTIPART_CONTENT if files else "application/json"
+
+        with capture_database_queries() as results:
+            response: DjangoTestClientResponseProtocol = self.post(  # type: ignore[assignment]
+                path=f"/{undine_settings.GRAPHQL_PATH}",
+                data=data,
+                content_type=content_type,
+                headers=headers,
+            )
+
+        return GraphQLClientHTTPResponse(response, results)
+
+    def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
+        """Create a superuser and log in as that user."""
+        defaults = {
+            "is_staff": True,
+            "is_superuser": True,
+            "email": "superuser@django.com",
+            **kwargs,
+        }
+        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
+        self.force_login(user)
+        return user
+
+    def login_with_regular_user(self, username: str = "user", **kwargs: Any) -> User:
+        """Create a regular user and log in as that user."""
+        defaults = {
+            "is_staff": False,
+            "is_superuser": False,
+            "email": "user@django.com",
+            **kwargs,
+        }
+        user, _ = get_user_model().objects.get_or_create(username=username, defaults=defaults)
+        self.force_login(user)
+        return user
+
+
+class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
+    """An async GraphQL client for testing."""
+
+    async def __call__(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+    ) -> GraphQLClientHTTPResponse:
+        """
+        Execute a GraphQL operation asynchronously.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        files = extract_files(variables)
+        data = _create_multipart_data(body, files) if files else body
+        content_type = MULTIPART_CONTENT if files else "application/json"
+
+        with capture_database_queries() as results:
+            response: DjangoTestClientResponseProtocol = await self.post(  # type: ignore[assignment]
+                path=f"/{undine_settings.GRAPHQL_PATH}",
+                data=data,
+                content_type=content_type,
+                headers=headers,
+            )
+
+        return GraphQLClientHTTPResponse(response, results)
+
+    async def login_with_superuser(self, username: str = "admin", **kwargs: Any) -> User:
+        """Create a superuser and log in as that user."""
+        defaults = {
+            "is_staff": True,
+            "is_superuser": True,
+            "email": "superuser@django.com",
+            **kwargs,
+        }
+        user, _ = await get_user_model().objects.aget_or_create(username=username, defaults=defaults)
+        self.force_login(user)
+        return user
+
+    async def login_with_regular_user(self, username: str = "user", **kwargs: Any) -> User:
+        """Create a regular user and log in as that user."""
+        defaults = {
+            "is_staff": False,
+            "is_superuser": False,
+            "email": "user@django.com",
+            **kwargs,
+        }
+        user, _ = await get_user_model().objects.aget_or_create(username=username, defaults=defaults)
+        self.force_login(user)
+        return user
 
 
 class BaseGraphQLClientResponse(ABC):
@@ -435,3 +505,17 @@ class GraphQLClientWebSocketResponse(BaseGraphQLClientResponse):
     def json(self) -> FormattedExecutionResult:
         """Return the JSON content of the response."""
         return self.result
+
+
+def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
+    path_map: dict[str, list[str]] = {}
+    files_map: dict[str, File] = {}
+    for i, (file, path) in enumerate(files.items()):
+        path_map[str(i)] = path
+        files_map[str(i)] = file
+
+    return {
+        "operations": json.dumps(body),
+        "map": json.dumps(path_map),
+        **files_map,
+    }

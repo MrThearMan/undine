@@ -3,13 +3,14 @@ from __future__ import annotations
 import pytest
 from graphql import GraphQLWrappingType
 
-from pytest_undine.fixtures import graphql, undine_settings
+from pytest_undine.fixtures import graphql, graphql_async, undine_settings
 from tests.factories._base import UndineFaker
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY, register_builtins
 
 __all__ = [
     "graphql",
+    "graphql_async",
     "undine_settings",
 ]
 

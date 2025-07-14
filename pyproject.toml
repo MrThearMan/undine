@@ -353,6 +353,24 @@ ignore = [
     "T201",     # Allowing print statements for debugging here
     "ARG005",   # Allow unused arguments in snippets
 ]
+"example_project/app/schema.py" = [
+    # No type-checking blocks in graphql schema
+    "TC001",
+    "TC002",
+    "TC003",
+]
+"example_project/app/types.py" = [
+    # No type-checking blocks in graphql schema
+    "TC001",
+    "TC002",
+    "TC003",
+]
+"example_project/app/mutations.py" = [
+    # No type-checking blocks in graphql schema
+    "TC001",
+    "TC002",
+    "TC003",
+]
 
 [tool.ruff.lint.isort]
 combine-as-imports = false
