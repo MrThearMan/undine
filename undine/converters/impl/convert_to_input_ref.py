@@ -8,7 +8,7 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
-from django.db.models import F, TextChoices
+from django.db.models import F, Model, TextChoices
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
     ManyToManyDescriptor,
@@ -41,6 +41,11 @@ def _(_: F, **kwargs: Any) -> Any:
 
 @convert_to_input_ref.register
 def _(ref: ModelField, **kwargs: Any) -> Any:
+    return ref
+
+
+@convert_to_input_ref.register
+def _(ref: type[Model], **kwargs: Any) -> Any:
     return ref
 
 

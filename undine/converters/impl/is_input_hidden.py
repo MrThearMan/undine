@@ -4,6 +4,7 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db.models import Model
 
 from undine import MutationType
 from undine.converters import is_input_hidden
@@ -42,3 +43,8 @@ def _(_: type[MutationType], **kwargs: Any) -> bool:
 @is_input_hidden.register  # Required for Django<5.1
 def _(ref: GenericForeignKey, **kwargs: Any) -> bool:
     return ref.hidden
+
+
+@is_input_hidden.register
+def _(_: type[Model], **kwargs: Any) -> bool:
+    return False

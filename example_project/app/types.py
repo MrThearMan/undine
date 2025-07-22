@@ -94,7 +94,7 @@ class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, 
 
     name = Field()
 
-    name_upper = Field(Upper("name"))
+    name_upper = Field(Upper("name"), complexity=1)
 
     assignees = Field(Connection(PersonType))
 

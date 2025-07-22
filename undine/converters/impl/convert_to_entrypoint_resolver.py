@@ -64,11 +64,11 @@ def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
 
         case MutationKind.delete:
             if caller.many:
-                return BulkDeleteResolver(mutation_type=ref)
-            return DeleteResolver(mutation_type=ref)
+                return BulkDeleteResolver(mutation_type=ref, entrypoint=caller)
+            return DeleteResolver(mutation_type=ref, entrypoint=caller)
 
         case MutationKind.custom:
-            return CustomResolver(mutation_type=ref)
+            return CustomResolver(mutation_type=ref, entrypoint=caller)
 
         case _:
             raise InvalidEntrypointMutationTypeError(ref=ref, kind=ref.__kind__)

@@ -278,16 +278,16 @@ def test_mutation_type__kind__related__output_type() -> None:
     assert MyRelatedMutation.__output_type__() == MyQueryType.__output_type__()
 
 
-def test_mutation_type__auto() -> None:
+def test_mutation_type__auto__false() -> None:
     class MyMutation(MutationType[Task], auto=False): ...
 
     assert MyMutation.__input_map__ == {}
 
 
 def test_mutation_type__exclude() -> None:
-    class MyMutation(MutationType[Task], exclude=["name"]): ...
+    class MyUpdateMutation(MutationType[Task], exclude=["name"]): ...
 
-    assert sorted(MyMutation.__input_map__) == [
+    assert sorted(MyUpdateMutation.__input_map__) == [
         "acceptancecriteria",
         "assignees",
         "attachment",
@@ -314,7 +314,7 @@ def test_mutation_type__exclude() -> None:
         "worked_hours",
     ]
 
-    input_type = MyMutation.__input_type__()
+    input_type = MyUpdateMutation.__input_type__()
     assert sorted(input_type.fields) == [
         "acceptancecriteria",
         "assignees",
@@ -344,9 +344,9 @@ def test_mutation_type__exclude() -> None:
 
 
 def test_mutation_type__exclude__multiple() -> None:
-    class MyMutation(MutationType[Task], exclude=["name", "pk"]): ...
+    class MyUpdateMutation(MutationType[Task], exclude=["name", "done"]): ...
 
-    assert sorted(MyMutation.__input_map__) == [
+    assert sorted(MyUpdateMutation.__input_map__) == [
         "acceptancecriteria",
         "assignees",
         "attachment",
@@ -354,12 +354,12 @@ def test_mutation_type__exclude__multiple() -> None:
         "comments",
         "contact_email",
         "demo_url",
-        "done",
         "due_by",
         "external_uuid",
         "extra_data",
         "image",
         "objective",
+        "pk",
         "points",
         "progress",
         "project",
@@ -372,7 +372,7 @@ def test_mutation_type__exclude__multiple() -> None:
         "worked_hours",
     ]
 
-    input_type = MyMutation.__input_type__()
+    input_type = MyUpdateMutation.__input_type__()
     assert sorted(input_type.fields) == [
         "acceptancecriteria",
         "assignees",
@@ -381,12 +381,12 @@ def test_mutation_type__exclude__multiple() -> None:
         "comments",
         "contactEmail",
         "demoUrl",
-        "done",
         "dueBy",
         "externalUuid",
         "extraData",
         "image",
         "objective",
+        "pk",
         "points",
         "progress",
         "project",

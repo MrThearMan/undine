@@ -12,7 +12,7 @@ from django.db.models import Model
 from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import mock_gql_info
-from undine import GQLInfo, MutationType
+from undine import Entrypoint, GQLInfo, MutationType, RootType
 from undine.resolvers import BulkDeleteResolver
 
 
@@ -27,7 +27,13 @@ def test_bulk_delete_resolver(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
+        mutation_type=TaskDeleteMutation,
+        entrypoint=Mutation.delete_task,
+    )
 
     data = [{"pk": task_1.pk}, {"pk": task_2.pk}]
 
@@ -66,7 +72,13 @@ def test_bulk_delete_resolver__mutation_hooks(undine_settings) -> None:
             nonlocal after_called
             after_called = next(counter)
 
-    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
+        mutation_type=TaskDeleteMutation,
+        entrypoint=Mutation.delete_task,
+    )
 
     resolver(root=None, info=mock_gql_info(), input=[{"pk": task.pk}])
 
@@ -87,7 +99,13 @@ async def test_bulk_delete_resolver__async(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
+        mutation_type=TaskDeleteMutation,
+        entrypoint=Mutation.delete_task,
+    )
 
     data = [{"pk": task_1.pk}, {"pk": task_2.pk}]
 

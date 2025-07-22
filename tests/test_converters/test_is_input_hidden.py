@@ -37,6 +37,10 @@ def test_is_input_only(value, expected) -> None:
     assert is_input_hidden(value) is expected
 
 
+def test_is_input_only__model() -> None:
+    assert is_input_hidden(Task) is False
+
+
 def test_is_input_only__function__no_input() -> None:
     def func(root: Any, info: GQLInfo) -> str: ...
 

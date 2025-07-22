@@ -88,7 +88,8 @@ Similarly, `nameStartsWith` uses `__istartswith` while `nameStartsWithExact` use
 
 ///
 
-You can disable auto-generation by setting the `auto` argument to `False` in the class definition:
+You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
+or the `FilterSet` by setting the `auto` argument to `False` in the class definition:
 
 ```python
 -8<- "filtering/filterset_no_auto.py"

@@ -11,7 +11,7 @@ from asgiref.sync import sync_to_async
 from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import mock_gql_info
-from undine import Input, MutationType
+from undine import Entrypoint, Input, MutationType, RootType
 from undine.exceptions import GraphQLMissingLookupFieldError, GraphQLModelNotFoundError
 from undine.resolvers import DeleteResolver
 from undine.typing import GQLInfo
@@ -25,7 +25,10 @@ def test_delete_resolver(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
     result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
 
@@ -40,7 +43,10 @@ def test_delete_resolver__instance_not_found(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
     with pytest.raises(GraphQLModelNotFoundError):
         resolver(root=None, info=mock_gql_info(), input={"pk": 1})
@@ -52,7 +58,10 @@ def test_delete_resolver__lookup_field_not_found(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
     with pytest.raises(GraphQLMissingLookupFieldError):
         resolver(root=None, info=mock_gql_info(), input={})
@@ -100,7 +109,10 @@ def test_delete_resolver__mutation_hooks(undine_settings) -> None:
             nonlocal after_called
             after_called = next(counter)
 
-    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
     resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
 
@@ -120,7 +132,10 @@ async def test_delete_resolver__async(undine_settings) -> None:
 
     class TaskDeleteMutation(MutationType[Task]): ...
 
-    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation)
+    class Mutation(RootType):
+        delete_task = Entrypoint(Task)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
     result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
     assert isawaitable(result)

@@ -51,6 +51,17 @@ for `Fields` and `Entrypoints`. See [Async Support](async.md) for more informati
 
 ///
 
+/// details | `AUTOGENERATION`
+    attrs: {id: autogeneration}
+
+Type `bool` | Default: `True`
+
+Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `MutationTypes`,
+`Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on an individual
+`QueryType`, `MutationType`, `FilterSet`, and `OrderSet` classes.
+
+///
+
 /// details | `CALCULATION_ARGUMENT_EXTENSIONS_KEY`
     attrs: {id: calculation_argument_extensions_key}
 

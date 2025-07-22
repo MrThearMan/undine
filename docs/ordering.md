@@ -60,7 +60,8 @@ query {
 This will order the `Task` objects by their primary key in ascending order,
 and then by their name in descending order.
 
-You can disable auto-generation by setting the `auto` argument to `False` in the class definition:
+You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
+or the `OrderSet` by setting the `auto` argument to `False` in the class definition:
 
 ```python
 -8<- "ordering/orderset_no_auto.py"

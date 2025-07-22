@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
+from django.db.models import Model
 from graphql import DirectiveLocation, GraphQLError, GraphQLInputField, Undefined
 
 from undine.converters import (
@@ -20,20 +21,25 @@ from undine.exceptions import GraphQLErrorGroup, MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.typing import JsonObject, MutationKind, TModel
+from undine.typing import MutationKind, TModel
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
 from undine.utils.graphql.utils import check_directives, with_graphql_error_path
-from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
+from undine.utils.model_utils import get_instance_or_raise, get_model_field, get_model_fields_for_graphql
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    cache_signature_if_function,
+    get_members,
+    get_wrapped_func,
+    is_subclass,
+)
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from collections.abc import Container
 
-    from django.db.models import Model
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType, GraphQLObjectType
 
     from undine import QueryType
@@ -103,9 +109,9 @@ class MutationTypeMeta(type):
             field = get_model_field(model=model, lookup="pk")
             _attrs["pk"] = Input(field, required=True)
 
-        auto = kwargs.get("auto", True)
+        auto = kwargs.get("auto", undine_settings.AUTOGENERATION)
         exclude = set(kwargs.get("exclude", []))
-        if auto and mutation_kind.should_use_auto:
+        if auto and mutation_kind.should_use_autogeneration:
             exclude |= set(_attrs)
             if mutation_kind.no_pk:
                 exclude.add("pk")
@@ -186,7 +192,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
         The kind of mutation this is. If not given, use "custom" if `__mutate__` is defined,
         or infer based on the name of the class.
 
-    `auto: bool = True`
+    `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Input` attributes for all Model fields automatically.
 
     `exclude: list[str] = []`
@@ -216,7 +222,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
     @classmethod
-    def __mutate__(cls, root: Any, info: GQLInfo, input_data: Annotated[Any, JsonObject]) -> Any:
+    def __mutate__(cls, root: Any, info: GQLInfo, input_data: Any) -> Any:
         """Override this method for custom mutations."""
 
     @classmethod
@@ -394,6 +400,9 @@ class Input:
 
         if not self.hidden and isinstance(self.ref, FunctionType):
             input_data[self.name] = value = self.ref(instance, info, value)
+
+        if is_subclass(self.ref, Model):
+            input_data[self.name] = value = get_instance_or_raise(model=self.ref, pk=value)
 
         # Only check permissions and do validation if value is not the default value.
         if value == self.default_value:

@@ -7,7 +7,7 @@ import pytest
 
 from example_project.app.models import Task
 from tests.helpers import mock_gql_info
-from undine import Input, MutationType
+from undine import Entrypoint, Input, MutationType, RootType
 from undine.resolvers import CustomResolver
 from undine.typing import GQLInfo
 
@@ -57,7 +57,10 @@ def test_custom_resolver() -> None:
             mutate_called = next(counter)
             return input_data
 
-    resolver = CustomResolver(mutation_type=TaskMutation)
+    class Mutation(RootType):
+        task_mutation = Entrypoint(Task)
+
+    resolver = CustomResolver(mutation_type=TaskMutation, entrypoint=Mutation.task_mutation)
 
     data = {"name": "foo"}
 
@@ -70,4 +73,4 @@ def test_custom_resolver() -> None:
     assert input_validate_called == 2
     assert validate_called == 3
     assert mutate_called == 4
-    assert after_called == 5
+    assert after_called == -1  # No after mutation

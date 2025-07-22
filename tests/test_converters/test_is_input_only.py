@@ -5,7 +5,7 @@ from typing import Any, NamedTuple
 import pytest
 from django.db.models import CharField
 
-from example_project.app.models import Comment, Task
+from example_project.app.models import Comment, Project, Task
 from tests.helpers import parametrize_helper
 from undine import Input, MutationType
 from undine.converters import is_input_only
@@ -63,6 +63,13 @@ def test_is_input_only__type_ref__model_field() -> None:
         name = Input(str)
 
     assert is_input_only(TypeRef(str), caller=TaskMutation.name) is False
+
+
+def test_is_input_only__model() -> None:
+    class TaskMutation(MutationType[Task]):
+        project = Input(Project)
+
+    assert is_input_only(Task, caller=TaskMutation.project) is False
 
 
 def test_is_input_only__function() -> None:

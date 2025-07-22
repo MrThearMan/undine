@@ -4,7 +4,7 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import Field, ForeignObjectRel
+from django.db.models import Field, ForeignObjectRel, Model
 from graphql import Undefined
 
 from undine import MutationType
@@ -50,4 +50,9 @@ def _(_: type[MutationType], **kwargs: Any) -> Any:
 
 @convert_to_default_value.register
 def _(_: GenericForeignKey, **kwargs: Any) -> Any:
+    return Undefined
+
+
+@convert_to_default_value.register
+def _(_: type[Model], **kwargs: Any) -> Any:
     return Undefined

@@ -581,8 +581,8 @@ class MutationKind(enum.StrEnum):
         return self == MutationKind.create
 
     @enum.property
-    def should_use_auto(self) -> bool:
-        return self in {MutationKind.create, MutationKind.update, MutationKind.custom, MutationKind.related}
+    def should_use_autogeneration(self) -> bool:
+        return self in {MutationKind.create, MutationKind.update, MutationKind.related}
 
     @enum.property
     def should_include_default_value(self) -> bool:

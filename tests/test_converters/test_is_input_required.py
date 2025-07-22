@@ -38,6 +38,13 @@ def test_is_required__model_field__many_to_many() -> None:
     assert is_input_required(field, caller=TaskCreateMutation.assignees) is False
 
 
+def test_is_required__model_field__model() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input(Project)
+
+    assert is_input_required(Project, caller=TaskCreateMutation.project) is False
+
+
 def test_is_required__model_field__nullable_field() -> None:
     class TaskCreateMutation(MutationType[Task]):
         request = Input()

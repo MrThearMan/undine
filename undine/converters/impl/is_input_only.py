@@ -4,6 +4,7 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db.models import Model
 
 from undine import Input, MutationType
 from undine.converters import is_input_only
@@ -41,3 +42,13 @@ def _(_: type[MutationType], **kwargs: Any) -> bool:
 @is_input_only.register  # Required for Django<5.1
 def _(_: GenericForeignKey, **kwargs: Any) -> bool:
     return False
+
+
+@is_input_only.register
+def _(_: type[Model], **kwargs: Any) -> bool:
+    caller: Input = kwargs["caller"]
+    try:
+        field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
+    except ModelFieldError:
+        return True
+    return is_input_only(field)

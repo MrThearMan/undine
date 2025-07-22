@@ -4,7 +4,7 @@ from types import FunctionType, GenericAlias
 from typing import Any, get_origin
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import F, Q, QuerySet
+from django.db.models import F, Model, Q, QuerySet
 from graphql import GraphQLList, GraphQLNonNull, GraphQLType
 
 from undine import Calculation, MutationType, QueryType, UnionType
@@ -19,6 +19,11 @@ from undine.utils.model_utils import get_model_field
 @is_many.register
 def _(ref: ModelField, **kwargs: Any) -> bool:
     return bool(ref.many_to_many) or bool(ref.one_to_many)
+
+
+@is_many.register
+def _(ref: type[Model], **kwargs: Any) -> bool:
+    return is_many(ref._meta.pk, **kwargs)
 
 
 @is_many.register

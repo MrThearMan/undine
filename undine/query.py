@@ -73,7 +73,7 @@ class QueryTypeMeta(type):
         except AttributeError as error:
             raise MissingModelGenericError(name=_name, cls="QueryType") from error
 
-        auto = kwargs.get("auto", True)
+        auto = kwargs.get("auto", undine_settings.AUTOGENERATION)
         exclude = set(kwargs.get("exclude", []))
         if auto:
             exclude |= set(_attrs)
@@ -178,7 +178,7 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
     `orderset: type[OrderSet] = None`
         `OrderSet` class this `QueryType` uses for ordering.
 
-    `auto: bool = True`
+    `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Field` attributes for all Model fields automatically.
 
     `exclude: list[str] = []`

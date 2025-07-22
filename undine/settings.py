@@ -48,6 +48,9 @@ class UndineDefaultSettings(NamedTuple):
 
     # Flags
 
+    AUTOGENERATION: bool = True
+    """Whether to automatically generate fields & inputs for some Undine types or not."""
+
     ALLOW_DID_YOU_MEAN_SUGGESTIONS: bool = False
     """Whether to allow the 'did you mean' suggestions on error messages."""
 

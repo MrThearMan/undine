@@ -449,6 +449,10 @@ def test_convert_to_graphql_type__model_fields(input_type, output_type) -> None:
     assert convert_to_graphql_type(input_type) == output_type
 
 
+def test_convert_to_graphql_type__model() -> None:
+    assert convert_to_graphql_type(Task) == GraphQLInt
+
+
 class Role(TextChoices):
     """Role choices."""
 

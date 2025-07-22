@@ -67,7 +67,7 @@ class FilterSetMeta(type):
         except AttributeError as error:
             raise MissingModelGenericError(name=_name, cls="FilterSet") from error
 
-        auto = kwargs.get("auto", True)
+        auto = kwargs.get("auto", undine_settings.AUTOGENERATION)
         exclude = set(kwargs.get("exclude", []))
         if auto:
             exclude |= set(_attrs)
@@ -194,7 +194,7 @@ class FilterSet(Generic[TModel], metaclass=FilterSetMeta):
 
     The following parameters can be passed in the class definition:
 
-    `auto: bool = True`
+    `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Filter` attributes for all Model fields and their lookups automatically.
 
     `exclude: list[str] = []`

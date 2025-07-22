@@ -509,6 +509,11 @@ with suppress(ImportError):
 
 
 @convert_to_graphql_type.register
+def _(ref: type[Model], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return convert_to_graphql_type(ref._meta.pk, **kwargs)
+
+
+@convert_to_graphql_type.register
 def _(ref: F, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     model: type[Model] = kwargs["model"]
     model_field = get_model_field(model=model, lookup=ref.name)

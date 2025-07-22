@@ -38,7 +38,8 @@ type TaskType {
 }
 ```
 
-You can disable auto-generation by setting the `auto` argument to `False` in the class definition:
+You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
+or the `QueryType` by setting the `auto` argument to `False` in the class definition:
 
 ```python
 -8<- "queries/query_type_no_auto.py"

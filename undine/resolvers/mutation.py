@@ -5,7 +5,6 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Generic
 
 from asgiref.sync import iscoroutinefunction, sync_to_async
-from django.db import transaction  # noqa: ICN003
 from django.db.models import Q
 from graphql import Undefined
 
@@ -134,6 +133,7 @@ class DeleteResolver(Generic[TModel]):
     """Resolves a mutation for deleting a model instance."""
 
     mutation_type: type[MutationType]
+    entrypoint: Entrypoint
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[SimpleNamespace]:
         if undine_settings.ASYNC:
@@ -298,6 +298,7 @@ class BulkDeleteResolver(Generic[TModel]):
     """Resolves a bulk delete mutation for deleting a list of model instances."""
 
     mutation_type: type[MutationType]
+    entrypoint: Entrypoint
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[SimpleNamespace]]:
         if undine_settings.ASYNC:
@@ -366,23 +367,34 @@ class CustomResolver:
     """Resolves a custom mutation a model instance."""
 
     mutation_type: type[MutationType]
+    entrypoint: Entrypoint
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         if undine_settings.ASYNC and iscoroutinefunction(self.mutation_type.__mutate__):
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
+    @property
+    def query_type(self) -> type[QueryType]:
+        return self.mutation_type.__query_type__()
+
+    @property
+    def model(self) -> type[TModel]:
+        return self.mutation_type.__model__  # type: ignore[return-value]
+
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
         self.mutation_type.__before__(instance=root, info=info, input_data=input_data)
 
-        with transaction.atomic(), convert_integrity_errors(GraphQLModelConstraintViolationError):
-            response = self.mutation_type.__mutate__(root, info, input_data)
+        with convert_integrity_errors(GraphQLModelConstraintViolationError):
+            result = self.mutation_type.__mutate__(root, info, input_data)
 
-        self.mutation_type.__after__(instance=root, info=info, previous_data={})
+        if isinstance(result, self.model):
+            resolver = QueryTypeSingleResolver(query_type=self.query_type, entrypoint=self.entrypoint)
+            return resolver.run_sync(root, info, pk=result.pk)
 
-        return response
+        return result
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
@@ -392,9 +404,11 @@ class CustomResolver:
 
         self.mutation_type.__before__(instance=root, info=info, input_data=input_data)
 
-        with transaction.atomic(), convert_integrity_errors(GraphQLModelConstraintViolationError):
-            response = await sync_to_async(self.mutation_type.__mutate__)(root, info, input_data)
+        with convert_integrity_errors(GraphQLModelConstraintViolationError):
+            result = await sync_to_async(self.mutation_type.__mutate__)(root, info, input_data)
 
-        self.mutation_type.__after__(instance=root, info=info, previous_data={})
+        if isinstance(result, self.model):
+            resolver = QueryTypeSingleResolver(query_type=self.query_type, entrypoint=self.entrypoint)
+            return await resolver.run_async(root, info, pk=result.pk)
 
-        return response
+        return result

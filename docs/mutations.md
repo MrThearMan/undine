@@ -20,34 +20,29 @@ and adding a Django model to it as a generic type parameter:
 
 ### Mutation kind
 
-`MutationType` supports `create`, `update`, `delete` as well as `custom` mutations.
-The kind of mutation a certain `MutationType` is for is determined by its
+`MutationType` can be used for `create`, `update`, `delete` as well as `custom` mutations.
+The _kind_ of mutation a certain `MutationType` is for is determined by its
 `kind`, which can be set in the `MutationType` class definition.
+This allows Undine to generate the correct fields using [auto-generation](#auto-generation),
+as well as link the correct mutation resolver to the `MutationType`.
 
 ```python
 -8<- "mutations/mutation_type_kind.py"
 ```
 
-However, `kind` can also be omitted, in which case the `MutationType`
-will first check if the `__mutate__` method has been defined on the `MutationType`,
-and if so, treat the mutation as a `custom` mutation.
+`kind` can also be omitted, in which case the `MutationType`
+will determine the mutation `kind` using this algorithm:
 
-```python
--8<- "mutations/mutation_type_mutate.py"
-```
-
-If `__mutate__` is not defined, the `MutationType` will then check if the word
-`create`, `update`, or `delete` can be found in the name of the `MutationType`,
-and if so, treat the mutation as that kind of mutation. Otherwise,
-the `MutationType` will treat the mutation as a `custom` mutation.
+1. If `__mutate__` method has been defined on the `MutationType`, `kind` will be `custom` (see [custom mutations](#custom-mutations)).
+2. If the word `create` can be found in the name of the `MutationType`, `kind` will be `create`.
+3. If the word `update` can be found in the name of the `MutationType`, `kind` will be `update`.
+4. If the word `delete` can be found in the name of the `MutationType`, `kind` will be `delete`.
+5. If the word `related` can be found in the name of the `MutationType`, `kind` will be `related` (see [related mutations](#related-mutations)).
+6. Otherwise, `kind` will be `custom`.
 
 ```python
 -8<- "mutations/mutation_type_create.py"
 ```
-
-`MutationTypes` can also be a special "related" `kind` of `MutationType`.
-These `MutationTypes` allow you to freely modify the related objects during a mutation.
-See the [related mutations](#related-mutations) section for more details.
 
 ### Auto-generation
 
@@ -89,7 +84,8 @@ input TaskDeleteMutation {
 }
 ```
 
-You can disable auto-generation by setting the `auto` argument to `False` in the class definition:
+You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
+or the `MutationType` by setting the `auto` argument to `False` in the class definition:
 
 ```python
 -8<- "mutations/mutation_type_no_auto.py"
@@ -214,6 +210,36 @@ has been set to `None`.
 ///
 
 This can be useful for doing things like sending emails.
+
+### Custom mutations
+
+If the normal mutation flow is too restrictive for your use case, you can
+define your own custom mutations by defining the `__mutate__` method on
+the `MutationType` class.
+
+```python
+-8<- "mutations/mutation_type_custom.py"
+```
+
+Custom mutations have a few changes compared to normal mutations:
+
+- [Auto-generation](#auto-generation) is not used
+- [After-mutation handling](#after-mutation-handling) is not called
+- `Inputs` are never [input-only](#input-only-inputs)
+- [Validations](#validation) are run and [permissions](#permissions) are checked,
+  but the instance argument for them will be the GraphQL `root` value
+  instead of the instance being mutated (since there might not be one)
+
+Note that by default, the output type of a custom mutation is still the `ObjectType`
+from the `QueryType` matching the `MutationType's` model. So, if your custom
+mutation returns an instance of that model, it will work without additional changes.
+
+However, if you want to return a different type, you can do so by overriding
+the `__output_type__` classmethod on the `MutationType`.
+
+```python
+-8<- "mutations/mutation_type_custom_output_type.py"
+```
 
 ### Order of operations
 
@@ -372,6 +398,19 @@ Also, since `current_user` is not a field on the `Task` model,
 the `Input` is also [`input_only`](#input-only-inputs).
 
 ///
+
+### Model references
+
+Models can also be used as `Input` references, when the `Input` is for a related field.
+In this case, the related model will be fetched to the input data between the [permission](#permissions_1)
+checks and the [validation](#validation_1) checks.
+
+```python
+-8<- "mutations/input_model_reference.py"
+```
+
+Model references are mainly useful in [custom mutations](#custom-mutations),
+as regular mutations have special handling for related fields.
 
 ### Related mutations
 

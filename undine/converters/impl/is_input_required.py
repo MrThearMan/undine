@@ -4,12 +4,13 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import NOT_PROVIDED
+from django.db.models import NOT_PROVIDED, Model
 from graphql import Undefined
 
 from undine import Input, MutationType
 from undine.converters import is_input_required
 from undine.dataclasses import LazyLambda, TypeRef
+from undine.exceptions import ModelFieldError
 from undine.parsers import parse_parameters
 from undine.typing import ModelField, MutationKind
 from undine.utils.model_utils import get_model_field
@@ -34,6 +35,16 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
         return not is_to_many_field and not is_nullable and not has_default
 
     return is_primary_key
+
+
+@is_input_required.register
+def _(_: type[Model], **kwargs: Any) -> bool:
+    caller: Input = kwargs["caller"]
+    try:
+        field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
+    except ModelFieldError:
+        return True
+    return is_input_required(field, **kwargs)
 
 
 @is_input_required.register

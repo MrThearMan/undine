@@ -221,3 +221,7 @@ def test_is_many__mutation_type__many_to_many() -> None:
     class AssigneeMutation(MutationType[Person]): ...
 
     assert is_many(AssigneeMutation, model=Task, name="assignees") is True
+
+
+def test_is_many__mutation_type__model() -> None:
+    assert is_many(Project, model=Task, name="assignees") is False

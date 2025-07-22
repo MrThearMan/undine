@@ -59,7 +59,7 @@ class OrderSetMeta(type):
         except AttributeError as error:
             raise MissingModelGenericError(name=_name, cls="OrderSet") from error
 
-        auto = kwargs.get("auto", True)
+        auto = kwargs.get("auto", undine_settings.AUTOGENERATION)
         exclude = set(kwargs.get("exclude", []))
         if auto:
             exclude |= set(_attrs)
@@ -155,7 +155,7 @@ class OrderSet(Generic[TModel], metaclass=OrderSetMeta):
 
     The following parameters can be passed in the class definition:
 
-    `auto: bool = True`
+    `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Order` attributes for all Model fields automatically.
 
     `exclude: list[str] = []`

@@ -86,6 +86,13 @@ def test_convert_to_input_ref__model_field() -> None:
     assert convert_to_input_ref(field, caller=TaskCreateMutation.name) == field
 
 
+def test_convert_to_input_ref__model() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input(Project)
+
+    assert convert_to_input_ref(Project, caller=TaskCreateMutation.project) == Project
+
+
 def test_convert_to_input_ref__deferred_attribute() -> None:
     class TaskCreateMutation(MutationType[Task]):
         name = Input(Task.name)

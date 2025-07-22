@@ -119,3 +119,8 @@ def test_parse_description__calculated() -> None:
             return Value(self.value)
 
     assert convert_to_description(ExampleCalculation) == "Description."
+
+
+
+def test_parse_description__model() -> None:
+    assert convert_to_description(Task) is None
