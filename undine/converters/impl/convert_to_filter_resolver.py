@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from types import FunctionType
 from typing import Any
 
@@ -43,3 +44,11 @@ def _(_: GenericForeignKey, **kwargs: Any) -> GraphQLFilterResolver:
     caller: Filter = kwargs["caller"]
     lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
     return FilterModelFieldResolver(lookup=lookup)
+
+
+with suppress(ImportError):
+    from undine.utils.full_text_search import PostgresFTS, PostgresFTSExpressionResolver
+
+    @convert_to_filter_resolver.register
+    def _(ref: PostgresFTS, **kwargs: Any) -> GraphQLFilterResolver:
+        return PostgresFTSExpressionResolver(fts=ref)

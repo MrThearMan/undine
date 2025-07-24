@@ -9,6 +9,7 @@ from functools import cache
 from types import FunctionType, GenericAlias, UnionType
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Generic,
     Literal,
@@ -70,7 +71,6 @@ from graphql import (
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping
     from http.cookies import SimpleCookie
 
     from asgiref.typing import ASGISendEvent
@@ -122,6 +122,8 @@ __all__ = [
     "ErrorMessage",
     "ExecutionResultGen",
     "FieldParams",
+    "FieldPermFunc",
+    "FilterAliasesFunc",
     "FilterParams",
     "FilterSetParams",
     "GQLInfo",
@@ -135,24 +137,22 @@ __all__ = [
     "LiteralArg",
     "ManyMatch",
     "ModelField",
-    "ModelManager",
     "MutationKind",
     "MutationTypeParams",
     "NextMessage",
     "NodeDict",
     "ObjectSelections",
     "OptimizerFunc",
+    "OrderAliasesFunc",
     "OrderParams",
     "OrderSetParams",
     "PageInfoDict",
     "ParametrizedType",
-    "PermissionFunc",
     "PingMessage",
     "PongMessage",
     "ProtocolType",
     "QueryTypeParams",
     "RelatedField",
-    "RelatedManager",
     "RequestMethod",
     "RootTypeParams",
     "Selections",
@@ -251,7 +251,7 @@ class DispatchProtocol(Protocol[T_co]):
     def __call__(self, key: Any, **kwargs: Any) -> T_co: ...
 
 
-class DjangoRequestProtocol(Protocol[TUser]):
+class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
     """Protocol of a Django 'HttpRequest' object. Abbreviated to the most useful properties."""
 
     @property
@@ -329,6 +329,27 @@ class DjangoRequestProtocol(Protocol[TUser]):
     def response_content_type(self, value: str) -> None:
         """Set by decorators in 'undine.http.utils'."""
 
+    def is_secure(self) -> bool:
+        """A boolean representing whether the request is over HTTPS."""
+
+    def accepts(self, media_type: str) -> bool:
+        """Does the client accept a response in the given media type?"""
+
+    def get_host(self) -> str:
+        """Return the HTTP host using the environment or request headers."""
+
+    def get_port(self) -> str:
+        """Return the port number for the request as a string."""
+
+    def get_full_path(self, force_append_slash: bool = False) -> str:  # noqa: FBT001,FBT002
+        """Return the full path for the request."""
+
+    def get_full_path_info(self, force_append_slash: bool = False) -> str:  # noqa: FBT001,FBT002
+        """Return the full path info for the request."""
+
+    def build_absolute_uri(self, location: str | None = None) -> str:
+        """Build an absolute URI from the location and the variables available in this request."""
+
 
 class DjangoResponseProtocol(Protocol):
     """Protocol of a Django 'HttpResponse' object. Abbreviated to the most useful properties."""
@@ -383,122 +404,6 @@ class DjangoTestClientResponseProtocol(DjangoResponseProtocol, Protocol):
 
     def json(self) -> dict[str, Any]:
         """The JSON content of the response."""
-
-
-class ModelManager(Protocol[TModel]):  # noqa: PLR0904
-    """Protocol of a model manager."""
-
-    def get_queryset(self) -> QuerySet[TModel]: ...
-
-    def iterator(self, chunk_size: int | None = None) -> Iterator[TModel]: ...
-
-    def aggregate(self, *args: Any, **kwargs: Any) -> dict[str, Any]: ...
-
-    def count(self) -> int: ...
-
-    def get(self, *args: Any, **kwargs: Any) -> TModel: ...
-
-    def create(self, **kwargs: Any) -> TModel: ...
-
-    def bulk_create(  # noqa: PLR0917
-        self,
-        objs: Iterable[TModel],
-        batch_size: int | None = None,
-        ignore_conflicts: bool = False,  # noqa: FBT001, FBT002
-        update_conflicts: bool = False,  # noqa: FBT001, FBT002
-        update_fields: Collection[str] | None = None,
-        unique_fields: Collection[str] | None = None,
-    ) -> list[TModel]: ...
-
-    def bulk_update(
-        self,
-        objs: Iterable[TModel],
-        fields: Collection[str],
-        batch_size: int | None = None,
-    ) -> int: ...
-
-    def get_or_create(
-        self,
-        defaults: Mapping[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> tuple[TModel, bool]: ...
-
-    def update_or_create(
-        self,
-        defaults: Mapping[str, Any] | None = None,
-        create_defaults: Mapping[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> tuple[TModel, bool]: ...
-
-    def first(self) -> TModel | None: ...
-
-    def last(self) -> TModel | None: ...
-
-    def delete(self) -> int: ...
-
-    def update(self, **kwargs: Any) -> int: ...
-
-    def exists(self) -> bool: ...
-
-    def contains(self, obj: TModel) -> bool: ...
-
-    def values(self, *fields: str, **expressions: Any) -> QuerySet[TModel]: ...
-
-    def values_list(self, *fields: str, flat: bool = False, named: bool = False) -> QuerySet[TModel]: ...
-
-    def none(self) -> QuerySet[TModel]: ...
-
-    def all(self) -> QuerySet[TModel]: ...
-
-    def filter(self, *args: Any, **kwargs: Any) -> QuerySet[TModel]: ...
-
-    def exclude(self, *args: Any, **kwargs: Any) -> QuerySet[TModel]: ...
-
-    def union(self, *other_qs: QuerySet[TModel], all: bool = False) -> QuerySet[TModel]: ...  # noqa: A002
-
-    def intersection(self, *other_qs: QuerySet[TModel]) -> QuerySet[TModel]: ...
-
-    def difference(self, *other_qs: QuerySet[TModel]) -> QuerySet[TModel]: ...
-
-    def select_related(self, *fields: Any) -> QuerySet[TModel]: ...
-
-    def prefetch_related(self, *lookups: Any) -> QuerySet[TModel]: ...
-
-    def annotate(self, *args: Any, **kwargs: Any) -> QuerySet[TModel]: ...
-
-    def alias(self, *args: Any, **kwargs: Any) -> QuerySet[TModel]: ...
-
-    def order_by(self, *field_names: Any) -> QuerySet[TModel]: ...
-
-    def distinct(self, *field_names: Any) -> QuerySet[TModel]: ...
-
-    def reverse(self) -> QuerySet[TModel]: ...
-
-    def defer(self, *fields: Any) -> QuerySet[TModel]: ...
-
-    def only(self, *fields: Any) -> QuerySet[TModel]: ...
-
-    def using(self, alias: str | None) -> QuerySet[TModel]: ...
-
-
-class RelatedManager(ModelManager, Protocol[TModel]):
-    """Protocol of a manager for one-to-many and many-to-many relations."""
-
-    def add(self, *objs: TModel, bulk: bool = True) -> int: ...
-
-    def set(
-        self,
-        objs: Iterable[TModel],
-        *,
-        clear: bool = False,
-        through_defaults: Any = None,
-    ) -> QuerySet[TModel]: ...
-
-    def clear(self) -> None: ...
-
-    def remove(self, obj: Iterable[TModel], bulk: bool = True) -> TModel: ...  # noqa: FBT001, FBT002
-
-    def create(self, through_defaults: Any = None, **kwargs: Any) -> TModel: ...
 
 
 # Enums
@@ -891,7 +796,6 @@ class FilterParams(TypedDict, total=False):
     distinct: bool
     required: bool
     description: str | None
-    required_aliases: dict[str, DjangoExpression]
     deprecation_reason: str | None
     schema_name: str
     directives: list[Directive]
@@ -952,15 +856,131 @@ class CalculationArgumentParams(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
+class PostgresFTSLangSpecificFields(TypedDict, total=False):
+    """Specify fields for text search per language."""
+
+    # Cannot use "Iterable[str]" since "str" is also an iterable of strings.
+    arabic: list[str] | tuple[str, ...] | set[str]
+    armenian: list[str] | tuple[str, ...] | set[str]
+    basque: list[str] | tuple[str, ...] | set[str]
+    catalan: list[str] | tuple[str, ...] | set[str]
+    danish: list[str] | tuple[str, ...] | set[str]
+    dutch: list[str] | tuple[str, ...] | set[str]
+    english: list[str] | tuple[str, ...] | set[str]
+    finnish: list[str] | tuple[str, ...] | set[str]
+    french: list[str] | tuple[str, ...] | set[str]
+    german: list[str] | tuple[str, ...] | set[str]
+    greek: list[str] | tuple[str, ...] | set[str]
+    hindi: list[str] | tuple[str, ...] | set[str]
+    hungarian: list[str] | tuple[str, ...] | set[str]
+    indonesian: list[str] | tuple[str, ...] | set[str]
+    irish: list[str] | tuple[str, ...] | set[str]
+    italian: list[str] | tuple[str, ...] | set[str]
+    lithuanian: list[str] | tuple[str, ...] | set[str]
+    nepali: list[str] | tuple[str, ...] | set[str]
+    norwegian: list[str] | tuple[str, ...] | set[str]
+    portuguese: list[str] | tuple[str, ...] | set[str]
+    romanian: list[str] | tuple[str, ...] | set[str]
+    russian: list[str] | tuple[str, ...] | set[str]
+    serbian: list[str] | tuple[str, ...] | set[str]
+    spanish: list[str] | tuple[str, ...] | set[str]
+    swedish: list[str] | tuple[str, ...] | set[str]
+    tamil: list[str] | tuple[str, ...] | set[str]
+    turkish: list[str] | tuple[str, ...] | set[str]
+    yiddish: list[str] | tuple[str, ...] | set[str]
+
+
+FTSLang: TypeAlias = Literal[
+    "arabic",
+    "armenian",
+    "basque",
+    "catalan",
+    "danish",
+    "dutch",
+    "english",
+    "finnish",
+    "french",
+    "german",
+    "greek",
+    "hindi",
+    "hungarian",
+    "indonesian",
+    "irish",
+    "italian",
+    "lithuanian",
+    "nepali",
+    "norwegian",
+    "portuguese",
+    "romanian",
+    "russian",
+    "serbian",
+    "spanish",
+    "swedish",
+    "tamil",
+    "turkish",
+    "yiddish",
+]
+
+LangCode: TypeAlias = Literal[
+    "ar",
+    "hy",
+    "eu",
+    "ca",
+    "da",
+    "nl",
+    "en",
+    "fi",
+    "fr",
+    "de",
+    "el",
+    "hi",
+    "hu",
+    "id",
+    "ga",
+    "it",
+    "lt",
+    "ne",
+    "nb",
+    "pt",
+    "ro",
+    "ru",
+    "sr",
+    "es",
+    "sv",
+    "ta",
+    "tr",
+    "yi",
+]
+
+LangSep: TypeAlias = Literal["|", "&", "<->", "<1>", "<2>", "<3>", "<4>", "<5>", "<6>", "<7>", "<8>", "<9>"]
+
+
 # Resolvers
 
-PermissionFunc: TypeAlias = Callable[[Any, GQLInfo, Any], None]
-InputPermFunc: TypeAlias = Callable[[Any, GQLInfo, Any], None]
-ValidatorFunc: TypeAlias = Callable[[Any, GQLInfo, Any], None]
-OptimizerFunc: TypeAlias = Callable[[Any, "OptimizationData", GQLInfo], None]
+_AnyValue: TypeAlias = Annotated[Any, "value"]
+_AnyModel: TypeAlias = Annotated[Any, "django.db.models.Model"]
+_AnyField: TypeAlias = Annotated[Any, "undine.Field"]
+_AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
+_AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
 
-GraphQLFilterResolver: TypeAlias = Callable[..., Q]
-"""(self: Filter, info: GQLInfo, *, value: Any) -> Q"""
+FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
+InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
+ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
+
+OptimizerFunc: TypeAlias = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
+
+
+class FilterAliasesFunc(Protocol):
+    def __call__(self, root: _AnyFilter, /, info: GQLInfo, *, value: Any) -> dict[str, DjangoExpression]: ...
+
+
+class OrderAliasesFunc(Protocol):
+    def __call__(self, root: _AnyOrder, /, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]: ...
+
+
+class GraphQLFilterResolver(Protocol):
+    def __call__(self, root: _AnyFilter, /, info: GQLInfo, *, value: Any) -> Q: ...
+
 
 # Callbacks
 

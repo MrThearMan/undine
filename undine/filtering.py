@@ -18,11 +18,11 @@ from undine.dataclasses import FilterResults, LookupRef, MaybeManyOrNonNull
 from undine.exceptions import EmptyFilterResult, MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import Annotatable, ManyMatch, TModel
+from undine.typing import ManyMatch, TModel
 from undine.utils.graphql.type_registry import get_or_create_graphql_input_object_type
 from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_fields_for_graphql, is_to_many, lookup_to_display_name
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
 
     from undine.directives import Directive
-    from undine.typing import DjangoExpression, FilterParams, FilterSetParams, GQLInfo
+    from undine.typing import DjangoExpression, FilterAliasesFunc, FilterParams, FilterSetParams, GQLInfo
 
 __all__ = [
     "Filter",
@@ -135,9 +135,8 @@ class FilterSetMeta(type):
                 else:
                     frt = cls.__filter_map__[filter_name]
                     distinct |= frt.distinct
-                    aliases |= frt.required_aliases
-                    if isinstance(frt.ref, Annotatable):
-                        aliases[frt.name] = frt.ref
+                    if frt.aliases_func is not None:
+                        aliases |= frt.aliases_func(frt, info, value=filter_value)
 
                     if frt.many:
                         conditions = (frt.get_expression(value, info) for value in filter_value)
@@ -252,7 +251,6 @@ class Filter:
         :param distinct: Does the `Filter` require `queryset.distinct()` to be used?
         :param required: Is the `Filter` is a required input?
         :param description: Description of the `Filter`.
-        :param required_aliases: `QuerySet` aliases required for this `Filter`.
         :param deprecation_reason: If the `Filter` is deprecated, describes the reason for deprecation.
         :param field_name: Name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name of the `Filter` in the GraphQL schema. Can be used to alias the `Filter`
@@ -268,7 +266,6 @@ class Filter:
         self.distinct: bool = kwargs.get("distinct", False)
         self.required: bool = kwargs.get("required", False)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
-        self.required_aliases: dict[str, DjangoExpression] = kwargs.get("required_aliases", {})
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
@@ -277,6 +274,8 @@ class Filter:
 
         check_directives(self.directives, location=DirectiveLocation.INPUT_FIELD_DEFINITION)
         self.extensions[undine_settings.FILTER_EXTENSIONS_KEY] = self
+
+        self.aliases_func: FilterAliasesFunc | None = None
 
     def __connect__(self, filterset: type[FilterSet], name: str) -> None:
         """Connect this `Filter` to the given `FilterSet` using the given name."""
@@ -325,6 +324,13 @@ class Filter:
         lookup = LookupRef(ref=self.ref, lookup=self.lookup)
         value = MaybeManyOrNonNull(lookup, many=self.many, nullable=not self.required)
         return convert_to_graphql_type(value, model=self.filterset.__model__, is_input=True)  # type: ignore[return-value]
+
+    def aliases(self, func: FilterAliasesFunc | None = None, /) -> FilterAliasesFunc:
+        """Decorate a function to add additional queryset aliases required by this Filter."""
+        if func is None:  # Allow `@<filter_name>.aliases()`
+            return self.aliases  # type: ignore[return-value]
+        self.aliases_func = get_wrapped_func(func)
+        return func
 
 
 def get_filters_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Filter]:

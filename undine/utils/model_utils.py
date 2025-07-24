@@ -27,13 +27,12 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-    from django.db.models import Field, ManyToManyRel, Model
+    from django.db.models import Field, Manager, ManyToManyRel, Model
 
     from undine.typing import (
         CombinableExpression,
         GenericField,
         ModelField,
-        ModelManager,
         RelatedField,
         TModel,
         ToManyField,
@@ -64,7 +63,7 @@ __all__ = [
 ]
 
 
-def get_default_manager(model: type[TModel]) -> ModelManager[TModel]:
+def get_default_manager(model: type[TModel]) -> Manager[TModel]:
     """Get the default manager for the given model."""
     return model._meta.default_manager  # type: ignore[return-value]
 

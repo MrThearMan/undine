@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import pytest
-from django.db.models import F, OrderBy, Subquery
+from django.db.models import Count, F, OrderBy, Subquery
 from django.db.models.functions import Length
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Person, Task
 from tests.helpers import mock_gql_info
-from undine import Order, OrderSet
+from undine import DjangoExpression, GQLInfo, Order, OrderSet
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 from undine.ordering import OrderSetMeta
@@ -212,3 +212,19 @@ def test_order__extensions() -> None:
     enum_type = get_underlying_type(input_type)
     assert enum_type.values["nameAsc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
     assert enum_type.values["nameDesc"].extensions == {"foo": "bar", "undine_order": MyOrderSet.name}
+
+
+def test_order__aliases() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.aliases
+        def name_aliases(self, info: GQLInfo, descending: bool) -> dict[str, DjangoExpression]:
+            return {"foo": Count("*")}
+
+    data = ["name_asc"]
+
+    results = MyOrderSet.__build__(order_data=data, info=mock_gql_info())
+
+    assert results.order_by == [OrderBy(F("name"))]
+    assert results.aliases == {"foo": Count("*")}

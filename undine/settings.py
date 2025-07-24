@@ -234,6 +234,9 @@ class UndineDefaultSettings(NamedTuple):
     SDL_PRINTER: type[SDLPrinter] = "undine.utils.graphql.sdl_printer.SDLPrinter"  # type: ignore[assignment]
     """The SDL printer to use."""
 
+    PG_TEXT_SEARCH_PREFIX: str = "_undine_ts_vector"
+    """A prefix to use for the filter aliases of postgres full text search Filters."""
+
     # Extensions keys
 
     CALCULATION_ARGUMENT_EXTENSIONS_KEY: str = "undine_calculation_argument"

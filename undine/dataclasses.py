@@ -72,6 +72,7 @@ class OrderResults:
     """Holds the results of a QueryType ordering operation."""
 
     order_by: list[OrderBy]
+    aliases: dict[str, DjangoExpression]
     order_count: int = 0
 
 

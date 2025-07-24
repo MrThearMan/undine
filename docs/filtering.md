@@ -308,14 +308,14 @@ If you want to make a `Filter` required, you can do so by setting the `required`
 -8<- "filtering/filter_required.py"
 ```
 
-### Required aliases
+### Aliases
 
-The `required_aliases` argument can be used to specify additional expressions that
-should be added as aliases to the queryset when the `Filter` is used. This is useful
-as a way to make the actual `Filter` more readable when complex expressions are needed.
+Sometimes a `Filter` may require additional expressions to be added as aliases
+to the queryset when the `Filter` is used. For this, you can define a function
+that returns a dictionary of expressions and decorate it with the `aliases` decorator.
 
 ```python
--8<- "filtering/filter_required_aliases.py"
+-8<- "filtering/filter_aliases.py"
 ```
 
 ### Field name

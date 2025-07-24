@@ -14,7 +14,7 @@ from undine.typing import TModel
 from undine.utils.graphql.type_registry import get_or_create_graphql_enum
 from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_fields_for_graphql
-from undine.utils.reflection import get_members
+from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLEnumType
 
     from undine.directives import Directive
-    from undine.typing import GQLInfo, OrderParams, OrderSetParams
+    from undine.typing import DjangoExpression, GQLInfo, OrderAliasesFunc, OrderParams, OrderSetParams
 
 __all__ = [
     "Order",
@@ -100,6 +100,7 @@ class OrderSetMeta(type):
         :param info: The GraphQL resolve info for the request.
         """
         order_by: list[OrderBy] = []
+        aliases: dict[str, DjangoExpression] = {}
         order_count: int = 0
 
         for enum_value in order_data:
@@ -113,11 +114,14 @@ class OrderSetMeta(type):
                 raise GraphQLInvalidOrderDataError(orderset=cls, enum_value=enum_value)
 
             order = cls.__order_map__[order_name]
+            if order.aliases_func is not None:
+                aliases |= order.aliases_func(order, info, descending=descending)
+
             expression = order.get_expression(descending=descending)
             order_by.append(expression)
             order_count += 1
 
-        return OrderResults(order_by=order_by, order_count=order_count)
+        return OrderResults(order_by=order_by, aliases=aliases, order_count=order_count)
 
     def __enum_type__(cls) -> GraphQLEnumType:
         """Create the enum type to use for the `QueryType` this `OrderSet` is for."""
@@ -223,6 +227,8 @@ class Order:
         check_directives(self.directives, location=DirectiveLocation.ENUM_VALUE)
         self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self
 
+        self.aliases_func: OrderAliasesFunc | None = None
+
     def __connect__(self, orderset: type[OrderSet], name: str) -> None:
         """Connect this `Order` to the given `OrderSet` using the given name."""
         self.orderset = orderset
@@ -262,6 +268,13 @@ class Order:
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,
         )
+
+    def aliases(self, func: OrderAliasesFunc | None = None, /) -> OrderAliasesFunc:
+        """Decorate a function to add additional queryset aliases required by this Order."""
+        if func is None:  # Allow `@<order_name>.aliases()`
+            return self.aliases  # type: ignore[return-value]
+        self.aliases_func = get_wrapped_func(func)
+        return func
 
 
 def get_orders_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Order]:

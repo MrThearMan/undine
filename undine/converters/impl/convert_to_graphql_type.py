@@ -61,7 +61,6 @@ from graphql import (
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLObjectType,
     GraphQLOutputType,
     GraphQLString,
 )
@@ -105,7 +104,7 @@ from undine.utils.graphql.validation_rules.one_of_input_object import (
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.reflection import FunctionEqualityWrapper, get_flattened_generic_params, is_generic_list
-from undine.utils.text import get_docstring, to_camel_case, to_pascal_case
+from undine.utils.text import get_docstring, to_camel_case, to_pascal_case, to_schema_name
 
 # --- Python types -------------------------------------------------------------------------------------------------
 
@@ -221,9 +220,9 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
         graphql_type = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)
 
         if is_input:
-            fields[key] = GraphQLInputField(graphql_type)
+            fields[to_schema_name(key)] = GraphQLInputField(graphql_type, out_name=key)
         else:
-            fields[key] = GraphQLField(graphql_type)
+            fields[to_schema_name(key)] = GraphQLField(graphql_type)
 
     description = get_docstring(ref)
 
@@ -655,6 +654,24 @@ def _(ref: LookupRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 @convert_to_graphql_type.register
 def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    def edge_fields() -> dict[str, GraphQLField]:
+        return {
+            "cursor": GraphQLField(
+                GraphQLNonNull(GraphQLString),
+                description="A value identifying this edge for pagination purposes.",
+            ),
+            "node": GraphQLField(
+                convert_to_graphql_type(ref.query_type, **kwargs),  # type: ignore[arg-type]
+                description="An item in the connection.",
+            ),
+        }
+
+    EdgeType = get_or_create_graphql_object_type(  # noqa: N806
+        name=f"{ref.query_type.__schema_name__}Edge",
+        description="An object describing an item in the connection.",
+        fields=FunctionEqualityWrapper(edge_fields, context=ref),
+    )
+
     return get_or_create_graphql_object_type(
         name=f"{ref.query_type.__schema_name__}Connection",
         description="A connection to a list of items.",
@@ -668,22 +685,7 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
                 description="Information about the current state of the pagination.",
             ),
             "edges": GraphQLField(
-                GraphQLList(
-                    GraphQLObjectType(
-                        name=f"{ref.query_type.__schema_name__}Edge",
-                        description="An object describing an item in the connection.",
-                        fields=lambda: {
-                            "cursor": GraphQLField(
-                                GraphQLNonNull(GraphQLString),
-                                description="A value identifying this edge for pagination purposes.",
-                            ),
-                            "node": GraphQLField(
-                                convert_to_graphql_type(ref.query_type, **kwargs),  # type: ignore[arg-type]
-                                description="An item in the connection.",
-                            ),
-                        },
-                    ),
-                ),
+                GraphQLList(EdgeType),
                 description="The items in the connection.",
             ),
         },
@@ -694,3 +696,11 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 @convert_to_graphql_type.register
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return ref.__interface__()
+
+
+with suppress(ImportError):
+    from undine.utils.full_text_search import PostgresFTS
+
+    @convert_to_graphql_type.register
+    def _(_: PostgresFTS, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+        return GraphQLString

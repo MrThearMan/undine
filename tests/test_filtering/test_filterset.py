@@ -418,16 +418,3 @@ def test_filterset__many__all() -> None:
     assert results.filters == [Q(name__exact="foo") & Q(name__exact="bar")]
     assert results.distinct is False
     assert results.aliases == {}
-
-
-def test_filterset__required_aliases() -> None:
-    class MyFilterSet(FilterSet[Task], auto=False):
-        name = Filter(required_aliases={"foo": Count("*")})
-
-    data = {"name": "foo"}
-
-    results = MyFilterSet.__build__(filter_data=data, info=mock_gql_info())
-
-    assert results.filters == [Q(name__exact="foo")]
-    assert results.distinct is False
-    assert results.aliases == {"foo": Count("*")}

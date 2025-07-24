@@ -179,6 +179,16 @@ the `null_placement` argument can be used to specify the position of null values
 
 By default, null values are placed according to your database default.
 
+### Aliases
+
+Sometimes a `Order` may require additional expressions to be added as aliases
+to the queryset when the `Order` is used. For this, you can define a function
+that returns a dictionary of expressions and decorate it with the `aliases` decorator.
+
+```python
+-8<- "ordering/order_aliases.py"
+```
+
 ### Field name
 
 A `field_name` can be provided to explicitly set the Django model field name
