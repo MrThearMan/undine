@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -73,3 +74,11 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:  # Required for Django<5.1
 @convert_to_description.register
 def _(ref: Connection, **kwargs: Any) -> Any:
     return ref.description
+
+
+with suppress(ImportError):
+    from undine.utils.full_text_search import PostgresFTS
+
+    @convert_to_description.register
+    def _(_: PostgresFTS, **kwargs: Any) -> Any:
+        return None

@@ -16,7 +16,7 @@ from django.db.models import (
 )
 
 if TYPE_CHECKING:
-    from undine.typing import RelatedManager
+    from example_project.project.typing import RelatedManager
 
 __all__ = [
     "Example",

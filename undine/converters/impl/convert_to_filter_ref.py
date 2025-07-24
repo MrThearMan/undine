@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from types import FunctionType
 from typing import Any
 
@@ -15,7 +16,7 @@ from django.db.models.query_utils import DeferredAttribute
 
 from undine import Filter
 from undine.converters import convert_to_filter_ref
-from undine.typing import CombinableExpression, ModelField
+from undine.typing import CombinableExpression, DjangoExpression, GQLInfo, ModelField
 from undine.utils.model_utils import determine_output_field, get_model_field
 
 
@@ -72,6 +73,19 @@ def _(ref: FunctionType, **kwargs: Any) -> Any:
 
 @convert_to_filter_ref.register
 def _(ref: Q, **kwargs: Any) -> Any:
+    caller: Filter = kwargs["caller"]
+
+    user_func = caller.aliases_func
+
+    def aliases(root: Filter, info: GQLInfo, *, value: bool) -> dict[str, DjangoExpression]:
+        results: dict[str, DjangoExpression] = {}
+        if user_func is not None:
+            results |= user_func(root, info, value=value)
+
+        results[root.name] = ref
+        return results
+
+    caller.aliases_func = aliases
     return ref
 
 
@@ -79,6 +93,18 @@ def _(ref: Q, **kwargs: Any) -> Any:
 def _(ref: CombinableExpression, **kwargs: Any) -> Any:
     caller: Filter = kwargs["caller"]
     determine_output_field(ref, model=caller.filterset.__model__)
+
+    user_func = caller.aliases_func
+
+    def aliases(root: Filter, info: GQLInfo, *, value: Any) -> dict[str, DjangoExpression]:
+        results: dict[str, DjangoExpression] = {}
+        if user_func is not None:
+            results |= user_func(root, info, value=value)
+
+        results[root.name] = ref
+        return results
+
+    caller.aliases_func = aliases
     return ref
 
 
@@ -90,3 +116,26 @@ def _(ref: GenericRel, **kwargs: Any) -> Any:
 @convert_to_filter_ref.register  # Required for Django<5.1
 def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
     return ref
+
+
+with suppress(ImportError):
+    from undine.utils.full_text_search import PostgresFTS
+
+    @convert_to_filter_ref.register
+    def _(ref: PostgresFTS, **kwargs: Any) -> Any:
+        caller: Filter = kwargs["caller"]
+
+        user_func = caller.aliases_func
+
+        def aliases(root: Filter, info: GQLInfo, *, value: Any) -> dict[str, DjangoExpression]:
+            results: dict[str, DjangoExpression] = {}
+            if user_func is not None:
+                results |= user_func(root, info, value=value)
+
+            lang = ref.get_search_language(info)
+            key = ref.get_vector_alias_key(root, lang)
+            results[key] = ref.vectors[lang.name]
+            return results
+
+        caller.aliases_func = aliases
+        return ref

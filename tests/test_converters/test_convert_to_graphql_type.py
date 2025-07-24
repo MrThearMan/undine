@@ -253,6 +253,7 @@ class MyTypedDict(TypedDict):
 
     foo: int
     bar: str
+    fizz_buzz: datetime.datetime
 
 
 def test_convert_to_graphql_type__typed_dict__output() -> None:
@@ -263,6 +264,7 @@ def test_convert_to_graphql_type__typed_dict__output() -> None:
     assert result.fields == {
         "foo": GraphQLField(GraphQLNonNull(GraphQLInt)),
         "bar": GraphQLField(GraphQLNonNull(GraphQLString)),
+        "fizzBuzz": GraphQLField(GraphQLNonNull(GraphQLDateTime)),
     }
     assert result.description == "Description."
 
@@ -273,8 +275,9 @@ def test_convert_to_graphql_type__typed_dict__input() -> None:
     assert isinstance(result, GraphQLInputObjectType)
     assert result.name == "MyTypedDict"
     assert result.fields == {
-        "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
-        "bar": GraphQLInputField(GraphQLNonNull(GraphQLString)),
+        "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt), out_name="foo"),
+        "bar": GraphQLInputField(GraphQLNonNull(GraphQLString), out_name="bar"),
+        "fizzBuzz": GraphQLInputField(GraphQLNonNull(GraphQLDateTime), out_name="fizz_buzz"),
     }
     assert result.description == "Description."
 

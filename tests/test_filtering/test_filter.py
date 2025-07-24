@@ -14,7 +14,7 @@ from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 from undine.filtering import FilterSetMeta
 from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver
-from undine.typing import ManyMatch
+from undine.typing import DjangoExpression, GQLInfo, ManyMatch
 
 
 def test_filter__repr() -> None:
@@ -357,3 +357,20 @@ def test_filter__extensions() -> None:
 
     input_field = MyFilter.name.as_graphql_input_field()
     assert input_field.extensions == {"foo": "bar", "undine_filter": MyFilter.name}
+
+
+def test_filter__aliases() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+        @name.aliases
+        def name_aliases(self, info: GQLInfo, value: str) -> dict[str, DjangoExpression]:
+            return {"foo": Count("*")}
+
+    data = {"name": "foo"}
+
+    results = MyFilterSet.__build__(filter_data=data, info=mock_gql_info())
+
+    assert results.filters == [Q(name__exact="foo")]
+    assert results.distinct is False
+    assert results.aliases == {"foo": Count("*")}
