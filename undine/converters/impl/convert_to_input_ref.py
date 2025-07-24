@@ -28,14 +28,14 @@ from undine.utils.model_utils import get_model_field, get_reverse_field_name
 @convert_to_input_ref.register
 def _(_: None, **kwargs: Any) -> Any:
     caller: Input = kwargs["caller"]
-    field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     return convert_to_input_ref(field, **kwargs)
 
 
 @convert_to_input_ref.register
-def _(_: F, **kwargs: Any) -> Any:
+def _(ref: F, **kwargs: Any) -> Any:
     caller: Input = kwargs["caller"]
-    field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.mutation_type.__model__, lookup=ref.name)
     return convert_to_input_ref(field, **kwargs)
 
 
@@ -165,7 +165,7 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
 
     # Remove the Input for the reverse relation from the MutationType used as the Input for this one.
     model = caller.mutation_type.__model__
-    field = get_model_field(model=model, lookup=caller.name)
+    field = get_model_field(model=model, lookup=caller.field_name)
     reverse_field_name = get_reverse_field_name(field=field)
     ref.__input_map__.pop(reverse_field_name, None)
 

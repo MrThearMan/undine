@@ -67,7 +67,7 @@ def _(ref: FunctionType, **kwargs: Any) -> bool:
 @is_input_required.register
 def _(_: type[MutationType], **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
-    field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.name)
+    field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     return is_input_required(field, caller=caller)
 
 

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
     from undine.directives import Directive
-    from undine.typing import EntrypointParams, PermissionFunc, RootTypeParams
+    from undine.typing import EntrypointParams, FieldPermFunc, RootTypeParams
 
 __all__ = [
     "Entrypoint",
@@ -162,7 +162,7 @@ class Entrypoint:
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
         self.resolver_func: GraphQLFieldResolver | None = None
-        self.permissions_func: PermissionFunc | None = None
+        self.permissions_func: FieldPermFunc | None = None
 
     def __connect__(self, root_type: type[RootType], name: str) -> None:
         """Connect this `Entrypoint` to the given `RootType` using the given name."""
@@ -229,7 +229,7 @@ class Entrypoint:
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
-    def permissions(self, func: PermissionFunc | None = None, /) -> PermissionFunc:
+    def permissions(self, func: FieldPermFunc | None = None, /) -> FieldPermFunc:
         """Decorate a function to add it as a permission check for this Entrypoint."""
         if func is None:  # Allow `@<entrypoint_name>.permissions()`
             return self.permissions  # type: ignore[return-value]

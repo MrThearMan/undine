@@ -58,7 +58,12 @@ def _(ref: CombinableExpression, **kwargs: Any) -> Any:
     caller: UndineField = kwargs["caller"]
     determine_output_field(ref, model=caller.query_type.__model__)
 
+    user_func = caller.optimizer_func
+
     def optimizer_func(field: UndineField, data: OptimizationData, info: GQLInfo) -> None:
+        if user_func is not None:
+            user_func(field, data, info)
+
         data.annotations[field.name] = ref
 
     caller.optimizer_func = optimizer_func
@@ -69,7 +74,12 @@ def _(ref: CombinableExpression, **kwargs: Any) -> Any:
 def _(ref: Q, **kwargs: Any) -> Any:
     caller: UndineField = kwargs["caller"]
 
+    user_func = caller.optimizer_func
+
     def optimizer_func(field: UndineField, data: OptimizationData, info: GQLInfo) -> None:
+        if user_func is not None:
+            user_func(field, data, info)
+
         data.annotations[field.name] = ref
 
     caller.optimizer_func = optimizer_func
@@ -215,7 +225,12 @@ def _(ref: Connection, **kwargs: Any) -> Any:
 def _(ref: type[Calculation], **kwargs: Any) -> Any:
     caller: UndineField = kwargs["caller"]
 
+    user_func = caller.optimizer_func
+
     def optimizer_func(field: UndineField, data: OptimizationData, info: GQLInfo) -> None:
+        if user_func is not None:
+            user_func(field, data, info)
+
         arg_values = get_arguments(info)
         field_name = get_queried_field_name(field.name, info)
         calculation = ref(field_name, **arg_values)

@@ -536,6 +536,15 @@ The name of given to the persisted documents registration view in the URLconf.
 
 ///
 
+/// details | `PG_TEXT_SEARCH_PREFIX`
+    attrs: {id: pg_text_search_prefix}
+
+Type: `str` | Default: `"_undine_ts_vector"`
+
+A prefix to use for the filter aliases of postgres full text search Filters.
+
+///
+
 /// details | `PREFETCH_HACK_CACHE_KEY`
     attrs: {id: prefetch_hack_cache_key}
 

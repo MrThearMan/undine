@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from undine import FilterSet, GQLInfo, InterfaceType, OrderSet
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
-    from undine.typing import FieldParams, OptimizerFunc, PermissionFunc, QueryTypeParams
+    from undine.typing import FieldParams, FieldPermFunc, OptimizerFunc, QueryTypeParams
 
 __all__ = [
     "Field",
@@ -283,7 +283,7 @@ class Field:
 
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
-        self.permissions_func: PermissionFunc | None = None
+        self.permissions_func: FieldPermFunc | None = None
 
     def __connect__(self, query_type: type[QueryType], name: str) -> None:
         """Connect this `Field` to the given `QueryType` using the given name."""
@@ -356,7 +356,7 @@ class Field:
         self.optimizer_func = get_wrapped_func(func)
         return func
 
-    def permissions(self, func: PermissionFunc | None = None, /) -> PermissionFunc:
+    def permissions(self, func: FieldPermFunc | None = None, /) -> FieldPermFunc:
         """Decorate a function to add it as a permission check for this field."""
         if func is None:  # Allow `@<field_name>.permissions()`
             return self.permissions  # type: ignore[return-value]

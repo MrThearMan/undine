@@ -32,7 +32,7 @@ from django.db.models import (
 )
 
 if TYPE_CHECKING:
-    from undine.typing import ModelManager, RelatedManager
+    from example_project.project.typing import ModelManager, RelatedManager
 
 __all__ = [
     "AcceptanceCriteria",

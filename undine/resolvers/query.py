@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from undine import Entrypoint, Field, InterfaceType, UnionType
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.relay import Connection, PaginationHandler
-    from undine.typing import GQLInfo, RelatedManager
+    from undine.typing import GQLInfo
 
 __all__ = [
     "ConnectionResolver",
@@ -210,7 +210,7 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         field_name = get_queried_field_name(self.field.name, info)
-        manager: RelatedManager[TModel] = getattr(root, field_name)
+        manager: Manager[TModel] = getattr(root, field_name)
         instances = list(manager.get_queryset())
 
         if self.field.permissions_func is not None:

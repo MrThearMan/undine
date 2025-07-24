@@ -44,15 +44,7 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.directives import Directive
-    from undine.typing import (
-        DefaultValueType,
-        GQLInfo,
-        InputParams,
-        InputPermFunc,
-        MutationTypeParams,
-        PermissionFunc,
-        ValidatorFunc,
-    )
+    from undine.typing import DefaultValueType, GQLInfo, InputParams, InputPermFunc, MutationTypeParams, ValidatorFunc
 
 __all__ = [
     "Input",
@@ -316,7 +308,7 @@ class Input:
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
 
         self.validator_func: ValidatorFunc | None = None
-        self.permissions_func: PermissionFunc | None = None
+        self.permissions_func: InputPermFunc | None = None
 
     def __connect__(self, mutation_type: type[MutationType], name: str) -> None:
         """Connect this `Input` to the given `MutationType` using the given name."""

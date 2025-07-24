@@ -694,3 +694,11 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 @convert_to_graphql_type.register
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return ref.__interface__()
+
+
+with suppress(ImportError):
+    from undine.utils.full_text_search import PostgresFTS
+
+    @convert_to_graphql_type.register
+    def _(_: PostgresFTS, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+        return GraphQLString

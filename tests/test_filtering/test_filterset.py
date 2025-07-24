@@ -8,6 +8,7 @@ from graphql import DirectiveLocation, GraphQLInputField, GraphQLNonNull, GraphQ
 
 from example_project.app.models import Person, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info
+from undine import DjangoExpression, GQLInfo
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError, MissingModelGenericError
 from undine.filtering import Filter, FilterSet
@@ -420,9 +421,13 @@ def test_filterset__many__all() -> None:
     assert results.aliases == {}
 
 
-def test_filterset__required_aliases() -> None:
+def test_filterset__filter_aliases() -> None:
     class MyFilterSet(FilterSet[Task], auto=False):
-        name = Filter(required_aliases={"foo": Count("*")})
+        name = Filter()
+
+        @name.aliases
+        def name_aliases(self, info: GQLInfo) -> dict[str, DjangoExpression]:
+            return {"foo": Count("*")}
 
     data = {"name": "foo"}
 
