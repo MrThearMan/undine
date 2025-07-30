@@ -24,6 +24,7 @@ from .reflection import (
     can_be_literal_arg,
     get_flattened_generic_params,
     get_instance_name,
+    get_origin_or_noop,
     get_signature,
     is_lambda,
     is_not_required_type,
@@ -73,7 +74,7 @@ class FunctionDispatcher(Generic[T]):
     def __getitem__(self, original_key: Any) -> DispatchProtocol[T]:  # noqa: C901, PLR0912
         """Find the implementation for the given key."""
         non_null_key = self._remove_null(original_key)
-        key = get_origin(non_null_key) or non_null_key
+        key = get_origin_or_noop(non_null_key)
 
         if is_lambda(key):
             impl = self.implementations.types.get(Lambda)
@@ -92,7 +93,7 @@ class FunctionDispatcher(Generic[T]):
 
         if isinstance(key, type):
             section: dict[Any, DispatchProtocol] = self.implementations.types
-            cls: type = get_origin(key) or key
+            cls: type = get_origin_or_noop(key)
 
         else:
             section = self.implementations.instances

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from types import FunctionType, GenericAlias
-from typing import Any, get_origin
+from types import FunctionType
+from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import F, Model, Q, QuerySet
@@ -14,6 +14,7 @@ from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.model_utils import get_model_field
+from undine.utils.reflection import get_origin_or_noop
 
 
 @is_many.register
@@ -28,9 +29,7 @@ def _(ref: type[Model], **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: TypeRef, **kwargs: Any) -> bool:
-    annotation = ref.value
-    if isinstance(annotation, GenericAlias):
-        annotation = get_origin(annotation)
+    annotation = get_origin_or_noop(ref.value)
     return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
 
 
@@ -71,9 +70,7 @@ def _(ref: GraphQLType, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: FunctionType, **kwargs: Any) -> bool:
-    annotation = parse_return_annotation(ref)
-    if isinstance(annotation, GenericAlias):
-        annotation = get_origin(annotation)
+    annotation = get_origin_or_noop(parse_return_annotation(ref))
     return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
 
 

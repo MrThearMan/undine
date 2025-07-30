@@ -6,7 +6,7 @@ import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
 from types import FunctionType, GenericAlias, LambdaType
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar, get_args
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar, get_args, get_origin
 
 from graphql import GraphQLResolveInfo
 
@@ -83,6 +83,14 @@ def get_wrapped_func(func: Callable[..., Any]) -> Callable[..., Any]:
             continue
         break
     return func
+
+
+def get_origin_or_noop(type_hint: T) -> T:
+    """
+    Get the unsubscripted version of the given type hint,
+    or return the type hint itself if it's not unsubscripted.
+    """
+    return get_origin(type_hint) or type_hint
 
 
 def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
@@ -267,7 +275,7 @@ def get_root_and_info_params(func: FunctionType | Callable[..., Any], *, depth: 
         if i == 0 and param.name in {"self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME}:
             root_param = param.name
 
-        elif param.annotation in {GraphQLResolveInfo, GQLInfo}:
+        elif get_origin_or_noop(param.annotation) in {GraphQLResolveInfo, GQLInfo}:
             info_param = param.name
             break
 
