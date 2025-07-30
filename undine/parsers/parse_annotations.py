@@ -9,7 +9,7 @@ from graphql import GraphQLResolveInfo, Undefined
 from undine.dataclasses import Parameter
 from undine.exceptions import MissingFunctionAnnotationsError, MissingFunctionReturnTypeError, NoFunctionParametersError
 from undine.typing import GQLInfo
-from undine.utils.reflection import get_signature, is_subclass
+from undine.utils.reflection import get_origin_or_noop, get_signature, is_subclass
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -50,7 +50,7 @@ def parse_parameters(func: FunctionType | Callable[..., Any], *, depth: int = 0)
             missing.append(param.name)
             continue
 
-        if param.annotation in {GraphQLResolveInfo, GQLInfo}:
+        if get_origin_or_noop(param.annotation) in {GraphQLResolveInfo, GQLInfo}:
             continue
 
         if is_subclass(param.annotation, QuerySet):
