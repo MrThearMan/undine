@@ -5,7 +5,8 @@ from asyncio import iscoroutinefunction
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeAlias
 
 from asgiref.sync import sync_to_async
-from django.db.models import Manager, QuerySet
+from django.db.models import QuerySet
+from django.db.models.manager import BaseManager
 from graphql import GraphQLID, GraphQLObjectType
 
 from undine import QueryType
@@ -210,7 +211,7 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         field_name = get_queried_field_name(self.field.name, info)
-        manager: Manager[TModel] = getattr(root, field_name)
+        manager: BaseManager[TModel] = getattr(root, field_name)
         instances = list(manager.get_queryset())
 
         if self.field.permissions_func is not None:
@@ -352,7 +353,7 @@ class NestedQueryTypeManyResolver(Generic[TModel]):
         field_name = get_queried_field_name(self.field.name, info)
 
         instances: list[TModel] = getattr(root, field_name)
-        if isinstance(instances, Manager):
+        if isinstance(instances, BaseManager):
             instances = list(instances.get_queryset())
 
         for instance in instances:
@@ -515,7 +516,7 @@ class NestedConnectionResolver(Generic[TModel]):
 
     def get_instances(self, root: Model, field_name: str) -> list[TModel]:
         instances: list[TModel] = getattr(root, field_name)
-        if isinstance(instances, Manager):
+        if isinstance(instances, BaseManager):
             instances = list(instances.get_queryset())
         return instances
 
