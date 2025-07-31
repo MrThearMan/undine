@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from graphql import GraphQLWrappingType
 
 from pytest_undine.fixtures import graphql, graphql_async, undine_settings
 from tests.factories._base import UndineFaker
@@ -27,14 +26,3 @@ def _clear_registries() -> None:
 def _reset_faker_uniqueness() -> None:
     """Reset the uniqueness between tests so that we don't run out of unique values."""
     UndineFaker.clear_unique()
-
-
-@pytest.fixture(autouse=True, scope="session")
-def _patch_graphql_objects() -> None:
-    # Set wrapping types to compare their wrapped types.
-    def wrapping_eq(self: GraphQLWrappingType, other: object) -> bool:
-        if not isinstance(other, type(self)):
-            return NotImplemented
-        return self.of_type == other.of_type
-
-    GraphQLWrappingType.__eq__ = wrapping_eq  # type: ignore[method-assign,assignment]

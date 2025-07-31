@@ -23,7 +23,10 @@ def _(ref: Any, **kwargs: Any) -> Any:
 
 @convert_to_description.register
 def _(ref: ModelField, **kwargs: Any) -> Any:
-    return getattr(ref, "help_text", None) or None
+    help_text = getattr(ref, "help_text", None) or None
+    if help_text is None:
+        return None
+    return str(help_text)
 
 
 @convert_to_description.register

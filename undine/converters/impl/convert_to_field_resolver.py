@@ -4,7 +4,7 @@ from types import FunctionType
 from typing import Any, Never
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.db.models import F
+from django.db.models import F, Q
 from graphql import GraphQLFieldResolver, GraphQLID, GraphQLType, GraphQLWrappingType
 
 from undine import Calculation, Field, QueryType
@@ -51,7 +51,7 @@ def _(_: ToManyField, **kwargs: Any) -> GraphQLFieldResolver:
 
 
 @convert_to_field_resolver.register
-def _(_: CombinableExpression | F, **kwargs: Any) -> GraphQLFieldResolver:
+def _(_: CombinableExpression | F | Q, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Field = kwargs["caller"]
     return ModelAttributeResolver(field=caller)
 

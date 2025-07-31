@@ -4,7 +4,7 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import F
+from django.db.models import F, Q
 from graphql import (
     GraphQLArgument,
     GraphQLArgumentMap,
@@ -60,7 +60,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
 
 
 @convert_to_graphql_argument_map.register
-def _(_: ModelField | CombinableExpression | F, **kwargs: Any) -> GraphQLArgumentMap:
+def _(_: ModelField | CombinableExpression | F | Q, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
 
 

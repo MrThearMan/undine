@@ -63,6 +63,7 @@ from graphql import (
     GraphQLNonNull,
     GraphQLOutputType,
     GraphQLString,
+    Undefined,
 )
 
 from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
@@ -103,7 +104,12 @@ from undine.utils.graphql.validation_rules.one_of_input_object import (
 )
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
-from undine.utils.reflection import FunctionEqualityWrapper, get_flattened_generic_params, is_generic_list
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    get_flattened_generic_params,
+    is_generic_list,
+    is_namedtuple,
+)
 from undine.utils.text import get_docstring, to_camel_case, to_pascal_case, to_schema_name
 
 # --- Python types -------------------------------------------------------------------------------------------------
@@ -214,28 +220,76 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     is_input = kwargs.get("is_input", False)
     total: bool = getattr(ref, "__total__", True)
 
-    fields: dict[str, GraphQLField | GraphQLInputField] = {}
+    description = get_docstring(ref)
+
+    if is_input:
+        input_fields: dict[str, GraphQLInputField] = {}
+        for key, value in ref.__annotations__.items():
+            evaluated_type = eval_type(value, globals_=module_globals)
+            input_type: GraphQLInputType = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)  # type: ignore[assignment]
+            input_fields[to_schema_name(key)] = GraphQLInputField(input_type, out_name=key)
+
+        return get_or_create_graphql_input_object_type(
+            name=f"{ref.__name__}Input",
+            fields=input_fields,
+            description=description,
+        )
+
+    output_fields: dict[str, GraphQLField] = {}
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
-        graphql_type = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)
+        output_type: GraphQLOutputType = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)  # type: ignore[assignment]
+        output_fields[to_schema_name(key)] = GraphQLField(output_type)
 
-        if is_input:
-            fields[to_schema_name(key)] = GraphQLInputField(graphql_type, out_name=key)
-        else:
-            fields[to_schema_name(key)] = GraphQLField(graphql_type)
+    return get_or_create_graphql_object_type(
+        name=f"{ref.__name__}Output",
+        fields=output_fields,
+        description=description,
+    )
+
+
+@convert_to_graphql_type.register
+def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if not is_namedtuple(ref):
+        args = get_flattened_generic_params(ref)
+        if args:
+            return GraphQLList(convert_to_graphql_type(args[0], **kwargs))
+        return GraphQLList(GraphQLAny)
+
+    module_globals = vars(import_module(ref.__module__))
+    is_input = kwargs.get("is_input", False)
 
     description = get_docstring(ref)
 
     if is_input:
+        input_fields: dict[str, GraphQLInputField] = {}
+        defaults: dict[str, Any] = getattr(ref, "_field_defaults", {})
+
+        for key, value in ref.__annotations__.items():
+            evaluated_type = eval_type(value, globals_=module_globals)
+            input_type: GraphQLInputType = convert_to_graphql_type(evaluated_type, **kwargs)  # type: ignore[assignment]
+
+            input_fields[to_schema_name(key)] = GraphQLInputField(
+                input_type,
+                default_value=defaults.get(key, Undefined),
+                out_name=key,
+            )
+
         return get_or_create_graphql_input_object_type(
-            name=ref.__name__,
-            fields=fields,
+            name=f"{ref.__name__}Input",
+            fields=input_fields,
             description=description,
         )
 
+    output_fields: dict[str, GraphQLField] = {}
+    for key, value in ref.__annotations__.items():
+        evaluated_type = eval_type(value, globals_=module_globals)
+        output_type: GraphQLOutputType = convert_to_graphql_type(evaluated_type, **kwargs)  # type: ignore[assignment]
+        output_fields[to_schema_name(key)] = GraphQLField(output_type)
+
     return get_or_create_graphql_object_type(
-        name=ref.__name__,
-        fields=fields,
+        name=f"{ref.__name__}Output",
+        fields=output_fields,
         description=description,
     )
 

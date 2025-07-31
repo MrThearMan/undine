@@ -260,7 +260,7 @@ def test_convert_to_graphql_type__typed_dict__output() -> None:
     result = convert_to_graphql_type(MyTypedDict)
 
     assert isinstance(result, GraphQLObjectType)
-    assert result.name == "MyTypedDict"
+    assert result.name == "MyTypedDictOutput"
     assert result.fields == {
         "foo": GraphQLField(GraphQLNonNull(GraphQLInt)),
         "bar": GraphQLField(GraphQLNonNull(GraphQLString)),
@@ -273,7 +273,7 @@ def test_convert_to_graphql_type__typed_dict__input() -> None:
     result = convert_to_graphql_type(MyTypedDict, is_input=True)
 
     assert isinstance(result, GraphQLInputObjectType)
-    assert result.name == "MyTypedDict"
+    assert result.name == "MyTypedDictInput"
     assert result.fields == {
         "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt), out_name="foo"),
         "bar": GraphQLInputField(GraphQLNonNull(GraphQLString), out_name="bar"),

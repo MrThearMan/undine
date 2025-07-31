@@ -8,6 +8,7 @@ from graphql import GraphQLResolveInfo, Undefined
 
 from undine.dataclasses import Parameter
 from undine.exceptions import MissingFunctionAnnotationsError, MissingFunctionReturnTypeError, NoFunctionParametersError
+from undine.settings import undine_settings
 from undine.typing import GQLInfo
 from undine.utils.reflection import get_origin_or_noop, get_signature, is_subclass
 
@@ -39,7 +40,7 @@ def parse_parameters(func: FunctionType | Callable[..., Any], *, depth: int = 0)
 
     for i, param in enumerate(sig.parameters.values()):
         # 'self' and 'cls' parameters are special and thus skipped.
-        if param.name in {"self", "cls"} and i == 0:
+        if i == 0 and param.name in {"self", "cls", undine_settings.RESOLVER_ROOT_PARAM_NAME}:
             continue
 
         # Don't include '*args' and '**kwargs' parameters, as they are not supported by GraphQL.

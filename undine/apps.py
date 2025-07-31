@@ -4,6 +4,7 @@ from importlib import import_module
 from pathlib import Path
 
 from django.apps import AppConfig
+from graphql import GraphQLWrappingType
 
 
 class UndineConfig(AppConfig):
@@ -12,10 +13,21 @@ class UndineConfig(AppConfig):
     verbose_name = "undine"
 
     def ready(self) -> None:
+        self.patch_graphql_wrapping_object()
         self.register_additional_types()
         self.register_converters()
         self.maybe_disable_did_you_mean()
         self.patch_debug_toolbar_if_installed()
+
+    def patch_graphql_wrapping_object(self) -> None:
+        """Set wrapping types to compare their wrapped types."""
+
+        def wrapping_eq(self_: GraphQLWrappingType, other: object) -> bool:
+            if not isinstance(other, type(self_)):
+                return NotImplemented
+            return self_.of_type == other.of_type
+
+        GraphQLWrappingType.__eq__ = wrapping_eq  # type: ignore[method-assign,assignment]
 
     def register_additional_types(self) -> None:
         from undine.utils.graphql.type_registry import register_builtins  # noqa: PLC0415

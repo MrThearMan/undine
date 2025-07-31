@@ -126,7 +126,7 @@ def test_to_argument_map__function__typed_dict() -> None:
     assert isinstance(result["arg"].type, GraphQLNonNull)
     assert isinstance(result["arg"].type.of_type, GraphQLInputObjectType)
 
-    assert result["arg"].type.of_type.name == "UserParams"
+    assert result["arg"].type.of_type.name == "UserParamsInput"
 
     assert sorted(result["arg"].type.of_type.fields) == ["age", "name"]
 

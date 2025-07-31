@@ -6,7 +6,18 @@ import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
 from types import FunctionType, GenericAlias, LambdaType
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, Protocol, TypeGuard, TypeVar, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    NamedTuple,
+    ParamSpec,
+    Protocol,
+    TypeGuard,
+    TypeVar,
+    get_args,
+    get_origin,
+)
 
 from graphql import GraphQLResolveInfo
 
@@ -35,6 +46,7 @@ __all__ = [
     "has_callable_attribute",
     "is_generic_list",
     "is_lambda",
+    "is_namedtuple",
     "is_not_required_type",
     "is_protocol",
     "is_required_type",
@@ -202,6 +214,16 @@ def is_required_type(type_: Any) -> bool:
 def is_not_required_type(type_: Any) -> bool:
     """Check if the given type is a TypedDict `Required` type."""
     return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
+
+
+def is_namedtuple(obj: Any) -> TypeGuard[type[NamedTuple]]:
+    """Check if the given object is a namedtuple class or not."""
+    return (
+        is_subclass(obj, tuple)
+        and getattr(obj, "_fields", None) is not None
+        and getattr(obj, "_field_defaults", None) is not None
+        and getattr(obj, "_asdict", None) is not None
+    )
 
 
 def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType | Callable[..., Any], /) -> bool:
