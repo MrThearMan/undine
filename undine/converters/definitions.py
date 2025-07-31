@@ -6,7 +6,7 @@ from typing import Any
 from django.db.models import Field, Lookup, Transform
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import TruncDate, TruncTime
-from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLInputType, GraphQLOutputType, GraphQLType
+from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLInputType, GraphQLOutputType
 
 from undine.typing import DjangoExpression, GraphQLFilterResolver, SupportsLookup
 from undine.utils.function_dispatcher import FunctionDispatcher
@@ -41,17 +41,15 @@ __all__ = [
 # These are then registered in `apps.py` when Django apps are ready.
 
 
-convert_lookup_to_graphql_type: FunctionDispatcher[GraphQLType] = FunctionDispatcher()
+convert_lookup_to_graphql_type: FunctionDispatcher[GraphQLInputType | GraphQLOutputType] = FunctionDispatcher()
 """
 Convert the given Model field lookup to a GraphQL type.
 
 Arguments:
 
-`lookup: str`: The lookup to convert.
+`lookup: str`: The lookup made to the Model field.
 
-`default_type: type`: Default python type to use for the lookup.
-
-`many: bool`: Whether the lookup is for a field that contains a list of objects or not.
+`default_type: GraphQLInputType | GraphQLOutputType`: The GraphQL Type for the parent field the lookup is for.
 """
 
 convert_to_bad_lookups: FunctionDispatcher[set[str]] = FunctionDispatcher()

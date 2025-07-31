@@ -140,7 +140,7 @@ def test_optimizer__union__filtering(graphql, undine_settings) -> None:
         query {
           commentable(
             filterTask: {
-              type: "TASK"
+              type: TASK
             }
             filterProject: {
               name: "Project 1"

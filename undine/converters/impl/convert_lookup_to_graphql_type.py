@@ -3,47 +3,45 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from django.db.models.constants import LOOKUP_SEP
-from graphql import GraphQLBoolean, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString, GraphQLType
+from graphql import (
+    GraphQLBoolean,
+    GraphQLInputType,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLOutputType,
+    GraphQLString,
+)
 
-from undine.converters import convert_lookup_to_graphql_type, convert_to_graphql_type, convert_to_python_type
+from undine.converters import convert_lookup_to_graphql_type
 from undine.exceptions import FunctionDispatcherError
+from undine.scalars import GraphQLDate, GraphQLTime
 
 
 @convert_lookup_to_graphql_type.register
-def _(lookup: str, **kwargs: Any) -> GraphQLType:
+def _(lookup: str, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     if LOOKUP_SEP not in lookup:
         msg = f"Could not find a matching GraphQL type for lookup: '{lookup}'."
         raise FunctionDispatcherError(msg)
 
     transform, rest = lookup.split(LOOKUP_SEP, maxsplit=1)
-
-    transform_graphql_type = convert_lookup_to_graphql_type(transform, **kwargs)
-    transform_python_type = convert_to_python_type(transform_graphql_type)
-
-    kwargs["default_type"] = transform_python_type
-
+    kwargs["default_type"] = convert_lookup_to_graphql_type(transform, **kwargs)
     return convert_lookup_to_graphql_type(rest, **kwargs)
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["exact"], **kwargs: Any) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    return convert_to_graphql_type(default_type, **kwargs)
+def _(_: Literal["exact"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return kwargs["default_type"]
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["endswith", "startswith"], **kwargs: Any) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    return convert_to_graphql_type(default_type, **kwargs)
+def _(_: Literal["endswith", "startswith"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return kwargs["default_type"]
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["contains"], **kwargs: Any) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    many = kwargs["many"]
-    if many:
-        default_type = list.__class_getitem__(default_type)
-    return convert_to_graphql_type(default_type, **kwargs)
+def _(_: Literal["contains"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return kwargs["default_type"]
 
 
 @convert_lookup_to_graphql_type.register
@@ -57,7 +55,7 @@ def _(
         "regex",
     ],
     **kwargs: Any,
-) -> GraphQLType:
+) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLString
 
 
@@ -70,21 +68,18 @@ def _(
         "lte",
     ],
     **kwargs: Any,
-) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    return convert_to_graphql_type(default_type, **kwargs)
+) -> GraphQLInputType | GraphQLOutputType:
+    return kwargs["default_type"]
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["isnull"], **kwargs: Any) -> GraphQLType:
+def _(_: Literal["isnull"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLBoolean
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["in", "range"], **kwargs: Any) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    type_ = list.__class_getitem__(default_type)
-    return convert_to_graphql_type(type_, **kwargs)
+def _(_: Literal["in", "range"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return GraphQLList(GraphQLNonNull(kwargs["default_type"]))
 
 
 @convert_lookup_to_graphql_type.register
@@ -104,40 +99,32 @@ def _(
         "year",
     ],
     **kwargs: Any,
-) -> GraphQLType:
+) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLInt
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["date"], **kwargs: Any) -> GraphQLType:
-    from undine.scalars import GraphQLDate
-
+def _(_: Literal["date"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLDate
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["time"], **kwargs: Any) -> GraphQLType:
-    from undine.scalars import GraphQLTime
-
+def _(_: Literal["time"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLTime
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["contained_by", "overlap"], **kwargs: Any) -> GraphQLType:
-    default_type = kwargs["default_type"]
-    many = kwargs["many"]
-    if many:
-        default_type = list.__class_getitem__(default_type)
-    return convert_to_graphql_type(default_type, **kwargs)
+def _(_: Literal["contained_by", "overlap"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return kwargs["default_type"]
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["len"], **kwargs: Any) -> GraphQLType:
+def _(_: Literal["len"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLInt
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["has_key"], **kwargs: Any) -> GraphQLType:
+def _(_: Literal["has_key"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLString
 
 
@@ -150,12 +137,12 @@ def _(
         "values",
     ],
     **kwargs: Any,
-) -> GraphQLType:
+) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLList(GraphQLNonNull(GraphQLString))
 
 
 @convert_lookup_to_graphql_type.register
-def _(_: Literal["unaccent"], **kwargs: Any) -> GraphQLType:
+def _(_: Literal["unaccent"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLString
 
 
@@ -167,7 +154,7 @@ def _(
         "trigram_strict_word_similar",
     ],
     **kwargs: Any,
-) -> GraphQLType:
+) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLString
 
 
@@ -181,5 +168,5 @@ def _(
         "upper_inf",
     ],
     **kwargs: Any,
-) -> GraphQLType:
+) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLBoolean

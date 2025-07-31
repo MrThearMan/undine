@@ -45,6 +45,12 @@ def _(_: TypeRef, **kwargs: Any) -> Any:
 
 
 @convert_to_description.register
+def _(_: type[tuple], **kwargs: Any) -> Any:
+    # For NamedTuples, don't use the generated docstring.
+    return None
+
+
+@convert_to_description.register
 def _(ref: LazyRelation, **kwargs: Any) -> Any:
     return convert_to_description(ref.field)
 

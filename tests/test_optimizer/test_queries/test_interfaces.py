@@ -574,7 +574,7 @@ def test_interfaces__entrypoint__filtering(graphql, undine_settings) -> None:
         query {
           named(
             filterTask: {
-              type: "TASK"
+              type: TASK
             }
             filterProject: {
               name: "Project 1"

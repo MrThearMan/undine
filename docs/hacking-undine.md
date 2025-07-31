@@ -53,9 +53,7 @@ lookup expression has been added. For example a `__date` lookup changes the expe
 input for a `DateTimeField` `Filter` from `DateTime` to `Date`.
 
 In addition to the lookup expression to convert, the function also accepts a `default_type`
-parameter, which is the default python type to use for the lookup, and a `many`
-parameter, which is a boolean indicating whether the lookup is for a field that
-contains a list of objects or not.
+parameter, which is the GraphQLType for the parent field the lookup is for.
 
 ### `convert_to_python_type`
 

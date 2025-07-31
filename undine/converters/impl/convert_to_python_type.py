@@ -64,11 +64,18 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.typing import CombinableExpression, ToManyField, ToOneField
+from undine.utils.model_fields import TextChoicesField
 
 
 @convert_to_python_type.register
 def _(_: CharField | TextField, **kwargs: Any) -> type:
+    # CharField might have an enum, but we cannot access it anymore.
     return str
+
+
+@convert_to_python_type.register
+def _(ref: TextChoicesField, **kwargs: Any) -> type:
+    return ref.choices_enum
 
 
 @convert_to_python_type.register

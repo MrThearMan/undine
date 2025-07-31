@@ -260,7 +260,7 @@ def test_convert_to_graphql_type__typed_dict__output() -> None:
     result = convert_to_graphql_type(MyTypedDict)
 
     assert isinstance(result, GraphQLObjectType)
-    assert result.name == "MyTypedDictOutput"
+    assert result.name == "MyTypedDictType"
     assert result.fields == {
         "foo": GraphQLField(GraphQLNonNull(GraphQLInt)),
         "bar": GraphQLField(GraphQLNonNull(GraphQLString)),
@@ -473,7 +473,7 @@ class RoleTextChoicesFieldModel(Model):
         app_label = __name__
 
 
-def test_convert_to_graphql_type__char_field__textchoices() -> None:
+def test_convert_to_graphql_type__char_field__text_choices() -> None:
     input_type = RoleTextChoicesFieldModel._meta.get_field("role")
     result = convert_to_graphql_type(input_type)
 

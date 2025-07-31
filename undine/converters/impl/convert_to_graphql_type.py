@@ -67,7 +67,7 @@ from graphql import (
 )
 
 from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
-from undine.converters import convert_lookup_to_graphql_type, convert_to_graphql_type, convert_to_python_type
+from undine.converters import convert_lookup_to_graphql_type, convert_to_description, convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
 from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
@@ -104,13 +104,8 @@ from undine.utils.graphql.validation_rules.one_of_input_object import (
 )
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
-from undine.utils.reflection import (
-    FunctionEqualityWrapper,
-    get_flattened_generic_params,
-    is_generic_list,
-    is_namedtuple,
-)
-from undine.utils.text import get_docstring, to_camel_case, to_pascal_case, to_schema_name
+from undine.utils.reflection import FunctionEqualityWrapper, get_flattened_generic_params, is_namedtuple
+from undine.utils.text import to_camel_case, to_pascal_case, to_schema_name
 
 # --- Python types -------------------------------------------------------------------------------------------------
 
@@ -176,7 +171,7 @@ def _(ref: type[Enum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
         values={name: value.value for name, value in ref.__members__.items()},
-        description=get_docstring(ref),
+        description=convert_to_description(ref),
     )
 
 
@@ -185,7 +180,7 @@ def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOutput
     return get_or_create_graphql_enum(
         name=ref.__name__,
         values={key: str(value) for key, value in ref.choices},
-        description=get_docstring(ref),
+        description=convert_to_description(ref),
     )
 
 
@@ -197,16 +192,18 @@ def _(_: type, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 @convert_to_graphql_type.register
 def _(ref: type[list], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     args = get_flattened_generic_params(ref)
+
     nullable = types.NoneType in args
-    args = tuple(arg for arg in args if arg is not types.NoneType)
+    if nullable:
+        args = tuple(arg for arg in args if arg is not types.NoneType)
 
     # For lists without type, or with a union type, default to any.
     if len(args) != 1:
         return GraphQLList(GraphQLAny)
 
-    graphql_type = convert_to_graphql_type(TypeRef(args[0]), **kwargs)
-    if nullable and isinstance(graphql_type, GraphQLNonNull):
-        graphql_type = graphql_type.of_type
+    graphql_type = convert_to_graphql_type(args[0], **kwargs)
+    if not nullable:
+        graphql_type = GraphQLNonNull(graphql_type)
 
     return GraphQLList(graphql_type)
 
@@ -220,7 +217,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     is_input = kwargs.get("is_input", False)
     total: bool = getattr(ref, "__total__", True)
 
-    description = get_docstring(ref)
+    description = convert_to_description(ref)
 
     if is_input:
         input_fields: dict[str, GraphQLInputField] = {}
@@ -230,7 +227,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             input_fields[to_schema_name(key)] = GraphQLInputField(input_type, out_name=key)
 
         return get_or_create_graphql_input_object_type(
-            name=f"{ref.__name__}Input",
+            name=ref.__name__.removesuffix("Type").removesuffix("Input") + "Input",
             fields=input_fields,
             description=description,
         )
@@ -242,7 +239,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
         output_fields[to_schema_name(key)] = GraphQLField(output_type)
 
     return get_or_create_graphql_object_type(
-        name=f"{ref.__name__}Output",
+        name=ref.__name__.removesuffix("Type") + "Type",
         fields=output_fields,
         description=description,
     )
@@ -252,14 +249,25 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     if not is_namedtuple(ref):
         args = get_flattened_generic_params(ref)
-        if args:
-            return GraphQLList(convert_to_graphql_type(args[0], **kwargs))
-        return GraphQLList(GraphQLAny)
+        args = tuple(arg for arg in args if arg is not Ellipsis)
+
+        nullable = types.NoneType in args
+        if nullable:
+            args = tuple(arg for arg in args if arg is not types.NoneType)
+
+        if len(args) != 1:
+            return GraphQLList(GraphQLAny)
+
+        graphql_type = convert_to_graphql_type(args[0], **kwargs)
+        if not nullable:
+            graphql_type = GraphQLNonNull(graphql_type)
+
+        return GraphQLList(graphql_type)
 
     module_globals = vars(import_module(ref.__module__))
     is_input = kwargs.get("is_input", False)
 
-    description = get_docstring(ref)
+    description = convert_to_description(ref)
 
     if is_input:
         input_fields: dict[str, GraphQLInputField] = {}
@@ -267,7 +275,7 @@ def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
         for key, value in ref.__annotations__.items():
             evaluated_type = eval_type(value, globals_=module_globals)
-            input_type: GraphQLInputType = convert_to_graphql_type(evaluated_type, **kwargs)  # type: ignore[assignment]
+            input_type: GraphQLInputType = convert_to_graphql_type(TypeRef(evaluated_type), **kwargs)  # type: ignore[assignment]
 
             input_fields[to_schema_name(key)] = GraphQLInputField(
                 input_type,
@@ -276,7 +284,7 @@ def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             )
 
         return get_or_create_graphql_input_object_type(
-            name=f"{ref.__name__}Input",
+            name=ref.__name__.removesuffix("Type").removesuffix("Input") + "Input",
             fields=input_fields,
             description=description,
         )
@@ -284,11 +292,11 @@ def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     output_fields: dict[str, GraphQLField] = {}
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
-        output_type: GraphQLOutputType = convert_to_graphql_type(evaluated_type, **kwargs)  # type: ignore[assignment]
+        output_type: GraphQLOutputType = convert_to_graphql_type(TypeRef(evaluated_type), **kwargs)  # type: ignore[assignment]
         output_fields[to_schema_name(key)] = GraphQLField(output_type)
 
     return get_or_create_graphql_object_type(
-        name=f"{ref.__name__}Output",
+        name=ref.__name__.removesuffix("Type") + "Type",
         fields=output_fields,
         description=description,
     )
@@ -345,7 +353,7 @@ def _(ref: CharField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=name,
         values={key: str(value) for key, value in ref.choices},
-        description=getattr(ref, "help_text", None) or None,
+        description=convert_to_description(ref),
     )
 
 
@@ -359,7 +367,7 @@ def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputT
     return get_or_create_graphql_enum(
         name=ref.choices_enum.__name__,
         values={key: str(value) for key, value in ref.choices_enum.choices},
-        description=getattr(ref, "help_text", None) or get_docstring(ref.choices_enum),
+        description=convert_to_description(ref) or convert_to_description(ref.choices_enum),
     )
 
 
@@ -695,14 +703,7 @@ def _(ref: type[Calculation], **kwargs: Any) -> GraphQLInputType | GraphQLOutput
 
 @convert_to_graphql_type.register
 def _(ref: LookupRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    default_type = convert_to_python_type(ref.ref, **kwargs)
-
-    many = is_generic_list(default_type)
-    if many:
-        default_type = default_type.__args__[0]
-
-    kwargs["default_type"] = default_type
-    kwargs["many"] = many
+    kwargs["default_type"] = convert_to_graphql_type(ref.ref, **kwargs)
     return convert_lookup_to_graphql_type(ref.lookup, **kwargs)
 
 

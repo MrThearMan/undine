@@ -21,7 +21,7 @@ from undine.scalars import GraphQLDate, GraphQLJSON, GraphQLTime
 
 class Params(NamedTuple):
     value: str
-    default_type: type | None
+    default_type: GraphQLInputType | GraphQLOutputType | None
     expected: GraphQLOutputType | GraphQLInputType
 
 
@@ -29,62 +29,62 @@ class Params(NamedTuple):
     **parametrize_helper({
         "exact": Params(
             value="exact",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "iexact": Params(
             value="iexact",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "contains": Params(
             value="contains",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "icontains": Params(
             value="icontains",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "startswith str": Params(
             value="startswith",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "startswith int": Params(
             value="startswith",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "istartswith": Params(
             value="istartswith",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "endswith str": Params(
             value="endswith",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "endswith int": Params(
             value="endswith",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "iendswith": Params(
             value="iendswith",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "regex": Params(
             value="regex",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "iregex": Params(
             value="iregex",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "isnull": Params(
@@ -94,22 +94,22 @@ class Params(NamedTuple):
         ),
         "lt": Params(
             value="lt",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "lte": Params(
             value="lte",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "gt": Params(
             value="gt",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "gte": Params(
             value="gte",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "day": Params(
@@ -174,139 +174,139 @@ class Params(NamedTuple):
         ),
         "in": Params(
             value="in",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "range": Params(
             value="range",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLList(GraphQLNonNull(GraphQLInt)),
         ),
         "date": Params(
             value="date",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLDate,
         ),
         "time": Params(
             value="time",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLTime,
         ),
         "contained_by dict": Params(
             value="contained_by",
-            default_type=dict[str, str],
+            default_type=GraphQLJSON,
             expected=GraphQLJSON,
         ),
         "contained_by list": Params(
             value="contained_by",
-            default_type=list[str],
+            default_type=GraphQLList(GraphQLNonNull(GraphQLString)),
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "len": Params(
             value="len",
-            default_type=int,
+            default_type=GraphQLInt,
             expected=GraphQLInt,
         ),
         "overlap list": Params(
             value="overlap",
-            default_type=list[str],
+            default_type=GraphQLList(GraphQLNonNull(GraphQLString)),
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "overlap dict": Params(
             value="overlap",
-            default_type=dict[str, str],
+            default_type=GraphQLJSON,
             expected=GraphQLJSON,
         ),
         "has_key": Params(
             value="has_key",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "has_any_keys": Params(
             value="has_any_keys",
-            default_type=list[str],
+            default_type=GraphQLList(GraphQLNonNull(GraphQLString)),
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "has_keys": Params(
             value="has_keys",
-            default_type=list[str],
+            default_type=GraphQLList(GraphQLNonNull(GraphQLString)),
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "keys": Params(
             value="keys",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "values": Params(
             value="values",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLList(GraphQLNonNull(GraphQLString)),
         ),
         "unaccent": Params(
             value="unaccent",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "trigram_similar": Params(
             value="trigram_similar",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "trigram_word_similar": Params(
             value="trigram_word_similar",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "trigram_strict_word_similar": Params(
             value="trigram_strict_word_similar",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLString,
         ),
         "isempty": Params(
             value="isempty",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLBoolean,
         ),
         "lower_inc": Params(
             value="lower_inc",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLBoolean,
         ),
         "lower_inf": Params(
             value="lower_inf",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLBoolean,
         ),
         "upper_inc": Params(
             value="upper_inc",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLBoolean,
         ),
         "upper_inf": Params(
             value="upper_inf",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLBoolean,
         ),
         "transform": Params(
             value="day__lt",
-            default_type=str,
+            default_type=GraphQLString,
             expected=GraphQLInt,
         ),
     }),
 )
 def test_convert_lookup_to_graphql_type(value, default_type, expected) -> None:
-    assert convert_lookup_to_graphql_type(value, default_type=default_type, many=False) == expected
+    assert convert_lookup_to_graphql_type(value, default_type=default_type) == expected
 
 
 def test_convert_lookup_to_graphql_type__bad_lookup() -> None:
     msg = "Could not find a matching GraphQL type for lookup: 'foo'."
 
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        assert convert_lookup_to_graphql_type("foo", default_type=str, many=False)
+        assert convert_lookup_to_graphql_type("foo", default_type=GraphQLString)
 
 
 def test_convert_lookup_to_graphql_type__bad_lookup__nested() -> None:
     msg = "Could not find a matching GraphQL type for lookup: 'foo'."
 
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
-        assert convert_lookup_to_graphql_type("day__foo", default_type=str, many=False)
+        assert convert_lookup_to_graphql_type("day__foo", default_type=GraphQLString)

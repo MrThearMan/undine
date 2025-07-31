@@ -311,6 +311,10 @@ class SDLPrinter:  # noqa: PLR0904
 
         input_field_str: str = f"{indentation}{name}: {input_field.type}"
 
+        default_ast = ast_from_value(input_field.default_value, input_field.type)
+        if default_ast:
+            input_field_str += f" = {print_ast(default_ast)}"
+
         input_field_str += cls.print_deprecated(input_field.deprecation_reason)
 
         undine_input = get_undine_input(input_field)
