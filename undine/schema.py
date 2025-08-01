@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from graphql import (
@@ -31,6 +32,9 @@ __all__ = [
 ]
 
 
+logger = logging.getLogger("undine")
+
+
 def create_schema(
     *,
     query: type[RootType],
@@ -58,9 +62,20 @@ def create_schema(
 
     directives = get_registered_directives()
 
-    query_object_type = query.__output_type__()
-    mutation_object_type = mutation.__output_type__() if mutation is not None else None
-    subscription_object_type = subscription.__output_type__() if subscription is not None else None
+    logger.debug("Creating Query type...")
+    query_object_type: GraphQLObjectType = query.__output_type__()
+
+    mutation_object_type: GraphQLObjectType | None = None
+    if mutation is not None:
+        logger.debug("Creating Mutation type...")
+        mutation_object_type = mutation.__output_type__()
+
+    subscription_object_type: GraphQLObjectType | None = None
+    if subscription is not None:
+        logger.debug("Creating Subscription type...")
+        subscription_object_type = subscription.__output_type__()
+
+    logger.debug("Creating GraphQL schema...")
 
     schema = GraphQLSchema(
         query=query_object_type,
@@ -73,10 +88,14 @@ def create_schema(
 
     sort_schema_types(schema)
 
+    logger.debug("Validating GraphQL schema...")
+
     schema_validation_errors = validate_schema(schema)
     if schema_validation_errors:
         msg = "Schema validation failed"
         raise UndineErrorGroup(schema_validation_errors, msg=msg)
+
+    logger.debug("GraphQL schema created successfully!")
 
     # Clear cached signatures for functions to reduce memory usage.
     get_signature.cache.clear()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+from collections.abc import Hashable
 from types import FunctionType
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
@@ -44,7 +46,15 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.directives import Directive
-    from undine.typing import DefaultValueType, GQLInfo, InputParams, InputPermFunc, MutationTypeParams, ValidatorFunc
+    from undine.typing import (
+        ConvertionFunc,
+        DefaultValueType,
+        GQLInfo,
+        InputParams,
+        InputPermFunc,
+        MutationTypeParams,
+        ValidatorFunc,
+    )
 
 __all__ = [
     "Input",
@@ -144,6 +154,7 @@ class MutationTypeMeta(type):
             fields=FunctionEqualityWrapper(cls.__input_fields__, context=cls),
             description=get_docstring(cls),
             extensions=cls.__extensions__,
+            out_type=cls.__convert_input__,
         )
 
     def __input_fields__(cls) -> dict[str, GraphQLInputField]:
@@ -170,6 +181,14 @@ class MutationTypeMeta(type):
             )
 
         return query_type.__output_type__()
+
+    def __convert_input__(cls, input_data: dict[str, Any]) -> dict[str, Any]:
+        """Enables additional conversion of input data on per-input basis."""
+        for key, value in input_data.items():
+            inpt = cls.__input_map__.get(key)
+            if inpt is not None and inpt.convertion_func is not None:
+                input_data[key] = inpt.convertion_func(inpt, value)
+        return input_data
 
 
 class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
@@ -309,6 +328,7 @@ class Input:
 
         self.validator_func: ValidatorFunc | None = None
         self.permissions_func: InputPermFunc | None = None
+        self.convertion_func: ConvertionFunc | None = None
 
     def __connect__(self, mutation_type: type[MutationType], name: str) -> None:
         """Connect this `Input` to the given `MutationType` using the given name."""
@@ -336,6 +356,9 @@ class Input:
             self.description = self.mutation_type.__attribute_docstrings__.get(name)
             if self.description is None:
                 self.description = convert_to_description(self.ref)
+
+        if not isinstance(self.default_value, Hashable):
+            handle_non_hashable_default_values(self)
 
     def __call__(self, ref: GraphQLFieldResolver, /) -> Input:
         """Called when using as decorator with parenthesis: @Input(...)"""
@@ -375,6 +398,13 @@ class Input:
         if func is None:  # Allow `@<input_name>.permissions()`
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
+        return func
+
+    def convert(self, func: ConvertionFunc | None = None, /) -> ConvertionFunc:
+        """Decorate a function to add it as a convertion function for this input."""
+        if func is None:  # Allow `@<input_name>.convert()`
+            return self.convert  # type: ignore[return-value]
+        self.convertion_func = get_wrapped_func(func)
         return func
 
     def before(self, instance: Model, info: GQLInfo, input_data: dict[str, Any]) -> None:
@@ -438,3 +468,21 @@ def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) ->
         result.pop(field_name, None)
 
     return result
+
+
+def handle_non_hashable_default_values(input_: Input) -> None:
+    """
+    If the Input's default value is not hashable (i.e. a list or a dict),
+    we need to make a copy of the input value looks like it's the default value.
+    Otherwise, mutations could change the default value and cause unexpected behavior.
+    """
+    user_func = input_.convertion_func
+
+    def convert(inpt: Input, value: Any) -> Any:
+        if value == inpt.default_value:
+            value = copy.deepcopy(value)
+        if user_func is not None:
+            value = user_func(inpt, value)
+        return value
+
+    input_.convertion_func = convert

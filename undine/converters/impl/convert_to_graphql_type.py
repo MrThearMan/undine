@@ -685,7 +685,14 @@ def _(ref: MaybeManyOrNonNull, **kwargs: Any) -> GraphQLInputType | GraphQLOutpu
     value = convert_to_graphql_type(ref.value, **kwargs)
 
     # Note that order matters here!
-    if ref.many is True and not isinstance(value, GraphQLList):
+
+    if ref.nullable is True and isinstance(value, GraphQLNonNull):
+        value = value.of_type
+
+    if ref.many is True and (
+        not isinstance(value, GraphQLList)
+        and not (isinstance(value, GraphQLNonNull) and isinstance(value.of_type, GraphQLList))
+    ):
         if not isinstance(value, GraphQLNonNull):
             value = GraphQLNonNull(value)
         value = GraphQLList(value)

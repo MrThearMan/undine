@@ -581,6 +581,28 @@ The `value` argument is the value provided for the input.
 You can raise any `GraphQLError` when validation fails, but it's recommended to
 raise a `GraphQLValidationError` from the `undine.exceptions` module.
 
+### Conversion
+
+Normally, values for `Inputs` are parsed and converted based on the `Input's` [`Scalar`](scalars.md).
+However, you can add additional convertion for an individual `Input` by first defining
+the `Input` in the class body of the `MutationType` and then adding a method with
+the `@<input_name>.convert` decorator.
+
+```python
+-8<- "mutations/input_convert.py"
+```
+
+/// details | About method signature
+
+The `self` argument is not an instance of the `MutationType`,
+but the `Input` whose value is being coerced.
+
+The `value` argument is the value provided for the `Input`.
+
+///
+
+Note that conversion functions are also run for [default values](#default-values).
+
 ### Default values
 
 By default, an `Input` is able to determine its default value based on its reference.

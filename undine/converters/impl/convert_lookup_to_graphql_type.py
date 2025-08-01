@@ -79,6 +79,8 @@ def _(_: Literal["isnull"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputTy
 
 @convert_lookup_to_graphql_type.register
 def _(_: Literal["in", "range"], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if isinstance(kwargs["default_type"], GraphQLList):
+        return kwargs["default_type"]
     return GraphQLList(GraphQLNonNull(kwargs["default_type"]))
 
 

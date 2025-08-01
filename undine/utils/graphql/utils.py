@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Hashable
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
@@ -18,6 +19,7 @@ from graphql import (
     GraphQLUnionType,
     OperationDefinitionNode,
     OperationType,
+    Undefined,
     get_argument_values,
     get_directive_values,
 )
@@ -185,6 +187,10 @@ def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -
 
     include_args = get_directive_values(GraphQLIncludeDirective, node, variable_values)
     return include_args is not None and include_args["if"] is False
+
+
+def is_non_null_default_value(default_value: Any) -> bool:
+    return not isinstance(default_value, Hashable) or default_value not in {Undefined, None}
 
 
 # Misc.

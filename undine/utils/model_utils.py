@@ -5,7 +5,17 @@ from typing import TYPE_CHECKING, Any, TypeGuard
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import CharField, F, ForeignKey, IntegerField, ManyToManyField, OneToOneField, Subquery, TextField
+from django.db.models import (
+    NOT_PROVIDED,
+    CharField,
+    F,
+    ForeignKey,
+    IntegerField,
+    ManyToManyField,
+    OneToOneField,
+    Subquery,
+    TextField,
+)
 from django.db.models.constants import LOOKUP_SEP
 from django.db.utils import IntegrityError
 
@@ -311,6 +321,11 @@ def is_generic_foreign_key(field: ModelField | GenericField) -> TypeGuard[Generi
     has_content_type_field = hasattr(field, "ct_field")
     has_object_id_field = hasattr(field, "fk_field")
     return is_many_to_one and has_content_type_field and has_object_id_field
+
+
+def has_default(field: ModelField | GenericField) -> bool:
+    has_auto_default = bool(getattr(field, "auto_now", False)) or bool(getattr(field, "auto_now_add", False))
+    return has_auto_default or getattr(field, "default", NOT_PROVIDED) is not NOT_PROVIDED
 
 
 class SubqueryCount(Subquery):

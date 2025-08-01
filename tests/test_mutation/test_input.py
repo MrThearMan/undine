@@ -225,6 +225,27 @@ def test_input__default_value() -> None:
     assert TaskUpdateMutation.progress.default_value == Undefined
 
 
+def test_input__default_value__not_hashable() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        foo = Input(list[str], default_value=["123"])
+
+    assert TaskCreateMutation.foo.default_value == ["123"]
+    assert TaskCreateMutation.foo.convertion_func is not None
+
+
+def test_input__convert_func() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        foo = Input(str)
+
+        @foo.convert
+        def convert_foo(self, value: str) -> str:
+            return value.upper()
+
+    assert TaskCreateMutation.foo.convertion_func is not None
+
+    assert TaskCreateMutation.__convert_input__({"foo": "abc"}) == {"foo": "ABC"}
+
+
 def test_input__related_mutation_type() -> None:
     class TaskProject(MutationType[Project], kind="related"): ...
 

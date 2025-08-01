@@ -4,16 +4,17 @@ from types import FunctionType
 from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db.models import NOT_PROVIDED, Model
+from django.db.models import Model
 from graphql import Undefined
 
 from undine import Input, MutationType
 from undine.converters import is_input_required
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import ModelFieldError
-from undine.parsers import parse_parameters
+from undine.parsers import parse_is_nullable, parse_parameters
 from undine.typing import ModelField, MutationKind
-from undine.utils.model_utils import get_model_field
+from undine.utils.graphql.utils import is_non_null_default_value
+from undine.utils.model_utils import get_model_field, has_default, is_to_many
 
 
 @is_input_required.register
@@ -21,20 +22,26 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
 
     is_primary_key = bool(getattr(ref, "primary_key", False))
-    is_create_mutation = caller.mutation_type.__kind__ == MutationKind.create
-    is_related_mutation = caller.mutation_type.__kind__ == MutationKind.related
-    is_to_many_field = bool(ref.one_to_many) or bool(ref.many_to_many)
     is_nullable = bool(getattr(ref, "null", True))
-    has_auto_default = bool(getattr(ref, "auto_now", False)) or bool(getattr(ref, "auto_now_add", False))
-    has_default = has_auto_default or getattr(ref, "default", NOT_PROVIDED) is not NOT_PROVIDED
+    is_to_many_field = is_to_many(ref)
+    has_non_null_default_value = is_non_null_default_value(caller.default_value)
+    has_field_default = has_default(ref)
 
-    if is_related_mutation:
-        return False
+    match caller.mutation_type.__kind__:
+        case MutationKind.create:
+            if is_to_many_field:
+                return False
+            if is_nullable:
+                return False
+            if has_non_null_default_value:
+                return True
+            return not has_field_default
 
-    if is_create_mutation:
-        return not is_to_many_field and not is_nullable and not has_default
+        case MutationKind.update | MutationKind.delete:
+            return is_primary_key
 
-    return is_primary_key
+        case _:
+            return False
 
 
 @is_input_required.register
@@ -48,8 +55,18 @@ def _(_: type[Model], **kwargs: Any) -> bool:
 
 
 @is_input_required.register
-def _(_: TypeRef, **kwargs: Any) -> bool:
-    return False
+def _(ref: TypeRef, **kwargs: Any) -> bool:
+    caller: Input = kwargs["caller"]
+
+    # GraphQL doesn't differentiate between null and required.
+    nullable = parse_is_nullable(ref.value, is_input=True, total=ref.total)
+    if nullable:
+        return False
+
+    if is_non_null_default_value(caller.default_value):
+        return True
+
+    return caller.mutation_type.__kind__ in {MutationKind.create, MutationKind.custom}
 
 
 @is_input_required.register
@@ -61,7 +78,7 @@ def _(_: LazyLambda, **kwargs: Any) -> bool:
 def _(ref: FunctionType, **kwargs: Any) -> bool:
     parameters = parse_parameters(ref)
     first_param_default_value = next((param.default_value for param in parameters), Undefined)
-    return first_param_default_value is Undefined
+    return is_non_null_default_value(first_param_default_value)
 
 
 @is_input_required.register

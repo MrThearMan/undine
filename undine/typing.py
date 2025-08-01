@@ -110,6 +110,7 @@ __all__ = [
     "ConnectionAckMessage",
     "ConnectionDict",
     "ConnectionInitMessage",
+    "ConvertionFunc",
     "DirectiveArgumentParams",
     "DirectiveParams",
     "DispatchProtocol",
@@ -960,12 +961,15 @@ LangSep: TypeAlias = Literal["|", "&", "<->", "<1>", "<2>", "<3>", "<4>", "<5>",
 _AnyValue: TypeAlias = Annotated[Any, "value"]
 _AnyModel: TypeAlias = Annotated[Any, "django.db.models.Model"]
 _AnyField: TypeAlias = Annotated[Any, "undine.Field"]
+_AnyInput: TypeAlias = Annotated[Any, "undine.Input"]
 _AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
 _AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
 
 FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
 InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
 ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
+
+ConvertionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
 
 OptimizerFunc: TypeAlias = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
 
