@@ -71,6 +71,7 @@ from graphql import (
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
+    from collections.abc import Container
     from http.cookies import SimpleCookie
 
     from asgiref.typing import ASGISendEvent
@@ -796,8 +797,10 @@ class FilterParams(TypedDict, total=False):
     match: Literal["any", "all", "one_of"]
     distinct: bool
     required: bool
+    empty_values: Container[Any]
     description: str | None
     deprecation_reason: str | None
+    field_name: str
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]
@@ -820,6 +823,7 @@ class OrderParams(TypedDict, total=False):
     null_placement: Literal["first", "last"]
     description: str | None
     deprecation_reason: str | None
+    field_name: str
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]

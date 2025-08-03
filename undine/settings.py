@@ -9,6 +9,8 @@ from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLStrin
 from settings_holder import SettingsHolder, reload_settings
 
 if TYPE_CHECKING:
+    from collections.abc import Container
+
     from graphql import ASTValidationRule, GraphQLFieldResolver
 
     from undine.execution import UndineExecutionContext
@@ -236,6 +238,9 @@ class UndineDefaultSettings(NamedTuple):
 
     PG_TEXT_SEARCH_PREFIX: str = "_undine_ts_vector"
     """A prefix to use for the filter aliases of postgres full text search Filters."""
+
+    EMPTY_VALUES: Container[Any] = (None, "", [], {})
+    """By default, if a Filter receives any of these values, it will be ignored."""
 
     # Extensions keys
 

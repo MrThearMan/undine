@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, TypeGuard
 
@@ -18,6 +19,7 @@ from django.db.models import (
 )
 from django.db.models.constants import LOOKUP_SEP
 from django.db.utils import IntegrityError
+from django.utils.encoding import force_str
 
 from undine.dataclasses import BulkCreateKwargs
 from undine.exceptions import (
@@ -37,6 +39,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.core.exceptions import ValidationError
     from django.db.models import Field, Manager, ManyToManyRel, Model
 
     from undine.typing import (
@@ -66,6 +69,7 @@ __all__ = [
     "get_related_field_name",
     "get_reverse_field_name",
     "get_save_update_fields",
+    "get_validation_error_messages",
     "is_to_many",
     "is_to_one",
     "lookup_to_display_name",
@@ -470,3 +474,43 @@ def lookup_to_display_name(lookup: str, field: ModelField) -> str:
             parts.append(name)
 
     return "_".join(parts)
+
+
+def get_validation_error_messages(validation_error: ValidationError) -> dict[str, list[str]]:
+    """
+    Get dict of error fields to messages inside the given ValidationError.
+
+    >>> get_validation_error_messages(ValidationError("foo"))
+    {"": ["foo"]}
+    >>> get_validation_error_messages(ValidationError({"foo": "bar"}))
+    {"foo": ["bar"]}
+    >>> get_validation_error_messages(ValidationError({"foo": ["bar", "baz"]}))
+    {"foo": ["bar", "baz"]}
+    """
+    error_messages: dict[str, list[str]] = defaultdict(list)  # path -> list of messages
+
+    if hasattr(validation_error, "message"):
+        message = validation_error.message
+        if validation_error.params:
+            with suppress(KeyError):  # Allow for mismatching params
+                message %= validation_error.params
+
+        error_messages[""].append(force_str(message))
+        return error_messages
+
+    if hasattr(validation_error, "error_dict"):
+        for field, errors in validation_error.error_dict.items():
+            for error in errors:
+                sub_messages = get_validation_error_messages(error)
+                for path, messages in sub_messages.items():
+                    key = f"{field}.{path}" if path else field
+                    error_messages[key].extend(messages)
+
+        return error_messages
+
+    for error in validation_error.error_list:
+        sub_messages = get_validation_error_messages(error)
+        for path, messages in sub_messages.items():
+            error_messages[path].extend(messages)
+
+    return error_messages

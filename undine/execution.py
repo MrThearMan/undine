@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from asyncio import ensure_future
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import aclosing, nullcontext
@@ -8,6 +9,7 @@ from http import HTTPStatus
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
+from django.core.exceptions import ValidationError
 from graphql import ExecutionContext, ExecutionResult, GraphQLError, execute, is_non_null_type, parse, validate
 from graphql.execution.subscribe import execute_subscription
 
@@ -22,6 +24,7 @@ from undine.hooks import LifecycleHookContext, LifecycleHookManager, use_lifecyc
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import is_subscription_operation, validate_get_request_operation
 from undine.utils.graphql.validation_rules import get_validation_rules
+from undine.utils.model_utils import get_validation_error_messages
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -42,6 +45,9 @@ class UndineExecutionContext(ExecutionContext):
     """Custom GraphQL execution context class."""
 
     def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:
+        if isinstance(error.original_error, ValidationError):
+            self.handle_django_validation_error(error, error.original_error)
+
         if not isinstance(error.original_error, GraphQLErrorGroup):
             return super().handle_field_error(error, return_type)
 
@@ -54,6 +60,30 @@ class UndineExecutionContext(ExecutionContext):
             self.handle_field_error(err, return_type)
 
         return None
+
+    def handle_django_validation_error(self, graphql_error: GraphQLError, original_error: ValidationError) -> None:
+        graphql_error.extensions = graphql_error.extensions or {}
+        graphql_error.extensions["status_code"] = HTTPStatus.BAD_REQUEST
+
+        code = getattr(original_error, "code", None)
+        if code:
+            graphql_error.extensions["error_code"] = code.upper()
+
+        error_messages = get_validation_error_messages(original_error)
+
+        errors: list[GraphQLError] = []
+        for field, messages in error_messages.items():
+            for message in messages:
+                path: list[Any] | None = graphql_error.path
+                if field and graphql_error.path:
+                    path = graphql_error.path + field.split(".")
+
+                new_error = copy.deepcopy(graphql_error)
+                new_error.message = message
+                new_error.path = path
+                errors.append(new_error)
+
+        graphql_error.original_error = GraphQLErrorGroup(errors=errors)
 
     @staticmethod
     def build_response(data: dict[str, Any] | None, errors: list[GraphQLError]) -> ExecutionResult:

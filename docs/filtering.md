@@ -318,6 +318,19 @@ that returns a dictionary of expressions and decorate it with the `aliases` deco
 -8<- "filtering/filter_aliases.py"
 ```
 
+### Empty values
+
+By default, `Filters` will ignore some values which are considered _"empty"_ in the context of filtering.
+These values are set globally by the [`EMPTY_VALUES`](settings.md#empty_values) setting.
+Usually this is what you want, as it allows you to set default values in our GraphQL variables.
+
+If you wish to change what's considered an empty value for an individual `Filter`,
+you can do so by setting the `empty_values` argument to a list of values.
+
+```python
+-8<- "filtering/filter_empty_values.py"
+```
+
 ### Field name
 
 A `field_name` can be provided to explicitly set the Django model field name

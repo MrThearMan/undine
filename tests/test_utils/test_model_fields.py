@@ -52,7 +52,7 @@ def test_text_choices_field__to_python() -> None:
 
 
 def test_text_choices_field__to_python__invalid() -> None:
-    msg = """["`foo` is not a member of the `Role` enum. Choices are: ['admin', 'user']."]"""
+    msg = """["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]"""
 
     with pytest.raises(ValidationError, match=exact(msg)):
         FIELD.to_python("foo")
@@ -78,7 +78,7 @@ def test_text_choices_field__from_db_value() -> None:
 
 
 def test_text_choices_field__from_db_value__invalid() -> None:
-    msg = """["`foo` is not a member of the `Role` enum. Choices are: ['admin', 'user']."]"""
+    msg = """["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]"""
 
     with pytest.raises(ValidationError, match=exact(msg)):
         FIELD.from_db_value("foo", ..., ...)

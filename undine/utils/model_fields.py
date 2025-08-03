@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any
 from django.core.exceptions import ValidationError
 from django.db.models import CharField
 
+from undine.utils.text import comma_sep_str
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -53,15 +55,14 @@ class TextChoicesField(CharField):
         try:
             return self.choices_enum(value)
         except ValueError as error:
-            raise ValidationError(
-                self.error_messages["invalid"],
-                code="invalid",
-                params={
-                    "value": value,
-                    "enum_name": self.choices_enum.__name__,
-                    "choices": self.choices_enum.values,
-                },
-            ) from error
+            params = {
+                "value": value,
+                "enum_name": self.choices_enum.__name__,
+                "choices": comma_sep_str(self.choices_enum.values, last_sep="and", quote=True),
+            }
+            msg = self.error_messages["invalid"] % params
+
+            raise ValidationError(msg, code="invalid") from error
 
     def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:
         """Converts a value as returned by the database to a Python object."""

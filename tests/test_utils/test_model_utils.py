@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 import pytest
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.exceptions import ValidationError
 from django.db.models import CharField, DateField
 from django.db.models.functions import Upper
 
@@ -30,6 +31,7 @@ from undine.utils.model_utils import (
     get_model_fields_for_graphql,
     get_reverse_field_name,
     get_save_update_fields,
+    get_validation_error_messages,
     is_to_many,
     is_to_one,
     lookup_to_display_name,
@@ -390,3 +392,61 @@ def test_lookup_to_display_name(lookup, display_name) -> None:
 )
 def test_lookup_to_display_name__text_field(lookup, display_name) -> None:
     assert lookup_to_display_name(lookup, CharField()) == display_name
+
+
+class ValidationErrorTestParams(NamedTuple):
+    error: ValidationError
+    output: dict[str, list[str]]
+
+
+@pytest.mark.parametrize(
+    **parametrize_helper({
+        "one error": ValidationErrorTestParams(
+            error=ValidationError("foo"),
+            output={"": ["foo"]},
+        ),
+        "two errors": ValidationErrorTestParams(
+            error=ValidationError(["foo", "bar"]),
+            output={"": ["foo", "bar"]},
+        ),
+        "keyed error": ValidationErrorTestParams(
+            error=ValidationError({"foo": "bar"}),
+            output={"foo": ["bar"]},
+        ),
+        "two keyed errors": ValidationErrorTestParams(
+            error=ValidationError({"foo": "bar", "fizz": "buzz"}),
+            output={"foo": ["bar"], "fizz": ["buzz"]},
+        ),
+        "two keyed errors list": ValidationErrorTestParams(
+            error=ValidationError({"foo": ["bar", "baz"]}),
+            output={"foo": ["bar", "baz"]},
+        ),
+        "nested": ValidationErrorTestParams(
+            error=ValidationError({"foo": [ValidationError("bar")]}),
+            output={"foo": ["bar"]},
+        ),
+        "nested multiple": ValidationErrorTestParams(
+            error=ValidationError({"foo": [ValidationError("bar"), ValidationError("baz")]}),
+            output={"foo": ["bar", "baz"]},
+        ),
+        "nested list": ValidationErrorTestParams(
+            error=ValidationError({"foo": [ValidationError([ValidationError("baz")])]}),
+            output={"foo": ["baz"]},
+        ),
+        "nested dicts": ValidationErrorTestParams(
+            # ValidationError doesn't retain key for the second level dicts.
+            error=ValidationError({"foo": [ValidationError({"bar": ValidationError("baz")})]}),
+            output={"foo": ["baz"]},
+        ),
+        "params": ValidationErrorTestParams(
+            error=ValidationError("%(foo)s", params={"foo": "bar"}),
+            output={"": ["bar"]},
+        ),
+        "params nested": ValidationErrorTestParams(
+            error=ValidationError({"foo": [ValidationError("%(foo)s", params={"foo": "bar"})]}),
+            output={"foo": ["bar"]},
+        ),
+    })
+)
+def test_get_validation_error_messages(error, output) -> None:
+    assert get_validation_error_messages(error) == output

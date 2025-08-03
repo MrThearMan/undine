@@ -172,6 +172,16 @@ Should be given as the dotted path to the docstring parser class.
 
 ///
 
+/// details | `EMPTY_VALUES`
+    attrs: {id: empty_values}
+
+Type `Container[Any]` | Default: `"(None, "", [], {})"`
+
+By default, if a Filter receives any of these values, it will be ignored.
+Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty_values) argument.
+
+///
+
 /// details | `ENTRYPOINT_EXTENSIONS_KEY`
     attrs: {id: entrypoint_extensions_key}
 

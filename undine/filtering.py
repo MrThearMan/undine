@@ -118,6 +118,9 @@ class FilterSetMeta(type):
         try:
             for filter_name, filter_value in filter_data.items():
                 if filter_name == "NOT":
+                    if not filter_value:
+                        continue
+
                     results = cls.__build__(filter_value, info)
                     distinct |= results.distinct
                     aliases |= results.aliases
@@ -125,6 +128,9 @@ class FilterSetMeta(type):
                     filters.extend(~frt for frt in results.filters)
 
                 elif filter_name in {"AND", "OR", "XOR"}:
+                    if not filter_value:
+                        continue
+
                     results = cls.__build__(filter_value, info)
                     distinct |= results.distinct
                     aliases |= results.aliases
@@ -133,16 +139,19 @@ class FilterSetMeta(type):
                     filters.append(reduce(func, results.filters, Q()))
 
                 else:
-                    frt = cls.__filter_map__[filter_name]
-                    distinct |= frt.distinct
-                    if frt.aliases_func is not None:
-                        aliases |= frt.aliases_func(frt, info, value=filter_value)
+                    ftr = cls.__filter_map__[filter_name]
+                    if filter_value in ftr.empty_values:
+                        continue
 
-                    if frt.many:
-                        conditions = (frt.get_expression(value, info) for value in filter_value)
-                        filter_expression = reduce(frt.match.operator, conditions, Q())
+                    distinct |= ftr.distinct
+                    if ftr.aliases_func is not None:
+                        aliases |= ftr.aliases_func(ftr, info, value=filter_value)
+
+                    if ftr.many:
+                        conditions = (ftr.get_expression(value, info) for value in filter_value)
+                        filter_expression = reduce(ftr.match.operator, conditions, Q())
                     else:
-                        filter_expression = frt.get_expression(filter_value, info)
+                        filter_expression = ftr.get_expression(filter_value, info)
 
                     filters.append(filter_expression)
                     filter_count += 1
@@ -250,6 +259,7 @@ class Filter:
                       matches either "any", "all", or "one_of" of the provided values.
         :param distinct: Does the `Filter` require `queryset.distinct()` to be used?
         :param required: Is the `Filter` is a required input?
+        :param empty_values: Values that will be ignored if they are provided as filter values.
         :param description: Description of the `Filter`.
         :param deprecation_reason: If the `Filter` is deprecated, describes the reason for deprecation.
         :param field_name: Name of the field in the Django model. If not provided, use the name of the attribute.
@@ -265,6 +275,7 @@ class Filter:
         self.match: ManyMatch = ManyMatch(kwargs.get("match", ManyMatch.any))
         self.distinct: bool = kwargs.get("distinct", False)
         self.required: bool = kwargs.get("required", False)
+        self.empty_values: Container = kwargs.get("empty_values", undine_settings.EMPTY_VALUES)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
