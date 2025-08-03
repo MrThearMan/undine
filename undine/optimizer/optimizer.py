@@ -479,12 +479,16 @@ class OptimizationData:
         self.queryset_callback = query_type.__get_queryset__
 
         # Only include pre-filter callback if it's different from the default.
-        if not is_same_func(query_type.__filter_queryset__, QueryType.__filter_queryset__):
+        if (
+            self.pre_filter_callback is None  # No custom pre-filter callback
+            and not is_same_func(query_type.__filter_queryset__, QueryType.__filter_queryset__)
+        ):
             self.pre_filter_callback = query_type.__filter_queryset__
 
         # Only include post-filter callback if it's different from the default.
         if (
-            query_type.__filterset__  # Has filterset
+            self.post_filter_callback is None  # No custom post-filter callback
+            and query_type.__filterset__  # Has filterset
             and not is_same_func(query_type.__filterset__.__filter_queryset__, FilterSet.__filter_queryset__)
         ):
             self.post_filter_callback = query_type.__filterset__.__filter_queryset__
