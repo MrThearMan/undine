@@ -47,10 +47,12 @@ class TextChoicesField(CharField):
 
     def to_python(self, value: Any) -> Any:
         """Converts the given value into the correct Python object for this field."""
+        # The database can return `None` even if this field is not nullable
+        # in case the field selected through a relation where the relationship itself is null.
+        #
+        # When saving to database, we can return `None` here since the database
+        # will throw an `IntegrityError` if the field is not nullable.
         if value is None:
-            if not self.null:
-                error_dict = {self.attname: self.error_messages["null"]}
-                raise ValidationError(error_dict, code="null")
             return None
 
         try:
@@ -66,4 +68,8 @@ class TextChoicesField(CharField):
 
     def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:
         """Converts a value as returned by the database to a Python object."""
+        return self.to_python(value)
+
+    def get_prep_value(self, value: Any) -> Any:
+        """Converts the given value into a value suitable for the database."""
         return self.to_python(value)

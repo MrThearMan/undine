@@ -62,14 +62,15 @@ def test_text_choices_field__to_python__null() -> None:
     assert FIELD.to_python(None) is None
 
 
-def test_text_choices_field__to_python_null__not_allowed() -> None:
+def test_text_choices_field__to_python_null__not_nullable() -> None:
     field = deepcopy(FIELD)
     field.null = False
 
-    msg = {"role": ["This field cannot be null."]}
+    assert field.to_python(None) is None
 
+    msg = ["This field cannot be null."]
     with pytest.raises(ValidationError, match=exact(str(msg))):
-        assert field.to_python(None) is None
+        field.validate(None, None)
 
 
 def test_text_choices_field__from_db_value() -> None:
@@ -88,11 +89,12 @@ def test_text_choices_field__from_db_value__null() -> None:
     assert FIELD.from_db_value(None, ..., ...) is None
 
 
-def test_text_choices_field__from_db_value__null__not_allowed() -> None:
+def test_text_choices_field__from_db_value__null__not_nullable() -> None:
     field = deepcopy(FIELD)
     field.null = False
 
-    msg = {"role": ["This field cannot be null."]}
+    assert field.from_db_value(None, ..., ...) is None
 
+    msg = ["This field cannot be null."]
     with pytest.raises(ValidationError, match=exact(str(msg))):
-        assert field.from_db_value(None, ..., ...) is None
+        field.validate(None, None)
