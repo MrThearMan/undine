@@ -49,7 +49,8 @@ class TextChoicesField(CharField):
         """Converts the given value into the correct Python object for this field."""
         if value is None:
             if not self.null:
-                raise ValidationError(self.error_messages["null"], code="null")
+                error_dict = {self.attname: self.error_messages["null"]}
+                raise ValidationError(error_dict, code="null")
             return None
 
         try:
@@ -60,9 +61,8 @@ class TextChoicesField(CharField):
                 "enum_name": self.choices_enum.__name__,
                 "choices": comma_sep_str(self.choices_enum.values, last_sep="and", quote=True),
             }
-            msg = self.error_messages["invalid"] % params
-
-            raise ValidationError(msg, code="invalid") from error
+            error_dict = {self.attname: self.error_messages["invalid"] % params}
+            raise ValidationError(error_dict, code="invalid") from error
 
     def from_db_value(self, value: Any, expression: Any, connection: Any) -> Any:
         """Converts a value as returned by the database to a Python object."""

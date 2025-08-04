@@ -52,9 +52,9 @@ def test_text_choices_field__to_python() -> None:
 
 
 def test_text_choices_field__to_python__invalid() -> None:
-    msg = """["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]"""
+    msg = {"role": ["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]}
 
-    with pytest.raises(ValidationError, match=exact(msg)):
+    with pytest.raises(ValidationError, match=exact(str(msg))):
         FIELD.to_python("foo")
 
 
@@ -66,9 +66,9 @@ def test_text_choices_field__to_python_null__not_allowed() -> None:
     field = deepcopy(FIELD)
     field.null = False
 
-    msg = "['This field cannot be null.']"
+    msg = {"role": ["This field cannot be null."]}
 
-    with pytest.raises(ValidationError, match=exact(msg)):
+    with pytest.raises(ValidationError, match=exact(str(msg))):
         assert field.to_python(None) is None
 
 
@@ -78,9 +78,9 @@ def test_text_choices_field__from_db_value() -> None:
 
 
 def test_text_choices_field__from_db_value__invalid() -> None:
-    msg = """["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]"""
+    msg = {"role": ["`foo` is not a member of the `Role` enum. Choices are: 'admin' and 'user'."]}
 
-    with pytest.raises(ValidationError, match=exact(msg)):
+    with pytest.raises(ValidationError, match=exact(str(msg))):
         FIELD.from_db_value("foo", ..., ...)
 
 
@@ -92,7 +92,7 @@ def test_text_choices_field__from_db_value__null__not_allowed() -> None:
     field = deepcopy(FIELD)
     field.null = False
 
-    msg = "['This field cannot be null.']"
+    msg = {"role": ["This field cannot be null."]}
 
-    with pytest.raises(ValidationError, match=exact(msg)):
+    with pytest.raises(ValidationError, match=exact(str(msg))):
         assert field.from_db_value(None, ..., ...) is None
