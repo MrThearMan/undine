@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, TypeAlias, overload
 from django.http import HttpRequest, HttpResponse
 from django.http.request import MediaType
 from django.shortcuts import render
-from graphql import ExecutionResult
 
 from undine.exceptions import (
     GraphQLMissingContentTypeError,
@@ -19,11 +18,12 @@ from undine.exceptions import (
 )
 from undine.settings import undine_settings
 from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
+from undine.utils.graphql.utils import build_response
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from graphql import GraphQLError
+    from graphql import ExecutionResult, GraphQLError
 
     from undine.exceptions import GraphQLErrorGroup
     from undine.typing import RequestMethod
@@ -138,7 +138,7 @@ def graphql_error_response(
     content_type: str = "application/json",
 ) -> DjangoResponseProtocol:
     """Serialize the given GraphQL error to an HTTP response."""
-    result = ExecutionResult(errors=[error])
+    result = build_response(errors=[error])
     return graphql_result_response(result, status=status, content_type=content_type)
 
 
@@ -149,7 +149,7 @@ def graphql_error_group_response(
     content_type: str = "application/json",
 ) -> DjangoResponseProtocol:
     """Serialize the given GraphQL error group to an HTTP response."""
-    result = ExecutionResult(errors=list(error.flatten()))
+    result = build_response(errors=list(error.flatten()))
     return graphql_result_response(result, status=status, content_type=content_type)
 
 

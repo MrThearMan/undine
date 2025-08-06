@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import inspect
 import sys
-import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
-from types import FunctionType, GenericAlias, LambdaType
+from traceback import format_tb
+from types import FunctionType, GenericAlias, LambdaType, UnionType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,7 +28,7 @@ from undine.typing import GQLInfo, LiteralArg, ParametrizedType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Hashable, Sequence
-    from types import FrameType
+    from types import FrameType, TracebackType
 
     from undine.typing import Lambda
 
@@ -42,6 +42,7 @@ __all__ = [
     "get_members",
     "get_root_and_info_params",
     "get_signature",
+    "get_traceback",
     "get_wrapped_func",
     "has_callable_attribute",
     "is_generic_list",
@@ -110,7 +111,7 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     Get all generic parameters of the given type.
     Flattens any union types.
     """
-    return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, types.UnionType) else (arg,)))
+    return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, UnionType) else (arg,)))
 
 
 def cache_signature_if_function(value: Callable[..., Any], *, depth: int = 0) -> Callable[..., Any]:
@@ -315,3 +316,8 @@ def reverse_enumerate(sequence: Sequence[T]) -> Generator[tuple[int, T], None, N
     """
     for index in range(len(sequence) - 1, -1, -1):
         yield index, sequence[index]
+
+
+def get_traceback(traceback: TracebackType) -> list[str]:
+    """Format the given traceback into a list of strings."""
+    return [subline for line in format_tb(traceback) for subline in line.split("\n")]

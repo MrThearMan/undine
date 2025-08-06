@@ -79,7 +79,7 @@ def test_execute_graphql__validation_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
     params = GraphQLHttpParams(
-        document="query { hello } query { hello }",
+        document="query { testing } query { testing }",
         variables={},
         operation_name=None,
         extensions={},
@@ -125,4 +125,4 @@ def test_execute_graphql__error_raised(undine_settings) -> None:
     assert result.data is None
     assert result.errors is not None
     assert result.errors[0].message == "Error!"
-    assert result.errors[0].extensions == {"status_code": 400}
+    assert result.errors[0].extensions == {"status_code": 500}

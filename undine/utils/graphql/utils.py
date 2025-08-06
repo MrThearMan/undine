@@ -31,6 +31,7 @@ from undine.exceptions import (
     GraphQLGetRequestNoOperationError,
     GraphQLGetRequestOperationNotFoundError,
 )
+from undine.settings import undine_settings
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from graphql import (
         DirectiveLocation,
         DocumentNode,
+        ExecutionResult,
         GraphQLList,
         GraphQLNonNull,
         GraphQLOutputType,
@@ -53,6 +55,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "build_response",
     "check_directives",
     "get_arguments",
     "get_queried_field_name",
@@ -253,3 +256,7 @@ def validate_get_request_operation(document: DocumentNode, operation_name: str |
         return
 
     raise GraphQLGetRequestOperationNotFoundError(operation_name=operation_name)
+
+
+def build_response(data: dict[str, Any] | None = None, errors: list[GraphQLError] | None = None) -> ExecutionResult:
+    return undine_settings.EXECUTION_CONTEXT_CLASS.build_response(data=data, errors=errors or [])

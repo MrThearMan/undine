@@ -3,7 +3,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-from graphql import ExecutionResult, GraphQLError
+from graphql import GraphQLError
 
 from undine.exceptions import GraphQLErrorGroup, GraphQLRequestDecodingError
 from undine.http.utils import (
@@ -14,6 +14,7 @@ from undine.http.utils import (
     require_persisted_documents_request,
 )
 from undine.settings import undine_settings
+from undine.utils.graphql.utils import build_response
 
 from .utils import parse_document_map, register_persisted_documents
 
@@ -54,5 +55,5 @@ def persisted_documents_view(request: DjangoRequestProtocol) -> DjangoResponsePr
     except GraphQLErrorGroup as error:
         return graphql_error_group_response(error, status=HTTPStatus.BAD_REQUEST)
 
-    result = ExecutionResult(data={"documents": document_id_map})
+    result = build_response(data={"documents": document_id_map})
     return graphql_result_response(result)

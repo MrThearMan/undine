@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from graphql import ExecutionResult, GraphQLError
+from graphql import GraphQLError
 
 from undine.execution import execute_graphql_http_async, execute_graphql_http_sync
 from undine.http.utils import graphql_result_response, require_graphql_request
 from undine.parsers import GraphQLRequestParamsParser
+from undine.utils.graphql.utils import build_response
 
 if TYPE_CHECKING:
     from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
@@ -24,7 +25,7 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
         params = GraphQLRequestParamsParser.run(request)
         result = execute_graphql_http_sync(params, request)
     except GraphQLError as error:
-        result = ExecutionResult(errors=[error])
+        result = build_response(errors=[error])
 
     return graphql_result_response(result, content_type=request.response_content_type)
 
@@ -36,6 +37,6 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
         params = GraphQLRequestParamsParser.run(request)
         result = await execute_graphql_http_async(params, request)
     except GraphQLError as error:
-        result = ExecutionResult(errors=[error])
+        result = build_response(errors=[error])
 
     return graphql_result_response(result, content_type=request.response_content_type)

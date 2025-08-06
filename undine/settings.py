@@ -68,6 +68,9 @@ class UndineDefaultSettings(NamedTuple):
     FILE_UPLOAD_ENABLED: bool = False
     """Whether file uploads are enabled. Should enable CSRF protection on the GraphiQL endpoint if enabled."""
 
+    INCLUDE_ERROR_TRACEBACK: bool = False
+    """Whether to include the error traceback in the response error extensions."""
+
     MUTATION_FULL_CLEAN: bool = True
     """Whether to run `model.full_clean()` when mutating a model."""
 

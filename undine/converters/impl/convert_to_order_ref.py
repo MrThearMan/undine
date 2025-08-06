@@ -21,15 +21,15 @@ from undine.utils.model_utils import determine_output_field, get_model_field
 @convert_to_order_ref.register
 def _(ref: str, **kwargs: Any) -> Any:
     caller: Order = kwargs["caller"]
-    field = get_model_field(model=caller.orderset.__model__, lookup=ref)
-    return F(field.name)
+    get_model_field(model=caller.orderset.__model__, lookup=ref)
+    return F(ref)
 
 
 @convert_to_order_ref.register
 def _(_: None, **kwargs: Any) -> Any:
     caller: Order = kwargs["caller"]
-    field = get_model_field(model=caller.orderset.__model__, lookup=caller.field_name)
-    return F(field.name)
+    get_model_field(model=caller.orderset.__model__, lookup=caller.field_name)
+    return F(caller.field_name)
 
 
 @convert_to_order_ref.register

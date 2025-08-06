@@ -288,6 +288,15 @@ if it's included using `path("", include("undine.http.urls"))`.
 
 ///
 
+/// details | `INCLUDE_ERROR_TRACEBACK`
+    attrs: {id: include_error_traceback}
+
+Type: `bool` | Default: `False`
+
+Whether to include the error traceback in the response error extensions.
+
+///
+
 /// details | `INPUT_EXTENSIONS_KEY`
     attrs: {id: input_extensions_key}
 

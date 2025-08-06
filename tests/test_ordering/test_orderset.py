@@ -163,7 +163,7 @@ def test_orderset__two_fields() -> None:
     results = MyOrderSet.__build__(order_data=data, info=mock_gql_info())
     assert results.order_by == [
         OrderBy(F("name")),
-        OrderBy(F("id"), descending=True),
+        OrderBy(F("pk"), descending=True),
     ]
 
 

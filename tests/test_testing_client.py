@@ -142,7 +142,12 @@ def test_testing_client__error(undine_settings) -> None:
     assert response.has_errors is True
     assert response.json == {
         "data": None,
-        "errors": [{"message": "Cannot query field 'hello' on type 'Query'."}],
+        "errors": [
+            {
+                "message": "Cannot query field 'hello' on type 'Query'.",
+                "extensions": {"status_code": 400},
+            },
+        ],
     }
 
     assert response.error_message(0) == "Cannot query field 'hello' on type 'Query'."

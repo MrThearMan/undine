@@ -10,7 +10,7 @@ from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
-from graphql import ExecutionContext, ExecutionResult, GraphQLError, execute, is_non_null_type, parse, validate
+from graphql import ExecutionContext, ExecutionResult, GraphQLError, is_non_null_type, parse, validate
 from graphql.execution.subscribe import execute_subscription
 
 from undine.exceptions import (
@@ -22,14 +22,16 @@ from undine.exceptions import (
 )
 from undine.hooks import LifecycleHookContext, LifecycleHookManager, use_lifecycle_hooks_async, use_lifecycle_hooks_sync
 from undine.settings import undine_settings
-from undine.utils.graphql.utils import is_subscription_operation, validate_get_request_operation
+from undine.utils.graphql.utils import build_response, is_subscription_operation, validate_get_request_operation
 from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.model_utils import get_validation_error_messages
+from undine.utils.reflection import get_traceback
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from graphql import GraphQLOutputType
+    from graphql import DocumentNode, GraphQLOutputType
+    from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol, ExecutionResultGen, P, WebSocketResult
@@ -88,7 +90,16 @@ class UndineExecutionContext(ExecutionContext):
     @staticmethod
     def build_response(data: dict[str, Any] | None, errors: list[GraphQLError]) -> ExecutionResult:
         for error in errors:
-            error.extensions.setdefault("status_code", HTTPStatus.BAD_REQUEST)  # type: ignore[union-attr]
+            extensions: dict[str, Any] = error.extensions  # type: ignore[union-attr]
+
+            if error.original_error is None or isinstance(error.original_error, GraphQLError):
+                extensions.setdefault("status_code", HTTPStatus.BAD_REQUEST)
+            else:
+                extensions.setdefault("status_code", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+            if undine_settings.INCLUDE_ERROR_TRACEBACK:
+                extensions["traceback"] = get_traceback(error.__traceback__)
+
         return ExecutionContext.build_response(data, errors)
 
 
@@ -106,13 +117,14 @@ def raised_exceptions_as_execution_results_sync(
             return func(*args, **kwargs)
 
         except GraphQLError as error:
-            return ExecutionResult(errors=[error])
+            return build_response(errors=[error])
 
         except GraphQLErrorGroup as error:
-            return ExecutionResult(errors=list(error.flatten()))
+            return build_response(errors=list(error.flatten()))
 
         except Exception as error:  # noqa: BLE001
-            return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
+            err = GraphQLUnexpectedError(message=str(error))
+            return build_response(errors=[err])
 
     return wrapper
 
@@ -163,7 +175,7 @@ def _parse_source_sync(context: LifecycleHookContext) -> None:
             max_tokens=undine_settings.MAX_TOKENS,
         )
     except GraphQLError as error:
-        context.result = ExecutionResult(errors=[error])
+        context.result = build_response(errors=[error])
 
 
 @use_lifecycle_hooks_sync(hooks=undine_settings.VALIDATION_HOOKS)
@@ -182,7 +194,7 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
         max_errors=undine_settings.MAX_ERRORS,
     )
     if validation_errors:
-        context.result = ExecutionResult(errors=validation_errors)
+        context.result = build_response(errors=validation_errors)
         return
 
 
@@ -194,27 +206,25 @@ def _validate_http(context: LifecycleHookContext) -> None:
                 operation_name=context.operation_name,
             )
         except GraphQLError as err:
-            context.result = ExecutionResult(errors=[err])
+            context.result = build_response(errors=[err])
             return
 
     if is_subscription_operation(context.document):  # type: ignore[arg-type]
         error: GraphQLError = GraphQLUseWebSocketsForSubscriptionsError()
-        context.result = ExecutionResult(errors=[error])
+        context.result = build_response(errors=[error])
         return
 
 
 @use_lifecycle_hooks_sync(hooks=undine_settings.EXECUTION_HOOKS)
 def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
-    result = execute(
-        schema=undine_settings.SCHEMA,
+    exec_context = _get_execution_context(
         document=context.document,  # type: ignore[arg-type]
         root_value=undine_settings.ROOT_VALUE,
         context_value=context.request,
         variable_values=context.variables,
         operation_name=context.operation_name,
-        middleware=undine_settings.MIDDLEWARE,
-        execution_context_class=undine_settings.EXECUTION_CONTEXT_CLASS,
     )
+    result = _execute(exec_context)
 
     if result is None:  # pragma: no cover
         raise GraphQLNoExecutionResultError
@@ -241,13 +251,14 @@ def raised_exceptions_as_execution_results_async(
             return await func(*args, **kwargs)
 
         except GraphQLError as error:
-            return ExecutionResult(errors=[error])
+            return build_response(errors=[error])
 
         except GraphQLErrorGroup as error:
-            return ExecutionResult(errors=list(error.flatten()))
+            return build_response(errors=list(error.flatten()))
 
         except Exception as error:  # noqa: BLE001
-            return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
+            err = GraphQLUnexpectedError(message=str(error))
+            return build_response(errors=[err])
 
     return wrapper
 
@@ -300,7 +311,7 @@ async def _parse_source_async(context: LifecycleHookContext) -> None:  # noqa: R
             max_tokens=undine_settings.MAX_TOKENS,
         )
     except GraphQLError as error:
-        context.result = ExecutionResult(errors=[error])
+        context.result = build_response(errors=[error])
 
 
 @use_lifecycle_hooks_async(hooks=undine_settings.VALIDATION_HOOKS)
@@ -320,22 +331,20 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
         max_errors=undine_settings.MAX_ERRORS,
     )
     if validation_errors:
-        context.result = ExecutionResult(errors=validation_errors)
+        context.result = build_response(errors=validation_errors)
         return
 
 
 @use_lifecycle_hooks_async(hooks=undine_settings.EXECUTION_HOOKS)
 async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
-    result = execute(
-        schema=undine_settings.SCHEMA,
+    exec_context = _get_execution_context(
         document=context.document,  # type: ignore[arg-type]
         root_value=undine_settings.ROOT_VALUE,
         context_value=context.request,
         variable_values=context.variables,
         operation_name=context.operation_name,
-        middleware=undine_settings.MIDDLEWARE,
-        execution_context_class=undine_settings.EXECUTION_CONTEXT_CLASS,
     )
+    result = _execute(exec_context)
 
     if result is None:  # pragma: no cover
         raise GraphQLNoExecutionResultError
@@ -356,13 +365,14 @@ def raised_exceptions_as_execution_results_websocket(
             return await func(*args, **kwargs)
 
         except GraphQLError as error:
-            return ExecutionResult(errors=[error])
+            return build_response(errors=[error])
 
         except GraphQLErrorGroup as error:
-            return ExecutionResult(errors=list(error.flatten()))
+            return build_response(errors=list(error.flatten()))
 
         except Exception as error:  # noqa: BLE001
-            return ExecutionResult(errors=[GraphQLUnexpectedError(message=str(error))])
+            err = GraphQLUnexpectedError(message=str(error))
+            return build_response(errors=[err])
 
     return wrapper
 
@@ -423,16 +433,16 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
         middleware=undine_settings.MIDDLEWARE,
     )
     if isinstance(context_or_errors, list):
-        return ExecutionResult(data=None, errors=context_or_errors)
+        return build_response(errors=context_or_errors)
 
     try:
         event_stream = await execute_subscription(context_or_errors)
     except GraphQLError as error:
-        return ExecutionResult(data=None, errors=[error])
+        return build_response(errors=[error])
 
     if not isinstance(event_stream, AsyncIterable):
         err = GraphQLUnexpectedError(message="Subscription did not return an event stream")
-        return ExecutionResult(data=None, errors=[err])
+        return build_response(errors=[err])
 
     return event_stream
 
@@ -461,24 +471,83 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
                     break
 
                 if isinstance(payload, GraphQLError):
-                    context.result = ExecutionResult(errors=[payload])
+                    context.result = build_response(errors=[payload])
                     yield context.result
                     continue
 
                 if isinstance(payload, GraphQLErrorGroup):
-                    context.result = ExecutionResult(errors=list(payload.flatten()))
+                    context.result = build_response(errors=list(payload.flatten()))
                     yield context.result
                     continue
 
-                result = execute(
-                    schema=undine_settings.SCHEMA,
-                    document=context.document,  # type: ignore[arg-type]
+                exec_context = _get_execution_context(
+                    document=context.document,
                     root_value=payload,
                     context_value=context.request,
                     variable_values=context.variables,
                     operation_name=context.operation_name,
-                    middleware=undine_settings.MIDDLEWARE,
-                    execution_context_class=undine_settings.EXECUTION_CONTEXT_CLASS,
                 )
+                result = _execute(exec_context)
+
                 context.result = await result if isawaitable(result) else result
                 yield context.result
+
+
+# Helpers
+
+
+def _get_execution_context(
+    document: DocumentNode,
+    root_value: Any,
+    context_value: Any,
+    variable_values: dict[str, Any],
+    operation_name: str | None,
+) -> UndineExecutionContext:
+    context_or_errors = undine_settings.EXECUTION_CONTEXT_CLASS.build(
+        schema=undine_settings.SCHEMA,
+        document=document,
+        root_value=root_value,
+        context_value=context_value,
+        raw_variable_values=variable_values,
+        operation_name=operation_name,
+        middleware=undine_settings.MIDDLEWARE,
+    )
+
+    if isinstance(context_or_errors, list):
+        raise GraphQLErrorGroup(errors=context_or_errors)
+
+    return context_or_errors
+
+
+def _execute(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:
+    try:
+        data_or_awaitable = context.execute_operation(context.operation, context.root_value)
+
+    except GraphQLError as error:
+        context.errors.append(error)
+        return context.build_response(data=None, errors=context.errors)
+
+    except GraphQLErrorGroup as error:
+        context.errors.extend(error.flatten())
+        return context.build_response(data=None, errors=context.errors)
+
+    if context.is_awaitable(data_or_awaitable):
+
+        async def await_result() -> ExecutionResult:
+            try:
+                data = await data_or_awaitable
+
+            except GraphQLError as err:
+                context.errors.append(err)
+                return context.build_response(data=None, errors=context.errors)
+
+            except GraphQLErrorGroup as err:
+                context.errors.extend(err.flatten())
+                return context.build_response(data=None, errors=context.errors)
+
+            else:
+                return context.build_response(data=data, errors=context.errors)
+
+        return await_result()
+
+    return context.build_response(data=data_or_awaitable, errors=context.errors)

@@ -121,7 +121,11 @@ async def test_graphql_over_websocket__subscription__error__as_value(graphql, un
         FormattedExecutionResult(
             data=None,
             errors=[
-                GraphQLFormattedError(message="Test error", path=["countdown"]),
+                GraphQLFormattedError(
+                    message="Test error",
+                    path=["countdown"],
+                    extensions={"status_code": 400},
+                ),
             ],
         ),
         FormattedExecutionResult(data={"countdown": 1}),
@@ -200,8 +204,16 @@ async def test_graphql_over_websocket__subscription__error_group__as_value(graph
         FormattedExecutionResult(
             data=None,
             errors=[
-                GraphQLFormattedError(message="Test error", path=["countdown"]),
-                GraphQLFormattedError(message="Real error", path=["countdown"]),
+                GraphQLFormattedError(
+                    message="Real error",
+                    path=["countdown"],
+                    extensions={"status_code": 400},
+                ),
+                GraphQLFormattedError(
+                    message="Test error",
+                    path=["countdown"],
+                    extensions={"status_code": 400},
+                ),
             ],
         ),
         FormattedExecutionResult(data={"countdown": 1}),
