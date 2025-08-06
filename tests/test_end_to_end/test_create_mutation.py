@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from example_project.app.models import Person, Project, Task, TaskTypeChoices
+from example_project.app.models import Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 
@@ -48,7 +48,7 @@ def test_create_mutation(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__to_one(graphql, undine_settings):
+def test_create_mutation__relations__many_to_one(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class ProjectType(QueryType[Project]): ...
@@ -99,7 +99,7 @@ def test_create_mutation__relations__to_one(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__to_one__existing(graphql, undine_settings):
+def test_create_mutation__relations__many_to_one__existing(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class ProjectType(QueryType[Project]): ...
@@ -152,7 +152,62 @@ def test_create_mutation__relations__to_one__existing(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__to_many(graphql, undine_settings):
+def test_create_mutation__relations__one_to_many(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskStepType(QueryType[TaskStep]): ...
+
+    class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        steps = Input(RelatedTaskStep)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [
+            {
+                "name": "Test Step",
+            },
+        ],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                name
+                steps {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "createTask": {
+            "name": "Test Task",
+            "steps": [
+                {
+                    "name": "Test Step",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__many_to_many(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class PersonType(QueryType[Person]): ...
@@ -208,7 +263,7 @@ def test_create_mutation__relations__to_many(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__to_many__existing(graphql, undine_settings):
+def test_create_mutation__relations__many_to_many__existing(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class PersonType(QueryType[Person]): ...

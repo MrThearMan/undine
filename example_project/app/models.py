@@ -198,7 +198,7 @@ class AcceptanceCriteria(Model):
     details = TextField()
     fulfilled = BooleanField(default=False)
 
-    task = ForeignKey(Task, on_delete=CASCADE)  # No related_name on purpose.
+    task = ForeignKey(Task, on_delete=CASCADE, null=True, blank=True)  # No related_name on purpose.
 
     objects: ModelManager[AcceptanceCriteria]
 

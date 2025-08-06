@@ -21,7 +21,7 @@ from undine.settings import undine_settings
 from undine.typing import TModel
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.graphql.utils import check_directives
-from undine.utils.model_utils import get_default_manager, get_model_fields_for_graphql
+from undine.utils.model_utils import get_default_manager, get_model_fields_for_graphql, get_related_name
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.registy import Registry
 from undine.utils.text import dotpath, get_docstring, to_schema_name
@@ -369,7 +369,7 @@ def get_fields_for_model(model: type[Model], *, exclude: Container[str] = ()) ->
     result: dict[str, Field] = {}
 
     for model_field in get_model_fields_for_graphql(model):
-        field_name = model_field.name
+        field_name = get_related_name(model_field)  # type: ignore[arg-type]
 
         is_primary_key = bool(getattr(model_field, "primary_key", False))
         if is_primary_key:

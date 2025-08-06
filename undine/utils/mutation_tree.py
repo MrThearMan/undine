@@ -447,9 +447,7 @@ class MutationNode:
 
     def _handle_reverse_o2o(self, data: Any, rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle reverse one-to-one relations for the given instance."""
-        parent_instance: Model | None = instance
         existing_instance: Model | None = getattr(instance, rel_info.field_name, None)
-        has_existing_instance = existing_instance is not None
 
         match data:
             case dict():
@@ -459,45 +457,29 @@ class MutationNode:
                 node.handle_one_pk(pk=data)
 
             case None:
-                if not rel_info.nullable:
-                    raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
-
-                # Make sure relation is set to null even if its not otherwise updated.
-                if not node.instances and has_existing_instance:
-                    node.instances.append(existing_instance)  # type: ignore[arg-type]
-
-                parent_instance = None
+                # If creating, no related instance is created.
+                # If updating, there might be a related instance which should be disconnected,
+                # which is done in `self._disconnect_instances`
+                pass
 
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
         for rel in node.instances:
-            setattr(rel, rel_info.related_name, parent_instance)  # type: ignore[arg-type]
+            setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
             node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
-        # Previous relation must be disconnected (if setting the relation to null is allowed).
-        if has_existing_instance and node.instances and existing_instance.pk != node.instances[0].pk:  # type: ignore[index,union-attr]
-            if not rel_info.nullable:
-                raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
+        if existing_instance is not None:
+            updated_instances: set[Model] = {instance for instance in node.instances if instance.pk is not None}
+            non_updated_instances: set[Model] = {existing_instance} - updated_instances
 
-            setattr(existing_instance, rel_info.related_name, None)  # type: ignore[arg-type]
-
-            # Existing relation must be disconnected before new relation is added to satisfy on-to-one constraint.
-            remove_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
-            remove_node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
-            remove_node.instances.append(existing_instance)  # type: ignore[index,arg-type]
-
-            node.put_before(
-                remove_node,
-                field_name=f"__remove_old_{rel_info.field_name}",
-                related_name=f"__add_new_{rel_info.field_name}",
-            )
+            if non_updated_instances:
+                self._disconnect_instances(non_updated_instances, rel_info, node)
 
     def _handle_o2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle one-to-many relations for the given instance."""
-        parent_instance: Model | None = instance
         existing_instances: set[Model] = set()
         if instance.pk is not None:
             existing_instances = set(getattr(instance, rel_info.field_name).all())
@@ -510,35 +492,24 @@ class MutationNode:
                 node.handle_many_pk(pks=data)
 
             case [None, *_] | [] | None:
-                if not rel_info.nullable:
-                    raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
-
-                # Make sure all relations are set to null even if they're not otherwise updated.
-                for existing_instance in existing_instances:
-                    node.instances.append(existing_instance)
-
-                parent_instance = None
+                # If creating, do not add related instances.
+                # If updating, all instances will be "non-updated" instances, so whether they
+                # can be disconnected is checked in `self._disconnect_instances`
+                pass
 
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
         for rel in node.instances:
-            setattr(rel, rel_info.related_name, parent_instance)  # type: ignore[arg-type]
+            setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
             node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index,arg-type]
 
-        # Any relations that weren't updated must be disconnected (if setting the relation to null is allowed)
         if existing_instances:
             updated_instances: set[Model] = {instance for instance in node.instances if instance.pk is not None}
             non_updated_instances: set[Model] = existing_instances - updated_instances
 
             if non_updated_instances:
-                if not rel_info.nullable:
-                    raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
-
-                for existing_instance in non_updated_instances:
-                    setattr(existing_instance, rel_info.related_name, None)  # type: ignore[arg-type]
-                    node.instances.append(existing_instance)
-                    node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
+                self._disconnect_instances(non_updated_instances, rel_info, node)
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -631,6 +602,33 @@ class MutationNode:
             self.previous_data[rel_info.field_name] = Undefined
 
         self.put_before(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
+
+    def _disconnect_instances(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
+        """
+        Disconnect instances for:
+
+        - reverse one-to-one, if the relation is updated to another instance
+        - reverse foreign keys relations, if a some of the instances are not updated or picked using pk.
+
+        Do not allow disconnecting if the forward relation is not nullable.
+        """
+        if not rel_info.nullable:
+            raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
+
+        remove_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
+        remove_node.instances.extend(instances)
+
+        for existing_instance in instances:
+            setattr(existing_instance, rel_info.related_name, None)  # type: ignore[arg-type]
+            remove_node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
+
+        # For reverse one-to-one relations, existing relation must be disconnected before new relation is added
+        # to satisfy on-to-one constraint.
+        node.put_before(
+            remove_node,
+            field_name=f"__remove_old_{rel_info.field_name}",
+            related_name=f"__add_new_{rel_info.field_name}",
+        )
 
     # Link handling
 

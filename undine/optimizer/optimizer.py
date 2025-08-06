@@ -14,7 +14,7 @@ from undine.exceptions import GraphQLTooManyFiltersError, GraphQLTooManyOrdersEr
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_connection, get_undine_field, get_undine_query_type
 from undine.utils.graphql.utils import get_underlying_type, is_connection, is_typename_metafield, should_skip_node
-from undine.utils.model_utils import get_default_manager, get_related_field_name
+from undine.utils.model_utils import get_default_manager, get_field_name, get_related_name
 from undine.utils.reflection import is_same_func
 
 from .ast_walker import GraphQLASTWalker
@@ -230,7 +230,7 @@ class QueryOptimizer(GraphQLASTWalker):
         field_node: FieldNode,
         related_field: ToOneField,
     ) -> None:
-        name = get_related_field_name(related_field)
+        name = get_related_name(related_field)
 
         # Aliases not accounted for since there is no filtering
         data = self.optimization_data.add_select_related(name)
@@ -256,8 +256,8 @@ class QueryOptimizer(GraphQLASTWalker):
     ) -> None:
         from django.contrib.contenttypes.fields import GenericRelation  # noqa: PLC0415
 
-        name = get_related_field_name(related_field)
-        alias = field_node.alias.value if field_node.alias else None
+        name = get_field_name(related_field)
+        alias = field_node.alias.value if field_node.alias else get_related_name(related_field)
         data = self.optimization_data.add_prefetch_related(name, to_attr=alias)
 
         if isinstance(related_field, ManyToOneRel):
@@ -280,7 +280,7 @@ class QueryOptimizer(GraphQLASTWalker):
         field_node: FieldNode,
         related_field: GenericForeignKey,
     ) -> None:
-        name = get_related_field_name(related_field)
+        name = get_related_name(related_field)
 
         self.optimization_data.only_fields.add(related_field.ct_field)
         self.optimization_data.only_fields.add(related_field.fk_field)
@@ -526,7 +526,7 @@ class OptimizationData:
         for name, prefetch_related_data in self.prefetch_related.items():
             # Only need `to_attr` if it's different from the field name.
             to_attr: str | None = name
-            if to_attr == prefetch_related_data.related_field.name:  # type: ignore[union-attr]
+            if to_attr == get_related_name(prefetch_related_data.related_field):  # type: ignore[union-attr]
                 to_attr = None
 
             prefetch = self._process_prefetch(prefetch_related_data, to_attr=to_attr)
@@ -538,7 +538,7 @@ class OptimizationData:
 
             # Only need `to_attr` if it's different from the field name.
             to_attr = name
-            if to_attr == generic_prefetches[0].related_field.name:  # type: ignore[union-attr]
+            if to_attr == get_related_name(generic_prefetches[0].related_field):  # type: ignore[union-attr]
                 to_attr = None
 
             generic_prefetch = self._process_generic_prefetch(generic_prefetches, to_attr=to_attr)
@@ -552,7 +552,7 @@ class OptimizationData:
         queryset = data.queryset_callback(data.info)  # type: ignore[arg-type]
         optimized_queryset = optimizations.apply(queryset, data.info)  # type: ignore[arg-type]
 
-        field_name: str = data.related_field.name  # type: ignore[union-attr]
+        field_name = get_related_name(data.related_field)  # type: ignore[union-attr]
         return Prefetch(field_name, optimized_queryset, to_attr=to_attr)
 
     def _process_generic_prefetch(self, data: list[OptimizationData], *, to_attr: str | None = None) -> GenericPrefetch:
@@ -565,7 +565,7 @@ class OptimizationData:
             optimized_queryset = optimizations.apply(queryset, model_data.info)  # type: ignore[arg-type]
             optimized_querysets.append(optimized_queryset)
 
-        field_name: str = data[0].related_field.name  # type: ignore[union-attr]
+        field_name = get_related_name(data[0].related_field)  # type: ignore[union-attr]
         return GenericPrefetch(field_name, optimized_querysets, to_attr=to_attr)
 
 

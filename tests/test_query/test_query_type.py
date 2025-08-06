@@ -61,7 +61,7 @@ def test_query_type__attributes() -> None:
     assert MyQueryType.__attribute_docstrings__ == {}
 
     assert sorted(MyQueryType.__field_map__) == [
-        "acceptancecriteria",
+        "acceptancecriteria_set",
         "assignees",
         "attachment",
         "check_time",

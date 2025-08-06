@@ -66,7 +66,7 @@ __all__ = [
     "get_model",
     "get_model_field",
     "get_model_fields_for_graphql",
-    "get_related_field_name",
+    "get_related_name",
     "get_reverse_field_name",
     "get_save_update_fields",
     "get_validation_error_messages",
@@ -203,7 +203,7 @@ def get_many_to_many_through_field(field: ManyToManyField | ManyToManyRel) -> Fo
     return field.through._meta.get_field(field.field.m2m_field_name())  # type: ignore[union-attr,return-value]
 
 
-def get_reverse_field_name(field: RelatedField) -> str | None:
+def get_reverse_field_name(field: RelatedField | GenericField) -> str | None:
     """Get the name of the reverse field for the given related field."""
     relation_type = RelationType.for_related_field(field)
     if relation_type.is_forward:
@@ -219,10 +219,36 @@ def get_reverse_field_name(field: RelatedField) -> str | None:
     raise NotImplementedError(msg)  # pragma: no cover
 
 
-def get_related_field_name(related_field: RelatedField | GenericField) -> str:
-    if hasattr(related_field, "cache_name"):  # Django 5.1+
-        return related_field.cache_name or related_field.name
-    return related_field.get_cache_name() or related_field.name
+def get_related_name(related_field: RelatedField | GenericField) -> str:
+    """
+    Get by which the relation of this field can be used in:
+
+    - Accessing the relation from a model instance: `instance.related_name.all()`
+    - Pre-fetching: `qs.select_related("related_name")` or `qs.prefetch_related("related_name")`
+    """
+    if hasattr(related_field, "accessor_name"):
+        return related_field.accessor_name or related_field.name
+    if hasattr(related_field, "get_accessor_name"):  # Django < 5.1
+        return related_field.get_accessor_name() or related_field.name
+    return related_field.name
+
+
+def get_related_query_name(related_field: RelatedField | GenericField) -> str:
+    """
+    Name by which the relation of this field can be used in:
+
+    - Query expressions: `qs.filter(query_name__exact=...)`
+    """
+    return related_field.related_query_name or related_field.name
+
+
+def get_field_name(related_field: RelatedField | GenericField) -> str:
+    """
+    Name by which the relation of this field can be used in:
+
+    - Model meta options: `Model._meta.get_fields("query_name")`
+    """
+    return related_field.name
 
 
 def get_model_fields_for_graphql(

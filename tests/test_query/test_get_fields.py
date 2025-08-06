@@ -7,7 +7,7 @@ from undine.query import get_fields_for_model
 def test_get_fields_for_model() -> None:
     fields = get_fields_for_model(Task)
     assert sorted(fields) == [
-        "acceptancecriteria",
+        "acceptancecriteria_set",
         "assignees",
         "attachment",
         "check_time",
@@ -39,7 +39,7 @@ def test_get_fields_for_model() -> None:
 def test_get_fields_for_model__exclude() -> None:
     fields = get_fields_for_model(Task, exclude=["name"])
     assert sorted(fields) == [
-        "acceptancecriteria",
+        "acceptancecriteria_set",
         "assignees",
         "attachment",
         "check_time",

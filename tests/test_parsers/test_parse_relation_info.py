@@ -28,7 +28,7 @@ def test_parse_relation_info__task() -> None:
             field_name="acceptancecriteria_set",
             related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
-            nullable=False,
+            nullable=True,
             related_model_pk_type=int,
             model=AcceptanceCriteria,
         ),
