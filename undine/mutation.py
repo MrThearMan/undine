@@ -23,7 +23,7 @@ from undine.exceptions import GraphQLErrorGroup, MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.typing import MutationKind, TModel
+from undine.typing import MutationKind, RelatedAction, TModel
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
@@ -69,6 +69,7 @@ class MutationTypeMeta(type):
     __model__: type[Model]
     __input_map__: dict[str, Input]
     __kind__: MutationKind
+    __related_action__: RelatedAction
     __schema_name__: str
     __directives__: list[Directive]
     __extensions__: dict[str, Any]
@@ -107,6 +108,9 @@ class MutationTypeMeta(type):
         else:
             mutation_kind = MutationKind(kind)
 
+        action = kwargs.get("related_action")
+        related_action = RelatedAction.null if action is None else RelatedAction(action)
+
         if "pk" not in _attrs and mutation_kind.requires_pk:
             field = get_model_field(model=model, lookup="pk")
             _attrs["pk"] = Input(field, required=True)
@@ -125,6 +129,7 @@ class MutationTypeMeta(type):
         mutation_type.__model__ = model
         mutation_type.__input_map__ = get_members(mutation_type, Input)
         mutation_type.__kind__ = mutation_kind
+        mutation_type.__related_action__ = related_action
         mutation_type.__schema_name__ = kwargs.get("schema_name", _name)
         mutation_type.__directives__ = kwargs.get("directives", [])
         mutation_type.__extensions__ = kwargs.get("extensions", {})
@@ -203,6 +208,10 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
         The kind of mutation this is. If not given, use "custom" if `__mutate__` is defined,
         or infer based on the name of the class.
 
+    `related_action: Literal["null", "delete", "ignore"] = "null"`
+        If this is a "related" kind of mutation type,
+        what happens to related objects that are not included in the input?
+
     `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Input` attributes for all Model fields automatically.
 
@@ -227,6 +236,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __model__: ClassVar[type[Model]]
     __input_map__: ClassVar[dict[str, Input]]
     __kind__: ClassVar[MutationKind]
+    __related_action__: ClassVar[RelatedAction]
     __schema_name__: ClassVar[str]
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]

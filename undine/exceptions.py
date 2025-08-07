@@ -743,6 +743,22 @@ class GraphQLPersistedDocumentsNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.PERSISTED_DOCUMENTS_NOT_SUPPORTED
 
 
+class GraphQLRelationMultipleInstancesError(GraphQLStatusError):
+    """
+    Error raised when trying to change the reverse one-to-one relation
+    to another instance without changing the current related object.
+    Should only happen as a misconfiguration of the related mutation type.
+    """
+
+    msg = (
+        "Field '{model:dotpath}.{field_name}' is a one-to-one relation, "
+        "but trying to set a new instance to it without handling the current instance. "
+        "Check if the related mutation action is set to 'ignore', which is not allowed."
+    )
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION
+
+
 class GraphQLRelationNotNullableError(GraphQLStatusError):
     """Error raised when trying to update a relation to null, but the relation is not nullable."""
 

@@ -258,25 +258,25 @@ def test_input__related_mutation_type() -> None:
 
 
 def test_input__callable() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         @Input
         def foo(self) -> int:
             """Description."""
 
-    assert MyMutationType.foo.many is False
-    assert MyMutationType.foo.description == "Description."
-    assert MyMutationType.foo.hidden is True
-    assert MyMutationType.foo.input_only is True
+    assert TaskCreateMutation.foo.many is False
+    assert TaskCreateMutation.foo.description == "Description."
+    assert TaskCreateMutation.foo.hidden is True
+    assert TaskCreateMutation.foo.input_only is True
 
 
 def test_input__callable__arguments() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         @Input(required=True)
         def foo(self) -> int:
             """Description."""
 
-    assert MyMutationType.foo.many is False
-    assert MyMutationType.foo.description == "Description."
-    assert MyMutationType.foo.hidden is True
-    assert MyMutationType.foo.input_only is True
-    assert MyMutationType.foo.required is True
+    assert TaskCreateMutation.foo.many is False
+    assert TaskCreateMutation.foo.description == "Description."
+    assert TaskCreateMutation.foo.hidden is True
+    assert TaskCreateMutation.foo.input_only is True
+    assert TaskCreateMutation.foo.required is True

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Self, overload
 
 from django.db import router, transaction  # noqa: ICN003
 from django.db.models import Q
-from django.db.models.signals import m2m_changed, post_save, pre_save
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
 from graphql import GraphQLError, GraphQLResolveInfo, Undefined
 
 from undine.exceptions import (
@@ -18,11 +18,12 @@ from undine.exceptions import (
     GraphQLMutationInputNotFoundError,
     GraphQLMutationInstanceLimitError,
     GraphQLMutationTreeModelMismatchError,
+    GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
 )
 from undine.parsers import parse_model_relation_info
 from undine.settings import undine_settings
-from undine.typing import RelationType
+from undine.typing import RelatedAction, RelationType
 from undine.utils.model_utils import (
     convert_integrity_errors,
     generic_relations_for_generic_foreign_key,
@@ -259,6 +260,13 @@ class MutationNode:
 
         return self.instances
 
+    def mutate_delete(self) -> list[Model]:
+        """Delete model instance s using the `queryset.delete` method."""
+        pks = [instance.pk for instance in self.instances]
+        with self._with_delete_signals(self.instances):
+            get_default_manager(self.model).filter(pk__in=pks).delete()
+        return []
+
     def mutate_through(self, *, source_name: str, target_name: str, reverse: bool, symmetrical: bool) -> list[Model]:
         through_map: defaultdict[Model, dict[Model, Model]] = defaultdict(dict)
 
@@ -353,8 +361,6 @@ class MutationNode:
                 self.errors.extend(error.flatten())
 
         for field_name, field_data in data.items():
-            mutation_type = self.get_nested_mutation_type(field_name)
-
             rel_info = relation_info.get(field_name)
             if rel_info is None:
                 if instance.pk is None:
@@ -364,6 +370,8 @@ class MutationNode:
 
                 setattr(instance, field_name, field_data)
                 continue
+
+            mutation_type = self.get_nested_mutation_type(field_name)
 
             with self._with_child_info(to_schema_name(field_name)):
                 node = MutationNode(model=rel_info.model, info=self.info, mutation_type=mutation_type)  # type: ignore[arg-type]
@@ -458,8 +466,8 @@ class MutationNode:
 
             case None:
                 # If creating, no related instance is created.
-                # If updating, there might be a related instance which should be disconnected,
-                # which is done in `self._disconnect_instances`
+                # If updating, there might be a related instance.
+                # What happens to it depends on the "related action" set by the mutation type.
                 pass
 
             case _:
@@ -476,7 +484,16 @@ class MutationNode:
             non_updated_instances: set[Model] = {existing_instance} - updated_instances
 
             if non_updated_instances:
-                self._disconnect_instances(non_updated_instances, rel_info, node)
+                mutation_type = node.mutation_type
+                related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
+
+                match related_action:
+                    case RelatedAction.null:
+                        self._disconnect_instances(non_updated_instances, rel_info, node)
+                    case RelatedAction.delete:
+                        self._remove_instances(non_updated_instances, rel_info, node)
+                    case RelatedAction.ignore:
+                        raise GraphQLRelationMultipleInstancesError(field_name=rel_info.related_name, model=node.model)
 
     def _handle_o2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle one-to-many relations for the given instance."""
@@ -493,8 +510,8 @@ class MutationNode:
 
             case [None, *_] | [] | None:
                 # If creating, do not add related instances.
-                # If updating, all instances will be "non-updated" instances, so whether they
-                # can be disconnected is checked in `self._disconnect_instances`
+                # If updating, all instances will be "non-updated" instances.
+                # What happens to them depends on the "related action" set by the mutation type.
                 pass
 
             case _:
@@ -509,7 +526,16 @@ class MutationNode:
             non_updated_instances: set[Model] = existing_instances - updated_instances
 
             if non_updated_instances:
-                self._disconnect_instances(non_updated_instances, rel_info, node)
+                mutation_type = node.mutation_type
+                related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
+
+                match related_action:
+                    case RelatedAction.null:
+                        self._disconnect_instances(non_updated_instances, rel_info, node)
+                    case RelatedAction.delete:
+                        self._remove_instances(non_updated_instances, rel_info, node)
+                    case RelatedAction.ignore:
+                        pass
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -615,14 +641,28 @@ class MutationNode:
         if not rel_info.nullable:
             raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
 
-        remove_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
-        remove_node.instances.extend(instances)
+        disconnect_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
+        disconnect_node.instances.extend(instances)
 
         for existing_instance in instances:
             setattr(existing_instance, rel_info.related_name, None)  # type: ignore[arg-type]
-            remove_node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
+            disconnect_node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
 
         # For reverse one-to-one relations, existing relation must be disconnected before new relation is added
+        # to satisfy on-to-one constraint.
+        node.put_before(
+            disconnect_node,
+            field_name=f"__disconnect_old_{rel_info.field_name}",
+            related_name=f"__connect_new_{rel_info.field_name}",
+        )
+
+    def _remove_instances(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
+        """Remove the given related instances when a relation is updated."""
+        remove_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
+        remove_node.instances.extend(instances)
+        remove_node.mutation_func = remove_node.mutate_delete
+
+        # For reverse one-to-one relations, existing relation must be removed before new relation is added
         # to satisfy on-to-one constraint.
         node.put_before(
             remove_node,
@@ -851,6 +891,28 @@ class MutationNode:
                     update_fields=list(update_fields or []),
                     raw=False,
                     using=router.db_for_write(self.model, instance=instance),
+                )
+
+    @contextmanager
+    def _with_delete_signals(self, instances: list[Model]) -> Generator[None, None, None]:
+        if pre_delete.has_listeners(self.model):
+            for instance in instances:
+                pre_delete.send(
+                    sender=self.model,
+                    instance=instance,
+                    using=router.db_for_write(self.model, instance=instance),
+                    origin=instance,
+                )
+
+        yield
+
+        if post_delete.has_listeners(self.model):
+            for instance in instances:
+                post_delete.send(
+                    sender=self.model,
+                    instance=instance,
+                    using=router.db_for_write(self.model, instance=instance),
+                    origin=instance,
                 )
 
     @contextmanager

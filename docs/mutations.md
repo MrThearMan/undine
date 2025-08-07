@@ -448,7 +448,7 @@ the "main" mutation is for creating or updating the main model. That's why all t
 in the the created `TaskProject` are nullable, even if the `Project` model requires
 the `name` field to be provided when creating a new `Project`.
 
-Let's give a few examples. Assuming you added the `TaskCreateMutation` to our Schema with
+Let's give a few examples. Assuming you added the `TaskCreateMutation` to the schema with
 an `Entrypoint` `create_task`, you can create a new `Task` together with a new `Project` like this:
 
 ```graphql
@@ -503,31 +503,43 @@ mutation {
 }
 ```
 
-Since the `project` relation on the `Task` model is not nullable,
-the input is required, but if it was nullable, you could also unlink relations
-during update mutations like this:
-
-```graphql
-mutation {
-  updateTask(
-    input: {
-      pk: 1
-      name: "Updated task"
-      project: null
-    }
-  ) {
-    pk
-  }
-}
-```
-
-Since the relation's nullability also affects whether the `Input` is required or not,
-a nullable relation can be left out during mutations. If left out during create mutations,
-the relation will be set to `null`, and in update mutations, the relation won't be updated.
-
 > Note that the total amount of objects that can be mutated in a single mutation
 > is limited by the [`MUTATION_INSTANCE_LIMIT`](settings.md#mutation_instance_limit) setting.
 > This also affects bulk mutations.
+
+### Related mutation action
+
+When updating an instance and its relations using a [related mutation](#related-mutations),
+that instance may already have existing related objects. For some relations,
+it's unclear what should happen to relations that are not selected in the related mutation.
+
+Some relations have a single obvious behavior
+
+- **Forward one-to-one relation**: Selects the new related object to attach to, or set the relation to null.
+  Reverse one-to-one relation can always be missing.
+- **Forward foreign key (many-to-one) relation**: Selects the new related object to attach to, or set the relation to null.
+  Reverse relations do not have any constraints.
+- **Many-to-many relations**: Selects the new related objects that the current instance should be linked to.
+  Non-selected objects are unlinked, meaning through table rows are deleted.
+
+For others, you might need different behavior depending on the situation:
+
+- **Reverse one-to-one relation**: You might want to delete the exiting related object, or set the relation to null
+  (although the forward part of the relation might not be nullable).
+- **Reverse foreign key (one-to-many) relation**: You might want to delete exiting related objects,
+  or set their relation to null (although the forward part of the relation might not be nullable).
+  You might even want to leave the existing relations as they are.
+
+The action that should be taken for the relations is defined by the `MutationType` `related_action` argument.
+The actions are as follows:
+
+- `null`: Set the relaton to null. If the relation is not nullable, an error is raised. Default action.
+- `delete`: Delete the related objects.
+- `ignore`: Leave the existing relations as they are. For one-to-one relations, an error is raised.
+
+```python
+-8<- "mutations/mutation_type_related_action.py"
+```
 
 ### Permissions
 

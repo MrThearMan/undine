@@ -154,6 +154,7 @@ __all__ = [
     "PongMessage",
     "ProtocolType",
     "QueryTypeParams",
+    "RelatedAction",
     "RelatedField",
     "RequestMethod",
     "RootTypeParams",
@@ -496,6 +497,31 @@ class MutationKind(enum.StrEnum):
         return self == MutationKind.create
 
 
+class RelatedAction(enum.StrEnum):
+    """
+    When a relation is updated using a "related" kind of MutationType,
+    what happens to related objects that are not included in the input?
+    This only applies for reverse one-to-one and reverse foreign key (one-to-many) relations.
+    """
+
+    null = "null"
+    """
+    The relation from the related object to the parent object is set to null.
+    This will raise an error if the relation is not nullable.
+    """
+
+    delete = "delete"
+    """
+    The related objects are deleted.
+    """
+
+    ignore = "ignore"
+    """
+    The related objects are left unchanged.
+    For reverse one-to-one relations, this will raise an error due to the one-to-one constraint.
+    """
+
+
 class ManyMatch(enum.StrEnum):
     any = "any"
     all = "all"
@@ -527,6 +553,7 @@ class UndineErrorCodes(StrEnum):
     CONTENT_TYPE_MISSING = auto()
     DUPLICATE_TYPE = auto()
     FIELD_NOT_NULLABLE = auto()
+    FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()
     INVALID_INPUT_DATA = auto()
     INVALID_OPERATION_FOR_METHOD = auto()
@@ -539,15 +566,13 @@ class UndineErrorCodes(StrEnum):
     MISSING_GRAPHQL_QUERY_AND_DOCUMENT_PARAMETERS = auto()
     MISSING_GRAPHQL_QUERY_PARAMETER = auto()
     MISSING_INSTANCES_TO_DELETE = auto()
-    MISSING_OPERATION_NAME = auto()
     MISSING_OPERATIONS = auto()
+    MISSING_OPERATION_NAME = auto()
     MISSING_SUBSCRIPTION_ARGUMENT = auto()
     MODEL_CONSTRAINT_VIOLATION = auto()
     MODEL_NOT_FOUND = auto()
     MUTATION_TOO_MANY_OBJECTS = auto()
     MUTATION_TREE_MODEL_MISMATCH = auto()
-    NO_EXECUTION_RESULT = auto()
-    NO_OPERATION = auto()
     NODE_ID_NOT_GLOBAL_ID = auto()
     NODE_INTERFACE_MISSING = auto()
     NODE_INVALID_GLOBAL_ID = auto()
@@ -555,11 +580,13 @@ class UndineErrorCodes(StrEnum):
     NODE_QUERY_TYPE_ID_FIELD_MISSING = auto()
     NODE_QUERY_TYPE_MISSING = auto()
     NODE_TYPE_NOT_OBJECT_TYPE = auto()
+    NO_EXECUTION_RESULT = auto()
+    NO_OPERATION = auto()
     OPERATION_NOT_FOUND = auto()
     OPTIMIZER_ERROR = auto()
     PERMISSION_DENIED = auto()
-    PERSISTED_DOCUMENT_NOT_FOUND = auto()
     PERSISTED_DOCUMENTS_NOT_SUPPORTED = auto()
+    PERSISTED_DOCUMENT_NOT_FOUND = auto()
     REQUEST_DECODING_ERROR = auto()
     REQUEST_PARSE_ERROR = auto()
     SCALAR_CONVERSION_ERROR = auto()
@@ -756,6 +783,7 @@ class MutationTypeParams(TypedDict, total=False):
 
     model: type[Model]
     kind: Literal["create", "update", "delete", "custom", "related"]
+    related_action: Literal["null", "delete", "ignore"]
     auto: bool
     exclude: list[str]
     schema_name: str

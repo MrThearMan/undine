@@ -168,7 +168,7 @@ def test_update_mutation__relations__many_to_one__existing(graphql, undine_setti
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__one_to_many__nullable(graphql, undine_settings):
+def test_update_mutation__relations__one_to_many__nullable(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class AcceptanceCriteriaType(QueryType[AcceptanceCriteria]): ...
@@ -227,7 +227,7 @@ def test_create_mutation__relations__one_to_many__nullable(graphql, undine_setti
 
 
 @pytest.mark.django_db
-def test_create_mutation__relations__one_to_many__not_nullable(graphql, undine_settings):
+def test_update_mutation__relations__one_to_many__not_nullable(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class TaskStepType(QueryType[TaskStep]): ...
@@ -284,6 +284,127 @@ def test_create_mutation__relations__one_to_many__not_nullable(graphql, undine_s
             },
         }
     ]
+
+
+@pytest.mark.django_db
+def test_update_mutation__relations__one_to_many__not_nullable__remove_related(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskStepType(QueryType[TaskStep]): ...
+
+    class RelatedTaskStep(MutationType[TaskStep], kind="related", related_action="delete"): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        steps = Input(RelatedTaskStep)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+    TaskStepFactory.create(task=task)
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [
+            {
+                "name": "Test Step",
+            },
+        ],
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                name
+                steps {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False
+
+    assert response.results == {
+        "name": "Test Task",
+        "steps": [
+            {
+                "name": "Test Step",
+            },
+        ],
+    }
+
+    assert task.steps.count() == 1
+
+
+@pytest.mark.django_db
+def test_update_mutation__relations__one_to_many__not_nullable__ignore(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskStepType(QueryType[TaskStep]): ...
+
+    class RelatedTaskStep(MutationType[TaskStep], kind="related", related_action="ignore"): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        steps = Input(RelatedTaskStep)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+    TaskStepFactory.create(task=task, name="Real Step")
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [
+            {
+                "name": "Test Step",
+            },
+        ],
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                name
+                steps {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False
+
+    assert response.results == {
+        "name": "Test Task",
+        "steps": [
+            {
+                "name": "Real Step",
+            },
+            {
+                "name": "Test Step",
+            },
+        ],
+    }
+
+    assert task.steps.count() == 2
 
 
 @pytest.mark.django_db

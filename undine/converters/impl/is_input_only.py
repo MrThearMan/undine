@@ -10,7 +10,7 @@ from undine import Input, MutationType
 from undine.converters import is_input_only
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import ModelFieldError
-from undine.typing import ModelField
+from undine.typing import ModelField, MutationKind
 from undine.utils.model_utils import get_model_field
 
 
@@ -22,6 +22,9 @@ def _(_: ModelField, **kwargs: Any) -> bool:
 @is_input_only.register
 def _(_: TypeRef | FunctionType, **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
+    if caller.mutation_type.__kind__ == MutationKind.custom:
+        return False
+
     try:
         field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     except ModelFieldError:
@@ -47,6 +50,9 @@ def _(_: GenericForeignKey, **kwargs: Any) -> bool:
 @is_input_only.register
 def _(_: type[Model], **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
+    if caller.mutation_type.__kind__ == MutationKind.custom:
+        return False
+
     try:
         field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     except ModelFieldError:

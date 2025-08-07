@@ -64,6 +64,7 @@ from undine.exceptions import (
     GraphQLPermissionError,
     GraphQLPersistedDocumentNotFoundError,
     GraphQLPersistedDocumentsNotSupportedError,
+    GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
     GraphQLRequestDecodingError,
     GraphQLRequestParseError,
@@ -632,6 +633,16 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Server does not support persisted documents.",
             extensions={"error_code": "PERSISTED_DOCUMENTS_NOT_SUPPORTED", "status_code": 400},
+        ),
+        "GraphQLRelationMultipleInstancesError": GQLErrorParams(
+            cls=GraphQLRelationMultipleInstancesError,
+            args={"model": Task, "field_name": "name"},
+            message=(
+                "Field 'example_project.app.models.Task.name' is a one-to-one relation, "
+                "but trying to set a new instance to it without handling the current instance. "
+                "Check if the related mutation action is set to 'ignore', which is not allowed."
+            ),
+            extensions={"error_code": "FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION", "status_code": 500},
         ),
         "GraphQLRelationNotNullableError": GQLErrorParams(
             cls=GraphQLRelationNotNullableError,
