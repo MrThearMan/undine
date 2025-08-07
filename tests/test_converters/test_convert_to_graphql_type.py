@@ -60,6 +60,7 @@ from tests.helpers import exact, mock_gql_info, parametrize_helper
 from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, MutationType, QueryType
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
+from undine.resolvers.query import TypedDictFieldResolver
 from undine.scalars import (
     GraphQLAny,
     GraphQLBase64,
@@ -262,9 +263,9 @@ def test_convert_to_graphql_type__typed_dict__output() -> None:
     assert isinstance(result, GraphQLObjectType)
     assert result.name == "MyTypedDictType"
     assert result.fields == {
-        "foo": GraphQLField(GraphQLNonNull(GraphQLInt)),
-        "bar": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "fizzBuzz": GraphQLField(GraphQLNonNull(GraphQLDateTime)),
+        "foo": GraphQLField(GraphQLNonNull(GraphQLInt), resolve=TypedDictFieldResolver(key="foo")),
+        "bar": GraphQLField(GraphQLNonNull(GraphQLString), resolve=TypedDictFieldResolver(key="bar")),
+        "fizzBuzz": GraphQLField(GraphQLNonNull(GraphQLDateTime), resolve=TypedDictFieldResolver(key="fizz_buzz")),
     }
     assert result.description == "Description."
 
@@ -294,10 +295,10 @@ def test_convert_to_graphql_type__typed_dict__required() -> None:
 
     assert isinstance(result, GraphQLObjectType)
     assert result.fields == {
-        "foo": GraphQLField(GraphQLString),
-        "bar": GraphQLField(GraphQLString),
-        "fizz": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "buzz": GraphQLField(GraphQLString),
+        "foo": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="foo")),
+        "bar": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="bar")),
+        "fizz": GraphQLField(GraphQLNonNull(GraphQLString), resolve=TypedDictFieldResolver(key="fizz")),
+        "buzz": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="buzz")),
     }
 
 
@@ -313,10 +314,10 @@ def test_convert_to_graphql_type__typed_dict__not_required() -> None:
 
     assert isinstance(result, GraphQLObjectType)
     assert result.fields == {
-        "foo": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "bar": GraphQLField(GraphQLString),
-        "fizz": GraphQLField(GraphQLString),
-        "buzz": GraphQLField(GraphQLString),
+        "foo": GraphQLField(GraphQLNonNull(GraphQLString), resolve=TypedDictFieldResolver(key="foo")),
+        "bar": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="bar")),
+        "fizz": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="fizz")),
+        "buzz": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="buzz")),
     }
 
 

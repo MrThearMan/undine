@@ -73,6 +73,7 @@ from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
 from undine.relay import Connection, PageInfoType
+from undine.resolvers.query import NamedTupleFieldResolver, TypedDictFieldResolver
 from undine.scalars import (
     GraphQLAny,
     GraphQLBase64,
@@ -236,7 +237,8 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
         output_type: GraphQLOutputType = convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs)  # type: ignore[assignment]
-        output_fields[to_schema_name(key)] = GraphQLField(output_type)
+        resolver = TypedDictFieldResolver(key=key)
+        output_fields[to_schema_name(key)] = GraphQLField(output_type, resolve=resolver)
 
     return get_or_create_graphql_object_type(
         name=ref.__name__.removesuffix("Type") + "Type",
@@ -293,7 +295,8 @@ def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     for key, value in ref.__annotations__.items():
         evaluated_type = eval_type(value, globals_=module_globals)
         output_type: GraphQLOutputType = convert_to_graphql_type(TypeRef(evaluated_type), **kwargs)  # type: ignore[assignment]
-        output_fields[to_schema_name(key)] = GraphQLField(output_type)
+        resolver = NamedTupleFieldResolver(attr=key)
+        output_fields[to_schema_name(key)] = GraphQLField(output_type, resolve=resolver)
 
     return get_or_create_graphql_object_type(
         name=ref.__name__.removesuffix("Type") + "Type",

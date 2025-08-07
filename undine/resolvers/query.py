@@ -50,12 +50,14 @@ __all__ = [
     "ModelAttributeResolver",
     "ModelManyRelatedFieldResolver",
     "ModelSingleRelatedFieldResolver",
+    "NamedTupleFieldResolver",
     "NestedConnectionResolver",
     "NestedQueryTypeManyResolver",
     "NestedQueryTypeSingleResolver",
     "NodeResolver",
     "QueryTypeManyResolver",
     "QueryTypeSingleResolver",
+    "TypedDictFieldResolver",
     "UnionTypeResolver",
 ]
 
@@ -765,3 +767,34 @@ class _InterfaceConnectionResolver:  # TODO: Implement
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
         msg = "Interface connections are not implemented yet."
         raise NotImplementedError(msg)
+
+
+# Miscellaneous
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class TypedDictFieldResolver:
+    """Resolves a typed dict field."""
+
+    key: str
+    """
+    The actual key in the typed dict,
+    which may have been converted to camel case for the GraphQL ObjectType.
+    """
+
+    def __call__(self, root: dict[str, Any], info: GQLInfo, **kwargs: Any) -> Any:
+        return root.get(self.key, None)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class NamedTupleFieldResolver:
+    """Resolves a named tuple field."""
+
+    attr: str
+    """
+    The actual attribute in the named tuple,
+    which may have been converted to camel case for the GraphQL ObjectType.
+    """
+
+    def __call__(self, root: object, info: GQLInfo, **kwargs: Any) -> Any:
+        return getattr(root, self.attr, None)
