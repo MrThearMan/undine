@@ -47,8 +47,16 @@ class UndineError(Exception):
     msg: ClassVar[str] = ""
     error_formatter = ErrorMessageFormatter()
 
-    def __init__(self, msg: str = "", **kwargs: Any) -> None:
-        msg = self.error_formatter.format(msg or self.msg, **kwargs)
+    def __init__(
+        self,
+        msg: str = "",
+        *,
+        format_message: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        msg = msg or self.msg
+        if format_message:
+            msg = self.error_formatter.format(msg, **kwargs)
         super().__init__(msg)
 
 
@@ -58,8 +66,17 @@ class UndineErrorGroup(ExceptionGroup):
     msg: ClassVar[str] = ""
     error_formatter = ErrorMessageFormatter()
 
-    def __new__(cls, errors: Sequence[Exception], *, msg: str = "", **kwargs: Any) -> Self:
-        msg = cls.error_formatter.format(msg or cls.msg, **kwargs)
+    def __new__(
+        cls,
+        errors: Sequence[Exception],
+        *,
+        msg: str = "",
+        format_message: bool = True,
+        **kwargs: Any,
+    ) -> Self:
+        msg = msg or cls.msg
+        if format_message:
+            msg = cls.error_formatter.format(msg, **kwargs)
         return super().__new__(UndineErrorGroup, msg, errors)  # type: ignore[return-value]
 
     def __init__(self, errors: Sequence[Exception], *, msg: str = "", **kwargs: Any) -> None:
@@ -338,6 +355,7 @@ class GraphQLStatusError(GraphQLError):
         path: Collection[str | int] | None = None,
         original_error: Exception | None = None,
         extensions: GraphQLErrorExtensions | None = None,
+        format_message: bool = True,
         **kwargs: Any,
     ) -> None:
         """
@@ -354,10 +372,15 @@ class GraphQLStatusError(GraphQLError):
                      response which corresponds to this error.
         :param original_error: The original error thrown from a field resolver during execution.
         :param extensions: Extension fields to add to the formatted error.
+        :param format_message: Should message be formatted.
         """
         status = status or self.status
         code = code or self.code
-        message = self.error_formatter.format(message or self.msg, **kwargs)
+
+        message = message or self.msg
+        if format_message:
+            message = self.error_formatter.format(message, **kwargs)
+
         extensions = extensions or {}
         extensions["status_code"] = status
         if code is not None:
@@ -382,8 +405,17 @@ class GraphQLErrorGroup(ExceptionGroup):
 
     # Need to override both __new__ and __init__ so that keyword arguments can be used.
 
-    def __new__(cls, errors: Sequence[GraphQLError | GraphQLErrorGroup], *, msg: str = "", **kwargs: Any) -> Self:
-        msg = cls.error_formatter.format(msg or cls.msg, **kwargs)
+    def __new__(
+        cls,
+        errors: Sequence[GraphQLError | GraphQLErrorGroup],
+        *,
+        msg: str = "",
+        format_message: bool = True,
+        **kwargs: Any,
+    ) -> Self:
+        msg = msg or cls.msg
+        if format_message:
+            msg = cls.error_formatter.format(msg, **kwargs)
         return super().__new__(GraphQLErrorGroup, msg, errors)  # type: ignore[return-value]
 
     def __init__(self, errors: Sequence[GraphQLError | GraphQLErrorGroup], *, msg: str = "", **kwargs: Any) -> None:
@@ -894,9 +926,15 @@ class WebSocketError(Exception):
         self,
         reason: str | None = None,
         code: GraphQLWebSocketCloseCode | int | None = None,
+        *,
+        format_message: bool = True,
         **kwargs: Any,
     ) -> None:
-        self.reason = self.error_formatter.format(reason or self.reason, **kwargs)
+        reason = reason or self.reason
+        if format_message:
+            reason = self.error_formatter.format(reason, **kwargs)
+
+        self.reason = reason
         self.code = GraphQLWebSocketCloseCode(code or self.code)
 
 
