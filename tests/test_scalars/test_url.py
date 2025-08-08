@@ -24,3 +24,8 @@ def test_scalar__url__str__validation_error(func) -> None:
     msg = "'URL' cannot represent value 'hello world': Enter a valid URL."
     with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
         func("hello world")
+
+
+@pytest.mark.parametrize("func", [url_scalar.parse, url_scalar.serialize])
+def test_scalar__url__str__empty(func) -> None:
+    assert func("") == ""

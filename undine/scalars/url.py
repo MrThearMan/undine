@@ -22,5 +22,6 @@ GraphQLURL = url_scalar.as_graphql_scalar()
 @url_scalar.serialize.register
 @url_scalar.parse.register
 def _(value: str) -> str:
-    validate_url(value)
+    if value:
+        validate_url(value)
     return value

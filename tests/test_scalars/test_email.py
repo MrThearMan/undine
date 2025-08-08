@@ -24,3 +24,8 @@ def test_scalar__email__str__validation_error(func) -> None:
     msg = "'Email' cannot represent value 'hello world': Enter a valid email address."
     with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
         func("hello world")
+
+
+@pytest.mark.parametrize("func", [email_scalar.parse, email_scalar.serialize])
+def test_scalar__email__str__empty(func) -> None:
+    assert func("") == ""

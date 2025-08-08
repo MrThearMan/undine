@@ -22,5 +22,6 @@ GraphQLEmail = email_scalar.as_graphql_scalar()
 @email_scalar.serialize.register
 @email_scalar.parse.register
 def _(value: str) -> str:
-    validate_email(value)
+    if value:
+        validate_email(value)
     return value
