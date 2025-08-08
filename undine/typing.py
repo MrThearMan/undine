@@ -4,6 +4,7 @@ import enum
 import operator as op
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from contextlib import suppress
 from enum import Enum, StrEnum, auto
 from functools import cache
 from types import FunctionType, GenericAlias, UnionType
@@ -425,11 +426,14 @@ class RelationType(enum.Enum):
     @classmethod
     def for_related_field(cls, field: RelatedField | GenericField) -> RelationType:
         field_cls = type(field)
-        try:
-            return cls._related_field_to_relation_type_map()[field_cls]
-        except KeyError as error:
-            msg = f"Unknown related field: {field} (of type {field_cls})"
-            raise ValueError(msg) from error
+        mapping = cls._related_field_to_relation_type_map()
+
+        for cls_ in field_cls.__mro__:
+            with suppress(KeyError):
+                return mapping[cls_]
+
+        msg = f"Unknown related field: {field} (of type {field_cls})"
+        raise ValueError(msg)
 
     @enum.property
     def is_reverse(self) -> bool:
