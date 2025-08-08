@@ -27,7 +27,7 @@ from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
 from undine.utils.graphql.undine_extensions import get_undine_query_type
 from undine.utils.graphql.utils import get_queried_field_name, get_underlying_type, pre_evaluate_request_user
-from undine.utils.reflection import get_root_and_info_params
+from undine.utils.reflection import get_root_and_info_params, is_subclass
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -111,6 +111,9 @@ class EntrypointFunctionResolver:
             else:
                 self.entrypoint.permissions_func(root, info, result)
 
+        elif is_subclass(self.entrypoint.ref, QueryType):
+            self.entrypoint.ref.__permissions__(result, info)
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class FieldFunctionResolver:
@@ -157,6 +160,9 @@ class FieldFunctionResolver:
                     self.field.permissions_func(root, info, item)
             else:
                 self.field.permissions_func(root, info, result)
+
+        elif is_subclass(self.field.ref, QueryType):
+            self.field.ref.__permissions__(result, info)
 
 
 # Model field resolvers
