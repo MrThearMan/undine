@@ -440,7 +440,7 @@ class Input:
         if value == self.default_value:
             return
 
-        with with_graphql_error_path(info, key=self.name):
+        with with_graphql_error_path(info, key=self.schema_name):
             if self.permissions_func is not None:
                 self.permissions_func(instance, info, value)
 
