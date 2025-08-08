@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         GraphQLScalarValueParser,
         GraphQLTypeResolver,
     )
-    from graphql.type.definition import GraphQLInputFieldOutType
+    from graphql.type.definition import GraphQLEnumValueMap, GraphQLInputFieldOutType
 
     from undine import GQLInfo
     from undine.typing import UniquelyNamedGraphQLElement
@@ -200,7 +200,7 @@ def get_or_create_graphql_interface_type(
 def get_or_create_graphql_enum(
     *,
     name: str,
-    values: dict[str, str | GraphQLEnumValue],
+    values: GraphQLEnumValueMap | dict[str, Any],
     description: str | None = None,
     extensions: dict[str, Any] | None = None,
 ) -> GraphQLEnumType:

@@ -23,6 +23,7 @@ from django.db.models import (
     FloatField,
     GenericIPAddressField,
     ImageField,
+    IntegerChoices,
     IntegerField,
     IPAddressField,
     JSONField,
@@ -224,8 +225,8 @@ def test_convert_to_graphql_type__enum() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "MyEnum"
     assert result.values == {
-        "FOO": GraphQLEnumValue(value="FOO", description="foo"),
-        "BAR": GraphQLEnumValue(value="BAR", description="bar"),
+        "foo": GraphQLEnumValue(value=MyEnum.FOO, description="foo"),
+        "bar": GraphQLEnumValue(value=MyEnum.BAR, description="bar"),
     }
     assert result.description == "Description."
 
@@ -243,10 +244,37 @@ def test_convert_to_graphql_type__text_choices() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "MyTextChoices"
     assert result.values == {
-        "foo": GraphQLEnumValue(value="foo", description="Foo"),
-        "bar": GraphQLEnumValue(value="bar", description="Bar"),
+        "foo": GraphQLEnumValue(value=MyTextChoices.FOO, description="Foo"),
+        "bar": GraphQLEnumValue(value=MyTextChoices.BAR, description="Bar"),
     }
     assert result.description == "Description."
+
+    assert result.parse_value("foo") == MyTextChoices.FOO
+    assert result.serialize(MyTextChoices.FOO) == "foo"
+    assert result.serialize("foo") == "foo"
+
+
+class MyIntChoices(IntegerChoices):
+    """Description."""
+
+    FOO = 1, "Foo"
+    BAR = 2, "Bar"
+
+
+def test_convert_to_graphql_type__integer_choices() -> None:
+    result = convert_to_graphql_type(MyIntChoices)
+
+    assert isinstance(result, GraphQLEnumType)
+    assert result.name == "MyIntChoices"
+    assert result.values == {
+        "FOO": GraphQLEnumValue(value=MyIntChoices.FOO, description="Foo"),
+        "BAR": GraphQLEnumValue(value=MyIntChoices.BAR, description="Bar"),
+    }
+    assert result.description == "Description."
+
+    assert result.parse_value("FOO") == MyIntChoices.FOO
+    assert result.serialize(MyIntChoices.FOO) == "FOO"
+    assert result.serialize(1) == "FOO"
 
 
 class MyTypedDict(TypedDict):
@@ -486,6 +514,9 @@ def test_convert_to_graphql_type__char_field__text_choices() -> None:
     }
     assert result.description == "Role of the user."
 
+    assert result.parse_value("admin") == "admin"
+    assert result.serialize("admin") == "admin"
+
 
 def test_convert_to_graphql_type__text_choices_field() -> None:
     input_type = RoleTextChoicesFieldModel._meta.get_field("actual_role")
@@ -494,10 +525,14 @@ def test_convert_to_graphql_type__text_choices_field() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "Role"
     assert result.values == {
-        "admin": GraphQLEnumValue(value="admin", description="Admin"),
-        "user": GraphQLEnumValue(value="user", description="User"),
+        "admin": GraphQLEnumValue(value=Role.ADMIN, description="Admin"),
+        "user": GraphQLEnumValue(value=Role.USER, description="User"),
     }
     assert result.description == "Role choices."
+
+    assert result.parse_value("admin") == "admin"
+    assert result.serialize(Role.ADMIN) == "admin"
+    assert result.serialize("admin") == "admin"
 
 
 def test_convert_to_graphql_type__text_choices_field__help_text() -> None:

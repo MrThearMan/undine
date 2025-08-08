@@ -28,6 +28,7 @@ from django.db.models import (
     ForeignKey,
     GenericIPAddressField,
     ImageField,
+    IntegerChoices,
     IntegerField,
     IPAddressField,
     JSONField,
@@ -51,8 +52,10 @@ from django.db.models.fields.related_descriptors import (
     ReverseOneToOneDescriptor,
 )
 from django.db.models.query_utils import DeferredAttribute
+from django.utils.encoding import force_str
 from graphql import (
     GraphQLBoolean,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
@@ -171,7 +174,10 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType
 def _(ref: type[Enum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={name: value.value for name, value in ref.__members__.items()},
+        values={
+            str(value.value): GraphQLEnumValue(value=value, description=str(value.value))
+            for name, value in ref.__members__.items()
+        },
         description=convert_to_description(ref),
     )
 
@@ -180,7 +186,22 @@ def _(ref: type[Enum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={key: str(value) for key, value in ref.choices},
+        values={
+            str(value.value): GraphQLEnumValue(value=value, description=force_str(value.label))
+            for key, value in ref.__members__.items()
+        },
+        description=convert_to_description(ref),
+    )
+
+
+@convert_to_graphql_type.register
+def _(ref: type[IntegerChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return get_or_create_graphql_enum(
+        name=ref.__name__,
+        values={
+            str(value.name): GraphQLEnumValue(value=value, description=force_str(value.label))
+            for key, value in ref.__members__.items()
+        },
         description=convert_to_description(ref),
     )
 
@@ -369,7 +390,10 @@ def _(_: TextField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=ref.choices_enum.__name__,
-        values={key: str(value) for key, value in ref.choices_enum.choices},
+        values={
+            str(value.value): GraphQLEnumValue(value=value, description=str(value.label))
+            for key, value in ref.choices_enum.__members__.items()
+        },
         description=convert_to_description(ref) or convert_to_description(ref.choices_enum),
     )
 
