@@ -181,7 +181,7 @@ class ModelAttributeResolver:
     """
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
-        field_name = self.field.name
+        field_name = self.field.field_name
         if not self.static:
             field_name = get_queried_field_name(field_name, info)
 
@@ -200,7 +200,7 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> int | None:
-        value: TModel | None = getattr(root, self.field.name, None)
+        value: TModel | None = getattr(root, self.field.field_name, None)
 
         if value is None:
             return None
@@ -218,7 +218,7 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        field_name = get_queried_field_name(self.field.name, info)
+        field_name = get_queried_field_name(self.field.field_name, info)
         manager: BaseManager[TModel] = getattr(root, field_name)
         instances = list(manager.get_queryset())
 
@@ -236,7 +236,7 @@ class ModelGenericForeignKeyResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        value: TModel | None = getattr(root, self.field.name, None)
+        value: TModel | None = getattr(root, self.field.field_name, None)
 
         if value is None:
             return None
@@ -339,7 +339,7 @@ class NestedQueryTypeSingleResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        instance: TModel | None = getattr(root, self.field.name, None)
+        instance: TModel | None = getattr(root, self.field.field_name, None)
 
         if instance is not None:
             if self.field.permissions_func is not None:
@@ -358,7 +358,7 @@ class NestedQueryTypeManyResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        field_name = get_queried_field_name(self.field.name, info)
+        field_name = get_queried_field_name(self.field.field_name, info)
 
         instances: list[TModel] = getattr(root, field_name)
         if isinstance(instances, BaseManager):
@@ -517,7 +517,7 @@ class NestedConnectionResolver(Generic[TModel]):
     field: Field
 
     def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        field_name = get_queried_field_name(self.field.name, info)
+        field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         self.check_permissions(root, info, instances)
         return self.to_connection(instances)
