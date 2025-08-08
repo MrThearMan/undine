@@ -233,7 +233,8 @@ def test_mutation_type__kind__custom__implicit() -> None:
 
 def test_mutation_type__kind__custom__implicit__from_method_defined() -> None:
     class MyCreateMutation(MutationType[Task]):
-        def __mutate__(self, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> Any: ...
+        @classmethod
+        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> Any: ...
 
     assert MyCreateMutation.__kind__ == MutationKind.custom
 

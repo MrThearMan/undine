@@ -93,7 +93,7 @@ class MutationTypeMeta(type):
 
         kind = kwargs.get("kind")
         if kind is None:
-            if callable(_attrs.get("__mutate__")):
+            if "__mutate__" in _attrs:  # Custom mutation func defined
                 mutation_kind = MutationKind.custom
             elif "create" in _name.lower():
                 mutation_kind = MutationKind.create
