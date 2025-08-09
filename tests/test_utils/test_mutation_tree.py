@@ -56,9 +56,16 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     assert example.name == "foo"
 
     # example_foto
+    assert example.example_foto is not None
     assert example.example_foto.name == "foo"
+
+    assert example.example_foto.example_foto is not None
     assert example.example_foto.example_foto.name == "foo"
+
+    assert example.example_foto.example_ffk is not None
     assert example.example_foto.example_ffk.name == "foo"
+
+    assert example.example_foto.example_roto is not None
     assert example.example_foto.example_roto.name == "foo"
 
     assert example.example_foto.example_fmtm_set.count() == count
@@ -74,9 +81,16 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
         assert example_rmtm.name == "foo"
 
     # example_ffk
+    assert example.example_ffk is not None
     assert example.example_ffk.name == "foo"
+
+    assert example.example_ffk.example_foto is not None
     assert example.example_ffk.example_foto.name == "foo"
+
+    assert example.example_ffk.example_ffk is not None
     assert example.example_ffk.example_ffk.name == "foo"
+
+    assert example.example_ffk.example_roto is not None
     assert example.example_ffk.example_roto.name == "foo"
 
     assert example.example_ffk.example_fmtm_set.count() == count
@@ -92,9 +106,16 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
         assert example_rmtm.name == "foo"
 
     # example_roto
+    assert example.example_roto is not None
     assert example.example_roto.name == "foo"
+
+    assert example.example_roto.example_foto is not None
     assert example.example_roto.example_foto.name == "foo"
+
+    assert example.example_roto.example_ffk is not None
     assert example.example_roto.example_ffk.name == "foo"
+
+    assert example.example_roto.example_roto is not None
     assert example.example_roto.example_roto.name == "foo"
 
     assert example.example_roto.example_fmtm_set.count() == count
@@ -113,8 +134,14 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     assert example.example_fmtm_set.count() == count
     for example_fmtm in example.example_fmtm_set.all():
         assert example_fmtm.name == "foo"
+
+        assert example_fmtm.example_foto is not None
         assert example_fmtm.example_foto.name == "foo"
+
+        assert example_fmtm.example_ffk is not None
         assert example_fmtm.example_ffk.name == "foo"
+
+        assert example_fmtm.example_roto is not None
         assert example_fmtm.example_roto.name == "foo"
 
         assert example_fmtm.example_fmtm_set.count() == count
@@ -133,8 +160,14 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     assert example.example_rfk_set.count() == count
     for example_rfk in example.example_rfk_set.all():
         assert example_rfk.name == "foo"
+
+        assert example_rfk.example_foto is not None
         assert example_rfk.example_foto.name == "foo"
+
+        assert example_rfk.example_ffk is not None
         assert example_rfk.example_ffk.name == "foo"
+
+        assert example_rfk.example_roto is not None
         assert example_rfk.example_roto.name == "foo"
 
         assert example_rfk.example_fmtm_set.count() == count
@@ -153,8 +186,14 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     assert example.example_rmtm_set.count() == count
     for example_rmtm in example.example_rmtm_set.all():
         assert example_rmtm.name == "foo"
+
+        assert example_rmtm.example_foto is not None
         assert example_rmtm.example_foto.name == "foo"
+
+        assert example_rmtm.example_ffk is not None
         assert example_rmtm.example_ffk.name == "foo"
+
+        assert example_rmtm.example_roto is not None
         assert example_rmtm.example_roto.name == "foo"
 
         assert example_rmtm.example_fmtm_set.count() == count
@@ -200,18 +239,26 @@ def test_mutation_optimization__ids(undine_settings) -> None:
 
     assert example.name == "foo"
 
+    assert example.example_foto is not None
     assert example.example_foto.pk == example_foto.pk
+
+    assert example.example_ffk is not None
     assert example.example_ffk.pk == example_ffk.pk
+
+    assert example.example_roto is not None
     assert example.example_roto.pk == example_roto.pk
 
-    assert example.example_fmtm_set.count() == 1
-    assert example.example_fmtm_set.first().pk == example_fmtm.pk
+    example_fmtm_set = list(example.example_fmtm_set.all())
+    assert len(example_fmtm_set) == 1
+    assert example_fmtm_set[0].pk == example_fmtm.pk
 
-    assert example.example_rfk_set.count() == 1
-    assert example.example_rfk_set.first().pk == example_rfk.pk
+    example_rfk_set = list(example.example_rfk_set.all())
+    assert len(example_rfk_set) == 1
+    assert example_rfk_set[0].pk == example_rfk.pk
 
-    assert example.example_rmtm_set.count() == 1
-    assert example.example_rmtm_set.first().pk == example_rmtm.pk
+    example_rmtm_set = list(example.example_rmtm_set.all())
+    assert len(example_rmtm_set) == 1
+    assert example_rmtm_set[0].pk == example_rmtm.pk
 
 
 @pytest.mark.django_db
@@ -320,18 +367,57 @@ def test_mutation_optimization__replace(undine_settings) -> None:
 
     assert example.name == "bar"
 
+    assert example.example_foto is not None
     assert example.example_foto.name == "bar"
+
+    assert example.example_ffk is not None
     assert example.example_ffk.name == "bar"
+
+    assert example.example_roto is not None
     assert example.example_roto.name == "bar"
 
-    assert example.example_fmtm_set.count() == 1
-    assert example.example_fmtm_set.first().name == "bar"
+    example_fmtm_set = list(example.example_fmtm_set.all())
+    assert len(example_fmtm_set) == 1
+    assert example_fmtm_set[0].name == "bar"
 
-    assert example.example_rfk_set.count() == 1
-    assert example.example_rfk_set.first().name == "bar"
+    example_rfk_set = list(example.example_rfk_set.all())
+    assert len(example_rfk_set) == 1
+    assert example_rfk_set[0].name == "bar"
 
-    assert example.example_rmtm_set.count() == 1
-    assert example.example_rmtm_set.first().name == "bar"
+    example_rmtm_set = list(example.example_rmtm_set.all())
+    assert len(example_rmtm_set) == 1
+    assert example_rmtm_set[0].name == "bar"
+
+
+@pytest.mark.django_db
+def test_mutation_optimization__different_contents(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    example_fmtm = ExampleFMTMFactory.create(name="foo")
+    example = ExampleFactory.create(example_fmtm_set=[example_fmtm])
+
+    data = {
+        "pk": example.pk,
+        "example_fmtm_set": [
+            {"pk": example_fmtm.pk},
+            {"name": "bar"},
+        ],
+    }
+
+    with capture_database_queries() as queries:
+        example = mutate(data, model=Example)
+
+    assert queries.count == 8, queries.log
+
+    example.refresh_from_db()
+
+    example_fmtm_set = list(example.example_fmtm_set.all())
+    assert len(example_fmtm_set) == 2
+
+    assert example_fmtm_set[0].pk == example_fmtm.pk
+    assert example_fmtm_set[0].name == "foo"
+
+    assert example_fmtm_set[1].name == "bar"
 
 
 @pytest.mark.django_db
@@ -351,13 +437,18 @@ def test_mutation_optimization__create_symmetrical(undine_settings) -> None:
     assert queries.count == 5, queries.log
 
     assert new_example.name == "bar"
-    assert new_example.symmetrical_field.count() == 1
-    assert new_example.symmetrical_field.first().name == "foo"
+
+    symmetrical_field = list(new_example.symmetrical_field.all())
+    assert len(symmetrical_field) == 1
+    assert symmetrical_field[0].name == "foo"
 
     existing_example.refresh_from_db()
+
     assert existing_example.name == "foo"
-    assert existing_example.symmetrical_field.count() == 1
-    assert existing_example.symmetrical_field.first().name == "bar"
+
+    symmetrical_field = list(existing_example.symmetrical_field.all())
+    assert len(symmetrical_field) == 1
+    assert symmetrical_field[0].name == "bar"
 
 
 @pytest.mark.django_db
@@ -379,19 +470,25 @@ def test_mutation_optimization__add_symmetrical(undine_settings) -> None:
     assert queries.count == 5, queries.log
 
     assert new_example.name == "baz"
-    assert new_example.symmetrical_field.count() == 1
-    assert new_example.symmetrical_field.first().name == "foo"
+
+    symmetrical_field = list(new_example.symmetrical_field.all())
+    assert len(symmetrical_field) == 1
+    assert symmetrical_field[0].name == "foo"
 
     example_1.refresh_from_db()
     assert example_1.name == "foo"
-    assert example_1.symmetrical_field.count() == 2
-    assert example_1.symmetrical_field.all()[0].name == "bar"
-    assert example_1.symmetrical_field.all()[1].name == "baz"
+
+    symmetrical_field = list(example_1.symmetrical_field.all())
+    assert len(symmetrical_field) == 2
+    assert symmetrical_field[0].name == "bar"
+    assert symmetrical_field[1].name == "baz"
 
     example_2.refresh_from_db()
     assert example_2.name == "bar"
-    assert example_2.symmetrical_field.count() == 1
-    assert example_2.symmetrical_field.first().name == "foo"
+
+    symmetrical_field = list(example_2.symmetrical_field.all())
+    assert len(symmetrical_field) == 1
+    assert symmetrical_field[0].name == "foo"
 
 
 @pytest.mark.django_db
@@ -470,6 +567,8 @@ def test_mutation_optimization__generic_foreign_key(undine_settings) -> None:
     assert queries.count == 2, queries.log
 
     assert example_generic.name == "bar"
+
+    assert example_generic.content_object is not None
     assert example_generic.content_object.name == "foo"
 
 
@@ -497,4 +596,6 @@ def test_mutation_optimization__generic_foreign_key__pk(undine_settings) -> None
     assert queries.count == 2, queries.log
 
     assert example_generic.name == "bar"
+
+    assert example_generic.content_object is not None
     assert example_generic.content_object == example

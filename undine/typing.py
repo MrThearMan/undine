@@ -129,6 +129,7 @@ __all__ = [
     "FilterAliasesFunc",
     "FilterParams",
     "FilterSetParams",
+    "ForwardField",
     "GQLInfo",
     "GraphQLFilterResolver",
     "InputParams",
@@ -158,6 +159,7 @@ __all__ = [
     "RelatedAction",
     "RelatedField",
     "RequestMethod",
+    "ReverseField",
     "RootTypeParams",
     "Selections",
     "Self",
@@ -441,6 +443,7 @@ class RelationType(enum.Enum):
             RelationType.REVERSE_ONE_TO_ONE,
             RelationType.REVERSE_ONE_TO_MANY,
             RelationType.REVERSE_MANY_TO_MANY,
+            RelationType.GENERIC_ONE_TO_MANY,
         }
 
     @enum.property
@@ -449,6 +452,7 @@ class RelationType(enum.Enum):
             RelationType.FORWARD_ONE_TO_ONE,
             RelationType.FORWARD_MANY_TO_ONE,
             RelationType.FORWARD_MANY_TO_MANY,
+            RelationType.GENERIC_MANY_TO_ONE,
         }
 
     @enum.property
@@ -458,6 +462,13 @@ class RelationType(enum.Enum):
     @enum.property
     def is_generic_foreign_key(self) -> bool:
         return self == RelationType.GENERIC_MANY_TO_ONE
+
+    @enum.property
+    def is_many(self) -> bool:
+        return self in {
+            RelationType.FORWARD_MANY_TO_MANY,
+            RelationType.REVERSE_MANY_TO_MANY,
+        }
 
     @classmethod
     @cache
@@ -612,6 +623,8 @@ class UndineErrorCodes(StrEnum):
 
 ToOneField: TypeAlias = OneToOneField | OneToOneRel | ForeignKey
 ToManyField: TypeAlias = ManyToManyField | ManyToManyRel | ManyToOneRel
+ForwardField: TypeAlias = OneToOneField | ForeignKey | ManyToManyField
+ReverseField: TypeAlias = OneToOneRel | ManyToManyRel | ManyToOneRel
 RelatedField: TypeAlias = ToOneField | ToManyField
 GenericField: TypeAlias = Union["GenericForeignKey", "GenericRelation", "GenericRel"]
 ModelField: TypeAlias = Field | ForeignObjectRel

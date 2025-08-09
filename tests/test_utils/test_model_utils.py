@@ -29,7 +29,6 @@ from undine.utils.model_utils import (
     get_model,
     get_model_field,
     get_model_fields_for_graphql,
-    get_reverse_field_name,
     get_save_update_fields,
     get_validation_error_messages,
     is_to_many,
@@ -215,17 +214,6 @@ def test_get_model_fields_for_graphql__exclude_nonsaveable() -> None:
         Task._meta.get_field("type"),
         Task._meta.get_field("worked_hours"),
     ]
-
-
-def test_get_reverse_field_name() -> None:
-    assert get_reverse_field_name(Task._meta.get_field("request")) == "task"
-    assert get_reverse_field_name(Task._meta.get_field("project")) == "tasks"
-    assert get_reverse_field_name(Task._meta.get_field("assignees")) == "tasks"
-    assert get_reverse_field_name(Task._meta.get_field("result")) == "task"
-    assert get_reverse_field_name(Task._meta.get_field("steps")) == "task"
-    assert get_reverse_field_name(Task._meta.get_field("reports")) == "tasks"
-    assert get_reverse_field_name(Task._meta.get_field("comments")) == "target"
-    assert get_reverse_field_name(Comment._meta.get_field("target")) is None
 
 
 @pytest.mark.django_db

@@ -176,12 +176,19 @@ class LazyLambda:
 class RelInfo:
     """Holds information about a related field on a model."""
 
-    field_name: str
-    related_name: str | None
     relation_type: RelationType
+
+    # Relation source
+    field_name: str
+    model: type[Model]
+    model_pk_type: type
     nullable: bool
+
+    # Relation target
+    related_name: str | None  # Null for generic foreign keys
+    related_model: type[Model] | None  # Null for generic foreign keys
     related_model_pk_type: type
-    model: type[Model] | None
+    related_nullable: bool
 
 
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)

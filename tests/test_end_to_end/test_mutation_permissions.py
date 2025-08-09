@@ -224,7 +224,7 @@ def test_end_to_end__mutation__single__permission_error__nested__many(graphql, u
 
     class TaskStepMutation(MutationType[TaskStep], kind="related"):
         @classmethod
-        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        def __permissions__(cls, instance: TaskStep, info: GQLInfo, input_data: dict[str, Any]) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -444,7 +444,7 @@ def test_end_to_end__mutation__single__permission_error__field__nested__single(g
         details = Input()
 
         @details.permissions
-        def details_permissions(self: Task, info: GQLInfo, value: Any) -> None:
+        def details_permissions(root: ServiceRequest, info: GQLInfo, value: Any) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -515,7 +515,7 @@ def test_end_to_end__mutation__single__permission_error__field__nested__many(gra
         name = Input()
 
         @name.permissions
-        def name_permissions(self: Task, info: GQLInfo, value: Any) -> None:
+        def name_permissions(root: TaskStep, info: GQLInfo, value: Any) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -674,7 +674,7 @@ def test_end_to_end__mutation__many__permission_error__nested__single(graphql, u
 
     class ServiceRequestMutation(MutationType[ServiceRequest], kind="related"):
         @classmethod
-        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        def __permissions__(cls, instance: ServiceRequest, info: GQLInfo, input_data: dict[str, Any]) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -760,7 +760,7 @@ def test_end_to_end__mutation__many__permission_error__nested__many(graphql, und
 
     class TaskStepMutation(MutationType[TaskStep], kind="related"):
         @classmethod
-        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        def __permissions__(cls, instance: TaskStep, info: GQLInfo, input_data: dict[str, Any]) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -1042,7 +1042,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__single(gra
         details = Input()
 
         @details.permissions
-        def details_permission(self: Task, info: GQLInfo, value: str) -> None:
+        def details_permission(root: ServiceRequest, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
@@ -1130,7 +1130,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__many(graph
         name = Input()
 
         @name.permissions
-        def name_permission(self: Task, info: GQLInfo, value: str) -> None:
+        def name_permission(root: TaskStep, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
     class TaskCreateMutation(MutationType[Task], auto=False):

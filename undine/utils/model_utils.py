@@ -32,7 +32,7 @@ from undine.exceptions import (
 )
 from undine.integrations.modeltranslation import get_translatable_fields, is_translation_field
 from undine.settings import undine_settings
-from undine.typing import ModelField, RelationType
+from undine.typing import ModelField
 from undine.utils.constraints import get_constraint_message
 
 if TYPE_CHECKING:
@@ -67,7 +67,6 @@ __all__ = [
     "get_model_field",
     "get_model_fields_for_graphql",
     "get_related_name",
-    "get_reverse_field_name",
     "get_save_update_fields",
     "get_validation_error_messages",
     "is_to_many",
@@ -203,22 +202,6 @@ def get_many_to_many_through_field(field: ManyToManyField | ManyToManyRel) -> Fo
     return field.through._meta.get_field(field.field.m2m_field_name())  # type: ignore[union-attr,return-value]
 
 
-def get_reverse_field_name(field: RelatedField | GenericField) -> str | None:
-    """Get the name of the reverse field for the given related field."""
-    relation_type = RelationType.for_related_field(field)
-    if relation_type.is_forward:
-        return field.remote_field.get_accessor_name()  # type: ignore[union-attr]
-    if relation_type.is_reverse:
-        return field.remote_field.name
-    if relation_type.is_generic_relation:
-        return generic_foreign_key_for_generic_relation(field).name  # type: ignore[arg-type]
-    if relation_type.is_generic_foreign_key:
-        return None
-
-    msg = f"Unhandled relation type: {relation_type}"  # pragma: no cover
-    raise NotImplementedError(msg)  # pragma: no cover
-
-
 def get_related_name(related_field: RelatedField | GenericField) -> str:
     """
     Get by which the relation of this field can be used in:
@@ -239,7 +222,11 @@ def get_related_query_name(related_field: RelatedField | GenericField) -> str:
 
     - Query expressions: `qs.filter(query_name__exact=...)`
     """
-    return related_field.related_query_name or related_field.name
+    if hasattr(related_field, "related_query_name"):
+        if callable(related_field.related_query_name):
+            return related_field.related_query_name() or related_field.name
+        return related_field.related_query_name or related_field.name
+    return related_field.name
 
 
 def get_field_name(related_field: RelatedField | GenericField) -> str:

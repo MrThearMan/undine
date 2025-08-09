@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Self, overload
 from django.db import router, transaction  # noqa: ICN003
 from django.db.models import Q
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
-from graphql import GraphQLError, GraphQLResolveInfo, Undefined
+from graphql import GraphQLError, GraphQLResolveInfo
 
 from undine.exceptions import (
     GraphQLErrorGroup,
@@ -37,7 +37,7 @@ from undine.utils.reflection import is_subclass
 from undine.utils.text import to_camel_case, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator
+    from collections.abc import Callable, Generator, Iterator
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model
@@ -109,9 +109,6 @@ class MutationMapping:
     corresponds to the same instance. The `generate` method can then
     be used to generate data for each instance.
 
-    A value of `Undefined` indicates that a previous value does
-    not exist for the instance. These are removed when `generator` is called.
-
     >>> data = MutationMapping()
     >>> data["name"] = "foo"
     >>> data["name"] = "bar"
@@ -120,41 +117,43 @@ class MutationMapping:
     """
 
     def __init__(self) -> None:
-        self._data: defaultdict[str, list[Any]] = defaultdict(list)
+        self._data: dict[int, dict[str, Any]] = {}
+        self._index: int = -1
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}(data={self._data!r})>"
 
-    def __getitem__(self, key: str) -> list[Any]:
-        return self._data[key]
+    def __getitem__(self, key: str) -> Any:
+        return self._data[self._index][key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        self._data[key].append(value)
+        self._data[self._index][key] = value
 
     def __delitem__(self, key: str) -> None:
-        del self._data[key]
+        del self._data[self._index][key]
 
     def __len__(self) -> int:
-        return len(self._data)
+        return len(self._data[self._index])
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self._data)
+        return iter(self._data[self._index])
 
-    def update(self, other: MutationMapping) -> None:
-        """Update this mapping with the given mapping."""
-        for key, values in other._data.items():
-            for value in values:
-                self[key] = value
+    def incr(self) -> None:
+        self._index += 1
+        self._data.setdefault(self._index, {})
+
+    def extend(self, other: MutationMapping) -> None:
+        """Extend this mapping with the given mapping."""
+        for data in other._data.values():
+            self.incr()
+            self._data[self._index] = data
 
     def generator(self) -> Generator[dict[str, Any], None, None]:
-        """Generate data per instance, removing `Undefined` values."""
-        num_of_instances = len(next(iter(self._data.values()), []))
-
-        for i in range(num_of_instances):
-            yield {key: values[i] for key, values in self._data.items() if values[i] is not Undefined}
+        """Generate data per instance"""
+        yield from self._data.values()
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(slots=True, kw_only=True)
 class MutationNode:
     """
     A node in a tree of mutations.
@@ -177,6 +176,9 @@ class MutationNode:
 
     instances: list[Model] = dataclasses.field(default_factory=list)
     """The instances that should be updated or created."""
+
+    field_names: set[str] = dataclasses.field(default_factory=set)
+    """Fields that are present in the input data."""
 
     previous_data: MutationMapping = dataclasses.field(default_factory=MutationMapping)
     """Fields that are updated during the mutation, and their previous values before the mutation per instance."""
@@ -221,6 +223,12 @@ class MutationNode:
 
         return instance_count
 
+    def add_instance(self, instance: Model) -> Self:
+        """Add new instance while keeping previous data pointer up to date."""
+        self.instances.append(instance)
+        self.previous_data.incr()
+        return self
+
     # Mutation handling
 
     def mutate(self, *, previous_node: MutationNode | None = None) -> Any:
@@ -244,7 +252,7 @@ class MutationNode:
 
     def mutate_bulk(self) -> list[Model]:
         """Mutate model instances using the `queryset.bulk_create` method."""
-        kwargs = get_bulk_create_kwargs(self.model, *self.previous_data)
+        kwargs = get_bulk_create_kwargs(self.model, *self.field_names)
 
         instances: list[Model] = []
         for instance in self.instances:
@@ -301,7 +309,7 @@ class MutationNode:
 
     # Data handling
 
-    def handle_one(self, data: dict[str, Any]) -> Self:
+    def handle_one(self, data: dict[str, Any]) -> Model:
         """Handle data for a single object."""
         instance_count = self.current_instance_count() + 1
         if instance_count > undine_settings.MUTATION_INSTANCE_LIMIT:
@@ -312,11 +320,11 @@ class MutationNode:
         # TODO: Optimize fetching for nested mutations
         instance = self.model() if pk is None else get_instance_or_raise(model=self.model, pk=pk)
 
-        self.instances.append(instance)
+        self.add_instance(instance)
         self.handle_data(data, instance)
-        return self
+        return instance
 
-    def handle_many(self, data: list[dict[str, Any]]) -> Self:
+    def handle_many(self, data: list[dict[str, Any]]) -> list[Model]:
         """Handle data for many objects."""
         instance_count = self.current_instance_count() + len(data)
         if instance_count > undine_settings.MUTATION_INSTANCE_LIMIT:
@@ -329,25 +337,19 @@ class MutationNode:
             # TODO: Optimize fetching for nested mutations
             instances = {inst.pk: inst for inst in get_instances_or_raise(model=self.model, pks=pks)}
 
+        new_instances: list[Model] = []
+
         for index, item in enumerate(data):
             pk = item.get("pk")
             instance = instances.get(pk) or self.model()
-            self.instances.append(instance)
+
+            self.add_instance(instance)
+            new_instances.append(instance)
 
             with self._with_child_info(index):
                 self.handle_data(item, instance)
 
-        return self
-
-    def handle_one_pk(self, pk: Any) -> Self:
-        instance = get_instance_or_raise(model=self.model, pk=pk)
-        self.instances.append(instance)
-        return self
-
-    def handle_many_pk(self, pks: Iterable[Any]) -> Self:
-        instances = get_instances_or_raise(model=self.model, pks=set(pks))
-        self.instances.extend(instances)
-        return self
+        return new_instances
 
     def handle_data(self, data: dict[str, Any], instance: Model) -> Self:
         relation_info = parse_model_relation_info(model=self.model)
@@ -363,10 +365,10 @@ class MutationNode:
         for field_name, field_data in data.items():
             rel_info = relation_info.get(field_name)
             if rel_info is None:
-                if instance.pk is None:
-                    self.previous_data[field_name] = Undefined
-                else:
-                    self.previous_data[field_name] = getattr(instance, field_name, Undefined)
+                self.field_names.add(field_name)  # type: ignore[arg-type]
+
+                if instance.pk is not None:
+                    self.previous_data[field_name] = getattr(instance, field_name)
 
                 setattr(instance, field_name, field_data)
                 continue
@@ -374,7 +376,7 @@ class MutationNode:
             mutation_type = self.get_nested_mutation_type(field_name)
 
             with self._with_child_info(to_schema_name(field_name)):
-                node = MutationNode(model=rel_info.model, info=self.info, mutation_type=mutation_type)  # type: ignore[arg-type]
+                node = MutationNode(model=rel_info.related_model, info=self.info, mutation_type=mutation_type)  # type: ignore[arg-type]
                 self.handle_relation(field_data, rel_info, instance, node)
 
         return self
@@ -429,24 +431,34 @@ class MutationNode:
         """Handle forward one-to-one relations for the given instance."""
         match data:
             case dict():
-                node.handle_one(data=data)
+                rel = node.handle_one(data=data)
+
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
             case rel_info.related_model_pk_type():
-                node.handle_one_pk(pk=data)
+                rel = get_instance_or_raise(model=node.model, pk=data)
+
+                node.add_instance(rel)
+
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case rel_info.related_model():
+                node.add_instance(data)
+
+                setattr(instance, rel_info.field_name, data)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
             case None:
-                if not rel_info.nullable:
+                if not rel_info.related_nullable:
                     raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
 
                 setattr(instance, rel_info.field_name, None)
-                self.previous_data[rel_info.field_name] = Undefined
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
-
-        for rel in node.instances:
-            setattr(instance, rel_info.field_name, rel)
-            self.previous_data[rel_info.field_name] = Undefined
 
         self.put_before(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -459,10 +471,24 @@ class MutationNode:
 
         match data:
             case dict():
-                node.handle_one(data=data)
+                rel = node.handle_one(data=data)
+
+                setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
             case rel_info.related_model_pk_type():
-                node.handle_one_pk(pk=data)
+                rel = get_instance_or_raise(model=node.model, pk=data)
+
+                node.add_instance(rel)
+
+                setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case rel_info.related_model():
+                node.add_instance(data)
+
+                setattr(data, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
             case None:
                 # If creating, no related instance is created.
@@ -473,10 +499,6 @@ class MutationNode:
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
-        for rel in node.instances:
-            setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
-            node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
-
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
         if existing_instance is not None:
@@ -484,16 +506,22 @@ class MutationNode:
             non_updated_instances: set[Model] = {existing_instance} - updated_instances
 
             if non_updated_instances:
-                mutation_type = node.mutation_type
-                related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
+                self._handle_existing_reverse_o2o(non_updated_instances, rel_info, node)
 
-                match related_action:
-                    case RelatedAction.null:
-                        self._disconnect_instances(non_updated_instances, rel_info, node)
-                    case RelatedAction.delete:
-                        self._remove_instances(non_updated_instances, rel_info, node)
-                    case RelatedAction.ignore:
-                        raise GraphQLRelationMultipleInstancesError(field_name=rel_info.related_name, model=node.model)
+    def _handle_existing_reverse_o2o(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
+        mutation_type = node.mutation_type
+        related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
+
+        match related_action:
+            case RelatedAction.null:
+                self._disconnect_instances(instances, rel_info, node)
+            case RelatedAction.delete:
+                self._remove_instances(instances, rel_info, node)
+            case RelatedAction.ignore:
+                raise GraphQLRelationMultipleInstancesError(
+                    field_name=rel_info.related_name,
+                    model=rel_info.related_model,
+                )
 
     def _handle_o2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle one-to-many relations for the given instance."""
@@ -503,10 +531,26 @@ class MutationNode:
 
         match data:
             case [dict(), *_]:
-                node.handle_many(data=data)
+                instances = node.handle_many(data=data)
+
+                for rel in instances:
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
             case [rel_info.related_model_pk_type(), *_]:
-                node.handle_many_pk(pks=data)
+                for rel in get_instances_or_raise(model=node.model, pks=set(data)):
+                    node.add_instance(rel)
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case [rel_info.related_model(), *_]:
+                for rel in data:
+                    node.add_instance(rel)
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
             case [None, *_] | [] | None:
                 # If creating, do not add related instances.
@@ -517,27 +561,26 @@ class MutationNode:
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
-        for rel in node.instances:
-            setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
-            node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index,arg-type]
+        self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
         if existing_instances:
             updated_instances: set[Model] = {instance for instance in node.instances if instance.pk is not None}
             non_updated_instances: set[Model] = existing_instances - updated_instances
 
             if non_updated_instances:
-                mutation_type = node.mutation_type
-                related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
+                self._handle_existing_o2m(non_updated_instances, rel_info, node)
 
-                match related_action:
-                    case RelatedAction.null:
-                        self._disconnect_instances(non_updated_instances, rel_info, node)
-                    case RelatedAction.delete:
-                        self._remove_instances(non_updated_instances, rel_info, node)
-                    case RelatedAction.ignore:
-                        pass
+    def _handle_existing_o2m(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
+        mutation_type = node.mutation_type
+        related_action = RelatedAction.null if mutation_type is None else mutation_type.__related_action__
 
-        self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
+        match related_action:
+            case RelatedAction.null:
+                self._disconnect_instances(instances, rel_info, node)
+            case RelatedAction.delete:
+                self._remove_instances(instances, rel_info, node)
+            case RelatedAction.ignore:
+                pass
 
     def _handle_m2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle many-to-many relations for the given instance."""
@@ -546,7 +589,12 @@ class MutationNode:
                 node.handle_many(data=data)
 
             case [rel_info.related_model_pk_type(), *_]:
-                node.handle_many_pk(pks=data)
+                for rel in get_instances_or_raise(model=node.model, pks=set(data)):
+                    node.add_instance(rel)
+
+            case [rel_info.related_model(), *_]:
+                for rel in data:
+                    node.add_instance(rel)
 
             case [None, *_] | [] | None:
                 node.instances = []
@@ -579,9 +627,10 @@ class MutationNode:
             through_instance = node.model()
             setattr(through_instance, source_name, source)
             setattr(through_instance, target_name, target)
-            node.instances.append(through_instance)
-            node.previous_data[source_name] = Undefined
-            node.previous_data[target_name] = Undefined
+
+            node.add_instance(through_instance)
+            node.field_names.add(source_name)
+            node.field_names.add(target_name)
 
         attr: ForeignKeyDeferredAttribute = getattr(m2m.through, source_name)
         hidden_field_name = attr.field.remote_field.get_accessor_name()
@@ -599,33 +648,33 @@ class MutationNode:
 
         model_data: dict[str, Any] = data[key]
 
-        parent_model = type(instance)
-        field: GenericForeignKey = parent_model._meta.get_field(rel_info.field_name)  # type: ignore[assignment]
+        field: GenericForeignKey = rel_info.model._meta.get_field(rel_info.field_name)  # type: ignore[assignment]
         relations = generic_relations_for_generic_foreign_key(field)
         related_model_map = {to_camel_case(rel.model.__name__): rel.model for rel in relations}
 
         model = related_model_map.get(key)
         if model is None:
-            msg = f"Model '{key}' doesn't exist or have a generic relation to '{parent_model.__name__}'."
+            msg = f"Model '{key}' doesn't exist or have a generic relation to '{rel_info.model.__name__}'."
             raise GraphQLInvalidInputDataError(msg)
 
         node.model = model
 
         match model_data:
             case dict():
-                node.handle_one(data=model_data)
+                rel = node.handle_one(data=model_data)
+
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
             case None:
-                if not rel_info.nullable:
+                if not rel_info.related_nullable:
                     raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
+
                 setattr(instance, rel_info.field_name, None)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
             case _:
                 raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=model_data)
-
-        for rel in node.instances:
-            setattr(instance, rel_info.field_name, rel)
-            self.previous_data[rel_info.field_name] = Undefined
 
         self.put_before(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -638,15 +687,15 @@ class MutationNode:
 
         Do not allow disconnecting if the forward relation is not nullable.
         """
-        if not rel_info.nullable:
+        if not rel_info.related_nullable:
             raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
 
-        disconnect_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
-        disconnect_node.instances.extend(instances)
+        disconnect_node = MutationNode(model=rel_info.related_model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
 
-        for existing_instance in instances:
-            setattr(existing_instance, rel_info.related_name, None)  # type: ignore[arg-type]
-            disconnect_node.previous_data[rel_info.related_name] = Undefined  # type: ignore[index]
+        for instance in instances:
+            setattr(instance, rel_info.related_name, None)  # type: ignore[arg-type]
+            disconnect_node.add_instance(instance)
+            disconnect_node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
         # For reverse one-to-one relations, existing relation must be disconnected before new relation is added
         # to satisfy on-to-one constraint.
@@ -658,7 +707,7 @@ class MutationNode:
 
     def _remove_instances(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
         """Remove the given related instances when a relation is updated."""
-        remove_node = MutationNode(model=rel_info.model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
+        remove_node = MutationNode(model=rel_info.related_model, info=self.info, mutation_type=node.mutation_type)  # type: ignore[arg-type]
         remove_node.instances.extend(instances)
         remove_node.mutation_func = remove_node.mutate_delete
 
@@ -678,8 +727,8 @@ class MutationNode:
             raise GraphQLMutationTreeModelMismatchError(model_1=node.model, model_2=self.model)
 
         self.instances.extend(node.instances)
+        self.previous_data.extend(node.previous_data)
         self.errors.extend(node.errors)
-        self.previous_data.update(node.previous_data)
 
         for name, before_node in self.before.items():
             if previous_node == before_node:
@@ -799,7 +848,7 @@ class MutationNode:
                 if instance.pk is None:
                     source_to_added_target_pks[source].add(target.pk)
 
-        kwargs = get_bulk_create_kwargs(self.model, *self.previous_data)
+        kwargs = get_bulk_create_kwargs(self.model, *self.field_names)
 
         with self._with_m2m_add_signals(
             source_to_added_target_pks,
@@ -817,14 +866,20 @@ class MutationNode:
     ) -> None:
         """Add symmetrical instances to the 'through_map'."""
         symmetric_map: defaultdict[Model, dict[Model, Model]] = defaultdict(dict)
+
+        field_names = {field.name for field in self.model._meta.get_fields()}
+        field_names.discard(self.model._meta.pk.name)
+        field_names.discard(source_name)
+        field_names.discard(target_name)
+
         for source, target_map in through_map.items():
             for target, instance in target_map.items():
                 symmetrical_instance = self.model()
                 setattr(symmetrical_instance, source_name, target)
                 setattr(symmetrical_instance, target_name, source)
 
-                for field in set(self.previous_data) - {source_name, target_name}:
-                    setattr(symmetrical_instance, field, getattr(instance, field))
+                for field_name in field_names:
+                    setattr(symmetrical_instance, field_name, getattr(instance, field_name))
 
                 symmetric_map[target][source] = symmetrical_instance
 
@@ -852,13 +907,18 @@ class MutationNode:
 
         qs = get_default_manager(self.model).filter(existing).select_related(source_name, target_name)
 
+        field_names = {field.name for field in self.model._meta.get_fields()}
+        field_names.discard(self.model._meta.pk.name)
+        field_names.discard(source_name)
+        field_names.discard(target_name)
+
         for through_instance in qs:
             source = getattr(through_instance, source_name)
             target = getattr(through_instance, target_name)
 
             new_through_instance = through_map[source][target]
-            for field in set(self.previous_data) - {source_name, target_name}:
-                setattr(through_instance, field, getattr(new_through_instance, field))
+            for field_name in field_names:
+                setattr(through_instance, field_name, getattr(new_through_instance, field_name))
 
             through_map[source][target] = through_instance
 

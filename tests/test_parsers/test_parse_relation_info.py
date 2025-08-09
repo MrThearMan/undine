@@ -25,84 +25,154 @@ def test_parse_relation_info__task() -> None:
     info = parse_model_relation_info(model=Task)
     assert info == {
         "acceptancecriteria_set": RelInfo(
-            field_name="acceptancecriteria_set",
-            related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
+            #
+            # Source details
+            field_name="acceptancecriteria_set",
+            model=Task,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="task",
             related_model_pk_type=int,
-            model=AcceptanceCriteria,
+            related_model=AcceptanceCriteria,
+            related_nullable=True,
         ),
         "assignees": RelInfo(
-            field_name="assignees",
-            related_name="tasks",
             relation_type=RelationType.FORWARD_MANY_TO_MANY,
-            nullable=False,
+            #
+            # Source details
+            field_name="assignees",
+            model=Task,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name="tasks",
             related_model_pk_type=int,
-            model=Person,
+            related_model=Person,
+            related_nullable=True,
         ),
         "comments": RelInfo(
-            field_name="comments",
-            related_name="target",
             relation_type=RelationType.GENERIC_ONE_TO_MANY,
+            #
+            # Source details
+            field_name="comments",
+            model=Task,
+            model_pk_type=str,
             nullable=True,
+            #
+            # Target details
+            related_name="target",
             related_model_pk_type=int,
-            model=Comment,
+            related_model=Comment,
+            related_nullable=True,
         ),
         "objective": RelInfo(
-            field_name="objective",
-            related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_ONE,
+            #
+            # Source details
+            field_name="objective",
+            model=Task,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="task",
             related_model_pk_type=int,
-            model=TaskObjective,
+            related_model=TaskObjective,
+            related_nullable=True,
         ),
         "project": RelInfo(
-            field_name="project",
-            related_name="tasks",
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
+            #
+            # Source details
+            field_name="project",
+            model=Task,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="tasks",
             related_model_pk_type=int,
-            model=Project,
+            related_model=Project,
+            related_nullable=True,
         ),
         "related_tasks": RelInfo(
-            field_name="related_tasks",
-            related_name="related_tasks",
             relation_type=RelationType.FORWARD_MANY_TO_MANY,
-            nullable=False,
-            related_model_pk_type=int,
+            #
+            # Source details
+            field_name="related_tasks",
             model=Task,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name="related_tasks",
+            related_model_pk_type=int,
+            related_model=Task,
+            related_nullable=True,
         ),
         "reports": RelInfo(
-            field_name="reports",
-            related_name="tasks",
             relation_type=RelationType.REVERSE_MANY_TO_MANY,
-            nullable=False,
+            #
+            # Source details
+            field_name="reports",
+            model=Task,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name="tasks",
             related_model_pk_type=int,
-            model=Report,
+            related_model=Report,
+            related_nullable=True,
         ),
         "request": RelInfo(
-            field_name="request",
-            related_name="task",
             relation_type=RelationType.FORWARD_ONE_TO_ONE,
+            #
+            # Source details
+            field_name="request",
+            model=Task,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="task",
             related_model_pk_type=int,
-            model=ServiceRequest,
+            related_model=ServiceRequest,
+            related_nullable=True,
         ),
         "result": RelInfo(
-            field_name="result",
-            related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_ONE,
-            nullable=False,
+            #
+            # Source details
+            field_name="result",
+            model=Task,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name="task",
+            related_model=TaskResult,
             related_model_pk_type=int,
-            model=TaskResult,
+            related_nullable=False,
         ),
         "steps": RelInfo(
-            field_name="steps",
-            related_name="task",
             relation_type=RelationType.REVERSE_ONE_TO_MANY,
-            nullable=False,
+            #
+            # Source details
+            field_name="steps",
+            model=Task,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name="task",
+            related_model=TaskStep,
             related_model_pk_type=int,
-            model=TaskStep,
+            related_nullable=False,
         ),
     }
 
@@ -111,28 +181,49 @@ def test_parse_relation_info__comment() -> None:
     info = parse_model_relation_info(model=Comment)
     assert info == {
         "commenter": RelInfo(
-            field_name="commenter",
-            related_name="comments",
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
+            #
+            # Source details
+            field_name="commenter",
+            model=Comment,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="comments",
+            related_model=Person,
             related_model_pk_type=int,
-            model=Person,
+            related_nullable=True,
         ),
         "content_type": RelInfo(
-            field_name="content_type",
-            related_name="comment_set",
             relation_type=RelationType.FORWARD_MANY_TO_ONE,
+            #
+            # Source details
+            field_name="content_type",
+            model=Comment,
+            model_pk_type=int,
             nullable=True,
+            #
+            # Target details
+            related_name="comment_set",
+            related_model=ContentType,
             related_model_pk_type=int,
-            model=ContentType,
+            related_nullable=True,
         ),
         "target": RelInfo(
-            field_name="target",
-            related_name=None,
             relation_type=RelationType.GENERIC_MANY_TO_ONE,
-            nullable=False,
-            related_model_pk_type=str,  # 'object_id' type, not actual 'id' type of generic relations
-            model=None,
+            #
+            # Source details
+            field_name="target",
+            model=Comment,
+            model_pk_type=int,
+            nullable=True,
+            #
+            # Target details
+            related_name=None,
+            related_model=None,
+            related_model_pk_type=str,
+            related_nullable=True,
         ),
     }
 

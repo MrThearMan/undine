@@ -21,8 +21,8 @@ from undine import Input, MutationType
 from undine.converters import convert_to_input_ref
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import InvalidInputMutationTypeError
-from undine.typing import Lambda, ModelField, MutationKind
-from undine.utils.model_utils import get_model_field, get_reverse_field_name
+from undine.typing import GenericField, Lambda, ModelField, MutationKind, RelatedField, RelationType
+from undine.utils.model_utils import generic_foreign_key_for_generic_relation, get_model_field, get_related_name
 
 
 @convert_to_input_ref.register
@@ -165,9 +165,17 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
 
     # Remove the Input for the reverse relation from the MutationType used as the Input for this one.
     model = caller.mutation_type.__model__
-    field = get_model_field(model=model, lookup=caller.field_name)
-    reverse_field_name = get_reverse_field_name(field=field)
-    ref.__input_map__.pop(reverse_field_name, None)
+    field: RelatedField | GenericField = get_model_field(model=model, lookup=caller.field_name)  # type: ignore[assignment]
+
+    relation_type = RelationType.for_related_field(field)
+
+    if relation_type.is_generic_relation:
+        reverse_field_name: str = generic_foreign_key_for_generic_relation(field).name  # type: ignore[arg-type]
+        ref.__input_map__.pop(reverse_field_name, None)
+
+    elif not relation_type.is_generic_foreign_key:
+        reverse_field_name = get_related_name(field.remote_field)  # type: ignore[arg-type]
+        ref.__input_map__.pop(reverse_field_name, None)
 
     return ref
 

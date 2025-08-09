@@ -50,12 +50,10 @@ class UndineError(Exception):
     def __init__(
         self,
         msg: str = "",
-        *,
-        format_message: bool = True,
         **kwargs: Any,
     ) -> None:
         msg = msg or self.msg
-        if format_message:
+        if kwargs:
             msg = self.error_formatter.format(msg, **kwargs)
         super().__init__(msg)
 
@@ -71,11 +69,10 @@ class UndineErrorGroup(ExceptionGroup):
         errors: Sequence[Exception],
         *,
         msg: str = "",
-        format_message: bool = True,
         **kwargs: Any,
     ) -> Self:
         msg = msg or cls.msg
-        if format_message:
+        if kwargs:
             msg = cls.error_formatter.format(msg, **kwargs)
         return super().__new__(UndineErrorGroup, msg, errors)  # type: ignore[return-value]
 
@@ -355,7 +352,6 @@ class GraphQLStatusError(GraphQLError):
         path: Collection[str | int] | None = None,
         original_error: Exception | None = None,
         extensions: GraphQLErrorExtensions | None = None,
-        format_message: bool = True,
         **kwargs: Any,
     ) -> None:
         """
@@ -372,13 +368,12 @@ class GraphQLStatusError(GraphQLError):
                      response which corresponds to this error.
         :param original_error: The original error thrown from a field resolver during execution.
         :param extensions: Extension fields to add to the formatted error.
-        :param format_message: Should message be formatted.
         """
         status = status or self.status
         code = code or self.code
 
         message = message or self.msg
-        if format_message:
+        if kwargs:
             message = self.error_formatter.format(message, **kwargs)
 
         extensions = extensions or {}
@@ -410,11 +405,10 @@ class GraphQLErrorGroup(ExceptionGroup):
         errors: Sequence[GraphQLError | GraphQLErrorGroup],
         *,
         msg: str = "",
-        format_message: bool = True,
         **kwargs: Any,
     ) -> Self:
         msg = msg or cls.msg
-        if format_message:
+        if kwargs:
             msg = cls.error_formatter.format(msg, **kwargs)
         return super().__new__(GraphQLErrorGroup, msg, errors)  # type: ignore[return-value]
 
@@ -926,12 +920,10 @@ class WebSocketError(Exception):
         self,
         reason: str | None = None,
         code: GraphQLWebSocketCloseCode | int | None = None,
-        *,
-        format_message: bool = True,
         **kwargs: Any,
     ) -> None:
         reason = reason or self.reason
-        if format_message:
+        if kwargs:
             reason = self.error_formatter.format(reason, **kwargs)
 
         self.reason = reason
