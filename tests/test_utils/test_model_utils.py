@@ -12,12 +12,7 @@ from example_project.app.models import AcceptanceCriteria, Comment, Project, Tas
 from tests.factories import ProjectFactory, TaskFactory
 from tests.helpers import parametrize_helper
 from undine.dataclasses import BulkCreateKwargs
-from undine.exceptions import (
-    GraphQLModelNotFoundError,
-    GraphQLModelsNotFoundError,
-    ModelFieldDoesNotExistError,
-    ModelFieldNotARelationError,
-)
+from undine.exceptions import GraphQLModelNotFoundError, ModelFieldDoesNotExistError, ModelFieldNotARelationError
 from undine.utils.model_utils import (
     determine_output_field,
     generic_foreign_key_for_generic_relation,
@@ -118,7 +113,7 @@ def test_get_instances_or_raise() -> None:
 
 @pytest.mark.django_db
 def test_get_instances_or_raise__missing() -> None:
-    with pytest.raises(GraphQLModelsNotFoundError):
+    with pytest.raises(GraphQLModelNotFoundError):
         get_instances_or_raise(model=Project, pks={1})
 
 

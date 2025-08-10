@@ -89,7 +89,7 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
             related_model = forward_field.remote_field.model
             name = forward_field.name
 
-            nullable = True if relation_type.is_many else forward_field.null
+            nullable = True if relation_type.is_many_to_many else forward_field.null
 
             is_self_relation = model == related_model
 
@@ -115,7 +115,7 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
             forward_field = reverse_field.remote_field  # type: ignore[assignment]
             name = get_related_name(reverse_field)
 
-            nullable = True if relation_type.is_many else forward_field.null
+            nullable = True if relation_type.is_many_to_many else forward_field.null
 
             relation_info[name] = RelInfo(
                 relation_type=relation_type,

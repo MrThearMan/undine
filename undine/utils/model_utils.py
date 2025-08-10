@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, TypeGuard
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist
+from django.db import router  # noqa: ICN003
 from django.db.models import (
     NOT_PROVIDED,
     CharField,
@@ -18,6 +19,7 @@ from django.db.models import (
     TextField,
 )
 from django.db.models.constants import LOOKUP_SEP
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
 from django.db.utils import IntegrityError
 from django.utils.encoding import force_str
 
@@ -102,6 +104,8 @@ def get_instances_or_raise(*, model: type[TModel], pks: set[Any]) -> list[TModel
     instances: list[TModel] = list(get_default_manager(model).filter(pk__in=pks))
     missing = pks - {instance.pk for instance in instances}
     if missing:
+        if len(missing) == 1:
+            raise GraphQLModelNotFoundError(pk=missing.pop(), model=model)
         raise GraphQLModelsNotFoundError(missing=missing, model=model)
     return instances
 
@@ -527,3 +531,137 @@ def get_validation_error_messages(validation_error: ValidationError) -> dict[str
             error_messages[path].extend(messages)
 
     return error_messages
+
+
+@contextmanager
+def use_save_signals(
+    model: type[Model],
+    instances: Iterable[Model],
+    update_fields: set[str] | None,
+) -> Generator[None, None, None]:
+    if pre_save.has_listeners(model):
+        for instance in instances:
+            pre_save.send(
+                sender=model,
+                instance=instance,
+                raw=False,
+                using=router.db_for_write(model, instance=instance),
+                update_fields=list(update_fields or []),
+            )
+
+    yield
+
+    if post_save.has_listeners(model):
+        for instance in instances:
+            post_save.send(
+                sender=model,
+                instance=instance,
+                created=True,
+                update_fields=list(update_fields or []),
+                raw=False,
+                using=router.db_for_write(model, instance=instance),
+            )
+
+
+@contextmanager
+def use_delete_signals(
+    model: type[Model],
+    instances: Iterable[Model],
+) -> Generator[None, None, None]:
+    if pre_delete.has_listeners(model):
+        for instance in instances:
+            pre_delete.send(
+                sender=model,
+                instance=instance,
+                using=router.db_for_write(model, instance=instance),
+                origin=instance,
+            )
+
+    yield
+
+    if post_delete.has_listeners(model):
+        for instance in instances:
+            post_delete.send(
+                sender=model,
+                instance=instance,
+                using=router.db_for_write(model, instance=instance),
+                origin=instance,
+            )
+
+
+@contextmanager
+def use_m2m_remove_signals(
+    model: type[Model],
+    source_to_removed_target_pks: dict[Model, set[Any]],
+    *,
+    target_name: str,
+    reverse: bool,
+) -> Generator[None, None, None]:
+    if not m2m_changed.has_listeners(model):
+        yield
+        return
+
+    target_model = getattr(model, target_name).field.remote_field.model
+
+    for source, pk_set in source_to_removed_target_pks.items():
+        m2m_changed.send(
+            sender=model,
+            action="pre_remove",
+            instance=source,
+            reverse=reverse,
+            model=target_model,
+            pk_set=pk_set,
+            using=router.db_for_write(model, instance=source),
+        )
+
+    yield
+
+    for source, pk_set in source_to_removed_target_pks.items():
+        m2m_changed.send(
+            sender=model,
+            action="post_remove",
+            instance=source,
+            reverse=reverse,
+            model=target_model,
+            pk_set=pk_set,
+            using=router.db_for_write(model, instance=source),
+        )
+
+
+@contextmanager
+def use_m2m_add_signals(
+    model: type[Model],
+    source_to_added_target_pks: dict[Model, set[Any]],
+    *,
+    target_name: str,
+    reverse: bool,
+) -> Generator[None, None, None]:
+    if not m2m_changed.has_listeners(model):
+        yield
+        return
+
+    target_model = getattr(model, target_name).field.remote_field.model
+
+    for source, pk_set in source_to_added_target_pks.items():
+        m2m_changed.send(
+            sender=model,
+            action="pre_add",
+            instance=source,
+            reverse=reverse,
+            model=target_model,
+            pk_set=pk_set,
+            using=router.db_for_write(model, instance=source),
+        )
+
+    yield
+
+    for source, pk_set in source_to_added_target_pks.items():
+        m2m_changed.send(
+            sender=model,
+            action="post_add",
+            instance=source,
+            reverse=reverse,
+            model=target_model,
+            pk_set=pk_set,
+            using=router.db_for_write(model, instance=source),
+        )

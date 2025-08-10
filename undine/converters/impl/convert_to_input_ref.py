@@ -18,11 +18,17 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 
 from undine import Input, MutationType
-from undine.converters import convert_to_input_ref
+from undine.converters import convert_to_input_ref, is_many
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import InvalidInputMutationTypeError
 from undine.typing import GenericField, Lambda, ModelField, MutationKind, RelatedField, RelationType
-from undine.utils.model_utils import generic_foreign_key_for_generic_relation, get_model_field, get_related_name
+from undine.utils.model_utils import (
+    generic_foreign_key_for_generic_relation,
+    get_instance_or_raise,
+    get_instances_or_raise,
+    get_model_field,
+    get_related_name,
+)
 
 
 @convert_to_input_ref.register
@@ -46,6 +52,28 @@ def _(ref: ModelField, **kwargs: Any) -> Any:
 
 @convert_to_input_ref.register
 def _(ref: type[Model], **kwargs: Any) -> Any:
+    caller: Input = kwargs["caller"]
+
+    user_func = caller.convertion_func
+
+    if is_many(ref, model=caller.mutation_type.__model__, name=caller.field_name):
+
+        def convert_many(inpt: Input, value: list[Any]) -> list[Model]:
+            instances = get_instances_or_raise(model=ref, pks=set(value))
+            if user_func is not None:
+                return user_func(inpt, instances)
+            return instances
+
+        caller.convertion_func = convert_many
+        return ref
+
+    def convert_single(inpt: Input, value: Any) -> Model:
+        instance = get_instance_or_raise(model=ref, pk=value)
+        if user_func is not None:
+            return user_func(inpt, instance)
+        return instance
+
+    caller.convertion_func = convert_single
     return ref
 
 

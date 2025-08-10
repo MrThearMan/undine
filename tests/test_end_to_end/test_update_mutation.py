@@ -568,7 +568,7 @@ def test_update_mutation__mutation_instance_limit(graphql, undine_settings):
         "data": None,
         "errors": [
             {
-                "message": "Cannot mutate more than 0 objects in a single mutation.",
+                "message": "Cannot mutate more than 0 objects in a single mutation (counted 1).",
                 "extensions": {
                     "error_code": "MUTATION_TOO_MANY_OBJECTS",
                     "status_code": 400,
@@ -624,18 +624,13 @@ def test_update_mutation__after(graphql, undine_settings):
 
 @pytest.mark.django_db
 def test_update_mutation__after__relations(graphql, undine_settings):
-    after_data: dict[str, Any] = {}
-    related_after_data: dict[str, Any] = {}
+    after_data = {}
 
     class TaskType(QueryType[Task]): ...
 
     class ProjectType(QueryType[Project]): ...
 
-    class RelatedProject(MutationType[Project], kind="related"):
-        @classmethod
-        def __after__(cls, instance: Project, info: GQLInfo, previous_data: dict[str, Any]) -> None:
-            nonlocal related_after_data
-            related_after_data = deepcopy(previous_data)
+    class RelatedProject(MutationType[Project], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         project = Input(RelatedProject)
@@ -685,11 +680,10 @@ def test_update_mutation__after__relations(graphql, undine_settings):
         "pk": task.pk,
         "name": "Original Task",
         "type": "STORY",
-    }
-
-    assert related_after_data == {
-        "pk": project.pk,
-        "name": "Original Project",
+        "project": {
+            "pk": project.pk,
+            "name": "Original Project",
+        },
     }
 
 

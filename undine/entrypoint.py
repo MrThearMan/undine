@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
     from undine.directives import Directive
-    from undine.typing import EntrypointParams, FieldPermFunc, RootTypeParams
+    from undine.typing import EntrypointParams, EntrypointPermFunc, FieldPermFunc, RootTypeParams
 
 __all__ = [
     "Entrypoint",
@@ -162,7 +162,7 @@ class Entrypoint:
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
         self.resolver_func: GraphQLFieldResolver | None = None
-        self.permissions_func: FieldPermFunc | None = None
+        self.permissions_func: EntrypointPermFunc | None = None
 
     def __connect__(self, root_type: type[RootType], name: str) -> None:
         """Connect this `Entrypoint` to the given `RootType` using the given name."""

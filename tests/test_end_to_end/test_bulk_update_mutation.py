@@ -273,7 +273,7 @@ def test_bulk_update_mutation__mutation_instance_limit(graphql, undine_settings)
         "data": None,
         "errors": [
             {
-                "message": "Cannot mutate more than 1 objects in a single mutation.",
+                "message": "Cannot mutate more than 1 objects in a single mutation (counted 2).",
                 "extensions": {
                     "error_code": "MUTATION_TOO_MANY_OBJECTS",
                     "status_code": 400,
@@ -340,18 +340,13 @@ def test_bulk_update_mutation__after(graphql, undine_settings):
 
 @pytest.mark.django_db
 def test_bulk_update_mutation__after__relations(graphql, undine_settings):
-    after_data: list[dict[str, Any]] = []
-    related_after_data: list[dict[str, Any]] = []
+    after_data = []
 
     class ProjectType(QueryType[Project]): ...
 
     class TaskType(QueryType[Task]): ...
 
-    class RelatedProject(MutationType[Project], kind="related"):
-        @classmethod
-        def __after__(cls, instance: Project, info: GQLInfo, previous_data: dict[str, Any]) -> None:
-            nonlocal related_after_data
-            related_after_data.append(deepcopy(previous_data))
+    class RelatedProject(MutationType[Project], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         project = Input(RelatedProject)
@@ -412,13 +407,24 @@ def test_bulk_update_mutation__after__relations(graphql, undine_settings):
     assert response.has_errors is False, response.errors
 
     assert after_data == [
-        {"pk": task_1.pk, "name": "Original Task 1", "type": "TASK"},
-        {"pk": task_2.pk, "name": "Original Task 2", "type": "STORY"},
-    ]
-
-    assert related_after_data == [
-        {"pk": project_1.pk, "name": "Test Project"},
-        {"pk": project_2.pk, "name": "Real Project"},
+        {
+            "pk": task_1.pk,
+            "name": "Original Task 1",
+            "type": "TASK",
+            "project": {
+                "pk": project_1.pk,
+                "name": "Test Project",
+            },
+        },
+        {
+            "pk": task_2.pk,
+            "name": "Original Task 2",
+            "type": "STORY",
+            "project": {
+                "pk": project_2.pk,
+                "name": "Real Project",
+            },
+        },
     ]
 
 

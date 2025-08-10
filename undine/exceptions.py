@@ -230,6 +230,12 @@ class ModelFieldNotARelationError(ModelFieldError):
     msg = "Field '{field}' is not a relation in model '{model:dotpath}'."
 
 
+class ModelFieldNotARelationOfModelError(ModelFieldError):
+    """Error raised if a field is not a relation in the given model."""
+
+    msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
+
+
 class NoFunctionParametersError(UndineError):
     """Error raised if a function does not contain a parameter to parse type from."""
 
@@ -627,7 +633,7 @@ class GraphQLModelNotFoundError(GraphQLStatusError):
 
     msg = "Primary key {pk!r} on model '{model:dotpath}' did not match any row."
     status = HTTPStatus.NOT_FOUND
-    code = UndineErrorCodes.MODEL_NOT_FOUND
+    code = UndineErrorCodes.MODEL_INSTANCE_NOT_FOUND
 
 
 class GraphQLModelsNotFoundError(GraphQLStatusError):
@@ -635,7 +641,7 @@ class GraphQLModelsNotFoundError(GraphQLStatusError):
 
     msg = "Primary keys {missing:comma_sep_and} on model '{model:dotpath}' did not match any row."
     status = HTTPStatus.NOT_FOUND
-    code = UndineErrorCodes.MODEL_NOT_FOUND
+    code = UndineErrorCodes.MODEL_INSTANCE_NOT_FOUND
 
 
 class GraphQLMutationInputNotFoundError(GraphQLStatusError):
@@ -652,7 +658,7 @@ class GraphQLMutationInputNotFoundError(GraphQLStatusError):
 class GraphQLMutationInstanceLimitError(GraphQLStatusError):
     """Error raised when mutation contains too many objects."""
 
-    msg = "Cannot mutate more than {limit} objects in a single mutation."
+    msg = "Cannot mutate more than {limit} objects in a single mutation (counted {count})."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MUTATION_TOO_MANY_OBJECTS
 

@@ -47,6 +47,7 @@ __all__ = [
     "has_callable_attribute",
     "is_generic_list",
     "is_lambda",
+    "is_list_of",
     "is_namedtuple",
     "is_not_required_type",
     "is_protocol",
@@ -195,6 +196,15 @@ def has_callable_attribute(obj: object, name: str) -> bool:
 def is_subclass(obj: object, cls: TType) -> TypeGuard[TType]:
     """Check if the given object is a subclass of the given class."""
     return isinstance(obj, type) and issubclass(obj, cls)  # type: ignore[arg-type]
+
+
+def is_list_of(value: Any, cls: type[T], *, allow_empty: bool = False) -> TypeGuard[list[T]]:
+    """
+    Check if the value is a homogeneous list of the given type.
+    List must have at least one item to be considered a list of the given type, unless `allow_empty` is True.
+    """
+    max_length = 0 if allow_empty else 1
+    return isinstance(value, list) and len(value) >= max_length and all(isinstance(item, cls) for item in value)  # type: ignore[arg-type]
 
 
 def is_generic_list(type_: type) -> TypeGuard[GenericAlias]:

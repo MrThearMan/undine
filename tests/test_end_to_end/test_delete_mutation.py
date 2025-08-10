@@ -78,7 +78,7 @@ def test_delete_mutation__instance_not_found(graphql, undine_settings):
         {
             "message": "Primary key -1 on model 'example_project.app.models.Task' did not match any row.",
             "extensions": {
-                "error_code": "MODEL_NOT_FOUND",
+                "error_code": "MODEL_INSTANCE_NOT_FOUND",
                 "status_code": 404,
             },
             "path": ["deleteTask"],

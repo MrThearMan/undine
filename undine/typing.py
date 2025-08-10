@@ -122,6 +122,7 @@ __all__ = [
     "DjangoTestClientResponseProtocol",
     "DocstringParserProtocol",
     "EntrypointParams",
+    "EntrypointPermFunc",
     "ErrorMessage",
     "ExecutionResultGen",
     "FieldParams",
@@ -464,7 +465,25 @@ class RelationType(enum.Enum):
         return self == RelationType.GENERIC_MANY_TO_ONE
 
     @enum.property
+    def is_single(self) -> bool:
+        return self in {
+            RelationType.FORWARD_ONE_TO_ONE,
+            RelationType.FORWARD_MANY_TO_ONE,
+            RelationType.REVERSE_ONE_TO_ONE,
+            RelationType.GENERIC_MANY_TO_ONE,
+        }
+
+    @enum.property
     def is_many(self) -> bool:
+        return self in {
+            RelationType.FORWARD_MANY_TO_MANY,
+            RelationType.REVERSE_MANY_TO_MANY,
+            RelationType.REVERSE_ONE_TO_MANY,
+            RelationType.GENERIC_ONE_TO_MANY,
+        }
+
+    @enum.property
+    def is_many_to_many(self) -> bool:
         return self in {
             RelationType.FORWARD_MANY_TO_MANY,
             RelationType.REVERSE_MANY_TO_MANY,
@@ -510,6 +529,10 @@ class MutationKind(enum.StrEnum):
     @enum.property
     def should_include_default_value(self) -> bool:
         return self == MutationKind.create
+
+    @enum.property
+    def inputs_are_not_hidden_by_default(self) -> bool:
+        return self == MutationKind.custom
 
 
 class RelatedAction(enum.StrEnum):
@@ -585,7 +608,7 @@ class UndineErrorCodes(StrEnum):
     MISSING_OPERATION_NAME = auto()
     MISSING_SUBSCRIPTION_ARGUMENT = auto()
     MODEL_CONSTRAINT_VIOLATION = auto()
-    MODEL_NOT_FOUND = auto()
+    MODEL_INSTANCE_NOT_FOUND = auto()
     MUTATION_TOO_MANY_OBJECTS = auto()
     MUTATION_TREE_MODEL_MISMATCH = auto()
     NODE_ID_NOT_GLOBAL_ID = auto()
@@ -1014,6 +1037,7 @@ _AnyInput: TypeAlias = Annotated[Any, "undine.Input"]
 _AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
 _AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
 
+EntrypointPermFunc: TypeAlias = Callable[[Any, GQLInfo, _AnyValue], None]
 FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
 InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
 ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]

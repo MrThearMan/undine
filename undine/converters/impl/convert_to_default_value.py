@@ -3,7 +3,7 @@ from __future__ import annotations
 from types import FunctionType
 from typing import Any
 
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import Field, ForeignKey, Model, OneToOneField, OneToOneRel
 from graphql import Undefined
 
@@ -33,6 +33,11 @@ def _(ref: OneToOneField | ForeignKey, **kwargs: Any) -> Any:
 
 @convert_to_default_value.register
 def _(_: OneToOneRel | ToManyField, **kwargs: Any) -> Any:
+    return Undefined
+
+
+@convert_to_default_value.register
+def _(_: GenericRelation, **kwargs: Any) -> Any:
     return Undefined
 
 

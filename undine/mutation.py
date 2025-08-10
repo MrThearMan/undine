@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable
-from types import FunctionType
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
-from django.db.models import Model
-from graphql import DirectiveLocation, GraphQLError, GraphQLInputField, Undefined
+from graphql import DirectiveLocation, GraphQLInputField, Undefined
 
 from undine.converters import (
     convert_to_default_value,
@@ -19,7 +17,7 @@ from undine.converters import (
     is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
-from undine.exceptions import GraphQLErrorGroup, MissingModelGenericError
+from undine.exceptions import MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
@@ -28,20 +26,15 @@ from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
-from undine.utils.graphql.utils import check_directives, with_graphql_error_path
-from undine.utils.model_utils import get_instance_or_raise, get_model_field, get_model_fields_for_graphql
-from undine.utils.reflection import (
-    FunctionEqualityWrapper,
-    cache_signature_if_function,
-    get_members,
-    get_wrapped_func,
-    is_subclass,
-)
+from undine.utils.graphql.utils import check_directives
+from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
+from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from collections.abc import Container
 
+    from django.db.models import Model
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType, GraphQLObjectType
 
     from undine import QueryType
@@ -243,7 +236,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
     @classmethod
-    def __mutate__(cls, root: Any, info: GQLInfo, input_data: Any) -> Any:
+    def __mutate__(cls, instance: TModel, info: GQLInfo, input_data: Any) -> Any:
         """Override this method for custom mutations."""
 
     @classmethod
@@ -257,35 +250,6 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     @classmethod
     def __after__(cls, instance: TModel, info: GQLInfo, previous_data: dict[str, Any]) -> None:
         """A function that is run after a mutation using this `MutationType` has been executed."""
-
-    @classmethod
-    def __before__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """A function that is run before a mutation using this `MutationType` is executed."""
-        to_remove: list[str] = []
-
-        with with_graphql_error_path(info):
-            cls.__permissions__(instance, info, input_data)
-
-        errors: list[GraphQLError] = []
-
-        for input_field in cls.__input_map__.values():
-            try:
-                input_field.before(instance, info, input_data)
-            except GraphQLError as error:
-                errors.append(error)
-                continue
-
-            if input_field.input_only and input_field.name in input_data:
-                to_remove.append(input_field.name)
-
-        if errors:
-            raise GraphQLErrorGroup(errors)
-
-        with with_graphql_error_path(info):
-            cls.__validate__(instance, info, input_data)
-
-        for field_name in to_remove:
-            input_data.pop(field_name, None)
 
 
 class Input:
@@ -355,7 +319,8 @@ class Input:
         if self.many is Undefined:
             self.many = is_many(self.ref, model=self.mutation_type.__model__, name=self.field_name)
         if self.input_only is Undefined:
-            self.input_only = is_input_only(self.ref, caller=self)
+            inputs_are_not_hidden_by_default = self.mutation_type.__kind__.inputs_are_not_hidden_by_default
+            self.input_only = False if inputs_are_not_hidden_by_default else is_input_only(self.ref, caller=self)
         if self.hidden is Undefined:
             self.hidden = is_input_hidden(self.ref, caller=self)
         if self.default_value is Undefined and self.mutation_type.__kind__.should_include_default_value:
@@ -416,36 +381,6 @@ class Input:
             return self.convert  # type: ignore[return-value]
         self.convertion_func = get_wrapped_func(func)
         return func
-
-    def before(self, instance: Model, info: GQLInfo, input_data: dict[str, Any]) -> None:
-        """Input checks to run before mutation."""
-        if self.hidden:
-            if isinstance(self.ref, FunctionType):
-                input_data[self.name] = self.ref(instance, info)
-
-            elif self.default_value is not Undefined:
-                input_data[self.name] = self.default_value
-
-        value: Any = input_data.get(self.name, Undefined)
-        if value is Undefined:
-            return
-
-        if not self.hidden and isinstance(self.ref, FunctionType):
-            input_data[self.name] = value = self.ref(instance, info, value)
-
-        if is_subclass(self.ref, Model):
-            input_data[self.name] = value = get_instance_or_raise(model=self.ref, pk=value)
-
-        # Only check permissions and do validation if value is not the default value.
-        if value == self.default_value:
-            return
-
-        with with_graphql_error_path(info, key=self.schema_name):
-            if self.permissions_func is not None:
-                self.permissions_func(instance, info, value)
-
-            if self.validator_func is not None:
-                self.validator_func(instance, info, value)
 
 
 def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Input]:

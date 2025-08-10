@@ -80,10 +80,10 @@ def test_bulk_delete_mutation__missing_instances(graphql, undine_settings):
 
     assert response.errors == [
         {
-            "message": "Expected 2 instances to delete, but found 1.",
+            "message": "Primary key -1 on model 'example_project.app.models.Task' did not match any row.",
             "extensions": {
-                "error_code": "MISSING_INSTANCES_TO_DELETE",
-                "status_code": 400,
+                "error_code": "MODEL_INSTANCE_NOT_FOUND",
+                "status_code": 404,
             },
             "path": ["deleteTasks"],
         }

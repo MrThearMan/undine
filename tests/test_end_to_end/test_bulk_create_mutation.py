@@ -242,7 +242,7 @@ def test_bulk_create_mutation__mutation_instance_limit(graphql, undine_settings)
         "data": None,
         "errors": [
             {
-                "message": "Cannot mutate more than 1 objects in a single mutation.",
+                "message": "Cannot mutate more than 1 objects in a single mutation (counted 2).",
                 "extensions": {
                     "error_code": "MUTATION_TOO_MANY_OBJECTS",
                     "status_code": 400,
@@ -348,7 +348,6 @@ def test_bulk_create_mutation__input_only(graphql, undine_settings):
         {
             "attachment": None,
             "check_time": None,
-            "comments": None,
             "contact_email": None,
             "demo_url": None,
             "done": False,
@@ -367,7 +366,6 @@ def test_bulk_create_mutation__input_only(graphql, undine_settings):
         {
             "attachment": None,
             "check_time": None,
-            "comments": None,
             "contact_email": None,
             "demo_url": None,
             "done": False,

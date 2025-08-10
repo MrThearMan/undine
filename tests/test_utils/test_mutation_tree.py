@@ -14,12 +14,14 @@ from tests.factories.example import (
     ExampleRMTMFactory,
     ExampleROTOFactory,
 )
+from undine.utils.mutation_data import get_mutation_data
 from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
 def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     undine_settings.MUTATION_FULL_CLEAN = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 200
 
     ex = ExampleFactory.create(name="bar")
 
@@ -46,9 +48,14 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     }
 
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 88, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 87, queries.log
 
     example.refresh_from_db()
 
@@ -231,9 +238,14 @@ def test_mutation_optimization__ids(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 15, queries.log
+    assert queries.count == 6, queries.log
+
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 9, queries.log
 
     example.refresh_from_db()
 
@@ -275,8 +287,10 @@ def test_mutation_optimization__null(undine_settings) -> None:
         "example_rmtm_set": None,
     }
 
+    mutation_data = get_mutation_data(model=Example, data=data)
+
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        example = mutate(mutation_data, model=Example)
 
     assert queries.count == 3, queries.log
 
@@ -317,9 +331,14 @@ def test_mutation_optimization__set_null(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 10, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 9, queries.log
 
     example.refresh_from_db()
 
@@ -359,9 +378,14 @@ def test_mutation_optimization__replace(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 20, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 19, queries.log
 
     example.refresh_from_db()
 
@@ -405,9 +429,14 @@ def test_mutation_optimization__different_contents(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 8, queries.log
+    assert queries.count == 2, queries.log
+
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 6, queries.log
 
     example.refresh_from_db()
 
@@ -432,9 +461,14 @@ def test_mutation_optimization__create_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        new_example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 5, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        new_example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 4, queries.log
 
     assert new_example.name == "bar"
 
@@ -465,9 +499,14 @@ def test_mutation_optimization__add_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        new_example = mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 5, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        new_example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 4, queries.log
 
     assert new_example.name == "baz"
 
@@ -505,9 +544,14 @@ def test_mutation_optimization__remove_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutate(data, model=Example)
+        mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 3, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        mutate(mutation_data, model=Example)
+
+    assert queries.count == 2, queries.log
 
     example_1.refresh_from_db()
     assert example_1.symmetrical_field.count() == 0
@@ -519,6 +563,9 @@ def test_mutation_optimization__remove_symmetrical(undine_settings) -> None:
 @pytest.mark.django_db
 def test_mutation_optimization__generic_relation(undine_settings) -> None:
     undine_settings.MUTATION_FULL_CLEAN = False
+
+    # Cache the content type
+    ContentType.objects.get_for_model(Example)
 
     data = {
         "name": "foo",
@@ -532,10 +579,12 @@ def test_mutation_optimization__generic_relation(undine_settings) -> None:
         ],
     }
 
-    with capture_database_queries() as queries:
-        example = mutate(data, model=Example)
+    mutation_data = get_mutation_data(model=Example, data=data)
 
-    assert queries.count == 3, queries.log
+    with capture_database_queries() as queries:
+        example = mutate(mutation_data, model=Example)
+
+    assert queries.count == 2, queries.log
 
     assert example.name == "foo"
 
@@ -562,7 +611,12 @@ def test_mutation_optimization__generic_foreign_key(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        example_generic = mutate(data, model=ExampleGeneric)
+        mutation_data = get_mutation_data(model=ExampleGeneric, data=data)
+
+    assert queries.count == 0, queries.log
+
+    with capture_database_queries() as queries:
+        example_generic = mutate(mutation_data, model=ExampleGeneric)
 
     assert queries.count == 2, queries.log
 
@@ -591,9 +645,14 @@ def test_mutation_optimization__generic_foreign_key__pk(undine_settings) -> None
     }
 
     with capture_database_queries() as queries:
-        example_generic = mutate(data, model=ExampleGeneric)
+        mutation_data = get_mutation_data(model=ExampleGeneric, data=data)
 
-    assert queries.count == 2, queries.log
+    assert queries.count == 1, queries.log
+
+    with capture_database_queries() as queries:
+        example_generic = mutate(mutation_data, model=ExampleGeneric)
+
+    assert queries.count == 1, queries.log
 
     assert example_generic.name == "bar"
 

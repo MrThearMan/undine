@@ -224,13 +224,15 @@ the `MutationType` class.
 Custom mutations have a few changes compared to normal mutations:
 
 - [Auto-generation](#auto-generation) is not used
-- [After-mutation handling](#after-mutation-handling) is not called
-- `Inputs` are never [input-only](#input-only-inputs)
-- [Validations](#validation) are run and [permissions](#permissions) are checked,
-  but the instance argument for them will be the GraphQL `root` value
-  instead of the instance being mutated (since there might not be one)
+- No `Input` is not [input-only](#input-only-inputs) by default
+- [After-mutation handling](#after-mutation-handling) is only called if the
+  mutation returns an instance of its model
 
-Note that by default, the output type of a custom mutation is still the `ObjectType`
+If an `Input` named `pk` is present, that input will be used to fetch an instance
+to mutate and run permission and validation checks on. Otherwise, an empty instance
+will be used.
+
+By default, the output type of a custom mutation is still the `ObjectType`
 from the `QueryType` matching the `MutationType's` model. So, if your custom
 mutation returns an instance of that model, it will work without additional changes.
 
@@ -245,16 +247,16 @@ the `__output_type__` classmethod on the `MutationType`.
 
 The order of operations for executing a mutation using a `MutationType` is as follows:
 
-1. `MutationType` [permissions](#permissions) are checked
-2. For each `Input`:
-    - `Input` [permissions](#permissions_1) are checked
-    - `Input` [validation](#validation_1) is run
-3. `MutationType` [validation](#validation) is run
-4. Mutation is executed
-5. `MutationType` [after handling](#after-mutation-handling) is run
+1. `MutationType` [permissions](#permissions) and `Input` [permissions](#permissions_1) are checked
+2. `MutationType` [validation](#validation) and `Input` [validation](#validation_1) are run
+3. Mutation is executed
+4. `MutationType` [after handling](#after-mutation-handling) is run
 
-If `GraphQLErrors` are raised during steps 1-3, the validation and permission checks continue until
-step 4, and then all exceptions are raised at once. The error's `path` will point to the input where
+For [related mutations](#related-mutations), if the `Input` defines a permission or validation check,
+that check is run instead of the related `MutationType` class permission or validation checks.
+
+If `GraphQLErrors` are raised during steps 1 and 2, the validation and permission checks continue until
+step 3, and then all exceptions are raised at once. The error's `path` will point to the `Input` where
 the exception was raised.
 
 /// details | Example result with multiple errors

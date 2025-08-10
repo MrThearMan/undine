@@ -21,6 +21,7 @@ from undine.exceptions import (
 from undine.http.files import place_files
 from undine.http.utils import decode_body, load_json_dict, parse_json_body
 from undine.settings import undine_settings
+from undine.utils.reflection import is_list_of
 
 if TYPE_CHECKING:
     from django.core.files.uploadedfile import UploadedFile
@@ -102,7 +103,7 @@ class GraphQLRequestParamsParser:
         )
 
         for value in files_map.values():
-            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            if not is_list_of(value, str, allow_empty=True):
                 msg = "The `map` value is not a mapping from string to list of strings."
                 raise GraphQLRequestDecodingError(msg)
 

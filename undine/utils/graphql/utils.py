@@ -14,6 +14,7 @@ from graphql import (
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLObjectType,
+    GraphQLResolveInfo,
     GraphQLScalarType,
     GraphQLSkipDirective,
     GraphQLUnionType,
@@ -26,6 +27,7 @@ from graphql import (
 
 from undine.exceptions import (
     DirectiveLocationError,
+    GraphQLErrorGroup,
     GraphQLGetRequestMultipleOperationsNoOperationNameError,
     GraphQLGetRequestNonQueryOperationError,
     GraphQLGetRequestNoOperationError,
@@ -60,6 +62,7 @@ __all__ = [
     "get_arguments",
     "get_queried_field_name",
     "get_underlying_type",
+    "graphql_error_path",
     "is_connection",
     "is_edge",
     "is_node_interface",
@@ -67,7 +70,6 @@ __all__ = [
     "is_relation_id",
     "is_subscription_operation",
     "should_skip_node",
-    "with_graphql_error_path",
 ]
 
 
@@ -200,16 +202,36 @@ def is_non_null_default_value(default_value: Any) -> bool:
 
 
 @contextmanager
-def with_graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Generator[None, None, None]:
+def graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Generator[GQLInfo, None, None]:
     """Context manager that sets the path of all GraphQL errors raised during its context."""
+    if key is not None:
+        info = GraphQLResolveInfo(  # type: ignore[assignment]
+            field_name=info.field_name,
+            field_nodes=info.field_nodes,
+            return_type=info.return_type,
+            parent_type=info.parent_type,
+            path=info.path.add_key(key),
+            schema=info.schema,
+            fragments=info.fragments,
+            root_value=info.root_value,
+            operation=info.operation,
+            variable_values=info.variable_values,
+            context=info.context,
+            is_awaitable=info.is_awaitable,
+        )
+
     try:
-        yield
+        yield info
+
     except GraphQLError as error:
         if error.path is None:
-            if key is not None:
-                error.path = info.path.add_key(key).as_list()
-            else:
-                error.path = info.path.as_list()
+            error.path = info.path.as_list()
+        raise
+
+    except GraphQLErrorGroup as error_group:
+        for err in error_group.flatten():
+            if err.path is None:
+                err.path = info.path.as_list()
         raise
 
 

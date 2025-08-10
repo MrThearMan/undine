@@ -58,13 +58,6 @@ def test_is_input_only__type_ref() -> None:
     assert is_input_only(TypeRef(int), caller=TaskCreateMutation.foo) is True
 
 
-def test_is_input_only__type_ref__custom_mutation() -> None:
-    class TaskMutation(MutationType[Task]):
-        foo = Input(int)
-
-    assert is_input_only(TypeRef(int), caller=TaskMutation.foo) is False
-
-
 def test_is_input_only__type_ref__model_field() -> None:
     class TaskMutation(MutationType[Task]):
         name = Input(str)
@@ -87,16 +80,6 @@ def test_is_input_only__function() -> None:
         foo = Input(func)
 
     assert is_input_only(func, caller=TaskCreateMutation.foo) is True
-
-
-def test_is_input_only__function__custom_mutation() -> None:
-    def func(root: Any, info: Any, value: Any) -> str:
-        return value
-
-    class TaskMutation(MutationType[Task]):
-        foo = Input(func)
-
-    assert is_input_only(func, caller=TaskMutation.foo) is False
 
 
 def test_is_input_only__function__model_field() -> None:

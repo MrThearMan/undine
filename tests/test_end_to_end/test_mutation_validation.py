@@ -71,8 +71,7 @@ def test_end_to_end__mutation__single__validation_error(graphql, undine_settings
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -140,8 +139,7 @@ def test_end_to_end__mutation__single__validation_error__nested__single(graphql,
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -218,8 +216,7 @@ def test_end_to_end__mutation__single__validation_error__nested__many(graphql, u
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -282,8 +279,7 @@ def test_end_to_end__mutation__single__validation_error__field(graphql, undine_s
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -358,8 +354,7 @@ def test_end_to_end__mutation__single__validation_error__field__multiple(graphql
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -429,8 +424,7 @@ def test_end_to_end__mutation__single__validation_error__field__nested__single(g
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -509,8 +503,7 @@ def test_end_to_end__mutation__single__validation_error__field__nested__many(gra
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 # Many
@@ -590,8 +583,7 @@ def test_end_to_end__mutation__many__validation_error(graphql, undine_settings) 
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -676,8 +668,7 @@ def test_end_to_end__mutation__many__validation_error__nested__single(graphql, u
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -780,8 +771,7 @@ def test_end_to_end__mutation__many__validation_error__nested__many(graphql, und
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -858,8 +848,7 @@ def test_end_to_end__mutation__many__validation_error__field(graphql, undine_set
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -956,8 +945,7 @@ def test_end_to_end__mutation__many__validation_error__field__multiple(graphql, 
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -1044,8 +1032,7 @@ def test_end_to_end__mutation__many__validation_error__field__nested__single(gra
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)
 
 
 @pytest.mark.django_db
@@ -1150,5 +1137,4 @@ def test_end_to_end__mutation__many__validation_error__field__nested__many(graph
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(1)
+    response.assert_query_count(0)

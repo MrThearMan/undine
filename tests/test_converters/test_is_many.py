@@ -11,6 +11,7 @@ from tests.helpers import parametrize_helper
 from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, MutationType, QueryType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.exceptions import ModelFieldNotARelationOfModelError
 
 
 class Params(NamedTuple):
@@ -223,5 +224,14 @@ def test_is_many__mutation_type__many_to_many() -> None:
     assert is_many(AssigneeMutation, model=Task, name="assignees") is True
 
 
-def test_is_many__mutation_type__model() -> None:
-    assert is_many(Project, model=Task, name="assignees") is False
+def test_is_many__mutation_type__model__single() -> None:
+    assert is_many(Project, model=Task, name="project") is False
+
+
+def test_is_many__mutation_type__model__many() -> None:
+    assert is_many(Person, model=Task, name="assignees") is True
+
+
+def test_is_many__mutation_type__model__not_correct() -> None:
+    with pytest.raises(ModelFieldNotARelationOfModelError):
+        assert is_many(Project, model=Task, name="assignees") is True

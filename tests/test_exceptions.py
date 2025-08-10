@@ -94,6 +94,7 @@ from undine.exceptions import (
     MissingModelGenericError,
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
+    ModelFieldNotARelationOfModelError,
     NoFunctionParametersError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
@@ -294,6 +295,14 @@ class UndineErrorParams(NamedTuple):
             cls=ModelFieldNotARelationError,
             args={"field": "foo", "model": Task},
             message="Field 'foo' is not a relation in model 'example_project.app.models.Task'.",
+        ),
+        "ModelFieldNotARelationOfModelError": UndineErrorParams(
+            cls=ModelFieldNotARelationOfModelError,
+            args={"field": "foo", "model": Task, "related": Project},
+            message=(
+                "Field 'foo' is not a relation from model 'example_project.app.models.Task' "
+                "to model 'example_project.app.models.Project'."
+            ),
         ),
         "NoFunctionParametersError": UndineErrorParams(
             cls=NoFunctionParametersError,
@@ -522,13 +531,13 @@ class GQLErrorParams(NamedTuple):
             cls=GraphQLModelNotFoundError,
             args={"pk": 1, "model": Task},
             message="Primary key 1 on model 'example_project.app.models.Task' did not match any row.",
-            extensions={"error_code": "MODEL_NOT_FOUND", "status_code": 404},
+            extensions={"error_code": "MODEL_INSTANCE_NOT_FOUND", "status_code": 404},
         ),
         "GraphQLModelsNotFoundError": GQLErrorParams(
             cls=GraphQLModelsNotFoundError,
             args={"missing": [1, 2], "model": Task},
             message="Primary keys '1' and '2' on model 'example_project.app.models.Task' did not match any row.",
-            extensions={"error_code": "MODEL_NOT_FOUND", "status_code": 404},
+            extensions={"error_code": "MODEL_INSTANCE_NOT_FOUND", "status_code": 404},
         ),
         "GraphQLMutationInputNotFoundError": GQLErrorParams(
             cls=GraphQLMutationInputNotFoundError,
@@ -541,8 +550,8 @@ class GQLErrorParams(NamedTuple):
         ),
         "GraphQLMutationInstanceLimitError": GQLErrorParams(
             cls=GraphQLMutationInstanceLimitError,
-            args={"limit": 100},
-            message="Cannot mutate more than 100 objects in a single mutation.",
+            args={"limit": 100, "count": 200},
+            message="Cannot mutate more than 100 objects in a single mutation (counted 200).",
             extensions={"error_code": "MUTATION_TOO_MANY_OBJECTS", "status_code": 400},
         ),
         "GraphQLMutationTreeModelMismatchError": GQLErrorParams(
