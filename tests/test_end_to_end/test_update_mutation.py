@@ -844,3 +844,95 @@ def test_update_mutation__related_model(graphql, undine_settings):
             "pk": task.pk,
         },
     }
+
+
+@pytest.mark.django_db
+def test_update_mutation__hidden_input(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @Input(hidden=True)
+        def type(self, info: GQLInfo) -> TaskTypeChoices:
+            return TaskTypeChoices.BUG_FIX
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+
+    data = {
+        "pk": task.pk,
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                type
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+            "type": "BUG_FIX",
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_update_mutation__input_only_input(graphql, undine_settings):
+    input_only_data = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        foo = Input(str, input_only=True)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal input_only_data
+            input_only_data = input_data["foo"]
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+
+    data = {
+        "pk": task.pk,
+        "foo": "bar",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+        },
+    }
+
+    assert input_only_data == "bar"

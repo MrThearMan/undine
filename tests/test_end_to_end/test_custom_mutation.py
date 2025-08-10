@@ -576,3 +576,229 @@ def test_custom_mutation__default_of_dict(graphql, undine_settings):
 
     assert response.has_errors is False, response.errors
     assert response.data == {"taskMutation": {"bar": {"fizz": "123", "buzz": 2}}}
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+def test_custom_mutation__hidden_input(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        @Input(hidden=True, input_only=False)
+        def name(self, info: GQLInfo) -> str:
+            return "Modified"
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.name = input_data["name"]
+            instance.save(update_fields=["name"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Test task")
+
+    data = {
+        "pk": task.pk,
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "taskMutation": {
+            "name": "Modified",
+        },
+    }
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_custom_mutation__hidden_input__async(graphql_async, undine_settings):
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        @Input(hidden=True, input_only=False)
+        def name(self, info: GQLInfo) -> str:
+            return "Modified"
+
+        @classmethod
+        async def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.name = input_data["name"]
+            await instance.asave(update_fields=["name"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    data = {
+        "pk": task.pk,
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "taskMutation": {
+            "name": "Modified",
+        },
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+def test_custom_mutation__input_only_input(graphql, undine_settings):
+    input_only_data = None
+    not_in_mutate = False
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        foo = Input(str, input_only=True)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal input_only_data
+            input_only_data = input_data["foo"]
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            nonlocal not_in_mutate
+            not_in_mutate = "foo" not in input_data
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Test task")
+
+    data = {
+        "pk": task.pk,
+        "foo": "bar",
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "taskMutation": {
+            "pk": task.pk,
+        },
+    }
+
+    assert input_only_data == "bar"
+    assert not_in_mutate is True
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_custom_mutation__input_only_input__async(graphql_async, undine_settings):
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    input_only_data = None
+    not_in_mutate = False
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        foo = Input(str, input_only=True)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal input_only_data
+            input_only_data = input_data["foo"]
+
+        @classmethod
+        async def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            nonlocal not_in_mutate
+            not_in_mutate = "foo" not in input_data
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    data = {
+        "pk": task.pk,
+        "foo": "bar",
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "taskMutation": {
+            "pk": task.pk,
+        },
+    }
+
+    assert input_only_data == "bar"
+    assert not_in_mutate is True

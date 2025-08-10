@@ -575,9 +575,10 @@ class CustomResolver:
 
         previous_data = mutation_data.previous_data
         parent = mutation_data.instance
+        input_data = mutation_data.plain_data
 
         with convert_integrity_errors(GraphQLModelConstraintViolationError):
-            result = self.mutation_type.__mutate__(parent, info, data)
+            result = self.mutation_type.__mutate__(parent, info, input_data)
 
         if isinstance(result, self.model):
             self.mutation_type.__after__(instance=result, info=info, previous_data=previous_data)
@@ -609,9 +610,10 @@ class CustomResolver:
 
         previous_data = mutation_data.previous_data
         parent = mutation_data.instance
+        input_data = mutation_data.plain_data
 
         with convert_integrity_errors(GraphQLModelConstraintViolationError):
-            result = await self.mutation_type.__mutate__(parent, info, data)
+            result = await self.mutation_type.__mutate__(parent, info, input_data)
 
         if isinstance(result, self.model):
             self.mutation_type.__after__(instance=result, info=info, previous_data=previous_data)
@@ -699,7 +701,7 @@ def _add_hidden_inputs(
                 mutation_data.data[input_field.name] = input_field.default_value
 
         if input_field.name not in mutation_data.data:
-            return
+            continue
 
         value = mutation_data.data[input_field.name]
 
@@ -707,12 +709,12 @@ def _add_hidden_inputs(
             mutation_data.data[input_field.name] = input_field.ref(instance, info, value)
 
         if not is_subclass(input_field.ref, MutationType):
-            return
+            continue
 
         if is_list_of(value, MutationData):
             for item in value:
                 _add_hidden_inputs(item, input_field.ref, info)
-            return
+            continue
 
         if isinstance(value, MutationData):
             _add_hidden_inputs(value, input_field.ref, info)
@@ -894,17 +896,17 @@ def _remove_input_only_inputs(
             mutation_data.data.pop(input_field.name, None)
 
         if input_field.name not in mutation_data.data:
-            return
+            continue
 
         value = mutation_data.data[input_field.name]
 
         if not is_subclass(input_field.ref, MutationType):
-            return
+            continue
 
         if is_list_of(value, MutationData):
             for item in value:
                 _remove_input_only_inputs(item, input_field.ref, info)
-            return
+            continue
 
         if isinstance(value, MutationData):
             _remove_input_only_inputs(value, input_field.ref, info)

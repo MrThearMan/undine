@@ -573,3 +573,92 @@ def test_create_mutation__related_model(graphql, undine_settings):
             "name": "Test Task",
         },
     }
+
+
+@pytest.mark.django_db
+def test_create_mutation__hidden_input(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @Input(hidden=True)
+        def type(self, info: GQLInfo) -> TaskTypeChoices:
+            return TaskTypeChoices.TASK
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                name
+                type
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "createTask": {
+            "name": "Test Task",
+            "type": "TASK",
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__input_only_input(graphql, undine_settings):
+    input_only_data = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        foo = Input(str, input_only=True)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal input_only_data
+            input_only_data = input_data["foo"]
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.STORY,
+        "foo": "bar",
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "createTask": {
+            "name": "Test Task",
+        },
+    }
+
+    assert input_only_data == "bar"
