@@ -4,6 +4,7 @@ import os
 from typing import Any, TypedDict
 
 import pytest
+from asgiref.sync import sync_to_async
 from graphql import GraphQLField, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLString
 
 from example_project.app.models import Project, Task
@@ -15,7 +16,7 @@ from undine.utils.model_utils import get_instance_or_raise
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")  # TODO: Async version
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
 def test_custom_mutation(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
@@ -23,7 +24,7 @@ def test_custom_mutation(graphql, undine_settings):
         pk = Input(required=True)
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
             return get_instance_or_raise(model=Task, pk=input_data["pk"])
 
     class Query(RootType):
@@ -58,21 +59,190 @@ def test_custom_mutation(graphql, undine_settings):
     }
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_custom_mutation__async(graphql_async, undine_settings):
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        @classmethod
+        async def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            return await Task.objects.aget(pk=input_data["pk"])
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    data = {
+        "pk": task.pk,
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "taskMutation": {
+            "name": task.name,
+        },
+    }
+
+
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")  # TODO: Async version
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
 def test_custom_mutation__related(graphql, undine_settings):
+    undine_settings.ASYNC = False
+
+    related_input = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedProject(MutationType[Project], kind="related"): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        project = Input(RelatedProject)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal related_input
+            related_input = input_data["project"]
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.project = get_instance_or_raise(model=Project, pk=input_data["project"]["pk"])
+            instance.save(update_fields=["project"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Test task")
+    project = ProjectFactory.create(name="Test project")
+
+    data = {
+        "pk": task.pk,
+        "project": {
+            "pk": project.pk,
+        },
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task.refresh_from_db()
+    assert task.project.name == "Test project"
+
+    assert related_input == {"pk": project.pk}
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_custom_mutation__related__async(graphql_async, undine_settings):
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedProject(MutationType[Project], kind="related"): ...
+
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        project = Input(RelatedProject)
+
+        @classmethod
+        async def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.project = await Project.objects.aget(pk=input_data["project"]["pk"])
+            await instance.asave(update_fields=["project"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        task_mutation = Entrypoint(TaskMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+    project = await sync_to_async(ProjectFactory.create)(name="Test project")
+
+    data = {
+        "pk": task.pk,
+        "project": {
+            "pk": project.pk,
+        },
+    }
+    query = """
+        mutation($input: TaskMutation!) {
+            taskMutation(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = await Task.objects.select_related("project").aget(pk=task.pk)
+    assert task.project.name == "Test project"
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+def test_custom_mutation__related_id(graphql, undine_settings):
+    related_input = None
+
     class TaskType(QueryType[Task]): ...
 
     class TaskLinkProjectMutation(MutationType[Task]):
         pk = Input(required=True)
-        project = Input(Project, required=True)
+        project = Input(int, required=True)
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> Task:
-            my_task = get_instance_or_raise(model=Task, pk=input_data["pk"])
-            my_task.project = input_data["project"]
-            my_task.save(update_fields=["project"])
-            return my_task
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal related_input
+            related_input = input_data["project"]
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.project = get_instance_or_raise(model=Project, pk=input_data["project"])
+            instance.save(update_fields=["project"])
+            return instance
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -104,6 +274,112 @@ def test_custom_mutation__related(graphql, undine_settings):
     task.refresh_from_db()
     assert task.project == project
 
+    assert related_input == project.pk
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_custom_mutation__related_id__async(graphql_async, undine_settings):
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskLinkProjectMutation(MutationType[Task]):
+        pk = Input(required=True)
+        project = Input(int, required=True)
+
+        @classmethod
+        async def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.project = await Project.objects.aget(pk=input_data["project"])
+            await instance.asave(update_fields=["project"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        link_project = Entrypoint(TaskLinkProjectMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+    project = await sync_to_async(ProjectFactory.create)(name="Test project")
+
+    data = {
+        "pk": task.pk,
+        "project": project.pk,
+    }
+    query = """
+        mutation($input: TaskLinkProjectMutation!) {
+            linkProject(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = await Task.objects.select_related("project").aget(pk=task.pk)
+    assert task.project.name == "Test project"
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
+def test_custom_mutation__related_model(graphql, undine_settings):
+    related_input = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskLinkProjectMutation(MutationType[Task]):
+        pk = Input(required=True)
+        project = Input(Project, required=True)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal related_input
+            related_input = input_data["project"]
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            instance.project = input_data["project"]
+            instance.save(update_fields=["project"])
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        link_project = Entrypoint(TaskLinkProjectMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Test task")
+    project = ProjectFactory.create(name="Test project")
+
+    data = {
+        "pk": task.pk,
+        "project": project.pk,
+    }
+    query = """
+        mutation($input: TaskLinkProjectMutation!) {
+            linkProject(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task.refresh_from_db()
+    assert task.project == project
+
+    assert related_input == project
+
 
 @pytest.mark.django_db
 def test_custom_mutation__custom_output_type(graphql, undine_settings):
@@ -113,7 +389,7 @@ def test_custom_mutation__custom_output_type(graphql, undine_settings):
         foo = Input(str, input_only=False, required=True)
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
             return {"bar": input_data["foo"]}
 
         @classmethod
@@ -159,7 +435,7 @@ def test_custom_mutation__default_of_list(graphql, undine_settings):
         foo = Input(list[str], input_only=False, default_value=["123"])
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
             # Try to modify the default value. Should not persist between mutations.
             input_data["foo"].append("456")
             return {"bar": input_data["foo"]}
@@ -207,7 +483,7 @@ def test_custom_mutation__default_of_list__no_variable(graphql, undine_settings)
         foo = Input(list[str], input_only=False, default_value=["123"])
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
             # Try to modify the default value. Should not persist between mutations.
             input_data["foo"].append("456")
             return {"bar": input_data["foo"]}
@@ -259,7 +535,7 @@ def test_custom_mutation__default_of_dict(graphql, undine_settings):
         foo = Input(FooInput, input_only=False, default_value=FooInput(fizz="123", buzz=1))
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
             # Try to modify the default value. Should not persist between mutations.
             input_data["foo"]["buzz"] = 2
             return {"bar": input_data["foo"]}

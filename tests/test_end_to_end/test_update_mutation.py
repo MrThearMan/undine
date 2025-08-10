@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from typing import Any
 
@@ -735,4 +736,111 @@ def test_update_mutation__input_only(graphql, undine_settings):
         "foo": "bar",
         "name": "Test Task",
         "type": "TASK",
+    }
+
+
+@pytest.mark.django_db
+def test_update_mutation__related_int(graphql, undine_settings):
+    related_input = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        project = Input(int, required=True)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal related_input
+            related_input = input_data["project"]
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+    project = ProjectFactory.create()
+
+    data = {
+        "pk": task.pk,
+        "project": project.pk,
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task.refresh_from_db()
+    assert task.project == project
+
+    assert related_input == project.pk
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+        },
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
+def test_update_mutation__related_model(graphql, undine_settings):
+    related_input = None
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        project = Input(Project, required=True)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal related_input
+            related_input = input_data["project"]
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+    project = ProjectFactory.create()
+
+    data = {
+        "pk": task.pk,
+        "project": project.pk,
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task.refresh_from_db()
+    assert task.project == project
+
+    assert related_input == project
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+        },
     }

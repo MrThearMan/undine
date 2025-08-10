@@ -52,7 +52,7 @@ def test_custom_resolver() -> None:
             after_called = next(counter)
 
         @classmethod
-        def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Any:
             nonlocal mutate_called
             mutate_called = next(counter)
             return input_data

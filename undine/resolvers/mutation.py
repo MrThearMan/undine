@@ -611,7 +611,7 @@ class CustomResolver:
         parent = mutation_data.instance
 
         with convert_integrity_errors(GraphQLModelConstraintViolationError):
-            result = await sync_to_async(self.mutation_type.__mutate__)(parent, info, data)
+            result = await self.mutation_type.__mutate__(parent, info, data)
 
         if isinstance(result, self.model):
             self.mutation_type.__after__(instance=result, info=info, previous_data=previous_data)

@@ -10,7 +10,7 @@ from .models import Task
 
 class TaskMutation(MutationType[Task]):
     @classmethod
-    def __mutate__(cls, root: Any, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+    def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
         return {"foo": 1}
 
     @classmethod

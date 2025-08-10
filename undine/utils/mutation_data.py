@@ -244,7 +244,6 @@ class MutationInfo:
 
     def process(self, mutation_type: type[MutationType] | None) -> MutationData:
         data = deepcopy(self.fields)
-        related_action = mutation_type.__related_action__ if mutation_type is not None else RelatedAction.null
 
         for key, single_data in self.single_relations.items():
             sub_mutation_type = get_nested_mutation_type(mutation_type=mutation_type, field_name=key)
@@ -256,7 +255,7 @@ class MutationInfo:
             for item_data in many_data:
                 values.append(item_data.process(sub_mutation_type))
 
-        return MutationData(instance=self.instance, data=data, related_action=related_action)
+        return MutationData(instance=self.instance, data=data, mutation_type=mutation_type)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -269,8 +268,12 @@ class MutationData:
     data: dict[str, Any]  # Node: `Any` can be `MutationData` or `list[MutationData]`
     """The data that will be applied to the instance as part of this mutation."""
 
-    related_action: RelatedAction
+    mutation_type: type[MutationType] | None
     """If this is a related mutation, what action should be taken on non-updated related objects."""
+
+    @property
+    def related_action(self) -> RelatedAction:
+        return self.mutation_type.__related_action__ if self.mutation_type is not None else RelatedAction.null
 
     @property
     def plain_data(self) -> dict[str, Any]:
@@ -279,10 +282,34 @@ class MutationData:
 
         for key, value in self.data.items():
             if isinstance(value, MutationData):
+                if value.mutation_type is not None:
+                    data[key] = value.plain_data
+                    continue
+
+                if "pk" in value.data and len(value.data) == 1:
+                    data[key] = value.data["pk"]
+                    continue
+
+                if value.instance.pk is not None:
+                    data[key] = value.instance
+                    continue
+
                 data[key] = value.plain_data
                 continue
 
             if is_list_of(value, MutationData):
+                if all(item.mutation_type is not None for item in value):
+                    data[key] = [item.plain_data for item in value]
+                    continue
+
+                if all(("pk" in item.data and len(item.data) == 1) for item in value):
+                    data[key] = [item.data["pk"] for item in value]
+                    continue
+
+                if all(item.instance.pk is not None for item in value):
+                    data[key] = [item.instance for item in value]
+                    continue
+
                 data[key] = [item.plain_data for item in value]
                 continue
 
