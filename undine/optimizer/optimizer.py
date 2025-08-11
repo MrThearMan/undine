@@ -12,7 +12,12 @@ from graphql import InlineFragmentNode, get_argument_values
 from undine.converters import extend_expression
 from undine.exceptions import GraphQLTooManyFiltersError, GraphQLTooManyOrdersError
 from undine.settings import undine_settings
-from undine.utils.graphql.undine_extensions import get_undine_connection, get_undine_field, get_undine_query_type
+from undine.utils.graphql.undine_extensions import (
+    get_undine_connection,
+    get_undine_field,
+    get_undine_mutation_type,
+    get_undine_query_type,
+)
 from undine.utils.graphql.utils import get_underlying_type, is_connection, is_typename_metafield, should_skip_node
 from undine.utils.model_utils import get_default_manager, get_field_name, get_related_name
 from undine.utils.reflection import is_same_func
@@ -25,9 +30,9 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Field, Model, OrderBy, Q, QuerySet
-    from graphql import FieldNode, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType
+    from graphql import FieldNode, GraphQLInputObjectType, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType
 
-    from undine import Calculation, QueryType
+    from undine import Calculation, MutationType, QueryType
     from undine.relay import PaginationHandler
     from undine.typing import (
         DjangoExpression,
@@ -156,9 +161,21 @@ class QueryOptimizer(GraphQLASTWalker):
                 page_size=undine_connection.page_size,
             )
 
+        # Check MutationType first so that it can override QueryType optimizations
+        if parent_type == self.info.schema.mutation_type:
+            arg = graphql_field.args.get(undine_settings.MUTATION_INPUT_DATA_KEY)
+            if arg is not None:
+                arg_type: GraphQLInputObjectType = get_underlying_type(arg.type)  # type: ignore[assignment]
+                mutation_type = get_undine_mutation_type(arg_type)
+                if mutation_type is not None:
+                    self.handle_undine_mutation_type(mutation_type, arg_values)
+
         query_type = get_undine_query_type(object_type)
         if query_type is not None:
             self.handle_undine_query_type(query_type, arg_values)
+
+    def handle_undine_mutation_type(self, mutation_type: type[MutationType], arg_values: dict[str, Any]) -> None:
+        self.optimization_data.fill_from_mutation_type(mutation_type=mutation_type)
 
     def handle_undine_query_type(self, query_type: type[QueryType], arg_values: dict[str, Any]) -> None:
         self.optimization_data.fill_from_query_type(query_type=query_type)
@@ -492,6 +509,19 @@ class OptimizationData:
             and not is_same_func(query_type.__filterset__.__filter_queryset__, FilterSet.__filter_queryset__)
         ):
             self.post_filter_callback = query_type.__filterset__.__filter_queryset__
+
+        return self
+
+    def fill_from_mutation_type(self, mutation_type: type[MutationType]) -> OptimizationData:
+        """Fill the optimization data from the given MutationType."""
+        from undine import MutationType  # noqa: PLC0415
+
+        # Only include pre-filter callback if it's different from the default.
+        if (
+            self.pre_filter_callback is None  # No custom pre-filter callback
+            and not is_same_func(mutation_type.__filter_queryset__, MutationType.__filter_queryset__)
+        ):
+            self.pre_filter_callback = mutation_type.__filter_queryset__
 
         return self
 

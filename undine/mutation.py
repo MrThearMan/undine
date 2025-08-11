@@ -34,7 +34,7 @@ from undine.utils.text import dotpath, get_docstring, to_schema_name
 if TYPE_CHECKING:
     from collections.abc import Container
 
-    from django.db.models import Model
+    from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType, GraphQLObjectType
 
     from undine import QueryType
@@ -250,6 +250,11 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     @classmethod
     def __after__(cls, instance: TModel, info: GQLInfo, previous_data: dict[str, Any]) -> None:
         """A function that is run after a mutation using this `MutationType` has been executed."""
+
+    @classmethod
+    def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+        """A function that is used to filter the queryset returned by this `MutationType`."""
+        return queryset
 
 
 class Input:

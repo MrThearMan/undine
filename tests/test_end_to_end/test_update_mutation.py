@@ -5,10 +5,12 @@ from copy import deepcopy
 from typing import Any
 
 import pytest
+from django.db.models import QuerySet
 
 from example_project.app.models import AcceptanceCriteria, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import AcceptanceCriteriaFactory, PersonFactory, ProjectFactory, TaskFactory, TaskStepFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine.typing import TModel
 
 
 @pytest.mark.django_db
@@ -982,3 +984,60 @@ def test_update_mutation__input_only_input(graphql, undine_settings):
     }
 
     assert input_only_data == "bar"
+
+
+@pytest.mark.django_db
+def test_update_mutation__update_causes_query_type_to_not_return_instance(graphql, undine_settings):
+    not_run = True
+
+    class TaskType(QueryType[Task]):
+        @classmethod
+        def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+            # Not run on 'TaskUpdateMutation' since it defines its own '__filter_queryset__'
+            nonlocal not_run
+            not_run = False
+            return queryset.exclude(name="temp")
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+            return queryset
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+
+    data = {
+        "pk": task.pk,
+        "name": "temp",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+            "name": "temp",
+        },
+    }
+
+    task.refresh_from_db()
+    assert task.name == "temp"
+
+    assert not_run is True
