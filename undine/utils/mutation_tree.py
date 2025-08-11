@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
     from undine.dataclasses import RelInfo
     from undine.typing import TModel
-    from undine.utils.mutation_data import MutationData
+    from undine.utils.mutation_data import MutationData, MutationManyData
 
 __all__ = [
     "bulk_mutate",
@@ -300,7 +300,7 @@ class MutationNode:
 
     def _handle_o2m(
         self,
-        data: list[MutationData],
+        data: MutationManyData,
         rel_info: RelInfo,
         instance: Model,
         node: MutationNode,
@@ -310,11 +310,7 @@ class MutationNode:
         if instance.pk is not None:
             existing_instances = set(getattr(instance, rel_info.field_name).all())
 
-        related_action: RelatedAction = RelatedAction.null
-
         for item in data:
-            related_action = item.related_action
-
             node.instances.append(item.instance)
             node.handle_data(item.data, item.instance)
 
@@ -328,7 +324,7 @@ class MutationNode:
             non_updated_instances: set[Model] = existing_instances - updated_instances
 
             if non_updated_instances:
-                match related_action:
+                match data.related_action:
                     case RelatedAction.null:
                         self._disconnect_instances(non_updated_instances, rel_info, node)
 
@@ -340,7 +336,7 @@ class MutationNode:
 
     def _handle_m2m(
         self,
-        data: list[MutationData],
+        data: MutationManyData,
         rel_info: RelInfo,
         instance: Model,
         node: MutationNode,
@@ -350,6 +346,7 @@ class MutationNode:
             node.instances.append(item.instance)
             node.handle_data(item.data, item.instance)
 
+        # TODO: Related action?
         node._handle_through(instance, rel_info)
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]

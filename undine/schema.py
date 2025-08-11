@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import TYPE_CHECKING, Any
 
 from graphql import (
@@ -54,6 +55,7 @@ def create_schema(
     :param schema_definition_directives: The directives to add to the schema definition.
     :param extensions: The extensions for the schema.
     """
+    started = time.perf_counter()
     extensions = extensions or {}
 
     if schema_definition_directives is not None:
@@ -95,7 +97,8 @@ def create_schema(
         msg = "Schema validation failed"
         raise UndineErrorGroup(schema_validation_errors, msg=msg)
 
-    logger.debug("GraphQL schema created successfully!")
+    elapsed = time.perf_counter() - started
+    logger.debug(f"GraphQL schema created successfully in {elapsed}s!")
 
     # Clear cached signatures for functions to reduce memory usage.
     get_signature.cache.clear()

@@ -19,10 +19,12 @@ from undine.settings import undine_settings
 from undine.typing import RelatedAction
 
 from .model_utils import generic_relations_for_generic_foreign_key, get_instances_or_raise
-from .reflection import is_list_of, is_subclass
+from .reflection import is_subclass
 from .text import to_camel_case
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from django.contrib.contenttypes.fields import GenericForeignKey
 
     from undine import MutationType
@@ -30,6 +32,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "MutationData",
+    "MutationManyData",
     "get_mutation_data",
 ]
 
@@ -250,8 +253,8 @@ class MutationInfo:
             data[key] = single_data.process(sub_mutation_type) if single_data is not None else None
 
         for key, many_data in self.many_relations.items():
-            values = data.setdefault(key, [])
             sub_mutation_type = get_nested_mutation_type(mutation_type=mutation_type, field_name=key)
+            values = data.setdefault(key, MutationManyData(mutation_type=sub_mutation_type))
             for item_data in many_data:
                 values.append(item_data.process(sub_mutation_type))
 
@@ -265,7 +268,7 @@ class MutationData:
     instance: Model
     """The instance that the data will be applied to."""
 
-    data: dict[str, Any]  # Node: `Any` can be `MutationData` or `list[MutationData]`
+    data: dict[str, Any]  # Node: `Any` can be `MutationData` or `MutationManyData`
     """The data that will be applied to the instance as part of this mutation."""
 
     mutation_type: type[MutationType] | None
@@ -297,7 +300,7 @@ class MutationData:
                 data[key] = value.plain_data
                 continue
 
-            if is_list_of(value, MutationData):
+            if isinstance(value, MutationManyData):
                 if all(item.mutation_type is not None for item in value):
                     data[key] = [item.plain_data for item in value]
                     continue
@@ -329,7 +332,7 @@ class MutationData:
                 data[key] = value.previous_data
                 continue
 
-            if is_list_of(value, MutationData):
+            if isinstance(value, MutationManyData):
                 data[key] = [item.previous_data for item in value]
                 continue
 
@@ -343,6 +346,43 @@ class MutationData:
             data[key] = previous_value
 
         return data
+
+
+@dataclasses.dataclass(kw_only=True)
+class MutationManyData:
+    """A `MutationData` that can be used for many related fields."""
+
+    mutation_data: list[MutationData] = dataclasses.field(default_factory=list)
+
+    mutation_type: type[MutationType] | None
+    """If this is a related mutation, what action should be taken on non-updated related objects."""
+
+    @property
+    def related_action(self) -> RelatedAction:
+        return self.mutation_type.__related_action__ if self.mutation_type is not None else RelatedAction.null
+
+    @property
+    def plain_data(self) -> list[dict[str, Any]]:
+        return [item.plain_data for item in self.mutation_data]
+
+    @property
+    def previous_data(self) -> list[dict[str, Any]]:
+        return [item.previous_data for item in self.mutation_data]
+
+    def __len__(self) -> int:
+        return len(self.mutation_data)
+
+    def __iter__(self) -> Iterator[MutationData]:
+        return iter(self.mutation_data)
+
+    def __getitem__(self, index: int) -> MutationData:
+        return self.mutation_data[index]
+
+    def __setitem__(self, index: int, value: MutationData) -> None:
+        self.mutation_data[index] = value
+
+    def append(self, value: MutationData) -> None:
+        self.mutation_data.append(value)
 
 
 def get_nested_mutation_type(mutation_type: type[MutationType] | None, field_name: str) -> type[MutationType] | None:

@@ -32,7 +32,7 @@ from tests.factories.example import (
     ExampleRMTMFactory,
     ExampleROTOFactory,
 )
-from undine.utils.mutation_data import MutationData, get_mutation_data
+from undine.utils.mutation_data import MutationData, MutationManyData, get_mutation_data
 
 
 @pytest.mark.django_db
@@ -204,7 +204,7 @@ def test_mutation_data__generic_relation():
     assert list(mutation_data.data) == ["name", "generic"]
 
     generic_data = mutation_data.data["generic"]
-    assert isinstance(generic_data, list)
+    assert isinstance(generic_data, MutationManyData)
     assert len(generic_data) == 2
 
     generic_data_1 = generic_data[0]
@@ -288,6 +288,11 @@ def test_mutation_data__generic_foreign_key__ids():
     assert generic_data.data["pk"] == example.pk
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------------------------------------------------
+
+
 def _check_single(mutation_data: Any, model: type[Model], *, count: int) -> None:
     assert isinstance(mutation_data, MutationData)
     assert isinstance(mutation_data.instance, model)
@@ -309,7 +314,7 @@ def _check_single(mutation_data: Any, model: type[Model], *, count: int) -> None
 
 
 def _check_many(mutation_data: Any, model: type[Model], *, count: int) -> None:
-    assert isinstance(mutation_data, list)
+    assert isinstance(mutation_data, MutationManyData)
     assert len(mutation_data) == count
 
     for mutation_data_item in mutation_data:
@@ -349,7 +354,7 @@ def _check_nested_single(mutation_type: Any, model: type[Model]) -> None:
 
 
 def _check_nested_many(mutation_type: Any, model: type[Model], *, count: int) -> None:
-    assert isinstance(mutation_type, list)
+    assert isinstance(mutation_type, MutationManyData)
     assert len(mutation_type) == count
     for mutation_type_item in mutation_type:
         assert isinstance(mutation_type_item, MutationData)
@@ -367,7 +372,7 @@ def _check_single_id(mutation_data: Any, model: type[Model], *, pk: int) -> None
 
 
 def _check_many_id(mutation_data: Any, model: type[Model], *, pk: int) -> None:
-    assert isinstance(mutation_data, list)
+    assert isinstance(mutation_data, MutationManyData)
     assert len(mutation_data) == 1
 
     for mutation_data_item in mutation_data:
@@ -383,5 +388,5 @@ def _check_single_null(mutation_data: Any) -> None:
 
 
 def _check_many_null(mutation_data: Any) -> None:
-    assert isinstance(mutation_data, list)
+    assert isinstance(mutation_data, MutationManyData)
     assert len(mutation_data) == 0

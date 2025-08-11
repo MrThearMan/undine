@@ -10,13 +10,14 @@ from graphql import GraphQLError, Undefined
 
 from undine import MutationType
 from undine.exceptions import GraphQLErrorGroup, GraphQLMissingLookupFieldError, GraphQLModelConstraintViolationError
+from undine.parsers import parse_model_relation_info
 from undine.settings import undine_settings
-from undine.typing import TModel
+from undine.typing import MutationKind, TModel
 from undine.utils.graphql.utils import graphql_error_path, pre_evaluate_request_user
 from undine.utils.model_utils import convert_integrity_errors, get_default_manager
-from undine.utils.mutation_data import MutationData, get_mutation_data
+from undine.utils.mutation_data import MutationData, MutationManyData, get_mutation_data, get_related_info
 from undine.utils.mutation_tree import bulk_mutate, mutate
-from undine.utils.reflection import is_list_of, is_subclass
+from undine.utils.reflection import is_subclass
 
 from .query import QueryTypeManyResolver, QueryTypeSingleResolver
 
@@ -624,6 +625,9 @@ class CustomResolver:
         return result
 
 
+# Helpers
+
+
 def _pre_mutation_chain(
     root: Any,
     info: GQLInfo,
@@ -685,33 +689,57 @@ def _pre_mutation_chain_many(
         raise GraphQLErrorGroup(errors)
 
 
-def _add_hidden_inputs(
+def _add_hidden_inputs(  # noqa: C901, PLR0912
     mutation_data: MutationData,
     mutation_type: type[MutationType],
     info: GQLInfo,
 ) -> None:
     instance = mutation_data.instance
 
+    relation_info = parse_model_relation_info(model=mutation_type.__model__)
+
     for input_field in mutation_type.__input_map__.values():
+        value = mutation_data.data.get(input_field.name, Undefined)
+
         if input_field.hidden:
             if isinstance(input_field.ref, FunctionType):
-                mutation_data.data[input_field.name] = input_field.ref(instance, info)
-
+                value = input_field.ref(instance, info)
             elif input_field.default_value is not Undefined:
-                mutation_data.data[input_field.name] = input_field.default_value
+                value = input_field.default_value
 
-        if input_field.name not in mutation_data.data:
+        if value is Undefined:
             continue
-
-        value = mutation_data.data[input_field.name]
 
         if not input_field.hidden and isinstance(input_field.ref, FunctionType):
-            mutation_data.data[input_field.name] = input_field.ref(instance, info, value)
+            value = input_field.ref(instance, info, value)
 
-        if not is_subclass(input_field.ref, MutationType):
+        sub_mutation_type: type[MutationType] | None = None
+        is_related_input = is_subclass(input_field.ref, MutationType)
+        if is_related_input:
+            sub_mutation_type = input_field.ref
+
+        rel_info = relation_info.get(input_field.field_name)
+
+        if rel_info is None:
+            mutation_data.data[input_field.name] = value
             continue
 
-        if is_list_of(value, MutationData):
+        if rel_info.relation_type.is_single and not isinstance(value, MutationData):
+            mutation_info = get_related_info(data=value, rel_info=rel_info)
+            if mutation_info is not None:
+                value = mutation_info.process(sub_mutation_type)
+
+        elif rel_info.relation_type.is_many and not isinstance(value, MutationManyData):
+            mut_info = [get_related_info(data=item, rel_info=rel_info) for item in value]
+            mut_data = [item.process(sub_mutation_type) for item in mut_info if item is not None]
+            value = MutationManyData(mutation_data=mut_data, mutation_type=sub_mutation_type)
+
+        mutation_data.data[input_field.name] = value
+
+        if not is_related_input:
+            continue
+
+        if isinstance(value, MutationManyData):
             for item in value:
                 _add_hidden_inputs(item, input_field.ref, info)
             continue
@@ -729,12 +757,13 @@ def _check_permissions(
     parent_permissions_func: InputPermFunc | EntrypointPermFunc | None = None,
 ) -> None:
     input_data = mutation_data.plain_data
+    instance = mutation_data.instance
 
     with graphql_error_path(info):
         if parent_permissions_func is not None:
             parent_permissions_func(parent, info, input_data)
         else:
-            mutation_type.__permissions__(mutation_data.instance, info, input_data)
+            mutation_type.__permissions__(instance, info, input_data)
 
     errors: list[GraphQLError] = []
 
@@ -767,7 +796,7 @@ def _check_permissions_input(
     original_value: Any,
 ) -> None:
     if is_subclass(input_field.ref, MutationType):
-        if isinstance(original_value, list):
+        if isinstance(original_value, MutationManyData):
             errors: list[GraphQLError] = []
 
             for index, item in enumerate(original_value):
@@ -790,7 +819,7 @@ def _check_permissions_input(
             if errors:
                 raise GraphQLErrorGroup(errors)
 
-        else:
+        elif isinstance(original_value, MutationData):
             _check_permissions(
                 parent=parent,
                 info=info,
@@ -798,6 +827,15 @@ def _check_permissions_input(
                 mutation_type=input_field.ref,
                 parent_permissions_func=input_field.permissions_func,
             )
+
+        # Custom mutations can use related mutation types for non-relational fields.
+        elif input_field.mutation_type.__kind__ == MutationKind.custom:
+            if input_field.permissions_func is not None:
+                input_field.permissions_func(parent, info, value)
+
+        else:
+            msg = f"Unexpected type: {type(original_value)}"
+            raise TypeError(msg)  # TODO: Custom Error
 
     elif input_field.permissions_func is not None:
         input_field.permissions_func(parent, info, value)
@@ -814,6 +852,7 @@ def _validate(
     errors: list[GraphQLError] = []
 
     input_data = mutation_data.plain_data
+    instance = mutation_data.instance
 
     for key, value in input_data.items():
         input_field = mutation_type.__input_map__[key]
@@ -824,7 +863,7 @@ def _validate(
 
         try:
             with graphql_error_path(info, key=input_field.schema_name) as sub_info:
-                _validate_input(mutation_data.instance, sub_info, value, input_field, original_value)
+                _validate_input(instance, sub_info, value, input_field, original_value)
 
         except GraphQLError as error:
             errors.append(error)
@@ -836,7 +875,7 @@ def _validate(
         if parent_validation_func is not None:
             parent_validation_func(parent, info, input_data)
         else:
-            mutation_type.__validate__(mutation_data.instance, info, input_data)
+            mutation_type.__validate__(instance, info, input_data)
 
     if errors:
         raise GraphQLErrorGroup(errors)
@@ -850,7 +889,7 @@ def _validate_input(
     original_value: Any,
 ) -> None:
     if is_subclass(input_field.ref, MutationType):
-        if isinstance(value, list):
+        if isinstance(original_value, MutationManyData):
             errors: list[GraphQLError] = []
 
             for index, item in enumerate(original_value):
@@ -873,7 +912,7 @@ def _validate_input(
             if errors:
                 raise GraphQLErrorGroup(errors)
 
-        else:
+        elif isinstance(original_value, MutationData):
             _validate(
                 parent=parent,
                 info=info,
@@ -881,6 +920,15 @@ def _validate_input(
                 mutation_type=input_field.ref,
                 parent_validation_func=input_field.validator_func,
             )
+
+        # Custom mutations can use related mutation types for non-relational fields.
+        elif input_field.mutation_type.__kind__ == MutationKind.custom:
+            if input_field.validator_func is not None:
+                input_field.validator_func(parent, info, value)
+
+        else:
+            msg = f"Unexpected type: {type(value)}"
+            raise TypeError(msg)  # TODO: Custom Error
 
     elif input_field.validator_func is not None:
         input_field.validator_func(parent, info, value)
@@ -903,7 +951,7 @@ def _remove_input_only_inputs(
         if not is_subclass(input_field.ref, MutationType):
             continue
 
-        if is_list_of(value, MutationData):
+        if isinstance(value, MutationManyData):
             for item in value:
                 _remove_input_only_inputs(item, input_field.ref, info)
             continue

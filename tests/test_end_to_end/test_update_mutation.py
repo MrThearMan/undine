@@ -847,6 +847,52 @@ def test_update_mutation__related_model(graphql, undine_settings):
 
 
 @pytest.mark.django_db
+def test_update_mutation__related_empty_list__not_nullable(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedStep(MutationType[TaskStep], related_action="delete"): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        steps = Input(RelatedStep, many=True)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create()
+    TaskStepFactory.create(task=task)
+
+    data = {
+        "pk": task.pk,
+        "steps": [],
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(pk=response.results["pk"])
+    assert task.steps.count() == 0
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+        },
+    }
+
+
+@pytest.mark.django_db
 def test_update_mutation__hidden_input(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 

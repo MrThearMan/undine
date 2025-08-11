@@ -576,6 +576,96 @@ def test_create_mutation__related_model(graphql, undine_settings):
 
 
 @pytest.mark.django_db
+def test_create_mutation__related_hidden_input(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @Input(hidden=True)
+        def project(self, info: GQLInfo) -> Project:
+            return project
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    project = ProjectFactory.create()
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(pk=response.results["pk"])
+
+    assert task.project == project
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__related_different_name(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input(schema_name="group")
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    project = ProjectFactory.create()
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "group": project.pk,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(pk=response.results["pk"])
+    assert task.project == project
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+        },
+    }
+
+
+@pytest.mark.django_db
 def test_create_mutation__hidden_input(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 

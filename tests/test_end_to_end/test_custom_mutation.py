@@ -7,7 +7,7 @@ import pytest
 from asgiref.sync import sync_to_async
 from graphql import GraphQLField, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLString
 
-from example_project.app.models import Project, Task
+from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.converters import convert_to_graphql_type
@@ -802,3 +802,65 @@ async def test_custom_mutation__input_only_input__async(graphql_async, undine_se
 
     assert input_only_data == "bar"
     assert not_in_mutate is True
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+def test_custom_mutation__related_fake(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class RelatedTask(MutationType[Task], kind="related"):
+        name = Input()
+        type = Input()
+
+    class ProjectCreateMutation(MutationType[Project]):
+        name = Input()
+        task_details = Input(RelatedTask, many=False, required=True)
+
+        @classmethod
+        def __mutate__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> Project:
+            task_details = input_data.pop("task_details")
+
+            for key, value in input_data.items():
+                setattr(instance, key, value)
+            instance.save()
+
+            task = Task()
+            task.project = instance
+            for key, value in task_details.items():
+                setattr(task, key, value)
+            task.save()
+
+            return instance
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_project = Entrypoint(ProjectCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Project",
+        "taskDetails": {
+            "name": "Test Task",
+            "type": TaskTypeChoices.TASK.value,
+        },
+    }
+    query = """
+        mutation($input: ProjectCreateMutation!) {
+            createProject(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    project = Project.objects.get(pk=response.results["pk"])
+    assert project.tasks.count() == 1

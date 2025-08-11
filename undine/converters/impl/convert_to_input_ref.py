@@ -20,7 +20,7 @@ from django.db.models.query_utils import DeferredAttribute
 from undine import Input, MutationType
 from undine.converters import convert_to_input_ref, is_many
 from undine.dataclasses import LazyLambda, TypeRef
-from undine.exceptions import InvalidInputMutationTypeError
+from undine.exceptions import InvalidInputMutationTypeError, ModelFieldDoesNotExistError
 from undine.typing import GenericField, Lambda, ModelField, MutationKind, RelatedField, RelationType
 from undine.utils.model_utils import (
     generic_foreign_key_for_generic_relation,
@@ -191,12 +191,20 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
 
     caller: Input = kwargs["caller"]
 
-    # Remove the Input for the reverse relation from the MutationType used as the Input for this one.
     model = caller.mutation_type.__model__
-    field: RelatedField | GenericField = get_model_field(model=model, lookup=caller.field_name)  # type: ignore[assignment]
+
+    try:
+        field: RelatedField | GenericField = get_model_field(model=model, lookup=caller.field_name)  # type: ignore[assignment]
+
+    except ModelFieldDoesNotExistError:
+        # Allow using related inputs for non-relational fields in custom mutations.
+        if caller.mutation_type.__kind__ == MutationKind.custom:
+            return ref
+        raise
 
     relation_type = RelationType.for_related_field(field)
 
+    # Remove the Input for the reverse relation from the MutationType used as the Input for this one.
     if relation_type.is_generic_relation:
         reverse_field_name: str = generic_foreign_key_for_generic_relation(field).name  # type: ignore[arg-type]
         ref.__input_map__.pop(reverse_field_name, None)
