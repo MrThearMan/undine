@@ -18,15 +18,7 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.relay import PaginationHandler
-    from undine.typing import (
-        DispatchProtocol,
-        DjangoExpression,
-        LiteralArg,
-        ProtocolType,
-        RelatedField,
-        RelationType,
-        TypeHint,
-    )
+    from undine.typing import DispatchProtocol, DjangoExpression, LiteralArg, RelatedField, RelationType, TypeHint
 
 __all__ = [
     "AbstractSelections",
@@ -228,7 +220,6 @@ class DispatchImplementations(Generic[T]):
     types: dict[type, DispatchProtocol[T]] = dataclasses.field(default_factory=dict)
     instances: dict[object, DispatchProtocol[T]] = dataclasses.field(default_factory=dict)
     literals: dict[LiteralArg, DispatchProtocol[T]] = dataclasses.field(default_factory=dict)
-    protocols: dict[ProtocolType, DispatchProtocol[T]] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass(slots=True)

@@ -13,7 +13,6 @@ from undine.exceptions import (
     FunctionDispatcherImproperLiteralError,
     FunctionDispatcherNoArgumentAnnotationError,
     FunctionDispatcherNoArgumentsError,
-    FunctionDispatcherNonRuntimeProtocolError,
     FunctionDispatcherRegistrationError,
     FunctionDispatcherUnionTypeError,
     FunctionDispatcherUnknownArgumentError,
@@ -28,7 +27,6 @@ from .reflection import (
     get_signature,
     is_lambda,
     is_not_required_type,
-    is_protocol,
     is_required_type,
 )
 
@@ -71,7 +69,7 @@ class FunctionDispatcher(Generic[T]):
         implementation = self[value]
         return implementation(key, **kwargs)
 
-    def __getitem__(self, original_key: Any) -> DispatchProtocol[T]:  # noqa: C901, PLR0912
+    def __getitem__(self, original_key: Any) -> DispatchProtocol[T]:
         """Find the implementation for the given key."""
         non_null_key = self._remove_null(original_key)
         key = get_origin_or_noop(non_null_key)
@@ -80,11 +78,6 @@ class FunctionDispatcher(Generic[T]):
             impl = self.implementations.types.get(Lambda)
             if impl is not None:
                 return impl
-
-        elif callable(key):
-            for proto, impl in self.implementations.protocols.items():
-                if isinstance(key, proto):
-                    return impl
 
         elif can_be_literal_arg(key):
             impl = self.implementations.literals.get(key)
@@ -134,13 +127,6 @@ class FunctionDispatcher(Generic[T]):
 
         if annotation in {Lambda, type}:
             self.implementations.types[annotation] = self.wrapper(func) if self.wrapper else func
-            return func
-
-        if is_protocol(annotation):
-            if not annotation._is_runtime_protocol:  # noqa: SLF001
-                raise FunctionDispatcherNonRuntimeProtocolError(annotation=annotation)
-
-            self.implementations.protocols[annotation] = self.wrapper(func) if self.wrapper else func
             return func
 
         origin = get_origin(annotation)

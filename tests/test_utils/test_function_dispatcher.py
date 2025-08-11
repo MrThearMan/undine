@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 from types import FunctionType
-from typing import Any, Callable, Literal, NotRequired, Protocol, Required, runtime_checkable
+from typing import Any, Callable, Literal, NotRequired, Required
 
 import pytest
 from graphql import Undefined
@@ -303,23 +303,6 @@ def test_function_dispatcher__required() -> None:
         return ref
 
     assert dispatcher(Required[int]) == int
-
-
-def test_function_dispatcher__protocols() -> None:
-    @runtime_checkable
-    class MyProtocol(Protocol):
-        def foo(self, a: int) -> int: ...
-
-    dispatcher: FunctionDispatcher[int] = FunctionDispatcher()
-
-    @dispatcher.register
-    def my_impl(ref: MyProtocol, **kwargs: Any) -> int:
-        return 1
-
-    class Foo:
-        def foo(self, a: int) -> int: ...
-
-    assert dispatcher(Foo) == 1
 
 
 def test_function_dispatcher__literals() -> None:
