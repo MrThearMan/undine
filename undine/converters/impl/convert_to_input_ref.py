@@ -21,6 +21,7 @@ from undine import Input, MutationType
 from undine.converters import convert_to_input_ref, is_many
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import InvalidInputMutationTypeError, ModelFieldDoesNotExistError
+from undine.settings import undine_settings
 from undine.typing import GenericField, Lambda, ModelField, MutationKind, RelatedField, RelationType
 from undine.utils.model_utils import (
     generic_foreign_key_for_generic_relation,
@@ -54,12 +55,18 @@ def _(ref: ModelField, **kwargs: Any) -> Any:
 def _(ref: type[Model], **kwargs: Any) -> Any:
     caller: Input = kwargs["caller"]
 
+    if undine_settings.ASYNC:
+        msg = "Model Inputs cannot be used in async mutations."
+        raise RuntimeError(msg)  # TODO: Custom exception
+
     user_func = caller.convertion_func
 
     if is_many(ref, model=caller.mutation_type.__model__, name=caller.field_name):
 
-        def convert_many(inpt: Input, value: list[Any]) -> list[Model]:
-            instances = get_instances_or_raise(model=ref, pks=set(value))
+        def convert_many(inpt: Input, value: list[Any] | None) -> list[Model]:
+            instances: list[Model] = []
+            if value is not None:
+                instances = get_instances_or_raise(model=ref, pks=set(value))
             if user_func is not None:
                 return user_func(inpt, instances)
             return instances
@@ -67,8 +74,10 @@ def _(ref: type[Model], **kwargs: Any) -> Any:
         caller.convertion_func = convert_many
         return ref
 
-    def convert_single(inpt: Input, value: Any) -> Model:
-        instance = get_instance_or_raise(model=ref, pk=value)
+    def convert_single(inpt: Input, value: Any) -> Model | None:
+        instance: Model | None = None
+        if value is not None:
+            instance = get_instance_or_raise(model=ref, pk=value)
         if user_func is not None:
             return user_func(inpt, instance)
         return instance

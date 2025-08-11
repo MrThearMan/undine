@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+
+import pytest
+
 from example_project.app.models import Comment, Project, Task
 from undine import Input, MutationType
 from undine.converters import is_input_required
@@ -38,6 +42,7 @@ def test_is_required__model_field__many_to_many() -> None:
     assert is_input_required(field, caller=TaskCreateMutation.assignees) is False
 
 
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_is_required__model_field__model() -> None:
     class TaskCreateMutation(MutationType[Task]):
         project = Input(Project)

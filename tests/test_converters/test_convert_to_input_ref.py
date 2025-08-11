@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import decimal
+import os
 import uuid
 from enum import Enum
 
@@ -86,6 +87,7 @@ def test_convert_to_input_ref__model_field() -> None:
     assert convert_to_input_ref(field, caller=TaskCreateMutation.name) == field
 
 
+@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_convert_to_input_ref__model() -> None:
     class TaskCreateMutation(MutationType[Task]):
         project = Input(Project)
