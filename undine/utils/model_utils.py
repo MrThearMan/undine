@@ -291,11 +291,11 @@ def get_save_update_fields(instance: Model, *fields: str) -> Iterable[str] | Non
     # No need to optimize on create.
     if instance.pk is None:
         return None
-    unique_fields: set[str] = set(fields)
-    # 'GenericForeignKey' fields or 'pk' properties cannot be in the 'update_fields' set.
+    unique_fields: set[str] = set(fields) - {"pk", type(instance)._meta.pk.name}
+    # Some fields like 'GenericForeignKey' cannot be in the 'update_fields' set.
     # If they are, we cannot optimize the update to only the fields actually updated.
     if unique_fields.issubset(type(instance)._meta._non_pk_concrete_field_names):  # type: ignore[attr-defined]
-        return unique_fields
+        return unique_fields or None
     return None
 
 
