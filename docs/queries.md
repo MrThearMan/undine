@@ -422,13 +422,13 @@ you can provide a description in one of two ways:
 -8<- "queries/field_description.py"
 ```
 
-2) As class attribute docstrings.
+2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
 -8<- "queries/field_description_class.py"
 ```
 
-When using [function references](#function-references), instead of a class variable docstring,
+When using [function references](#function-references), instead of a class attribute docstring,
 you add a docstring to the function/method used as the reference instead.
 
 ```python

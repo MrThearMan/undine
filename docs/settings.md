@@ -182,6 +182,16 @@ Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty
 
 ///
 
+/// details | `ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`
+    attrs: {id: enable_class_attribute_docstrings}
+
+Type `bool` | Default: `False`
+
+Whether to parse class attribute docstrings or not.
+Disabled by default to improve performance of the schema creation.
+
+///
+
 /// details | `ENTRYPOINT_EXTENSIONS_KEY`
     attrs: {id: entrypoint_extensions_key}
 

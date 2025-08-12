@@ -10,7 +10,9 @@ from undine.directives import Directive
 from undine.exceptions import GraphQLMissingCalculationArgumentError, GraphQLUnexpectedCalculationArgumentError
 
 
-def test_calculation__definition() -> None:
+def test_calculation__definition(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class ExampleCalculation(Calculation[int]):
         """Description."""
 
@@ -29,8 +31,7 @@ def test_calculation__definition__argument() -> None:
     class ExampleCalculation(Calculation[int]):
         """Description."""
 
-        value = CalculationArgument(int)
-        """Value description."""
+        value = CalculationArgument(int, description="Value description.")
 
         def __call__(self, info: GQLInfo) -> DjangoExpression:
             return Value(self.value)
@@ -47,8 +48,7 @@ def test_calculation__definition__argument__repr() -> None:
     class ExampleCalculation(Calculation[int]):
         """Description."""
 
-        value = CalculationArgument(int)
-        """Value description."""
+        value = CalculationArgument(int, description="Value description.")
 
         def __call__(self, info: GQLInfo) -> DjangoExpression:
             return Value(self.value)
@@ -70,8 +70,7 @@ def test_calculation__definition__argument__graphql_argument() -> None:
     class ExampleCalculation(Calculation[int]):
         """Description."""
 
-        value = CalculationArgument(int)
-        """Value description."""
+        value = CalculationArgument(int, description="Value description.")
 
         def __call__(self, info: GQLInfo) -> DjangoExpression:
             return Value(self.value)

@@ -105,7 +105,9 @@ def test_input__description() -> None:
     assert graphql_input_field.description == "Description."
 
 
-def test_input__description__variable() -> None:
+def test_input__description__variable(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class MyMutationType(MutationType[Task]):
         name = Input()
         """Description."""

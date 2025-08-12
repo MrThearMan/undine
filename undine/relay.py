@@ -282,8 +282,11 @@ class PaginationHandler:
 class Node(InterfaceType):
     """An interface for objects with Global IDs."""
 
-    id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
-    """The Global ID of an object."""
+    id = InterfaceField(
+        GraphQLNonNull(GraphQLID),
+        resolvable_output_type=True,
+        description="The Global ID of an object.",
+    )
 
 
 class Connection:

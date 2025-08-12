@@ -10,7 +10,9 @@ from undine.exceptions import DirectiveLocationError
 from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY
 
 
-def test_directive__attributes() -> None:
+def test_directive__attributes(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class ValueDirective(
         Directive,
         locations=[DirectiveLocation.FIELD_DEFINITION],
@@ -38,8 +40,7 @@ def test_directive__str() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         """Description."""
 
-        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
-        """Argument description."""
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt), description="Argument description.")
 
     assert str(ValueDirective) == cleandoc(
         '''
@@ -109,7 +110,9 @@ def test_directive__argument__description() -> None:
     assert ValueDirective.value.description == "Description."
 
 
-def test_directive__argument__description__attribute() -> None:
+def test_directive__argument__description__attribute(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
         """Description."""

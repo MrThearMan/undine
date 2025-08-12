@@ -127,7 +127,9 @@ def test_pre_processing_docstring_parser__strip() -> None:
     assert parser.parse_deprecations(" foo ") == {}
 
 
-def test_parse_class_variable_docstrings() -> None:
+def test_parse_class_variable_docstrings(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class Foo:
         bar: int = 1
         """Description."""

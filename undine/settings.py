@@ -65,6 +65,9 @@ class UndineDefaultSettings(NamedTuple):
     CAMEL_CASE_SCHEMA_FIELDS: bool = True
     """Should names be converted from 'snake_case' to 'camelCase' for the GraphQL schema?"""
 
+    ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS: bool = False
+    """Whether to parse class attribute docstrings or not."""
+
     FILE_UPLOAD_ENABLED: bool = False
     """Whether file uploads are enabled. Should enable CSRF protection on the GraphiQL endpoint if enabled."""
 

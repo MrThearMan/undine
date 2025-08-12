@@ -148,6 +148,10 @@ def parse_class_attribute_docstrings(cls: type, /) -> dict[str, str]:
     >>> parse_class_attribute_docstrings(Foo)
     {'bar': 'Description.', 'baz': 'Another description.'}
     """
+    # Class attribute docstrings are disabled by default to improve performance.
+    if not undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS:
+        return {}
+
     descriptions: dict[str, str] = {}
 
     try:
@@ -159,7 +163,7 @@ def parse_class_attribute_docstrings(cls: type, /) -> dict[str, str]:
 
     name: str | None = None
     for expr in class_def.body:
-        # Variable docstrings are always directly below the class variable definition.
+        # Variable docstrings are always directly below the class attribute definition.
         if name is not None:
             if isinstance(expr, ast.Expr) and isinstance(expr.value, ast.Constant):
                 descriptions[name] = inspect.cleandoc(expr.value.value)

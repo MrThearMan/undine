@@ -11,7 +11,9 @@ from undine.exceptions import DirectiveLocationError
 from undine.interface import InterfaceField
 
 
-def test_interface_type__definition() -> None:
+def test_interface_type__definition(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class Named(InterfaceType):
         """Description."""
 
@@ -30,8 +32,7 @@ def test_interface_type__str() -> None:
     class Named(InterfaceType):
         """Interface description."""
 
-        name = InterfaceField(GraphQLNonNull(GraphQLString))
-        """Field description."""
+        name = InterfaceField(GraphQLNonNull(GraphQLString), description="Field description.")
 
     assert str(Named) == cleandoc(
         '''
@@ -167,6 +168,16 @@ def test_interface_type__interface_field__args() -> None:
 def test_interface_type__interface_field__description() -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString), description="Description.")
+
+    assert Named.name.description == "Description."
+
+
+def test_interface_type__interface_field__description__attribute(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+        """Description."""
 
     assert Named.name.description == "Description."
 

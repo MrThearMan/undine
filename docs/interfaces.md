@@ -165,7 +165,7 @@ A description for a field can be provided in one of two ways:
 -8<- "interfaces/interface_field_description.py"
 ```
 
-2) As class attribute docstrings.
+2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
 -8<- "interfaces/interface_field_description_class.py"

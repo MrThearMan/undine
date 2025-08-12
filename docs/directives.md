@@ -476,7 +476,7 @@ A description for a `DirectiveArgument` can be provided in on of two ways:
 -8<- "directives/directive_argument_description.py"
 ```
 
-2) As class attribute docstring.
+2) As class attribute docstring, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
 -8<- "directives/directive_argument_description_class.py"

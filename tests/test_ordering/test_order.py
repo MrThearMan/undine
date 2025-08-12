@@ -168,7 +168,9 @@ def test_order__description() -> None:
     assert enum_type.values["nameDesc"].description == "Description."
 
 
-def test_order__description__variable() -> None:
+def test_order__description__variable(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class MyOrderSet(OrderSet[Task], auto=False):
         name = Order()
         """Description."""

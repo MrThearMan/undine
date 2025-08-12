@@ -290,7 +290,9 @@ def test_filter__description() -> None:
     assert input_field.description == "Description."
 
 
-def test_filter__description__variable() -> None:
+def test_filter__description__variable(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class MyFilter(FilterSet[Task], auto=False):
         name = Filter()
         """Description."""

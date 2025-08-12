@@ -223,7 +223,7 @@ this can be done in two ways:
 -8<- "ordering/order_description.py"
 ```
 
-2) As class variable docstrings.
+2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
 -8<- "ordering/order_description_class.py"

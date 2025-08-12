@@ -311,7 +311,9 @@ def test_field__description() -> None:
     assert graphql_field.description == "Description."
 
 
-def test_field__description__variable_docstring() -> None:
+def test_field__description__variable_docstring(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
     class MyQueryType(QueryType[Task]):
         name = Field()
         """Description."""

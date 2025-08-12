@@ -236,13 +236,15 @@ you can do so by providing the `schema_name` argument.
 
 ### Description
 
-You can provide a description using the `description` argument.
+You can add a description in one of two ways:
+
+1) By setting the `description` argument.
 
 ```python hl_lines="10"
 -8<- "schema/entrypoint_description.py"
 ```
 
-You can also provide the description as a "class attribute docstring".
+2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python hl_lines="11"
 -8<- "schema/entrypoint_variable_docstring.py"
