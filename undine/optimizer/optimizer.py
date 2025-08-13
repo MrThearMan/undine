@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, overload
 
 from django.contrib.contenttypes.prefetch import GenericPrefetch
-from django.db.models import ForeignKey, ManyToOneRel, OneToOneRel, Prefetch
+from django.db.models import ForeignKey, ManyToOneRel, OneToOneRel, Prefetch, Q
 from django.db.models.constants import LOOKUP_SEP
 from graphql import InlineFragmentNode, get_argument_values
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from django.contrib.contenttypes.fields import GenericForeignKey
-    from django.db.models import Field, Model, OrderBy, Q, QuerySet
+    from django.db.models import Field, Model, OrderBy, QuerySet
     from graphql import FieldNode, GraphQLInputObjectType, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType
 
     from undine import Calculation, MutationType, QueryType
@@ -651,8 +651,17 @@ class OptimizationResults:
         for calculation in self.field_calculations:
             queryset = queryset.annotate(**{calculation.__field_name__: calculation(info)})
 
-        for ftr in self.filters:
-            queryset = queryset.filter(ftr)
+        # Note that we want to add the filters as as single Q object to prevent some issues
+        # when filters are "spanning multi-valued relationships". See Django documentation here:
+        # https://docs.djangoproject.com/en/stable/topics/db/queries/#spanning-multi-valued-relationships
+        #
+        # Specifically, if two filters for the same many-valued relationships are used in separate
+        # `queryset.filter(...)` calls, the result of the filtering will include results where EITHER
+        # of the conditions are met, not BOTH. Furthermore, separate `queryset.filter(...)` calls
+        # will result in multiple joins to the many-valued relationship, which can be very expensive.
+        # The EITHER behavior is still possible by using an OR block of a FilterSet.
+        if self.filters:
+            queryset = queryset.filter(Q(*self.filters))
 
         if self.post_filter_callback is not None:
             queryset = self.post_filter_callback(queryset, info)
