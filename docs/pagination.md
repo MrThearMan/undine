@@ -1,3 +1,5 @@
+description: Documentation on query pagination in Undine.
+
 # Pagination
 
 In this section, we'll cover the everything necessary for adding pagination

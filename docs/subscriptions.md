@@ -1,3 +1,5 @@
+description: Documentation on subscriptions in Undine.
+
 # Subscriptions
 
 In this section, we'll cover how you can add subscriptions to your schema.

@@ -1,3 +1,5 @@
+description: Documentation on async support for Undine.
+
 # Async support
 
 In this section, we'll look at how you can make you schema support async operations.

@@ -1,3 +1,5 @@
+description: Documentation on GraphQL scalars in Undine.
+
 # Scalars
 
 In this section, we'll cover how GraphQL scalars work in Undine.

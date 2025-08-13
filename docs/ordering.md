@@ -1,3 +1,5 @@
+description: Documentation on query ordering in Undine.
+
 # Ordering
 
 In this section, we'll cover the everything necessary for adding ordering

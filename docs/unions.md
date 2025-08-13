@@ -1,3 +1,5 @@
+description: Documentation on GraphQL Unions in Undine.
+
 # Unions
 
 In this section, we'll cover how GraphQL Unions work in Undine.

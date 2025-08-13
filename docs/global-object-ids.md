@@ -1,3 +1,5 @@
+description: Relay Global Object Identification specification support in Undine.
+
 # Global Object IDs
 
 In this section, we'll cover how to add support for object refetching and client caching using the Relay

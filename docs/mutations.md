@@ -1,3 +1,5 @@
+description: Documentation on mutations in Undine.
+
 # Mutations
 
 In this section, we'll cover Undine's [`MutationTypes`](#mutationtypes)

@@ -1,3 +1,5 @@
+description: Integrations Undine has with other libraries.
+
 # Integrations
 
 In this section, we'll cover the integrations to other libraries that

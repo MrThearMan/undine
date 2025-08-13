@@ -1,3 +1,5 @@
+description: Hacking Undine with converters.
+
 # Hacking Undine
 
 While Undine aims to offer a batteries-included solution for

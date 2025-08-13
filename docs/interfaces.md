@@ -1,3 +1,5 @@
+description: Documentation on GraphQL Interfaces in Undine.
+
 # Interfaces
 
 In this section, we'll cover how GraphQL Interfaces work in Undine.

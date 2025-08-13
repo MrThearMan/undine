@@ -1,3 +1,5 @@
+description: How to contribute to Undine.
+
 # Contributing
 
 Thank you for your interest in contributing!

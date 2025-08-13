@@ -1,3 +1,5 @@
+description: Documentation on the query optimizer in Undine.
+
 # Optimizer
 
 This section covers Undine's query optimizer, which is responsible for

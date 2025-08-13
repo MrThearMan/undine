@@ -1,3 +1,5 @@
+description: Frequently asked questions about Undine.
+
 # FAQ
 
 Here are some common questions you might have when it comes to using Undine

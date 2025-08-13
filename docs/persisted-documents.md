@@ -1,3 +1,5 @@
+description: Documentation on persisted documents in Undine.
+
 # Persisted Documents
 
 In this section, we'll cover Undine's support for [persisted documents]{:target="_blank"}

@@ -1,3 +1,5 @@
+description: Documentation on queries in Undine.
+
 # Queries
 
 In this section, we'll cover Undine's [`QueryTypes`](#querytypes)

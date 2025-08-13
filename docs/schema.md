@@ -1,3 +1,5 @@
+description: Documentation on schema root types and entrypoints in Undine.
+
 # Schema
 
 In this section, we'll cover how you can set up entrypoints

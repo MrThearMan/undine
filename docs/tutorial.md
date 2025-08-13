@@ -1,3 +1,5 @@
+description: Tutorial for Undine.
+
 # Tutorial
 
 > Before starting the tutorial, read the [Getting Started](getting-started.md) section.

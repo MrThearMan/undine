@@ -1,3 +1,5 @@
+description: Getting started with Undine.
+
 # Getting Started
 
 ## New to GraphQL?

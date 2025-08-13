@@ -1,3 +1,5 @@
+description: Documentation on lifecycle hooks in Undine.
+
 # Lifecycle Hooks
 
 In this section, we'll cover Undine's lifecycle hooks, which allow you to hook into the

@@ -1,3 +1,5 @@
+description: Documentation on GraphQL directives in Undine.
+
 # Directives
 
 In this section, we'll cover the GraphQL directives in Undine.

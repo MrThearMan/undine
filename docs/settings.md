@@ -1,3 +1,5 @@
+description: Documentation on Undine various settings.
+
 # Settings
 
 In this section, we'll cover the settings that can be used to customize Undine.
@@ -178,7 +180,7 @@ Should be given as the dotted path to the docstring parser class.
 Type `Container[Any]` | Default: `"(None, "", [], {})"`
 
 By default, if a Filter receives any of these values, it will be ignored.
-Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty_values) argument.
+Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty-values) argument.
 
 ///
 

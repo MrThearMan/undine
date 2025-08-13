@@ -1,3 +1,5 @@
+description: Documentation on query filtering in Undine.
+
 # Filtering
 
 In this section, we'll cover the everything necessary for adding filtering

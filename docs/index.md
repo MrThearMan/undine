@@ -1,3 +1,5 @@
+description: Undine: A batteries-included GraphQL library for Django.
+
 # Undine
 
 [![Coverage Status][coverage-badge]][coverage]
