@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable
+from types import FunctionType
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
@@ -17,22 +18,28 @@ from undine.converters import (
     is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
-from undine.exceptions import MissingModelGenericError
+from undine.exceptions import MissingModelGenericError, MutationTypeKindCannotBeDeterminedError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.typing import MutationKind, RelatedAction, TModel
+from undine.typing import MutationKind, TModel
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
 from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    cache_signature_if_function,
+    get_members,
+    get_wrapped_func,
+    is_subclass,
+)
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import Callable, Container
 
     from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType, GraphQLObjectType
@@ -62,11 +69,16 @@ class MutationTypeMeta(type):
     __model__: type[Model]
     __input_map__: dict[str, Input]
     __kind__: MutationKind
-    __related_action__: RelatedAction
     __schema_name__: str
     __directives__: list[Directive]
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
+
+    # Calculated after inputs are connected
+    __input_only_inputs__: dict[str, Input]
+    __hidden_inputs__: dict[str, Input]
+    __related_inputs__: dict[str, Input]
+    __function_inputs__: dict[str, Input]
 
     def __new__(  # noqa: PLR0912, C901
         cls,
@@ -86,9 +98,7 @@ class MutationTypeMeta(type):
 
         kind = kwargs.get("kind")
         if kind is None:
-            if "__mutate__" in _attrs:  # Custom mutation func defined
-                mutation_kind = MutationKind.custom
-            elif "create" in _name.lower():
+            if "create" in _name.lower():
                 mutation_kind = MutationKind.create
             elif "update" in _name.lower():
                 mutation_kind = MutationKind.update
@@ -97,12 +107,9 @@ class MutationTypeMeta(type):
             elif "related" in _name.lower():
                 mutation_kind = MutationKind.related
             else:
-                mutation_kind = MutationKind.custom
+                raise MutationTypeKindCannotBeDeterminedError(name=_name)
         else:
             mutation_kind = MutationKind(kind)
-
-        action = kwargs.get("related_action")
-        related_action = RelatedAction.null if action is None else RelatedAction(action)
 
         if "pk" not in _attrs and mutation_kind.requires_pk:
             field = get_model_field(model=model, lookup="pk")
@@ -122,7 +129,6 @@ class MutationTypeMeta(type):
         mutation_type.__model__ = model
         mutation_type.__input_map__ = get_members(mutation_type, Input)
         mutation_type.__kind__ = mutation_kind
-        mutation_type.__related_action__ = related_action
         mutation_type.__schema_name__ = kwargs.get("schema_name", _name)
         mutation_type.__directives__ = kwargs.get("directives", [])
         mutation_type.__extensions__ = kwargs.get("extensions", {})
@@ -133,6 +139,14 @@ class MutationTypeMeta(type):
 
         for name, input_ in mutation_type.__input_map__.items():
             input_.__connect__(mutation_type, name)  # type: ignore[arg-type]
+
+        def get_input_subset(ftr: Callable[[Input], bool]) -> dict[str, Input]:
+            return {k: v for k, v in mutation_type.__input_map__.items() if ftr(v)}
+
+        mutation_type.__input_only_inputs__ = get_input_subset(lambda i: i.input_only)
+        mutation_type.__hidden_inputs__ = get_input_subset(lambda i: i.hidden)
+        mutation_type.__related_inputs__ = get_input_subset(lambda i: is_subclass(i.ref, MutationType))
+        mutation_type.__function_inputs__ = get_input_subset(lambda i: isinstance(i.ref, FunctionType))
 
         return mutation_type
 
@@ -197,13 +211,8 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
 
     The following parameters can be passed in the class definition:
 
-    `kind: Literal["create", "update", "delete", "custom", "related"] = <inferred>`
-        The kind of mutation this is. If not given, use "custom" if `__mutate__` is defined,
-        or infer based on the name of the class.
-
-    `related_action: Literal["null", "delete", "ignore"] = "null"`
-        If this is a "related" kind of mutation type,
-        what happens to related objects that are not included in the input?
+    `kind: Literal["create", "update", "delete", "related"] = <inferred>`
+        The kind of mutation this is. Infer used mutation type from mutation name.
 
     `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Input` attributes for all Model fields automatically.
@@ -229,15 +238,24 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __model__: ClassVar[type[Model]]
     __input_map__: ClassVar[dict[str, Input]]
     __kind__: ClassVar[MutationKind]
-    __related_action__: ClassVar[RelatedAction]
     __schema_name__: ClassVar[str]
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
+    # Calculated after inputs are connected
+    __input_only_inputs__: ClassVar[dict[str, Input]]
+    __hidden_inputs__: ClassVar[dict[str, Input]]
+    __related_inputs__: ClassVar[dict[str, Input]]
+    __function_inputs__: ClassVar[dict[str, Input]]
+
     @classmethod
     def __mutate__(cls, instance: TModel, info: GQLInfo, input_data: Any) -> Any:
         """Override this method for custom mutations."""
+
+    @classmethod
+    def __bulk_mutate__(cls, instance: list[TModel], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+        """Override this method for custom bulk mutations."""
 
     @classmethod
     def __permissions__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
@@ -248,7 +266,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
         """Validate all input data given to this `MutationType`."""
 
     @classmethod
-    def __after__(cls, instance: TModel, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+    def __after__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """A function that is run after a mutation using this `MutationType` has been executed."""
 
     @classmethod

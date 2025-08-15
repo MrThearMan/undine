@@ -157,7 +157,6 @@ __all__ = [
     "PongMessage",
     "ProtocolType",
     "QueryTypeParams",
-    "RelatedAction",
     "RelatedField",
     "RequestMethod",
     "ReverseField",
@@ -511,7 +510,6 @@ class MutationKind(enum.StrEnum):
     create = "create"
     update = "update"
     delete = "delete"
-    custom = "custom"
     related = "related"
 
     @enum.property
@@ -533,31 +531,6 @@ class MutationKind(enum.StrEnum):
     @enum.property
     def inputs_are_not_hidden_by_default(self) -> bool:
         return self == MutationKind.custom
-
-
-class RelatedAction(enum.StrEnum):
-    """
-    When a relation is updated using a "related" kind of MutationType,
-    what happens to related objects that are not included in the input?
-    This only applies for reverse one-to-one and reverse foreign key (one-to-many) relations.
-    """
-
-    null = "null"
-    """
-    The relation from the related object to the parent object is set to null.
-    This will raise an error if the relation is not nullable.
-    """
-
-    delete = "delete"
-    """
-    The related objects are deleted.
-    """
-
-    ignore = "ignore"
-    """
-    The related objects are left unchanged.
-    For reverse one-to-one relations, this will raise an error due to the one-to-one constraint.
-    """
 
 
 class ManyMatch(enum.StrEnum):
@@ -589,6 +562,7 @@ class UndineErrorCodes(StrEnum):
 
     ASYNC_NOT_SUPPORTED = auto()
     CONTENT_TYPE_MISSING = auto()
+    DUPLICATE_PRIMARY_KEYS = auto()
     DUPLICATE_TYPE = auto()
     FIELD_NOT_NULLABLE = auto()
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
@@ -625,6 +599,7 @@ class UndineErrorCodes(StrEnum):
     PERMISSION_DENIED = auto()
     PERSISTED_DOCUMENTS_NOT_SUPPORTED = auto()
     PERSISTED_DOCUMENT_NOT_FOUND = auto()
+    PRIMARY_KEYS_MISSING = auto()
     REQUEST_DECODING_ERROR = auto()
     REQUEST_PARSE_ERROR = auto()
     SCALAR_CONVERSION_ERROR = auto()
@@ -822,8 +797,7 @@ class MutationTypeParams(TypedDict, total=False):
     """Arguments for an Undine `MutationType`."""
 
     model: type[Model]
-    kind: Literal["create", "update", "delete", "custom", "related"]
-    related_action: Literal["null", "delete", "ignore"]
+    kind: Literal["create", "update", "delete", "related"]
     auto: bool
     exclude: list[str]
     schema_name: str

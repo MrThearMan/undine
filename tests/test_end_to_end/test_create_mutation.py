@@ -372,9 +372,9 @@ def test_create_mutation__after(graphql, undine_settings):
 
     class TaskCreateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = deepcopy(previous_data)
+            after_data = deepcopy(input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)

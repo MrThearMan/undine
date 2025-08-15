@@ -236,6 +236,12 @@ class ModelFieldNotARelationOfModelError(ModelFieldError):
     msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
 
 
+class MutationTypeKindCannotBeDeterminedError(UndineError):
+    """Error raised if mutation type cannot determine its kind automatically."""
+
+    msg = "Cannot determine mutation kind for MutationType '{name}'"
+
+
 class NoFunctionParametersError(UndineError):
     """Error raised if a function does not contain a parameter to parse type from."""
 
@@ -459,6 +465,14 @@ class GraphQLAsyncNotSupportedError(GraphQLStatusError):
     msg = "GraphQL execution failed to complete synchronously."
     status = HTTPStatus.INTERNAL_SERVER_ERROR
     code = UndineErrorCodes.ASYNC_NOT_SUPPORTED
+
+
+class GraphQLDuplicatePrimaryKeysError(GraphQLStatusError):
+    """Error raised when bulk update did not receive primary keys for all input dicts."""
+
+    msg = "Bulk update received instances with duplicate primary keys: {duplicates}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.DUPLICATE_PRIMARY_KEYS
 
 
 class GraphQLDuplicateTypeError(GraphQLStatusError):
@@ -773,6 +787,14 @@ class GraphQLPersistedDocumentsNotSupportedError(GraphQLStatusError):
     msg = "Server does not support persisted documents."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.PERSISTED_DOCUMENTS_NOT_SUPPORTED
+
+
+class GraphQLPrimaryKeysMissingError(GraphQLStatusError):
+    """Error raised when bulk update did not receive primary keys for all input dicts."""
+
+    msg = "Bulk update missing primary keys for objects: Got {got}, expected {expected}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.PRIMARY_KEYS_MISSING
 
 
 class GraphQLRelationMultipleInstancesError(GraphQLStatusError):

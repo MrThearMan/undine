@@ -590,9 +590,9 @@ def test_update_mutation__after(graphql, undine_settings):
 
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = previous_data
+            after_data = input_data
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -639,9 +639,9 @@ def test_update_mutation__after__relations(graphql, undine_settings):
         project = Input(RelatedProject)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = deepcopy(previous_data)
+            after_data = deepcopy(input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)

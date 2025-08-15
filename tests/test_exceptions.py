@@ -26,6 +26,7 @@ from undine.exceptions import (
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
     GraphQLAsyncNotSupportedError,
+    GraphQLDuplicatePrimaryKeysError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
     GraphQLFileNotFoundError,
@@ -64,6 +65,7 @@ from undine.exceptions import (
     GraphQLPermissionError,
     GraphQLPersistedDocumentNotFoundError,
     GraphQLPersistedDocumentsNotSupportedError,
+    GraphQLPrimaryKeysMissingError,
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
     GraphQLRequestDecodingError,
@@ -95,6 +97,7 @@ from undine.exceptions import (
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
     ModelFieldNotARelationOfModelError,
+    MutationTypeKindCannotBeDeterminedError,
     NoFunctionParametersError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
@@ -304,6 +307,11 @@ class UndineErrorParams(NamedTuple):
                 "to model 'example_project.app.models.Project'."
             ),
         ),
+        "MutationTypeKindCannotBeDeterminedError": UndineErrorParams(
+            cls=MutationTypeKindCannotBeDeterminedError,
+            args={"name": "TaskMutation"},
+            message="Cannot determine mutation kind for MutationType 'TaskMutation'",
+        ),
         "NoFunctionParametersError": UndineErrorParams(
             cls=NoFunctionParametersError,
             args={"func": my_func},
@@ -399,6 +407,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="GraphQL execution failed to complete synchronously.",
             extensions={"error_code": "ASYNC_NOT_SUPPORTED", "status_code": 500},
+        ),
+        "GraphQLDuplicatePrimaryKeysError": GQLErrorParams(
+            cls=GraphQLDuplicatePrimaryKeysError,
+            args={"duplicates": [1, 2]},
+            message="Bulk update received instances with duplicate primary keys: [1, 2].",
+            extensions={"error_code": "DUPLICATE_PRIMARY_KEYS", "status_code": 400},
         ),
         "GraphQLDuplicateTypeError": GQLErrorParams(
             cls=GraphQLDuplicateTypeError,
@@ -642,6 +656,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Server does not support persisted documents.",
             extensions={"error_code": "PERSISTED_DOCUMENTS_NOT_SUPPORTED", "status_code": 400},
+        ),
+        "GraphQLPrimaryKeysMissingError": GQLErrorParams(
+            cls=GraphQLPrimaryKeysMissingError,
+            args={"got": 1, "expected": 2},
+            message="Bulk update missing primary keys for objects: Got 1, expected 2.",
+            extensions={"error_code": "PRIMARY_KEYS_MISSING", "status_code": 400},
         ),
         "GraphQLRelationMultipleInstancesError": GQLErrorParams(
             cls=GraphQLRelationMultipleInstancesError,

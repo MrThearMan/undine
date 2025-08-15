@@ -13,7 +13,6 @@ from .mutation import (
     BulkDeleteResolver,
     BulkUpdateResolver,
     CreateResolver,
-    CustomResolver,
     DeleteResolver,
     UpdateResolver,
 )
@@ -43,7 +42,6 @@ __all__ = [
     "BulkUpdateResolver",
     "ConnectionResolver",
     "CreateResolver",
-    "CustomResolver",
     "DeleteResolver",
     "EntrypointFunctionResolver",
     "EntrypointFunctionResolver",

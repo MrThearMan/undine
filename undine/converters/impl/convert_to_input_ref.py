@@ -30,6 +30,7 @@ from undine.utils.model_utils import (
     get_model_field,
     get_related_name,
 )
+from undine.utils.reflection import is_same_func
 
 
 @convert_to_input_ref.register
@@ -66,7 +67,7 @@ def _(ref: type[Model], **kwargs: Any) -> Any:
         def convert_many(inpt: Input, value: list[Any] | None) -> list[Model]:
             instances: list[Model] = []
             if value is not None:
-                instances = get_instances_or_raise(model=ref, pks=set(value))
+                instances = get_instances_or_raise(model=ref, pks=value)
             if user_func is not None:
                 return user_func(inpt, instances)
             return instances
@@ -199,6 +200,10 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
         raise InvalidInputMutationTypeError(ref=ref, kind=ref.__kind__)
 
     caller: Input = kwargs["caller"]
+
+    if is_same_func(caller.mutation_type.__mutate__, MutationType.__mutate__):
+        msg = "Must override mutate function to handle related inputs"
+        raise RuntimeError(msg)  # TODO: Custom error.
 
     model = caller.mutation_type.__model__
 

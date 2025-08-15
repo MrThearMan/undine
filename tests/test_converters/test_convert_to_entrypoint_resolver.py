@@ -11,7 +11,6 @@ from undine.resolvers import (
     BulkDeleteResolver,
     BulkUpdateResolver,
     CreateResolver,
-    CustomResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
     QueryTypeManyResolver,

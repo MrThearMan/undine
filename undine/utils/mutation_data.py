@@ -92,7 +92,7 @@ def build_mutation_data(
         get_placements(placements, data=mutation_info, path=[i])
 
     for path_model, path_to_pk in placements.items():
-        pks = set(path_to_pk.values())
+        pks = list(path_to_pk.values())
 
         # TODO: Could join required relations. Should still check that fetched instance count is correct.
         instances = get_instances_or_raise(model=path_model, pks=pks)

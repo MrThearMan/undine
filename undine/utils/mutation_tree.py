@@ -9,7 +9,6 @@ from django.db import transaction  # noqa: ICN003
 from django.db.models import Q
 
 from undine.exceptions import (
-    GraphQLModelConstraintViolationError,
     GraphQLMutationTreeModelMismatchError,
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
@@ -47,7 +46,7 @@ __all__ = [
 
 
 @transaction.atomic
-@convert_integrity_errors(GraphQLModelConstraintViolationError)
+@convert_integrity_errors()
 def mutate(data: MutationData, *, model: type[TModel]) -> TModel:
     """Create or update models and link or unlink relations using the given data and model."""
     start_node = MutationNode(model=model)
@@ -57,7 +56,7 @@ def mutate(data: MutationData, *, model: type[TModel]) -> TModel:
 
 
 @transaction.atomic
-@convert_integrity_errors(GraphQLModelConstraintViolationError)
+@convert_integrity_errors()
 def bulk_mutate(data: list[MutationData], *, model: type[TModel]) -> list[TModel]:
     """Create or update models and link or unlink relations using the given data and model."""
     start_node = MutationNode(model=model)

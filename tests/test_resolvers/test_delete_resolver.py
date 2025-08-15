@@ -105,7 +105,7 @@ def test_delete_resolver__mutation_hooks(undine_settings) -> None:
             permission_called = next(counter)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_called
             after_called = next(counter)
 

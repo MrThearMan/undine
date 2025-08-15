@@ -16,7 +16,6 @@ from undine.resolvers import (
     BulkUpdateResolver,
     ConnectionResolver,
     CreateResolver,
-    CustomResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
     InterfaceResolver,
@@ -66,9 +65,6 @@ def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
             if caller.many:
                 return BulkDeleteResolver(mutation_type=ref, entrypoint=caller)
             return DeleteResolver(mutation_type=ref, entrypoint=caller)
-
-        case MutationKind.custom:
-            return CustomResolver(mutation_type=ref, entrypoint=caller)
 
         case _:
             raise InvalidEntrypointMutationTypeError(ref=ref, kind=ref.__kind__)
