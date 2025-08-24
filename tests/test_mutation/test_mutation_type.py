@@ -16,13 +16,13 @@ from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY
 
 
 def test_mutation_type__str() -> None:
-    class MyMutationType(MutationType[Task], auto=False):
+    class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
 
-    assert str(MyMutationType) == cleandoc(
+    assert str(TaskCreateMutation) == cleandoc(
         """
-        input MyMutationType {
-          name: String
+        input TaskCreateMutation {
+          name: String!
         }
         """
     )
@@ -149,9 +149,9 @@ def test_mutation_type__kind__create__implicit() -> None:
 
 
 def test_mutation_type__kind__create__explicit() -> None:
-    class MyMutation(MutationType[Task], kind="create"): ...
+    class TaskCreateMutation(MutationType[Task], kind="create"): ...
 
-    assert MyMutation.__kind__ == MutationKind.create
+    assert TaskCreateMutation.__kind__ == MutationKind.create
 
 
 def test_mutation_type__kind__create__primary_key() -> None:
@@ -169,29 +169,29 @@ def test_mutation_type__kind__create__output_type() -> None:
 
 
 def test_mutation_type__kind__update__implicit() -> None:
-    class MyUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]): ...
 
-    assert MyUpdateMutation.__kind__ == MutationKind.update
+    assert TaskUpdateMutation.__kind__ == MutationKind.update
 
 
 def test_mutation_type__kind__update__explicit() -> None:
-    class MyMutation(MutationType[Task], kind="update"): ...
+    class TaskCreateMutation(MutationType[Task], kind="update"): ...
 
-    assert MyMutation.__kind__ == MutationKind.update
+    assert TaskCreateMutation.__kind__ == MutationKind.update
 
 
 def test_mutation_type__kind__update__primary_key() -> None:
-    class MyUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]): ...
 
-    assert "pk" in MyUpdateMutation.__input_map__
+    assert "pk" in TaskUpdateMutation.__input_map__
 
 
 def test_mutation_type__kind__update__output_type() -> None:
     class MyQueryType(QueryType[Task]): ...
 
-    class MyUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]): ...
 
-    assert MyUpdateMutation.__output_type__() == MyQueryType.__output_type__()
+    assert TaskUpdateMutation.__output_type__() == MyQueryType.__output_type__()
 
 
 def test_mutation_type__kind__delete__implicit() -> None:
@@ -201,9 +201,9 @@ def test_mutation_type__kind__delete__implicit() -> None:
 
 
 def test_mutation_type__kind__delete__explicit() -> None:
-    class MyMutation(MutationType[Task], kind="delete"): ...
+    class TaskCreateMutation(MutationType[Task], kind="delete"): ...
 
-    assert MyMutation.__kind__ == MutationKind.delete
+    assert TaskCreateMutation.__kind__ == MutationKind.delete
 
 
 def test_mutation_type__kind__delete__primary_key() -> None:
@@ -225,70 +225,49 @@ def test_mutation_type__kind__delete__output_type() -> None:
     assert output_type.fields["pk"].deprecation_reason is None
 
 
-def test_mutation_type__kind__custom__implicit() -> None:
-    class MyOtherMutation(MutationType[Task]): ...
+def test_mutation_type__kind__custom__single() -> None:
+    class MyOtherMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+            return instance
 
     assert MyOtherMutation.__kind__ == MutationKind.custom
 
 
-def test_mutation_type__kind__custom__implicit__from_method_defined() -> None:
-    class MyCreateMutation(MutationType[Task]):
+def test_mutation_type__kind__custom__many() -> None:
+    class MyOtherMutation(MutationType[Task]):
         @classmethod
-        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Any: ...
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+            return instances
 
-    assert MyCreateMutation.__kind__ == MutationKind.custom
-
-
-def test_mutation_type__kind__custom__explicit() -> None:
-    class MyCreateMutation(MutationType[Task], kind="custom"): ...
-
-    assert MyCreateMutation.__kind__ == MutationKind.custom
+    assert MyOtherMutation.__kind__ == MutationKind.custom
 
 
-def test_mutation_type__kind__custom__output_type() -> None:
-    class MyQueryType(QueryType[Task]): ...
-
-    class MyOtherMutation(MutationType[Task]): ...
-
-    assert MyOtherMutation.__output_type__() == MyQueryType.__output_type__()
-
-
-def test_mutation_type__kind__related__implicit() -> None:
-    class MyRelatedMutation(MutationType[Task]): ...
+def test_mutation_type__kind__related() -> None:
+    class MyRelatedMutation(MutationType[Task], kind="related"): ...
 
     assert MyRelatedMutation.__kind__ == MutationKind.related
-
-
-def test_mutation_type__kind__related__explicit() -> None:
-    class MyCreateMutation(MutationType[Task], kind="related"): ...
-
-    assert MyCreateMutation.__kind__ == MutationKind.related
-
-
-def test_mutation_type__kind__related__primary_key() -> None:
-    class MyRelatedMutation(MutationType[Task]): ...
-
     assert "pk" in MyRelatedMutation.__input_map__
 
 
 def test_mutation_type__kind__related__output_type() -> None:
     class MyQueryType(QueryType[Task]): ...
 
-    class MyRelatedMutation(MutationType[Task]): ...
+    class MyRelatedMutation(MutationType[Task], kind="related"): ...
 
     assert MyRelatedMutation.__output_type__() == MyQueryType.__output_type__()
 
 
 def test_mutation_type__auto__false() -> None:
-    class MyMutation(MutationType[Task], auto=False): ...
+    class MyCreateMutation(MutationType[Task], auto=False): ...
 
-    assert MyMutation.__input_map__ == {}
+    assert MyCreateMutation.__input_map__ == {}
 
 
 def test_mutation_type__exclude() -> None:
-    class MyUpdateMutation(MutationType[Task], exclude=["name"]): ...
+    class TaskUpdateMutation(MutationType[Task], exclude=["name"]): ...
 
-    assert sorted(MyUpdateMutation.__input_map__) == [
+    assert sorted(TaskUpdateMutation.__input_map__) == [
         "acceptancecriteria",
         "assignees",
         "attachment",
@@ -315,7 +294,7 @@ def test_mutation_type__exclude() -> None:
         "worked_hours",
     ]
 
-    input_type = MyUpdateMutation.__input_type__()
+    input_type = TaskUpdateMutation.__input_type__()
     assert sorted(input_type.fields) == [
         "acceptancecriteria",
         "assignees",
@@ -345,9 +324,9 @@ def test_mutation_type__exclude() -> None:
 
 
 def test_mutation_type__exclude__multiple() -> None:
-    class MyUpdateMutation(MutationType[Task], exclude=["name", "done"]): ...
+    class TaskUpdateMutation(MutationType[Task], exclude=["name", "done"]): ...
 
-    assert sorted(MyUpdateMutation.__input_map__) == [
+    assert sorted(TaskUpdateMutation.__input_map__) == [
         "acceptancecriteria",
         "assignees",
         "attachment",
@@ -373,7 +352,7 @@ def test_mutation_type__exclude__multiple() -> None:
         "worked_hours",
     ]
 
-    input_type = MyUpdateMutation.__input_type__()
+    input_type = TaskUpdateMutation.__input_type__()
     assert sorted(input_type.fields) == [
         "acceptancecriteria",
         "assignees",
@@ -402,11 +381,11 @@ def test_mutation_type__exclude__multiple() -> None:
 
 
 def test_mutation_type__schema_name() -> None:
-    class MyMutation(MutationType[Task], schema_name="CustomName"): ...
+    class TaskCreateMutation(MutationType[Task], schema_name="CustomName"): ...
 
-    assert MyMutation.__schema_name__ == "CustomName"
+    assert TaskCreateMutation.__schema_name__ == "CustomName"
 
-    input_type = MyMutation.__input_type__()
+    input_type = TaskCreateMutation.__input_type__()
     assert input_type.name == "CustomName"
 
 
@@ -416,15 +395,15 @@ def test_mutation_type__directives() -> None:
 
     directives: list[Directive] = [ValueDirective(value="foo")]
 
-    class MyMutation(MutationType[Task], directives=directives, auto=False):
+    class TaskCreateMutation(MutationType[Task], directives=directives, auto=False):
         name = Input()
 
-    assert MyMutation.__directives__ == directives
+    assert TaskCreateMutation.__directives__ == directives
 
-    assert str(MyMutation) == cleandoc(
+    assert str(TaskCreateMutation) == cleandoc(
         """
-        input MyMutation @value(value: "foo") {
-          name: String
+        input TaskCreateMutation @value(value: "foo") {
+          name: String!
         }
         """
     )
@@ -438,27 +417,27 @@ def test_mutation_type__directives__not_applicable() -> None:
 
     with pytest.raises(DirectiveLocationError):
 
-        class MyMutation(MutationType[Task], directives=directives): ...
+        class TaskCreateMutation(MutationType[Task], directives=directives): ...
 
 
 def test_mutation_type__extensions() -> None:
-    class MyMutation(MutationType[Task], extensions={"foo": "bar"}): ...
+    class TaskCreateMutation(MutationType[Task], extensions={"foo": "bar"}): ...
 
-    assert MyMutation.__extensions__ == {"foo": "bar", "undine_mutation_type": MyMutation}
+    assert TaskCreateMutation.__extensions__ == {"foo": "bar", "undine_mutation_type": TaskCreateMutation}
 
-    input_type = MyMutation.__input_type__()
-    assert input_type.extensions == {"foo": "bar", "undine_mutation_type": MyMutation}
+    input_type = TaskCreateMutation.__input_type__()
+    assert input_type.extensions == {"foo": "bar", "undine_mutation_type": TaskCreateMutation}
 
 
 def test_mutation_type__validate() -> None:
-    class MyMutation(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         @classmethod
         def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             if input_data["foo"] is not True:
                 msg = "Foo must be True"
                 raise ValueError(msg)
 
-    MyMutation.__validate__(Task(), mock_gql_info(), {"foo": True})
+    TaskCreateMutation.__validate__(Task(), mock_gql_info(), {"foo": True})
 
     with pytest.raises(ValueError, match=exact("Foo must be True")):
-        MyMutation.__validate__(Task(), mock_gql_info(), {"foo": False})
+        TaskCreateMutation.__validate__(Task(), mock_gql_info(), {"foo": False})

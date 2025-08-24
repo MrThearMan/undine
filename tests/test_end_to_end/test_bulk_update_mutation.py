@@ -8,6 +8,7 @@ import pytest
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine.utils.mutation_tree import bulk_mutate
 
 
 @pytest.mark.django_db
@@ -76,6 +77,10 @@ def test_bulk_update_mutation__relations__to_one(graphql, undine_settings):
 
     class TaskUpdateMutation(MutationType[Task]):
         project = Input(RelatedProject)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -152,6 +157,10 @@ def test_bulk_update_mutation__relations__to_many(graphql, undine_settings):
 
     class TaskUpdateMutation(MutationType[Task]):
         assignees = Input(RelatedAssignee)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -292,9 +301,9 @@ def test_bulk_update_mutation__after(graphql, undine_settings):
 
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data.append(deepcopy(previous_data))
+            after_data.append(deepcopy(input_data))
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -333,8 +342,16 @@ def test_bulk_update_mutation__after(graphql, undine_settings):
     assert response.has_errors is False, response.errors
 
     assert after_data == [
-        {"pk": task_1.pk, "name": "Original Task 1", "type": "TASK"},
-        {"pk": task_2.pk, "name": "Original Task 2", "type": "STORY"},
+        {
+            "pk": task_1.pk,
+            "name": "Test Task",
+            "type": TaskTypeChoices.TASK,
+        },
+        {
+            "pk": task_2.pk,
+            "name": "Real Task",
+            "type": TaskTypeChoices.STORY,
+        },
     ]
 
 
@@ -352,9 +369,13 @@ def test_bulk_update_mutation__after__relations(graphql, undine_settings):
         project = Input(RelatedProject)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+            return bulk_mutate(model=Task, data=input_data)
+
+        @classmethod
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data.append(deepcopy(previous_data))
+            after_data.append(deepcopy(input_data))
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -409,20 +430,20 @@ def test_bulk_update_mutation__after__relations(graphql, undine_settings):
     assert after_data == [
         {
             "pk": task_1.pk,
-            "name": "Original Task 1",
-            "type": "TASK",
+            "name": "Test Task",
+            "type": TaskTypeChoices.TASK,
             "project": {
                 "pk": project_1.pk,
-                "name": "Test Project",
+                "name": "New Test Project",
             },
         },
         {
             "pk": task_2.pk,
-            "name": "Original Task 2",
-            "type": "STORY",
+            "name": "Real Task",
+            "type": TaskTypeChoices.STORY,
             "project": {
                 "pk": project_2.pk,
-                "name": "Real Project",
+                "name": "New Real Project",
             },
         },
     ]

@@ -88,6 +88,12 @@ class UndineErrorGroup(ExceptionGroup):
                 yield error
 
 
+class BulkMutateNeedsImplementationError(UndineError):
+    """Error raised if a MutationType '__bulk_mutate__' method is not implemented when its should be."""
+
+    msg = "Must implement '{mutation_type}.__bulk_mutate__' to handle related inputs"
+
+
 class DirectiveLocationError(UndineError):
     """Error raised if Directive is passed to a location it cannot be used in."""
 
@@ -234,6 +240,18 @@ class ModelFieldNotARelationOfModelError(ModelFieldError):
     """Error raised if a field is not a relation in the given model."""
 
     msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
+
+
+class MutateNeedsImplementationError(UndineError):
+    """Error raised if a MutationType '__mutate__' method is not implemented when its should be."""
+
+    msg = "Must implement '{mutation_type}.__mutate__' to handle related inputs"
+
+
+class MutationTypeKindCannotBeDeterminedError(UndineError):
+    """Error raised if mutation type cannot determine its kind automatically."""
+
+    msg = "Cannot determine mutation kind for MutationType '{name}'"
 
 
 class NoFunctionParametersError(UndineError):
@@ -459,6 +477,14 @@ class GraphQLAsyncNotSupportedError(GraphQLStatusError):
     msg = "GraphQL execution failed to complete synchronously."
     status = HTTPStatus.INTERNAL_SERVER_ERROR
     code = UndineErrorCodes.ASYNC_NOT_SUPPORTED
+
+
+class GraphQLDuplicatePrimaryKeysError(GraphQLStatusError):
+    """Error raised when bulk update did not receive primary keys for all input dicts."""
+
+    msg = "Bulk update received instances with duplicate primary keys: {duplicates}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.DUPLICATE_PRIMARY_KEYS
 
 
 class GraphQLDuplicateTypeError(GraphQLStatusError):
@@ -773,6 +799,14 @@ class GraphQLPersistedDocumentsNotSupportedError(GraphQLStatusError):
     msg = "Server does not support persisted documents."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.PERSISTED_DOCUMENTS_NOT_SUPPORTED
+
+
+class GraphQLPrimaryKeysMissingError(GraphQLStatusError):
+    """Error raised when bulk update did not receive primary keys for all input dicts."""
+
+    msg = "Bulk update missing primary keys for objects: Got {got}, expected {expected}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.PRIMARY_KEYS_MISSING
 
 
 class GraphQLRelationMultipleInstancesError(GraphQLStatusError):

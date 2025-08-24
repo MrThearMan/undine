@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from typing import Any
 
@@ -321,50 +320,6 @@ def test_create_mutation__relations__many_to_many__existing(graphql, undine_sett
 
 
 @pytest.mark.django_db
-def test_create_mutation__mutation_instance_limit(graphql, undine_settings):
-    class TaskType(QueryType[Task]): ...
-
-    class TaskCreateMutation(MutationType[Task]): ...
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType)
-
-    class Mutation(RootType):
-        create_task = Entrypoint(TaskCreateMutation)
-
-    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
-    undine_settings.MUTATION_INSTANCE_LIMIT = 0
-
-    data = {
-        "name": "Test Task",
-        "type": TaskTypeChoices.TASK,
-    }
-    query = """
-        mutation($input: TaskCreateMutation!) {
-            createTask(input: $input) {
-                name
-            }
-        }
-    """
-
-    response = graphql(query, variables={"input": data})
-
-    assert response.json == {
-        "data": None,
-        "errors": [
-            {
-                "message": "Cannot mutate more than 0 objects in a single mutation (counted 1).",
-                "extensions": {
-                    "error_code": "MUTATION_TOO_MANY_OBJECTS",
-                    "status_code": 400,
-                },
-                "path": ["createTask"],
-            }
-        ],
-    }
-
-
-@pytest.mark.django_db
 def test_create_mutation__after(graphql, undine_settings):
     after_data = {}
 
@@ -372,9 +327,9 @@ def test_create_mutation__after(graphql, undine_settings):
 
     class TaskCreateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = deepcopy(previous_data)
+            after_data = deepcopy(input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -400,7 +355,23 @@ def test_create_mutation__after(graphql, undine_settings):
 
     assert response.has_errors is False, response.errors
 
-    assert after_data == {}
+    assert after_data == {
+        "attachment": None,
+        "check_time": None,
+        "contact_email": None,
+        "demo_url": None,
+        "done": False,
+        "due_by": None,
+        "external_uuid": None,
+        "extra_data": None,
+        "image": None,
+        "name": "Test Task",
+        "points": None,
+        "progress": 0,
+        "project": None,
+        "request": None,
+        "type": "TASK",
+    }
 
 
 @pytest.mark.django_db
@@ -469,7 +440,7 @@ def test_create_mutation__related_int(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
     class TaskCreateMutation(MutationType[Task]):
-        project = Input(required=True)
+        project = Input(int, required=True)
 
         @classmethod
         def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
@@ -519,7 +490,6 @@ def test_create_mutation__related_int(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_create_mutation__related_model(graphql, undine_settings):
     related_input = None
 

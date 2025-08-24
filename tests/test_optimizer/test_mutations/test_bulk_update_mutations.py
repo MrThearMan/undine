@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from django.contrib.contenttypes.models import ContentType
 
 from example_project.app.models import Comment, Person, Project, Report, ServiceRequest, Task, TaskResult, TaskStep
 from tests.factories import CommentFactory, ProjectFactory, TaskFactory
-from undine import Entrypoint, Field, Input, MutationType, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine.utils.mutation_tree import bulk_mutate
 
 
 @pytest.mark.django_db
@@ -20,6 +23,7 @@ def test_mutation_optimization__bulk_update(graphql, undine_settings) -> None:
     # MutationTypes
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
 
     # RootTypes
@@ -61,8 +65,7 @@ def test_mutation_optimization__bulk_update(graphql, undine_settings) -> None:
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(3)
+    response.assert_query_count(4)
 
 
 @pytest.mark.django_db
@@ -83,8 +86,13 @@ def test_mutation_optimization__bulk_update__forward__one_to_one(graphql, undine
     class ServiceRequestMutation(MutationType[ServiceRequest], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         request = Input(ServiceRequestMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -140,8 +148,7 @@ def test_mutation_optimization__bulk_update__forward__one_to_one(graphql, undine
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(5)
+    response.assert_query_count(6)
 
 
 @pytest.mark.django_db
@@ -162,8 +169,13 @@ def test_mutation_optimization__bulk_update__forward__many_to_one(graphql, undin
     class ProjectMutation(MutationType[Project], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         project = Input(ProjectMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -219,8 +231,7 @@ def test_mutation_optimization__bulk_update__forward__many_to_one(graphql, undin
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(6)
+    response.assert_query_count(7)
 
 
 @pytest.mark.django_db
@@ -241,8 +252,13 @@ def test_mutation_optimization__bulk_update__forward__many_to_many(graphql, undi
     class PersonMutation(MutationType[Person], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         assignees = Input(PersonMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -303,8 +319,7 @@ def test_mutation_optimization__bulk_update__forward__many_to_many(graphql, undi
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(9)
+    response.assert_query_count(10)
 
 
 @pytest.mark.django_db
@@ -325,8 +340,13 @@ def test_mutation_optimization__bulk_update__reverse__one_to_one(graphql, undine
     class TaskResultMutation(MutationType[TaskResult], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         result = Input(TaskResultMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -382,8 +402,7 @@ def test_mutation_optimization__bulk_update__reverse__one_to_one(graphql, undine
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(6)
+    response.assert_query_count(7)
 
 
 @pytest.mark.django_db
@@ -404,8 +423,13 @@ def test_mutation_optimization__bulk_update__reverse__one_to_many(graphql, undin
     class TaskStepMutation(MutationType[TaskStep], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         steps = Input(TaskStepMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -466,8 +490,7 @@ def test_mutation_optimization__bulk_update__reverse__one_to_many(graphql, undin
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(7)
+    response.assert_query_count(8)
 
 
 @pytest.mark.django_db
@@ -488,8 +511,13 @@ def test_mutation_optimization__bulk_update__reverse__many_to_many(graphql, undi
     class ReportMutation(MutationType[Report], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         reports = Input(ReportMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -550,8 +578,7 @@ def test_mutation_optimization__bulk_update__reverse__many_to_many(graphql, undi
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(9)
+    response.assert_query_count(10)
 
 
 @pytest.mark.django_db
@@ -572,9 +599,14 @@ def test_mutation_optimization__bulk_update__generic_relation(graphql, undine_se
     class CommentMutation(MutationType[Comment], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         type = Input()
         comments = Input(CommentMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -635,8 +667,7 @@ def test_mutation_optimization__bulk_update__generic_relation(graphql, undine_se
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(7)
+    response.assert_query_count(8)
 
 
 @pytest.mark.django_db
@@ -658,8 +689,13 @@ def test_mutation_optimization__bulk_update__generic_foreign_key(graphql, undine
     # MutationTypes
 
     class CommentUpdateMutation(MutationType[Comment], auto=False):
+        pk = Input()
         contents = Input()
         target = Input()
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Comment], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Comment, data=input_data)
 
     # RootTypes
 
@@ -724,5 +760,4 @@ def test_mutation_optimization__bulk_update__generic_foreign_key(graphql, undine
         ],
     }
 
-    # Check that total queries match
-    response.assert_query_count(5)
+    response.assert_query_count(6)

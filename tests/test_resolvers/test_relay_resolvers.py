@@ -215,7 +215,7 @@ def test_resolvers__connection_resolver(undine_settings) -> None:
     pagination.total_count = 100
 
     with patch_optimizer(pagination=pagination):
-        result = resolver(root=task, info=mock_gql_info())
+        result = resolver.run_sync(root=task, info=mock_gql_info())
 
     typename = TaskType.__schema_name__
     assert result == (
@@ -257,10 +257,7 @@ async def test_resolvers__connection_resolver__async(undine_settings) -> None:
     pagination.total_count = 100
 
     with patch_optimizer(pagination=pagination):
-        coroutine = resolver(root=task, info=mock_gql_info())
-        assert isawaitable(coroutine)
-
-        result = await coroutine
+        result = await resolver.run_async(root=task, info=mock_gql_info())
 
     typename = TaskType.__schema_name__
     assert result == (
@@ -304,7 +301,7 @@ def test_resolvers__connection_resolver__permissions(undine_settings) -> None:
     pagination.total_count = 100
 
     with patch_optimizer(pagination=pagination), pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -337,7 +334,7 @@ def test_resolvers__nested_connection_resolver(undine_settings) -> None:
         connection=connection, field=TaskType.assignees
     )
 
-    result = resolver(root=task, info=mock_gql_info())
+    result = resolver.run_sync(root=task, info=mock_gql_info())
 
     typename = PersonType.__schema_name__
     assert result == (
@@ -392,7 +389,7 @@ def test_resolvers__nested_connection_resolver__field_permissions(undine_setting
     )
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -427,7 +424,7 @@ def test_resolvers__nested_connection_resolver__query_type_permissions(undine_se
     )
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -463,7 +460,60 @@ def test_resolvers__nested_connection_resolver__to_attr(undine_settings) -> None
 
     info = mock_gql_info(path=Path(prev=None, key="original_assignees", typename=""))
 
-    result = resolver(root=task, info=info)
+    result = resolver.run_sync(root=task, info=info)
+
+    typename = PersonType.__schema_name__
+    assert result == (
+        ConnectionDict(
+            totalCount=100,
+            pageInfo=PageInfoDict(
+                hasNextPage=True,
+                hasPreviousPage=False,
+                startCursor=offset_to_cursor(typename, 0),
+                endCursor=offset_to_cursor(typename, 0),
+            ),
+            edges=[
+                NodeDict(
+                    cursor=offset_to_cursor(typename, 0),
+                    node=assignee,
+                ),
+            ],
+        )
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__nested_connection_resolver__async(undine_settings) -> None:
+    class PersonType(QueryType[Person], auto=False, interfaces=[Node]): ...
+
+    connection = Connection(PersonType)
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
+        assignees = Field(connection)
+
+    await sync_to_async(TaskFactory.create)(assignees__name="Test assignee")
+
+    task: Task = await Task.objects.prefetch_related(  # type: ignore[assignment]
+        Prefetch(
+            "assignees",
+            queryset=Person.objects.annotate(
+                **{
+                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
+                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                },
+            ),
+        ),
+    ).afirst()
+
+    assignee: Person = next(iter(task.assignees.all()))  # type: ignore[assignment]
+
+    resolver: NestedConnectionResolver[Person] = NestedConnectionResolver(
+        connection=connection, field=TaskType.assignees
+    )
+
+    result = await resolver.run_async(root=task, info=mock_gql_info())
 
     typename = PersonType.__schema_name__
     assert result == (

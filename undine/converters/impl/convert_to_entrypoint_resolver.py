@@ -16,7 +16,6 @@ from undine.resolvers import (
     BulkUpdateResolver,
     ConnectionResolver,
     CreateResolver,
-    CustomResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
     InterfaceResolver,
@@ -48,7 +47,7 @@ def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
 
 
 @convert_to_entrypoint_resolver.register
-def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
+def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:  # noqa: PLR0911
     caller: Entrypoint = kwargs["caller"]
 
     match ref.__kind__:
@@ -68,7 +67,14 @@ def _(ref: type[MutationType], **kwargs: Any) -> GraphQLFieldResolver:
             return DeleteResolver(mutation_type=ref, entrypoint=caller)
 
         case MutationKind.custom:
-            return CustomResolver(mutation_type=ref, entrypoint=caller)
+            if "pk" in ref.__input_map__:
+                if caller.many:
+                    return BulkUpdateResolver(mutation_type=ref, entrypoint=caller)
+                return UpdateResolver(mutation_type=ref, entrypoint=caller)
+
+            if caller.many:
+                return BulkCreateResolver(mutation_type=ref, entrypoint=caller)
+            return CreateResolver(mutation_type=ref, entrypoint=caller)
 
         case _:
             raise InvalidEntrypointMutationTypeError(ref=ref, kind=ref.__kind__)

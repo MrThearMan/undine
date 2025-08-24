@@ -151,6 +151,7 @@ UNDINE = {
     "ALLOW_INTROSPECTION_QUERIES": True,
     "NO_ERROR_LOCATION": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
+    # "INCLUDE_ERROR_TRACEBACK": True,
     "MIDDLEWARE": [
         "example_project.app.middleware.error_logging_middleware",
     ],

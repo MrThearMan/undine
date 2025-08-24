@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 from asyncio import iscoroutinefunction
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeAlias
 
@@ -94,7 +95,7 @@ class EntrypointFunctionResolver:
 
         self.set_kwargs(kwargs, root, info)
         result = await self.func(**kwargs)
-        self.check_permissions(root, info, result)
+        await self.check_permissions_async(root, info, result)
         return result
 
     def set_kwargs(self, kwargs: dict[str, Any], root: Any, info: GQLInfo) -> None:
@@ -113,6 +114,27 @@ class EntrypointFunctionResolver:
 
         elif is_subclass(self.entrypoint.ref, QueryType):
             self.entrypoint.ref.__permissions__(result, info)
+
+    async def check_permissions_async(self, root: Any, info: GQLInfo, result: Any) -> None:
+        if self.entrypoint.permissions_func is not None:
+            if self.entrypoint.many:
+                for item in result:
+                    if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                        await self.entrypoint.permissions_func(root, info, item)
+                    else:
+                        self.entrypoint.permissions_func(root, info, item)
+
+            elif inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                await self.entrypoint.permissions_func(root, info, result)
+
+            else:
+                self.entrypoint.permissions_func(root, info, result)
+
+        elif is_subclass(self.entrypoint.ref, QueryType):
+            if inspect.iscoroutinefunction(self.entrypoint.ref.__permissions__):
+                await self.entrypoint.ref.__permissions__(result, info)
+            else:
+                self.entrypoint.ref.__permissions__(result, info)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -144,7 +166,7 @@ class FieldFunctionResolver:
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         self.set_kwargs(kwargs, root, info)
         result = await self.func(**kwargs)
-        self.check_permissions(root, info, result)
+        await self.check_permissions_async(root, info, result)
         return result
 
     def set_kwargs(self, kwargs: dict[str, Any], root: Any, info: GQLInfo) -> None:
@@ -164,6 +186,27 @@ class FieldFunctionResolver:
         elif is_subclass(self.field.ref, QueryType):
             self.field.ref.__permissions__(result, info)
 
+    async def check_permissions_async(self, root: Any, info: GQLInfo, result: Any) -> None:
+        if self.field.permissions_func is not None:
+            if self.field.many:
+                for item in result:
+                    if inspect.iscoroutinefunction(self.field.permissions_func):
+                        await self.field.permissions_func(root, info, item)
+                    else:
+                        self.field.permissions_func(root, info, item)
+
+            elif inspect.iscoroutinefunction(self.field.permissions_func):
+                await self.field.permissions_func(root, info, result)
+
+            else:
+                self.field.permissions_func(root, info, result)
+
+        elif is_subclass(self.field.ref, QueryType):
+            if inspect.iscoroutinefunction(self.field.ref.__permissions__):
+                await self.field.ref.__permissions__(result, info)
+            else:
+                self.field.ref.__permissions__(result, info)
+
 
 # Model field resolvers
 
@@ -180,17 +223,37 @@ class ModelAttributeResolver:
     different values, for example, based on input arguments?
     """
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[Any]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
+
+    def run_sync(self, root: Model, info: GQLInfo) -> Any:
+        value = self.get_value(root, info)
+        self.check_permissions(root, info, value)
+        return value
+
+    async def run_async(self, root: Model, info: GQLInfo) -> Any:
+        value = self.get_value(root, info)
+        await self.check_permissions_async(root, info, value)
+        return value
+
+    def get_value(self, root: Model, info: GQLInfo) -> Any:
         field_name = self.field.field_name
         if not self.static:
             field_name = get_queried_field_name(field_name, info)
+        return getattr(root, field_name, None)
 
-        value = getattr(root, field_name, None)
-
+    def check_permissions(self, root: Model, info: GQLInfo, value: Any) -> None:
         if self.field.permissions_func is not None:
             self.field.permissions_func(root, info, value)
 
-        return value
+    async def check_permissions_async(self, root: Model, info: GQLInfo, value: Any) -> None:
+        if self.field.permissions_func is not None:
+            if inspect.iscoroutinefunction(self.field.permissions_func):
+                await self.field.permissions_func(root, info, value)
+            else:
+                self.field.permissions_func(root, info, value)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -199,16 +262,37 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
 
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> int | None:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
 
+    def run_sync(self, root: Model, info: GQLInfo) -> Any:
+        value: TModel | None = getattr(root, self.field.field_name, None)
         if value is None:
             return None
 
+        self.check_permissions(root, info, value)
+        return value.pk
+
+    async def run_async(self, root: Model, info: GQLInfo) -> Any:
+        value: TModel | None = getattr(root, self.field.field_name, None)
+        if value is None:
+            return None
+
+        await self.check_permissions_async(root, info, value)
+        return value.pk
+
+    def check_permissions(self, root: Model, info: GQLInfo, value: Any) -> None:
         if self.field.permissions_func is not None:
             self.field.permissions_func(root, info, value)
 
-        return value.pk
+    async def check_permissions_async(self, root: Model, info: GQLInfo, value: Any) -> None:
+        if self.field.permissions_func is not None:
+            if inspect.iscoroutinefunction(self.field.permissions_func):
+                await self.field.permissions_func(root, info, value)
+            else:
+                self.field.permissions_func(root, info, value)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -217,16 +301,38 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
 
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[Any]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
+
+    def run_sync(self, root: Model, info: GQLInfo) -> list[Any]:
+        instances = self.get_instances(root, info)
+        self.check_permissions(root, info, instances)
+        return [instance.pk for instance in instances]
+
+    async def run_async(self, root: Model, info: GQLInfo) -> list[Any]:
+        instances = self.get_instances(root, info)
+        await self.check_permissions_async(root, info, instances)
+        return [instance.pk for instance in instances]
+
+    def get_instances(self, root: Model, info: GQLInfo) -> list[TModel]:
         field_name = get_queried_field_name(self.field.field_name, info)
         manager: BaseManager[TModel] = getattr(root, field_name)
-        instances = list(manager.get_queryset())
+        return list(manager.get_queryset())
 
+    def check_permissions(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
         if self.field.permissions_func is not None:
             for instance in instances:
                 self.field.permissions_func(root, info, instance)
 
-        return [instance.pk for instance in instances]
+    async def check_permissions_async(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
+        if self.field.permissions_func is not None:
+            for instance in instances:
+                if inspect.iscoroutinefunction(self.field.permissions_func):
+                    await self.field.permissions_func(root, info, instance)
+                else:
+                    self.field.permissions_func(root, info, instance)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -235,16 +341,37 @@ class ModelGenericForeignKeyResolver(Generic[TModel]):
 
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
 
+    def run_sync(self, root: Model, info: GQLInfo) -> TModel | None:
+        value: TModel | None = getattr(root, self.field.field_name, None)
         if value is None:
             return None
 
+        self.check_permissions(root, info, value)
+        return value
+
+    async def run_async(self, root: Model, info: GQLInfo) -> TModel | None:
+        value: TModel | None = getattr(root, self.field.field_name, None)
+        if value is None:
+            return None
+
+        await self.check_permissions_async(root, info, value)
+        return value
+
+    def check_permissions(self, root: Model, info: GQLInfo, value: Any) -> None:
         if self.field.permissions_func is not None:
             self.field.permissions_func(root, info, value)
 
-        return value
+    async def check_permissions_async(self, root: Model, info: GQLInfo, value: Any) -> None:
+        if self.field.permissions_func is not None:
+            if inspect.iscoroutinefunction(self.field.permissions_func):
+                await self.field.permissions_func(root, info, value)
+            else:
+                self.field.permissions_func(root, info, value)
 
 
 # Query type resolvers
@@ -278,12 +405,25 @@ class QueryTypeSingleResolver(Generic[TModel]):
         instance = await optimize_async(queryset, info, **kwargs)
 
         if instance is not None:
-            self.check_permissions(root, info, instance)
+            await self.check_permissions_async(root, info, instance)
         return instance
 
     def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
         if self.entrypoint.permissions_func is not None:
             self.entrypoint.permissions_func(root, info, instance)
+        else:
+            self.query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+        if self.entrypoint.permissions_func is not None:
+            if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                await self.entrypoint.permissions_func(root, info, instance)
+            else:
+                self.entrypoint.permissions_func(root, info, instance)
+
+        elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+            await self.query_type.__permissions__(instance, info)
+
         else:
             self.query_type.__permissions__(instance, info)
 
@@ -314,7 +454,7 @@ class QueryTypeManyResolver(Generic[TModel]):
 
         queryset = self.get_queryset(info)
         instances = await optimize_async(queryset, info)
-        self.check_permissions(root, info, instances)
+        await self.check_permissions_async(root, info, instances)
         return instances
 
     def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
@@ -330,6 +470,20 @@ class QueryTypeManyResolver(Generic[TModel]):
             else:
                 self.query_type.__permissions__(instance, info)
 
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+                await self.query_type.__permissions__(instance, info)
+
+            else:
+                self.query_type.__permissions__(instance, info)
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class NestedQueryTypeSingleResolver(Generic[TModel]):
@@ -338,16 +492,41 @@ class NestedQueryTypeSingleResolver(Generic[TModel]):
     query_type: type[QueryType[TModel]]
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
+
+    def run_sync(self, root: Model, info: GQLInfo) -> TModel | None:
         instance: TModel | None = getattr(root, self.field.field_name, None)
-
         if instance is not None:
-            if self.field.permissions_func is not None:
-                self.field.permissions_func(root, info, instance)
-            else:
-                self.query_type.__permissions__(instance, info)
-
+            self.check_permissions(root, info, instance)
         return instance
+
+    async def run_async(self, root: Model, info: GQLInfo) -> TModel | None:
+        instance: TModel | None = getattr(root, self.field.field_name, None)
+        if instance is not None:
+            await self.check_permissions_async(root, info, instance)
+        return instance
+
+    def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+        if self.field.permissions_func is not None:
+            self.field.permissions_func(root, info, instance)
+        else:
+            self.query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+        if self.field.permissions_func is not None:
+            if inspect.iscoroutinefunction(self.field.permissions_func):
+                await self.field.permissions_func(root, info, instance)
+            else:
+                self.field.permissions_func(root, info, instance)
+
+        elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+            await self.query_type.__permissions__(instance, info)
+
+        else:
+            self.query_type.__permissions__(instance, info)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -357,20 +536,49 @@ class NestedQueryTypeManyResolver(Generic[TModel]):
     query_type: type[QueryType[TModel]]
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
+
+    def run_sync(self, root: Model, info: GQLInfo) -> list[TModel]:
+        instances = self.get_instances(root, info)
+        self.check_permissions(root, info, instances)
+        return instances
+
+    async def run_async(self, root: Model, info: GQLInfo) -> list[TModel]:
+        instances = self.get_instances(root, info)
+        await self.check_permissions_async(root, info, instances)
+        return instances
+
+    def get_instances(self, root: Model, info: GQLInfo) -> list[TModel]:
         field_name = get_queried_field_name(self.field.field_name, info)
 
         instances: list[TModel] = getattr(root, field_name)
         if isinstance(instances, BaseManager):
             instances = list(instances.get_queryset())
+        return instances
 
+    def check_permissions(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
             if self.field.permissions_func is not None:
                 self.field.permissions_func(root, info, instance)
             else:
                 self.query_type.__permissions__(instance, info)
 
-        return instances
+    async def check_permissions_async(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
+        for instance in instances:
+            if self.field.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.field.permissions_func):
+                    await self.field.permissions_func(root, info, instance)
+                else:
+                    self.field.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+                await self.query_type.__permissions__(instance, info)
+
+            else:
+                self.query_type.__permissions__(instance, info)
 
 
 # Relay
@@ -448,7 +656,7 @@ class ConnectionResolver(Generic[TModel]):
 
         results = await self.run_optimizer_async(info)
         instances = await evaluate_with_prefetch_hack_async(results.queryset)
-        self.check_permissions(root, info, instances)
+        await self.check_permissions_async(root, info, instances)
         return self.to_connection(instances, pagination=results.pagination)
 
     def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
@@ -479,6 +687,20 @@ class ConnectionResolver(Generic[TModel]):
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
+            else:
+                self.connection.query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(self.connection.query_type.__permissions__):
+                await self.connection.query_type.__permissions__(instance, info)
+
             else:
                 self.connection.query_type.__permissions__(instance, info)
 
@@ -516,10 +738,21 @@ class NestedConnectionResolver(Generic[TModel]):
     connection: Connection
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info)
+        return self.run_sync(root, info)
+
+    def run_sync(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
         field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         self.check_permissions(root, info, instances)
+        return self.to_connection(instances)
+
+    async def run_async(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        field_name = get_queried_field_name(self.field.field_name, info)
+        instances = self.get_instances(root, field_name)
+        await self.check_permissions_async(root, info, instances)
         return self.to_connection(instances)
 
     def get_instances(self, root: Model, field_name: str) -> list[TModel]:
@@ -532,6 +765,20 @@ class NestedConnectionResolver(Generic[TModel]):
         for instance in instances:
             if self.field.permissions_func is not None:
                 self.field.permissions_func(root, info, instance)
+            else:
+                self.connection.query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+        for instance in instances:
+            if self.field.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.field.permissions_func):
+                    await self.field.permissions_func(root, info, instance)
+                else:
+                    self.field.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(self.connection.query_type.__permissions__):
+                await self.connection.query_type.__permissions__(instance, info)
+
             else:
                 self.connection.query_type.__permissions__(instance, info)
 
@@ -614,7 +861,7 @@ class UnionTypeResolver(Generic[TModel]):
 
         for query_type, queryset in queryset_map.items():
             instances = await evaluate_with_prefetch_hack_async(queryset)
-            self.check_permissions(root, info, query_type, instances)
+            await self.check_permissions_async(root, info, query_type, instances)
             all_instances.extend(instances)
 
         return all_instances
@@ -629,6 +876,26 @@ class UnionTypeResolver(Generic[TModel]):
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(query_type.__permissions__):
+                await query_type.__permissions__(instance, info)
+
             else:
                 query_type.__permissions__(instance, info)
 
@@ -714,7 +981,7 @@ class InterfaceResolver(Generic[TModel]):
 
         for query_type, queryset in queryset_map.items():
             instances = await evaluate_with_prefetch_hack_async(queryset)
-            self.check_permissions(info, root, query_type, instances)
+            await self.check_permissions_async(info, root, query_type, instances)
             all_instances.extend(instances)
 
         return all_instances
@@ -729,6 +996,26 @@ class InterfaceResolver(Generic[TModel]):
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(
+        self,
+        info: GQLInfo,
+        root: Any,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(query_type.__permissions__):
+                await query_type.__permissions__(instance, info)
+
             else:
                 query_type.__permissions__(instance, info)
 

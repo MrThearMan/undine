@@ -13,128 +13,128 @@ from undine.typing import GQLInfo
 
 
 def test_input__repr() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
 
-    assert repr(MyMutationType.name) == "<undine.mutation.Input(ref=<django.db.models.fields.CharField: name>)>"
+    assert repr(TaskCreateMutation.name) == "<undine.mutation.Input(ref=<django.db.models.fields.CharField: name>)>"
 
 
 def test_input__attributes() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
 
-    assert MyMutationType.name.ref == Task._meta.get_field("name")
-    assert MyMutationType.name.many is False
-    assert MyMutationType.name.required is False
-    assert MyMutationType.name.hidden is False
-    assert MyMutationType.name.default_value is Undefined
-    assert MyMutationType.name.description is None
-    assert MyMutationType.name.deprecation_reason is None
-    assert MyMutationType.name.schema_name == "name"
-    assert MyMutationType.name.directives == []
-    assert MyMutationType.name.extensions == {"undine_input": MyMutationType.name}
+    assert TaskCreateMutation.name.ref == Task._meta.get_field("name")
+    assert TaskCreateMutation.name.many is False
+    assert TaskCreateMutation.name.required is True
+    assert TaskCreateMutation.name.hidden is False
+    assert TaskCreateMutation.name.default_value is Undefined
+    assert TaskCreateMutation.name.description is None
+    assert TaskCreateMutation.name.deprecation_reason is None
+    assert TaskCreateMutation.name.schema_name == "name"
+    assert TaskCreateMutation.name.directives == []
+    assert TaskCreateMutation.name.extensions == {"undine_input": TaskCreateMutation.name}
 
-    assert MyMutationType.name.mutation_type == MyMutationType
-    assert MyMutationType.name.name == "name"
+    assert TaskCreateMutation.name.mutation_type == TaskCreateMutation
+    assert TaskCreateMutation.name.name == "name"
 
 
 def test_input__get_field_type() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
 
-    field_type = MyMutationType.name.get_field_type()
-    assert field_type == GraphQLString
+    field_type = TaskCreateMutation.name.get_field_type()
+    assert field_type == GraphQLNonNull(GraphQLString)
 
 
 def test_input__as_graphql_input_field() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
 
-    graphql_input_field = MyMutationType.name.as_graphql_input_field()
-    assert graphql_input_field.type == GraphQLString
+    graphql_input_field = TaskCreateMutation.name.as_graphql_input_field()
+    assert graphql_input_field.type == GraphQLNonNull(GraphQLString)
     assert graphql_input_field.description is None
     assert graphql_input_field.deprecation_reason is None
-    assert graphql_input_field.extensions == {"undine_input": MyMutationType.name}
+    assert graphql_input_field.extensions == {"undine_input": TaskCreateMutation.name}
 
 
 def test_input__many() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(many=True)
 
-    assert MyMutationType.name.many is True
+    assert TaskCreateMutation.name.many is True
 
-    field_type = MyMutationType.name.get_field_type()
-    assert field_type == GraphQLList(GraphQLNonNull(GraphQLString))
+    field_type = TaskCreateMutation.name.get_field_type()
+    assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_input__required() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(required=True)
 
-    assert MyMutationType.name.required is True
+    assert TaskCreateMutation.name.required is True
 
-    field_type = MyMutationType.name.get_field_type()
+    field_type = TaskCreateMutation.name.get_field_type()
     assert field_type == GraphQLNonNull(GraphQLString)
 
 
 def test_input__required_and_many() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(required=True, many=True)
 
-    assert MyMutationType.name.required is True
-    assert MyMutationType.name.many is True
+    assert TaskCreateMutation.name.required is True
+    assert TaskCreateMutation.name.many is True
 
-    field_type = MyMutationType.name.get_field_type()
+    field_type = TaskCreateMutation.name.get_field_type()
     assert field_type == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
 
 
 def test_input__input_only() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(input_only=True)
 
-    assert MyMutationType.name.input_only is True
+    assert TaskCreateMutation.name.input_only is True
 
 
 def test_input__description() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(description="Description.")
 
-    assert MyMutationType.name.description == "Description."
+    assert TaskCreateMutation.name.description == "Description."
 
-    graphql_input_field = MyMutationType.name.as_graphql_input_field()
+    graphql_input_field = TaskCreateMutation.name.as_graphql_input_field()
     assert graphql_input_field.description == "Description."
 
 
 def test_input__description__variable(undine_settings) -> None:
     undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
 
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
         """Description."""
 
-    assert MyMutationType.name.description == "Description."
+    assert TaskCreateMutation.name.description == "Description."
 
-    graphql_input_field = MyMutationType.name.as_graphql_input_field()
+    graphql_input_field = TaskCreateMutation.name.as_graphql_input_field()
     assert graphql_input_field.description == "Description."
 
 
 def test_input__deprecation_reason() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(deprecation_reason="Use something else.")
 
-    assert MyMutationType.name.deprecation_reason == "Use something else."
+    assert TaskCreateMutation.name.deprecation_reason == "Use something else."
 
-    graphql_input_field = MyMutationType.name.as_graphql_input_field()
+    graphql_input_field = TaskCreateMutation.name.as_graphql_input_field()
     assert graphql_input_field.deprecation_reason == "Use something else."
 
 
 def test_input__schema_name() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(schema_name="val")
 
-    assert MyMutationType.name.schema_name == "val"
+    assert TaskCreateMutation.name.schema_name == "val"
 
-    assert str(MyMutationType.name) == "val: String"
+    assert str(TaskCreateMutation.name) == "val: String!"
 
 
 def test_input__directives() -> None:
@@ -143,12 +143,12 @@ def test_input__directives() -> None:
 
     directives: list[Directive] = [ValueDirective(value="foo")]
 
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(directives=directives)
 
-    assert MyMutationType.name.directives == directives
+    assert TaskCreateMutation.name.directives == directives
 
-    assert str(MyMutationType.name) == 'name: String @value(value: "foo")'
+    assert str(TaskCreateMutation.name) == 'name: String! @value(value: "foo")'
 
 
 def test_input__directives__not_applicable() -> None:
@@ -159,7 +159,7 @@ def test_input__directives__not_applicable() -> None:
 
     with pytest.raises(DirectiveLocationError):
 
-        class MyMutationType(MutationType[Task]):
+        class TaskCreateMutation(MutationType[Task]):
             name = Input(directives=directives)
 
     # Model not cleaned up since error occurred in MutationType class body.
@@ -167,17 +167,17 @@ def test_input__directives__not_applicable() -> None:
 
 
 def test_input__extensions() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(extensions={"foo": "bar"})
 
-    assert MyMutationType.name.extensions == {"foo": "bar", "undine_input": MyMutationType.name}
+    assert TaskCreateMutation.name.extensions == {"foo": "bar", "undine_input": TaskCreateMutation.name}
 
-    graphql_input_field = MyMutationType.name.as_graphql_input_field()
-    assert graphql_input_field.extensions == {"foo": "bar", "undine_input": MyMutationType.name}
+    graphql_input_field = TaskCreateMutation.name.as_graphql_input_field()
+    assert graphql_input_field.extensions == {"foo": "bar", "undine_input": TaskCreateMutation.name}
 
 
 def test_input__validator() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
         done = Input()
 
@@ -190,14 +190,14 @@ def test_input__validator() -> None:
         @done.validate()
         def validate_done(self: Input, info: GQLInfo, *, value: bool) -> None: ...
 
-    assert MyMutationType.name.validator_func is MyMutationType.validate_name
+    assert TaskCreateMutation.name.validator_func is TaskCreateMutation.validate_name
 
     with pytest.raises(ValueError, match=exact("Name must not be 'foo'")):
-        MyMutationType.validate_name(MyMutationType.name, mock_gql_info(), "foo")
+        TaskCreateMutation.validate_name(TaskCreateMutation.name, mock_gql_info(), "foo")
 
 
 def test_input__permissions() -> None:
-    class MyMutationType(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input()
         done = Input()
 
@@ -208,10 +208,10 @@ def test_input__permissions() -> None:
         @done.permissions()
         def done_permissions(self: Input, info: GQLInfo, value: str) -> None: ...
 
-    assert MyMutationType.name.permissions_func is MyMutationType.name_permissions
+    assert TaskCreateMutation.name.permissions_func is TaskCreateMutation.name_permissions
 
     with pytest.raises(GraphQLPermissionError):
-        MyMutationType.name_permissions(MyMutationType.name, mock_gql_info(), "foo")
+        TaskCreateMutation.name_permissions(TaskCreateMutation.name, mock_gql_info(), "foo")
 
 
 def test_input__default_value() -> None:
@@ -257,6 +257,7 @@ def test_input__related_mutation_type() -> None:
     # Related mutation type can be left out and it won't affect the current relation.
     assert TaskCreateMutation.project.default_value == Undefined
     assert TaskCreateMutation.project.required is False
+
 
 
 def test_input__callable() -> None:

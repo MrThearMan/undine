@@ -7,7 +7,7 @@ from django.db.models import CASCADE, CharField, ForeignKey, ManyToOneRel
 
 from example_project.app.models import Task
 from tests.helpers import parametrize_helper
-from undine import GQLInfo, MutationType, QueryType
+from undine import GQLInfo, Input, MutationType, QueryType
 from undine.converters import is_input_hidden
 from undine.dataclasses import TypeRef
 
@@ -38,7 +38,11 @@ def test_is_input_only(value, expected) -> None:
 
 
 def test_is_input_only__model() -> None:
-    assert is_input_hidden(Task) is False
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input()
+
+    result = is_input_hidden(Task, caller=TaskCreateMutation.project)
+    assert result is False
 
 
 def test_is_input_only__function__no_input() -> None:
@@ -56,6 +60,6 @@ def test_is_input_only__function__has_input() -> None:
 def test_is_input_only__mutation_type() -> None:
     class TaskType(QueryType[Task]): ...
 
-    class TaskMutation(MutationType[Task]): ...
+    class TaskCreateMutation(MutationType[Task]): ...
 
-    assert is_input_hidden(TaskMutation) is False
+    assert is_input_hidden(TaskCreateMutation) is False

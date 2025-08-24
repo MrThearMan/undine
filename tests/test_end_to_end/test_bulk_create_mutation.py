@@ -7,6 +7,7 @@ import pytest
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine.utils.mutation_tree import bulk_mutate
 
 
 @pytest.mark.django_db
@@ -67,6 +68,10 @@ def test_bulk_create_mutation__relations__to_one(graphql, undine_settings):
 
     class TaskCreateMutation(MutationType[Task]):
         project = Input(RelatedProject)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -135,6 +140,10 @@ def test_bulk_create_mutation__relations__to_many(graphql, undine_settings):
 
     class TaskCreateMutation(MutationType[Task]):
         assignees = Input(RelatedAssignee)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -261,9 +270,9 @@ def test_bulk_create_mutation__after(graphql, undine_settings):
 
     class TaskCreateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data.append(deepcopy(previous_data))
+            after_data.append(deepcopy(input_data))
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -295,7 +304,42 @@ def test_bulk_create_mutation__after(graphql, undine_settings):
 
     assert response.has_errors is False, response.errors
 
-    assert after_data == [{}, {}]
+    assert after_data == [
+        {
+            "attachment": None,
+            "check_time": None,
+            "contact_email": None,
+            "demo_url": None,
+            "done": False,
+            "due_by": None,
+            "external_uuid": None,
+            "extra_data": None,
+            "image": None,
+            "name": "Test Task",
+            "points": None,
+            "progress": 0,
+            "project": None,
+            "request": None,
+            "type": TaskTypeChoices.TASK,
+        },
+        {
+            "attachment": None,
+            "check_time": None,
+            "contact_email": None,
+            "demo_url": None,
+            "done": False,
+            "due_by": None,
+            "external_uuid": None,
+            "extra_data": None,
+            "image": None,
+            "name": "Test Task",
+            "points": None,
+            "progress": 0,
+            "project": None,
+            "request": None,
+            "type": TaskTypeChoices.TASK,
+        },
+    ]
 
 
 @pytest.mark.django_db

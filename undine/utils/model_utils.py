@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, TypeGuard
 
@@ -27,8 +27,11 @@ from undine.dataclasses import BulkCreateKwargs
 from undine.exceptions import (
     ExpressionMultipleOutputFieldError,
     ExpressionNoOutputFieldError,
+    GraphQLDuplicatePrimaryKeysError,
+    GraphQLModelConstraintViolationError,
     GraphQLModelNotFoundError,
     GraphQLModelsNotFoundError,
+    GraphQLPrimaryKeysMissingError,
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
 )
@@ -68,6 +71,7 @@ __all__ = [
     "get_model",
     "get_model_field",
     "get_model_fields_for_graphql",
+    "get_pks_from_list_of_dicts",
     "get_related_name",
     "get_save_update_fields",
     "get_validation_error_messages",
@@ -95,19 +99,38 @@ def get_instance_or_raise(*, model: type[TModel], pk: Any) -> TModel:
         raise GraphQLModelNotFoundError(pk=pk, model=model) from error
 
 
-def get_instances_or_raise(*, model: type[TModel], pks: set[Any]) -> list[TModel]:
+def get_instances_or_raise(*, model: type[TModel], pks: list[Any]) -> list[TModel]:
     """
     Get model instances by the given primary keys.
 
     :raises GraphQLModelsNotFoundError: If an instance for any of the given primary keys does not exist.
     """
     instances: list[TModel] = list(get_default_manager(model).filter(pk__in=pks))
-    missing = pks - {instance.pk for instance in instances}
+    missing = set(pks) - {instance.pk for instance in instances}
     if missing:
         if len(missing) == 1:
             raise GraphQLModelNotFoundError(pk=missing.pop(), model=model)
         raise GraphQLModelsNotFoundError(missing=missing, model=model)
     return instances
+
+
+def get_pks_from_list_of_dicts(input_data: list[dict[str, Any]]) -> list[Any]:
+    """
+    Gets primary keys from a list of dicts while validating that each item in list has a pk
+    and there are no duplicates. Primary keys are in the same order as in the given list.
+
+    :raises GraphQLPrimaryKeysMissingError: Some items don't have pk.
+    :raises GraphQLDuplicatePrimaryKeysError: There are some duplicate primary keys.
+    """
+    pks = [data["pk"] for data in input_data if "pk" in data]
+    if len(pks) != len(input_data):
+        raise GraphQLPrimaryKeysMissingError(got=len(pks), expected=len(input_data))
+
+    if len(set(pks)) != len(pks):
+        duplicates = [item for item, count in Counter(pks).items() if count > 1]
+        raise GraphQLDuplicatePrimaryKeysError(duplicates=duplicates)
+
+    return pks
 
 
 def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:
@@ -453,13 +476,13 @@ def set_forward_ids(instance: Model) -> None:
 
 
 @contextmanager
-def convert_integrity_errors(to_exception: type[Exception]) -> Generator[None, None, None]:
+def convert_integrity_errors() -> Generator[None, None, None]:
     """Convert IntegrityErrors raised during the context to the given exception."""
     try:
         yield
     except IntegrityError as error:
         msg = get_constraint_message(error.args[0])
-        raise to_exception(msg) from error
+        raise GraphQLModelConstraintViolationError(msg) from error
 
 
 def lookup_to_display_name(lookup: str, field: ModelField) -> str:

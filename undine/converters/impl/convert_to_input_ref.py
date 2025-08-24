@@ -18,18 +18,11 @@ from django.db.models.fields.related_descriptors import (
 from django.db.models.query_utils import DeferredAttribute
 
 from undine import Input, MutationType
-from undine.converters import convert_to_input_ref, is_many
+from undine.converters import convert_to_input_ref
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import InvalidInputMutationTypeError, ModelFieldDoesNotExistError
-from undine.settings import undine_settings
 from undine.typing import GenericField, Lambda, ModelField, MutationKind, RelatedField, RelationType
-from undine.utils.model_utils import (
-    generic_foreign_key_for_generic_relation,
-    get_instance_or_raise,
-    get_instances_or_raise,
-    get_model_field,
-    get_related_name,
-)
+from undine.utils.model_utils import generic_foreign_key_for_generic_relation, get_model_field, get_related_name
 
 
 @convert_to_input_ref.register
@@ -52,37 +45,12 @@ def _(ref: ModelField, **kwargs: Any) -> Any:
 
 
 @convert_to_input_ref.register
+def _(ref: RelatedField, **kwargs: Any) -> Any:
+    return ref.related_model
+
+
+@convert_to_input_ref.register
 def _(ref: type[Model], **kwargs: Any) -> Any:
-    caller: Input = kwargs["caller"]
-
-    if undine_settings.ASYNC:
-        msg = "Model Inputs cannot be used in async mutations."
-        raise RuntimeError(msg)  # TODO: Custom exception
-
-    user_func = caller.convertion_func
-
-    if is_many(ref, model=caller.mutation_type.__model__, name=caller.field_name):
-
-        def convert_many(inpt: Input, value: list[Any] | None) -> list[Model]:
-            instances: list[Model] = []
-            if value is not None:
-                instances = get_instances_or_raise(model=ref, pks=set(value))
-            if user_func is not None:
-                return user_func(inpt, instances)
-            return instances
-
-        caller.convertion_func = convert_many
-        return ref
-
-    def convert_single(inpt: Input, value: Any) -> Model | None:
-        instance: Model | None = None
-        if value is not None:
-            instance = get_instance_or_raise(model=ref, pk=value)
-        if user_func is not None:
-            return user_func(inpt, instance)
-        return instance
-
-    caller.convertion_func = convert_single
     return ref
 
 
@@ -204,12 +172,10 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
 
     try:
         field: RelatedField | GenericField = get_model_field(model=model, lookup=caller.field_name)  # type: ignore[assignment]
-
     except ModelFieldDoesNotExistError:
-        # Allow using related inputs for non-relational fields in custom mutations.
-        if caller.mutation_type.__kind__ == MutationKind.custom:
-            return ref
-        raise
+        # Allow using relations "wrong", e.g. provide single dict for many related field.
+        # Actual mutation for related mutations will be handled by the user.
+        return ref
 
     relation_type = RelationType.for_related_field(field)
 
@@ -227,14 +193,14 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
 
 @convert_to_input_ref.register
 def _(ref: GenericRelation, **kwargs: Any) -> Any:
-    return ref
+    return ref.related_model
 
 
 @convert_to_input_ref.register
 def _(ref: GenericRel, **kwargs: Any) -> Any:
-    return ref.field
+    return convert_to_input_ref(ref.field, **kwargs)
 
 
-@convert_to_input_ref.register  # Required for Django<5.1
+@convert_to_input_ref.register
 def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
     return ref

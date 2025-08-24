@@ -6,7 +6,7 @@ import uuid
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import suppress
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, IntEnum, StrEnum
 from functools import partial
 from importlib import import_module
 from types import FunctionType
@@ -171,11 +171,23 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType
 
 
 @convert_to_graphql_type.register
-def _(ref: type[Enum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(ref: type[Enum | StrEnum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return get_or_create_graphql_enum(
         name=ref.__name__,
         values={
             str(value.value): GraphQLEnumValue(value=value, description=str(value.value))
+            for name, value in ref.__members__.items()
+        },
+        description=convert_to_description(ref),
+    )
+
+
+@convert_to_graphql_type.register
+def _(ref: type[IntEnum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return get_or_create_graphql_enum(
+        name=ref.__name__,
+        values={
+            str(value.name): GraphQLEnumValue(value=value, description=str(value.name))
             for name, value in ref.__members__.items()
         },
         description=convert_to_description(ref),

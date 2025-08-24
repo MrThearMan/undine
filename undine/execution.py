@@ -24,6 +24,7 @@ from undine.hooks import LifecycleHookContext, LifecycleHookManager, use_lifecyc
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import build_response, is_subscription_operation, validate_get_request_operation
 from undine.utils.graphql.validation_rules import get_validation_rules
+from undine.utils.logging import log_traceback
 from undine.utils.model_utils import get_validation_error_messages
 from undine.utils.reflection import get_traceback
 
@@ -90,15 +91,18 @@ class UndineExecutionContext(ExecutionContext):
     @staticmethod
     def build_response(data: dict[str, Any] | None, errors: list[GraphQLError]) -> ExecutionResult:
         for error in errors:
-            extensions: dict[str, Any] = error.extensions  # type: ignore[union-attr]
+            extensions: dict[str, Any] = error.extensions  # type: ignore[union-attr,assignment]
 
             if error.original_error is None or isinstance(error.original_error, GraphQLError):
                 extensions.setdefault("status_code", HTTPStatus.BAD_REQUEST)
             else:
                 extensions.setdefault("status_code", HTTPStatus.INTERNAL_SERVER_ERROR)
 
-            if undine_settings.INCLUDE_ERROR_TRACEBACK:
-                extensions["traceback"] = get_traceback(error.__traceback__)
+            if error.__traceback__ is not None:
+                log_traceback(error.__traceback__)
+
+                if undine_settings.INCLUDE_ERROR_TRACEBACK:
+                    extensions["traceback"] = get_traceback(error.__traceback__)
 
         return ExecutionContext.build_response(data, errors)
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any, NamedTuple
 
 import pytest
@@ -47,9 +46,9 @@ def test_is_input_only(value, expected) -> None:
 
 
 def test_is_input_only__mutation_type() -> None:
-    class TaskMutation(MutationType[Task]): ...
+    class TaskCreateMutation(MutationType[Task]): ...
 
-    assert is_input_only(TaskMutation) is False
+    assert is_input_only(TaskCreateMutation) is False
 
 
 def test_is_input_only__type_ref() -> None:
@@ -60,18 +59,17 @@ def test_is_input_only__type_ref() -> None:
 
 
 def test_is_input_only__type_ref__model_field() -> None:
-    class TaskMutation(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(str)
 
-    assert is_input_only(TypeRef(str), caller=TaskMutation.name) is False
+    assert is_input_only(TypeRef(str), caller=TaskCreateMutation.name) is False
 
 
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_is_input_only__model() -> None:
-    class TaskMutation(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         project = Input(Project)
 
-    assert is_input_only(Task, caller=TaskMutation.project) is False
+    assert is_input_only(Task, caller=TaskCreateMutation.project) is False
 
 
 def test_is_input_only__function() -> None:
@@ -88,7 +86,7 @@ def test_is_input_only__function__model_field() -> None:
     def func(root: Any, info: Any, value: Any) -> str:
         return value
 
-    class TaskMutation(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         name = Input(func)
 
-    assert is_input_only(func, caller=TaskMutation.name) is False
+    assert is_input_only(func, caller=TaskCreateMutation.name) is False

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import datetime
 import decimal
-import os
 import uuid
 from enum import Enum
 
 import pytest
 from django.db.models import F, TextChoices
 
-from example_project.app.models import Comment, Project, Task
+from example_project.app.models import Comment, Person, Project, Report, Task, TaskResult, TaskStep
 from undine import Input, MutationType
 from undine.converters import convert_to_input_ref
 from undine.dataclasses import LazyLambda, TypeRef
@@ -87,7 +86,6 @@ def test_convert_to_input_ref__model_field() -> None:
     assert convert_to_input_ref(field, caller=TaskCreateMutation.name) == field
 
 
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_convert_to_input_ref__model() -> None:
     class TaskCreateMutation(MutationType[Task]):
         project = Input(Project)
@@ -115,32 +113,28 @@ def test_convert_to_input_ref__reverse_many_to_one_descriptor() -> None:
     class TaskCreateMutation(MutationType[Task]):
         steps = Input(Task.steps)
 
-    field = Task._meta.get_field("steps")
-    assert convert_to_input_ref(Task.steps, caller=TaskCreateMutation.steps) == field
+    assert convert_to_input_ref(Task.steps, caller=TaskCreateMutation.steps) == TaskStep
 
 
 def test_convert_to_input_ref__reverse_one_to_one_descriptor() -> None:
     class TaskCreateMutation(MutationType[Task]):
         result = Input(Task.result)
 
-    field = Task._meta.get_field("result")
-    assert convert_to_input_ref(Task.result, caller=TaskCreateMutation.result) == field
+    assert convert_to_input_ref(Task.result, caller=TaskCreateMutation.result) == TaskResult
 
 
 def test_convert_to_input_ref__many_to_many_descriptor__forward() -> None:
     class TaskCreateMutation(MutationType[Task]):
         assignees = Input(Task.assignees)
 
-    field = Task._meta.get_field("assignees")
-    assert convert_to_input_ref(Task.assignees, caller=TaskCreateMutation.assignees) == field
+    assert convert_to_input_ref(Task.assignees, caller=TaskCreateMutation.assignees) == Person
 
 
 def test_convert_to_input_ref__many_to_many_descriptor__reverse() -> None:
     class TaskCreateMutation(MutationType[Task]):
         reports = Input(Task.reports)
 
-    field = Task._meta.get_field("reports")
-    assert convert_to_input_ref(Task.reports, caller=TaskCreateMutation.reports) == field
+    assert convert_to_input_ref(Task.reports, caller=TaskCreateMutation.reports) == Report
 
 
 def test_convert_to_input_ref__mutation_type() -> None:
@@ -159,7 +153,7 @@ def test_convert_to_input_ref__mutation_type() -> None:
 
 
 def test_convert_to_input_ref__mutation_type__not_related() -> None:
-    class ProjectMutation(MutationType[Project]): ...
+    class ProjectMutation(MutationType[Project], kind="create"): ...
 
     class TaskCreateMutation(MutationType[Task]): ...
 
@@ -175,15 +169,14 @@ def test_convert_to_input_ref__generic_relation() -> None:
     class TaskCreateMutation(MutationType[Task]):
         comments = Input(field)
 
-    assert convert_to_input_ref(field, caller=TaskCreateMutation.comments) == field
+    assert convert_to_input_ref(field, caller=TaskCreateMutation.comments) == Comment
 
 
 def test_convert_to_input_ref__generic_rel() -> None:
     class TaskCreateMutation(MutationType[Task]):
         comments = Input(Task.comments)
 
-    field = Task._meta.get_field("comments")
-    assert convert_to_input_ref(Task.comments, caller=TaskCreateMutation.comments) == field
+    assert convert_to_input_ref(Task.comments, caller=TaskCreateMutation.comments) == Comment
 
 
 def test_convert_to_input_ref__generic_foreign_key() -> None:

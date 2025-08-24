@@ -3,8 +3,8 @@ from __future__ import annotations
 from django.db.models import Field
 from graphql import Undefined
 
-from example_project.app.models import Comment, Task
-from undine import MutationType, QueryType
+from example_project.app.models import Comment, Project, Task
+from undine import Input, MutationType, QueryType
 from undine.converters import convert_to_default_value
 from undine.dataclasses import LazyLambda, TypeRef
 
@@ -57,9 +57,9 @@ def test_convert_to_default_value__func() -> None:
 def test_convert_to_default_value__mutation_type() -> None:
     class TaskType(QueryType[Task]): ...
 
-    class TaskMutation(MutationType[Task]): ...
+    class TaskCreateMutation(MutationType[Task]): ...
 
-    result = convert_to_default_value(TaskMutation)
+    result = convert_to_default_value(TaskCreateMutation)
     assert result is Undefined
 
 
@@ -71,5 +71,8 @@ def test_convert_to_default_value__generic_foreign_key() -> None:
 
 
 def test_convert_to_default_value__model() -> None:
-    result = convert_to_default_value(Task)
-    assert result is Undefined
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input()
+
+    result = convert_to_default_value(Project, caller=TaskCreateMutation.project)
+    assert result is None

@@ -107,14 +107,14 @@ def test_get_instance_or_raise__missing() -> None:
 def test_get_instances_or_raise() -> None:
     project = ProjectFactory.create()
 
-    instances = get_instances_or_raise(model=Project, pks={project.pk})
+    instances = get_instances_or_raise(model=Project, pks=[project.pk])
     assert instances == [project]
 
 
 @pytest.mark.django_db
 def test_get_instances_or_raise__missing() -> None:
     with pytest.raises(GraphQLModelNotFoundError):
-        get_instances_or_raise(model=Project, pks={1})
+        get_instances_or_raise(model=Project, pks=[1])
 
 
 def test_generic_relations_for_generic_foreign_key() -> None:

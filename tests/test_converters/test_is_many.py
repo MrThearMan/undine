@@ -213,13 +213,13 @@ def test_is_many__query_type__many_to_many() -> None:
 
 
 def test_is_many__mutation_type__foreign_key() -> None:
-    class ProjectMutation(MutationType[Project]): ...
+    class ProjectMutation(MutationType[Project], kind="related"): ...
 
     assert is_many(ProjectMutation, model=Task, name="project") is False
 
 
 def test_is_many__mutation_type__many_to_many() -> None:
-    class AssigneeMutation(MutationType[Person]): ...
+    class AssigneeMutation(MutationType[Person], kind="related"): ...
 
     assert is_many(AssigneeMutation, model=Task, name="assignees") is True
 

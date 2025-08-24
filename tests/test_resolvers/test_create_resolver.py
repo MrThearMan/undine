@@ -16,6 +16,7 @@ from example_project.app.models import (
     TaskResult,
     TaskStep,
     TaskTypeChoices,
+    Team,
 )
 from tests.factories import (
     PersonFactory,
@@ -64,7 +65,11 @@ def test_create_resolver__forward_one_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedRequest(MutationType[ServiceRequest], kind="related"):
+        details = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        request = Input(RelatedRequest)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -124,7 +129,12 @@ def test_create_resolver__forward_many_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedProject(MutationType[Project], kind="related"):
+        name = Input()
+        team = Input(Team)
+
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input(RelatedProject)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -183,7 +193,12 @@ def test_create_resolver__forward_many_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedAssignee(MutationType[Person], kind="related"):
+        name = Input()
+        email = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        assignees = Input(RelatedAssignee, many=True)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -244,7 +259,12 @@ def test_create_resolver__reverse_one_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedResult(MutationType[TaskResult], kind="related"):
+        details = Input()
+        time_used = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        result = Input(RelatedResult)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -303,7 +323,11 @@ def test_create_resolver__reverse_one_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedStep(MutationType[TaskStep], kind="related"):
+        name = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        steps = Input(RelatedStep, many=True)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -363,7 +387,12 @@ def test_create_resolver__reverse_many_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskCreateMutation(MutationType[Task]): ...
+    class RelatedReport(MutationType[Report], kind="related"):
+        name = Input()
+        content = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        reports = Input(RelatedReport, many=True)
 
     class Query(RootType):
         create_task = Entrypoint(TaskCreateMutation)
@@ -456,7 +485,7 @@ def test_create_resolver__mutation_hooks(undine_settings) -> None:
             permission_called = next(counter)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_called
             after_called = next(counter)
 

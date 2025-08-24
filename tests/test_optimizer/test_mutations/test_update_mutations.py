@@ -20,6 +20,7 @@ def test_mutation_optimization__update(graphql, undine_settings) -> None:
     # MutationTypes
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
 
     # RootTypes
@@ -57,8 +58,7 @@ def test_mutation_optimization__update(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(3)
+    response.assert_query_count(4)
 
 
 @pytest.mark.django_db
@@ -79,6 +79,7 @@ def test_mutation_optimization__update__forward__one_to_one(graphql, undine_sett
     class ServiceRequestMutation(MutationType[ServiceRequest], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         request = Input(ServiceRequestMutation)
 
@@ -132,8 +133,7 @@ def test_mutation_optimization__update__forward__one_to_one(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(5)
+    response.assert_query_count(6)
 
 
 @pytest.mark.django_db
@@ -154,6 +154,7 @@ def test_mutation_optimization__update__forward__many_to_one(graphql, undine_set
     class ProjectMutation(MutationType[Project], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         project = Input(ProjectMutation)
 
@@ -207,8 +208,7 @@ def test_mutation_optimization__update__forward__many_to_one(graphql, undine_set
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(6)
+    response.assert_query_count(7)
 
 
 @pytest.mark.django_db
@@ -229,6 +229,7 @@ def test_mutation_optimization__update__forward__many_to_many(graphql, undine_se
     class PersonMutation(MutationType[Person], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         assignees = Input(PersonMutation)
 
@@ -287,8 +288,7 @@ def test_mutation_optimization__update__forward__many_to_many(graphql, undine_se
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(9)
+    response.assert_query_count(10)
 
 
 @pytest.mark.django_db
@@ -309,6 +309,7 @@ def test_mutation_optimization__update__reverse__one_to_one(graphql, undine_sett
     class TaskResultMutation(MutationType[TaskResult], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         result = Input(TaskResultMutation)
 
@@ -362,8 +363,7 @@ def test_mutation_optimization__update__reverse__one_to_one(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(6)
+    response.assert_query_count(7)
 
 
 @pytest.mark.django_db
@@ -384,6 +384,7 @@ def test_mutation_optimization__update__reverse__one_to_many(graphql, undine_set
     class TaskStepMutation(MutationType[TaskStep], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
+        pk = Input()
         name = Input()
         steps = Input(TaskStepMutation)
 
@@ -442,8 +443,7 @@ def test_mutation_optimization__update__reverse__one_to_many(graphql, undine_set
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(7)
+    response.assert_query_count(8)
 
 
 @pytest.mark.django_db
@@ -464,6 +464,7 @@ def test_mutation_optimization__update__reverse__many_to_many(graphql, undine_se
     class ReportMutation(MutationType[Report], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
+        pk = Input()
         name = Input()
         reports = Input(ReportMutation)
 
@@ -522,8 +523,7 @@ def test_mutation_optimization__update__reverse__many_to_many(graphql, undine_se
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(9)
+    response.assert_query_count(10)
 
 
 @pytest.mark.django_db
@@ -544,6 +544,7 @@ def test_mutation_optimization__update__generic_relation(graphql, undine_setting
     class CommentMutation(MutationType[Comment], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
         type = Input()
         comments = Input(CommentMutation)
@@ -603,8 +604,7 @@ def test_mutation_optimization__update__generic_relation(graphql, undine_setting
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(7)
+    response.assert_query_count(8)
 
 
 @pytest.mark.django_db
@@ -626,6 +626,7 @@ def test_mutation_optimization__update__generic_foreign_key(graphql, undine_sett
     # MutationTypes
 
     class CommentUpdateMutation(MutationType[Comment], auto=False):
+        pk = Input()
         contents = Input()
         target = Input()
 
@@ -688,5 +689,4 @@ def test_mutation_optimization__update__generic_foreign_key(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
-    response.assert_query_count(5)
+    response.assert_query_count(6)

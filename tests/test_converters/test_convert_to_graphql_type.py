@@ -4,7 +4,7 @@ import datetime
 import uuid
 from contextlib import suppress
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, IntEnum, StrEnum
 from typing import Any, AsyncGenerator, AsyncIterable, AsyncIterator, NamedTuple, NotRequired, Required, TypedDict
 
 import pytest
@@ -227,6 +227,44 @@ def test_convert_to_graphql_type__enum() -> None:
     assert result.values == {
         "foo": GraphQLEnumValue(value=MyEnum.FOO, description="foo"),
         "bar": GraphQLEnumValue(value=MyEnum.BAR, description="bar"),
+    }
+    assert result.description == "Description."
+
+
+class MyStrEnum(StrEnum):
+    """Description."""
+
+    FOO = "foo"
+    BAR = "bar"
+
+
+def test_convert_to_graphql_type__str_enum() -> None:
+    result = convert_to_graphql_type(MyStrEnum)
+
+    assert isinstance(result, GraphQLEnumType)
+    assert result.name == "MyStrEnum"
+    assert result.values == {
+        "foo": GraphQLEnumValue(value=MyStrEnum.FOO, description="foo"),
+        "bar": GraphQLEnumValue(value=MyStrEnum.BAR, description="bar"),
+    }
+    assert result.description == "Description."
+
+
+class MyIntEnum(IntEnum):
+    """Description."""
+
+    FOO = 1
+    BAR = 2
+
+
+def test_convert_to_graphql_type__int_enum() -> None:
+    result = convert_to_graphql_type(MyIntEnum)
+
+    assert isinstance(result, GraphQLEnumType)
+    assert result.name == "MyIntEnum"
+    assert result.values == {
+        "FOO": GraphQLEnumValue(value=MyIntEnum.FOO, description="FOO"),
+        "BAR": GraphQLEnumValue(value=MyIntEnum.BAR, description="BAR"),
     }
     assert result.description == "Description."
 

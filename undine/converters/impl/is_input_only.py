@@ -53,4 +53,5 @@ def _(_: type[Model], **kwargs: Any) -> bool:
         field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     except ModelFieldError:
         return True
-    return is_input_only(field)
+
+    return is_input_only(field, **kwargs)

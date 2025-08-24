@@ -6,10 +6,12 @@ from typing import Any
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Model
 
-from undine import MutationType
+from undine import Input, MutationType
 from undine.converters import is_input_hidden
 from undine.dataclasses import LazyLambda, TypeRef
+from undine.exceptions import ModelFieldDoesNotExistError
 from undine.typing import ModelField
+from undine.utils.model_utils import get_model_field
 from undine.utils.reflection import get_signature
 
 
@@ -47,4 +49,11 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> bool:
 
 @is_input_hidden.register
 def _(_: type[Model], **kwargs: Any) -> bool:
-    return False
+    caller: Input = kwargs["caller"]
+
+    try:
+        field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
+    except ModelFieldDoesNotExistError:
+        return False
+
+    return is_input_hidden(field, **kwargs)

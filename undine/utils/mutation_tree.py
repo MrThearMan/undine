@@ -9,7 +9,7 @@ from django.db import transaction  # noqa: ICN003
 from django.db.models import Q
 
 from undine.exceptions import (
-    GraphQLModelConstraintViolationError,
+    GraphQLInvalidInputDataError,
     GraphQLMutationTreeModelMismatchError,
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
@@ -17,28 +17,29 @@ from undine.exceptions import (
 from undine.parsers import parse_model_relation_info
 from undine.settings import undine_settings
 from undine.typing import RelatedAction, RelationType
-
-from .model_utils import (
-    convert_integrity_errors,
+from undine.utils.model_utils import (
+    generic_relations_for_generic_foreign_key,
     get_bulk_create_kwargs,
     get_default_manager,
+    get_instance_or_raise,
+    get_instances_or_raise,
     set_forward_ids,
     use_delete_signals,
     use_m2m_add_signals,
     use_m2m_remove_signals,
     use_save_signals,
 )
+from undine.utils.text import to_camel_case
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model
     from django.db.models.fields.related_descriptors import ForeignKeyDeferredAttribute, ManyToManyDescriptor
-    from graphql import GraphQLError
 
     from undine.dataclasses import RelInfo
     from undine.typing import TModel
-    from undine.utils.mutation_data import MutationData, MutationManyData
 
 __all__ = [
     "bulk_mutate",
@@ -47,23 +48,28 @@ __all__ = [
 
 
 @transaction.atomic
-@convert_integrity_errors(GraphQLModelConstraintViolationError)
-def mutate(data: MutationData, *, model: type[TModel]) -> TModel:
-    """Create or update models and link or unlink relations using the given data and model."""
-    start_node = MutationNode(model=model)
-    start_node.instances.append(data.instance)
-    start_node.handle_data(data.data, data.instance)
+def mutate(
+    *,
+    model: type[TModel],
+    data: dict[str, Any],
+    related_action: RelatedAction = RelatedAction.null,
+) -> TModel:
+    """Mutate objects using the given data and model."""
+    start_node = MutationNode(model=model, related_action=related_action)
+    start_node.handle_one(data)
     return start_node.mutate()[0]  # type: ignore[return-value]
 
 
 @transaction.atomic
-@convert_integrity_errors(GraphQLModelConstraintViolationError)
-def bulk_mutate(data: list[MutationData], *, model: type[TModel]) -> list[TModel]:
-    """Create or update models and link or unlink relations using the given data and model."""
-    start_node = MutationNode(model=model)
-    for item in data:
-        start_node.instances.append(item.instance)
-        start_node.handle_data(item.data, item.instance)
+def bulk_mutate(
+    *,
+    model: type[TModel],
+    data: list[dict[str, Any]],
+    related_action: RelatedAction = RelatedAction.null,
+) -> list[TModel]:
+    """Bulk mutate objects using the given data and model."""
+    start_node = MutationNode(model=model, related_action=related_action)
+    start_node.handle_many(data)
     return start_node.mutate()  # type: ignore[return-value]
 
 
@@ -79,6 +85,9 @@ class MutationNode:
     model: type[Model]
     """The model that this node is for."""
 
+    related_action: RelatedAction = RelatedAction.null
+    """What happens to related objects that are not included in the input?"""
+
     mutation_func: Callable[[], list[Model]] = dataclasses.field(init=False)
     """The function that should be run to mutate the instances."""
 
@@ -93,9 +102,6 @@ class MutationNode:
 
     after: dict[str, MutationNode] = dataclasses.field(default_factory=dict)
     """Mutations that should be run after this one."""
-
-    errors: list[GraphQLError] = dataclasses.field(default_factory=list)
-    """Validation an permission errors that occurred before the mutation."""
 
     def __post_init__(self) -> None:
         self.mutation_func = self.mutate_bulk
@@ -139,17 +145,9 @@ class MutationNode:
         pks = [instance.pk for instance in self.instances]
         with use_delete_signals(self.model, self.instances):
             get_default_manager(self.model).filter(pk__in=pks).delete()
-
         return []
 
-    def mutate_through(
-        self,
-        *,
-        source_name: str,
-        target_name: str,
-        reverse: bool,
-        symmetrical: bool,
-    ) -> list[Model]:
+    def mutate_through(self, *, source_name: str, target_name: str, reverse: bool, symmetrical: bool) -> list[Model]:
         through_map: defaultdict[Model, dict[Model, Model]] = defaultdict(dict)
 
         # Add new instances
@@ -183,17 +181,47 @@ class MutationNode:
 
     # Data handling
 
+    def handle_one(self, data: dict[str, Any]) -> Model:
+        """Handle data for a single object."""
+        pk = data.get("pk")
+        # We need to fetch the existing instance so that non-updated fields are present during bulk-create.
+        instance = self.model() if pk is None else get_instance_or_raise(model=self.model, pk=pk)
+
+        self.instances.append(instance)
+        self.handle_data(data, instance)
+        return instance
+
+    def handle_many(self, data: list[dict[str, Any]]) -> list[Model]:
+        """Handle data for many objects."""
+        instances: list[Model] = []
+
+        instance_map: dict[Any, Model] = {}
+        pks = [item["pk"] for item in data if "pk" in item]
+        if pks:
+            # We need to fetch existing instances so that non-updated fields are present during bulk-create.
+            instance_map = {inst.pk: inst for inst in get_instances_or_raise(model=self.model, pks=pks)}
+
+        for item in data:
+            pk = item.get("pk")
+            instance = instance_map.get(pk) or self.model()
+
+            self.instances.append(instance)
+            self.handle_data(item, instance)
+            instances.append(instance)
+
+        return instances
+
     def handle_data(self, data: dict[str, Any], instance: Model) -> Self:
         relation_info = parse_model_relation_info(model=self.model)
 
         for field_name, field_data in data.items():
             rel_info = relation_info.get(field_name)
             if rel_info is None:
-                self.field_names.add(field_name)  # type: ignore[arg-type]
+                self.field_names.add(field_name)
                 setattr(instance, field_name, field_data)
                 continue
 
-            node = MutationNode(model=rel_info.related_model)  # type: ignore[arg-type]
+            node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
             self.handle_relation(field_data, rel_info, instance, node)
 
         return self
@@ -230,53 +258,77 @@ class MutationNode:
                 msg = f"Unhandled relation type: {rel_info.relation_type}"
                 raise NotImplementedError(msg)
 
-    def _handle_forward_o2o(
-        self,
-        data: MutationData | None,
-        rel_info: RelInfo,
-        instance: Model,
-        node: MutationNode,
-    ) -> None:
+    def _handle_forward_o2o(self, data: Any, rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle forward one-to-one relations for the given instance."""
-        if data is None:
-            if not rel_info.related_nullable:
-                raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
+        match data:
+            case dict():
+                rel = node.handle_one(data=data)
 
-            setattr(instance, rel_info.field_name, None)
-            self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
-            return
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
-        node.instances.append(data.instance)
-        node.handle_data(data.data, data.instance)
+            case rel_info.related_model_pk_type():
+                rel = get_instance_or_raise(model=node.model, pk=data)
 
-        setattr(instance, rel_info.field_name, data.instance)
-        self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+                node.instances.append(rel)
+
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case rel_info.related_model():
+                node.instances.append(data)
+
+                setattr(instance, rel_info.field_name, data)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case None:
+                if not rel_info.related_nullable:
+                    raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
+
+                setattr(instance, rel_info.field_name, None)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case _:
+                raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
         self.put_before(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
     _handle_m2o = _handle_forward_o2o
     """Handle many-to-one relations for the given instance."""
 
-    def _handle_reverse_o2o(
-        self,
-        data: MutationData | None,
-        rel_info: RelInfo,
-        instance: Model,
-        node: MutationNode,
-    ) -> None:
+    def _handle_reverse_o2o(self, data: Any, rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle reverse one-to-one relations for the given instance."""
         existing_instance: Model | None = getattr(instance, rel_info.field_name, None)
 
-        related_action: RelatedAction = RelatedAction.null
+        match data:
+            case dict():
+                rel = node.handle_one(data=data)
 
-        if data is not None:
-            related_action = data.related_action
+                setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
-            node.instances.append(data.instance)
-            node.handle_data(data.data, data.instance)
+            case rel_info.related_model_pk_type():
+                rel = get_instance_or_raise(model=node.model, pk=data)
 
-            setattr(data.instance, rel_info.related_name, instance)  # type: ignore[arg-type]
-            node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+                node.instances.append(rel)
+
+                setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case rel_info.related_model():
+                node.instances.append(data)
+
+                setattr(data, rel_info.related_name, instance)  # type: ignore[arg-type]
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case None:
+                # If creating, no related instance is created.
+                # If updating, there might be a related instance.
+                # What happens to it depends on the "related action" set by the mutation type.
+                pass
+
+            case _:
+                raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -285,37 +337,54 @@ class MutationNode:
             non_updated_instances: set[Model] = {existing_instance} - updated_instances
 
             if non_updated_instances:
-                match related_action:
+                match self.related_action:
                     case RelatedAction.null:
                         self._disconnect_instances(non_updated_instances, rel_info, node)
-
                     case RelatedAction.delete:
                         self._remove_instances(non_updated_instances, rel_info, node)
-
                     case RelatedAction.ignore:
                         raise GraphQLRelationMultipleInstancesError(
                             field_name=rel_info.related_name,
                             model=rel_info.related_model,
                         )
 
-    def _handle_o2m(
-        self,
-        data: MutationManyData,
-        rel_info: RelInfo,
-        instance: Model,
-        node: MutationNode,
-    ) -> None:
+    def _handle_o2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:  # noqa: C901,PLR0912
         """Handle one-to-many relations for the given instance."""
         existing_instances: set[Model] = set()
         if instance.pk is not None:
             existing_instances = set(getattr(instance, rel_info.field_name).all())
 
-        for item in data:
-            node.instances.append(item.instance)
-            node.handle_data(item.data, item.instance)
+        match data:
+            case [dict(), *_]:
+                instances = node.handle_many(data=data)
 
-            setattr(item.instance, rel_info.related_name, instance)  # type: ignore[arg-type]
-            node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+                for rel in instances:
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case [rel_info.related_model_pk_type(), *_]:
+                for rel in get_instances_or_raise(model=node.model, pks=data):
+                    node.instances.append(rel)
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case [rel_info.related_model(), *_]:
+                for rel in data:
+                    node.instances.append(rel)
+                    setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
+
+                node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
+
+            case [None, *_] | [] | None:
+                # If creating, do not add related instances.
+                # If updating, all instances will be "non-updated" instances.
+                # What happens to them depends on the "related action" set by the mutation type.
+                pass
+
+            case _:
+                raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -324,29 +393,34 @@ class MutationNode:
             non_updated_instances: set[Model] = existing_instances - updated_instances
 
             if non_updated_instances:
-                match data.related_action:
+                match self.related_action:
                     case RelatedAction.null:
                         self._disconnect_instances(non_updated_instances, rel_info, node)
-
                     case RelatedAction.delete:
                         self._remove_instances(non_updated_instances, rel_info, node)
-
                     case RelatedAction.ignore:
                         pass
 
-    def _handle_m2m(
-        self,
-        data: MutationManyData,
-        rel_info: RelInfo,
-        instance: Model,
-        node: MutationNode,
-    ) -> None:
+    def _handle_m2m(self, data: list[Any], rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle many-to-many relations for the given instance."""
-        for item in data:
-            node.instances.append(item.instance)
-            node.handle_data(item.data, item.instance)
+        match data:
+            case [dict(), *_]:
+                node.handle_many(data=data)
 
-        # TODO: Related action?
+            case [rel_info.related_model_pk_type(), *_]:
+                for rel in get_instances_or_raise(model=node.model, pks=data):
+                    node.instances.append(rel)
+
+            case [rel_info.related_model(), *_]:
+                for rel in data:
+                    node.instances.append(rel)
+
+            case [None, *_] | [] | None:
+                node.instances = []
+
+            case _:
+                raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
+
         node._handle_through(instance, rel_info)
 
         self.put_after(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
@@ -359,7 +433,7 @@ class MutationNode:
         target_name = m2m.field.m2m_field_name() if reverse else m2m.field.m2m_reverse_field_name()
         symmetrical = m2m.rel.symmetrical
 
-        node = MutationNode(model=m2m.through)
+        node = MutationNode(model=m2m.through, related_action=self.related_action)  # type: ignore[arg-type]
         node.mutation_func = partial(
             node.mutate_through,
             source_name=source_name,
@@ -382,29 +456,44 @@ class MutationNode:
 
         self.put_after(node, field_name=hidden_field_name, related_name=source_name)  # type: ignore[arg-type]
 
-    def _handle_generic_fk(
-        self,
-        data: MutationData | None,
-        rel_info: RelInfo,
-        instance: Model,
-        node: MutationNode,
-    ) -> None:
+    def _handle_generic_fk(self, data: Any, rel_info: RelInfo, instance: Model, node: MutationNode) -> None:
         """Handle generic foreign key relations for the given instance."""
-        if data is None:
-            if not rel_info.related_nullable:
-                raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
+        if not isinstance(data, dict):
+            raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
-            setattr(instance, rel_info.field_name, None)
-            self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
-            return
+        key: str | None = next(iter(data), None)
+        if key is None:
+            raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=data)
 
-        node.model = type(data.instance)
+        model_data: dict[str, Any] = data[key]
 
-        node.instances.append(data.instance)
-        node.handle_data(data.data, data.instance)
+        field: GenericForeignKey = rel_info.model._meta.get_field(rel_info.field_name)  # type: ignore[assignment]
+        relations = generic_relations_for_generic_foreign_key(field)
+        related_model_map = {to_camel_case(rel.model.__name__): rel.model for rel in relations}
 
-        setattr(instance, rel_info.field_name, data.instance)
-        self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+        model = related_model_map.get(key)
+        if model is None:
+            msg = f"Model '{key}' doesn't exist or have a generic relation to '{rel_info.model.__name__}'."
+            raise GraphQLInvalidInputDataError(msg)
+
+        node.model = model
+
+        match model_data:
+            case dict():
+                rel = node.handle_one(data=model_data)
+
+                setattr(instance, rel_info.field_name, rel)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case None:
+                if not rel_info.related_nullable:
+                    raise GraphQLRelationNotNullableError(field_name=rel_info.field_name, model=self.model)
+
+                setattr(instance, rel_info.field_name, None)
+                self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
+
+            case _:
+                raise GraphQLInvalidInputDataError(field_name=rel_info.field_name, data=model_data)
 
         self.put_before(node, field_name=rel_info.field_name, related_name=rel_info.related_name)  # type: ignore[arg-type]
 
@@ -420,7 +509,7 @@ class MutationNode:
         if not rel_info.related_nullable:
             raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
 
-        disconnect_node = MutationNode(model=rel_info.related_model)  # type: ignore[arg-type]
+        disconnect_node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
 
         for instance in instances:
             setattr(instance, rel_info.related_name, None)  # type: ignore[arg-type]
@@ -437,7 +526,7 @@ class MutationNode:
 
     def _remove_instances(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
         """Remove the given related instances when a relation is updated."""
-        remove_node = MutationNode(model=rel_info.related_model)  # type: ignore[arg-type]
+        remove_node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
         remove_node.instances.extend(instances)
         remove_node.mutation_func = remove_node.mutate_delete
 
@@ -457,7 +546,6 @@ class MutationNode:
             raise GraphQLMutationTreeModelMismatchError(model_1=node.model, model_2=self.model)
 
         self.instances.extend(node.instances)
-        self.errors.extend(node.errors)
 
         for name, before_node in self.before.items():
             if previous_node == before_node:

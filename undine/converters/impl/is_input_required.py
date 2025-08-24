@@ -40,17 +40,25 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
         case MutationKind.update | MutationKind.delete:
             return is_primary_key
 
-        case _:
+        case MutationKind.custom:
+            return True
+
+        case MutationKind.related:
+            return False
+
+        case _:  # pragma: no cover
             return False
 
 
 @is_input_required.register
 def _(_: type[Model], **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
+
     try:
         field = get_model_field(model=caller.mutation_type.__model__, lookup=caller.field_name)
     except ModelFieldError:
         return True
+
     return is_input_required(field, **kwargs)
 
 

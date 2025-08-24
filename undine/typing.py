@@ -98,7 +98,7 @@ if TYPE_CHECKING:
     )
     from graphql.pyutils import Path
 
-    from undine import FilterSet, InterfaceType, OrderSet
+    from undine import FilterSet, InterfaceType, MutationType, OrderSet
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -157,7 +157,6 @@ __all__ = [
     "PongMessage",
     "ProtocolType",
     "QueryTypeParams",
-    "RelatedAction",
     "RelatedField",
     "RequestMethod",
     "ReverseField",
@@ -256,6 +255,26 @@ class DjangoExpression(Protocol):
 
 class DispatchProtocol(Protocol[T_co]):
     def __call__(self, key: Any, **kwargs: Any) -> T_co: ...
+
+
+class MutationDataFunc(Protocol):
+    def __call__(
+        self,
+        instance: Model,
+        info: GQLInfo,
+        input_data: dict[str, Any],
+        mutation_type: type[MutationType],
+    ) -> None: ...
+
+
+class MutationDataCoroutine(Protocol):
+    async def __call__(
+        self,
+        instance: Model,
+        info: GQLInfo,
+        input_data: dict[str, Any],
+        mutation_type: type[MutationType],
+    ) -> None: ...
 
 
 class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
@@ -511,8 +530,8 @@ class MutationKind(enum.StrEnum):
     create = "create"
     update = "update"
     delete = "delete"
-    custom = "custom"
     related = "related"
+    custom = "custom"
 
     @enum.property
     def requires_pk(self) -> bool:
@@ -520,7 +539,7 @@ class MutationKind(enum.StrEnum):
 
     @enum.property
     def no_pk(self) -> bool:
-        return self == MutationKind.create
+        return self in {MutationKind.create, MutationKind.custom}
 
     @enum.property
     def should_use_autogeneration(self) -> bool:
@@ -531,16 +550,12 @@ class MutationKind(enum.StrEnum):
         return self == MutationKind.create
 
     @enum.property
-    def inputs_are_not_hidden_by_default(self) -> bool:
+    def all_inputs_used_by_default(self) -> bool:
         return self == MutationKind.custom
 
 
 class RelatedAction(enum.StrEnum):
-    """
-    When a relation is updated using a "related" kind of MutationType,
-    what happens to related objects that are not included in the input?
-    This only applies for reverse one-to-one and reverse foreign key (one-to-many) relations.
-    """
+    """What happens to related objects that are not included in mutation input?"""
 
     null = "null"
     """
@@ -589,6 +604,7 @@ class UndineErrorCodes(StrEnum):
 
     ASYNC_NOT_SUPPORTED = auto()
     CONTENT_TYPE_MISSING = auto()
+    DUPLICATE_PRIMARY_KEYS = auto()
     DUPLICATE_TYPE = auto()
     FIELD_NOT_NULLABLE = auto()
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
@@ -625,6 +641,7 @@ class UndineErrorCodes(StrEnum):
     PERMISSION_DENIED = auto()
     PERSISTED_DOCUMENTS_NOT_SUPPORTED = auto()
     PERSISTED_DOCUMENT_NOT_FOUND = auto()
+    PRIMARY_KEYS_MISSING = auto()
     REQUEST_DECODING_ERROR = auto()
     REQUEST_PARSE_ERROR = auto()
     SCALAR_CONVERSION_ERROR = auto()
@@ -822,8 +839,7 @@ class MutationTypeParams(TypedDict, total=False):
     """Arguments for an Undine `MutationType`."""
 
     model: type[Model]
-    kind: Literal["create", "update", "delete", "custom", "related"]
-    related_action: Literal["null", "delete", "ignore"]
+    kind: Literal["create", "update", "delete", "related", "custom"]
     auto: bool
     exclude: list[str]
     schema_name: str
@@ -1037,10 +1053,10 @@ _AnyInput: TypeAlias = Annotated[Any, "undine.Input"]
 _AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
 _AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
 
-EntrypointPermFunc: TypeAlias = Callable[[Any, GQLInfo, _AnyValue], None]
-FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
-InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
-ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], None]
+EntrypointPermFunc: TypeAlias = Callable[[Any, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 
 ConvertionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
 

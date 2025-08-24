@@ -52,7 +52,7 @@ def test_end_to_end__query__entrypoint__permission_error(graphql, undine_setting
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -101,7 +101,7 @@ def test_end_to_end__query__single__permission_error(graphql, undine_settings) -
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -160,7 +160,7 @@ def test_end_to_end__query__single__permission_error__nested__single(graphql, un
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -216,7 +216,7 @@ def test_end_to_end__query__single__permission_error__nested__many(graphql, undi
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -263,7 +263,7 @@ def test_end_to_end__query__single__permission_error__field(graphql, undine_sett
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -323,7 +323,7 @@ def test_end_to_end__query__single__permission_error__field__nested__single(grap
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -381,7 +381,7 @@ def test_end_to_end__query__single__permission_error__field__nested__many(graphq
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -431,7 +431,7 @@ def test_end_to_end__query__many__permission_error(graphql, undine_settings) -> 
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -510,7 +510,7 @@ def test_end_to_end__query__many__permission_error__nested__single(graphql, undi
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -571,7 +571,7 @@ def test_end_to_end__query__many__permission_error__nested__many(graphql, undine
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -620,7 +620,7 @@ def test_end_to_end__query__many__permission_error__field(graphql, undine_settin
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -701,7 +701,7 @@ def test_end_to_end__query__many__permission_error__field__nested__single(graphq
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -764,5 +764,5 @@ def test_end_to_end__query__many__permission_error__field__nested__many(graphql,
         ],
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)

@@ -366,9 +366,9 @@ def test_to_argument_map__mutation_type__delete_mutation() -> None:
 
 
 def test_to_argument_map__mutation_type__custom_mutation() -> None:
-    class TaskMutation(MutationType[Task]): ...
+    class TaskCreateMutation(MutationType[Task]): ...
 
-    result = convert_to_graphql_argument_map(TaskMutation, many=False)
+    result = convert_to_graphql_argument_map(TaskCreateMutation, many=False)
 
     assert sorted(result) == ["input"]
     assert isinstance(result["input"], GraphQLArgument)
@@ -425,9 +425,9 @@ def test_to_argument_map__mutation_type__many__delete_mutation() -> None:
 
 
 def test_to_argument_map__mutation_type__many__custom_mutation() -> None:
-    class TaskMutation(MutationType[Task]): ...
+    class TaskCreateMutation(MutationType[Task]): ...
 
-    result = convert_to_graphql_argument_map(TaskMutation, many=True)
+    result = convert_to_graphql_argument_map(TaskCreateMutation, many=True)
 
     assert sorted(result) == ["input"]
     assert isinstance(result["input"], GraphQLArgument)

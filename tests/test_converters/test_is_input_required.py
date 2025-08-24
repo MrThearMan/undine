@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import os
-
-import pytest
-
 from example_project.app.models import Comment, Project, Task
 from undine import Input, MutationType
 from undine.converters import is_input_required
@@ -26,6 +22,22 @@ def test_is_required__model_field__update_mutation() -> None:
     assert is_input_required(field, caller=TaskUpdateMutation.name) is False
 
 
+def test_is_required__model_field__custom_mutation() -> None:
+    class TaskUpdateMutation(MutationType[Task], kind="custom"):
+        name = Input()
+
+    field = Task._meta.get_field("name")
+    assert is_input_required(field, caller=TaskUpdateMutation.name) is True
+
+
+def test_is_required__model_field__related_mutation() -> None:
+    class TaskUpdateMutation(MutationType[Task], kind="related"):
+        name = Input()
+
+    field = Task._meta.get_field("name")
+    assert is_input_required(field, caller=TaskUpdateMutation.name) is False
+
+
 def test_is_required__model_field__reverse_foreign_key() -> None:
     class TaskCreateMutation(MutationType[Task]):
         steps = Input()
@@ -42,7 +54,6 @@ def test_is_required__model_field__many_to_many() -> None:
     assert is_input_required(field, caller=TaskCreateMutation.assignees) is False
 
 
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_is_required__model_field__model() -> None:
     class TaskCreateMutation(MutationType[Task]):
         project = Input(Project)
@@ -99,8 +110,8 @@ def test_is_required__generic_foreign_key__update_mutation() -> None:
 
 
 def test_is_required__generic_relation() -> None:
-    class TaskMutation(MutationType[Task]):
+    class TaskCreateMutation(MutationType[Task]):
         comments = Input()
 
     field = Task._meta.get_field("comments")
-    assert is_input_required(field, caller=TaskMutation.comments) is False
+    assert is_input_required(field, caller=TaskCreateMutation.comments) is False

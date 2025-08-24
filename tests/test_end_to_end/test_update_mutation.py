@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from typing import Any
 
@@ -10,7 +9,8 @@ from django.db.models import QuerySet
 from example_project.app.models import AcceptanceCriteria, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import AcceptanceCriteriaFactory, PersonFactory, ProjectFactory, TaskFactory, TaskStepFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
-from undine.typing import TModel
+from undine.typing import RelatedAction, TModel
+from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
@@ -295,10 +295,14 @@ def test_update_mutation__relations__one_to_many__not_nullable__remove_related(g
 
     class TaskStepType(QueryType[TaskStep]): ...
 
-    class RelatedTaskStep(MutationType[TaskStep], kind="related", related_action="delete"): ...
+    class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         steps = Input(RelatedTaskStep)
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
+            return mutate(model=Task, data=input_data, related_action=RelatedAction.delete)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -354,10 +358,14 @@ def test_update_mutation__relations__one_to_many__not_nullable__ignore(graphql, 
 
     class TaskStepType(QueryType[TaskStep]): ...
 
-    class RelatedTaskStep(MutationType[TaskStep], kind="related", related_action="ignore"): ...
+    class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         steps = Input(RelatedTaskStep)
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
+            return mutate(model=Task, data=input_data, related_action=RelatedAction.ignore)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -535,54 +543,6 @@ def test_update_mutation__relations__many_to_many__existing(graphql, undine_sett
 
 
 @pytest.mark.django_db
-def test_update_mutation__mutation_instance_limit(graphql, undine_settings):
-    class TaskType(QueryType[Task]): ...
-
-    class TaskUpdateMutation(MutationType[Task]): ...
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType)
-
-    class Mutation(RootType):
-        update_task = Entrypoint(TaskUpdateMutation)
-
-    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
-    undine_settings.MUTATION_INSTANCE_LIMIT = 0
-
-    task = TaskFactory.create()
-
-    data = {
-        "pk": task.pk,
-        "name": "Test Task",
-        "type": TaskTypeChoices.TASK,
-    }
-    query = """
-        mutation($input: TaskUpdateMutation!) {
-            updateTask(input: $input) {
-                pk
-                name
-            }
-        }
-    """
-
-    response = graphql(query, variables={"input": data})
-
-    assert response.json == {
-        "data": None,
-        "errors": [
-            {
-                "message": "Cannot mutate more than 0 objects in a single mutation (counted 1).",
-                "extensions": {
-                    "error_code": "MUTATION_TOO_MANY_OBJECTS",
-                    "status_code": 400,
-                },
-                "path": ["updateTask"],
-            }
-        ],
-    }
-
-
-@pytest.mark.django_db
 def test_update_mutation__after(graphql, undine_settings):
     after_data: dict[str, Any] = {}
 
@@ -590,9 +550,9 @@ def test_update_mutation__after(graphql, undine_settings):
 
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = previous_data
+            after_data = input_data
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -622,7 +582,7 @@ def test_update_mutation__after(graphql, undine_settings):
 
     assert response.has_errors is False, response.errors
 
-    assert after_data == {"pk": task.pk, "name": "Original Task", "type": "TASK"}
+    assert after_data == {"pk": task.pk, "name": "Test Task", "type": "TASK"}
 
 
 @pytest.mark.django_db
@@ -639,9 +599,9 @@ def test_update_mutation__after__relations(graphql, undine_settings):
         project = Input(RelatedProject)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_data
-            after_data = deepcopy(previous_data)
+            after_data = deepcopy(input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -681,11 +641,11 @@ def test_update_mutation__after__relations(graphql, undine_settings):
 
     assert after_data == {
         "pk": task.pk,
-        "name": "Original Task",
-        "type": "STORY",
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
         "project": {
             "pk": project.pk,
-            "name": "Original Project",
+            "name": "Test Project",
         },
     }
 
@@ -743,17 +703,10 @@ def test_update_mutation__input_only(graphql, undine_settings):
 
 @pytest.mark.django_db
 def test_update_mutation__related_int(graphql, undine_settings):
-    related_input = None
-
     class TaskType(QueryType[Task]): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         project = Input(int, required=True)
-
-        @classmethod
-        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
-            nonlocal related_input
-            related_input = input_data["project"]
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -785,8 +738,6 @@ def test_update_mutation__related_int(graphql, undine_settings):
     task.refresh_from_db()
     assert task.project == project
 
-    assert related_input == project.pk
-
     assert response.data == {
         "updateTask": {
             "pk": task.pk,
@@ -795,7 +746,6 @@ def test_update_mutation__related_int(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Does not work with async")  # TODO: Async
 def test_update_mutation__related_model(graphql, undine_settings):
     related_input = None
 
@@ -852,10 +802,14 @@ def test_update_mutation__related_model(graphql, undine_settings):
 def test_update_mutation__related_empty_list__not_nullable(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
-    class RelatedStep(MutationType[TaskStep], related_action="delete"): ...
+    class RelatedStep(MutationType[TaskStep], kind="related"): ...
 
     class TaskUpdateMutation(MutationType[Task]):
         steps = Input(RelatedStep, many=True)
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
+            return mutate(model=Task, data=input_data, related_action=RelatedAction.delete)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)

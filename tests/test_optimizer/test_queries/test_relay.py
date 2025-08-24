@@ -46,7 +46,7 @@ def test_optimizer__relay__node(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -84,7 +84,7 @@ def test_optimizer__relay__node__id_only(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -140,7 +140,7 @@ def test_optimizer__relay__node__joins(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -186,7 +186,7 @@ def test_optimizer__relay__connection(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -227,7 +227,7 @@ def test_optimizer__relay__connection__first(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -268,7 +268,7 @@ def test_optimizer__relay__connection__last(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -311,7 +311,7 @@ def test_optimizer__relay__connection__after(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -354,7 +354,7 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -396,7 +396,7 @@ def test_optimizer__relay__connection__offset(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -470,7 +470,7 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -513,7 +513,7 @@ def test_optimizer__relay__connection__no_page_size(graphql, undine_settings) ->
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -554,7 +554,7 @@ def test_optimizer__relay__connection__no_page_size__first(graphql, undine_setti
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -596,7 +596,7 @@ def test_optimizer__relay__connection__no_page_size__last(graphql, undine_settin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -664,7 +664,7 @@ def test_optimizer__relay__connection__page_size__has_next_page(graphql, undine_
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -732,7 +732,7 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -807,7 +807,7 @@ def test_optimizer__relay__connection__joins(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -901,7 +901,7 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)
 
 
@@ -950,7 +950,7 @@ def test_optimizer__relay__connection__total_count_in_fragment(graphql, undine_s
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -994,7 +994,7 @@ def test_optimizer__relay__connection__different_ordering(graphql, undine_settin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -1029,7 +1029,7 @@ def test_optimizer__relay__connection__only_total_count(graphql, undine_settings
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1071,7 +1071,7 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings) -> 
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(1)
 
 
@@ -1126,7 +1126,7 @@ def test_optimizer__relay__connection__alias(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1219,7 +1219,7 @@ def test_optimizer__relay__nested_connection__many_to_many__forward(graphql, und
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1309,7 +1309,7 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1396,7 +1396,7 @@ def test_optimizer__relay__nested_connection__first(graphql, undine_settings) ->
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1483,7 +1483,7 @@ def test_optimizer__relay__nested_connection__last(graphql, undine_settings) -> 
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1570,7 +1570,7 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1660,7 +1660,7 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1746,7 +1746,7 @@ def test_optimizer__relay__nested_connection__offset(graphql, undine_settings) -
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1884,7 +1884,7 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -1974,7 +1974,7 @@ def test_optimizer__relay__nested_connection__no_page_size(graphql, undine_setti
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2061,7 +2061,7 @@ def test_optimizer__relay__nested_connection__no_page_size__first(graphql, undin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2148,7 +2148,7 @@ def test_optimizer__relay__nested_connection__no_page_size__last(graphql, undine
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2282,7 +2282,7 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2408,7 +2408,7 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2538,7 +2538,7 @@ def test_optimizer__relay__nested_connection__joins(graphql, undine_settings) ->
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)
 
 
@@ -2704,7 +2704,7 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)
 
 
@@ -2802,7 +2802,7 @@ def test_optimizer__relay__nested_connection__total_count_in_fragment(graphql, u
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2891,7 +2891,7 @@ def test_optimizer__relay__nested_connection__one_to_many(graphql, undine_settin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -2984,7 +2984,7 @@ def test_optimizer__relay__nested_connection__one_to_many__total_count(graphql, 
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -3075,7 +3075,7 @@ def test_optimizer__relay__nested_connection__different_ordering(graphql, undine
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -3152,7 +3152,7 @@ def test_optimizer__relay__nested_connection__only_total_count(graphql, undine_s
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -3241,7 +3241,7 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -3365,7 +3365,7 @@ def test_optimizer__relay__nested_connection__multiple_connections(graphql, undi
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)
 
 
@@ -3477,7 +3477,7 @@ def test_optimizer__relay__nested_connection__aliased_connections(graphql, undin
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)
 
 
@@ -3566,7 +3566,7 @@ def test_optimizer__relay__nested_connection__generic_relation(graphql, undine_s
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(2)
 
 
@@ -3733,5 +3733,5 @@ def test_optimizer__relay__nested_connection__third_level_connection(graphql, un
         },
     }
 
-    # Check that total queries match
+
     response.assert_query_count(3)

@@ -10,7 +10,7 @@ from graphql import GraphQLList, GraphQLNonNull, GraphQLType
 from undine import Calculation, MutationType, QueryType, UnionType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
-from undine.exceptions import ModelFieldNotARelationOfModelError
+from undine.exceptions import ModelFieldDoesNotExistError, ModelFieldNotARelationOfModelError
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
@@ -25,7 +25,11 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: type[Model], **kwargs: Any) -> bool:
-    field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
+    try:
+        field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
+    except ModelFieldDoesNotExistError:
+        return False
+
     if field.related_model != ref:
         raise ModelFieldNotARelationOfModelError(field=field.name, model=kwargs["model"], related=ref)
 

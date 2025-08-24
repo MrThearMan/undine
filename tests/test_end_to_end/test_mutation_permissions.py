@@ -7,6 +7,7 @@ import pytest
 from example_project.app.models import ServiceRequest, Task, TaskStep, TaskTypeChoices
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
+from undine.utils.mutation_tree import bulk_mutate
 
 # Entrypoint
 
@@ -34,6 +35,7 @@ def test_end_to_end__mutation__entrypoint__permission_error(graphql, undine_sett
     class Mutation(RootType):
         create_task = Entrypoint(TaskCreateMutation)
 
+        # Entrypoint permissions are for querying, not mutating!
         @create_task.permissions
         def create_task_permissions(self, info: GQLInfo, input_data: dict[str, Any]) -> None:
             raise GraphQLPermissionError
@@ -71,7 +73,8 @@ def test_end_to_end__mutation__entrypoint__permission_error(graphql, undine_sett
         ],
     }
 
-    response.assert_query_count(0)
+    # Mutation happens, but we cannot query data from the mutation.
+    response.assert_query_count(2)
 
 
 # Single
@@ -673,6 +676,10 @@ def test_end_to_end__mutation__many__permission_error__nested__single(graphql, u
         type = Input()
         request = Input(ServiceRequestMutation)
 
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
+
     # RootTypes
 
     class Query(RootType):
@@ -757,6 +764,10 @@ def test_end_to_end__mutation__many__permission_error__nested__many(graphql, und
         name = Input()
         type = Input()
         steps = Input(TaskStepMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -1037,6 +1048,10 @@ def test_end_to_end__mutation__many__permission_error__field__nested__single(gra
         type = Input()
         request = Input(ServiceRequestMutation)
 
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
+
     # RootTypes
 
     class Query(RootType):
@@ -1123,6 +1138,10 @@ def test_end_to_end__mutation__many__permission_error__field__nested__many(graph
         name = Input()
         type = Input()
         steps = Input(TaskStepMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 

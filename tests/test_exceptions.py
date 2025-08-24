@@ -11,6 +11,7 @@ from example_project.app.models import Project, Task
 from tests.helpers import parametrize_helper
 from undine import Entrypoint
 from undine.exceptions import (
+    BulkMutateNeedsImplementationError,
     DirectiveLocationError,
     EmptyFilterResult,
     ErrorMessageFormatter,
@@ -26,6 +27,7 @@ from undine.exceptions import (
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
     GraphQLAsyncNotSupportedError,
+    GraphQLDuplicatePrimaryKeysError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
     GraphQLFileNotFoundError,
@@ -64,6 +66,7 @@ from undine.exceptions import (
     GraphQLPermissionError,
     GraphQLPersistedDocumentNotFoundError,
     GraphQLPersistedDocumentsNotSupportedError,
+    GraphQLPrimaryKeysMissingError,
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
     GraphQLRequestDecodingError,
@@ -95,6 +98,8 @@ from undine.exceptions import (
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
     ModelFieldNotARelationOfModelError,
+    MutateNeedsImplementationError,
+    MutationTypeKindCannotBeDeterminedError,
     NoFunctionParametersError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
@@ -179,6 +184,11 @@ class UndineErrorParams(NamedTuple):
 
 @pytest.mark.parametrize(
     **parametrize_helper({
+        "BulkMutateNeedsImplementationError": UndineErrorParams(
+            cls=BulkMutateNeedsImplementationError,
+            args={"mutation_type": "TaskMutation"},
+            message="Must implement 'TaskMutation.__bulk_mutate__' to handle related inputs",
+        ),
         "DirectiveLocationError": UndineErrorParams(
             cls=DirectiveLocationError,
             args={"directive": "foo", "location": DirectiveLocation.OBJECT},
@@ -304,6 +314,16 @@ class UndineErrorParams(NamedTuple):
                 "to model 'example_project.app.models.Project'."
             ),
         ),
+        "MutateNeedsImplementationError": UndineErrorParams(
+            cls=MutateNeedsImplementationError,
+            args={"mutation_type": "TaskMutation"},
+            message="Must implement 'TaskMutation.__mutate__' to handle related inputs",
+        ),
+        "MutationTypeKindCannotBeDeterminedError": UndineErrorParams(
+            cls=MutationTypeKindCannotBeDeterminedError,
+            args={"name": "TaskMutation"},
+            message="Cannot determine mutation kind for MutationType 'TaskMutation'",
+        ),
         "NoFunctionParametersError": UndineErrorParams(
             cls=NoFunctionParametersError,
             args={"func": my_func},
@@ -399,6 +419,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="GraphQL execution failed to complete synchronously.",
             extensions={"error_code": "ASYNC_NOT_SUPPORTED", "status_code": 500},
+        ),
+        "GraphQLDuplicatePrimaryKeysError": GQLErrorParams(
+            cls=GraphQLDuplicatePrimaryKeysError,
+            args={"duplicates": [1, 2]},
+            message="Bulk update received instances with duplicate primary keys: [1, 2].",
+            extensions={"error_code": "DUPLICATE_PRIMARY_KEYS", "status_code": 400},
         ),
         "GraphQLDuplicateTypeError": GQLErrorParams(
             cls=GraphQLDuplicateTypeError,
@@ -642,6 +668,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Server does not support persisted documents.",
             extensions={"error_code": "PERSISTED_DOCUMENTS_NOT_SUPPORTED", "status_code": 400},
+        ),
+        "GraphQLPrimaryKeysMissingError": GQLErrorParams(
+            cls=GraphQLPrimaryKeysMissingError,
+            args={"got": 1, "expected": 2},
+            message="Bulk update missing primary keys for objects: Got 1, expected 2.",
+            extensions={"error_code": "PRIMARY_KEYS_MISSING", "status_code": 400},
         ),
         "GraphQLRelationMultipleInstancesError": GQLErrorParams(
             cls=GraphQLRelationMultipleInstancesError,

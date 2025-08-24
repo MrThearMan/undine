@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from asgiref.sync import sync_to_async
+from graphql.pyutils import Path
 
 from example_project.app.models import (
     Comment,
@@ -18,6 +19,7 @@ from example_project.app.models import (
     TaskResult,
     TaskStep,
     TaskTypeChoices,
+    Team,
 )
 from tests.factories import (
     PersonFactory,
@@ -31,8 +33,9 @@ from tests.factories import (
 )
 from tests.helpers import mock_gql_info, patch_optimizer
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType
-from undine.exceptions import GraphQLModelNotFoundError
+from undine.exceptions import GraphQLErrorGroup, GraphQLModelNotFoundError
 from undine.resolvers import BulkUpdateResolver
+from undine.utils.mutation_tree import bulk_mutate
 
 
 @pytest.mark.django_db
@@ -87,7 +90,10 @@ def test_bulk_update_resolver__related_object_not_found(undine_settings) -> None
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -101,8 +107,16 @@ def test_bulk_update_resolver__related_object_not_found(undine_settings) -> None
         },
     ]
 
-    with patch_optimizer(), pytest.raises(GraphQLModelNotFoundError):
-        resolver(root=None, info=mock_gql_info(), input=data)
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+
+    with patch_optimizer(), pytest.raises(GraphQLErrorGroup) as exc_info:
+        resolver(root=None, info=mock_info, input=data)
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 1
+
+    assert isinstance(errors[0], GraphQLModelNotFoundError)
+    assert errors[0].path == ["task", 0, "request"]
 
 
 @pytest.mark.django_db
@@ -113,7 +127,15 @@ def test_bulk_update_resolver__forward_one_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedRequest(MutationType[ServiceRequest], kind="related"):
+        details = Input()
+
+    class TaskUpdateMutation(MutationType[Task]):
+        request = Input(RelatedRequest)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -149,7 +171,10 @@ def test_bulk_update_resolver__forward_one_to_one__pk(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -181,7 +206,16 @@ def test_bulk_update_resolver__forward_many_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedProject(MutationType[Project], kind="related"):
+        name = Input()
+        team = Input(Team)
+
+    class TaskUpdateMutation(MutationType[Task]):
+        project = Input(RelatedProject)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -218,7 +252,10 @@ def test_bulk_update_resolver__forward_many_to_one__pk(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -249,7 +286,16 @@ def test_bulk_update_resolver__forward_many_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedAssignee(MutationType[Person], kind="related"):
+        name = Input()
+        email = Input()
+
+    class TaskUpdateMutation(MutationType[Task]):
+        assignees = Input(RelatedAssignee, many=True)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -288,7 +334,10 @@ def test_bulk_update_resolver__forward_many_to_many__pk(undine_settings) -> None
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -319,7 +368,16 @@ def test_bulk_update_resolver__reverse_one_to_one(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedResult(MutationType[TaskResult], kind="related"):
+        details = Input()
+        time_used = Input()
+
+    class TaskUpdateMutation(MutationType[Task]):
+        result = Input(RelatedResult)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -356,7 +414,10 @@ def test_bulk_update_resolver__reverse_one_to_one__pk(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -387,7 +448,15 @@ def test_bulk_update_resolver__reverse_one_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedStep(MutationType[TaskStep], kind="related"):
+        name = Input()
+
+    class TaskUpdateMutation(MutationType[Task]):
+        steps = Input(RelatedStep, many=True)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -425,7 +494,10 @@ def test_bulk_update_resolver__reverse_one_to_many__pk(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -456,7 +528,16 @@ def test_bulk_update_resolver__reverse_many_to_many(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedReport(MutationType[Report], kind="related"):
+        name = Input()
+        content = Input()
+
+    class TaskUpdateMutation(MutationType[Task]):
+        reports = Input(RelatedReport, many=True)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -495,7 +576,10 @@ def test_bulk_update_resolver__reverse_many_to_many__pk(undine_settings) -> None
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -527,7 +611,16 @@ def test_bulk_update_resolver__generic_relation(undine_settings) -> None:
 
     class TaskType(QueryType[Task]): ...
 
-    class TaskUpdateMutation(MutationType[Task]): ...
+    class RelatedComment(MutationType[Comment], kind="related"):
+        contents = Input()
+        commenter = Input(Person)
+
+    class TaskUpdateMutation(MutationType[Task]):
+        comments = Input(RelatedComment, many=True)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -537,7 +630,12 @@ def test_bulk_update_resolver__generic_relation(undine_settings) -> None:
     data = [
         {
             "pk": task.pk,
-            "comments": [{"contents": "Test comment", "commenter": commenter.pk}],
+            "comments": [
+                {
+                    "contents": "Test comment",
+                    "commenter": commenter.pk,
+                },
+            ],
         },
     ]
 
@@ -592,7 +690,7 @@ def test_bulk_update_resolver__mutation_hooks(undine_settings) -> None:
             permission_called = next(counter)
 
         @classmethod
-        def __after__(cls, instance: Task, info: GQLInfo, previous_data: dict[str, Any]) -> None:
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             nonlocal after_called
             after_called = next(counter)
 

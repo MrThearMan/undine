@@ -17,7 +17,7 @@ class Query(RootType):
     tasks = Entrypoint(TaskType, many=True)
 
 
-class RelatedProject(MutationType[Project]): ...
+class RelatedProject(MutationType[Project], kind="related"): ...
 
 
 class TaskCreateMutation(MutationType[Task]):

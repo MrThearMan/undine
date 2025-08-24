@@ -67,7 +67,6 @@ def test_mutation_optimization__create(graphql, undine_settings) -> None:
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(2)
 
 
@@ -141,7 +140,6 @@ def test_mutation_optimization__create__forward__one_to_one(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(3)
 
 
@@ -215,7 +213,6 @@ def test_mutation_optimization__create__forward__many_to_one(graphql, undine_set
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(3)
 
 
@@ -294,7 +291,6 @@ def test_mutation_optimization__create__forward__many_to_many(graphql, undine_se
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(7)
 
 
@@ -369,7 +365,6 @@ def test_mutation_optimization__create__reverse__one_to_one(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(3)
 
 
@@ -447,7 +442,6 @@ def test_mutation_optimization__create__reverse__one_to_many(graphql, undine_set
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(4)
 
 
@@ -526,7 +520,6 @@ def test_mutation_optimization__create__reverse__many_to_many(graphql, undine_se
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(7)
 
 
@@ -608,7 +601,6 @@ def test_mutation_optimization__create__generic_relation(graphql, undine_setting
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(5)
 
 
@@ -692,5 +684,4 @@ def test_mutation_optimization__create__generic_foreign_key(graphql, undine_sett
         },
     }
 
-    # Check that total queries match
     response.assert_query_count(4)

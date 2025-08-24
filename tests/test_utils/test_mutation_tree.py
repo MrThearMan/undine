@@ -14,7 +14,6 @@ from tests.factories.example import (
     ExampleRMTMFactory,
     ExampleROTOFactory,
 )
-from undine.utils.mutation_data import get_mutation_data
 from undine.utils.mutation_tree import mutate
 
 
@@ -48,14 +47,9 @@ def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        example = mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 87, queries.log
+    assert queries.count == 88, queries.log
 
     example.refresh_from_db()
 
@@ -238,14 +232,9 @@ def test_mutation_optimization__ids(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        example = mutate(model=Example, data=data)
 
-    assert queries.count == 6, queries.log
-
-    with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 9, queries.log
+    assert queries.count == 15, queries.log
 
     example.refresh_from_db()
 
@@ -287,10 +276,8 @@ def test_mutation_optimization__null(undine_settings) -> None:
         "example_rmtm_set": None,
     }
 
-    mutation_data = get_mutation_data(model=Example, data=data)
-
     with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
+        example = mutate(model=Example, data=data)
 
     assert queries.count == 3, queries.log
 
@@ -331,14 +318,9 @@ def test_mutation_optimization__set_null(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        example = mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 9, queries.log
+    assert queries.count == 10, queries.log
 
     example.refresh_from_db()
 
@@ -378,14 +360,9 @@ def test_mutation_optimization__replace(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        example = mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 19, queries.log
+    assert queries.count == 20, queries.log
 
     example.refresh_from_db()
 
@@ -429,14 +406,9 @@ def test_mutation_optimization__different_contents(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        example = mutate(model=Example, data=data)
 
-    assert queries.count == 2, queries.log
-
-    with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 6, queries.log
+    assert queries.count == 8, queries.log
 
     example.refresh_from_db()
 
@@ -461,14 +433,9 @@ def test_mutation_optimization__create_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        new_example = mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        new_example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 4, queries.log
+    assert queries.count == 5, queries.log
 
     assert new_example.name == "bar"
 
@@ -499,14 +466,9 @@ def test_mutation_optimization__add_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        new_example = mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        new_example = mutate(mutation_data, model=Example)
-
-    assert queries.count == 4, queries.log
+    assert queries.count == 5, queries.log
 
     assert new_example.name == "baz"
 
@@ -544,14 +506,9 @@ def test_mutation_optimization__remove_symmetrical(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=Example, data=data)
+        mutate(model=Example, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        mutate(mutation_data, model=Example)
-
-    assert queries.count == 2, queries.log
+    assert queries.count == 3, queries.log
 
     example_1.refresh_from_db()
     assert example_1.symmetrical_field.count() == 0
@@ -579,10 +536,8 @@ def test_mutation_optimization__generic_relation(undine_settings) -> None:
         ],
     }
 
-    mutation_data = get_mutation_data(model=Example, data=data)
-
     with capture_database_queries() as queries:
-        example = mutate(mutation_data, model=Example)
+        example = mutate(model=Example, data=data)
 
     assert queries.count == 2, queries.log
 
@@ -611,12 +566,7 @@ def test_mutation_optimization__generic_foreign_key(undine_settings) -> None:
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=ExampleGeneric, data=data)
-
-    assert queries.count == 0, queries.log
-
-    with capture_database_queries() as queries:
-        example_generic = mutate(mutation_data, model=ExampleGeneric)
+        example_generic = mutate(model=ExampleGeneric, data=data)
 
     assert queries.count == 2, queries.log
 
@@ -645,14 +595,9 @@ def test_mutation_optimization__generic_foreign_key__pk(undine_settings) -> None
     }
 
     with capture_database_queries() as queries:
-        mutation_data = get_mutation_data(model=ExampleGeneric, data=data)
+        example_generic = mutate(model=ExampleGeneric, data=data)
 
-    assert queries.count == 1, queries.log
-
-    with capture_database_queries() as queries:
-        example_generic = mutate(mutation_data, model=ExampleGeneric)
-
-    assert queries.count == 1, queries.log
+    assert queries.count == 2, queries.log
 
     assert example_generic.name == "bar"
 

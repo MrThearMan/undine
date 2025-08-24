@@ -7,6 +7,7 @@ import pytest
 from example_project.app.models import ServiceRequest, Task, TaskStep, TaskTypeChoices
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLValidationError
+from undine.utils.mutation_tree import bulk_mutate
 
 # Single
 
@@ -607,6 +608,10 @@ def test_end_to_end__mutation__many__validation_error__nested__single(graphql, u
         type = Input()
         request = Input(ServiceRequestMutation)
 
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
+
     # RootTypes
 
     class Query(RootType):
@@ -684,13 +689,17 @@ def test_end_to_end__mutation__many__validation_error__nested__many(graphql, und
 
     class TaskStepMutation(MutationType[TaskStep], kind="related"):
         @classmethod
-        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        def __validate__(cls, instance: TaskStep, info: GQLInfo, input_data: dict[str, Any]) -> None:
             raise GraphQLValidationError
 
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
         type = Input()
         steps = Input(TaskStepMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -971,6 +980,10 @@ def test_end_to_end__mutation__many__validation_error__field__nested__single(gra
         type = Input()
         request = Input(ServiceRequestMutation)
 
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
+
     # RootTypes
 
     class Query(RootType):
@@ -1057,6 +1070,10 @@ def test_end_to_end__mutation__many__validation_error__field__nested__many(graph
         name = Input()
         type = Input()
         steps = Input(TaskStepMutation)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
+            return bulk_mutate(model=Task, data=input_data)
 
     # RootTypes
 

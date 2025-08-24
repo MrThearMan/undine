@@ -71,6 +71,8 @@ Returns `Undefined` if the reference doesn't have a default value.
 Arguments:
 
 `ref: Any`: The reference to convert to a default value.
+
+`caller: Input`: The Input instance that is calling this function.
 """
 
 convert_to_description: FunctionDispatcher[str | None] = FunctionDispatcher()

@@ -87,7 +87,6 @@ def test_optimizer__relations__forward_one_to_one__forward_one_to_one(graphql, u
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -120,7 +119,6 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -153,7 +151,6 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -186,7 +183,6 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_one(graphql, u
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -219,7 +215,6 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_many(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -252,7 +247,6 @@ def test_optimizer__relations__forward_one_to_one__reverse_many_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -288,7 +282,6 @@ def test_optimizer__relations__forward_many_to_one__forward_one_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -321,7 +314,6 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -354,7 +346,6 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -387,7 +378,6 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -420,7 +410,6 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -453,7 +442,6 @@ def test_optimizer__relations__forward_many_to_one__reverse_many_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -489,7 +477,6 @@ def test_optimizer__relations__forward_many_to_many__forward_one_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -522,7 +509,6 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_one(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -555,7 +541,6 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_many(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -588,7 +573,6 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -621,7 +605,6 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -654,7 +637,6 @@ def test_optimizer__relations__forward_many_to_many__reverse_many_to_many(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -690,7 +672,6 @@ def test_optimizer__relations__reverse_one_to_one__forward_one_to_one(graphql, u
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -723,7 +704,6 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -756,7 +736,6 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -789,7 +768,6 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_one(graphql, u
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(1)
 
     assert response.results == [
@@ -822,7 +800,6 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_many(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -855,7 +832,6 @@ def test_optimizer__relations__reverse_one_to_one__reverse_many_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -891,7 +867,6 @@ def test_optimizer__relations__reverse_one_to_many__forward_one_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -924,7 +899,6 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -957,7 +931,6 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -990,7 +963,6 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_one(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -1023,7 +995,6 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_many(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -1056,7 +1027,6 @@ def test_optimizer__relations__reverse_one_to_many__reverse_many_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -1092,7 +1062,6 @@ def test_optimizer__relations__reverse_many_to_many__forward_one_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -1125,7 +1094,6 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_one(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -1158,7 +1126,6 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_many(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -1191,7 +1158,6 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_one(graphql,
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.results == [
@@ -1224,7 +1190,6 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_many(graphql
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -1257,7 +1222,6 @@ def test_optimizer__relations__reverse_many_to_many__reverse_many_to_many(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.results == [
@@ -1300,7 +1264,6 @@ def test_optimizer__relations__generic_relation(graphql, undine_settings) -> Non
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.data == {
@@ -1354,7 +1317,6 @@ def test_optimizer__relations__generic_foreign_key(graphql, undine_settings) -> 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.data == {
@@ -1422,7 +1384,6 @@ def test_optimizer__relations__generic_foreign_key__as_nested_relation(graphql, 
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(4)
 
     assert response.data == {
@@ -1504,7 +1465,6 @@ def test_optimizer__relations__generic_foreign_key__with_nested_relations(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(3)
 
     assert response.data == {
@@ -1559,7 +1519,6 @@ def test_optimizer__relations__same_relation_multiple_times(graphql, undine_sett
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.data == {
@@ -1612,7 +1571,6 @@ def test_optimizer__relations__same_related_object_selected_with_different_field
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.data == {
@@ -1670,7 +1628,6 @@ def test_optimizer__relations__related_objects_shared_by_multiple_objects(graphq
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    # Check that total queries match
     response.assert_query_count(2)
 
     assert response.data == {

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from example_project.app.models import Task
-from undine import Entrypoint, MutationType, QueryType, RootType
+from undine import Entrypoint, Input, MutationType, QueryType, RootType
 from undine.converters import convert_to_entrypoint_resolver
 from undine.exceptions import InvalidEntrypointMutationTypeError
 from undine.resolvers import (
@@ -11,7 +13,6 @@ from undine.resolvers import (
     BulkDeleteResolver,
     BulkUpdateResolver,
     CreateResolver,
-    CustomResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
     QueryTypeManyResolver,
@@ -159,15 +160,67 @@ def test_convert_entrypoint_ref_to_resolver__mutation_type__delete_mutation() ->
     assert result.mutation_type == TaskDeleteMutation
 
 
-def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation() -> None:
-    class TaskMutation(MutationType[Task]): ...
+def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation__create() -> None:
+    class TaskMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+            return instance
 
     class Mutation(RootType):
         mutate_task = Entrypoint(TaskMutation)
 
     result = convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.mutate_task)
 
-    assert isinstance(result, CustomResolver)
+    assert isinstance(result, CreateResolver)
+    assert result.mutation_type == TaskMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation__update() -> None:
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+            return instance
+
+    class Mutation(RootType):
+        mutate_task = Entrypoint(TaskMutation)
+
+    result = convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.mutate_task)
+
+    assert isinstance(result, UpdateResolver)
+    assert result.mutation_type == TaskMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation__bulk_create() -> None:
+    class TaskMutation(MutationType[Task]):
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+            return instances
+
+    class Mutation(RootType):
+        mutate_task = Entrypoint(TaskMutation, many=True)
+
+    result = convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.mutate_task)
+
+    assert isinstance(result, BulkCreateResolver)
+    assert result.mutation_type == TaskMutation
+
+
+def test_convert_entrypoint_ref_to_resolver__mutation_type__custom_mutation__bulk_update() -> None:
+    class TaskMutation(MutationType[Task]):
+        pk = Input(required=True)
+
+        @classmethod
+        def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+            return instances
+
+    class Mutation(RootType):
+        mutate_task = Entrypoint(TaskMutation, many=True)
+
+    result = convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.mutate_task)
+
+    assert isinstance(result, BulkUpdateResolver)
     assert result.mutation_type == TaskMutation
 
 
@@ -205,18 +258,6 @@ def test_convert_entrypoint_ref_to_resolver__mutation_type__many__delete_mutatio
 
     assert isinstance(result, BulkDeleteResolver)
     assert result.mutation_type == TaskBulkDeleteMutation
-
-
-def test_convert_entrypoint_ref_to_resolver__mutation_type__many__custom_mutation() -> None:
-    class TaskMutation(MutationType[Task]): ...
-
-    class Mutation(RootType):
-        bulk_mutation = Entrypoint(TaskMutation, many=True)
-
-    result = convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.bulk_mutation)
-
-    assert isinstance(result, CustomResolver)
-    assert result.mutation_type == TaskMutation
 
 
 def test_convert_entrypoint_ref_to_resolver__mutation_type__related() -> None:

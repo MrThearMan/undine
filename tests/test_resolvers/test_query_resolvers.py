@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from inspect import isawaitable
 from typing import Any
 
 import pytest
@@ -163,7 +162,7 @@ def test_resolvers__model_field_resolver() -> None:
 
     task = TaskFactory.create(name="Test task")
 
-    assert resolver(root=task, info=mock_gql_info()) == "Test task"
+    assert resolver.run_sync(root=task, info=mock_gql_info()) == "Test task"
 
 
 @pytest.mark.django_db
@@ -180,7 +179,7 @@ def test_resolvers__model_field_resolver__field_permissions() -> None:
     task = TaskFactory.create(name="Test task")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -193,7 +192,7 @@ def test_resolvers__model_single_related_field_resolver() -> None:
     project = ProjectFactory.create(name="Project")
     task = TaskFactory.create(project=project)
 
-    result = resolver(root=task, info=mock_gql_info())
+    result = resolver.run_sync(root=task, info=mock_gql_info())
 
     assert isinstance(result, int)
     assert result == project.pk
@@ -208,7 +207,7 @@ def test_resolvers__model_single_related_field_resolver__null() -> None:
 
     task = TaskFactory.create(project=None)
 
-    result = resolver(root=task, info=mock_gql_info())
+    result = resolver.run_sync(root=task, info=mock_gql_info())
     assert result is None
 
 
@@ -226,7 +225,7 @@ def test_resolvers__model_single_related_field_resolver__field_permissions() -> 
     task = TaskFactory.create(project__name="Project")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -239,7 +238,7 @@ def test_resolvers__model_many_related_field_resolver() -> None:
     assignee = PersonFactory.create(name="Assignee")
     task = TaskFactory.create(assignees=[assignee])
 
-    result = resolver(root=task, info=mock_gql_info())
+    result = resolver.run_sync(root=task, info=mock_gql_info())
 
     assert isinstance(result, list)
     assert len(result) == 1
@@ -260,7 +259,7 @@ def test_resolvers__model_many_related_field_resolver__field_permissions() -> No
     task = TaskFactory.create(assignees__name="Assignee")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -277,7 +276,7 @@ def test_resolvers__model_generic_foreign_key_resolver() -> None:
     task = TaskFactory.create(name="foo")
     comment = CommentFactory.create(contents="bar", target=task)
 
-    result = resolver(root=comment, info=mock_gql_info())
+    result = resolver.run_sync(root=comment, info=mock_gql_info())
 
     # Should return an instance so that union can determine which type to use.
     assert isinstance(result, Task)
@@ -297,7 +296,7 @@ def test_resolvers__model_generic_foreign_key_resolver__null() -> None:
 
     comment = CommentFactory.create(contents="bar")
 
-    result = resolver(root=comment, info=mock_gql_info())
+    result = resolver.run_sync(root=comment, info=mock_gql_info())
     assert result is None
 
 
@@ -320,7 +319,7 @@ def test_resolvers__model_generic_foreign_key_resolver__field_permissions() -> N
     comment = CommentFactory.create(contents="bar", target=task)
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=comment, info=mock_gql_info())
+        resolver.run_sync(root=comment, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -340,7 +339,7 @@ def test_resolvers__query_type_single_resolver(undine_settings) -> None:
     task = TaskFactory.create()
 
     with patch_optimizer():
-        assert resolver(root=task, info=mock_gql_info(), pk=task.pk) == task
+        assert resolver.run_sync(root=task, info=mock_gql_info(), pk=task.pk) == task
 
 
 @pytest.mark.django_db(transaction=True)
@@ -361,11 +360,9 @@ async def test_resolvers__query_type_single_resolver__async(undine_settings) -> 
     task = await sync_to_async(TaskFactory.create)()
 
     with patch_optimizer():
-        coroutine = resolver(root=task, info=mock_gql_info(), pk=task.pk)
-        assert isawaitable(coroutine)
+        result = await resolver.run_async(root=task, info=mock_gql_info(), pk=task.pk)
 
-        result = await coroutine
-        assert result == task
+    assert result == task
 
 
 @pytest.mark.django_db
@@ -388,7 +385,7 @@ def test_resolvers__query_type_single_resolver__permissions(undine_settings) -> 
     task = TaskFactory.create()
 
     with patch_optimizer(), pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -408,7 +405,7 @@ def test_resolvers__query_type_many_resolver(undine_settings) -> None:
     task = TaskFactory.create()
 
     with patch_optimizer():
-        assert resolver(root=task, info=mock_gql_info()) == [task]
+        assert resolver.run_sync(root=task, info=mock_gql_info()) == [task]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -429,11 +426,9 @@ async def test_resolvers__query_type_many_resolver__async(undine_settings) -> No
     task = await sync_to_async(TaskFactory.create)()
 
     with patch_optimizer():
-        coroutine = resolver(root=task, info=mock_gql_info())
-        assert isawaitable(coroutine)
+        result = await resolver.run_async(root=task, info=mock_gql_info())
 
-        result = await coroutine
-        assert result == [task]
+    assert result == [task]
 
 
 @pytest.mark.django_db
@@ -456,7 +451,7 @@ def test_resolvers__query_type_many_resolver__permissions(undine_settings) -> No
     task = TaskFactory.create()
 
     with patch_optimizer(), pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -478,7 +473,7 @@ def test_resolvers__query_type_many_resolver__additional_filtering(undine_settin
     )
 
     with patch_optimizer():
-        assert resolver(root=task, info=mock_gql_info()) == [task]
+        assert resolver.run_sync(root=task, info=mock_gql_info()) == [task]
 
 
 @pytest.mark.django_db
@@ -495,7 +490,7 @@ def test_resolvers__nested_query_type_single_resolver() -> None:
 
     task = TaskFactory.create(project__name="Test project")
 
-    assert resolver(root=task, info=mock_gql_info()) == task.project
+    assert resolver.run_sync(root=task, info=mock_gql_info()) == task.project
 
 
 @pytest.mark.django_db
@@ -517,7 +512,7 @@ def test_resolvers__nested_query_type_single_resolver__field_permissions() -> No
     task = TaskFactory.create(project__name="Test project")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -538,7 +533,7 @@ def test_resolvers__nested_query_type_single_resolver__query_type_permissions() 
     task = TaskFactory.create(project__name="Test project")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -563,7 +558,7 @@ def test_resolvers__nested_query_type_single_resolver__query_type_permissions__r
 
     task = TaskFactory.create(project__name="Test project")
 
-    assert resolver(root=task, info=mock_gql_info()) == task.project
+    assert resolver.run_sync(root=task, info=mock_gql_info()) == task.project
 
 
 @pytest.mark.django_db
@@ -580,7 +575,7 @@ def test_resolvers__nested_query_type_many_resolver() -> None:
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
-    instances = resolver(root=task, info=mock_gql_info())
+    instances = resolver.run_sync(root=task, info=mock_gql_info())
 
     assert isinstance(instances, list)
     assert len(instances) == 1
@@ -606,7 +601,7 @@ def test_resolvers__nested_query_type_many_resolver__field_permissions() -> None
     task = TaskFactory.create(assignees__name="Test assignee")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -624,7 +619,7 @@ def test_resolvers__nested_query_type_many_resolver__query_type_permissions() ->
     task = TaskFactory.create(assignees__name="Test assignee")
 
     with pytest.raises(GraphQLPermissionError):
-        resolver(root=task, info=mock_gql_info())
+        resolver.run_sync(root=task, info=mock_gql_info())
 
 
 @pytest.mark.django_db
@@ -646,4 +641,4 @@ def test_resolvers__nested_query_type_many_resolver__query_type_permissions__rel
 
     task = TaskFactory.create(assignees__name="Test assignee")
 
-    resolver(root=task, info=mock_gql_info())
+    resolver.run_sync(root=task, info=mock_gql_info())

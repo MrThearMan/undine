@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +19,7 @@ from undine.exceptions import UndineErrorGroup
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_registered_directives
 from undine.utils.graphql.utils import check_directives
+from undine.utils.logging import logger
 from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
@@ -31,9 +31,6 @@ if TYPE_CHECKING:
 __all__ = [
     "create_schema",
 ]
-
-
-logger = logging.getLogger("undine")
 
 
 def create_schema(
