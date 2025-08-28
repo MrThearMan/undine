@@ -58,7 +58,7 @@ def test_mutation_optimization__create(graphql, undine_settings) -> None:
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -128,7 +128,7 @@ def test_mutation_optimization__create__forward__one_to_one(graphql, undine_sett
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -201,7 +201,7 @@ def test_mutation_optimization__create__forward__many_to_one(graphql, undine_set
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -277,7 +277,7 @@ def test_mutation_optimization__create__forward__many_to_many(graphql, undine_se
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -353,7 +353,7 @@ def test_mutation_optimization__create__reverse__one_to_one(graphql, undine_sett
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -428,7 +428,7 @@ def test_mutation_optimization__create__reverse__one_to_many(graphql, undine_set
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -506,7 +506,7 @@ def test_mutation_optimization__create__reverse__many_to_many(graphql, undine_se
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -586,7 +586,7 @@ def test_mutation_optimization__create__generic_relation(graphql, undine_setting
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -671,7 +671,7 @@ def test_mutation_optimization__create__generic_foreign_key(graphql, undine_sett
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.has_errors is False, response.errors
 

@@ -80,7 +80,7 @@ def test_optimizer__manual_optimization__query_type(graphql, undine_settings) ->
     user = UserFactory.create(email="me@example.com")
     graphql.force_login(user)
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -139,7 +139,7 @@ def test_optimizer__manual_optimization__field(graphql, undine_settings) -> None
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -194,7 +194,7 @@ def test_optimizer__multiple_queries(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {"tasks": [{"name": "foo"}], "projects": [{"name": "foo"}]}
@@ -222,7 +222,7 @@ def test_optimizer__directives__include__false(graphql, undine_settings) -> None
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {"tasks": [{"done": True}]}
@@ -253,7 +253,7 @@ def test_optimizer__directives__include__true(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {"tasks": [{"name": "foo", "done": True}]}
@@ -284,7 +284,7 @@ def test_optimizer__directives__skip__false(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {"tasks": [{"name": "foo", "done": True}]}
@@ -315,7 +315,7 @@ def test_optimizer__directives__skip__true(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {"tasks": [{"done": True}]}
@@ -356,7 +356,7 @@ def test_optimizer__promote_to_prefetch__has_filter_queryset(graphql, undine_set
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -408,7 +408,7 @@ def test_optimizer__promote_to_prefetch__has_annotations(graphql, undine_setting
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -469,7 +469,7 @@ def test_optimizer__promote_to_prefetch__has_field_calculations(graphql, undine_
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -525,7 +525,7 @@ def test_optimizer__promote_to_prefetch__has_filterset_filter_queryset(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {

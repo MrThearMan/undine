@@ -84,16 +84,16 @@ def test_optimizer__relations__forward_one_to_one__forward_one_to_one(graphql, u
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFoto": {"exampleFoto": {"name": "1"}}},
         {"exampleFoto": {"exampleFoto": {"name": "2"}}},
         {"exampleFoto": {"exampleFoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -116,16 +116,16 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFoto": {"exampleFfk": {"name": "1"}}},
         {"exampleFoto": {"exampleFfk": {"name": "2"}}},
         {"exampleFoto": {"exampleFfk": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -148,16 +148,16 @@ def test_optimizer__relations__forward_one_to_one__forward_many_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFoto": {"exampleFmtmSet": [{"name": "1"}]}},
         {"exampleFoto": {"exampleFmtmSet": [{"name": "2"}]}},
         {"exampleFoto": {"exampleFmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -180,16 +180,16 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_one(graphql, u
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFoto": {"exampleRoto": {"name": "1"}}},
         {"exampleFoto": {"exampleRoto": {"name": "2"}}},
         {"exampleFoto": {"exampleRoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -212,16 +212,16 @@ def test_optimizer__relations__forward_one_to_one__reverse_one_to_many(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFoto": {"exampleRfkSet": [{"name": "1"}]}},
         {"exampleFoto": {"exampleRfkSet": [{"name": "2"}]}},
         {"exampleFoto": {"exampleRfkSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -244,16 +244,16 @@ def test_optimizer__relations__forward_one_to_one__reverse_many_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFoto": {"exampleRmtmSet": [{"name": "1"}]}},
         {"exampleFoto": {"exampleRmtmSet": [{"name": "2"}]}},
         {"exampleFoto": {"exampleRmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 ###############################################################################################
@@ -279,16 +279,16 @@ def test_optimizer__relations__forward_many_to_one__forward_one_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFfk": {"exampleFoto": {"name": "1"}}},
         {"exampleFfk": {"exampleFoto": {"name": "2"}}},
         {"exampleFfk": {"exampleFoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -311,16 +311,16 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFfk": {"exampleFfk": {"name": "1"}}},
         {"exampleFfk": {"exampleFfk": {"name": "2"}}},
         {"exampleFfk": {"exampleFfk": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -343,16 +343,16 @@ def test_optimizer__relations__forward_many_to_one__forward_many_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFfk": {"exampleFmtmSet": [{"name": "1"}]}},
         {"exampleFfk": {"exampleFmtmSet": [{"name": "2"}]}},
         {"exampleFfk": {"exampleFmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -375,16 +375,16 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleFfk": {"exampleRoto": {"name": "1"}}},
         {"exampleFfk": {"exampleRoto": {"name": "2"}}},
         {"exampleFfk": {"exampleRoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -407,16 +407,16 @@ def test_optimizer__relations__forward_many_to_one__reverse_one_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFfk": {"exampleRfkSet": [{"name": "1"}]}},
         {"exampleFfk": {"exampleRfkSet": [{"name": "2"}]}},
         {"exampleFfk": {"exampleRfkSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -439,16 +439,16 @@ def test_optimizer__relations__forward_many_to_one__reverse_many_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFfk": {"exampleRmtmSet": [{"name": "1"}]}},
         {"exampleFfk": {"exampleRmtmSet": [{"name": "2"}]}},
         {"exampleFfk": {"exampleRmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 ###############################################################################################
@@ -474,16 +474,16 @@ def test_optimizer__relations__forward_many_to_many__forward_one_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleFoto": {"name": "1"}}]},
         {"exampleFmtmSet": [{"exampleFoto": {"name": "2"}}]},
         {"exampleFmtmSet": [{"exampleFoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -506,16 +506,16 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_one(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleFfk": {"name": "1"}}]},
         {"exampleFmtmSet": [{"exampleFfk": {"name": "2"}}]},
         {"exampleFmtmSet": [{"exampleFfk": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -538,16 +538,16 @@ def test_optimizer__relations__forward_many_to_many__forward_many_to_many(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleFmtmSet": [{"name": "1"}]}]},
         {"exampleFmtmSet": [{"exampleFmtmSet": [{"name": "2"}]}]},
         {"exampleFmtmSet": [{"exampleFmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -570,16 +570,16 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleRoto": {"name": "1"}}]},
         {"exampleFmtmSet": [{"exampleRoto": {"name": "2"}}]},
         {"exampleFmtmSet": [{"exampleRoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -602,16 +602,16 @@ def test_optimizer__relations__forward_many_to_many__reverse_one_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleRfkSet": [{"name": "1"}]}]},
         {"exampleFmtmSet": [{"exampleRfkSet": [{"name": "2"}]}]},
         {"exampleFmtmSet": [{"exampleRfkSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -634,16 +634,16 @@ def test_optimizer__relations__forward_many_to_many__reverse_many_to_many(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleFmtmSet": [{"exampleRmtmSet": [{"name": "1"}]}]},
         {"exampleFmtmSet": [{"exampleRmtmSet": [{"name": "2"}]}]},
         {"exampleFmtmSet": [{"exampleRmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 ###############################################################################################
@@ -669,16 +669,16 @@ def test_optimizer__relations__reverse_one_to_one__forward_one_to_one(graphql, u
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleRoto": {"exampleFoto": {"name": "1"}}},
         {"exampleRoto": {"exampleFoto": {"name": "2"}}},
         {"exampleRoto": {"exampleFoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -701,16 +701,16 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleRoto": {"exampleFfk": {"name": "1"}}},
         {"exampleRoto": {"exampleFfk": {"name": "2"}}},
         {"exampleRoto": {"exampleFfk": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -733,16 +733,16 @@ def test_optimizer__relations__reverse_one_to_one__forward_many_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRoto": {"exampleFmtmSet": [{"name": "1"}]}},
         {"exampleRoto": {"exampleFmtmSet": [{"name": "2"}]}},
         {"exampleRoto": {"exampleFmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -765,16 +765,16 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_one(graphql, u
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.results == [
         {"exampleRoto": {"exampleRoto": {"name": "1"}}},
         {"exampleRoto": {"exampleRoto": {"name": "2"}}},
         {"exampleRoto": {"exampleRoto": {"name": "3"}}},
     ]
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -797,16 +797,16 @@ def test_optimizer__relations__reverse_one_to_one__reverse_one_to_many(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRoto": {"exampleRfkSet": [{"name": "1"}]}},
         {"exampleRoto": {"exampleRfkSet": [{"name": "2"}]}},
         {"exampleRoto": {"exampleRfkSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -829,16 +829,16 @@ def test_optimizer__relations__reverse_one_to_one__reverse_many_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRoto": {"exampleRmtmSet": [{"name": "1"}]}},
         {"exampleRoto": {"exampleRmtmSet": [{"name": "2"}]}},
         {"exampleRoto": {"exampleRmtmSet": [{"name": "3"}]}},
     ]
+
+    response.assert_query_count(2)
 
 
 ###############################################################################################
@@ -864,16 +864,16 @@ def test_optimizer__relations__reverse_one_to_many__forward_one_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleFoto": {"name": "1"}}]},
         {"exampleRfkSet": [{"exampleFoto": {"name": "2"}}]},
         {"exampleRfkSet": [{"exampleFoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -896,16 +896,16 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleFfk": {"name": "1"}}]},
         {"exampleRfkSet": [{"exampleFfk": {"name": "2"}}]},
         {"exampleRfkSet": [{"exampleFfk": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -928,16 +928,16 @@ def test_optimizer__relations__reverse_one_to_many__forward_many_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleFmtmSet": [{"name": "1"}]}]},
         {"exampleRfkSet": [{"exampleFmtmSet": [{"name": "2"}]}]},
         {"exampleRfkSet": [{"exampleFmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -960,16 +960,16 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_one(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleRoto": {"name": "1"}}]},
         {"exampleRfkSet": [{"exampleRoto": {"name": "2"}}]},
         {"exampleRfkSet": [{"exampleRoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -992,16 +992,16 @@ def test_optimizer__relations__reverse_one_to_many__reverse_one_to_many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleRfkSet": [{"name": "1"}]}]},
         {"exampleRfkSet": [{"exampleRfkSet": [{"name": "2"}]}]},
         {"exampleRfkSet": [{"exampleRfkSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -1024,16 +1024,16 @@ def test_optimizer__relations__reverse_one_to_many__reverse_many_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRfkSet": [{"exampleRmtmSet": [{"name": "1"}]}]},
         {"exampleRfkSet": [{"exampleRmtmSet": [{"name": "2"}]}]},
         {"exampleRfkSet": [{"exampleRmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 ###############################################################################################
@@ -1059,16 +1059,16 @@ def test_optimizer__relations__reverse_many_to_many__forward_one_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleFoto": {"name": "1"}}]},
         {"exampleRmtmSet": [{"exampleFoto": {"name": "2"}}]},
         {"exampleRmtmSet": [{"exampleFoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1091,16 +1091,16 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_one(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleFfk": {"name": "1"}}]},
         {"exampleRmtmSet": [{"exampleFfk": {"name": "2"}}]},
         {"exampleRmtmSet": [{"exampleFfk": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1123,16 +1123,16 @@ def test_optimizer__relations__reverse_many_to_many__forward_many_to_many(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleFmtmSet": [{"name": "1"}]}]},
         {"exampleRmtmSet": [{"exampleFmtmSet": [{"name": "2"}]}]},
         {"exampleRmtmSet": [{"exampleFmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -1155,16 +1155,16 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_one(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleRoto": {"name": "1"}}]},
         {"exampleRmtmSet": [{"exampleRoto": {"name": "2"}}]},
         {"exampleRmtmSet": [{"exampleRoto": {"name": "3"}}]},
     ]
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1187,16 +1187,16 @@ def test_optimizer__relations__reverse_many_to_many__reverse_one_to_many(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleRfkSet": [{"name": "1"}]}]},
         {"exampleRmtmSet": [{"exampleRfkSet": [{"name": "2"}]}]},
         {"exampleRmtmSet": [{"exampleRfkSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -1219,16 +1219,16 @@ def test_optimizer__relations__reverse_many_to_many__reverse_many_to_many(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.results == [
         {"exampleRmtmSet": [{"exampleRmtmSet": [{"name": "1"}]}]},
         {"exampleRmtmSet": [{"exampleRmtmSet": [{"name": "2"}]}]},
         {"exampleRmtmSet": [{"exampleRmtmSet": [{"name": "3"}]}]},
     ]
+
+    response.assert_query_count(3)
 
 
 ###############################################################################################
@@ -1261,10 +1261,8 @@ def test_optimizer__relations__generic_relation(graphql, undine_settings) -> Non
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.data == {
         "tasks": [
@@ -1276,6 +1274,8 @@ def test_optimizer__relations__generic_relation(graphql, undine_settings) -> Non
             },
         ],
     }
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1314,10 +1314,8 @@ def test_optimizer__relations__generic_foreign_key(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.data == {
         "comments": [
@@ -1329,6 +1327,8 @@ def test_optimizer__relations__generic_foreign_key(graphql, undine_settings) -> 
             },
         ],
     }
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -1381,10 +1381,8 @@ def test_optimizer__relations__generic_foreign_key__as_nested_relation(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(4)
 
     assert response.data == {
         "people": [
@@ -1412,6 +1410,8 @@ def test_optimizer__relations__generic_foreign_key__as_nested_relation(graphql, 
             },
         ],
     }
+
+    response.assert_query_count(4)
 
 
 @pytest.mark.django_db
@@ -1462,10 +1462,8 @@ def test_optimizer__relations__generic_foreign_key__with_nested_relations(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(3)
 
     assert response.data == {
         "comments": [
@@ -1483,6 +1481,8 @@ def test_optimizer__relations__generic_foreign_key__with_nested_relations(graphq
             },
         ],
     }
+
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -1516,10 +1516,8 @@ def test_optimizer__relations__same_relation_multiple_times(graphql, undine_sett
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.data == {
         "tasks": [
@@ -1531,6 +1529,8 @@ def test_optimizer__relations__same_relation_multiple_times(graphql, undine_sett
             },
         ],
     }
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1568,10 +1568,8 @@ def test_optimizer__relations__same_related_object_selected_with_different_field
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.data == {
         "tasks": [
@@ -1586,6 +1584,8 @@ def test_optimizer__relations__same_related_object_selected_with_different_field
             },
         ],
     }
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -1625,10 +1625,8 @@ def test_optimizer__relations__related_objects_shared_by_multiple_objects(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.data == {
         "tasks": [
@@ -1644,6 +1642,8 @@ def test_optimizer__relations__related_objects_shared_by_multiple_objects(graphq
             },
         ],
     }
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db

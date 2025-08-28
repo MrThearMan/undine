@@ -41,7 +41,7 @@ def test_optimizer__aliases__entrypoint(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -83,7 +83,7 @@ def test_optimizer__aliases__model_field(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -126,7 +126,7 @@ def test_optimizer__aliases__model_field__multiple(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -182,7 +182,7 @@ def test_optimizer__aliases__related_field__to_one(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -246,7 +246,7 @@ def test_optimizer__aliases__related_field__to_one__multiple(graphql, undine_set
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -315,7 +315,7 @@ def test_optimizer__aliases__related_field__to_many(graphql, undine_settings) ->
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -381,7 +381,7 @@ def test_optimizer__aliases__related_field__to_many__multiple(graphql, undine_se
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -457,7 +457,7 @@ def test_optimizer__aliases__related_field__generic_foreign_key(graphql, undine_
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -521,7 +521,7 @@ def test_optimizer__aliases__related_field__generic_foreign_key__multiple(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -569,7 +569,7 @@ def test_optimizer__aliases__calculated(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -618,7 +618,7 @@ def test_optimizer__aliases__calculated__multiple(graphql, undine_settings) -> N
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {

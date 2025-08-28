@@ -58,6 +58,7 @@ class WebSocketMixin:
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
         use_persisted_document: bool = False,
+        count_queries: bool = False,
     ) -> AsyncGenerator[GraphQLClientWebSocketResponse, None]:
         """
         Send a GraphQL over WebSocket request and yield the execution results.
@@ -69,6 +70,7 @@ class WebSocketMixin:
                                this is required to select the operation to execute.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
         """
         variables = variables or {}
         body: dict[str, Any] = {}
@@ -93,7 +95,7 @@ class WebSocketMixin:
         async with websocket:
             await websocket.connection_init()
 
-            with capture_database_queries() as queries:
+            with capture_database_queries(enabled=count_queries) as queries:
                 initial_result = await websocket.subscribe(body)
 
             if initial_result["type"] == "error":
@@ -104,7 +106,7 @@ class WebSocketMixin:
             yield GraphQLClientWebSocketResponse(result=initial_result["payload"], database_queries=queries)
 
             while True:
-                with capture_database_queries() as queries:
+                with capture_database_queries(enabled=count_queries) as queries:
                     message = await websocket.receive()
 
                 match message["type"]:
@@ -181,6 +183,7 @@ class GraphQLClient(WebSocketMixin, Client):
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
         use_persisted_document: bool = False,
+        count_queries: bool = False,
     ) -> GraphQLClientHTTPResponse:
         """
         Execute a GraphQL operation synchronously.
@@ -192,6 +195,7 @@ class GraphQLClient(WebSocketMixin, Client):
                                this is required to select the operation to execute.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
         """
         variables = variables or {}
         body: dict[str, Any] = {}
@@ -210,7 +214,7 @@ class GraphQLClient(WebSocketMixin, Client):
         data = _create_multipart_data(body, files) if files else body
         content_type = MULTIPART_CONTENT if files else "application/json"
 
-        with capture_database_queries() as results:
+        with capture_database_queries(enabled=count_queries) as results:
             response: DjangoTestClientResponseProtocol = self.post(  # type: ignore[assignment]
                 path=f"/{undine_settings.GRAPHQL_PATH}",
                 data=data,
@@ -256,6 +260,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
         use_persisted_document: bool = False,
+        count_queries: bool = False,
     ) -> GraphQLClientHTTPResponse:
         """
         Execute a GraphQL operation asynchronously.
@@ -267,6 +272,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
                                this is required to select the operation to execute.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
         """
         variables = variables or {}
         body: dict[str, Any] = {}
@@ -285,7 +291,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         data = _create_multipart_data(body, files) if files else body
         content_type = MULTIPART_CONTENT if files else "application/json"
 
-        with capture_database_queries() as results:
+        with capture_database_queries(enabled=count_queries) as results:
             response: DjangoTestClientResponseProtocol = await self.post(  # type: ignore[assignment]
                 path=f"/{undine_settings.GRAPHQL_PATH}",
                 data=data,
@@ -323,8 +329,13 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
 class BaseGraphQLClientResponse(ABC):
     """Base class for GraphQLClient responses."""
 
+    DB_QUERIES_NOT_ENABLED_MSG = (
+        "Database queries have not been captured. "
+        "Enable them using the `count_queries` parameter when calling the client."
+    )
+
     def __init__(self, database_queries: DBQueryData) -> None:
-        self.database_queries = database_queries
+        self._database_queries = database_queries
 
     @property
     @abstractmethod
@@ -348,17 +359,26 @@ class BaseGraphQLClientResponse(ABC):
     @property
     def queries(self) -> list[str]:
         """Return a list of the database queries that were executed."""
-        return [info.sql for info in self.database_queries.queries]
+        if not self._database_queries.enabled:
+            return pytest.fail(self.DB_QUERIES_NOT_ENABLED_MSG)
+
+        return [info.sql for info in self._database_queries.queries]
 
     @property
     def query_count(self) -> int:
         """Return the number of database queries that were executed."""
-        return self.database_queries.count
+        if not self._database_queries.enabled:
+            return pytest.fail(self.DB_QUERIES_NOT_ENABLED_MSG)
+
+        return self._database_queries.count
 
     @property
     def query_log(self) -> str:
         """Return a string representation of the database queries that were executed."""
-        return self.database_queries.log
+        if not self._database_queries.enabled:
+            return pytest.fail(self.DB_QUERIES_NOT_ENABLED_MSG)
+
+        return self._database_queries.log
 
     @property
     def data(self) -> dict[str, Any] | None:
@@ -380,7 +400,7 @@ class BaseGraphQLClientResponse(ABC):
             return next(iter(data.values()))
         except StopIteration:
             msg = f"No query object not found in response content\nContent: {self.json}"
-            return pytest.fail(msg, pytrace=False)
+            return pytest.fail(msg)
 
     @property
     def edges(self) -> list[dict[str, Any]]:
@@ -395,13 +415,13 @@ class BaseGraphQLClientResponse(ABC):
         results = self.results
         if not isinstance(results, dict):
             msg = f"Edges not found in response content\nContent: {self.json}"
-            return pytest.fail(msg, pytrace=False)
+            return pytest.fail(msg)
 
         try:
             return results["edges"]
         except (KeyError, TypeError):
             msg = f"Edges not found in response content\nContent: {self.json}"
-            return pytest.fail(msg, pytrace=False)
+            return pytest.fail(msg)
 
     def node(self, index: int) -> dict[str, Any]:
         """
@@ -416,7 +436,7 @@ class BaseGraphQLClientResponse(ABC):
             return self.edges[index]["node"]
         except (IndexError, TypeError):
             msg = f"Node {index!r} not found in response content\nContent: {self.json}"
-            return pytest.fail(msg, pytrace=False)
+            return pytest.fail(msg)
 
     @property
     def has_errors(self) -> bool:
@@ -437,7 +457,7 @@ class BaseGraphQLClientResponse(ABC):
             return self.json["errors"]
         except (KeyError, TypeError):
             msg = f"Errors not found in response content\nContent: {self.json}"
-            return pytest.fail(msg, pytrace=False)
+            return pytest.fail(msg)
 
     def error_message(self, selector: int | str) -> str:
         """
@@ -462,18 +482,21 @@ class BaseGraphQLClientResponse(ABC):
                 return self.errors[selector]["message"]
             except (IndexError, KeyError, TypeError):
                 msg = f"Errors message not found from index {selector}\nContent: {self.json}"
-                return pytest.fail(msg, pytrace=False)
+                return pytest.fail(msg)
         else:
             try:
                 return next(error["message"] for error in self.errors if error["path"][-1] == selector)
             except (StopIteration, KeyError, TypeError):
                 msg = f"Errors message not found from path {selector!r}\nContent: {self.json}"
-                return pytest.fail(msg, pytrace=False)
+                return pytest.fail(msg)
 
     def assert_query_count(self, count: int) -> None:
+        if not self._database_queries.enabled:
+            pytest.fail(self.DB_QUERIES_NOT_ENABLED_MSG)
+
         if self.query_count != count:
             msg = f"Expected {count} queries, got {self.query_count}.\n{self.query_log}"
-            pytest.fail(msg, pytrace=False)
+            pytest.fail(msg)
 
 
 class GraphQLClientHTTPResponse(BaseGraphQLClientResponse):

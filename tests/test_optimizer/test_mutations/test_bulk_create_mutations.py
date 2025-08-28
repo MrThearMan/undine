@@ -63,7 +63,7 @@ def test_mutation_optimization__bulk_create(graphql, undine_settings) -> None:
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -140,7 +140,7 @@ def test_mutation_optimization__bulk_create__forward__one_to_one(graphql, undine
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -220,7 +220,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_one(graphql, undin
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -302,7 +302,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_many(graphql, undi
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -385,7 +385,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_one(graphql, undine
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -467,7 +467,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_many(graphql, undin
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -552,7 +552,7 @@ def test_mutation_optimization__bulk_create__reverse__many_to_many(graphql, undi
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Comment)
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTasks": [
@@ -639,7 +639,7 @@ def test_mutation_optimization__bulk_create__generic_relation(graphql, undine_se
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateTask": [
@@ -730,7 +730,7 @@ def test_mutation_optimization__bulk_create__generic_foreign_key(graphql, undine
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkCreateComment": [

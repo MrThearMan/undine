@@ -55,7 +55,7 @@ def test_mutation_optimization__bulk_update(graphql, undine_settings) -> None:
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -135,7 +135,7 @@ def test_mutation_optimization__bulk_update__forward__one_to_one(graphql, undine
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -218,7 +218,7 @@ def test_mutation_optimization__bulk_update__forward__many_to_one(graphql, undin
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -304,7 +304,7 @@ def test_mutation_optimization__bulk_update__forward__many_to_many(graphql, undi
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -389,7 +389,7 @@ def test_mutation_optimization__bulk_update__reverse__one_to_one(graphql, undine
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -475,7 +475,7 @@ def test_mutation_optimization__bulk_update__reverse__one_to_many(graphql, undin
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -563,7 +563,7 @@ def test_mutation_optimization__bulk_update__reverse__many_to_many(graphql, undi
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTasks": [
@@ -652,7 +652,7 @@ def test_mutation_optimization__bulk_update__generic_relation(graphql, undine_se
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateTask": [
@@ -747,7 +747,7 @@ def test_mutation_optimization__bulk_update__generic_foreign_key(graphql, undine
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "bulkUpdateComment": [

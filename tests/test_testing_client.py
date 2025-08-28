@@ -30,7 +30,7 @@ def test_testing_client(undine_settings) -> None:
 
     client = GraphQLClient()
 
-    response = client(query)
+    response = client(query, count_queries=True)
     assert response.has_errors is False
     assert response.json == {"data": {"greeting": "Hello, World!"}}
     assert response.data == {"greeting": "Hello, World!"}
@@ -289,7 +289,7 @@ def test_testing_client__assert_query_count(undine_settings) -> None:
 
     client = GraphQLClient()
 
-    response = client(query)
+    response = client(query, count_queries=True)
 
     response.assert_query_count(0)
 
@@ -302,6 +302,32 @@ def test_testing_client__assert_query_count(undine_settings) -> None:
     )
     with pytest.raises(Failed, match=exact(msg)):
         response.assert_query_count(1)
+
+
+def test_testing_client__queries_not_counted(undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint
+        def greeting(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+          hello
+        }
+    """
+
+    client = GraphQLClient()
+
+    response = client(query, count_queries=False)
+
+    msg = (
+        "Database queries have not been captured. "
+        "Enable them using the `count_queries` parameter when calling the client."
+    )
+    with pytest.raises(Failed, match=exact(msg)):
+        response.assert_query_count(0)
 
 
 @pytest.mark.django_db

@@ -57,7 +57,7 @@ def test_end_to_end__mutation__entrypoint__permission_error(graphql, undine_sett
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -124,7 +124,7 @@ def test_end_to_end__mutation__single__permission_error(graphql, undine_settings
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -192,7 +192,7 @@ def test_end_to_end__mutation__single__permission_error__nested__single(graphql,
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -261,7 +261,7 @@ def test_end_to_end__mutation__single__permission_error__nested__many(graphql, u
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -332,7 +332,7 @@ def test_end_to_end__mutation__single__permission_error__field(graphql, undine_s
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -399,7 +399,7 @@ def test_end_to_end__mutation__single__permission_error__field__multiple(graphql
         "type": TaskTypeChoices.STORY.value,
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -477,7 +477,7 @@ def test_end_to_end__mutation__single__permission_error__field__nested__single(g
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -548,7 +548,7 @@ def test_end_to_end__mutation__single__permission_error__field__nested__many(gra
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -628,7 +628,7 @@ def test_end_to_end__mutation__many__permission_error(graphql, undine_settings) 
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -717,7 +717,7 @@ def test_end_to_end__mutation__many__permission_error__nested__single(graphql, u
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -808,7 +808,7 @@ def test_end_to_end__mutation__many__permission_error__nested__many(graphql, und
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -901,7 +901,7 @@ def test_end_to_end__mutation__many__permission_error__field(graphql, undine_set
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -982,7 +982,7 @@ def test_end_to_end__mutation__many__permission_error__field__multiple(graphql, 
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -1089,7 +1089,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__single(gra
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -1182,7 +1182,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__many(graph
         },
     ]
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.json == {
         "data": None,

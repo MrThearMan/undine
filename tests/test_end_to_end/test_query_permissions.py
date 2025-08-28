@@ -34,7 +34,7 @@ def test_end_to_end__query__entrypoint__permission_error(graphql, undine_setting
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -51,7 +51,6 @@ def test_end_to_end__query__entrypoint__permission_error(graphql, undine_setting
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -83,7 +82,7 @@ def test_end_to_end__query__single__permission_error(graphql, undine_settings) -
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -100,7 +99,6 @@ def test_end_to_end__query__single__permission_error(graphql, undine_settings) -
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -136,7 +134,7 @@ def test_end_to_end__query__single__permission_error__nested__single(graphql, un
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": {
@@ -159,7 +157,6 @@ def test_end_to_end__query__single__permission_error__nested__single(graphql, un
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -197,7 +194,7 @@ def test_end_to_end__query__single__permission_error__nested__many(graphql, undi
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -215,7 +212,6 @@ def test_end_to_end__query__single__permission_error__nested__many(graphql, undi
             },
         ],
     }
-
 
     response.assert_query_count(2)
 
@@ -244,7 +240,7 @@ def test_end_to_end__query__single__permission_error__field(graphql, undine_sett
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -262,7 +258,6 @@ def test_end_to_end__query__single__permission_error__field(graphql, undine_sett
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -298,7 +293,7 @@ def test_end_to_end__query__single__permission_error__field__nested__single(grap
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": {
@@ -322,7 +317,6 @@ def test_end_to_end__query__single__permission_error__field__nested__single(grap
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -360,7 +354,7 @@ def test_end_to_end__query__single__permission_error__field__nested__many(graphq
         }
     """
 
-    response = graphql(query, variables={"pk": task.pk})
+    response = graphql(query, variables={"pk": task.pk}, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -380,7 +374,6 @@ def test_end_to_end__query__single__permission_error__field__nested__many(graphq
             },
         ],
     }
-
 
     response.assert_query_count(2)
 
@@ -413,7 +406,7 @@ def test_end_to_end__query__many__permission_error(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -430,7 +423,6 @@ def test_end_to_end__query__many__permission_error(graphql, undine_settings) -> 
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -467,7 +459,7 @@ def test_end_to_end__query__many__permission_error__nested__single(graphql, undi
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": {
@@ -509,7 +501,6 @@ def test_end_to_end__query__many__permission_error__nested__single(graphql, undi
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -551,7 +542,7 @@ def test_end_to_end__query__many__permission_error__nested__many(graphql, undine
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -570,7 +561,6 @@ def test_end_to_end__query__many__permission_error__nested__many(graphql, undine
             },
         ],
     }
-
 
     response.assert_query_count(2)
 
@@ -600,7 +590,7 @@ def test_end_to_end__query__many__permission_error__field(graphql, undine_settin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -619,7 +609,6 @@ def test_end_to_end__query__many__permission_error__field(graphql, undine_settin
             },
         ],
     }
-
 
     response.assert_query_count(1)
 
@@ -656,7 +645,7 @@ def test_end_to_end__query__many__permission_error__field__nested__single(graphq
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": {
@@ -701,7 +690,6 @@ def test_end_to_end__query__many__permission_error__field__nested__single(graphq
         ],
     }
 
-
     response.assert_query_count(1)
 
 
@@ -742,7 +730,7 @@ def test_end_to_end__query__many__permission_error__field__nested__many(graphql,
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.json == {
         "data": None,
@@ -763,6 +751,5 @@ def test_end_to_end__query__many__permission_error__field__nested__many(graphql,
             },
         ],
     }
-
 
     response.assert_query_count(2)

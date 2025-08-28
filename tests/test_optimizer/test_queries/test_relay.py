@@ -36,7 +36,7 @@ def test_optimizer__relay__node(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query, variables={"global_id": global_id})
+    response = graphql(query, variables={"global_id": global_id}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -45,7 +45,6 @@ def test_optimizer__relay__node(graphql, undine_settings) -> None:
             "name": "Task",
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -74,7 +73,7 @@ def test_optimizer__relay__node__id_only(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query, variables={"global_id": global_id})
+    response = graphql(query, variables={"global_id": global_id}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -83,7 +82,6 @@ def test_optimizer__relay__node__id_only(graphql, undine_settings) -> None:
             "id": global_id,
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -128,7 +126,7 @@ def test_optimizer__relay__node__joins(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query, variables={"global_id": global_id})
+    response = graphql(query, variables={"global_id": global_id}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -139,7 +137,6 @@ def test_optimizer__relay__node__joins(graphql, undine_settings) -> None:
             "assignees": [{"name": "Assignee"}],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -173,7 +170,7 @@ def test_optimizer__relay__connection(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -185,7 +182,6 @@ def test_optimizer__relay__connection(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -216,7 +212,7 @@ def test_optimizer__relay__connection__first(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -226,7 +222,6 @@ def test_optimizer__relay__connection__first(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -257,7 +252,7 @@ def test_optimizer__relay__connection__last(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -267,7 +262,6 @@ def test_optimizer__relay__connection__last(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -299,7 +293,7 @@ def test_optimizer__relay__connection__after(graphql, undine_settings) -> None:
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)})
+    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -310,7 +304,6 @@ def test_optimizer__relay__connection__after(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -342,7 +335,7 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)})
+    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -353,7 +346,6 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -384,7 +376,7 @@ def test_optimizer__relay__connection__offset(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query, variables={"offset": 1})
+    response = graphql(query, variables={"offset": 1}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -395,7 +387,6 @@ def test_optimizer__relay__connection__offset(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -435,7 +426,7 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -470,7 +461,6 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
         },
     }
 
-
     response.assert_query_count(2)
 
 
@@ -500,7 +490,7 @@ def test_optimizer__relay__connection__no_page_size(graphql, undine_settings) ->
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -512,7 +502,6 @@ def test_optimizer__relay__connection__no_page_size(graphql, undine_settings) ->
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -543,7 +532,7 @@ def test_optimizer__relay__connection__no_page_size__first(graphql, undine_setti
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -553,7 +542,6 @@ def test_optimizer__relay__connection__no_page_size__first(graphql, undine_setti
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -584,7 +572,7 @@ def test_optimizer__relay__connection__no_page_size__last(graphql, undine_settin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -595,7 +583,6 @@ def test_optimizer__relay__connection__no_page_size__last(graphql, undine_settin
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -635,7 +622,7 @@ def test_optimizer__relay__connection__page_size__has_next_page(graphql, undine_
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -663,7 +650,6 @@ def test_optimizer__relay__connection__page_size__has_next_page(graphql, undine_
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -703,7 +689,7 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)})
+    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -731,7 +717,6 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -776,7 +761,7 @@ def test_optimizer__relay__connection__joins(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -806,7 +791,6 @@ def test_optimizer__relay__connection__joins(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -860,7 +844,7 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -901,7 +885,6 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
         },
     }
 
-
     response.assert_query_count(3)
 
 
@@ -936,7 +919,7 @@ def test_optimizer__relay__connection__total_count_in_fragment(graphql, undine_s
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -949,7 +932,6 @@ def test_optimizer__relay__connection__total_count_in_fragment(graphql, undine_s
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -982,7 +964,7 @@ def test_optimizer__relay__connection__different_ordering(graphql, undine_settin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -993,7 +975,6 @@ def test_optimizer__relay__connection__different_ordering(graphql, undine_settin
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -1020,7 +1001,7 @@ def test_optimizer__relay__connection__only_total_count(graphql, undine_settings
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1028,7 +1009,6 @@ def test_optimizer__relay__connection__only_total_count(graphql, undine_settings
             "totalCount": 3,
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1058,7 +1038,7 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings) -> 
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1070,7 +1050,6 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings) -> 
             ],
         },
     }
-
 
     response.assert_query_count(1)
 
@@ -1108,7 +1087,7 @@ def test_optimizer__relay__connection__alias(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1125,7 +1104,6 @@ def test_optimizer__relay__connection__alias(graphql, undine_settings) -> None:
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1176,7 +1154,7 @@ def test_optimizer__relay__nested_connection__many_to_many__forward(graphql, und
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1218,7 +1196,6 @@ def test_optimizer__relay__nested_connection__many_to_many__forward(graphql, und
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1266,7 +1243,7 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1308,7 +1285,6 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1356,7 +1332,7 @@ def test_optimizer__relay__nested_connection__first(graphql, undine_settings) ->
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1395,7 +1371,6 @@ def test_optimizer__relay__nested_connection__first(graphql, undine_settings) ->
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1443,7 +1418,7 @@ def test_optimizer__relay__nested_connection__last(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1482,7 +1457,6 @@ def test_optimizer__relay__nested_connection__last(graphql, undine_settings) -> 
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1531,7 +1505,7 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)})
+    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1569,7 +1543,6 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1618,7 +1591,7 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)})
+    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1659,7 +1632,6 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1707,7 +1679,7 @@ def test_optimizer__relay__nested_connection__offset(graphql, undine_settings) -
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1745,7 +1717,6 @@ def test_optimizer__relay__nested_connection__offset(graphql, undine_settings) -
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -1802,7 +1773,7 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1884,7 +1855,6 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
         },
     }
 
-
     response.assert_query_count(2)
 
 
@@ -1931,7 +1901,7 @@ def test_optimizer__relay__nested_connection__no_page_size(graphql, undine_setti
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -1973,7 +1943,6 @@ def test_optimizer__relay__nested_connection__no_page_size(graphql, undine_setti
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -2021,7 +1990,7 @@ def test_optimizer__relay__nested_connection__no_page_size__first(graphql, undin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2060,7 +2029,6 @@ def test_optimizer__relay__nested_connection__no_page_size__first(graphql, undin
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -2108,7 +2076,7 @@ def test_optimizer__relay__nested_connection__no_page_size__last(graphql, undine
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2147,7 +2115,6 @@ def test_optimizer__relay__nested_connection__no_page_size__last(graphql, undine
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -2204,7 +2171,7 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2282,7 +2249,6 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
         },
     }
 
-
     response.assert_query_count(2)
 
 
@@ -2338,7 +2304,7 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)})
+    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2408,7 +2374,6 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
         },
     }
 
-
     response.assert_query_count(2)
 
 
@@ -2465,7 +2430,7 @@ def test_optimizer__relay__nested_connection__joins(graphql, undine_settings) ->
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2538,7 +2503,6 @@ def test_optimizer__relay__nested_connection__joins(graphql, undine_settings) ->
         },
     }
 
-
     response.assert_query_count(3)
 
 
@@ -2604,7 +2568,7 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2704,7 +2668,6 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
         },
     }
 
-
     response.assert_query_count(3)
 
 
@@ -2756,7 +2719,7 @@ def test_optimizer__relay__nested_connection__total_count_in_fragment(graphql, u
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2801,7 +2764,6 @@ def test_optimizer__relay__nested_connection__total_count_in_fragment(graphql, u
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -2849,7 +2811,7 @@ def test_optimizer__relay__nested_connection__one_to_many(graphql, undine_settin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2890,7 +2852,6 @@ def test_optimizer__relay__nested_connection__one_to_many(graphql, undine_settin
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -2939,7 +2900,7 @@ def test_optimizer__relay__nested_connection__one_to_many__total_count(graphql, 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -2983,7 +2944,6 @@ def test_optimizer__relay__nested_connection__one_to_many__total_count(graphql, 
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -3033,7 +2993,7 @@ def test_optimizer__relay__nested_connection__different_ordering(graphql, undine
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3074,7 +3034,6 @@ def test_optimizer__relay__nested_connection__different_ordering(graphql, undine
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -3118,7 +3077,7 @@ def test_optimizer__relay__nested_connection__only_total_count(graphql, undine_s
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3151,7 +3110,6 @@ def test_optimizer__relay__nested_connection__only_total_count(graphql, undine_s
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -3198,7 +3156,7 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3240,7 +3198,6 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -3305,7 +3262,7 @@ def test_optimizer__relay__nested_connection__multiple_connections(graphql, undi
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3365,7 +3322,6 @@ def test_optimizer__relay__nested_connection__multiple_connections(graphql, undi
         },
     }
 
-
     response.assert_query_count(3)
 
 
@@ -3419,7 +3375,7 @@ def test_optimizer__relay__nested_connection__aliased_connections(graphql, undin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3477,7 +3433,6 @@ def test_optimizer__relay__nested_connection__aliased_connections(graphql, undin
         },
     }
 
-
     response.assert_query_count(3)
 
 
@@ -3524,7 +3479,7 @@ def test_optimizer__relay__nested_connection__generic_relation(graphql, undine_s
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3565,7 +3520,6 @@ def test_optimizer__relay__nested_connection__generic_relation(graphql, undine_s
             ],
         },
     }
-
 
     response.assert_query_count(2)
 
@@ -3635,7 +3589,7 @@ def test_optimizer__relay__nested_connection__third_level_connection(graphql, un
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -3732,6 +3686,5 @@ def test_optimizer__relay__nested_connection__third_level_connection(graphql, un
             ],
         },
     }
-
 
     response.assert_query_count(3)

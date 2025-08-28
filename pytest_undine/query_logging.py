@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import dataclasses
 import os
 import time
 import traceback
 from contextlib import contextmanager, suppress
-from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -23,16 +23,17 @@ __all__ = [
 ]
 
 
-@dataclass
+@dataclasses.dataclass(kw_only=True)
 class QueryInfo:
     sql: str
     duration_ns: int
     origin: str
 
 
-@dataclass
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class DBQueryData:
     queries: list[QueryInfo]
+    enabled: bool = True
 
     @property
     def count(self) -> int:
@@ -120,9 +121,17 @@ def get_stack_info() -> str:
 
 
 @contextmanager
-def capture_database_queries() -> Generator[DBQueryData, None, None]:
-    """Capture results of what database queries were executed."""
-    query_data = DBQueryData(queries=[])
+def capture_database_queries(*, enabled: bool = True) -> Generator[DBQueryData, None, None]:
+    """
+    Capture results of what database queries were executed.
+
+    :param enabled: Can be used to disable capturing.
+    """
+    query_data = DBQueryData(queries=[], enabled=enabled)
+    if not enabled:
+        yield query_data
+        return
+
     query_logger = partial(db_query_logger, query_data=query_data)
 
     with db.connection.execute_wrapper(query_logger):

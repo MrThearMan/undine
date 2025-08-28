@@ -60,7 +60,7 @@ def test_interfaces__entrypoint(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -126,7 +126,7 @@ def test_interfaces__entrypoint__only_one_fragment(graphql, undine_settings) -> 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -187,7 +187,7 @@ def test_interfaces__entrypoint__only_interface_fields(graphql, undine_settings)
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -251,7 +251,7 @@ def test_interfaces__entrypoint__only_fragment_fields(graphql, undine_settings) 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -312,7 +312,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -368,7 +368,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment__typena
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -431,7 +431,7 @@ def test_interfaces__entrypoint__multiple_interface_fields(graphql, undine_setti
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -505,7 +505,7 @@ def test_interfaces__entrypoint__typename(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -591,7 +591,7 @@ def test_interfaces__entrypoint__filtering(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -657,7 +657,7 @@ def test_interfaces__entrypoint__ordering(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 
@@ -716,7 +716,7 @@ def test_interfaces__entrypoint__process_results(graphql, undine_settings) -> No
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
 
     assert response.has_errors is False, response.errors
 

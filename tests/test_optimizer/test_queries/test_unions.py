@@ -52,7 +52,7 @@ def test_optimizer__union(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -97,7 +97,7 @@ def test_optimizer__union__only_one(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -156,7 +156,7 @@ def test_optimizer__union__filtering(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -213,7 +213,7 @@ def test_optimizer__union__ordering(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -268,7 +268,7 @@ def test_optimizer__union__process_results(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {
@@ -319,7 +319,7 @@ def test_optimizer__union__typename(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
     assert response.data == {

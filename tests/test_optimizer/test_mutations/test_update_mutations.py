@@ -50,7 +50,7 @@ def test_mutation_optimization__update(graphql, undine_settings) -> None:
         "name": "Updated task",
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -122,7 +122,7 @@ def test_mutation_optimization__update__forward__one_to_one(graphql, undine_sett
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -197,7 +197,7 @@ def test_mutation_optimization__update__forward__many_to_one(graphql, undine_set
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -275,7 +275,7 @@ def test_mutation_optimization__update__forward__many_to_many(graphql, undine_se
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -352,7 +352,7 @@ def test_mutation_optimization__update__reverse__one_to_one(graphql, undine_sett
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -430,7 +430,7 @@ def test_mutation_optimization__update__reverse__one_to_many(graphql, undine_set
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -510,7 +510,7 @@ def test_mutation_optimization__update__reverse__many_to_many(graphql, undine_se
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -591,7 +591,7 @@ def test_mutation_optimization__update__generic_relation(graphql, undine_setting
         ],
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateTask": {
@@ -678,7 +678,7 @@ def test_mutation_optimization__update__generic_foreign_key(graphql, undine_sett
         },
     }
 
-    response = graphql(query, variables={"input": data})
+    response = graphql(query, variables={"input": data}, count_queries=True)
 
     assert response.data == {
         "updateComment": {

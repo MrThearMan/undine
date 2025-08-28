@@ -34,10 +34,8 @@ def test_optimizer__fragment_spread(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.data == {
         "tasks": [
@@ -45,6 +43,8 @@ def test_optimizer__fragment_spread(graphql, undine_settings) -> None:
             {"type": "BUG_FIX"},
         ],
     }
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -72,10 +72,8 @@ def test_optimizer__fragment_spread__query(graphql, undine_settings) -> None:
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(1)
 
     assert response.data == {
         "tasks": [
@@ -83,6 +81,8 @@ def test_optimizer__fragment_spread__query(graphql, undine_settings) -> None:
             {"type": "BUG_FIX"},
         ],
     }
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -115,12 +115,12 @@ def test_optimizer__fragment_spread__to_one_relation(graphql, undine_settings) -
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
-    response.assert_query_count(1)
-
     assert response.data == {"tasks": [{"project": {"name": "Foo"}}]}
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -153,12 +153,12 @@ def test_optimizer__fragment_spread__to_many_relation(graphql, undine_settings) 
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
-    response.assert_query_count(2)
-
     assert response.data == {"tasks": [{"assignees": [{"name": "Foo"}]}]}
+
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -199,10 +199,8 @@ def test_optimizer__fragment_spread__same_relation_in_multiple_fragments(graphql
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    response.assert_query_count(2)
 
     assert response.data == {
         "tasks": [
@@ -213,3 +211,5 @@ def test_optimizer__fragment_spread__same_relation_in_multiple_fragments(graphql
             },
         ],
     }
+
+    response.assert_query_count(2)
