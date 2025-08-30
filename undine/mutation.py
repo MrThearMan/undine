@@ -23,14 +23,14 @@ from undine.exceptions import MissingModelGenericError, MutationTypeKindCannotBe
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.typing import MutationKind, TModel
+from undine.typing import MutationKind, RelatedAction, TModel
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
 from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
-from undine.utils.mutation_tree import bulk_mutate, mutate
+from undine.utils.mutation_tree import mutate
 from undine.utils.reflection import (
     FunctionEqualityWrapper,
     cache_signature_if_function,
@@ -71,6 +71,7 @@ class MutationTypeMeta(type):
     __model__: type[Model]
     __input_map__: dict[str, Input]
     __kind__: MutationKind
+    __related_action__: RelatedAction
     __schema_name__: str
     __directives__: list[Directive]
     __extensions__: dict[str, Any]
@@ -133,6 +134,7 @@ class MutationTypeMeta(type):
         mutation_type.__model__ = model
         mutation_type.__input_map__ = get_members(mutation_type, Input)
         mutation_type.__kind__ = mutation_kind
+        mutation_type.__related_action__ = RelatedAction(kwargs.get("related_action", RelatedAction.null))
         mutation_type.__schema_name__ = kwargs.get("schema_name", _name)
         mutation_type.__directives__ = kwargs.get("directives", [])
         mutation_type.__extensions__ = kwargs.get("extensions", {})
@@ -219,6 +221,9 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     `kind: Literal["create", "update", "delete", "related", "custom"] = <inferred>`
         The kind of mutation this is. Try to infer from mutation type if not provided.
 
+    `related_action: Literal["null", "delete", "ignore"] = "null"`
+        The action to take for existing related objects that are not included in the input.
+
     `auto: bool = <AUTOGENERATION setting>`
         Whether to add `Input` attributes for all Model fields automatically.
 
@@ -243,6 +248,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __model__: ClassVar[type[Model]]
     __input_map__: ClassVar[dict[str, Input]]
     __kind__: ClassVar[MutationKind]
+    __related_action__: ClassVar[RelatedAction]
     __schema_name__: ClassVar[str]
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
@@ -258,12 +264,12 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     @classmethod
     def __mutate__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> Any:
         """Method used for single object mutations."""
-        return mutate(model=cls.__model__, data=input_data)
+        return mutate(model=cls.__model__, data=input_data, related_action=cls.__related_action__)
 
     @classmethod
     def __bulk_mutate__(cls, instances: list[TModel], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
         """Method used for bulk mutations."""
-        return bulk_mutate(model=cls.__model__, data=input_data)
+        return mutate(model=cls.__model__, data=input_data, related_action=cls.__related_action__)
 
     @classmethod
     def __permissions__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:

@@ -7,7 +7,7 @@ import pytest
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
-from undine.utils.mutation_tree import bulk_mutate
+from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
@@ -71,7 +71,7 @@ def test_bulk_create_mutation__relations__to_one(graphql, undine_settings):
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -143,7 +143,7 @@ def test_bulk_create_mutation__relations__to_many(graphql, undine_settings):
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)

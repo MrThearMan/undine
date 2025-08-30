@@ -156,7 +156,7 @@ The resolver info object for the request, as it applies for this `OptimizationDa
 During field resolving, the `field_name`, `field_nodes`, `return_type` and `parent_type`
 of the resolver info object are different depending on the `ObjectType` being resolved,
 so each `OptimizationData` needs to know how the resolver info would look when its
-optimizations are needed. Various methods in `Undine` get passed this `info` object
+optimizations are needed. Various methods in Undine get passed this `info` object
 so that users of the library can use it do their own introspections.
 
 #### `related_field`
@@ -178,7 +178,7 @@ Contains fields that will be applied to `QuerySet.only()`. This prevents the
 #### `aliases`
 
 Contains the expressions that will be applied to `QuerySet.alias()`. Various
-methods in `Undine` can add to these aliases to enable more clearer use of
+methods in Undine can add to these aliases to enable more clearer use of
 for [`annotations`](#annotations).
 
 #### `annotations`

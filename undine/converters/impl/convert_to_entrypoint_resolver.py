@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from inspect import isasyncgenfunction
+from collections.abc import AsyncIterable
+from inspect import isasyncgenfunction, iscoroutinefunction
 from types import FunctionType
 from typing import Any
 
@@ -9,6 +10,7 @@ from graphql import GraphQLFieldResolver
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_entrypoint_resolver
 from undine.exceptions import InvalidEntrypointMutationTypeError
+from undine.parsers import parse_return_annotation
 from undine.relay import Connection, Node
 from undine.resolvers import (
     BulkCreateResolver,
@@ -28,6 +30,7 @@ from undine.resolvers import (
 )
 from undine.resolvers.query import _InterfaceConnectionResolver, _UnionTypeConnectionResolver
 from undine.typing import MutationKind
+from undine.utils.reflection import get_origin_or_noop, is_subclass
 
 
 @convert_to_entrypoint_resolver.register
@@ -35,6 +38,13 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
     if isasyncgenfunction(ref):
         return SubscriptionValueResolver()
+
+    if iscoroutinefunction(ref):
+        ann = parse_return_annotation(ref)
+        origin = get_origin_or_noop(ann)
+        if is_subclass(origin, AsyncIterable):
+            return SubscriptionValueResolver()
+
     return EntrypointFunctionResolver(func=ref, entrypoint=caller)
 
 

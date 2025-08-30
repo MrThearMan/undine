@@ -477,7 +477,7 @@ def set_forward_ids(instance: Model) -> None:
 
 @contextmanager
 def convert_integrity_errors() -> Generator[None, None, None]:
-    """Convert IntegrityErrors raised during the context to the given exception."""
+    """Convert IntegrityErrors raised during the context to a GraphQL error."""
     try:
         yield
     except IntegrityError as error:

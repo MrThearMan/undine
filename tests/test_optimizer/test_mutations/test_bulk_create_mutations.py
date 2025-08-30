@@ -18,7 +18,7 @@ from example_project.app.models import (
 )
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
-from undine.utils.mutation_tree import bulk_mutate
+from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
@@ -100,7 +100,7 @@ def test_mutation_optimization__bulk_create__forward__one_to_one(graphql, undine
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -180,7 +180,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_one(graphql, undin
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -260,7 +260,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_many(graphql, undi
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -344,7 +344,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_one(graphql, undine
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -425,7 +425,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_many(graphql, undin
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -509,7 +509,7 @@ def test_mutation_optimization__bulk_create__reverse__many_to_many(graphql, undi
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -594,7 +594,7 @@ def test_mutation_optimization__bulk_create__generic_relation(graphql, undine_se
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -681,7 +681,7 @@ def test_mutation_optimization__bulk_create__generic_foreign_key(graphql, undine
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Comment], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
-            return bulk_mutate(model=Comment, data=input_data)
+            return mutate(model=Comment, data=input_data)
 
     # RootTypes
 

@@ -16,7 +16,7 @@ dev-async port="8000":
 
 # Start the docs server
 docs port="8080":
-    @poetry run mkdocs serve -a localhost:{{port}}
+    @poetry run mkdocs serve -a localhost:{{port}} -o
 
 # Download a pygments code highlighting theme
 docs-theme style="fruity":

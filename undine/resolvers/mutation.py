@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import inspect
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Generic
 
@@ -21,6 +20,7 @@ from undine.utils.model_utils import (
     get_pks_from_list_of_dicts,
 )
 from undine.utils.pre_mutation import pre_mutation, pre_mutation_async, pre_mutation_many, pre_mutation_many_async
+from undine.utils.reflection import as_coroutine_func_if_not
 
 from .query import QueryTypeManyResolver, QueryTypeSingleResolver
 
@@ -98,19 +98,14 @@ class CreateResolver(Generic[TModel]):
             mutation_type=self.mutation_type,
         )
 
-        if inspect.iscoroutinefunction(self.mutation_type.__mutate__):
-            func = self.mutation_type.__mutate__
-        else:
-            func = sync_to_async(self.mutation_type.__mutate__)
+        mutate_func = as_coroutine_func_if_not(self.mutation_type.__mutate__)
 
         with convert_integrity_errors():
-            instance = await func(instance=instance, info=info, input_data=input_data)
+            instance = await mutate_func(instance=instance, info=info, input_data=input_data)
 
         if isinstance(instance, Model):
-            if inspect.iscoroutinefunction(self.mutation_type.__after__):
-                await self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)  # type: ignore[arg-type]
-            else:
-                self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)  # type: ignore[arg-type]
+            after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
+            await after_func(instance=instance, info=info, input_data=input_data)
 
             resolver = QueryTypeSingleResolver(query_type=self.query_type, entrypoint=self.entrypoint)
             return await resolver.run_async(root, info, pk=instance.pk)
@@ -181,19 +176,14 @@ class UpdateResolver(Generic[TModel]):
             mutation_type=self.mutation_type,
         )
 
-        if inspect.iscoroutinefunction(self.mutation_type.__mutate__):
-            func = self.mutation_type.__mutate__
-        else:
-            func = sync_to_async(self.mutation_type.__mutate__)
+        mutate_func = as_coroutine_func_if_not(self.mutation_type.__mutate__)
 
         with convert_integrity_errors():
-            instance = await func(instance=instance, info=info, input_data=input_data)
+            instance = await mutate_func(instance=instance, info=info, input_data=input_data)
 
         if isinstance(instance, Model):
-            if inspect.iscoroutinefunction(self.mutation_type.__after__):
-                await self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)  # type: ignore[arg-type]
-            else:
-                self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)  # type: ignore[arg-type]
+            after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
+            await after_func(instance=instance, info=info, input_data=input_data)
 
             resolver = QueryTypeSingleResolver(query_type=self.query_type, entrypoint=self.entrypoint)
             return await resolver.run_async(root, info, pk=instance.pk)
@@ -262,10 +252,8 @@ class DeleteResolver(Generic[TModel]):
         with convert_integrity_errors():
             await instance.adelete()
 
-        if inspect.iscoroutinefunction(self.mutation_type.__after__):
-            await self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)
-        else:
-            self.mutation_type.__after__(instance=instance, info=info, input_data=input_data)
+        after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
+        await after_func(instance=instance, info=info, input_data=input_data)
 
         return SimpleNamespace(pk=pk)
 
@@ -341,19 +329,15 @@ class BulkCreateResolver(Generic[TModel]):
             mutation_type=self.mutation_type,
         )
 
-        if inspect.iscoroutinefunction(self.mutation_type.__bulk_mutate__):
-            func = self.mutation_type.__bulk_mutate__
-        else:
-            func = sync_to_async(self.mutation_type.__bulk_mutate__)
+        mutate_func = as_coroutine_func_if_not(self.mutation_type.__bulk_mutate__)
 
         with convert_integrity_errors():
-            instances = await func(instances=instances, info=info, input_data=input_data)
+            instances = await mutate_func(instances=instances, info=info, input_data=input_data)
+
+        after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
 
         for instance, data in zip(instances, input_data, strict=True):
-            if inspect.iscoroutinefunction(self.mutation_type.__after__):
-                await self.mutation_type.__after__(instance=instance, info=info, input_data=data)
-            else:
-                self.mutation_type.__after__(instance=instance, info=info, input_data=data)
+            await after_func(instance=instance, info=info, input_data=data)
 
         resolver = QueryTypeManyResolver(
             query_type=self.query_type,
@@ -433,19 +417,15 @@ class BulkUpdateResolver(Generic[TModel]):
             mutation_type=self.mutation_type,
         )
 
-        if inspect.iscoroutinefunction(self.mutation_type.__bulk_mutate__):
-            func = self.mutation_type.__bulk_mutate__
-        else:
-            func = sync_to_async(self.mutation_type.__bulk_mutate__)
+        mutate_func = as_coroutine_func_if_not(self.mutation_type.__bulk_mutate__)
 
         with convert_integrity_errors():
-            instances = await func(instances=instances, info=info, input_data=input_data)
+            instances = await mutate_func(instances=instances, info=info, input_data=input_data)
+
+        after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
 
         for instance, data in zip(instances, input_data, strict=True):
-            if inspect.iscoroutinefunction(self.mutation_type.__after__):
-                await self.mutation_type.__after__(instance=instance, info=info, input_data=data)
-            else:
-                self.mutation_type.__after__(instance=instance, info=info, input_data=data)
+            await after_func(instance=instance, info=info, input_data=data)
 
         resolver = QueryTypeManyResolver(
             query_type=self.query_type,
@@ -515,10 +495,9 @@ class BulkDeleteResolver(Generic[TModel]):
         with convert_integrity_errors():
             await get_default_manager(self.model).filter(pk__in=pks).adelete()
 
+        after_func = as_coroutine_func_if_not(self.mutation_type.__after__)
+
         for instance, data in zip(instances, input_data, strict=True):
-            if inspect.iscoroutinefunction(self.mutation_type.__after__):
-                await self.mutation_type.__after__(instance=instance, info=info, input_data=data)
-            else:
-                self.mutation_type.__after__(instance=instance, info=info, input_data=data)
+            await after_func(instance=instance, info=info, input_data=data)
 
         return [SimpleNamespace(pk=pk) for pk in pks]

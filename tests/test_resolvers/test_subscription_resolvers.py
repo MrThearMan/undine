@@ -24,6 +24,9 @@ async def test_entrypoint_function_subscription__async_generator() -> None:
             for i in range(2):
                 yield i
 
+    resolver_func = Subscription.func.get_resolver()
+    assert isinstance(resolver_func, SubscriptionValueResolver)
+
     resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 
     result = [item async for item in resolver(None, mock_gql_info())]
@@ -49,8 +52,11 @@ async def test_entrypoint_function_subscription__async_iterator() -> None:
 
     class Subscription(RootType):
         @Entrypoint
-        async def func(self, info: GQLInfo) -> AsyncIterable[int]:
+        async def func(self, info: GQLInfo) -> AsyncIterator[int]:
             return ExampleIterator()
+
+    resolver_func = Subscription.func.get_resolver()
+    assert isinstance(resolver_func, SubscriptionValueResolver)
 
     resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 
@@ -72,6 +78,9 @@ async def test_entrypoint_function_subscription__async_iterable() -> None:
         @Entrypoint
         async def func(self, info: GQLInfo) -> AsyncIterable[int]:
             return ExampleIterable()
+
+    resolver_func = Subscription.func.get_resolver()
+    assert isinstance(resolver_func, SubscriptionValueResolver)
 
     resolver = FunctionSubscriptionResolver(func=Subscription.func.ref, entrypoint=Subscription.func)
 

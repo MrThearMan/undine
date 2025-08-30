@@ -840,6 +840,7 @@ class MutationTypeParams(TypedDict, total=False):
 
     model: type[Model]
     kind: Literal["create", "update", "delete", "related", "custom"]
+    related_action: Literal["null", "delete", "ignore"]
     auto: bool
     exclude: list[str]
     schema_name: str

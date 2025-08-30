@@ -7,7 +7,7 @@ import pytest
 from example_project.app.models import ServiceRequest, Task, TaskStep, TaskTypeChoices
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
-from undine.utils.mutation_tree import bulk_mutate
+from undine.utils.mutation_tree import mutate
 
 # Entrypoint
 
@@ -678,7 +678,7 @@ def test_end_to_end__mutation__many__permission_error__nested__single(graphql, u
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -767,7 +767,7 @@ def test_end_to_end__mutation__many__permission_error__nested__many(graphql, und
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -1050,7 +1050,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__single(gra
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 
@@ -1141,7 +1141,7 @@ def test_end_to_end__mutation__many__permission_error__field__nested__many(graph
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     # RootTypes
 

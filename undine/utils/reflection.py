@@ -19,6 +19,7 @@ from typing import (
     get_origin,
 )
 
+from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
 from undine.dataclasses import RootAndInfoParams
@@ -27,14 +28,17 @@ from undine.settings import undine_settings
 from undine.typing import GQLInfo, LiteralArg, ParametrizedType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Hashable, Sequence
+    from collections.abc import Awaitable, Callable, Generator, Hashable, Sequence
     from types import FrameType, TracebackType
+
+    from graphql.pyutils import AwaitableOrValue
 
     from undine.typing import Lambda
 
 
 __all__ = [
     "FunctionEqualityWrapper",
+    "as_coroutine_func_if_not",
     "cache_signature_if_function",
     "can_be_literal_arg",
     "get_flattened_generic_params",
@@ -331,3 +335,10 @@ def reverse_enumerate(sequence: Sequence[T]) -> Generator[tuple[int, T], None, N
 def get_traceback(traceback: TracebackType) -> list[str]:
     """Format the given traceback into a list of strings."""
     return [subline for line in format_tb(traceback) for subline in line.split("\n")]
+
+
+def as_coroutine_func_if_not(func: Callable[P, AwaitableOrValue[T]], /) -> Callable[P, Awaitable[T]]:
+    """Convert function to a coroutine function using sync_to_async if needed."""
+    if inspect.iscoroutinefunction(func):
+        return func
+    return sync_to_async(func)  # type: ignore[arg-type]

@@ -225,6 +225,9 @@ type Mutation {
 }
 ```
 
+> Note that the total amount of objects that can be mutated in a bulk mutation
+> is limited by the [`MUTATION_INSTANCE_LIMIT`](settings.md#mutation_instance_limit) setting.
+
 ### Schema name
 
 By default, the name of the `Entrypoint` is the name of the method or class attribute

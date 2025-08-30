@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 from collections import defaultdict
 from functools import partial
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, overload
 
 from django.db import transaction  # noqa: ICN003
 from django.db.models import Q
@@ -42,35 +42,82 @@ if TYPE_CHECKING:
     from undine.typing import TModel
 
 __all__ = [
-    "bulk_mutate",
     "mutate",
 ]
+
+
+@overload
+def mutate(
+    *,
+    model: type[TModel],
+    data: dict[str, Any],
+    related_action: RelatedAction = ...,
+) -> TModel: ...
+
+
+@overload
+def mutate(
+    *,
+    model: type[TModel],
+    data: list[dict[str, Any]],
+    related_action: RelatedAction = ...,
+) -> list[TModel]: ...
 
 
 @transaction.atomic
 def mutate(
     *,
     model: type[TModel],
-    data: dict[str, Any],
+    data: dict[str, Any] | list[dict[str, Any]],
     related_action: RelatedAction = RelatedAction.null,
-) -> TModel:
-    """Mutate objects using the given data and model."""
+) -> TModel | list[TModel]:
+    """
+    Mutates a instance(s) of the given model using the given input data.
+
+    New instance can created like this:
+
+    >>> instance = mutate(model=Task, data={"name": "New task"})
+    >>> instance.name
+    'New task'
+
+    Existing instances are used if input data contains the "pk" field.
+
+    >>> instance = mutate(model=Task, data={"pk": 1, "name": "Updated task"})
+    >>> instance.name
+    'Updated task'
+
+    Related objects can be created, updated or linked at the same time.
+    Acceptable values are: a dict containing the input data, the primary key of an existing instance,
+    the actual model instance, or None (if null relation is allowed). For many-relations,
+    lists of these values are required instead.
+
+    >>> instance = mutate(model=Task, data={"name": "New task", "project": {"name": "New project"}})
+    >>> instance.project.name
+    'New project'
+
+    If the input data is a list, a list of instances is created.
+
+    >>> instances = mutate(model=Task, data=[{"name": "New task"}, {"name": "New task 2"}])
+    >>> len(instances)
+    2
+    >>> instances[0].name
+    'New task'
+    >>> instances[1].name
+    'New task 2'
+
+    :param model: The model to mutate.
+    :param data: The input data to use for the mutation.
+    :param related_action: The action to take for existing related objects that are not included in the input.
+                           Specifically used for reverse one-to-one and reverse one-to-many relations.
+    """
+    if isinstance(data, list):
+        start_node = MutationNode(model=model, related_action=related_action)
+        start_node.handle_many(data)
+        return start_node.mutate()  # type: ignore[return-value]
+
     start_node = MutationNode(model=model, related_action=related_action)
     start_node.handle_one(data)
     return start_node.mutate()[0]  # type: ignore[return-value]
-
-
-@transaction.atomic
-def bulk_mutate(
-    *,
-    model: type[TModel],
-    data: list[dict[str, Any]],
-    related_action: RelatedAction = RelatedAction.null,
-) -> list[TModel]:
-    """Bulk mutate objects using the given data and model."""
-    start_node = MutationNode(model=model, related_action=related_action)
-    start_node.handle_many(data)
-    return start_node.mutate()  # type: ignore[return-value]
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)

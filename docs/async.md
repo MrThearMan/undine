@@ -19,15 +19,18 @@ UNDINE = {
 ```
 
 With this, your GraphQL endpoint will change from a sync view to an async view.
-This allows you to use async resolvers in your `Fields` and `Entrypoints`.
-Permission checks and custom optimizations are still executed synchronously.
+This allows you to write your Entrypoint resolvers as coroutines.
 
 ```python
--8<- "async/field_async.py"
+-8<- "async/entrypoint_async.py"
 ```
 
-_Custom_ mutations can also be made async. Validation, permission checks,
-and after hooks are still executed synchronously.
+Various parts of the `QueryTypes`, `MutationTypes`, and their `Fields` and `Inputs`
+can also be made async.
+
+```python
+-8<- "async/query_async.py"
+```
 
 ```python
 -8<- "async/mutation_async.py"

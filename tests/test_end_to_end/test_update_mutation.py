@@ -10,7 +10,6 @@ from example_project.app.models import AcceptanceCriteria, Person, Project, Task
 from tests.factories import AcceptanceCriteriaFactory, PersonFactory, ProjectFactory, TaskFactory, TaskStepFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.typing import RelatedAction, TModel
-from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
@@ -297,12 +296,8 @@ def test_update_mutation__relations__one_to_many__not_nullable__remove_related(g
 
     class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
 
-    class TaskUpdateMutation(MutationType[Task]):
+    class TaskUpdateMutation(MutationType[Task], related_action=RelatedAction.delete):
         steps = Input(RelatedTaskStep)
-
-        @classmethod
-        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
-            return mutate(model=Task, data=input_data, related_action=RelatedAction.delete)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -360,12 +355,8 @@ def test_update_mutation__relations__one_to_many__not_nullable__ignore(graphql, 
 
     class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
 
-    class TaskUpdateMutation(MutationType[Task]):
+    class TaskUpdateMutation(MutationType[Task], related_action=RelatedAction.ignore):
         steps = Input(RelatedTaskStep)
-
-        @classmethod
-        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
-            return mutate(model=Task, data=input_data, related_action=RelatedAction.ignore)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)
@@ -804,12 +795,8 @@ def test_update_mutation__related_empty_list__not_nullable(graphql, undine_setti
 
     class RelatedStep(MutationType[TaskStep], kind="related"): ...
 
-    class TaskUpdateMutation(MutationType[Task]):
+    class TaskUpdateMutation(MutationType[Task], related_action=RelatedAction.delete):
         steps = Input(RelatedStep, many=True)
-
-        @classmethod
-        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: Any) -> Any:
-            return mutate(model=Task, data=input_data, related_action=RelatedAction.delete)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType)

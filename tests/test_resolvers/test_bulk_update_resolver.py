@@ -35,7 +35,7 @@ from tests.helpers import mock_gql_info, patch_optimizer
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType
 from undine.exceptions import GraphQLErrorGroup, GraphQLModelNotFoundError
 from undine.resolvers import BulkUpdateResolver
-from undine.utils.mutation_tree import bulk_mutate
+from undine.utils.mutation_tree import mutate
 
 
 @pytest.mark.django_db
@@ -93,7 +93,7 @@ def test_bulk_update_resolver__related_object_not_found(undine_settings) -> None
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -135,7 +135,7 @@ def test_bulk_update_resolver__forward_one_to_one(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -174,7 +174,7 @@ def test_bulk_update_resolver__forward_one_to_one__pk(undine_settings) -> None:
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -215,7 +215,7 @@ def test_bulk_update_resolver__forward_many_to_one(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -255,7 +255,7 @@ def test_bulk_update_resolver__forward_many_to_one__pk(undine_settings) -> None:
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -295,7 +295,7 @@ def test_bulk_update_resolver__forward_many_to_many(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -337,7 +337,7 @@ def test_bulk_update_resolver__forward_many_to_many__pk(undine_settings) -> None
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -377,7 +377,7 @@ def test_bulk_update_resolver__reverse_one_to_one(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -417,7 +417,7 @@ def test_bulk_update_resolver__reverse_one_to_one__pk(undine_settings) -> None:
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -456,7 +456,7 @@ def test_bulk_update_resolver__reverse_one_to_many(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -497,7 +497,7 @@ def test_bulk_update_resolver__reverse_one_to_many__pk(undine_settings) -> None:
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -537,7 +537,7 @@ def test_bulk_update_resolver__reverse_many_to_many(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -579,7 +579,7 @@ def test_bulk_update_resolver__reverse_many_to_many__pk(undine_settings) -> None
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
@@ -620,7 +620,7 @@ def test_bulk_update_resolver__generic_relation(undine_settings) -> None:
 
         @classmethod
         def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: Any) -> Any:
-            return bulk_mutate(model=Task, data=input_data)
+            return mutate(model=Task, data=input_data)
 
     class Query(RootType):
         bulk_update_tasks = Entrypoint(TaskUpdateMutation)
