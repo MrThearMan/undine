@@ -367,3 +367,11 @@ extend the functionality of the `Entrypoint`.
 after the schema is created. The `Entrypoint` itself is found in the `extensions`
 under a key defined by the [`ENTRYPOINT_EXTENSIONS_KEY`](settings.md#entrypoint_extensions_key)
 setting.
+
+## Schema export
+
+Undine includes a management command to export your GraphQL schema.
+
+```bash
+python manage.py print_schema > schema.graphql
+```

@@ -177,7 +177,7 @@ Should be given as the dotted path to the docstring parser class.
 /// details | `EMPTY_VALUES`
     attrs: {id: empty_values}
 
-Type `Container[Any]` | Default: `"(None, "", [], {})"`
+Type `Container[Any]` | Default: `(None, "", [], {})`
 
 By default, if a Filter receives any of these values, it will be ignored.
 Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty-values) argument.
@@ -753,7 +753,7 @@ The number of seconds to wait for the `ConnectionInit` message after opening a W
 /// details | `WEBSOCKET_PATH`
     attrs: {id: websocket_path}
 
-Type: `str` | Default: `"ws/$"`
+Type: `str` | Default: `"graphql/"`
 
 The path where the GraphQL over WebSocket endpoint is located
 if using `undine.integrations.channels.get_websocket_enabled_app`.

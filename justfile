@@ -34,6 +34,10 @@ get-static:
 hook:
     @poetry run pre-commit install
 
+# Update GraphiQL import map
+importmap:
+    @poetry run python manage.py update_import_map
+
 # Install dependencies
 install:
     @poetry install --all-extras
@@ -54,13 +58,13 @@ migrations:
 nox:
     @poetry run nox
 
-# Print the GraphQL schema
-print-schema:
-    @poetry run python manage.py print_schema
-
 # Run py-spy to profiler on a given process
 profile pid:
     @poetry run py-spy --threads --subprocesses --output profile.svg --pid "{{pid}}"
+
+# Print the GraphQL schema
+schema:
+    @poetry run python manage.py print_schema
 
 # Collect static files
 static:

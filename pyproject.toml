@@ -93,6 +93,7 @@ pre-commit = "4.2.0"
 mypy = "1.16.1"
 django-stubs = "5.2.1"
 py-spy = "0.4.0"
+httpx = "0.28.1"
 
 [tool.poetry.extras]
 image = ["pillow"]

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 from asyncio import iscoroutinefunction
 from collections.abc import Awaitable, Callable
-from functools import wraps
+from enum import StrEnum
+from functools import cached_property, wraps
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, TypeAlias, overload
 
@@ -260,64 +262,155 @@ def render_graphiql(request: HttpRequest) -> HttpResponse:
     return render(request, "undine/graphiql.html", context=get_graphiql_context())
 
 
+class ModuleVersion(StrEnum):
+    # Note that changing the versions here will break integrity checks!
+    # Integrity values can be generated using the `update_import_map` management command.
+
+    REACT = "19.1.1"
+    GRAPHIQL = "5.2.0"
+    EXPLORER = "5.1.1"
+    GRAPHIQL_REACT = "0.37.1"
+    GRAPHIQL_TOOLKIT = "0.11.3"
+    GRAPHQL = "16.11.0"
+    MONACO_EDITOR = "0.52.2"
+    MONACO_GRAPHQL = "1.7.2"
+
+
+@dataclasses.dataclass(kw_only=True)
+class ModuleInfoItem:
+    latest: str
+    """URL to the latest version of the module."""
+
+    version: ModuleVersion
+    """Version of the module to use."""
+
+    integrity: str
+    """Subresource integrity hash for the module using the given version."""
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        self.name = name
+
+    @cached_property
+    def url(self) -> str:
+        return self.latest.replace("latest", self.version.value)  # type: ignore[arg-type]
+
+
+class ModuleInfo:
+    REACT = ModuleInfoItem(
+        latest="https://esm.sh/react@latest",
+        version=ModuleVersion.REACT,
+        integrity="sha384-9OJoKubDZJQFG2UMdUOdDcnYWkODV+gH9m+SAlT9CjHa82SyzSkej2hzbO5QAMpj",
+    )
+    REACT_JSX_RUNTIME = ModuleInfoItem(
+        latest="https://esm.sh/react@latest/jsx-runtime",
+        version=ModuleVersion.REACT,
+        integrity="sha384-3NEvPP3wjioeToUCcSPmCv3hnmoZaViS/8dYJK5EGgMXDyAEaoNe5lFp7FktwR6h",
+    )
+    REACT_DOM = ModuleInfoItem(
+        latest="https://esm.sh/react-dom@latest",
+        version=ModuleVersion.REACT,
+        integrity="sha384-AkbP9ShtoY9QW6TG7svAPqnTjTRM/eMwSY13/zh0pDEyBLfNqUJvrfJSwQEdyMIF",
+    )
+    REACT_DOM_CLIENT = ModuleInfoItem(
+        latest="https://esm.sh/react-dom@latest/client",
+        version=ModuleVersion.REACT,
+        integrity="sha384-iXvysXIHXb2s4DgTQrnYhOy/v/3MBGJKfiedt0fZ4pcaFy+cvBGgWGw82BYJxlR9",
+    )
+    GRAPHIQL = ModuleInfoItem(
+        latest="https://esm.sh/graphiql@latest?standalone&external=react,react-dom,@graphiql/react,graphql",
+        version=ModuleVersion.GRAPHIQL,
+        integrity="sha384-32Vv0P2Qy9UWdE0/n9/nFmGh8tM5/vMgpAarsa+UdD6So+aS6DVBQZDIjS2lU52e",
+    )
+    EXPLORER = ModuleInfoItem(
+        latest="https://esm.sh/@graphiql/plugin-explorer@latest?standalone&external=react,@graphiql/react,graphql",
+        version=ModuleVersion.EXPLORER,
+        integrity="sha384-rR9phbzRkwb/HINixBgg9De/Z/S6G9/OiRX7cVR1AKhP+2AUTfX7wmDT76y5HeSf",
+    )
+    GRAPHIQL_REACT = ModuleInfoItem(
+        latest="https://esm.sh/@graphiql/react@latest?standalone&external=react,react-dom,graphql",
+        version=ModuleVersion.GRAPHIQL_REACT,
+        integrity="sha384-nmxT3c47Z+ZSy1Bz3TPMhyVKyF85pJI3+L9MK80JdALLMea2Z94RVLYeICwaoLbI",
+    )
+    GRAPHIQL_TOOLKIT = ModuleInfoItem(
+        latest="https://esm.sh/@graphiql/toolkit@latest?standalone&external=graphql",
+        version=ModuleVersion.GRAPHIQL_TOOLKIT,
+        integrity="sha384-ZsnupyYmzpNjF1Z/81zwi4nV352n4P7vm0JOFKiYnAwVGOf9twnEMnnxmxabMBXe",
+    )
+    GRAPHQL = ModuleInfoItem(
+        latest="https://esm.sh/graphql@latest",
+        version=ModuleVersion.GRAPHQL,
+        integrity="sha384-uhRXaGfgCFqosYlwSLNd7XpDF9kcSUycv5yVbjjhH5OrE675kd0+MNIAAaSc+1Pi",
+    )
+    MONACO_EDITOR_EDITOR_WORKER = ModuleInfoItem(
+        latest="https://esm.sh/monaco-editor@latest/esm/vs/editor/editor.worker.js?worker",
+        version=ModuleVersion.MONACO_EDITOR,
+        integrity="sha384-lvRBk9hT6IKcVMAynOrBJUj/OCVkEaWBvzZdzvpPUqdrPW5bPsIBF7usVLLkQQxa",
+    )
+    MONACO_EDITOR_JSON_WORKER = ModuleInfoItem(
+        latest="https://esm.sh/monaco-editor@latest/esm/vs/language/json/json.worker.js?worker",
+        version=ModuleVersion.MONACO_EDITOR,
+        integrity="sha384-8UXA1aePGFu/adc7cEQ8PPlVJityyzV0rDqM9Tjq1tiFFT0E7jIDQlOS4X431c+O",
+    )
+    MONACO_GRAPHQL_GRAPHQL_WORKER = ModuleInfoItem(
+        latest="https://esm.sh/monaco-graphql@latest/esm/graphql.worker.js?worker",
+        version=ModuleVersion.MONACO_GRAPHQL,
+        integrity="sha384-Ji9h9Rhy4GB+oB6VrRLZ59jpS2ab0Q1KjJu6KmbVaoTgrTjGlyodHINJ0tDivxe4",
+    )
+    GRAPHIQL_CSS = ModuleInfoItem(
+        latest="https://esm.sh/graphiql@latest/dist/style.css",
+        version=ModuleVersion.GRAPHIQL,
+        integrity="sha384-f6GHLfCwoa4MFYUMd3rieGOsIVAte/evKbJhMigNdzUf52U9bV2JQBMQLke0ua+2",
+    )
+    EXPLORER_CSS = ModuleInfoItem(
+        latest="https://esm.sh/@graphiql/plugin-explorer@latest/dist/style.css",
+        version=ModuleVersion.EXPLORER,
+        integrity="sha384-vTFGj0krVqwFXLB7kq/VHR0/j2+cCT/B63rge2mULaqnib2OX7DVLUVksTlqvMab",
+    )
+
+
 def get_graphiql_context() -> dict[str, Any]:
     """Get the GraphiQL context."""
     return {
         "http_path": undine_settings.GRAPHQL_PATH,
         "ws_path": undine_settings.WEBSOCKET_PATH,
         "importmap": get_importmap(),
-        # Note that changing the versions here will break integrity checks! Regenerate: https://www.srihash.org/
-        "graphiql_css": "https://esm.sh/graphiql@5.0.3/dist/style.css",
-        "explorer_css": "https://esm.sh/@graphiql/plugin-explorer@5.0.0/dist/style.css",
-        "graphiql_css_integrity": "sha384-lixdMC836B3JdnFulLFPKjIN0gr85IffJ5qBAoYmKxoeNXlkn+JgibHqHBD6N9ef",
-        "explorer_css_integrity": "sha384-vTFGj0krVqwFXLB7kq/VHR0/j2+cCT/B63rge2mULaqnib2OX7DVLUVksTlqvMab",
+        "graphiql_css": ModuleInfo.GRAPHIQL_CSS.url,
+        "explorer_css": ModuleInfo.EXPLORER_CSS.url,
+        "graphiql_css_integrity": ModuleInfo.GRAPHIQL_CSS.integrity,
+        "explorer_css_integrity": ModuleInfo.EXPLORER_CSS.integrity,
     }
 
 
 def get_importmap() -> str:
     """Get the importmap for GraphiQL."""
-    # Note that changing the versions here will break integrity checks! Regenerate: https://www.srihash.org/
-    react = "https://esm.sh/react@19.1.0"
-    react_jsx = "https://esm.sh/react@19.1.0/jsx-runtime"
-    react_dom = "https://esm.sh/react-dom@19.1.0"
-    react_dom_client = "https://esm.sh/react-dom@19.1.0/client"
-    graphiql = "https://esm.sh/graphiql@5.0.3?standalone&external=react,react-dom,@graphiql/react,graphql"
-    explorer = "https://esm.sh/@graphiql/plugin-explorer@5.0.0?standalone&external=react,@graphiql/react,graphql"
-    graphiql_react = "https://esm.sh/@graphiql/react@0.35.4?standalone&external=react,react-dom,graphql"
-    graphiql_toolkit = "https://esm.sh/@graphiql/toolkit@0.11.3?standalone&external=graphql"
-    graphql = "https://esm.sh/graphql@16.11.0"
-    json_worker = "https://esm.sh/monaco-editor@0.52.2/esm/vs/language/json/json.worker.js?worker"
-    editor_worker = "https://esm.sh/monaco-editor@0.52.2/esm/vs/editor/editor.worker.js?worker"
-    graphql_worker = "https://esm.sh/monaco-graphql@1.7.1/esm/graphql.worker.js?worker"
-
     importmap = {
         "imports": {
-            "react": react,
-            "react/jsx-runtime": react_jsx,
-            "react-dom": react_dom,
-            "react-dom/client": react_dom_client,
-            "graphiql": graphiql,
-            "@graphiql/plugin-explorer": explorer,
-            "@graphiql/react": graphiql_react,
-            "@graphiql/toolkit": graphiql_toolkit,
-            "graphql": graphql,
-            "monaco-editor/json-worker": json_worker,
-            "monaco-editor/editor-worker": editor_worker,
-            "monaco-graphql/graphql-worker": graphql_worker,
+            "react": ModuleInfo.REACT.url,
+            "react/jsx-runtime": ModuleInfo.REACT_JSX_RUNTIME.url,
+            "react-dom": ModuleInfo.REACT_DOM.url,
+            "react-dom/client": ModuleInfo.REACT_DOM_CLIENT.url,
+            "graphiql": ModuleInfo.GRAPHIQL.url,
+            "@graphiql/plugin-explorer": ModuleInfo.EXPLORER.url,
+            "@graphiql/react": ModuleInfo.GRAPHIQL_REACT.url,
+            "@graphiql/toolkit": ModuleInfo.GRAPHIQL_TOOLKIT.url,
+            "graphql": ModuleInfo.GRAPHQL.url,
+            "monaco-editor/json-worker": ModuleInfo.MONACO_EDITOR_JSON_WORKER.url,
+            "monaco-editor/editor-worker": ModuleInfo.MONACO_EDITOR_EDITOR_WORKER.url,
+            "monaco-graphql/graphql-worker": ModuleInfo.MONACO_GRAPHQL_GRAPHQL_WORKER.url,
         },
         "integrity": {
-            react: "sha384-C3ApUaeHIj1v0KX4cY/+K3hQZ/8HcAbbmkw1gBK8H5XN4LCEguY7+A3jga11SaHF",
-            react_jsx: "sha384-ISrauaZAJlw0FRGhk9DBbU+2n4Bs1mrmh1kkJ63lTmkLTXYqpWTNFkGLPcK9C9BX",
-            react_dom: "sha384-CKiqgCWLo5oVMbiCv36UR0pLRrzeRKhw1jFUpx0j/XdZOpZ43zOHhjf8yjLNuLEy",
-            react_dom_client: "sha384-QH8CM8CiVIQ+RoTOjDp6ktXLkc0ix+qbx2mo7SSnwMeUQEoM4XJffjoSPY85X6VH",
-            graphiql: "sha384-Vxuid6El2THg0+qYzVT1pHMOPQe1KZHNpxKaxqMqK4lbqokaJ0H+iKZR1zFhQzBN",
-            explorer: "sha384-nrr4ZBQS9iyn0dn60BH3wtgG6YCSsQsuTPLgWDrUvvGvLvz0nE7LxnWWxEicmKHm",
-            graphiql_react: "sha384-EnyV8FGnqfde43nPpmKz4yVI0VxlcwLVQe6P2r/cc24UcTmAzPU6SAabBonnSrT/",
-            graphiql_toolkit: "sha384-ZsnupyYmzpNjF1Z/81zwi4nV352n4P7vm0JOFKiYnAwVGOf9twnEMnnxmxabMBXe",
-            graphql: "sha384-uhRXaGfgCFqosYlwSLNd7XpDF9kcSUycv5yVbjjhH5OrE675kd0+MNIAAaSc+1Pi",
-            json_worker: "sha384-8UXA1aePGFu/adc7cEQ8PPlVJityyzV0rDqM9Tjq1tiFFT0E7jIDQlOS4X431c+O",
-            editor_worker: "sha384-lvRBk9hT6IKcVMAynOrBJUj/OCVkEaWBvzZdzvpPUqdrPW5bPsIBF7usVLLkQQxa",
-            graphql_worker: "sha384-74lJ0Y2S6U0jkJAi5ijRRWnLiF0Fugr65EE1DVtJn/LHWmXJq9cVDFfC0eRjFkm1",
+            ModuleInfo.REACT.url: ModuleInfo.REACT.integrity,
+            ModuleInfo.REACT_JSX_RUNTIME.url: ModuleInfo.REACT_JSX_RUNTIME.integrity,
+            ModuleInfo.REACT_DOM.url: ModuleInfo.REACT_DOM.integrity,
+            ModuleInfo.REACT_DOM_CLIENT.url: ModuleInfo.REACT_DOM_CLIENT.integrity,
+            ModuleInfo.GRAPHIQL.url: ModuleInfo.GRAPHIQL.integrity,
+            ModuleInfo.EXPLORER.url: ModuleInfo.EXPLORER.integrity,
+            ModuleInfo.GRAPHIQL_REACT.url: ModuleInfo.GRAPHIQL_REACT.integrity,
+            ModuleInfo.GRAPHIQL_TOOLKIT.url: ModuleInfo.GRAPHIQL_TOOLKIT.integrity,
+            ModuleInfo.GRAPHQL.url: ModuleInfo.GRAPHQL.integrity,
+            ModuleInfo.MONACO_EDITOR_JSON_WORKER.url: ModuleInfo.MONACO_EDITOR_JSON_WORKER.integrity,
+            ModuleInfo.MONACO_EDITOR_EDITOR_WORKER.url: ModuleInfo.MONACO_EDITOR_EDITOR_WORKER.integrity,
+            ModuleInfo.MONACO_GRAPHQL_GRAPHQL_WORKER.url: ModuleInfo.MONACO_GRAPHQL_GRAPHQL_WORKER.integrity,
         },
     }
     return json.dumps(importmap, indent=2)
