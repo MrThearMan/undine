@@ -790,7 +790,10 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
                 description="The items in the connection.",
             ),
         },
-        extensions={undine_settings.CONNECTION_EXTENSIONS_KEY: ref},
+        extensions={
+            undine_settings.CONNECTION_EXTENSIONS_KEY: ref,
+            "is_visible": ref.query_type.__extensions__.get("is_visible", True),
+        },
     )
 
 

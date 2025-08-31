@@ -89,7 +89,13 @@ class CustomerDetails(TypedDict):
     age: int
 
 
-class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, interfaces=[Node, Named]):
+class TaskType(
+    QueryType[Task],
+    filterset=TaskFilterSet,
+    orderset=TaskOrderSet,
+    interfaces=[Node, Named],
+    extensions={"is_visible": False},
+):
     """Task Node description."""
 
     name = Field()
@@ -102,7 +108,7 @@ class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, 
     def name_permissions(self, info: GQLInfo, instance: Task) -> None:
         return
 
-    assignee_count = Field(Coalesce(Count("assignees"), 0))
+    assignee_count = Field(Coalesce(Count("assignees"), 0), extensions={"is_visible": False})
 
     @Field
     def customer(self, number: int = 18) -> CustomerDetails:
