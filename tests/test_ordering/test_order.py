@@ -105,6 +105,18 @@ def test_order__directives__not_applicable() -> None:
     del OrderSetMeta.__model__
 
 
+def test_order__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.ENUM_VALUE], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order() @ ValueDirective(value="foo")
+
+    assert MyOrderSet.name.directives == [ValueDirective(value="foo")]
+
+    assert str(MyOrderSet.name) == 'name @value(value: "foo")'
+
+
 def test_order__expression() -> None:
     expr = Length("name")
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLArgument, Undefined
 
@@ -150,3 +150,9 @@ class CalculationArgument:
 
     def get_field_type(self) -> GraphQLInputType:
         return convert_to_graphql_type(TypeRef(self.ref), is_input=True)  # type: ignore[return-value]
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this calculation argument."""
+        check_directives([directive], location=DirectiveLocation.ARGUMENT_DEFINITION)
+        self.directives.append(directive)
+        return self

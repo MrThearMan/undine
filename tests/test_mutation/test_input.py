@@ -166,6 +166,18 @@ def test_input__directives__not_applicable() -> None:
     del MutationTypeMeta.__model__
 
 
+def test_input__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.INPUT_FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class TaskCreateMutation(MutationType[Task]):
+        name = Input() @ ValueDirective(value="foo")
+
+    assert TaskCreateMutation.name.directives == [ValueDirective(value="foo")]
+
+    assert str(TaskCreateMutation.name) == 'name: String! @value(value: "foo")'
+
+
 def test_input__extensions() -> None:
     class TaskCreateMutation(MutationType[Task]):
         name = Input(extensions={"foo": "bar"})
@@ -257,7 +269,6 @@ def test_input__related_mutation_type() -> None:
     # Related mutation type can be left out and it won't affect the current relation.
     assert TaskCreateMutation.project.default_value == Undefined
     assert TaskCreateMutation.project.required is False
-
 
 
 def test_input__callable() -> None:

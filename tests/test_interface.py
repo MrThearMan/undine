@@ -115,6 +115,25 @@ def test_interface_type__definition__directives__not_applicable() -> None:
             name = InterfaceField(GraphQLNonNull(GraphQLString))
 
 
+def test_interface_type__definition__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.INTERFACE], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    @ValueDirective(value="foo")
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(Named) == cleandoc(
+        """
+        interface Named @value(value: "foo") {
+          name: String!
+        }
+        """
+    )
+
+
 def test_interface_type__definition__extensions() -> None:
     class Named(InterfaceType, extensions={"foo": "bar"}):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -205,6 +224,8 @@ def test_interface_type__interface_field__directives() -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString), directives=[ValueDirective(value="foo")])
 
+    assert Named.name.directives == [ValueDirective(value="foo")]
+
     assert str(Named.name) == 'name: String! @value(value: "foo")'
 
 
@@ -218,6 +239,18 @@ def test_interface_type__interface_field__directives__not_applicable() -> None:
 
         class Named(InterfaceType):
             name = InterfaceField(GraphQLNonNull(GraphQLString), directives=directives)
+
+
+def test_interface_type__interface_field__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString)) @ ValueDirective(value="foo")
+
+    assert Named.name.directives == [ValueDirective(value="foo")]
+
+    assert str(Named.name) == 'name: String! @value(value: "foo")'
 
 
 def test_interface_type__interface_field__extensions() -> None:

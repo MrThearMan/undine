@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import OrderBy
 from graphql import DirectiveLocation, GraphQLEnumValue, Undefined
@@ -149,6 +149,12 @@ class OrderSetMeta(type):
 
         return enum_values
 
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this orderset."""
+        check_directives([directive], location=DirectiveLocation.ENUM)
+        cls.__directives__.append(directive)
+        return cls
+
 
 class OrderSet(Generic[TModel], metaclass=OrderSetMeta):
     """
@@ -275,6 +281,12 @@ class Order:
             return self.aliases  # type: ignore[return-value]
         self.aliases_func = get_wrapped_func(func)
         return func
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this order."""
+        check_directives([directive], location=DirectiveLocation.ENUM_VALUE)
+        self.directives.append(directive)
+        return self
 
 
 def get_orders_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Order]:

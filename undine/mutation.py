@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Hashable
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
@@ -208,6 +208,12 @@ class MutationTypeMeta(type):
             if inpt is not None and inpt.convertion_func is not None:
                 input_data[key] = inpt.convertion_func(inpt, value)
         return input_data
+
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this mutation."""
+        check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
+        cls.__directives__.append(directive)
+        return cls
 
 
 class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
@@ -418,6 +424,12 @@ class Input:
             return self.convert  # type: ignore[return-value]
         self.convertion_func = get_wrapped_func(func)
         return func
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this input."""
+        check_directives([directive], location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+        self.directives.append(directive)
+        return self
 
 
 def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Input]:

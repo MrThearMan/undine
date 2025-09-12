@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -161,6 +161,12 @@ class QueryTypeMeta(type):
         """
         # Purposely not using `isinstance` here since models can inherit from other models.
         return type(value) is cls.__model__
+
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this query."""
+        check_directives([directive], location=DirectiveLocation.OBJECT)
+        cls.__directives__.append(directive)
+        return cls
 
 
 class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
@@ -362,6 +368,12 @@ class Field:
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this field."""
+        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
+        self.directives.append(directive)
+        return self
 
 
 def get_fields_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Field]:

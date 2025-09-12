@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator as op
 from functools import reduce
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import Q
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
@@ -192,6 +192,12 @@ class FilterSetMeta(type):
         """Defer creating fields until all QueryTypes have been registered."""
         return {frt.schema_name: frt.as_graphql_input_field() for frt in cls.__filter_map__.values()}
 
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this filterset."""
+        check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
+        cls.__directives__.append(directive)
+        return cls
+
 
 class FilterSet(Generic[TModel], metaclass=FilterSetMeta):
     """
@@ -342,6 +348,12 @@ class Filter:
             return self.aliases  # type: ignore[return-value]
         self.aliases_func = get_wrapped_func(func)
         return func
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this filter."""
+        check_directives([directive], location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+        self.directives.append(directive)
+        return self
 
 
 def get_filters_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Filter]:

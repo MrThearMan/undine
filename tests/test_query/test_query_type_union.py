@@ -85,6 +85,24 @@ def test_query_type_union__directives__not_applicable() -> None:
         class Commentable(UnionType[TaskType, ProjectType], directives=directives): ...
 
 
+def test_query_type_union__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.UNION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    @ValueDirective(value="foo")
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert Commentable.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(Commentable) == 'union Commentable @value(value: "foo") = TaskType | ProjectType'
+
+
 def test_query_type_union__union_type() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()

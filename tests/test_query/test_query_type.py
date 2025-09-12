@@ -216,6 +216,25 @@ def test_query_type__directives__not_applicable() -> None:
         class MyQueryType(QueryType[Task], directives=directives): ...
 
 
+def test_query_type__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.OBJECT], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    @ValueDirective(value="foo")
+    class MyQueryType(QueryType[Task], auto=False):
+        name = Field()
+
+    assert MyQueryType.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(MyQueryType) == cleandoc(
+        """
+        type MyQueryType @value(value: "foo") {
+          name: String!
+        }
+        """
+    )
+
+
 def test_query_type__extensions() -> None:
     class MyQueryType(QueryType[Task], extensions={"foo": "bar"}): ...
 

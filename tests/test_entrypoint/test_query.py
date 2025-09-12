@@ -4,6 +4,7 @@ from inspect import cleandoc
 
 import pytest
 from graphql import (
+    DirectiveLocation,
     GraphQLArgument,
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -16,6 +17,7 @@ from graphql import (
 
 from example_project.app.models import Task
 from undine import Entrypoint, FilterSet, GQLInfo, OrderSet, QueryType, RootType
+from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import MissingEntrypointRefError
 from undine.optimizer.optimizer import optimize_sync
 from undine.resolvers import EntrypointFunctionResolver, QueryTypeManyResolver, QueryTypeSingleResolver
@@ -47,7 +49,7 @@ def test_entrypoint__deprecation_reason() -> None:
     assert Query.foo.deprecation_reason == "Use something else."
 
 
-def test_entrypoint__query__repr() -> None:
+def test_entrypoint__query_type__repr() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -57,7 +59,7 @@ def test_entrypoint__query__repr() -> None:
     assert repr(Query.task) == f"<undine.entrypoint.Entrypoint(ref={TaskType!r})>"
 
 
-def test_entrypoint__query__str() -> None:
+def test_entrypoint__query_type__str() -> None:
     class TaskType(QueryType[Task]): ...
 
     class Query(RootType):
@@ -72,7 +74,7 @@ def test_entrypoint__query__str() -> None:
     )
 
 
-def test_entrypoint__query__attributes() -> None:
+def test_entrypoint__query_type__attributes() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -88,7 +90,7 @@ def test_entrypoint__query__attributes() -> None:
     assert Query.task.name == "task"
 
 
-def test_entrypoint__query__get_field_type() -> None:
+def test_entrypoint__query_type__get_field_type() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -100,7 +102,7 @@ def test_entrypoint__query__get_field_type() -> None:
     assert isinstance(field_type.of_type, GraphQLObjectType)
 
 
-def test_entrypoint__query__get_field_arguments() -> None:
+def test_entrypoint__query_type__get_field_arguments() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -112,7 +114,7 @@ def test_entrypoint__query__get_field_arguments() -> None:
     assert arguments == {"pk": GraphQLArgument(GraphQLNonNull(GraphQLInt), out_name="pk")}
 
 
-def test_entrypoint__query__get_resolver() -> None:
+def test_entrypoint__query_type__get_resolver() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -123,7 +125,7 @@ def test_entrypoint__query__get_resolver() -> None:
     assert isinstance(resolver, QueryTypeSingleResolver)
 
 
-def test_entrypoint__query__as_graphql_field() -> None:
+def test_entrypoint__query_type__as_graphql_field() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -142,7 +144,7 @@ def test_entrypoint__query__as_graphql_field() -> None:
     assert graphql_field.extensions == {"undine_entrypoint": Query.task}
 
 
-def test_entrypoint__query__many__attributes() -> None:
+def test_entrypoint__query_type__many__attributes() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -158,7 +160,7 @@ def test_entrypoint__query__many__attributes() -> None:
     assert Query.task.name == "task"
 
 
-def test_entrypoint__query__many__get_field_type() -> None:
+def test_entrypoint__query_type__many__get_field_type() -> None:
     class TaskType(QueryType[Task]):
         """Description."""
 
@@ -172,7 +174,7 @@ def test_entrypoint__query__many__get_field_type() -> None:
     assert isinstance(field_type.of_type.of_type.of_type, GraphQLObjectType)
 
 
-def test_entrypoint__query__many__get_field_arguments() -> None:
+def test_entrypoint__query_type__many__get_field_arguments() -> None:
     class TaskFilterSet(FilterSet[Task]): ...
 
     class TaskOrderSet(OrderSet[Task]): ...
@@ -195,7 +197,7 @@ def test_entrypoint__query__many__get_field_arguments() -> None:
     assert isinstance(arguments["orderBy"].type.of_type.of_type, GraphQLEnumType)
 
 
-def test_entrypoint__query__many__get_resolver() -> None:
+def test_entrypoint__query_type__many__get_resolver() -> None:
     class TaskType(QueryType[Task]): ...
 
     class Query(RootType):
@@ -205,7 +207,7 @@ def test_entrypoint__query__many__get_resolver() -> None:
     assert isinstance(resolver, QueryTypeManyResolver)
 
 
-def test_entrypoint__query__custom_resolver() -> None:
+def test_entrypoint__query_type__custom_resolver() -> None:
     class TaskType(QueryType[Task]): ...
 
     class Query(RootType):
@@ -221,3 +223,25 @@ def test_entrypoint__query__custom_resolver() -> None:
 
     args = Query.task.get_field_arguments()
     assert args == {"name": GraphQLArgument(GraphQLNonNull(GraphQLString), out_name="name")}
+
+
+def test_entrypoint__query_type__directive() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType) @ ValueDirective(value="foo")
+
+    assert Query.task.directives == [ValueDirective(value="foo")]
+
+    assert str(Query) == cleandoc(
+        """
+        type Query {
+          task(
+            pk: Int!
+          ): TaskType! @value(value: "foo")
+        }
+        """
+    )

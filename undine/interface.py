@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -96,6 +96,12 @@ class InterfaceTypeMeta(type):
     def __output_fields__(cls) -> dict[str, GraphQLField]:
         """Defer creating fields until all QueryTypes have been registered."""
         return {field.schema_name: field.as_graphql_field() for field in cls.__field_map__.values()}
+
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this interface."""
+        check_directives([directive], location=DirectiveLocation.INTERFACE)
+        cls.__directives__.append(directive)
+        return cls
 
 
 class InterfaceType(metaclass=InterfaceTypeMeta):
@@ -208,3 +214,9 @@ class InterfaceField:
             schema_name=self.schema_name,
             directives=self.directives,
         )
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this interface field."""
+        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
+        self.directives.append(directive)
+        return self

@@ -32,6 +32,14 @@ def test_scalar__scalar_type__str__custom_directive() -> None:
     assert str(my_scalar) == "scalar MyScalar @custom"
 
 
+def test_scalar__scalar_type__str__custom_directive__matmul() -> None:
+    class CustomDirective(Directive, locations=[DirectiveLocation.SCALAR], schema_name="custom"): ...
+
+    my_scalar: ScalarType[str, str] = ScalarType(name="MyScalar") @ CustomDirective()
+
+    assert str(my_scalar) == "scalar MyScalar @custom"
+
+
 def test_scalar__scalar_type__as_graphql_scalar() -> None:
     my_scalar: ScalarType[str, str] = ScalarType(name="MyScalar")
 

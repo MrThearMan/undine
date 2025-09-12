@@ -1,26 +1,35 @@
 from __future__ import annotations
 
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLArgument, Undefined
 
 from undine.exceptions import (
     MissingDirectiveArgumentError,
     MissingDirectiveLocationsError,
+    NotCompatibleWithDirectivesError,
     UnexpectedDirectiveArgumentError,
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_directive
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_members
+from undine.utils.reflection import get_members, has_callable_attribute
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLDirective, GraphQLInputType
 
-    from undine.typing import DefaultValueType, DirectiveArgumentParams, DirectiveParams
+    from undine import CalculationArgument, Entrypoint, Field, Filter, Order
+    from undine.entrypoint import RootTypeMeta
+    from undine.filtering import FilterSetMeta
+    from undine.interface import InterfaceTypeMeta
+    from undine.mutation import MutationTypeMeta
+    from undine.ordering import OrderSetMeta
+    from undine.query import QueryTypeMeta
+    from undine.typing import DefaultValueType, DirectiveArgumentParams, DirectiveParams, T
+    from undine.union import UnionTypeMeta
 
 __all__ = [
     "Directive",
@@ -154,6 +163,51 @@ class Directive(metaclass=DirectiveMeta):
     def __hash__(self) -> int:
         return hash((type(self), tuple(self.__parameters__.items())))
 
+    def __call__(self, other: T, /) -> T:  # TODO: Testing
+        """
+        Allow adding directives using decorators.
+
+        >>> class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+        >>>
+        >>> @MyDirective()
+        >>> class TaskType(QueryType[Task]): ...
+        """
+        self.__add_directive__(other)
+        return other
+
+    def __rmatmul__(self, other: T) -> T:  # TODO: Testing
+        """
+        Allow adding directives using the @ operator.
+
+        >>> class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+        >>>
+        >>> class TaskType(QueryType[Task]):
+        >>>     name = Field() @ MyDirective()
+        """
+        self.__add_directive__(other)
+        return other
+
+    def __add_directive__(self, other: T) -> T:
+        if has_callable_attribute(other, "add_directive"):
+            other: CalculationArgument | Entrypoint | Field | Filter | Order
+            other.add_directive(self)
+            return other
+
+        if has_callable_attribute(other, "__add_directive__"):
+            other: (
+                FilterSetMeta
+                | InterfaceTypeMeta
+                | MutationTypeMeta
+                | OrderSetMeta
+                | QueryTypeMeta
+                | RootTypeMeta
+                | UnionTypeMeta
+            )
+            other.__add_directive__(self)
+            return other
+
+        raise NotCompatibleWithDirectivesError(directive=self, other=other)
+
 
 class DirectiveArgument:
     """
@@ -213,3 +267,9 @@ class DirectiveArgument:
             out_name=self.name,
             extensions=self.extensions,
         )
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this input."""
+        check_directives([directive], location=DirectiveLocation.ARGUMENT_DEFINITION)
+        self.directives.append(directive)
+        return self

@@ -85,6 +85,12 @@ class ScalarType(Generic[TParse, TSerialize]):
             extensions=self.extensions,
         )
 
+    def __add_directive__(self, directive: Directive, /) -> ScalarType:
+        """Add a directive to this scalar."""
+        check_directives([directive], location=DirectiveLocation.SCALAR)
+        self.directives.append(directive)
+        return self
+
 
 def handle_scalar_errors(typename: str) -> Callable[[DispatchProtocol[T]], DispatchProtocol[T]]:
     """Catch errors raised by the scalar parsers and serializers and reraise them as GraphQLErrors."""

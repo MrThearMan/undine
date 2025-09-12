@@ -1,9 +1,20 @@
 from __future__ import annotations
 
-from graphql import GraphQLArgument, GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLObjectType
+from inspect import cleandoc
+
+from graphql import (
+    DirectiveLocation,
+    GraphQLArgument,
+    GraphQLInputObjectType,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLString,
+)
 
 from example_project.app.models import Task
 from undine import Entrypoint, MutationType, QueryType, RootType
+from undine.directives import Directive, DirectiveArgument
 from undine.resolvers import BulkCreateResolver, CreateResolver
 
 
@@ -116,3 +127,27 @@ def test_entrypoint__mutation__many() -> None:
 
     resolver = Mutation.create_task.get_resolver()
     assert isinstance(resolver, BulkCreateResolver)
+
+
+def test_entrypoint__mutation_type__directive() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation) @ ValueDirective(value="foo")
+
+    assert Mutation.create_task.directives == [ValueDirective(value="foo")]
+
+    assert str(Mutation) == cleandoc(
+        """
+        type Mutation {
+          createTask(
+            input: TaskCreateMutation!
+          ): TaskType! @value(value: "foo")
+        }
+        """
+    )

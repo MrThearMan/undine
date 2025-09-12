@@ -166,6 +166,29 @@ def test_entrypoint__function__directives__entrypoint__not_applicable() -> None:
                 return number * 2
 
 
+def test_entrypoint__function__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class Query(RootType):
+        @ValueDirective(value="foo")
+        @Entrypoint()
+        def double(self, number: int) -> int:
+            return number * 2
+
+    assert Query.double.directives == [ValueDirective(value="foo")]
+
+    assert str(Query) == cleandoc(
+        """
+        type Query {
+          double(
+            number: Int!
+          ): Int! @value(value: "foo")
+        }
+        """
+    )
+
+
 def test_entrypoint__function__extensions__root_type() -> None:
     class Query(RootType, extensions={"foo": "bar"}):
         @Entrypoint

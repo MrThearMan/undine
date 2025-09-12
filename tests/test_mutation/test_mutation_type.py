@@ -420,6 +420,25 @@ def test_mutation_type__directives__not_applicable() -> None:
         class TaskCreateMutation(MutationType[Task], directives=directives): ...
 
 
+def test_mutation_type__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    @ValueDirective(value="foo")
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+    assert TaskCreateMutation.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(TaskCreateMutation) == cleandoc(
+        """
+        input TaskCreateMutation @value(value: "foo") {
+          name: String!
+        }
+        """
+    )
+
+
 def test_mutation_type__extensions() -> None:
     class TaskCreateMutation(MutationType[Task], extensions={"foo": "bar"}): ...
 

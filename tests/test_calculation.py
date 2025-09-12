@@ -132,6 +132,20 @@ def test_calculation__definition__argument__directives() -> None:
     assert str(ExampleCalculation.value) == "value: Int! @arg"
 
 
+def test_calculation__definition__argument__directives__matmul() -> None:
+    class ArgDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION], schema_name="arg"): ...
+
+    class ExampleCalculation(Calculation[int]):
+        value = CalculationArgument(int) @ ArgDirective()
+
+        def __call__(self, info: GQLInfo) -> DjangoExpression:
+            return Value(self.value)
+
+    assert ExampleCalculation.value.directives == [ArgDirective()]
+
+    assert str(ExampleCalculation.value) == "value: Int! @arg"
+
+
 def test_calculation__definition__argument__extensions() -> None:
     class ExampleCalculation(Calculation[int]):
         value = CalculationArgument(int, extensions={"foo": "bar"})

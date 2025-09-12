@@ -260,6 +260,12 @@ class NoFunctionParametersError(UndineError):
     msg = "Function '{func:dotpath}' must have at least one argument."
 
 
+class NotCompatibleWithDirectivesError(UndineError):
+    """Error raised if a directive is not compatible with another directive."""
+
+    msg = "Cannot use directive '{directive:dotpath}' with {other!r}"
+
+
 class FunctionDispatcherError(UndineError):
     """Error raised for `FunctionDispatcher` errors."""
 

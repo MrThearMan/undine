@@ -101,6 +101,7 @@ from undine.exceptions import (
     MutateNeedsImplementationError,
     MutationTypeKindCannotBeDeterminedError,
     NoFunctionParametersError,
+    NotCompatibleWithDirectivesError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
     UndineError,
@@ -328,6 +329,11 @@ class UndineErrorParams(NamedTuple):
             cls=NoFunctionParametersError,
             args={"func": my_func},
             message="Function 'tests.test_exceptions.my_func' must have at least one argument.",
+        ),
+        "NotCompatibleWithDirectivesError": UndineErrorParams(
+            cls=NotCompatibleWithDirectivesError,
+            args={"directive": MyClass, "other": 1},
+            message="Cannot use directive 'tests.test_exceptions.MyClass' with 1",
         ),
         "FunctionDispatcherImplementationNotFoundError": UndineErrorParams(
             cls=FunctionDispatcherImplementationNotFoundError,

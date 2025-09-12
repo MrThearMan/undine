@@ -312,6 +312,29 @@ def test_filterset__directives__not_applicable() -> None:
         class MyFilterSet(FilterSet[Task], directives=directives): ...
 
 
+def test_filterset__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    @ValueDirective(value="foo")
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    assert MyFilterSet.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(MyFilterSet) == cleandoc(
+        """
+        input MyFilterSet @value(value: "foo") {
+          name: String
+          NOT: MyFilterSet
+          AND: MyFilterSet
+          OR: MyFilterSet
+          XOR: MyFilterSet
+        }
+        """
+    )
+
+
 def test_filterset__extensions() -> None:
     class MyFilterSet(FilterSet[Task], extensions={"foo": "bar"}): ...
 

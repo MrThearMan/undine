@@ -155,6 +155,18 @@ def test_directive__argument__directives__not_applicable() -> None:
             value = DirectiveArgument(GraphQLNonNull(GraphQLInt), directives=directives)
 
 
+def test_directive__argument__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="my"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt)) @ ValueDirective(value=1)
+
+    assert MyDirective.value.directives == [ValueDirective(value=1)]
+
+    assert str(MyDirective.value) == "value: Int! @value(value: 1)"
+
+
 def test_directive__argument__as_graphql_argument() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLInt))

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, ClassVar, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -88,6 +88,12 @@ class RootTypeMeta(type):
             entrypoint.schema_name: entrypoint.as_graphql_field()  # ...
             for entrypoint in cls.__entrypoint_map__.values()
         }
+
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this `RootType`."""
+        check_directives([directive], location=DirectiveLocation.OBJECT)
+        cls.__directives__.append(directive)
+        return cls
 
 
 class RootType(metaclass=RootTypeMeta):
@@ -235,3 +241,9 @@ class Entrypoint:
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func
+
+    def add_directive(self, directive: Directive, /) -> Self:
+        """Add a directive to this entrypoint."""
+        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
+        self.directives.append(directive)
+        return self

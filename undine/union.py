@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation
@@ -101,6 +101,12 @@ class UnionTypeMeta(type):
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
+
+    def __add_directive__(cls, directive: Directive, /) -> Self:
+        """Add a directive to this union."""
+        check_directives([directive], location=DirectiveLocation.UNION)
+        cls.__directives__.append(directive)
+        return cls
 
 
 class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):

@@ -351,6 +351,18 @@ def test_filter__directives__not_applicable() -> None:
     del FilterSetMeta.__model__
 
 
+def test_filter__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.INPUT_FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class MyFilter(FilterSet[Task], auto=False):
+        name = Filter() @ ValueDirective(value="foo")
+
+    assert MyFilter.name.directives == [ValueDirective(value="foo")]
+
+    assert str(MyFilter.name) == 'name: String @value(value: "foo")'
+
+
 def test_filter__extensions() -> None:
     class MyFilter(FilterSet[Task], auto=False):
         name = Filter(extensions={"foo": "bar"})

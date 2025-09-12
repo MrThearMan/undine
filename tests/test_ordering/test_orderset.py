@@ -209,6 +209,26 @@ def test_orderset__directives__not_applicable() -> None:
         class MyOrderSet(OrderSet[Task], directives=directives): ...
 
 
+def test_orderset__directives__decorator() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.ENUM], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    @ValueDirective(value="foo")
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    assert MyOrderSet.__directives__ == [ValueDirective(value="foo")]
+
+    assert str(MyOrderSet) == cleandoc(
+        """
+        enum MyOrderSet @value(value: "foo") {
+          nameAsc
+          nameDesc
+        }
+        """
+    )
+
+
 def test_orderset__extensions() -> None:
     class MyOrderSet(OrderSet[Task], extensions={"foo": "bar"}): ...
 

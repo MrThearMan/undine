@@ -356,6 +356,8 @@ def test_field__directives() -> None:
 
     assert MyQueryType.name.directives == directives
 
+    assert str(MyQueryType.name) == 'name: String! @value(value: "1")'
+
 
 def test_field__directives__not_applicable() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.OBJECT], schema_name="value"):
@@ -368,6 +370,18 @@ def test_field__directives__not_applicable() -> None:
 
     # Model not cleaned up since error occurred in QueryType class body.
     QueryTypeMeta.__model__ = Task
+
+
+def test_field__directives__matmul() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    class MyQueryType(QueryType[Task]):
+        name = Field() @ ValueDirective(value="1")
+
+    assert MyQueryType.name.directives == [ValueDirective(value="1")]
+
+    assert str(MyQueryType.name) == 'name: String! @value(value: "1")'
 
 
 def test_field__extensions() -> None:
