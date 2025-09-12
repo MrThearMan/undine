@@ -57,10 +57,15 @@ from graphql import (
     ExecutionResult,
     FieldNode,
     FragmentSpreadNode,
+    GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
+    GraphQLNamedType,
     GraphQLNullableType,
     GraphQLObjectType,
     GraphQLResolveInfo,
@@ -730,6 +735,10 @@ UniquelyNamedGraphQLElement: TypeAlias = (
     | GraphQLInputObjectType
     | GraphQLDirective
 )
+HasGraphQLExtensions: TypeAlias = (
+    GraphQLNamedType | GraphQLDirective | GraphQLField | GraphQLInputField | GraphQLArgument | GraphQLEnumValue
+)
+
 
 Selections: TypeAlias = Iterable[SelectionNode]
 ObjectSelections: TypeAlias = Iterable[FieldNode | FragmentSpreadNode]
@@ -1060,6 +1069,7 @@ InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOr
 ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 
 ConvertionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
+VisibilityFunc: TypeAlias = Callable[[Any, DjangoRequestProtocol], bool]
 
 OptimizerFunc: TypeAlias = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
 

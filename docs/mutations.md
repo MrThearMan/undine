@@ -452,6 +452,19 @@ You can add directives to the `MutationType` by providing them using the `direct
 
 See the [Directives](directives.md) section for more details on directives.
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `MutationType` from certain users by adding the `visible` argument to the `MutationType`.
+Hiding a mutation type means that it will not be included in introspection queries for that user,
+and entrypoints using that mutation type cannot be used in operations by that user.
+
+```python
+-8<- "mutations/mutation_type_visible.py"
+```
+
 ### GraphQL extensions
 
 You can provide custom extensions for the `MutationType` by providing a
@@ -755,6 +768,19 @@ You can add directives to the `Input` by providing them using the `directives` a
 ```
 
 See the [Directives](directives.md) section for more details on directives.
+
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `Input` from certain users by adding the `visible` argument to the `Input`.
+Hiding an input means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "mutations/input_visible.py"
+```
 
 ### GraphQL extensions
 

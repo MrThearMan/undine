@@ -77,6 +77,9 @@ class UndineDefaultSettings(NamedTuple):
     MUTATION_FULL_CLEAN: bool = True
     """Whether to run `model.full_clean()` when mutating a model."""
 
+    EXPERIMENTAL_VISIBILITY_CHECKS: bool = False  # Experimental, may not work as expected
+    """Whether to enable experimental visibility checks."""
+
     # Limits
 
     CONNECTION_PAGE_SIZE: int | None = 100

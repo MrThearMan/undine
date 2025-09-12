@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
     from undine.directives import Directive
-    from undine.typing import EntrypointParams, EntrypointPermFunc, RootTypeParams
+    from undine.typing import EntrypointParams, EntrypointPermFunc, RootTypeParams, VisibilityFunc
 
 __all__ = [
     "Entrypoint",
@@ -169,6 +169,7 @@ class Entrypoint:
 
         self.resolver_func: GraphQLFieldResolver | None = None
         self.permissions_func: EntrypointPermFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, root_type: type[RootType], name: str) -> None:
         """Connect this `Entrypoint` to the given `RootType` using the given name."""
@@ -229,17 +230,53 @@ class Entrypoint:
         return convert_to_entrypoint_subscription(self.ref, caller=self)
 
     def resolve(self, func: GraphQLFieldResolver | None = None, /) -> GraphQLFieldResolver:
-        """Decorate a function to add a custom resolver for this Entrypoint."""
+        """
+        Decorate a function to add a custom resolver for this Entrypoint.
+
+        >>> class Query(RootType):
+        ...     task = Entrypoint(TaskType, many=True)
+        ...
+        ...     @task.resolve
+        ...     def resolve_task(self: Any, info: GQLInfo, name: str) -> list[Task]:
+        ...         qs = Task.objects.filter(name__icontains=name)
+        ...         return optimize_sync(qs, info)
+        """
         if func is None:  # Allow `@<entrypoint_name>.resolve()`
             return self.resolve
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
     def permissions(self, func: EntrypointPermFunc | None = None, /) -> EntrypointPermFunc:
-        """Decorate a function to add it as a permission check for this Entrypoint."""
+        """
+        Decorate a function to add it as a permission check for this Entrypoint.
+
+        >>> class Query(RootType):
+        ...     task = Entrypoint(TaskType, many=True)
+        ...
+        ...     @task.permissions
+        ...     def task_permissions(self: Any, info: GQLInfo, name: str) -> None:
+        ...         raise GraphQLPermissionError
+        """
         if func is None:  # Allow `@<entrypoint_name>.permissions()`
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the Entrypoint's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class Query(RootType):
+        ...     task = Entrypoint(TaskType, many=True)
+        ...
+        ...     @task.visible
+        ...     def task_visible(self: Entrypoint, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<entrypoint_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
     def add_directive(self, directive: Directive, /) -> Self:

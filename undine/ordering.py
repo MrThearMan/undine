@@ -24,7 +24,15 @@ if TYPE_CHECKING:
     from graphql import GraphQLEnumType
 
     from undine.directives import Directive
-    from undine.typing import DjangoExpression, GQLInfo, OrderAliasesFunc, OrderParams, OrderSetParams
+    from undine.typing import (
+        DjangoExpression,
+        DjangoRequestProtocol,
+        GQLInfo,
+        OrderAliasesFunc,
+        OrderParams,
+        OrderSetParams,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "Order",
@@ -149,6 +157,13 @@ class OrderSetMeta(type):
 
         return enum_values
 
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given orderset is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
+
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this orderset."""
         check_directives([directive], location=DirectiveLocation.ENUM)
@@ -234,6 +249,7 @@ class Order:
         self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self
 
         self.aliases_func: OrderAliasesFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, orderset: type[OrderSet], name: str) -> None:
         """Connect this `Order` to the given `OrderSet` using the given name."""
@@ -276,10 +292,36 @@ class Order:
         )
 
     def aliases(self, func: OrderAliasesFunc | None = None, /) -> OrderAliasesFunc:
-        """Decorate a function to add additional queryset aliases required by this Order."""
+        """
+        Decorate a function to add additional queryset aliases required by this Order.
+
+        >>> class TaskOrderSet(OrderSet[Task]):
+        ...     name = Order()
+        ...
+        ...     @name.aliases
+        ...     def name_aliases(self: Order, info: GQLInfo, *, value: str) -> dict[str, DjangoExpression]:
+        ...         return {"foo": Value("bar")}
+        """
         if func is None:  # Allow `@<order_name>.aliases()`
             return self.aliases  # type: ignore[return-value]
         self.aliases_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the Order's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class TaskOrderSet(OrderSet[Task]):
+        ...     name = Order()
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: Order, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<order_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
     def add_directive(self, directive: Directive, /) -> Self:

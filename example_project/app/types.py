@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, Value
 from django.db.models.functions import Coalesce, Length, Now, Upper
-from graphql import GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import (
     AcceptanceCriteria,
@@ -19,16 +19,21 @@ from example_project.app.models import (
     TaskStep,
     Team,
 )
-from undine import Field, Filter, InterfaceField, InterfaceType, Order, UnionType
+from undine import Calculation, CalculationArgument, Field, Filter, InterfaceField, InterfaceType, Order, UnionType
+from undine.directives import Directive, DirectiveArgument
 from undine.filtering import FilterSet
 from undine.ordering import OrderSet
 from undine.query import QueryType
 from undine.relay import Connection, Node
-from undine.typing import GQLInfo
+from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 
 
 class Named(InterfaceType):
     name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    # @name.visible
+    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
 
 
 class PersonType(QueryType[Person], interfaces=[Node, Named]): ...
@@ -75,6 +80,14 @@ class TaskFilterSet(FilterSet[Task]):
         """Filter tasks created in the past."""
         return Q(created_at__lt=Now()) if value else Q(created_at__gte=Now())
 
+    @has_project.visible
+    def has_project_visible(self, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
+
+    # @classmethod
+    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
 
 class TaskOrderSet(OrderSet[Task]):
     """Order description."""
@@ -83,10 +96,35 @@ class TaskOrderSet(OrderSet[Task]):
     custom = Order(F("created_at"))
     length = Order(Length("name"))
 
+    # @name.visible
+    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
 
 class CustomerDetails(TypedDict):
     name: str
     age: int
+
+
+class MyDirective(Directive, locations=[DirectiveLocation.FIELD]):
+    """My custom directive."""
+
+    name = DirectiveArgument(GraphQLString)
+
+    # @name.visible
+    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
+
+class ExampleCalculation(Calculation[int]):
+    value = CalculationArgument(int)
+
+    # @value.visible
+    # def value_visible(self, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
+    def __call__(self, info: GQLInfo) -> DjangoExpression:
+        return Value(self.value)
 
 
 class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, interfaces=[Node, Named]):
@@ -104,9 +142,24 @@ class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, 
 
     assignee_count = Field(Coalesce(Count("assignees"), 0))
 
+    # @assignee_count.visible
+    # def assignees_count_visible(self, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
     @Field
     def customer(self, number: int = 18) -> CustomerDetails:
         return CustomerDetails(name="John", age=number)
 
+    example = Field(ExampleCalculation)
 
-class Commentable(UnionType[TaskType, ProjectType]): ...
+    # @classmethod
+    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser
+
+
+class Commentable(UnionType[TaskType, ProjectType]):
+    """All entities that can be commented on"""
+
+    # @classmethod
+    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+    #     return request.user.is_superuser

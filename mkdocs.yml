@@ -23,6 +23,7 @@ nav:
   - Optimizer: optimizer.md
   - Async Support: async.md
   - Lifecycle Hooks: lifecycle-hooks.md
+  - Validation Rules: validation-rules.md
   - Integrations: integrations.md
   - Settings: settings.md
   - FAQ: faq.md

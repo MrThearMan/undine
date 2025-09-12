@@ -10,7 +10,7 @@ from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 
 
-def test_query_type_union__str() -> None:
+def test_union__str() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -22,7 +22,7 @@ def test_query_type_union__str() -> None:
     assert str(Commentable) == "union Commentable = TaskType | ProjectType"
 
 
-def test_query_type_union__attributes() -> None:
+def test_union__attributes() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -37,7 +37,7 @@ def test_query_type_union__attributes() -> None:
     assert Commentable.__extensions__ == {"undine_union_type": Commentable}
 
 
-def test_query_type_union__schema_name() -> None:
+def test_union__schema_name() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -49,7 +49,7 @@ def test_query_type_union__schema_name() -> None:
     assert Commentable.__schema_name__ == "CustomName"
 
 
-def test_query_type_union__directives() -> None:
+def test_union__directives() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.UNION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
 
@@ -68,7 +68,7 @@ def test_query_type_union__directives() -> None:
     assert str(Commentable) == 'union Commentable @value(value: "foo") = TaskType | ProjectType'
 
 
-def test_query_type_union__directives__not_applicable() -> None:
+def test_union__directives__not_applicable() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.ENUM], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
 
@@ -85,7 +85,7 @@ def test_query_type_union__directives__not_applicable() -> None:
         class Commentable(UnionType[TaskType, ProjectType], directives=directives): ...
 
 
-def test_query_type_union__directives__decorator() -> None:
+def test_union__directives__decorator() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.UNION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
 
@@ -103,7 +103,7 @@ def test_query_type_union__directives__decorator() -> None:
     assert str(Commentable) == 'union Commentable @value(value: "foo") = TaskType | ProjectType'
 
 
-def test_query_type_union__union_type() -> None:
+def test_union__union_type() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -118,7 +118,7 @@ def test_query_type_union__union_type() -> None:
     assert union_type.name == "Commentable"
 
 
-def test_query_type_union__resolve_type() -> None:
+def test_union__resolve_type() -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 

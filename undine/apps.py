@@ -15,6 +15,7 @@ class UndineConfig(AppConfig):
     def ready(self) -> None:
         self.patch_graphql_wrapping_object()
         self.register_additional_types()
+        self.patch_introspection_types()
         self.register_converters()
         self.maybe_disable_did_you_mean()
         self.patch_debug_toolbar_if_installed()
@@ -33,6 +34,16 @@ class UndineConfig(AppConfig):
         from undine.utils.graphql.type_registry import register_builtins  # noqa: PLC0415
 
         register_builtins()
+
+    def patch_introspection_types(self) -> None:
+        from undine.settings import undine_settings  # noqa: PLC0415
+
+        if not undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS:
+            return
+
+        from undine.utils.graphql.introspection import patch_introspection_schema  # noqa: PLC0415
+
+        patch_introspection_schema()
 
     def register_converters(self) -> None:
         """Import all converter implementation modules to register the implementations to the converters."""

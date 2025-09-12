@@ -51,11 +51,13 @@ if TYPE_CHECKING:
     from undine.typing import (
         ConvertionFunc,
         DefaultValueType,
+        DjangoRequestProtocol,
         GQLInfo,
         InputParams,
         InputPermFunc,
         MutationTypeParams,
         ValidatorFunc,
+        VisibilityFunc,
     )
 
 __all__ = [
@@ -209,6 +211,13 @@ class MutationTypeMeta(type):
                 input_data[key] = inpt.convertion_func(inpt, value)
         return input_data
 
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given mutation type is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
+
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this mutation."""
         check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
@@ -346,6 +355,7 @@ class Input:
         self.validator_func: ValidatorFunc | None = None
         self.permissions_func: InputPermFunc | None = None
         self.convertion_func: ConvertionFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, mutation_type: type[MutationType], name: str) -> None:
         """Connect this `Input` to the given `MutationType` using the given name."""
@@ -405,24 +415,68 @@ class Input:
         return convert_to_graphql_type(value, model=self.mutation_type.__model__, is_input=True)  # type: ignore[return-value]
 
     def validate(self, func: ValidatorFunc | None = None, /) -> ValidatorFunc:
-        """Decorate a function to add validation for this input."""
+        """
+        Decorate a function to add validation for this Input.
+
+        >>> class TaskCreateMutation(MutationType[Task]):
+        ...     name = Input()
+        ...
+        ...     @name.validate
+        ...     def name_validate(self: Task, info: GQLInfo, value: str) -> None:
+        ...         raise GraphQLValidationError
+        """
         if func is None:  # Allow `@<input_name>.validate()`
             return self.validate  # type: ignore[return-value]
         self.validator_func = get_wrapped_func(func)
         return func
 
     def permissions(self, func: InputPermFunc | None = None, /) -> InputPermFunc:
-        """Decorate a function to add it as a permission check for this input."""
+        """
+        Decorate a function to add it as a permission check for this Input.
+
+        >>> class TaskCreateMutation(MutationType[Task]):
+        ...     name = Input()
+        ...
+        ...     @name.permissions
+        ...     def name_permissions(self: Task, info: GQLInfo, value: str) -> None:
+        ...         raise GraphQLPermissionError
+        """
         if func is None:  # Allow `@<input_name>.permissions()`
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
         return func
 
     def convert(self, func: ConvertionFunc | None = None, /) -> ConvertionFunc:
-        """Decorate a function to add it as a convertion function for this input."""
+        """
+        Decorate a function to add it as a convertion function for this Input.
+
+        >>> class TaskCreateMutation(MutationType[Task]):
+        ...     name = Input()
+        ...
+        ...     @name.convert
+        ...     def name_convert(self: Input, value: str) -> str:
+        ...         return value.upper()
+        """
         if func is None:  # Allow `@<input_name>.convert()`
             return self.convert  # type: ignore[return-value]
         self.convertion_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the Input's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class TaskCreateMutation(MutationType[Task]):
+        ...     name = Input()
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: Input, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<input_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
     def add_directive(self, directive: Directive, /) -> Self:

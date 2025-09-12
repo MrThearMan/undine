@@ -14,9 +14,11 @@ In this section, we will go through Undine's many converters,
 which are implemented using _single-dispatch generic functions_.
 A _singe-dispatch generic function_ is a function that has different implementations
 based on the argument it receives. You can think of it as a dynamic switch statement.
-You may know the [`@singledispatch`](https://peps.python.org/pep-0443/){:target="_blank"}
+You may know the [`@singledispatch`][singledispatch]{:target="_blank"}
 decorator from the python standard library, which implements this pattern.
 Undine implements its own version of it, which allows for more flexible dispatching.
+
+[singledispatch]: https://peps.python.org/pep-0443/
 
 This pattern allows users to override and extend the behavior of any
 converter without having to modify Undine's code directly.

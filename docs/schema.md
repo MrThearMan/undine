@@ -353,6 +353,19 @@ You can add directives to the `Entrypoint` by providing them using the `directiv
 
 See the [Directives](directives.md) section for more details on directives.
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide an `Entrypoint` from certain users by adding the `visible` argument to the `Entrypoint`.
+Hiding an entrypoint means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "schema/entrypoint_visible.py"
+```
+
 ### GraphQL extensions
 
 You can provide custom extensions for the `Entrypoint` by providing a extensions

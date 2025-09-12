@@ -194,7 +194,7 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
     validation_errors = validate(
         schema=undine_settings.SCHEMA,
         document_ast=context.document,  # type: ignore[arg-type]
-        rules=get_validation_rules(),
+        rules=get_validation_rules(context.request),
         max_errors=undine_settings.MAX_ERRORS,
     )
     if validation_errors:
@@ -331,7 +331,7 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
     validation_errors = validate(
         schema=undine_settings.SCHEMA,
         document_ast=context.document,  # type: ignore[arg-type]
-        rules=get_validation_rules(),
+        rules=get_validation_rules(context.request),
         max_errors=undine_settings.MAX_ERRORS,
     )
     if validation_errors:

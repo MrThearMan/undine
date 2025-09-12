@@ -17,14 +17,21 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import T_co
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_members
+from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLInputType
 
     from undine.directives import Directive
-    from undine.typing import CalculationArgumentParams, DefaultValueType, DjangoExpression, GQLInfo, TypeHint
+    from undine.typing import (
+        CalculationArgumentParams,
+        DefaultValueType,
+        DjangoExpression,
+        GQLInfo,
+        TypeHint,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "Calculation",
@@ -118,6 +125,8 @@ class CalculationArgument:
         check_directives(self.directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
         self.extensions[undine_settings.CALCULATION_ARGUMENT_EXTENSIONS_KEY] = self
 
+        self.visible_func: VisibilityFunc | None = None
+
     def __connect__(self, calculation: type[Calculation], name: str) -> None:
         self.calculation = calculation
         self.name = name
@@ -150,6 +159,23 @@ class CalculationArgument:
 
     def get_field_type(self) -> GraphQLInputType:
         return convert_to_graphql_type(TypeRef(self.ref), is_input=True)  # type: ignore[return-value]
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the argument's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class MyCalc(Calculation[int]):
+        ...     value = CalculationArgument(int)
+        ...
+        ...     @value.visible
+        ...     def value_visible(self: CalculationArgument, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<calculation_argument_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
+        return func
 
     def add_directive(self, directive: Directive, /) -> Self:
         """Add a directive to this calculation argument."""

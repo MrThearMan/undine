@@ -146,6 +146,19 @@ You can add directives to the `FilterSet` by providing them using the `directive
 
 See the [Directives](directives.md) section for more details on directives.
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `FilterSet` from certain users by adding the `visible` argument to the `FilterSet`.
+Hiding a filterset means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "filtering/filterset_visible.py"
+```
+
 ### GraphQL extensions
 
 You can provide custom extensions for the `FilterSet` by providing a
@@ -422,6 +435,19 @@ You can add directives to the `Filter` by providing them using the `directives` 
 ```
 
 See the [Directives](directives.md) section for more details on directives.
+
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `Filter` from certain users by adding the `visible` argument to the `Filter`.
+Hiding a filter means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "filtering/filter_visible.py"
+```
 
 ### GraphQL extensions
 

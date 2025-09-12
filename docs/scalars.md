@@ -9,13 +9,19 @@ strings, numbers, and booleans.
 ## Built-in Scalars
 
 In addition to GraphQL's built-in scalars of
-[`Int`](https://spec.graphql.org/draft/#sec-Int){:target="_blank"},
-[`Float`](https://spec.graphql.org/draft/#sec-Float){:target="_blank"},
-[`String`](https://spec.graphql.org/draft/#sec-String){:target="_blank"},
-[`Boolean`](https://spec.graphql.org/draft/#sec-Boolean){:target="_blank"},
-and [`ID`](https://spec.graphql.org/draft/#sec-ID){:target="_blank"},
+[`Int`][Int]{:target="_blank"},
+[`Float`][Float]{:target="_blank"},
+[`String`][String]{:target="_blank"},
+[`Boolean`][Boolean]{:target="_blank"},
+and [`ID`][ID]{:target="_blank"},
 Undine provides its own scalars that are useful for representing common data types
 in Python.
+
+[Int]: https://spec.graphql.org/draft/#sec-Int
+[Float]: https://spec.graphql.org/draft/#sec-Float
+[String]: https://spec.graphql.org/draft/#sec-String
+[Boolean]: https://spec.graphql.org/draft/#sec-Boolean
+[ID]: https://spec.graphql.org/draft/#sec-ID
 
 ### `Any`
 

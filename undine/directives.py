@@ -15,7 +15,7 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_directive
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_members, has_callable_attribute
+from undine.utils.reflection import get_members, get_wrapped_func, has_callable_attribute
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -28,7 +28,14 @@ if TYPE_CHECKING:
     from undine.mutation import MutationTypeMeta
     from undine.ordering import OrderSetMeta
     from undine.query import QueryTypeMeta
-    from undine.typing import DefaultValueType, DirectiveArgumentParams, DirectiveParams, T
+    from undine.typing import (
+        DefaultValueType,
+        DirectiveArgumentParams,
+        DirectiveParams,
+        DjangoRequestProtocol,
+        T,
+        VisibilityFunc,
+    )
     from undine.union import UnionTypeMeta
 
 __all__ = [
@@ -85,6 +92,13 @@ class DirectiveMeta(type):
 
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_directive(cls.__directive__())
+
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given directive is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __directive__(cls) -> GraphQLDirective:
         """Creates the `GraphQLDirective` for this `Directive`."""
@@ -163,7 +177,7 @@ class Directive(metaclass=DirectiveMeta):
     def __hash__(self) -> int:
         return hash((type(self), tuple(self.__parameters__.items())))
 
-    def __call__(self, other: T, /) -> T:  # TODO: Testing
+    def __call__(self, other: T, /) -> T:
         """
         Allow adding directives using decorators.
 
@@ -175,7 +189,7 @@ class Directive(metaclass=DirectiveMeta):
         self.__add_directive__(other)
         return other
 
-    def __rmatmul__(self, other: T) -> T:  # TODO: Testing
+    def __rmatmul__(self, other: T) -> T:
         """
         Allow adding directives using the @ operator.
 
@@ -242,6 +256,8 @@ class DirectiveArgument:
         check_directives(self.directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
         self.extensions[undine_settings.DIRECTIVE_ARGUMENT_EXTENSIONS_KEY] = self
 
+        self.visible_func: VisibilityFunc | None = None
+
     def __connect__(self, directive: type[Directive], name: str) -> None:
         """Connect this `DirectiveArgument` to the given `Directive` using the given name."""
         self.directive = directive
@@ -267,6 +283,23 @@ class DirectiveArgument:
             out_name=self.name,
             extensions=self.extensions,
         )
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the argument's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        ...     name = DirectiveArgument(GraphQLNonNull(GraphQLString))
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: DirectiveArgument, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<directive_argument_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
+        return func
 
     def add_directive(self, directive: Directive, /) -> Self:
         """Add a directive to this input."""

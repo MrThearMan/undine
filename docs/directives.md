@@ -16,12 +16,7 @@ In Undine, a GraphQL directive is implemented by subclassing the `Directive` cla
 
 Note that a `Directive` by itself does not do anything. It is only used as a way to define
 additional metadata, which the GraphQL server can use at runtime.
-If the directive implies some behavior, you'll need to add it, e.g., using a `ValidationRule`.
-See the `ValidationRules` in the [graphql-core repository]{:target="_blank"}
-for examples. Custom `ValidationRules` should be registered using the `ADDITIONAL_VALIDATION_RULES`
-setting.
-
-[graphql-core repository]: https://github.com/graphql-python/graphql-core/tree/main/src/graphql/validation/rules
+If the directive implies some behavior, you'll need to add it, e.g., using a [`ValidationRule`](validation-rules.md).
 
 Note that declared `Directives` are automatically added to the schema, even if they are not used.
 
@@ -352,7 +347,6 @@ enum TaskOrderSet {
 ```
 
 ///
-
 
 #### `INPUT_OBJECT`
 

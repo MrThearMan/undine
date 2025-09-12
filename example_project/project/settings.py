@@ -150,6 +150,7 @@ UNDINE = {
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,
     "NO_ERROR_LOCATION": True,
+    # "EXPERIMENTAL_VISIBILITY_CHECKS": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,
     "MIDDLEWARE": [

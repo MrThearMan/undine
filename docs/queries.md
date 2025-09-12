@@ -187,6 +187,20 @@ You can add directives to the `QueryType` by providing them using the `directive
 
 See the [Directives](directives.md) section for more details on directives.
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `QueryType` from certain users by adding the `visible` argument to the `QueryType`.
+Hiding a query type means that it will not be included in introspection queries for that user,
+and entrypoints (query _or_ mutation output) and relations using that query type
+cannot be used in operations by that user.
+
+```python
+-8<- "queries/query_type_visible.py"
+```
+
 ### GraphQL extensions
 
 You can provide custom extensions for the `QueryType` by providing a
@@ -555,6 +569,19 @@ You can add directives to the `Field` by providing them using the `directives` a
 ```
 
 See the [Directives](directives.md) section for more details on directives.
+
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `Field` from certain users by adding the `visible` argument to the `Field`.
+Hiding a field means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "queries/field_visible.py"
+```
 
 ### GraphQL extensions
 

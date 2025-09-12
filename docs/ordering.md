@@ -102,6 +102,19 @@ You can add directives to the `OrderSet` by providing them using the `directives
 
 See the [Directives](directives.md) section for more details on directives.
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide an `OrderSet` from certain users by adding the `visible` argument to the `OrderSet`.
+Hiding an orderset set means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "ordering/orderset_visible.py"
+```
+
 ### GraphQL extensions
 
 You can provide custom extensions for the `OrderSet` by providing a
@@ -249,6 +262,19 @@ You can add directives to the `Order` by providing them using the `directives` a
 ```
 
 See the [Directives](directives.md) section for more details on directives.
+
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide an `Order` from certain users by adding the `visible` argument to the `Order`.
+Hiding an order means that it will not be included in introspection queries for that user,
+and it cannot be used in operations by that user.
+
+```python
+-8<- "ordering/order_visible.py"
+```
 
 ### GraphQL extensions
 

@@ -233,6 +233,22 @@ Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
 
+/// details | `EXPERIMENTAL_VISIBILITY_CHECKS`
+    attrs: {id: experimental_visibility_checks}
+
+Type: `bool` | Default: `False`
+
+Whether to enable experimental visibility checks.
+When enabled, parts of the schema can be hidden from certain users according to
+specified visibility checks. When a field is not visible to a user, it will not be
+included in introspection queries and it cannot be used in operations.
+
+Note that visibility does not affect "did you mean" suggestions, so it is advised to disable
+these using [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](#allow_did_you_mean_suggestions)
+when using this feature.
+
+///
+
 /// details | `FIELD_EXTENSIONS_KEY`
     attrs: {id: field_extensions_key}
 
@@ -707,8 +723,10 @@ Type: `type[Model]` | Default: `"undine.persisted_documents.models.PersistedDocu
 **NOTE**: This setting should be set in the top level of the settings file, not in the `UNDINE` dictionary!
 
 The model to use for the `PersistedDocument` model. Works similarly to
-[`AUTH_USER_MODEL`](https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model){:target="_blank"},
+[`AUTH_USER_MODEL`][AUTH_USER_MODEL]{:target="_blank"},
 so must be set before running migrations for the persisted documents app.
+
+[AUTH_USER_MODEL]: https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model
 
 ///
 
