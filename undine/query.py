@@ -35,7 +35,14 @@ if TYPE_CHECKING:
     from undine import FilterSet, GQLInfo, InterfaceType, OrderSet
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
-    from undine.typing import FieldParams, FieldPermFunc, OptimizerFunc, QueryTypeParams
+    from undine.typing import (
+        DjangoRequestProtocol,
+        FieldParams,
+        FieldPermFunc,
+        OptimizerFunc,
+        QueryTypeParams,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "Field",
@@ -161,6 +168,13 @@ class QueryTypeMeta(type):
         """
         # Purposely not using `isinstance` here since models can inherit from other models.
         return type(value) is cls.__model__
+
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given query type is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this query."""
@@ -290,6 +304,7 @@ class Field:
         self.resolver_func: GraphQLFieldResolver | None = None
         self.optimizer_func: OptimizerFunc | None = None
         self.permissions_func: FieldPermFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, query_type: type[QueryType], name: str) -> None:
         """Connect this `Field` to the given `QueryType` using the given name."""
@@ -349,24 +364,68 @@ class Field:
         return convert_to_field_resolver(self.ref, caller=self)
 
     def resolve(self, func: GraphQLFieldResolver | None = None, /) -> GraphQLFieldResolver:
-        """Decorate a function to add a custom resolver for this Field."""
+        """
+        Decorate a function to add a custom resolver for this Field.
+
+        >>> class TaskType(QueryType[Task]):
+        ...     name = Field()
+        ...
+        ...     @name.resolve
+        ...     def resolve_name(self: Task, info: GQLInfo) -> str:
+        ...         return self.name
+        """
         if func is None:  # Allow `@<field_name>.resolve()`
             return self.resolve
         self.resolver_func = cache_signature_if_function(func, depth=1)
         return func
 
     def optimize(self, func: OptimizerFunc | None = None, /) -> OptimizerFunc:
-        """Decorate a function to add custom optimization rules for this Field."""
+        """
+        Decorate a function to add custom optimization rules for this Field.
+
+        >>> class TaskType(QueryType[Task]):
+        ...     name = Field()
+        ...
+        ...     @name.optimize
+        ...     def optimize_name(self: Field, data: OptimizationData, info: GQLInfo) -> None:
+        ...         data.only_fields.add("name")
+        """
         if func is None:  # Allow `@<field_name>.optimize()`
             return self.optimize  # type: ignore[return-value]
         self.optimizer_func = get_wrapped_func(func)
         return func
 
     def permissions(self, func: FieldPermFunc | None = None, /) -> FieldPermFunc:
-        """Decorate a function to add it as a permission check for this field."""
+        """
+        Decorate a function to add it as a permission check for this Field.
+
+        >>> class TaskType(QueryType[Task]):
+        ...     name = Field()
+        ...
+        ...     @name.permissions
+        ...     def name_permissions(self: Task, info: GQLInfo, value: str) -> None:
+        ...         raise GraphQLPermissionError
+        """
         if func is None:  # Allow `@<field_name>.permissions()`
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the Field's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class TaskType(QueryType[Task]):
+        ...     name = Field()
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: Field, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<field_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
     def add_directive(self, directive: Directive, /) -> Self:

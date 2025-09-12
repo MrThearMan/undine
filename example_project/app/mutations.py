@@ -15,7 +15,7 @@ from example_project.app.models import (
 )
 from undine import Input
 from undine.mutation import MutationType
-from undine.typing import GQLInfo
+from undine.typing import DjangoRequestProtocol, GQLInfo
 
 
 class TeamInput(MutationType[Team], kind="related"): ...
@@ -69,6 +69,10 @@ class TaskCreateMutationType(MutationType[Task]):
 
     input_only = Input(bool, default_value=True)
     custom = Input(CustomInput)
+
+    @custom.visible
+    def custom_visible(self, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
 
     @Input
     def current_user(self, info: GQLInfo) -> int | None:

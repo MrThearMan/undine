@@ -8,7 +8,7 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_interface_type
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import FunctionEqualityWrapper, get_members
+from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
     from undine.directives import Directive
     from undine.query import Field, QueryType
-    from undine.typing import GQLInfo, InterfaceFieldParams, InterfaceTypeParams
+    from undine.typing import DjangoRequestProtocol, GQLInfo, InterfaceFieldParams, InterfaceTypeParams, VisibilityFunc
 
 __all__ = [
     "InterfaceField",
@@ -96,6 +96,13 @@ class InterfaceTypeMeta(type):
     def __output_fields__(cls) -> dict[str, GraphQLField]:
         """Defer creating fields until all QueryTypes have been registered."""
         return {field.schema_name: field.as_graphql_field() for field in cls.__field_map__.values()}
+
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given interface is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this interface."""
@@ -178,6 +185,8 @@ class InterfaceField:
         check_directives(self.directives, location=DirectiveLocation.FIELD_DEFINITION)
         self.extensions[undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY] = self
 
+        self.visible_func: VisibilityFunc | None = None
+
     def __connect__(self, interface_type: type[InterfaceType], name: str) -> None:
         """Connect this `InterfaceField` to the given `InterfaceType` using the given name."""
         self.interface_type = interface_type
@@ -214,6 +223,23 @@ class InterfaceField:
             schema_name=self.schema_name,
             directives=self.directives,
         )
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the InterfaceField's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class Named(InterfaceType):
+        ...     name = InterfaceField()
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: InterfaceField, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<interface_field_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
+        return func
 
     def add_directive(self, directive: Directive, /) -> Self:
         """Add a directive to this interface field."""

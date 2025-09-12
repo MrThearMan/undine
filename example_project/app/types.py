@@ -24,7 +24,7 @@ from undine.filtering import FilterSet
 from undine.ordering import OrderSet
 from undine.query import QueryType
 from undine.relay import Connection, Node
-from undine.typing import GQLInfo
+from undine.typing import DjangoRequestProtocol, GQLInfo
 
 
 class Named(InterfaceType):
@@ -75,6 +75,14 @@ class TaskFilterSet(FilterSet[Task]):
         """Filter tasks created in the past."""
         return Q(created_at__lt=Now()) if value else Q(created_at__gte=Now())
 
+    @has_project.visible
+    def has_project_visible(self, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
+
 
 class TaskOrderSet(OrderSet[Task]):
     """Order description."""
@@ -82,6 +90,10 @@ class TaskOrderSet(OrderSet[Task]):
     name = Order("name")
     custom = Order(F("created_at"))
     length = Order(Length("name"))
+
+    @name.visible
+    def name_visible(self, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
 
 
 class CustomerDetails(TypedDict):
@@ -103,6 +115,10 @@ class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, 
         return
 
     assignee_count = Field(Coalesce(Count("assignees"), 0))
+
+    @assignee_count.visible
+    def assignees_count_visible(self, request: DjangoRequestProtocol) -> bool:
+        return request.user.is_superuser
 
     @Field
     def customer(self, number: int = 18) -> CustomerDetails:

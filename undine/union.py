@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
     from undine import GQLInfo, QueryType
     from undine.directives import Directive
-    from undine.typing import UnionTypeParams
+    from undine.typing import DjangoRequestProtocol, UnionTypeParams
 
 __all__ = [
     "UnionType",
@@ -101,6 +101,13 @@ class UnionTypeMeta(type):
             description=get_docstring(cls),
             extensions=cls.__extensions__,
         )
+
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given union is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this union."""

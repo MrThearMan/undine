@@ -77,6 +77,13 @@ class UndineDefaultSettings(NamedTuple):
     MUTATION_FULL_CLEAN: bool = True
     """Whether to run `model.full_clean()` when mutating a model."""
 
+    EXPERIMENTAL_VISIBILITY_CHECKS: bool = False  # Experimental, may not work as expected
+    """
+    Whether to enable experimental visibility checks.
+    Note that visibility only affects if a particular part of the schema can be introspected from the schema,
+    and not if it can be used by the client.
+    """
+
     # Limits
 
     CONNECTION_PAGE_SIZE: int | None = 100

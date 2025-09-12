@@ -32,7 +32,15 @@ if TYPE_CHECKING:
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
 
     from undine.directives import Directive
-    from undine.typing import DjangoExpression, FilterAliasesFunc, FilterParams, FilterSetParams, GQLInfo
+    from undine.typing import (
+        DjangoExpression,
+        DjangoRequestProtocol,
+        FilterAliasesFunc,
+        FilterParams,
+        FilterSetParams,
+        GQLInfo,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "Filter",
@@ -186,11 +194,18 @@ class FilterSetMeta(type):
             fields=FunctionEqualityWrapper(fields, context=cls),
             extensions=cls.__extensions__,
         )
-        return input_object_type
+        return input_object_type  # noqa: RET504, RUF100
 
     def __input_fields__(cls) -> dict[str, GraphQLInputField]:
         """Defer creating fields until all QueryTypes have been registered."""
         return {frt.schema_name: frt.as_graphql_input_field() for frt in cls.__filter_map__.values()}
+
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given filterset is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this filterset."""
@@ -293,6 +308,7 @@ class Filter:
         self.extensions[undine_settings.FILTER_EXTENSIONS_KEY] = self
 
         self.aliases_func: FilterAliasesFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, filterset: type[FilterSet], name: str) -> None:
         """Connect this `Filter` to the given `FilterSet` using the given name."""
@@ -343,10 +359,36 @@ class Filter:
         return convert_to_graphql_type(value, model=self.filterset.__model__, is_input=True)  # type: ignore[return-value]
 
     def aliases(self, func: FilterAliasesFunc | None = None, /) -> FilterAliasesFunc:
-        """Decorate a function to add additional queryset aliases required by this Filter."""
+        """
+        Decorate a function to add additional queryset aliases required by this Filter.
+
+        >>> class TaskFilterSet(FilterSet[Task]):
+        ...     name = Filter()
+        ...
+        ...     @name.aliases
+        ...     def name_aliases(self: Filter, info: GQLInfo, *, value: str) -> dict[str, DjangoExpression]:
+        ...         return {"foo": Value("bar")}
+        """
         if func is None:  # Allow `@<filter_name>.aliases()`
             return self.aliases  # type: ignore[return-value]
         self.aliases_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the Filter's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> class TaskFilterSet(FilterSet[Task]):
+        ...     name = Filter()
+        ...
+        ...     @name.visible
+        ...     def name_visible(self: Filter, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<filter_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
     def add_directive(self, directive: Directive, /) -> Self:
