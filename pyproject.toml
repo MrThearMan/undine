@@ -68,31 +68,31 @@ django-debug-toolbar = { version = ">=5.2.0", optional = true }
 channels = { version = ">=4.2.2", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.4.1"
+pytest = "8.4.2"
 pytest-django = "4.11.1"
-pytest-asyncio = "1.0.0"
-coverage = "7.9.1"
-hypothesis = "6.135.11"
-freezegun = "1.5.2"
+pytest-asyncio = "1.2.0"
+coverage = "7.10.6"
+hypothesis = "6.138.15"
+freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2025.5.1"
 urllib3 = "2.5.0"
-psycopg = { version = "3.2.9", extras = ["binary", "pool"] }
-django-modeltranslation = "0.19.15"
-uvicorn = { version = "0.34.3", extras = ["standard"] }
+psycopg = { version = "3.2.10", extras = ["binary", "pool"] }
+django-modeltranslation = "0.19.16"
+uvicorn = { version = "0.35.0", extras = ["standard"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.15"
-pygments = "2.19.1"
-mkdocs-mermaid2-plugin = "1.2.1"
-beautifulsoup4 = "4.13.4"
+pymdown-extensions = "10.16.1"
+pygments = "2.19.2"
+mkdocs-mermaid2-plugin = "1.2.2"
+beautifulsoup4 = "4.13.5"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.2.0"
-mypy = "1.16.1"
-django-stubs = "5.2.1"
-py-spy = "0.4.0"
+pre-commit = "4.3.0"
+mypy = "1.18.1"
+django-stubs = "5.2.5"
+py-spy = "0.4.1"
 httpx = "0.28.1"
 
 [tool.poetry.extras]
