@@ -71,7 +71,13 @@ def add_debug_toolbar_data(response: HttpResponse, toolbar: DebugToolbar) -> Non
     content = force_str(response.content, encoding=response.charset)
     payload = json.loads(content)
 
-    payload["debugToolbar"] = {"storeId": toolbar.store_id, "panels": {}}
+    try:
+        request_id = toolbar.request_id
+    except AttributeError:
+        #  Debug toolbar < 6.0.0 compatibility
+        request_id = toolbar.store_id
+
+    payload["debugToolbar"] = {"requestId": request_id, "panels": {}}
 
     for panel in reversed(toolbar.enabled_panels):
         payload["debugToolbar"]["panels"][panel.panel_id] = {

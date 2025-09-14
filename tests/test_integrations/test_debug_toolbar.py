@@ -37,7 +37,7 @@ def test_debug_toolbar(graphql, undine_settings):
 
     debug_toolbar = response["debugToolbar"]
 
-    assert "storeId" in debug_toolbar
+    assert "requestId" in debug_toolbar
     assert "panels" in debug_toolbar
 
     panels = debug_toolbar["panels"]
