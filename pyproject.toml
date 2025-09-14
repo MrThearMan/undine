@@ -1,6 +1,6 @@
 [project]
 name = "undine"
-version = "0.0.35"
+version = "0.1.0"
 description = "A GraphQL library for Django"
 authors = [
     { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
@@ -12,11 +12,7 @@ keywords = [
     "GraphQL",
 ]
 classifiers = [
-    # "Development Status :: 1 - Planning",
-    # "Development Status :: 2 - Pre-Alpha",
-    "Development Status :: 3 - Alpha",
-    # "Development Status :: 4 - Beta",
-    # "Development Status :: 5 - Production/Stable",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
