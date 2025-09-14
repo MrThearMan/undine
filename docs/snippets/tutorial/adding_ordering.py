@@ -1,22 +1,15 @@
-from undine import Entrypoint, OrderSet, QueryType, RootType, create_schema
+from undine import Field, Order, OrderSet, QueryType
 
-from .models import Project, Step, Task
-
-
-class ProjectType(QueryType[Project]): ...
+from .models import Task
 
 
-class TaskOrderSet(OrderSet[Task]): ...
+class TaskOrderSet(OrderSet[Task]):
+    pk = Order()
+    name = Order()
 
 
-class TaskType(QueryType[Task], orderset=TaskOrderSet): ...
-
-
-class StepType(QueryType[Step]): ...
-
-
-class Query(RootType):
-    tasks = Entrypoint(TaskType, many=True)
-
-
-schema = create_schema(query=Query)
+class TaskType(QueryType[Task], orderset=TaskOrderSet):
+    pk = Field()
+    name = Field()
+    done = Field()
+    created_at = Field()

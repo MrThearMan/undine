@@ -1,9 +1,11 @@
-from undine import QueryType
+from undine import Field, QueryType
 
 from .models import Task
 
 
-class TaskType(QueryType[Task]): ...
+class TaskType(QueryType[Task]):
+    name = Field()
 
 
-class OtherTaskType(QueryType[Task], register=False): ...
+class OtherTaskType(QueryType[Task], register=False):
+    pk = Field()

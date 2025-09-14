@@ -1,10 +1,7 @@
-from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine import Field, GQLInfo, QueryType
 from undine.exceptions import GraphQLPermissionError
 
-from .models import Project, Step, Task
-
-
-class ProjectType(QueryType[Project]): ...
+from .models import Task
 
 
 class TaskType(QueryType[Task]):
@@ -15,14 +12,3 @@ class TaskType(QueryType[Task]):
         if info.context.user.is_anonymous:
             msg = "Need to be logged in to access the name of the Task."
             raise GraphQLPermissionError(msg)
-
-
-class StepType(QueryType[Step]): ...
-
-
-class Query(RootType):
-    task = Entrypoint(TaskType)
-    tasks = Entrypoint(TaskType, many=True)
-
-
-schema = create_schema(query=Query)

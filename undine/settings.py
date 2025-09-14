@@ -50,7 +50,7 @@ class UndineDefaultSettings(NamedTuple):
 
     # Flags
 
-    AUTOGENERATION: bool = True
+    AUTOGENERATION: bool = False
     """Whether to automatically generate fields & inputs for some Undine types or not."""
 
     ALLOW_DID_YOU_MEAN_SUGGESTIONS: bool = False

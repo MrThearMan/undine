@@ -145,6 +145,7 @@ CHANNEL_LAYERS = {
 
 UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
+    "AUTOGENERATION": True,
     "GRAPHIQL_ENABLED": True,
     "FILE_UPLOAD_ENABLED": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,

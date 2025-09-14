@@ -2,8 +2,8 @@ description: Documentation on query filtering in Undine.
 
 # Filtering
 
-In this section, we'll cover the everything necessary for adding filtering
-for your [`QueryTypes`](queries.md#querytypes).
+In this section, we'll cover the everything necessary for filtering
+results returned by your [`QueryTypes`](queries.md#querytypes).
 
 ## FilterSet
 
@@ -13,7 +13,8 @@ added to a `QueryType` creates an input argument for filtering the
 results of a `QueryType`.
 
 A basic `FilterSet` is created by subclassing `FilterSet`
-and adding its Django Model as a generic type parameter:
+and adding its Django Model as a generic type parameter.
+Then, the `FilterSet` can be added to a `QueryType` using the `filterset` argument.
 
 ```python
 -8<- "filtering/filterset_basic.py"
@@ -21,65 +22,189 @@ and adding its Django Model as a generic type parameter:
 
 ### Auto-generation
 
-By default, a `FilterSet` automatically introspects its model and converts the model's fields
-to input fields on the generated `InputObjectType`. Given the following models:
+A `FilterSet` can automatically introspect its Django model and convert the model's fields
+to `Filters` on the `FilterSet`. For example, if the `Task` model has the following fields:
 
 ```python
 -8<- "filtering/models_1.py"
 ```
 
-Simply subclassing `FilterSet` creates an `InputObjectType` which has all of the `Task` model's
-fields and those fields' lookups translated into input arguments, as well as the logical operators
-`NOT`, `AND`, `OR`, `XOR`, allowing users to freely create any filtering conditions they want.
-The actual `InputObjectType` is omitted here for brevity, since it has quite many fields.
+An auto-generated `FilterSet` will have all of the `Task` model's fields and those fields'
+lookups translated into input arguments.
 
-Let's give a few examples on how to use it. Assuming we added the `TaskFilterSet`
-to a `QueryType` named `TaskType`, which in turn has been added to the GraphQL schema
-as a list `Entrypoint` `tasks`, we can filter to only tasks that are done:
+/// details | Here is the generated `InputObjectType`
 
 ```graphql
-query {
-  tasks(
-    filter: {
-      done: true
-    }
-  ) {
-    name
-  }
+input TaskFilterSet {
+  createdAt: DateTime
+  createdAtDate: Date
+  createdAtDateGt: Date
+  createdAtDateGte: Date
+  createdAtDateIn: [Date!]
+  createdAtDateLt: Date
+  createdAtDateLte: Date
+  createdAtDateRange: [Date!]
+  createdAtDay: Int
+  createdAtDayContains: Int
+  createdAtDayEndsWith: Int
+  createdAtDayGt: Int
+  createdAtDayGte: Int
+  createdAtDayIn: [Int!]
+  createdAtDayLt: Int
+  createdAtDayLte: Int
+  createdAtDayRange: [Int!]
+  createdAtDayStartsWith: Int
+  createdAtGt: DateTime
+  createdAtGte: DateTime
+  createdAtHour: Int
+  createdAtHourContains: Int
+  createdAtHourEndsWith: Int
+  createdAtHourGt: Int
+  createdAtHourGte: Int
+  createdAtHourIn: [Int!]
+  createdAtHourLt: Int
+  createdAtHourLte: Int
+  createdAtHourRange: [Int!]
+  createdAtHourStartsWith: Int
+  createdAtIn: [DateTime!]
+  createdAtIsoWeekDay: Int
+  createdAtIsoWeekDayContains: Int
+  createdAtIsoWeekDayEndsWith: Int
+  createdAtIsoWeekDayGt: Int
+  createdAtIsoWeekDayGte: Int
+  createdAtIsoWeekDayIn: [Int!]
+  createdAtIsoWeekDayLt: Int
+  createdAtIsoWeekDayLte: Int
+  createdAtIsoWeekDayRange: [Int!]
+  createdAtIsoWeekDayStartsWith: Int
+  createdAtIsoYear: Int
+  createdAtIsoYearContains: Int
+  createdAtIsoYearEndsWith: Int
+  createdAtIsoYearGt: Int
+  createdAtIsoYearGte: Int
+  createdAtIsoYearIn: [Int!]
+  createdAtIsoYearLt: Int
+  createdAtIsoYearLte: Int
+  createdAtIsoYearRange: [Int!]
+  createdAtIsoYearStartsWith: Int
+  createdAtLt: DateTime
+  createdAtLte: DateTime
+  createdAtMinute: Int
+  createdAtMinuteContains: Int
+  createdAtMinuteEndsWith: Int
+  createdAtMinuteGt: Int
+  createdAtMinuteGte: Int
+  createdAtMinuteIn: [Int!]
+  createdAtMinuteLt: Int
+  createdAtMinuteLte: Int
+  createdAtMinuteRange: [Int!]
+  createdAtMinuteStartsWith: Int
+  createdAtMonth: Int
+  createdAtMonthContains: Int
+  createdAtMonthEndsWith: Int
+  createdAtMonthGt: Int
+  createdAtMonthGte: Int
+  createdAtMonthIn: [Int!]
+  createdAtMonthLt: Int
+  createdAtMonthLte: Int
+  createdAtMonthRange: [Int!]
+  createdAtMonthStartsWith: Int
+  createdAtQuarter: Int
+  createdAtQuarterContains: Int
+  createdAtQuarterEndsWith: Int
+  createdAtQuarterGt: Int
+  createdAtQuarterGte: Int
+  createdAtQuarterIn: [Int!]
+  createdAtQuarterLt: Int
+  createdAtQuarterLte: Int
+  createdAtQuarterRange: [Int!]
+  createdAtQuarterStartsWith: Int
+  createdAtRange: [DateTime!]
+  createdAtSecond: Int
+  createdAtSecondContains: Int
+  createdAtSecondEndsWith: Int
+  createdAtSecondGt: Int
+  createdAtSecondGte: Int
+  createdAtSecondIn: [Int!]
+  createdAtSecondLt: Int
+  createdAtSecondLte: Int
+  createdAtSecondRange: [Int!]
+  createdAtSecondStartsWith: Int
+  createdAtTime: Time
+  createdAtTimeContains: Time
+  createdAtTimeEndsWith: Time
+  createdAtTimeGt: Time
+  createdAtTimeGte: Time
+  createdAtTimeIn: [Time!]
+  createdAtTimeLt: Time
+  createdAtTimeLte: Time
+  createdAtTimeRange: [Time!]
+  createdAtTimeStartsWith: Time
+  createdAtWeek: Int
+  createdAtWeekContains: Int
+  createdAtWeekDay: Int
+  createdAtWeekDayContains: Int
+  createdAtWeekDayEndsWith: Int
+  createdAtWeekDayGt: Int
+  createdAtWeekDayGte: Int
+  createdAtWeekDayIn: [Int!]
+  createdAtWeekDayLt: Int
+  createdAtWeekDayLte: Int
+  createdAtWeekDayRange: [Int!]
+  createdAtWeekDayStartsWith: Int
+  createdAtWeekEndsWith: Int
+  createdAtWeekGt: Int
+  createdAtWeekGte: Int
+  createdAtWeekIn: [Int!]
+  createdAtWeekLt: Int
+  createdAtWeekLte: Int
+  createdAtWeekRange: [Int!]
+  createdAtWeekStartsWith: Int
+  createdAtYear: Int
+  createdAtYearContains: Int
+  createdAtYearEndsWith: Int
+  createdAtYearGt: Int
+  createdAtYearGte: Int
+  createdAtYearIn: [Int!]
+  createdAtYearLt: Int
+  createdAtYearLte: Int
+  createdAtYearRange: [Int!]
+  createdAtYearStartsWith: Int
+  done: Boolean
+  name: String
+  nameContains: String
+  nameContainsExact: String
+  nameEndsWith: String
+  nameEndsWithExact: String
+  nameExact: String
+  nameIn: [String!]
+  nameStartsWith: String
+  nameStartsWithExact: String
+  pk: Int
+  pkContains: Int
+  pkEndsWith: Int
+  pkGt: Int
+  pkGte: Int
+  pkIn: [Int!]
+  pkLt: Int
+  pkLte: Int
+  pkRange: [Int!]
+  pkStartsWith: Int
+  project: Int
+  projectGt: Int
+  projectGte: Int
+  projectIn: [Int!]
+  projectIsNull: Boolean
+  projectLt: Int
+  projectLte: Int
+  NOT: TaskFilterSet
+  AND: TaskFilterSet
+  OR: TaskFilterSet
+  XOR: TaskFilterSet
 }
 ```
 
-To see done tasks in a certain project:
-
-```graphql
-query {
-  tasks(
-    filter: {
-      done: true
-      project: 1
-    }
-  ) {
-    name
-  }
-}
-```
-
-To see all tasks that either start with "a" or end with "a":
-
-```graphql
-query {
-  tasks(
-    filter: {
-      OR {
-        nameStartsWith: "a"
-        nameEndsWith: "a"
-      }
-    }
-  ) {
-    name
-  }
-}
-```
+///
 
 /// details | About `Filter` names
 
@@ -90,21 +215,80 @@ Similarly, `nameStartsWith` uses `__istartswith` while `nameStartsWithExact` use
 
 ///
 
-You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
-or the `FilterSet` by setting the `auto` argument to `False` in the class definition:
+To use auto-generation, either set [`AUTOGENERATION`](settings.md#autogeneration) setting to `True`
+to enable it globally, or set the `auto` argument to `True` in the `FilterSet` class definition.
+With this, you can leave the `FilterSet` class body empty.
 
 ```python
--8<- "filtering/filterset_no_auto.py"
+-8<- "filtering/filterset_auto.py"
 ```
 
-Alternatively, you could exclude some `Filters` from the auto-generation by setting the `exclude` argument:
+You can exclude some model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "filtering/filterset_exclude.py"
 ```
 
-You can exclude either a model field (`created_at`) or a specific
-lookup on that model field (`created_at_gte`, not `created_at__gte`).
+You can also exclude specific model lookups, e.g. `created_at__gte`.
+
+### Logical operators
+
+A `FilterSet` always provides the logical operators `NOT`, `AND`, `OR`, `XOR`,
+allowing users to freely create more complex conditions from defined filters.
+Let's assume you've added an [auto-generated](#auto-generation) `TaskFilterSet`
+to a `QueryType` named `TaskType`. Normally, when multiple filter's are used,
+we'll get results where all results match all filters.
+
+```graphql
+query {
+  tasks(
+    filter: {
+      nameStartsWith: "a"
+      done: true
+    }
+  ) {
+    name
+  }
+}
+```
+
+However, by adding the filter to an `OR` block, we can get results where any of the
+conditions match:
+
+```graphql
+query {
+  tasks(
+    filter: {
+      OR: {
+        nameStartsWith: "a"
+        done: true
+      }
+    }
+  ) {
+    name
+  }
+}
+```
+
+Note that only the results _inside_ the conditional block will use that logical combinator.
+For example, in the following example, only tasks that contains an "e" AND EITHER start with "a"
+OR are done will be returned:
+
+```graphql
+query {
+  tasks(
+    filter: {
+      nameContains: "e"
+      OR: {
+        nameStartsWith: "a"
+        done: true
+      }
+    }
+  ) {
+    name
+  }
+}
+```
 
 ### Filter queryset
 
@@ -113,7 +297,7 @@ classmethod. This method can be used to add filtering that should always be appl
 when fetching objects through `QueryTypes` using this `FilterSet`.
 
 ```python
--8<- "filtering/filter_queryset.py"
+-8<- "filtering/filterset_filter_queryset.py"
 ```
 
 As `QueryTypes` also have a `__filter_queryset__` classmethod, its important to note
@@ -185,10 +369,8 @@ input type for the `Filter`.
 
 ### Model field references
 
-As seen in the [`FilterSet`](#filterset) section, you don't need to provide model fields
-explicitly thanks to [auto-generation](#auto-generation), but if you wanted to be more explicit,
-you could add the `Filters` to the `FilterSet` class body. In this case, the `Filter` can be used
-without a reference, as its attribute name in the `FilterSet` class body can be used to identify
+For `Filters` corresponding to Django model fields, the `Filter` can be used without passing in a reference,
+as its attribute name in the `FilterSet` class body can be used to identify
 the corresponding model field.
 
 ```python
@@ -267,9 +449,6 @@ is used. This can be changed by providing the `lookup` argument to the `Filter`.
 -8<- "filtering/filter_lookup.py"
 ```
 
-Note that [auto-generation](#auto-generation) adds `Filters` all possible combinations
-of lookups for a model field, so you don't need to add them manually.
-
 ### Many
 
 The `many` argument changes the behavior of the `Filter` such that it takes
@@ -280,7 +459,7 @@ as defined by the [`match`](#match) argument to form a single filter condition.
 -8<- "filtering/filter_many.py"
 ```
 
-This would create the following filter input (ignoring [auto-generation](#auto-generation)):
+This would create the following filter input:
 
 ```graphql
 input TaskFilterSet {

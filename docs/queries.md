@@ -22,14 +22,14 @@ and adding a Django model to it as a generic type parameter:
 
 ### Auto-generation
 
-By default, a `QueryType` automatically introspects its model and converts the model's fields
-to fields on the generated `ObjectType`. For example, if the `Task` model has the following fields:
+A `QueryType` can automatically introspect its Django model and convert the model's fields
+to `Fields` on the `QueryType`. For example, if the `Task` model has the following fields:
 
 ```python
 -8<- "queries/models_1.py"
 ```
 
-Then the GraphQL `ObjectType` for the `QueryType` would be:
+Then the GraphQL `ObjectType` for the `QueryType` using auto-generation would be:
 
 ```graphql
 type TaskType {
@@ -40,14 +40,15 @@ type TaskType {
 }
 ```
 
-You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
-or the `QueryType` by setting the `auto` argument to `False` in the class definition:
+To use auto-generation, either set [`AUTOGENERATION`](settings.md#autogeneration) setting to `True`
+to enable it globally, or set the `auto` argument to `True` in the `QueryType` class definition.
+With this, you can leave the `QueryType` class body empty.
 
 ```python
--8<- "queries/query_type_no_auto.py"
+-8<- "queries/query_type_auto.py"
 ```
 
-Alternatively, you could exclude some model fields from the auto-generation by setting the `exclude` argument:
+You can exclude some model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "queries/query_type_exclude.py"
@@ -227,10 +228,8 @@ output type, and arguments for the `Field`.
 
 ### Model field references
 
-As seen in the [`QueryType`](#querytypes) section, you don't need to provide model fields
-explicitly thanks to [auto-generation](#auto-generation), but if you wanted to be more explicit,
-you could add the `Fields` to the `QueryType` class body. In this case, the `Field` can be used
-without a reference, as its attribute name in the `QueryType` class body can be used to identify
+For `Fields` corresponding to Django model fields, the `Field` can be used without passing in a reference,
+as its attribute name in the `QueryType` class body can be used to identify
 the corresponding model field.
 
 ```python
@@ -355,20 +354,19 @@ when the expression requires input data from the request.
 
 ### Relations
 
-Let's say there is a `Task` model with a ForeignKey to a `Project` model:
+Let's say there is a `Task` model with a `ForeignKey` to a `Project` model:
 
 ```python hl_lines="4 5 13"
 -8<- "queries/models_2.py"
 ```
 
-You can then create `QueryTypes` for both models.
+You can then create `QueryTypes` for both models and add `Fields` for the related fields.
 
-```python
+```python hl_lines="9 17"
 -8<- "queries/query_type_relations.py"
 ```
 
-When `auto` is used for the `QueryTypes` they will be automatically linked together
-in the GraphQL schema by their relations:
+The `QueryTypes` will be linked together in the GraphQL schema by their relations:
 
 ```graphql hl_lines="4 12"
 type ProjectType {
@@ -384,19 +382,6 @@ type TaskType {
     createdAt: DateTime!
     project: ProjectType!
 }
-```
-
-You could also link them explicitly by using the `QueryTypes` as the reference.
-
-```python
--8<- "queries/query_type_relations_explicit.py"
-```
-
-In this case, if the name of the field in the GraphQL schema is different from the model field name,
-you can use the `field_name` argument to specify the name in the GraphQL schema.
-
-```python
--8<- "queries/query_type_relations_field_name.py"
 ```
 
 ### Permissions

@@ -1,15 +1,13 @@
-from undine import Entrypoint, MutationType, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, Input, MutationType, QueryType, RootType, create_schema
 
-from .models import Project, Step, Task
-
-
-class ProjectType(QueryType[Project]): ...
+from .models import Task
 
 
-class TaskType(QueryType[Task]): ...
-
-
-class StepType(QueryType[Step]): ...
+class TaskType(QueryType[Task]):
+    pk = Field()
+    name = Field()
+    done = Field()
+    created_at = Field()
 
 
 class Query(RootType):
@@ -17,7 +15,9 @@ class Query(RootType):
     tasks = Entrypoint(TaskType, many=True)
 
 
-class TaskCreateMutation(MutationType[Task]): ...
+class TaskCreateMutation(MutationType[Task]):
+    name = Input()
+    done = Input()
 
 
 class Mutation(RootType):

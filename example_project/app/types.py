@@ -19,11 +19,20 @@ from example_project.app.models import (
     TaskStep,
     Team,
 )
-from undine import Calculation, CalculationArgument, Field, Filter, InterfaceField, InterfaceType, Order, UnionType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    Field,
+    Filter,
+    FilterSet,
+    InterfaceField,
+    InterfaceType,
+    Order,
+    OrderSet,
+    QueryType,
+    UnionType,
+)
 from undine.directives import Directive, DirectiveArgument
-from undine.filtering import FilterSet
-from undine.ordering import OrderSet
-from undine.query import QueryType
 from undine.relay import Connection, Node
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 

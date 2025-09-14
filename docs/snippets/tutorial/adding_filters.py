@@ -1,22 +1,15 @@
-from undine import Entrypoint, FilterSet, QueryType, RootType, create_schema
+from undine import Field, Filter, FilterSet, QueryType
 
-from .models import Project, Step, Task
-
-
-class ProjectType(QueryType[Project]): ...
+from .models import Task
 
 
-class TaskFilterSet(FilterSet[Task]): ...
+class TaskFilterSet(FilterSet[Task]):
+    name_contains = Filter(lookup="icontains")
+    done = Filter()
 
 
-class TaskType(QueryType[Task], filterset=TaskFilterSet): ...
-
-
-class StepType(QueryType[Step]): ...
-
-
-class Query(RootType):
-    tasks = Entrypoint(TaskType, many=True)
-
-
-schema = create_schema(query=Query)
+class TaskType(QueryType[Task], filterset=TaskFilterSet):
+    pk = Field()
+    name = Field()
+    done = Field()
+    created_at = Field()

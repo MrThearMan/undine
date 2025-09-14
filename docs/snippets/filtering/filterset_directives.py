@@ -1,6 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import FilterSet
+from undine import Filter, FilterSet
 from undine.directives import Directive
 
 from .models import Task
@@ -9,4 +9,5 @@ from .models import Task
 class MyDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT]): ...
 
 
-class TaskFilterSet(FilterSet[Task], directives=[MyDirective()]): ...
+class TaskFilterSet(FilterSet[Task], directives=[MyDirective()]):
+    name = Filter()

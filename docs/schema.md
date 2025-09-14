@@ -94,7 +94,7 @@ Function references can be used for both query and mutation `Entrypoints`.
 See the example from the [Tutorial](tutorial.md#part-1-setup).
 
 ```python
--8<- "schema/query_type.py"
+-8<- "schema/entrypoint_function_reference.py"
 ```
 
 With a function reference, the `Entrypoint` will use the decorated function as its GraphQL resolver.
@@ -164,7 +164,7 @@ For querying a single model instance, simply use the `QueryType` class
 as the reference for the `Entrypoint`.
 
 ```python
--8<- "schema/query_type_entrypoint.py"
+-8<- "schema/entrypoint_query_type_reference.py"
 ```
 
 This would create the following field in the `Query` `RootType`:
@@ -179,7 +179,7 @@ To query a list of model instances, simply add the `many` argument
 to the `Entrypoint` in addition to the `QueryType`.
 
 ```python
--8<- "schema/query_type_entrypoint_many.py"
+-8<- "schema/entrypoint_query_type_reference_many.py"
 ```
 
 This would create the following field in the `Query` `RootType`:
@@ -200,7 +200,7 @@ To create a mutation for a model instance (a create mutation in this example),
 simply use the `MutationType` class as the reference for the `Entrypoint`.
 
 ```python
--8<- "schema/mutation_type_entrypoint.py"
+-8<- "schema/entrypoint_mutation_type_reference.py"
 ```
 
 This would create the following field in the `Mutation` `RootType`:
@@ -214,7 +214,7 @@ type Mutation {
 To make this a bulk mutation, you can add the `many` argument to the `Entrypoint`.
 
 ```python
--8<- "schema/mutation_type_entrypoint_many.py"
+-8<- "schema/entrypoint_mutation_type_reference_many.py"
 ```
 
 This would create the following field in the `Mutation` `RootType`:

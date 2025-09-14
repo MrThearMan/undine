@@ -2,13 +2,15 @@ from typing import Any
 
 from graphql import GraphQLField, GraphQLInt, GraphQLNonNull, GraphQLObjectType
 
-from undine import GQLInfo, MutationType
+from undine import GQLInfo, Input, MutationType
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 
 from .models import Task
 
 
 class TaskMutation(MutationType[Task]):
+    name = Input()
+
     @classmethod
     def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
         return {"foo": 1}

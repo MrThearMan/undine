@@ -12,7 +12,8 @@ class TaskType(QueryType[Task]):
 
 class TaskCreateMutation(MutationType[Task]):
     name = Input()
+    done = Input()
 
 
 class Mutation(RootType):
-    create_task = Entrypoint(TaskCreateMutation)
+    bulk_create_tasks = Entrypoint(TaskCreateMutation, many=True)

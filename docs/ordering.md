@@ -2,8 +2,8 @@ description: Documentation on query ordering in Undine.
 
 # Ordering
 
-In this section, we'll cover the everything necessary for adding ordering
-for your [`QueryTypes`](queries.md#querytypes).
+In this section, we'll cover the everything necessary for ordering
+results returned by your [`QueryTypes`](queries.md#querytypes).
 
 ## OrderSet
 
@@ -12,7 +12,8 @@ An `OrderSet` is a collection of [`Order`](#order) objects that can be applied t
 when added to a `QueryType` creates an input argument for ordering the results of a `QueryType`.
 
 A basic `OrderSet` is created by subclassing `OrderSet`
-and adding its Django Model as a generic type parameter:
+and adding its Django Model as a generic type parameter.
+Then, the `OrderSet` can be added to a `QueryType` using the `orderset` argument.
 
 ```python
 -8<- "ordering/orderset_basic.py"
@@ -20,14 +21,15 @@ and adding its Django Model as a generic type parameter:
 
 ### Auto-generation
 
-By default, an `OrderSet` automatically introspects its model and converts the model's fields
-to input fields on the generated `Enum`. Given the following models:
+An `OrderSet` can automatically introspect its Django model and convert the model's fields
+to `Orders` on the `OrderSet`.  For example, if the `Task` model has the following fields:
 
 ```python
 -8<- "ordering/models_1.py"
 ```
 
-Simply subclassing `OrderSet` creates the following `Enum`:
+An auto-generated `OrderSet` has all of the `Task` model's fields translated into GraphQL `Enum` values,
+both in ascending and descending directions.
 
 ```graphql
 enum TaskOrderSet {
@@ -42,34 +44,15 @@ enum TaskOrderSet {
 }
 ```
 
-This `Enum` has all of the `Task` model's fields translated into `Enum` values,
-both in ascending and descending directions. With this, you can
-freely create any ordering you want by combining the different enum values.
-
-```graphql
-query {
-  tasks(
-    orderBy: [
-      pkAsc
-      nameDesc
-    ]
-  ) {
-    name
-  }
-}
-```
-
-This will order the `Task` objects by their primary key in ascending order,
-and then by their name in descending order.
-
-You can disable auto-generation globally using the [`AUTOGENERATION`](settings.md#autogeneration) setting,
-or the `OrderSet` by setting the `auto` argument to `False` in the class definition:
+To use auto-generation, either set [`AUTOGENERATION`](settings.md#autogeneration) setting to `True`
+to enable it globally, or set the `auto` argument to `True` in the `OrderSet` class definition.
+With this, you can leave the `OrderSet` class body empty.
 
 ```python
--8<- "ordering/orderset_no_auto.py"
+-8<- "ordering/orderset_auto.py"
 ```
 
-Alternatively, you could exclude some `Orders` from the auto-generation by setting the `exclude` argument:
+Your can exclude some model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "ordering/orderset_exclude.py"
@@ -140,10 +123,8 @@ Django `OrderBy` expression for the `Order`.
 
 ### Model field references
 
-As seen in the [`OrderSet`](#orderset) section, you don't need to provide model fields
-explicitly thanks to [auto-generation](#auto-generation), but if you wanted to be more explicit,
-you could add the `Orders` to the `OrderSet` class body. In this case, the `Order` can be used
-without a reference, as its attribute name in the `OrderSet` class body can be used to identify
+For `Orders` corresponding to Django model fields, the `Order` can be used without passing in a reference,
+as its attribute name in the `OrderSet` class body can be used to identify
 the corresponding model field.
 
 ```python

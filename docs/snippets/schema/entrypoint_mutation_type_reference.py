@@ -12,6 +12,7 @@ class TaskType(QueryType[Task]):
 
 class TaskCreateMutation(MutationType[Task]):
     name = Input()
+    done = Input()
 
 
 class Mutation(RootType):

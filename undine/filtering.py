@@ -5,6 +5,7 @@ from functools import reduce
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import Q
+from django.db.models.constants import LOOKUP_SEP
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
 
 from undine.converters import (
@@ -26,7 +27,7 @@ from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import Container, Iterable
 
     from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
@@ -398,9 +399,12 @@ class Filter:
         return self
 
 
-def get_filters_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Filter]:
+def get_filters_for_model(model: type[Model], *, exclude: Iterable[str] = ()) -> dict[str, Filter]:
     """Creates `Filters` for all the given Model's fields, except those in the 'exclude' list."""
     result: dict[str, Filter] = {}
+
+    # Lookups are separated by '__', but auto-generated names use '_' instead.
+    exclude = {"_".join(item.split(LOOKUP_SEP)) for item in exclude}
 
     for model_field in get_model_fields_for_graphql(model):
         field_name = model_field.name

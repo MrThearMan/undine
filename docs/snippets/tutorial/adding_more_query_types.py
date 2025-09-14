@@ -1,15 +1,28 @@
-from undine import Entrypoint, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, QueryType, RootType, create_schema
 
 from .models import Project, Step, Task
 
 
-class ProjectType(QueryType[Project]): ...
+class ProjectType(QueryType[Project]):
+    pk = Field()
+    name = Field()
+    tasks = Field()
 
 
-class TaskType(QueryType[Task]): ...
+class TaskType(QueryType[Task]):
+    pk = Field()
+    name = Field()
+    done = Field()
+    created_at = Field()
+    project = Field()
+    steps = Field()
 
 
-class StepType(QueryType[Step]): ...
+class StepType(QueryType[Step]):
+    pk = Field()
+    name = Field()
+    done = Field()
+    task = Field()
 
 
 class Query(RootType):

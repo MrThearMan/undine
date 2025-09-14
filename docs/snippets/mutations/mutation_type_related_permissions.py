@@ -6,6 +6,9 @@ from .models import Project, Task
 
 
 class TaskProject(MutationType[Project], kind="related"):
+    pk = Input()
+    name = Input()
+
     @classmethod
     def __permissions__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> None:
         # Some permission check logic here
@@ -13,4 +16,5 @@ class TaskProject(MutationType[Project], kind="related"):
 
 
 class TaskCreateMutation(MutationType[Task]):
+    name = Input()
     project = Input(TaskProject)
