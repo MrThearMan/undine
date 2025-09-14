@@ -26,10 +26,6 @@ docs-theme style="fruity":
 generate:
     @poetry run python manage.py create_test_data
 
-# Download static files for GraphiQL
-get-static:
-    @poetry run python manage.py fetch_graphiql_static_for_undine
-
 # Install pre-commit hooks
 hook:
     @poetry run pre-commit install
@@ -37,10 +33,6 @@ hook:
 # Update GraphiQL import map
 importmap:
     @poetry run python manage.py update_import_map
-
-# Install dependencies
-install:
-    @poetry install --all-extras
 
 # Run pre-commit hooks
 lint:
