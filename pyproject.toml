@@ -68,13 +68,13 @@ pytest = "8.4.2"
 pytest-django = "4.11.1"
 pytest-asyncio = "1.2.0"
 coverage = "7.10.6"
-hypothesis = "6.138.15"
+hypothesis = "6.138.16"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2025.5.1"
 urllib3 = "2.5.0"
 psycopg = { version = "3.2.10", extras = ["binary", "pool"] }
-django-modeltranslation = "0.19.16"
+django-modeltranslation = "0.19.17"
 uvicorn = { version = "0.35.0", extras = ["standard"] }
 
 [tool.poetry.group.docs.dependencies]
