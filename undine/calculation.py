@@ -39,7 +39,7 @@ __all__ = [
 ]
 
 
-class Calculation(Generic[T_co], ABC):
+class Calculation(ABC, Generic[T_co]):
     """
     An object that wraps logic for calculating a field's value based on defined input arguments.
 

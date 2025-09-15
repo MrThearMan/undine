@@ -680,7 +680,7 @@ SupportsLookup: TypeAlias = RegisterLookupMixin | type[RegisterLookupMixin]
 # GraphQL
 
 
-class GQLInfo(Generic[TUser], GraphQLResolveInfo):
+class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     """GraphQL execution information given to a GraphQL field resolver."""
 
     field_name: str
@@ -744,7 +744,7 @@ Selections: TypeAlias = Iterable[SelectionNode]
 ObjectSelections: TypeAlias = Iterable[FieldNode | FragmentSpreadNode]
 
 
-class NodeDict(Generic[TModel], TypedDict):
+class NodeDict(TypedDict, Generic[TModel]):
     cursor: str
     node: TModel
 
@@ -756,7 +756,7 @@ class PageInfoDict(TypedDict):
     endCursor: str | None
 
 
-class ConnectionDict(Generic[TModel], TypedDict):
+class ConnectionDict(TypedDict, Generic[TModel]):
     totalCount: int
     pageInfo: PageInfoDict
     edges: list[NodeDict[TModel]]
