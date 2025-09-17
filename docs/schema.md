@@ -190,6 +190,18 @@ type Query {
 }
 ```
 
+If a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
+has been added to your `QueryType`, those filters and orders will be added to the `Entrypoint`.
+
+```graphql
+type Query {
+  tasks(
+    filter: TaskFilterSet
+    orderBy: [TaskOrderSet!]
+  ): [TaskType!]!
+}
+```
+
 ### MutationType references
 
 A `MutationType` represents a possible mutation operation based on a Django model.

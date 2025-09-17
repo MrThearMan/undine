@@ -25,6 +25,45 @@ To support pagination, you need to wrap `QueryTypes` in `Entrypoints` with the `
 -8<- "pagination/connection.py"
 ```
 
+This will create the following GraphQL types.
+
+```graphql
+type TaskType {
+  pk: Int!
+  name: String!
+  done: Boolean!
+  createdAt: DateTime!
+}
+
+type TaskTypeEdge {
+  cursor: String!
+  node: TaskType
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type TaskTypeConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TaskTypeEdge!]!
+}
+
+type Query {
+  pagedTasks(
+    after: String
+    before: String
+    first: Int
+    last: Int
+    offset: Int
+  ): TaskTypeConnection!
+}
+```
+
 Querying this `Entrypoint` will return a response like this:
 
 ```json
@@ -33,6 +72,23 @@ Querying this `Entrypoint` will return a response like this:
 
 One addition to the Relay specification is the inclusion of a `totalCount` field,
 which returns the total number of items that can be queried from the `Connection`.
+
+If a [`FilterSet`](filtering.md#filterset) or [`OrderSet`](ordering.md#orderset)
+has been added to your `QueryType`, those filters and orders will be added to the `Entrypoint`.
+
+```graphql
+type Query {
+  pagedTasks(
+    after: String
+    before: String
+    first: Int
+    last: Int
+    offset: Int
+    filter: TaskFilterSet
+    orderBy: [TaskOrderSet!]
+  ): TaskTypeConnection!
+}
+```
 
 Many-related `Fields` can also be paginated using the `Connection` class.
 
