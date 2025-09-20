@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING
+from uuid import uuid4  # noqa: ICN003
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -207,11 +208,14 @@ class AcceptanceCriteria(Model):
 
 
 class Report(Model):
+    uuid = UUIDField(primary_key=True, default=uuid4, editable=False)
     name = CharField(max_length=255)
     content = TextField()
     created_at = DateField(auto_now_add=True)
 
     tasks = ManyToManyField(Task, related_name="reports")
+
+    comments = GenericRelation(Comment)
 
     objects: ModelManager[Report]
 

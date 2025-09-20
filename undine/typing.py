@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import enum
 import operator as op
+import types
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterator, Callable
 from contextlib import suppress
 from enum import Enum, StrEnum, auto
 from functools import cache
-from types import FunctionType, GenericAlias, UnionType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -103,7 +103,7 @@ if TYPE_CHECKING:
     )
     from graphql.pyutils import Path
 
-    from undine import FilterSet, InterfaceType, MutationType, OrderSet
+    from undine import FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionFilterSet, UnionType
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -171,6 +171,8 @@ __all__ = [
     "ServerMessage",
     "SubscribeMessage",
     "SupportsLookup",
+    "TModels",
+    "TQueryType",
     "ToManyField",
     "ToOneField",
     "UndineErrorCodes",
@@ -191,7 +193,7 @@ LiteralType: TypeAlias = _LiteralGenericAlias
 ProtocolType: TypeAlias = _ProtocolMeta
 PrefetchHackCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
 LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
-TypeHint: TypeAlias = type | UnionType | GenericAlias
+TypeHint: TypeAlias = type | types.UnionType | types.GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
 WebSocketResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
@@ -208,7 +210,10 @@ TUser = TypeVar("TUser", bound="AbstractUser", covariant=True)  # noqa: PLC0105
 TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
 GNT = TypeVar("GNT", bound=GraphQLNullableType)
 TTypeHint = TypeVar("TTypeHint", bound=TypeHint)
+TQueryType = TypeVar("TQueryType", bound="QueryType")
+TUnionType = TypeVar("TUnionType", bound="UnionType")
 TQueryTypes = TypeVarTuple("TQueryTypes")
+TModels = TypeVarTuple("TModels")
 
 
 # Literals
@@ -217,7 +222,7 @@ RequestMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPT
 
 # NewTypes
 
-Lambda = NewType("Lambda", FunctionType)
+Lambda = NewType("Lambda", types.FunctionType)
 """
 Type used to register a different implementations for lambda functions
 as opposed to a regular function in the FunctionDispatcher.
@@ -625,13 +630,15 @@ class UndineErrorCodes(StrEnum):
     MISSING_GRAPHQL_QUERY_AND_DOCUMENT_PARAMETERS = auto()
     MISSING_GRAPHQL_QUERY_PARAMETER = auto()
     MISSING_INSTANCES_TO_DELETE = auto()
-    MISSING_OPERATIONS = auto()
     MISSING_OPERATION_NAME = auto()
+    MISSING_OPERATIONS = auto()
     MISSING_SUBSCRIPTION_ARGUMENT = auto()
     MODEL_CONSTRAINT_VIOLATION = auto()
     MODEL_INSTANCE_NOT_FOUND = auto()
     MUTATION_TOO_MANY_OBJECTS = auto()
     MUTATION_TREE_MODEL_MISMATCH = auto()
+    NO_EXECUTION_RESULT = auto()
+    NO_OPERATION = auto()
     NODE_ID_NOT_GLOBAL_ID = auto()
     NODE_INTERFACE_MISSING = auto()
     NODE_INVALID_GLOBAL_ID = auto()
@@ -639,14 +646,13 @@ class UndineErrorCodes(StrEnum):
     NODE_QUERY_TYPE_ID_FIELD_MISSING = auto()
     NODE_QUERY_TYPE_MISSING = auto()
     NODE_TYPE_NOT_OBJECT_TYPE = auto()
-    NO_EXECUTION_RESULT = auto()
-    NO_OPERATION = auto()
     OPERATION_NOT_FOUND = auto()
     OPTIMIZER_ERROR = auto()
     PERMISSION_DENIED = auto()
-    PERSISTED_DOCUMENTS_NOT_SUPPORTED = auto()
     PERSISTED_DOCUMENT_NOT_FOUND = auto()
+    PERSISTED_DOCUMENTS_NOT_SUPPORTED = auto()
     PRIMARY_KEYS_MISSING = auto()
+    RELATION_NOT_NULLABLE = auto()
     REQUEST_DECODING_ERROR = auto()
     REQUEST_PARSE_ERROR = auto()
     SCALAR_CONVERSION_ERROR = auto()
@@ -676,6 +682,7 @@ ModelField: TypeAlias = Field | ForeignObjectRel
 CombinableExpression: TypeAlias = Expression | Subquery
 Annotatable: TypeAlias = CombinableExpression | F | Q
 SupportsLookup: TypeAlias = RegisterLookupMixin | type[RegisterLookupMixin]
+QuerySetMap: TypeAlias = dict[type["QueryType"], QuerySet]
 
 # GraphQL
 
@@ -840,6 +847,7 @@ class UnionTypeParams(TypedDict, total=False):
     """Arguments for an Undine `UnionType`."""
 
     schema_name: str
+    filterset: type[UnionFilterSet]
     directives: list[Directive]
     extensions: dict[str, Any]
 

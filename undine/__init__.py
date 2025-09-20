@@ -9,7 +9,7 @@ from .ordering import Order, OrderSet
 from .query import Field, QueryType
 from .schema import create_schema
 from .typing import DjangoExpression, GQLInfo
-from .union import UnionType
+from .union import UnionFilter, UnionFilterSet, UnionType
 
 __all__ = [
     "Calculation",
@@ -28,6 +28,8 @@ __all__ = [
     "OrderSet",
     "QueryType",
     "RootType",
+    "UnionFilter",
+    "UnionFilterSet",
     "UnionType",
     "create_schema",
 ]

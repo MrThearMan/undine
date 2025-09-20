@@ -30,6 +30,7 @@ from undine import (
     Order,
     OrderSet,
     QueryType,
+    UnionFilterSet,
     UnionType,
 )
 from undine.directives import Directive, DirectiveArgument
@@ -45,7 +46,9 @@ class Named(InterfaceType):
     #     return request.user.is_superuser
 
 
-class PersonType(QueryType[Person], interfaces=[Node, Named]): ...
+@Node
+@Named
+class PersonType(QueryType[Person]): ...
 
 
 class CommentType(QueryType[Comment], exclude=["content_type"]): ...
@@ -54,13 +57,16 @@ class CommentType(QueryType[Comment], exclude=["content_type"]): ...
 class ServiceRequestType(QueryType[ServiceRequest]): ...
 
 
-class TeamType(QueryType[Team], interfaces=[Named]): ...
+@Named
+class TeamType(QueryType[Team]): ...
 
 
 class ProjectFilterSet(FilterSet[Project]): ...
 
 
-class ProjectType(QueryType[Project], filterset=ProjectFilterSet, interfaces=[Named]): ...
+@Named
+@ProjectFilterSet
+class ProjectType(QueryType[Project]): ...
 
 
 class TaskResultType(QueryType[TaskResult]): ...
@@ -69,13 +75,15 @@ class TaskResultType(QueryType[TaskResult]): ...
 class TaskObjectiveType(QueryType[TaskObjective]): ...
 
 
-class TaskStepType(QueryType[TaskStep], interfaces=[Named]): ...
+@Named
+class TaskStepType(QueryType[TaskStep]): ...
 
 
 class AcceptanceCriteriaType(QueryType[AcceptanceCriteria]): ...
 
 
-class ReportType(QueryType[Report], interfaces=[Named]): ...
+@Named
+class ReportType(QueryType[Report]): ...
 
 
 class TaskFilterSet(FilterSet[Task]):
@@ -136,7 +144,11 @@ class ExampleCalculation(Calculation[int]):
         return Value(self.value)
 
 
-class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, interfaces=[Node, Named]):
+@Node
+@Named
+@TaskFilterSet
+@TaskOrderSet
+class TaskType(QueryType[Task]):
     """Task Node description."""
 
     name = Field()
@@ -166,7 +178,11 @@ class TaskType(QueryType[Task], filterset=TaskFilterSet, orderset=TaskOrderSet, 
     #     return request.user.is_superuser
 
 
-class Commentable(UnionType[TaskType, ProjectType]):
+class CommentableFilterSet(UnionFilterSet[Task, Project, Report], auto=True): ...
+
+
+@CommentableFilterSet
+class Commentable(UnionType[TaskType, ProjectType, ReportType]):
     """All entities that can be commented on"""
 
     # @classmethod

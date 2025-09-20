@@ -7,7 +7,7 @@ from graphql import DirectiveLocation, GraphQLEnumValue, Undefined
 
 from undine.converters import convert_to_description, convert_to_order_ref
 from undine.dataclasses import OrderResults
-from undine.exceptions import GraphQLInvalidOrderDataError, MissingModelGenericError
+from undine.exceptions import GraphQLInvalidOrderDataError, MismatchingModelError, MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModel
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
         OrderAliasesFunc,
         OrderParams,
         OrderSetParams,
+        TQueryType,
         VisibilityFunc,
     )
 
@@ -99,6 +100,26 @@ class OrderSetMeta(type):
         # but is not if an error occurs in the class body of the defined 'OrderSet'!
         OrderSetMeta.__model__ = model
         return cls  # type: ignore[return-value]
+
+    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+        """
+        Allow adding this OrderSet to a QueryType using a decorator syntax
+
+        >>> class TaskOrderSet(OrderSet[Task]): ...
+        >>>
+        >>> @TaskOrderSet
+        >>> class TaskType(QueryType[Task]): ...
+        """
+        if cls.__model__ is not query_type.__model__:
+            raise MismatchingModelError(
+                name=cls.__name__,
+                given_model=cls.__model__,
+                target=query_type.__name__,
+                expected_model=query_type.__model__,
+            )
+
+        query_type.__orderset__ = cls  # type: ignore[assignment]
+        return query_type
 
     def __build__(cls, order_data: list[str], info: GQLInfo) -> OrderResults:
         """

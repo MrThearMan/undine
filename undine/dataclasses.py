@@ -18,7 +18,15 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.relay import PaginationHandler
-    from undine.typing import DispatchProtocol, DjangoExpression, LiteralArg, RelatedField, RelationType, TypeHint
+    from undine.typing import (
+        DispatchProtocol,
+        DjangoExpression,
+        LiteralArg,
+        QuerySetMap,
+        RelatedField,
+        RelationType,
+        TypeHint,
+    )
 
 __all__ = [
     "AbstractSelections",
@@ -120,6 +128,14 @@ class OptimizationWithPagination(Generic[TModel]):
     """Pagination arguments that have been validated."""
 
     queryset: QuerySet[TModel]
+    pagination: PaginationHandler
+
+
+@dataclasses.dataclass(slots=True)
+class QuerySetMapWithPagination(Generic[TModel]):
+    """Pagination arguments that have been validated."""
+
+    queryset_map: QuerySetMap
     pagination: PaginationHandler
 
 

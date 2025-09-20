@@ -9,18 +9,18 @@ from django.db.models.functions import Greatest, RowNumber
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
 from graphql.type.scalars import serialize_id
 
+from undine import InterfaceField, InterfaceType, QueryType, UnionType
 from undine.dataclasses import ValidatedPaginationArgs
 from undine.exceptions import GraphQLPaginationArgumentValidationError
-from undine.interface import InterfaceField, InterfaceType
 from undine.optimizer.prefetch_hack import register_for_prefetch_hack
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.model_utils import SubqueryCount
+from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
 
-    from undine.query import QueryType
     from undine.typing import CombinableExpression, GQLInfo, ToManyField
 
 __all__ = [
@@ -294,7 +294,7 @@ class Connection:
 
     def __init__(
         self,
-        query_type: type[QueryType],
+        ref: type[QueryType | UnionType | InterfaceType],
         /,
         *,
         page_size: int | None = undine_settings.CONNECTION_PAGE_SIZE,
@@ -304,12 +304,15 @@ class Connection:
         """
         Create a new Connection.
 
-        :param query_type: The `QueryType` to use for the Connection.
+        :param ref: The `QueryType` or `UnionType` to use for the Connection.
         :param page_size: Maximum number of items to return in a page. No limit if `None`.
         :param pagination_handler: Handler to use for paginating the Connection.
         :param description: Description for the Connection.
         """
-        self.query_type = query_type
+        self.query_type = ref if is_subclass(ref, QueryType) else None
+        self.union_type = ref if is_subclass(ref, UnionType) else None
+        self.interface_type = ref if is_subclass(ref, InterfaceType) else None
+
         self.page_size = page_size
         self.pagination_handler = pagination_handler
         self.description = description

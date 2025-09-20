@@ -16,7 +16,14 @@ if TYPE_CHECKING:
 
     from undine.directives import Directive
     from undine.query import Field, QueryType
-    from undine.typing import DjangoRequestProtocol, GQLInfo, InterfaceFieldParams, InterfaceTypeParams, VisibilityFunc
+    from undine.typing import (
+        DjangoRequestProtocol,
+        GQLInfo,
+        InterfaceFieldParams,
+        InterfaceTypeParams,
+        TQueryType,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "InterfaceField",
@@ -75,6 +82,28 @@ class InterfaceTypeMeta(type):
 
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_interface_type(cls.__interface__())
+
+    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+        """
+        Allow adding this InterfaceType to a QueryType using a decorator syntax
+
+        >>> class Named(InterfaceType): ...
+        >>>
+        >>> @Named
+        >>> class TaskType(QueryType[Task]): ...
+        """
+        for field_name, interface_field in cls.__field_map__.items():
+            if field_name in query_type.__field_map__:
+                continue
+
+            field = interface_field.as_undine_field()
+            setattr(query_type, field_name, field)
+            query_type.__field_map__[field_name] = field
+            field.__connect__(query_type, field_name)
+
+        query_type.__interfaces__.append(cls)  # type: ignore[assignment]
+        cls.__register_as_implementation__(query_type)
+        return query_type
 
     def __register_as_implementation__(cls, implementation: type[InterfaceType | QueryType]) -> None:
         cls.__implementations__.append(implementation)

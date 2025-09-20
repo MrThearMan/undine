@@ -133,6 +133,10 @@ def _(ref: type[UnionType], **kwargs: Any) -> GraphQLArgumentMap:
             order_by_key = f"{undine_settings.QUERY_TYPE_ORDER_INPUT_KEY}{model.__name__}"
             arguments[order_by_key] = args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY]
 
+    if ref.__filterset__:
+        input_type = ref.__filterset__.__input_type__()
+        arguments[undine_settings.QUERY_TYPE_FILTER_INPUT_KEY] = GraphQLArgument(input_type)
+
     return arguments
 
 
@@ -174,7 +178,13 @@ def _(ref: type[Calculation], **kwargs: Any) -> GraphQLArgumentMap:
 @convert_to_graphql_argument_map.register
 def _(ref: Connection, **kwargs: Any) -> GraphQLArgumentMap:
     kwargs["many"] = True
-    arguments = convert_to_graphql_argument_map(ref.query_type, **kwargs)
+
+    if ref.union_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.union_type, **kwargs)
+    elif ref.interface_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.interface_type, **kwargs)
+    else:
+        arguments = convert_to_graphql_argument_map(ref.query_type, **kwargs)
 
     return {
         "after": GraphQLArgument(

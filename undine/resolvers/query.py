@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import dataclasses
+import functools
 import inspect
 from asyncio import iscoroutinefunction
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeAlias
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Generic, Optional
 
 from asgiref.sync import sync_to_async
-from django.db.models import QuerySet
+from django.db.models import Value
 from django.db.models.manager import BaseManager
 from graphql import GraphQLID, GraphQLObjectType
 
 from undine import QueryType
-from undine.dataclasses import OptimizationWithPagination
+from undine.dataclasses import OptimizationWithPagination, QuerySetMapWithPagination
 from undine.exceptions import (
+    GraphQLFieldNotNullableError,
+    GraphQLModelNotFoundError,
     GraphQLNodeIDFieldTypeError,
     GraphQLNodeInterfaceMissingError,
     GraphQLNodeInvalidGlobalIDError,
@@ -34,13 +38,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import FunctionType
 
-    from django.db.models import Model, Q
+    from django.db.models import Model, Q, QuerySet
     from graphql.pyutils import AwaitableOrValue
 
     from undine import Entrypoint, Field, InterfaceType, UnionType
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.relay import Connection, PaginationHandler
-    from undine.typing import GQLInfo
+    from undine.typing import GQLInfo, QuerySetMap
 
 __all__ = [
     "ConnectionResolver",
@@ -230,11 +234,29 @@ class ModelAttributeResolver:
 
     def run_sync(self, root: Model, info: GQLInfo) -> Any:
         value = self.get_value(root, info)
+
+        if value is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.field.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
+            return None
+
         self.check_permissions(root, info, value)
         return value
 
     async def run_async(self, root: Model, info: GQLInfo) -> Any:
         value = self.get_value(root, info)
+
+        if value is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.field.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
+            return None
+
         await self.check_permissions_async(root, info, value)
         return value
 
@@ -270,6 +292,11 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
     def run_sync(self, root: Model, info: GQLInfo) -> Any:
         value: TModel | None = getattr(root, self.field.field_name, None)
         if value is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.field.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
             return None
 
         self.check_permissions(root, info, value)
@@ -278,6 +305,11 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
     async def run_async(self, root: Model, info: GQLInfo) -> Any:
         value: TModel | None = getattr(root, self.field.field_name, None)
         if value is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.field.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
             return None
 
         await self.check_permissions_async(root, info, value)
@@ -393,8 +425,12 @@ class QueryTypeSingleResolver(Generic[TModel]):
         queryset = self.query_type.__get_queryset__(info)
         instance = optimize_sync(queryset, info, **kwargs)
 
-        if instance is not None:
-            self.check_permissions(root, info, instance)
+        if instance is None:
+            if not self.entrypoint.nullable:
+                raise GraphQLModelNotFoundError(model=self.query_type, pk=kwargs.get("pk"))
+            return None
+
+        self.check_permissions(root, info, instance)
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
@@ -404,8 +440,12 @@ class QueryTypeSingleResolver(Generic[TModel]):
         queryset = self.query_type.__get_queryset__(info)
         instance = await optimize_async(queryset, info, **kwargs)
 
-        if instance is not None:
-            await self.check_permissions_async(root, info, instance)
+        if instance is None:
+            if not self.entrypoint.nullable:
+                raise GraphQLModelNotFoundError(model=self.query_type, pk=kwargs.get("pk"))
+            return None
+
+        await self.check_permissions_async(root, info, instance)
         return instance
 
     def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
@@ -499,14 +539,30 @@ class NestedQueryTypeSingleResolver(Generic[TModel]):
 
     def run_sync(self, root: Model, info: GQLInfo) -> TModel | None:
         instance: TModel | None = getattr(root, self.field.field_name, None)
-        if instance is not None:
-            self.check_permissions(root, info, instance)
+
+        if instance is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
+            return None
+
+        self.check_permissions(root, info, instance)
         return instance
 
     async def run_async(self, root: Model, info: GQLInfo) -> TModel | None:
         instance: TModel | None = getattr(root, self.field.field_name, None)
-        if instance is not None:
-            await self.check_permissions_async(root, info, instance)
+
+        if instance is None:
+            if not self.field.nullable:
+                raise GraphQLFieldNotNullableError(
+                    typename=self.query_type.__schema_name__,
+                    field_name=self.field.schema_name,
+                )
+            return None
+
+        await self.check_permissions_async(root, info, instance)
         return instance
 
     def check_permissions(self, root: Any, info: GQLInfo, instance: TModel) -> None:
@@ -639,6 +695,10 @@ class ConnectionResolver(Generic[TModel]):
     connection: Connection
     entrypoint: Entrypoint
 
+    @property
+    def query_type(self) -> type[QueryType]:
+        return self.connection.query_type  # type: ignore[return-value]
+
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info)
@@ -660,7 +720,7 @@ class ConnectionResolver(Generic[TModel]):
         return self.to_connection(instances, pagination=results.pagination)
 
     def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
-        return self.connection.query_type.__get_queryset__(info)
+        return self.query_type.__get_queryset__(info)
 
     def run_optimizer(self, info: GQLInfo) -> OptimizationWithPagination[TModel]:
         queryset = self.get_queryset(info)
@@ -688,7 +748,7 @@ class ConnectionResolver(Generic[TModel]):
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
             else:
-                self.connection.query_type.__permissions__(instance, info)
+                self.query_type.__permissions__(instance, info)
 
     async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
@@ -698,14 +758,14 @@ class ConnectionResolver(Generic[TModel]):
                 else:
                     self.entrypoint.permissions_func(root, info, instance)
 
-            elif inspect.iscoroutinefunction(self.connection.query_type.__permissions__):
-                await self.connection.query_type.__permissions__(instance, info)
+            elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+                await self.query_type.__permissions__(instance, info)
 
             else:
-                self.connection.query_type.__permissions__(instance, info)
+                self.query_type.__permissions__(instance, info)
 
     def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
-        typename = self.connection.query_type.__schema_name__
+        typename = self.query_type.__schema_name__
         edges = [
             NodeDict(
                 cursor=offset_to_cursor(typename, pagination.start + index),
@@ -738,6 +798,10 @@ class NestedConnectionResolver(Generic[TModel]):
     connection: Connection
     field: Field
 
+    @property
+    def query_type(self) -> type[QueryType]:
+        return self.connection.query_type  # type: ignore[return-value]
+
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info)
@@ -766,7 +830,7 @@ class NestedConnectionResolver(Generic[TModel]):
             if self.field.permissions_func is not None:
                 self.field.permissions_func(root, info, instance)
             else:
-                self.connection.query_type.__permissions__(instance, info)
+                self.query_type.__permissions__(instance, info)
 
     async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
@@ -776,11 +840,11 @@ class NestedConnectionResolver(Generic[TModel]):
                 else:
                     self.field.permissions_func(root, info, instance)
 
-            elif inspect.iscoroutinefunction(self.connection.query_type.__permissions__):
-                await self.connection.query_type.__permissions__(instance, info)
+            elif inspect.iscoroutinefunction(self.query_type.__permissions__):
+                await self.query_type.__permissions__(instance, info)
 
             else:
-                self.connection.query_type.__permissions__(instance, info)
+                self.query_type.__permissions__(instance, info)
 
     def get_pagination_params(self, instances: list[TModel]) -> tuple[int, int | None, int | None]:
         total_count: int | None = None
@@ -798,7 +862,7 @@ class NestedConnectionResolver(Generic[TModel]):
     def to_connection(self, instances: list[TModel]) -> ConnectionDict[TModel]:
         start, stop, total_count = self.get_pagination_params(instances)
 
-        typename = self.connection.query_type.__schema_name__
+        typename = self.query_type.__schema_name__
         edges = [
             NodeDict(
                 cursor=offset_to_cursor(typename, start + index),
@@ -819,9 +883,6 @@ class NestedConnectionResolver(Generic[TModel]):
 
 
 # UnionType
-
-
-QuerySetMap: TypeAlias = dict[type[QueryType[TModel]], QuerySet[TModel]]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -846,7 +907,7 @@ class UnionTypeResolver(Generic[TModel]):
         all_instances = await self.fetch_instances_async(root, info, queryset_map)
         return self.union_type.__process_results__(all_instances, info)
 
-    def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+    def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
@@ -856,7 +917,7 @@ class UnionTypeResolver(Generic[TModel]):
 
         return all_instances
 
-    async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+    async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
@@ -899,8 +960,8 @@ class UnionTypeResolver(Generic[TModel]):
             else:
                 query_type.__permissions__(instance, info)
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap[TModel]:
-        queryset_map: QuerySetMap[TModel] = {}
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
+        queryset_map: QuerySetMap = {}
 
         for model, query_type in self.union_type.__query_types_by_model__.items():
             optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
@@ -930,15 +991,191 @@ class UnionTypeResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _UnionTypeConnectionResolver:  # TODO: Implement
+class UnionTypeConnectionResolver(Generic[TModel]):
     """Resolves a connection of union type items."""
 
     connection: Connection
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
-        msg = "Union connections are not implemented yet."
-        raise NotImplementedError(msg)
+    @property
+    def union_type(self) -> type[UnionType]:
+        return self.connection.union_type  # type: ignore[return-value]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        result = self.optimize(info, **kwargs)
+        if not result.queryset_map:
+            return self.empty_connection()
+
+        all_instances = self.fetch_instances(root, info, result)
+        return self.to_connection(all_instances, pagination=result.pagination)
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        result = self.optimize(info, **kwargs)
+        if not result.queryset_map:
+            return self.empty_connection()
+
+        all_instances = await self.fetch_instances_async(root, info, result)
+        return self.to_connection(all_instances, pagination=result.pagination)
+
+    def fetch_instances(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        """
+        Fetch paginated instances from the querysets.
+
+        Select primary key and typename from all querysets in the union and paginate that.
+        Then gather all pks for the page for each model and filter the individual querysets further before fetching.
+        Only fetch from models that actually fit in the page.
+        """
+        union_qs: QuerySet = functools.reduce(lambda x, y: x.union(y), result.queryset_map.values())
+        # TODO: Allow filtering & ordering by common fields
+        union_qs = union_qs.order_by("pk").values("__typename", "pk")
+        union_qs = result.pagination.paginate_queryset(union_qs, info)
+
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in result.queryset_map}
+
+        pks_by_model: dict[str, set[Any]] = defaultdict(set)
+        for item in union_qs:
+            pks_by_model[item["__typename"]].add(item["pk"])
+
+        all_instances: list[TModel] = []
+
+        for typename, pks in pks_by_model.items():
+            query_type = query_type_by_name[typename]
+            queryset = result.queryset_map[query_type]
+            queryset = queryset.filter(pk__in=pks)
+            instances = evaluate_with_prefetch_hack_sync(queryset)
+            self.check_permissions(root, info, query_type, instances)
+            all_instances.extend(instances)
+
+        return all_instances
+
+    async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        """Async version of `fetch_instances`."""
+        union_qs: QuerySet = functools.reduce(lambda x, y: x.union(y), result.queryset_map.values())
+        # TODO: Allow filtering & ordering by common fields
+        union_qs = union_qs.order_by("pk").values("__typename", "pk")
+        union_qs = result.pagination.paginate_queryset(union_qs, info)
+
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in result.queryset_map}
+
+        pks_by_model: dict[str, set[Any]] = defaultdict(set)
+        async for item in union_qs:
+            pks_by_model[item["__typename"]].add(item["pk"])
+
+        all_instances: list[TModel] = []
+
+        for typename, pks in pks_by_model.items():
+            query_type = query_type_by_name[typename]
+            queryset = result.queryset_map[query_type]
+            queryset = queryset.filter(pk__in=pks)
+            instances = await evaluate_with_prefetch_hack_async(queryset)
+            await self.check_permissions_async(root, info, query_type, instances)
+            all_instances.extend(instances)
+
+        return all_instances
+
+    def check_permissions(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(query_type.__permissions__):
+                await query_type.__permissions__(instance, info)
+
+            else:
+                query_type.__permissions__(instance, info)
+
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination[TModel]:
+        queryset_map: QuerySetMap = {}
+        pagination: PaginationHandler | None = None
+
+        for model, query_type in self.union_type.__query_types_by_model__.items():
+            optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
+            optimizations = optimizer.compile()
+
+            # If nothing is selected from this union type member, don't fetch anything from it
+            if not optimizations:
+                continue
+
+            args: dict[str, Any] = {}
+            filter_key = f"{undine_settings.QUERY_TYPE_FILTER_INPUT_KEY}{model.__name__}"
+            order_by_key = f"{undine_settings.QUERY_TYPE_ORDER_INPUT_KEY}{model.__name__}"
+
+            if filter_key in kwargs:
+                args[undine_settings.QUERY_TYPE_FILTER_INPUT_KEY] = kwargs[filter_key]
+            if order_by_key in kwargs:
+                args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY] = kwargs[order_by_key]
+
+            optimizer.handle_undine_query_type(query_type, args)
+
+            optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
+
+            # Save pagination (should be the same for all query types)
+            pagination = optimizations.pagination
+            optimizations.pagination = None
+
+            queryset = query_type.__get_queryset__(info)
+            optimized_queryset = optimizations.apply(queryset, info)
+
+            queryset_map[query_type] = optimized_queryset
+
+        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)
+
+    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
+        typename = self.union_type.__schema_name__
+        edges = [
+            NodeDict(
+                cursor=offset_to_cursor(typename, pagination.start + index),
+                node=instance,
+            )
+            for index, instance in enumerate(instances)
+        ]
+        return ConnectionDict(
+            totalCount=pagination.total_count or 0,
+            pageInfo=PageInfoDict(
+                hasNextPage=(
+                    False
+                    if pagination.stop is None
+                    else True
+                    if pagination.total_count is None
+                    else pagination.stop < pagination.total_count
+                ),
+                hasPreviousPage=pagination.start > 0,
+                startCursor=None if not edges else edges[0]["cursor"],
+                endCursor=None if not edges else edges[-1]["cursor"],
+            ),
+            edges=edges,
+        )
+
+    def empty_connection(self) -> ConnectionDict[TModel]:
+        page_info = PageInfoDict(hasNextPage=False, hasPreviousPage=False, startCursor=None, endCursor=None)
+        return ConnectionDict(totalCount=0, pageInfo=page_info, edges=[])
 
 
 # InterfaceType
@@ -966,7 +1203,7 @@ class InterfaceResolver(Generic[TModel]):
         all_instances = await self.fetch_instances_async(info, root, queryset_map)
         return self.interface.__process_results__(all_instances, info)
 
-    def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+    def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
@@ -976,7 +1213,7 @@ class InterfaceResolver(Generic[TModel]):
 
         return all_instances
 
-    async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap[TModel]) -> list[TModel]:
+    async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
         all_instances: list[TModel] = []
 
         for query_type, queryset in queryset_map.items():
@@ -1019,8 +1256,8 @@ class InterfaceResolver(Generic[TModel]):
             else:
                 query_type.__permissions__(instance, info)
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap[TModel]:
-        queryset_map: QuerySetMap[TModel] = {}
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
+        queryset_map: QuerySetMap = {}
 
         for query_type in self.interface.__concrete_implementations__():
             model = query_type.__model__

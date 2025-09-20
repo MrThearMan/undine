@@ -220,6 +220,28 @@ Arguments:
 `is_input: bool = False`: (Optional) Whether the type is for an input or output.
 """
 
+convert_to_union_filter_ref: FunctionDispatcher[Any] = FunctionDispatcher()
+"""
+Convert the given value to a reference that UnionFilter can deal with.
+
+Arguments:
+
+`ref: Any`: The value to convert.
+
+`caller: UnionFilter`: The UnionFilter instance that is calling this function.
+"""
+
+convert_to_union_filter_resolver: FunctionDispatcher[Any] = FunctionDispatcher()
+"""
+Convert the given reference to a filter resolver function for UnionFilter.
+
+Arguments:
+
+`ref: Any`: The reference to convert.
+
+`caller: UnionFilter`: The Filter instance that is calling this function.
+"""
+
 extend_expression: FunctionDispatcher[DjangoExpression] = FunctionDispatcher()
 """
 Rewrite an expression so that any containing lookups are referenced through the given field.
