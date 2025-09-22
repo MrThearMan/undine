@@ -1076,7 +1076,7 @@ class TypedDictFieldResolver:
     """
 
     def __call__(self, root: dict[str, Any], info: GQLInfo, **kwargs: Any) -> Any:
-        return root.get(self.key, None)
+        return root.get(self.key)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
