@@ -67,15 +67,15 @@ channels = { version = ">=4.2.2", optional = true }
 pytest = "8.4.2"
 pytest-django = "4.11.1"
 pytest-asyncio = "1.2.0"
-coverage = "7.10.6"
-hypothesis = "6.138.16"
+coverage = "7.10.7"
+hypothesis = "6.140.0"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2025.5.1"
 urllib3 = "2.5.0"
 psycopg = { version = "3.2.10", extras = ["binary", "pool"] }
 django-modeltranslation = "0.19.17"
-uvicorn = { version = "0.35.0", extras = ["standard"] }
+uvicorn = { version = "0.36.0", extras = ["standard"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
@@ -86,7 +86,7 @@ beautifulsoup4 = "4.13.5"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.3.0"
-mypy = "1.18.1"
+mypy = "1.18.2"
 django-stubs = "5.2.5"
 py-spy = "0.4.1"
 httpx = "0.28.1"
