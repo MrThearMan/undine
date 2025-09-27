@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 
+import django
 from django.db.models import CheckConstraint, Q, UniqueConstraint
 
 from example_project.app.models import Task
@@ -12,8 +13,8 @@ from undine.utils.constraints import get_constraint_message
 def with_example_constraints() -> None:
     check_constraint = CheckConstraint(
         name="check_example",
-        check=~Q(name__contains="example"),
         violation_error_message="Example constraint violation message.",
+        **{("check" if django.VERSION < (5, 1) else "condition"): ~Q(name__contains="example")},
     )
     unique_constraint = UniqueConstraint(
         fields=["name", "type"],

@@ -3,18 +3,12 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
-from graphql import GraphQLError
+from graphql import ExecutionResult, GraphQLError
 
 from undine.exceptions import GraphQLErrorGroup, GraphQLRequestDecodingError
-from undine.http.utils import (
-    graphql_error_group_response,
-    graphql_error_response,
-    graphql_result_response,
-    parse_json_body,
-    require_persisted_documents_request,
-)
+from undine.http.utils import graphql_result_response, parse_json_body, require_persisted_documents_request
 from undine.settings import undine_settings
-from undine.utils.graphql.utils import build_response
+from undine.utils.graphql.utils import get_error_execution_result
 
 from .utils import parse_document_map, register_persisted_documents
 
@@ -34,26 +28,32 @@ def persisted_documents_view(request: DjangoRequestProtocol) -> DjangoResponsePr
     """
     try:
         json_data = parse_json_body(request.body)
+
     except GraphQLRequestDecodingError as error:
-        return graphql_error_response(error, status=HTTPStatus.BAD_REQUEST)
+        result = get_error_execution_result(error)
+        return graphql_result_response(result, status=HTTPStatus.BAD_REQUEST)
 
     try:
         document_map = parse_document_map(json_data)
-    except GraphQLErrorGroup as error:
-        return graphql_error_group_response(error, status=HTTPStatus.BAD_REQUEST)
+
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        return graphql_result_response(result, status=HTTPStatus.BAD_REQUEST)
 
     if undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK is not None:
         try:
             undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK(request, document_map)
-        except GraphQLError as error:
-            return graphql_error_response(error, status=HTTPStatus.FORBIDDEN)
-        except GraphQLErrorGroup as error:
-            return graphql_error_group_response(error, status=HTTPStatus.FORBIDDEN)
+
+        except (GraphQLError, GraphQLErrorGroup) as error:
+            result = get_error_execution_result(error)
+            return graphql_result_response(result, status=HTTPStatus.FORBIDDEN)
 
     try:
         document_id_map = register_persisted_documents(document_map)
-    except GraphQLErrorGroup as error:
-        return graphql_error_group_response(error, status=HTTPStatus.BAD_REQUEST)
 
-    result = build_response(data={"documents": document_id_map})
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        return graphql_result_response(result, status=HTTPStatus.BAD_REQUEST)
+
+    result = ExecutionResult(data={"documents": document_id_map})
     return graphql_result_response(result)

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Hashable
 from contextlib import contextmanager
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
 from django.db.models import ForeignKey
 from graphql import (
     DocumentNode,
+    ExecutionResult,
     FieldNode,
     GraphQLEnumType,
     GraphQLError,
@@ -34,19 +36,26 @@ from undine.exceptions import (
     GraphQLGetRequestOperationNotFoundError,
 )
 from undine.settings import undine_settings
+from undine.utils.logging import log_traceback
+from undine.utils.model_utils import get_validation_error_messages
+from undine.utils.reflection import get_traceback
 from undine.utils.text import to_snake_case
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable
+    from collections.abc import Collection, Generator, Iterable
 
+    from django.core.exceptions import ValidationError
     from graphql import (
         DirectiveLocation,
         DocumentNode,
-        ExecutionResult,
+        GraphQLCompositeType,
+        GraphQLField,
         GraphQLList,
         GraphQLNonNull,
         GraphQLOutputType,
+        GraphQLSchema,
         GraphQLWrappingType,
+        Node,
         SelectionNode,
     )
     from graphql.execution.values import NodeWithDirective
@@ -57,12 +66,13 @@ if TYPE_CHECKING:
 
 
 __all__ = [
-    "build_response",
     "check_directives",
     "get_arguments",
+    "get_error_execution_result",
     "get_queried_field_name",
     "get_underlying_type",
     "graphql_error_path",
+    "graphql_errors_hook",
     "is_connection",
     "is_edge",
     "is_node_interface",
@@ -112,6 +122,17 @@ def get_arguments(info: GQLInfo) -> dict[str, Any]:
 def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
     """Get the name of a field in the current query."""
     return original_name if info.path.key == info.field_name else info.path.key  # type: ignore[return-value]
+
+
+def get_field_def(schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode) -> GraphQLField:
+    try:
+        from graphql.execution.execute import get_field_def  # noqa: PLC0415
+
+        return get_field_def(schema, parent_type, field_node)
+
+    # graphql-core >= 3.3.0
+    except ImportError:
+        return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)
 
 
 async def pre_evaluate_request_user(info: GQLInfo) -> None:
@@ -280,5 +301,64 @@ def validate_get_request_operation(document: DocumentNode, operation_name: str |
     raise GraphQLGetRequestOperationNotFoundError(operation_name=operation_name)
 
 
-def build_response(data: dict[str, Any] | None = None, errors: list[GraphQLError] | None = None) -> ExecutionResult:
-    return undine_settings.EXECUTION_CONTEXT_CLASS.build_response(data=data, errors=errors or [])
+def get_error_execution_result(error: GraphQLError | GraphQLErrorGroup | list[GraphQLError]) -> ExecutionResult:
+    if isinstance(error, list):
+        errors = graphql_errors_hook(error)
+        return ExecutionResult(data=None, errors=errors)
+
+    if isinstance(error, GraphQLErrorGroup):
+        errors = graphql_errors_hook(list(error.flatten()))
+        return ExecutionResult(data=None, errors=errors)
+
+    errors = graphql_errors_hook([error])
+    return ExecutionResult(data=None, errors=errors)
+
+
+def graphql_errors_hook(errors: list[GraphQLError]) -> list[GraphQLError]:
+    """Handle GraphQL errors before adding them to the response."""
+    if not errors:
+        return errors
+
+    for error in errors:
+        extensions: dict[str, Any] = error.extensions
+
+        if error.original_error is None or isinstance(error.original_error, GraphQLError):
+            extensions.setdefault("status_code", HTTPStatus.BAD_REQUEST)
+        else:
+            extensions.setdefault("status_code", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        if error.__traceback__ is not None:
+            log_traceback(error.__traceback__)
+
+            if undine_settings.INCLUDE_ERROR_TRACEBACK:
+                extensions["traceback"] = get_traceback(error.__traceback__)
+
+    # Sort the error list in order to make it deterministic
+    errors.sort(key=lambda err: (err.locations or [], err.path or [], err.message))
+    return errors
+
+
+def located_validation_error(
+    error: ValidationError,
+    nodes: Collection[Node],
+    path: list[str | int],
+) -> GraphQLErrorGroup:
+    """Transform a Django ValidationError into a GraphQL errors for each message in the error."""
+    code = getattr(error, "code", "").upper()
+    error_messages = get_validation_error_messages(error)
+
+    errors: list[GraphQLError] = []
+    for field, messages in error_messages.items():
+        for message in messages:
+            error_path = path.copy()
+            if field:
+                error_path += field.split(".")
+
+            extensions: dict[str, Any] = {"status_code": HTTPStatus.BAD_REQUEST}
+            if code:
+                extensions["error_code"] = code
+
+            graphql_error = GraphQLError(message=message, nodes=nodes, path=error_path, extensions=extensions)
+            errors.append(graphql_error)
+
+    return GraphQLErrorGroup(errors=errors)

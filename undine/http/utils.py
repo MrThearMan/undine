@@ -20,14 +20,13 @@ from undine.exceptions import (
 )
 from undine.settings import undine_settings
 from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
-from undine.utils.graphql.utils import build_response
+from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from graphql import ExecutionResult, GraphQLError
+    from graphql import ExecutionResult
 
-    from undine.exceptions import GraphQLErrorGroup
     from undine.typing import RequestMethod
 
 __all__ = [
@@ -35,8 +34,6 @@ __all__ = [
     "HttpUnsupportedContentTypeResponse",
     "decode_body",
     "get_preferred_response_content_type",
-    "graphql_error_group_response",
-    "graphql_error_response",
     "graphql_result_response",
     "load_json_dict",
     "parse_json_body",
@@ -133,28 +130,6 @@ def graphql_result_response(
     return HttpResponse(content=content, status=status, content_type=content_type)  # type: ignore[return-value]
 
 
-def graphql_error_response(
-    error: GraphQLError,
-    *,
-    status: int = HTTPStatus.OK,
-    content_type: str = "application/json",
-) -> DjangoResponseProtocol:
-    """Serialize the given GraphQL error to an HTTP response."""
-    result = build_response(errors=[error])
-    return graphql_result_response(result, status=status, content_type=content_type)
-
-
-def graphql_error_group_response(
-    error: GraphQLErrorGroup,
-    *,
-    status: int = HTTPStatus.OK,
-    content_type: str = "application/json",
-) -> DjangoResponseProtocol:
-    """Serialize the given GraphQL error group to an HTTP response."""
-    result = build_response(errors=list(error.flatten()))
-    return graphql_result_response(result, status=status, content_type=content_type)
-
-
 SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
 AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
 
@@ -239,18 +214,12 @@ def require_persisted_documents_request(func: SyncViewIn) -> SyncViewOut:
         request.response_content_type = media_type
 
         if request.content_type is None:  # pragma: no cover
-            return graphql_error_response(
-                error=GraphQLMissingContentTypeError(),
-                status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                content_type=media_type,
-            )
+            result = get_error_execution_result(GraphQLMissingContentTypeError())
+            return graphql_result_response(result, status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, content_type=media_type)
 
         if not MediaType(request.content_type).match(content_type):
-            return graphql_error_response(
-                error=GraphQLUnsupportedContentTypeError(content_type=request.content_type),
-                status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                content_type=media_type,
-            )
+            result = get_error_execution_result(GraphQLUnsupportedContentTypeError(content_type=request.content_type))
+            return graphql_result_response(result, status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE, content_type=media_type)
 
         return func(request)
 

@@ -13,13 +13,13 @@ from graphql import (
     InlineFragmentNode,
 )
 from graphql.execution.collect_fields import get_field_entry_key
-from graphql.execution.execute import get_field_def
 
 from undine.dataclasses import AbstractSelections
 from undine.exceptions import GraphQLOptimizerError, ModelFieldError
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_interface_type, get_undine_query_type
 from undine.utils.graphql.utils import (
+    get_field_def,
     get_underlying_type,
     is_connection,
     is_edge,

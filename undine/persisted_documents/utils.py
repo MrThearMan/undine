@@ -68,15 +68,11 @@ def parse_document_map(json_data: dict[str, Any]) -> dict[str, str]:
     documents = json_data.get("documents")
     if documents is None:
         msg = "Missing key."
-        error = GraphQLRequestParseError(msg, path=["documents"])
-
-        raise GraphQLErrorGroup([error])
+        raise GraphQLRequestParseError(msg, path=["documents"])
 
     if not isinstance(documents, dict):
         msg = "Value is not a dictionary."
-        error = GraphQLRequestParseError(msg, path=["documents"])
-
-        raise GraphQLErrorGroup([error])
+        raise GraphQLRequestParseError(msg, path=["documents"])
 
     errors: list[GraphQLRequestParseError] = []
 

@@ -55,17 +55,22 @@ from django.db.models.query_utils import DeferredAttribute
 from django.utils.encoding import force_str
 from graphql import (
     GraphQLBoolean,
+    GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
+    GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLObjectType,
     GraphQLOutputType,
+    GraphQLScalarType,
     GraphQLString,
+    GraphQLUnionType,
     Undefined,
 )
 
@@ -654,7 +659,19 @@ def _(ref: ManyToManyDescriptor, **kwargs: Any) -> GraphQLInputType | GraphQLOut
 
 
 @convert_to_graphql_type.register
-def _(ref: GraphQLInputType | GraphQLOutputType, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(
+    ref: (
+        GraphQLScalarType
+        | GraphQLObjectType
+        | GraphQLInputObjectType
+        | GraphQLInterfaceType
+        | GraphQLUnionType
+        | GraphQLEnumType
+        | GraphQLList
+        | GraphQLNonNull
+    ),
+    **kwargs: Any,
+) -> GraphQLInputType | GraphQLOutputType:
     return ref
 
 

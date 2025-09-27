@@ -75,6 +75,7 @@ from undine.exceptions import (
     GraphQLScalarInvalidValueError,
     GraphQLScalarTypeNotSupportedError,
     GraphQLStatusError,
+    GraphQLSubscriptionNoEventStreamError,
     GraphQLTooManyFiltersError,
     GraphQLTooManyOrdersError,
     GraphQLUnexpectedCalculationArgumentError,
@@ -729,6 +730,12 @@ class GQLErrorParams(NamedTuple):
             message="Type 'tests.test_exceptions.MyClass' is not supported",
             extensions={"error_code": "SCALAR_TYPE_NOT_SUPPORTED", "status_code": 400},
         ),
+        "GraphQLSubscriptionNoEventStreamError": GQLErrorParams(
+            cls=GraphQLSubscriptionNoEventStreamError,
+            args={},
+            message="Subscription did not return an event stream",
+            extensions={"error_code": "NO_EVENT_STREAM", "status_code": 500},
+        ),
         "GraphQLTooManyFiltersError": GQLErrorParams(
             cls=GraphQLTooManyFiltersError,
             args={"name": "foo", "filter_count": 100, "max_count": 50},
@@ -801,14 +808,6 @@ def test_graphql_error_group() -> None:
 
     assert list(group_1.flatten()) == [error_1, error_2]
     assert list(group_2.flatten()) == [error_1, error_2, error_3]
-
-    error_4 = GraphQLError("fizz", path=["buzz"])
-
-    group_2.located_by(error_4)
-
-    assert error_1.path == ["buzz"]
-    assert error_2.path == ["buzz"]
-    assert error_3.path == ["buzz"]
 
 
 class WebsocketErrorParams(NamedTuple):

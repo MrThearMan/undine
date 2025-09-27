@@ -449,31 +449,20 @@ class GraphQLErrorGroup(ExceptionGroup):
         return "\n\n".join(str(error) for error in self.flatten())
 
     def flatten(self) -> Generator[GraphQLError, None, None]:
-        """Flattened the errors inside the `GraphQLExceptionGroup`."""
+        """Iterate errors while flattening nested errors groups."""
         for error in self.exceptions:
             if isinstance(error, GraphQLErrorGroup):
                 yield from error.flatten()
             elif isinstance(error, GraphQLError):
                 yield error
 
-    def located(self, path: list[str | int]) -> Self:
-        """Set path information to all errors inside the `GraphQLExceptionGroup`."""
+    def located(self, path: list[str | int] | None = None, nodes: list[Node] | None = None) -> Self:
+        """Set location information to all errors."""
         for error in self.flatten():
             if not error.path:
                 error.path = path
-        return self
-
-    def located_by(self, error: GraphQLError) -> Self:
-        """Set location information to all errors inside the `GraphQLExceptionGroup` based on the given error."""
-        for err in self.flatten():
-            if not err.source:
-                err.source = error.source
-            if not err.positions:
-                err.positions = error.positions
-            if not err.path:
-                err.path = error.path
-            if not err.nodes:
-                err.nodes = error.nodes
+            if not error.nodes:
+                error.nodes = nodes
         return self
 
 
@@ -877,6 +866,14 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
     msg = "Type '{input_type:dotpath}' is not supported"
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.SCALAR_TYPE_NOT_SUPPORTED
+
+
+class GraphQLSubscriptionNoEventStreamError(GraphQLStatusError):
+    """Error raised when a subscription does not return an event stream."""
+
+    msg = "Subscription did not return an event stream"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.NO_EVENT_STREAM
 
 
 class GraphQLTooManyFiltersError(GraphQLStatusError):
