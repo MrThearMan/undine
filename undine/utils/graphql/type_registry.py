@@ -397,6 +397,8 @@ GraphQLOneOfDirective = GraphQLDirective(
 
 
 def register_builtins() -> None:
+    from undine.utils.graphql.validation_rules import core_implements_one_of_directive  # noqa: PLC0415
+
     for name, scalar in specified_scalar_types.items():
         GRAPHQL_REGISTRY[name] = scalar
 
@@ -404,7 +406,10 @@ def register_builtins() -> None:
         GRAPHQL_REGISTRY[directive.name] = directive
 
     GRAPHQL_REGISTRY[GraphQLComplexityDirective.name] = GraphQLComplexityDirective
-    GRAPHQL_REGISTRY[GraphQLOneOfDirective.name] = GraphQLOneOfDirective
+
+    # graphql-core < 3.3.0
+    if not core_implements_one_of_directive():
+        GRAPHQL_REGISTRY[GraphQLOneOfDirective.name] = GraphQLOneOfDirective
 
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:

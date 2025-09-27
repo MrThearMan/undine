@@ -30,14 +30,16 @@ def python_versions() -> list[str]:
 
 
 @nox.session(python=python_versions(), reuse_venv=True)
-@nox.parametrize("django", ["5.0", "5.1", "5.2"])
-def tests(session: nox.Session, django: str) -> None:
+@nox.parametrize("django", ["5.0.*", "5.1.*", "5.2.*", "6.0a1"])
+@nox.parametrize("graphql_core", ["3.2.*", "3.3.0a9"])
+def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     env = {
         "POETRY_VIRTUALENVS_PATH": str(Path(session.virtualenv.bin).parent),
     }
 
     session.run_install("poetry", "install", "--all-extras", external=True, env=env)
-    session.install(f"django=={django}.*")
+    session.install(f"django=={django}")
+    session.install(f"graphql-core=={graphql_core}")
 
     session.run("coverage", "run", "-m", "pytest", external="error")
 

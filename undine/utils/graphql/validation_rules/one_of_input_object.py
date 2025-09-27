@@ -85,6 +85,7 @@ def core_implements_one_of_directive() -> bool:
 
 
 def validate_one_of_input_object_variable_value(value: dict[str, Any], *, typename: str) -> dict[str, Any]:
+    # graphql-core < 3.3.0
     if core_implements_one_of_directive():
         return value
 
