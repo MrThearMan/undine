@@ -1,6 +1,6 @@
 [project]
 name = "undine"
-version = "0.1.0"
+version = "0.1.1"
 description = "A GraphQL library for Django"
 authors = [
     { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
