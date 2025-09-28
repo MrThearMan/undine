@@ -16,7 +16,7 @@ from undine.converters import (
     convert_to_graphql_type,
 )
 from undine.dataclasses import FilterResults, LookupRef, MaybeManyOrNonNull
-from undine.exceptions import EmptyFilterResult, MissingModelGenericError
+from undine.exceptions import EmptyFilterResult, MismatchingModelError, MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import ManyMatch, TModel
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         FilterParams,
         FilterSetParams,
         GQLInfo,
+        TQueryType,
         VisibilityFunc,
     )
 
@@ -108,6 +109,26 @@ class FilterSetMeta(type):
         # but is not if an error occurs in the class body of the defined 'FilterSet'!
         FilterSetMeta.__model__ = model
         return cls  # type: ignore[return-value]
+
+    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+        """
+        Allow adding this FilterSet to a QueryType using a decorator syntax
+
+        >>> class TaskFilterSet(FilterSet[Task]): ...
+        >>>
+        >>> @TaskFilterSet
+        >>> class TaskType(QueryType[Task]): ...
+        """
+        if cls.__model__ is not query_type.__model__:
+            raise MismatchingModelError(
+                name=cls.__name__,
+                given_model=cls.__model__,
+                target=query_type.__name__,
+                expected_model=query_type.__model__,
+            )
+
+        query_type.__filterset__ = cls  # type: ignore[assignment]
+        return query_type
 
     def __build__(cls, filter_data: dict[str, Any], info: GQLInfo) -> FilterResults:
         """
@@ -209,7 +230,7 @@ class FilterSetMeta(type):
         return True
 
     def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this filterset."""
+        """Add a directive to this `FilterSet`."""
         check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
         cls.__directives__.append(directive)
         return cls
@@ -261,7 +282,7 @@ class FilterSet(Generic[TModel], metaclass=FilterSetMeta):
 
 class Filter:
     """
-    A class for defining a possible filter input.
+    A class for defining a possible `FilterSet` input.
     Represents an input field in the GraphQL `InputObjectType` for the `FilterSet` this is added to.
 
     >>> class TaskFilterSet(FilterSet[Task]):

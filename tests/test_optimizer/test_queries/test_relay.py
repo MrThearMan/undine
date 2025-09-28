@@ -4,6 +4,7 @@ import pytest
 
 from example_project.app.models import Comment, Person, Project, Report, Task, TaskStep, Team
 from tests.factories import CommentFactory, PersonFactory, ReportFactory, TaskFactory, TaskStepFactory, TeamFactory
+from tests.helpers import cache_content_types
 from undine import Entrypoint, Field, OrderSet, QueryType, RootType, create_schema
 from undine.relay import Connection, Node, offset_to_cursor, to_global_id
 
@@ -3459,6 +3460,8 @@ def test_optimizer__relay__nested_connection__generic_relation(graphql, undine_s
     CommentFactory.create(contents="Comment 3", target=task_2)
     CommentFactory.create(contents="Comment 4", target=task_2)
     CommentFactory.create(contents="Comment 5", target=task_3)
+
+    cache_content_types()
 
     query = """
         query {

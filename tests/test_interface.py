@@ -5,7 +5,8 @@ from inspect import cleandoc
 import pytest
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLField, GraphQLNonNull, GraphQLString
 
-from undine import Field, InterfaceType
+from example_project.app.models import Task
+from undine import Field, InterfaceType, QueryType
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 from undine.interface import InterfaceField
@@ -311,3 +312,24 @@ def test_interface_type__interface_field__as_undine_field__resolvable_output_typ
 
     assert isinstance(field, Field)
     assert field.ref == GraphQLNonNull(GraphQLString)
+
+
+def test_interface_type__add_to_query_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]): ...
+
+    assert TaskType.__interfaces__ == [Named]
+    assert list(TaskType.__field_map__) == ["name"]
+
+
+def test_interface_type__add_to_query_type__decorator() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False): ...
+
+    assert TaskType.__interfaces__ == [Named]
+    assert list(TaskType.__field_map__) == ["name"]

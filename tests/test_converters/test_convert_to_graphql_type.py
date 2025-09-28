@@ -499,7 +499,7 @@ def test_convert_to_graphql_type__typed_dict__not_required() -> None:
         ),
         "ReverseManyToManyField": Params(
             input_type=Task._meta.get_field("reports"),
-            output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
+            output_type=GraphQLList(GraphQLNonNull(GraphQLUUID)),
         ),
         "GenericRelation": Params(
             input_type=Task._meta.get_field("comments"),
@@ -608,7 +608,7 @@ def test_convert_to_graphql_type__text_choices_field__help_text() -> None:
         ),
         "ReverseManyToManyDescriptor": Params(
             input_type=Task.reports,
-            output_type=GraphQLList(GraphQLNonNull(GraphQLInt)),
+            output_type=GraphQLList(GraphQLNonNull(GraphQLUUID)),
         ),
     }),
 )
@@ -947,10 +947,13 @@ def test_convert_to_graphql_type__generic_foreign_key__is_input() -> None:
     assert isinstance(result, GraphQLInputObjectType)
 
     assert result.name == "CommentTargetInput"
-    assert sorted(result.fields) == ["project", "task"]
+    assert sorted(result.fields) == ["project", "report", "task"]
 
     assert isinstance(result.fields["project"].type, GraphQLInputObjectType)
     assert result.fields["project"].type.name == "CommentTargetProjectInput"
+
+    assert isinstance(result.fields["report"].type, GraphQLInputObjectType)
+    assert result.fields["report"].type.name == "CommentTargetReportInput"
 
     assert isinstance(result.fields["task"].type, GraphQLInputObjectType)
     assert result.fields["task"].type.name == "CommentTargetTaskInput"

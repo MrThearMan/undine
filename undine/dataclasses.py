@@ -18,7 +18,15 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.relay import PaginationHandler
-    from undine.typing import DispatchProtocol, DjangoExpression, LiteralArg, RelatedField, RelationType, TypeHint
+    from undine.typing import (
+        DispatchProtocol,
+        DjangoExpression,
+        LiteralArg,
+        QuerySetMap,
+        RelatedField,
+        RelationType,
+        TypeHint,
+    )
 
 __all__ = [
     "AbstractSelections",
@@ -123,6 +131,14 @@ class OptimizationWithPagination(Generic[TModel]):
     pagination: PaginationHandler
 
 
+@dataclasses.dataclass(slots=True)
+class QuerySetMapWithPagination(Generic[TModel]):
+    """Pagination arguments that have been validated."""
+
+    queryset_map: QuerySetMap
+    pagination: PaginationHandler
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class RootAndInfoParams:
     root_param: str | None
@@ -154,6 +170,7 @@ class LazyGenericForeignKey:
         return [
             QUERY_TYPE_REGISTRY[field.remote_field.related_model]  # type: ignore[index]
             for field in generic_relations_for_generic_foreign_key(self.field)
+            if field.remote_field.related_model in QUERY_TYPE_REGISTRY  # type: ignore[index]
         ]
 
 

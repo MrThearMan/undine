@@ -825,6 +825,14 @@ class GraphQLRelationNotNullableError(GraphQLStatusError):
 
     msg = "Field '{model:dotpath}.{field_name}' is not nullable. Existing relation cannot be set to null."
     status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.RELATION_NOT_NULLABLE
+
+
+class GraphQLFieldNotNullableError(GraphQLStatusError):
+    """Error raised when field result is null, but the field is not nullable."""
+
+    msg = "'{typename}.{field_name}' returned null, but field is not nullable."
+    status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.FIELD_NOT_NULLABLE
 
 

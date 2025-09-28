@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pytest
-from django.contrib.contenttypes.models import ContentType
 
 from example_project.app.models import Comment, Person, Project, Report, ServiceRequest, Task, TaskResult, TaskStep
 from tests.factories import CommentFactory, ProjectFactory, TaskFactory
+from tests.helpers import cache_content_types
 from undine import Entrypoint, Field, Input, MutationType, QueryType, RootType, create_schema
 
 
@@ -97,10 +97,7 @@ def test_mutation_optimization__update__forward__one_to_one(graphql, undine_sett
 
     task = TaskFactory.create(name="Test task", request__details="Test request")
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -172,10 +169,7 @@ def test_mutation_optimization__update__forward__many_to_one(graphql, undine_set
 
     task = TaskFactory.create(name="Test task", project__name="Test project")
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -248,10 +242,7 @@ def test_mutation_optimization__update__forward__many_to_many(graphql, undine_se
     task = TaskFactory.create(name="Test task", assignees__name="Test person")
     assignee = task.assignees.first()
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -327,10 +318,7 @@ def test_mutation_optimization__update__reverse__one_to_one(graphql, undine_sett
 
     task = TaskFactory.create(name="Test task", result__details="Test result")
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -403,10 +391,7 @@ def test_mutation_optimization__update__reverse__one_to_many(graphql, undine_set
     task = TaskFactory.create(name="Test task", steps__name="Test step")
     step = task.steps.first()
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -461,7 +446,8 @@ def test_mutation_optimization__update__reverse__many_to_many(graphql, undine_se
 
     # MutationTypes
 
-    class ReportMutation(MutationType[Report], kind="related"): ...
+    class ReportMutation(MutationType[Report], kind="related"):
+        pk = Input()
 
     class TaskUpdateMutation(MutationType[Task]):
         pk = Input()
@@ -483,10 +469,7 @@ def test_mutation_optimization__update__reverse__many_to_many(graphql, undine_se
     task = TaskFactory.create(name="Test task", reports__name="Test report")
     report = task.reports.first()
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -564,10 +547,7 @@ def test_mutation_optimization__update__generic_relation(graphql, undine_setting
     task = TaskFactory.create()
     comment = CommentFactory.create(target=task, contents="Test comment")
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: TaskUpdateMutation!) {
@@ -647,10 +627,7 @@ def test_mutation_optimization__update__generic_foreign_key(graphql, undine_sett
 
     comment = CommentFactory.create(target=task, contents="Test comment")
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: CommentUpdateMutation!) {

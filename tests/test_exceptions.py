@@ -30,6 +30,7 @@ from undine.exceptions import (
     GraphQLDuplicatePrimaryKeysError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
+    GraphQLFieldNotNullableError,
     GraphQLFileNotFoundError,
     GraphQLFilePlacingError,
     GraphQLGetRequestMultipleOperationsNoOperationNameError,
@@ -698,6 +699,12 @@ class GQLErrorParams(NamedTuple):
             message=(
                 "Field 'example_project.app.models.Task.name' is not nullable. Existing relation cannot be set to null."
             ),
+            extensions={"error_code": "RELATION_NOT_NULLABLE", "status_code": 400},
+        ),
+        "GraphQLFieldNotNullableError": GQLErrorParams(
+            cls=GraphQLFieldNotNullableError,
+            args={"typename": "TaskType", "field_name": "name"},
+            message="'TaskType.name' returned null, but field is not nullable.",
             extensions={"error_code": "FIELD_NOT_NULLABLE", "status_code": 400},
         ),
         "GraphQLRequestDecodingError": GQLErrorParams(

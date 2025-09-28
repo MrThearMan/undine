@@ -4,11 +4,12 @@ from inspect import cleandoc
 
 import pytest
 from django.db.models import F, OrderBy
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import mock_gql_info
-from undine import Order, OrderSet
+from undine import Field, Order, OrderSet, QueryType
+from undine.converters import convert_to_graphql_argument_map
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError, MissingModelGenericError
 from undine.utils.graphql.utils import get_underlying_type
@@ -239,13 +240,13 @@ def test_orderset__extensions() -> None:
     assert enum_type.extensions == {"foo": "bar", "undine_orderset": MyOrderSet}
 
 
-def test_filterset__no_auto() -> None:
+def test_orderset__no_auto() -> None:
     class MyOrderSet(OrderSet[Task], auto=False): ...
 
     assert MyOrderSet.__order_map__ == {}
 
 
-def test_filterset__exclude() -> None:
+def test_orderset__exclude() -> None:
     class MyOrderSet(OrderSet[Task], exclude=["name"]): ...
 
     assert "pk" in MyOrderSet.__order_map__
@@ -254,10 +255,43 @@ def test_filterset__exclude() -> None:
     assert "created_at" in MyOrderSet.__order_map__
 
 
-def test_filterset__exclude__multiple() -> None:
+def test_orderset__exclude__multiple() -> None:
     class MyOrderSet(OrderSet[Task], exclude=["name", "pk"]): ...
 
     assert "pk" not in MyOrderSet.__order_map__
     assert "name" not in MyOrderSet.__order_map__
     assert "type" in MyOrderSet.__order_map__
     assert "created_at" in MyOrderSet.__order_map__
+
+
+def test_orderset__add_to_query_type() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    class TaskType(QueryType[Task], auto=False, orderset=MyOrderSet):
+        name = Field()
+
+    assert TaskType.__orderset__ == MyOrderSet
+
+    args = convert_to_graphql_argument_map(TaskType, many=True, entrypoint=True)
+
+    assert args == {
+        "orderBy": GraphQLArgument(GraphQLList(GraphQLNonNull(MyOrderSet.__enum_type__()))),
+    }
+
+
+def test_orderset__add_to_query_type__decorator() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    @MyOrderSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    assert TaskType.__orderset__ == MyOrderSet
+
+    args = convert_to_graphql_argument_map(TaskType, many=True, entrypoint=True)
+
+    assert args == {
+        "orderBy": GraphQLArgument(GraphQLList(GraphQLNonNull(MyOrderSet.__enum_type__()))),
+    }

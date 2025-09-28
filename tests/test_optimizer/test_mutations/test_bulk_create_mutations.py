@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from django.contrib.contenttypes.models import ContentType
 
 from example_project.app.models import (
     Comment,
@@ -17,6 +16,7 @@ from example_project.app.models import (
     TaskTypeChoices,
 )
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
+from tests.helpers import cache_content_types
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.utils.mutation_tree import mutate
 
@@ -135,10 +135,7 @@ def test_mutation_optimization__bulk_create__forward__one_to_one(graphql, undine
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -215,10 +212,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_one(graphql, undin
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -297,10 +291,7 @@ def test_mutation_optimization__bulk_create__forward__many_to_many(graphql, undi
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -380,10 +371,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_one(graphql, undine
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -462,10 +450,7 @@ def test_mutation_optimization__bulk_create__reverse__one_to_many(graphql, undin
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -547,10 +532,7 @@ def test_mutation_optimization__bulk_create__reverse__many_to_many(graphql, undi
         },
     ]
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     response = graphql(query, variables={"input": data}, count_queries=True)
 
@@ -610,10 +592,7 @@ def test_mutation_optimization__bulk_create__generic_relation(graphql, undine_se
 
     person = PersonFactory.create()
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: [TaskCreateMutation!]!) {
@@ -698,10 +677,7 @@ def test_mutation_optimization__bulk_create__generic_foreign_key(graphql, undine
     project = ProjectFactory.create(name="Test project")
     task = TaskFactory.create(name="Test task", project=project)
 
-    # Cache content types
-    ContentType.objects.get_for_model(Task)
-    ContentType.objects.get_for_model(Project)
-    ContentType.objects.get_for_model(Comment)
+    cache_content_types()
 
     query = """
         mutation ($input: [CommentCreateMutation!]!) {

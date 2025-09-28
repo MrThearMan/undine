@@ -141,7 +141,7 @@ class Params(NamedTuple):
         ),
         "ReverseManyToManyField": Params(
             input_type=Task._meta.get_field("reports"),
-            output_type=list[int],
+            output_type=list[uuid.UUID],
         ),
         "DeferredAttribute": Params(
             input_type=Task.name,
@@ -169,7 +169,7 @@ class Params(NamedTuple):
         ),
         "ReverseManyToManyDescriptor": Params(
             input_type=Task.reports,
-            output_type=list[int],
+            output_type=list[uuid.UUID],
         ),
         "Q expression": Params(
             input_type=Q(name__exact="foo"),

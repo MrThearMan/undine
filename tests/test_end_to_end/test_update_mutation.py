@@ -282,7 +282,7 @@ def test_update_mutation__relations__one_to_many__not_nullable(graphql, undine_s
             "path": ["updateTask"],
             "extensions": {
                 "status_code": 400,
-                "error_code": "FIELD_NOT_NULLABLE",
+                "error_code": "RELATION_NOT_NULLABLE",
             },
         }
     ]

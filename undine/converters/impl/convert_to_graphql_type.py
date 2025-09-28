@@ -772,6 +772,13 @@ def _(ref: LookupRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 @convert_to_graphql_type.register
 def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if ref.union_type is not None:
+        ref_type = ref.union_type
+    elif ref.interface_type is not None:
+        ref_type = ref.interface_type
+    else:
+        ref_type = ref.query_type
+
     def edge_fields() -> dict[str, GraphQLField]:
         return {
             "cursor": GraphQLField(
@@ -779,19 +786,19 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
                 description="A value identifying this edge for pagination purposes.",
             ),
             "node": GraphQLField(
-                convert_to_graphql_type(ref.query_type, **kwargs),  # type: ignore[arg-type]
+                convert_to_graphql_type(ref_type, **kwargs),  # type: ignore[arg-type]
                 description="An item in the connection.",
             ),
         }
 
     EdgeType = get_or_create_graphql_object_type(  # noqa: N806
-        name=f"{ref.query_type.__schema_name__}Edge",
+        name=f"{ref_type.__schema_name__}Edge",
         description="An object describing an item in the connection.",
         fields=FunctionEqualityWrapper(edge_fields, context=ref),
     )
 
     return get_or_create_graphql_object_type(
-        name=f"{ref.query_type.__schema_name__}Connection",
+        name=f"{ref_type.__schema_name__}Connection",
         description="A connection to a list of items.",
         fields={
             undine_settings.TOTAL_COUNT_PARAM_NAME: GraphQLField(

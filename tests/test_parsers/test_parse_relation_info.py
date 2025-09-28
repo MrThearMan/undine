@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 import pytest
 from django.contrib.contenttypes.models import ContentType
 
@@ -125,7 +127,7 @@ def test_parse_relation_info__task() -> None:
             #
             # Target details
             related_name="tasks",
-            related_model_pk_type=int,
+            related_model_pk_type=uuid.UUID,
             related_model=Report,
             related_nullable=True,
         ),

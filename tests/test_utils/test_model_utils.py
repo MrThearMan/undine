@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import CharField, DateField
 from django.db.models.functions import Upper
 
-from example_project.app.models import AcceptanceCriteria, Comment, Project, Task, Team
+from example_project.app.models import AcceptanceCriteria, Comment, Project, Report, Task, Team
 from tests.factories import ProjectFactory, TaskFactory
 from tests.helpers import parametrize_helper
 from undine.dataclasses import BulkCreateKwargs
@@ -124,6 +124,7 @@ def test_generic_relations_for_generic_foreign_key() -> None:
     assert relations == [
         Project._meta.get_field("comments"),
         Task._meta.get_field("comments"),
+        Report._meta.get_field("comments"),
     ]
 
 

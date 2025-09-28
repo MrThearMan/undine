@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.backends.base import SessionBase
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -24,6 +25,7 @@ from graphql.pyutils import Path
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
+from example_project.app.models import Comment, Project, Report, Task
 from undine.exceptions import UndineError
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
 from undine.settings import example_schema, undine_settings
@@ -245,3 +247,11 @@ def create_png(name: str = "image.png") -> File:
     bytes_io = BytesIO(PNG)
     bytes_io.seek(0)
     return File(bytes_io, name=name)
+
+
+def cache_content_types() -> None:
+    """Cache all content types for generic relations."""
+    ContentType.objects.get_for_model(Comment)
+    ContentType.objects.get_for_model(Task)
+    ContentType.objects.get_for_model(Project)
+    ContentType.objects.get_for_model(Report)

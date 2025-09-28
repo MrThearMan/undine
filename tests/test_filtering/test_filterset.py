@@ -4,10 +4,12 @@ from inspect import cleandoc
 
 import pytest
 from django.db.models import Count, Q, Subquery
-from graphql import DirectiveLocation, GraphQLInputField, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLInputField, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Person, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info
+from undine import Field, QueryType
+from undine.converters import convert_to_graphql_argument_map
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError, MissingModelGenericError
 from undine.filtering import Filter, FilterSet
@@ -441,3 +443,36 @@ def test_filterset__many__all() -> None:
     assert results.filters == [Q(name__exact="foo") & Q(name__exact="bar")]
     assert results.distinct is False
     assert results.aliases == {}
+
+
+def test_filterset__add_to_query_type() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    class TaskType(QueryType[Task], auto=False, filterset=MyFilterSet):
+        name = Field()
+
+    assert TaskType.__filterset__ == MyFilterSet
+
+    args = convert_to_graphql_argument_map(TaskType, many=True, entrypoint=True)
+
+    assert args == {
+        "filter": GraphQLArgument(MyFilterSet.__input_type__()),
+    }
+
+
+def test_filterset__add_to_query_type__decorator() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    @MyFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    assert TaskType.__filterset__ == MyFilterSet
+
+    args = convert_to_graphql_argument_map(TaskType, many=True, entrypoint=True)
+
+    assert args == {
+        "filter": GraphQLArgument(MyFilterSet.__input_type__()),
+    }

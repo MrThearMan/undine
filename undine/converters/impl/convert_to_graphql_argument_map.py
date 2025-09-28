@@ -174,7 +174,13 @@ def _(ref: type[Calculation], **kwargs: Any) -> GraphQLArgumentMap:
 @convert_to_graphql_argument_map.register
 def _(ref: Connection, **kwargs: Any) -> GraphQLArgumentMap:
     kwargs["many"] = True
-    arguments = convert_to_graphql_argument_map(ref.query_type, **kwargs)
+
+    if ref.union_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.union_type, **kwargs)
+    elif ref.interface_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.interface_type, **kwargs)
+    else:
+        arguments = convert_to_graphql_argument_map(ref.query_type, **kwargs)
 
     return {
         "after": GraphQLArgument(
