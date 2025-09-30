@@ -30,10 +30,10 @@ from graphql import (
 from undine.exceptions import (
     DirectiveLocationError,
     GraphQLErrorGroup,
-    GraphQLGetRequestMultipleOperationsNoOperationNameError,
     GraphQLGetRequestNonQueryOperationError,
-    GraphQLGetRequestNoOperationError,
-    GraphQLGetRequestOperationNotFoundError,
+    GraphQLRequestMultipleOperationsNoOperationNameError,
+    GraphQLRequestNoOperationError,
+    GraphQLRequestOperationNotFoundError,
 )
 from undine.settings import undine_settings
 from undine.utils.logging import log_traceback
@@ -195,15 +195,31 @@ def is_relation_id(field: ModelField, field_node: FieldNode) -> TypeGuard[Field]
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
-def is_subscription_operation(document: DocumentNode) -> bool:
-    if len(document.definitions) != 1:
-        return False
+def is_subscription_operation(document: DocumentNode, operation_name: str | None = None) -> bool:
+    operation_definitions: list[OperationDefinitionNode] = [
+        definition_node
+        for definition_node in document.definitions
+        if isinstance(definition_node, OperationDefinitionNode)
+    ]
 
-    operation_definition = document.definitions[0]
-    if not isinstance(operation_definition, OperationDefinitionNode):
-        return False
+    if len(operation_definitions) == 0:
+        raise GraphQLRequestNoOperationError
 
-    return operation_definition.operation == OperationType.SUBSCRIPTION
+    if len(operation_definitions) == 1:
+        operation_definition = operation_definitions[0]
+        if not isinstance(operation_definition, OperationDefinitionNode):
+            raise GraphQLRequestNoOperationError
+
+        return operation_definition.operation == OperationType.SUBSCRIPTION
+
+    if operation_name is None:
+        raise GraphQLRequestMultipleOperationsNoOperationNameError
+
+    for definition in operation_definitions:
+        if isinstance(definition, OperationDefinitionNode) and definition.name.value == operation_name:
+            return definition.operation == OperationType.SUBSCRIPTION
+
+    raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
 
 
 def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -> bool:
@@ -275,11 +291,11 @@ def validate_get_request_operation(document: DocumentNode, operation_name: str |
     ]
 
     if len(operation_definitions) == 0:
-        raise GraphQLGetRequestNoOperationError
+        raise GraphQLRequestNoOperationError
 
     if operation_name is None:
         if len(operation_definitions) != 1:
-            raise GraphQLGetRequestMultipleOperationsNoOperationNameError
+            raise GraphQLRequestMultipleOperationsNoOperationNameError
 
         if operation_definitions[0].operation != OperationType.QUERY:
             raise GraphQLGetRequestNonQueryOperationError
@@ -298,7 +314,7 @@ def validate_get_request_operation(document: DocumentNode, operation_name: str |
 
         return
 
-    raise GraphQLGetRequestOperationNotFoundError(operation_name=operation_name)
+    raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
 
 
 def get_error_execution_result(error: GraphQLError | GraphQLErrorGroup | list[GraphQLError]) -> ExecutionResult:

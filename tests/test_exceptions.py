@@ -33,10 +33,7 @@ from undine.exceptions import (
     GraphQLFieldNotNullableError,
     GraphQLFileNotFoundError,
     GraphQLFilePlacingError,
-    GraphQLGetRequestMultipleOperationsNoOperationNameError,
     GraphQLGetRequestNonQueryOperationError,
-    GraphQLGetRequestNoOperationError,
-    GraphQLGetRequestOperationNotFoundError,
     GraphQLInvalidInputDataError,
     GraphQLInvalidOrderDataError,
     GraphQLMissingCalculationArgumentError,
@@ -71,6 +68,9 @@ from undine.exceptions import (
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
     GraphQLRequestDecodingError,
+    GraphQLRequestMultipleOperationsNoOperationNameError,
+    GraphQLRequestNoOperationError,
+    GraphQLRequestOperationNotFoundError,
     GraphQLRequestParseError,
     GraphQLScalarConversionError,
     GraphQLScalarInvalidValueError,
@@ -456,11 +456,11 @@ class GQLErrorParams(NamedTuple):
             message="File for path 'foo' not found in request files.",
             extensions={"error_code": "FILE_NOT_FOUND", "status_code": 400},
         ),
-        "GraphQLGetRequestMultipleOperationsNoOperationNameError": GQLErrorParams(
-            cls=GraphQLGetRequestMultipleOperationsNoOperationNameError,
+        "GraphQLRequestMultipleOperationsNoOperationNameError": GQLErrorParams(
+            cls=GraphQLRequestMultipleOperationsNoOperationNameError,
             args={},
             message="Must provide operation name if query contains multiple operations.",
-            extensions={"error_code": "MISSING_OPERATION_NAME", "status_code": 405},
+            extensions={"error_code": "MISSING_OPERATION_NAME", "status_code": 400},
         ),
         "GraphQLGetRequestNonQueryOperationError": GQLErrorParams(
             cls=GraphQLGetRequestNonQueryOperationError,
@@ -468,17 +468,17 @@ class GQLErrorParams(NamedTuple):
             message="Only query operations are allowed on GET requests.",
             extensions={"error_code": "INVALID_OPERATION_FOR_METHOD", "status_code": 405},
         ),
-        "GraphQLGetRequestNoOperationError": GQLErrorParams(
-            cls=GraphQLGetRequestNoOperationError,
+        "GraphQLRequestNoOperationError": GQLErrorParams(
+            cls=GraphQLRequestNoOperationError,
             args={},
             message="Must provide an operation.",
-            extensions={"error_code": "NO_OPERATION", "status_code": 405},
+            extensions={"error_code": "NO_OPERATION", "status_code": 400},
         ),
-        "GraphQLGetRequestOperationNotFoundError": GQLErrorParams(
-            cls=GraphQLGetRequestOperationNotFoundError,
+        "GraphQLRequestOperationNotFoundError": GQLErrorParams(
+            cls=GraphQLRequestOperationNotFoundError,
             args={"operation_name": "foo"},
             message="Unknown operation named 'foo'.",
-            extensions={"error_code": "OPERATION_NOT_FOUND", "status_code": 405},
+            extensions={"error_code": "OPERATION_NOT_FOUND", "status_code": 400},
         ),
         "GraphQLInvalidInputDataError": GQLErrorParams(
             cls=GraphQLInvalidInputDataError,

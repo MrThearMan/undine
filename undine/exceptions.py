@@ -509,14 +509,14 @@ class GraphQLFileNotFoundError(GraphQLStatusError):
     code = UndineErrorCodes.FILE_NOT_FOUND
 
 
-class GraphQLGetRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
+class GraphQLRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
     """
     Error raised when user tries to execute multiple operations
     through an HTTP GET request without an operation name.
     """
 
     msg = "Must provide operation name if query contains multiple operations."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
+    status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_OPERATION_NAME
 
 
@@ -528,19 +528,19 @@ class GraphQLGetRequestNonQueryOperationError(GraphQLStatusError):
     code = UndineErrorCodes.INVALID_OPERATION_FOR_METHOD
 
 
-class GraphQLGetRequestNoOperationError(GraphQLStatusError):
+class GraphQLRequestNoOperationError(GraphQLStatusError):
     """Error raised when no operation definition can be found in the request."""
 
     msg = "Must provide an operation."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
+    status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.NO_OPERATION
 
 
-class GraphQLGetRequestOperationNotFoundError(GraphQLStatusError):
+class GraphQLRequestOperationNotFoundError(GraphQLStatusError):
     """Error raised when operation matching given operation name cannot be found in the request."""
 
     msg = "Unknown operation named '{operation_name}'."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
+    status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.OPERATION_NOT_FOUND
 
 

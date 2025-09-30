@@ -231,10 +231,6 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
     if context.result is not None:
         return
 
-    _validate_http(context)
-    if context.result is not None:
-        return
-
     validation_errors = validate(
         schema=undine_settings.SCHEMA,
         document_ast=context.document,  # type: ignore[arg-type]
@@ -243,6 +239,10 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
     )
     if validation_errors:
         context.result = get_error_execution_result(validation_errors)
+        return
+
+    _validate_http(context)
+    if context.result is not None:
         return
 
 
@@ -257,7 +257,7 @@ def _validate_http(context: LifecycleHookContext) -> None:
             context.result = get_error_execution_result(error)
             return
 
-    if is_subscription_operation(context.document):  # type: ignore[arg-type]
+    if is_subscription_operation(context.document, context.operation_name):  # type: ignore[arg-type]
         context.result = get_error_execution_result(GraphQLUseWebSocketsForSubscriptionsError())
         return
 
@@ -390,11 +390,6 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
     if context.result is not None:
         return
 
-    if context.request.method != "WEBSOCKET":
-        _validate_http(context)
-        if context.result is not None:
-            return
-
     validation_errors = validate(
         schema=undine_settings.SCHEMA,
         document_ast=context.document,  # type: ignore[arg-type]
@@ -404,6 +399,11 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
     if validation_errors:
         context.result = get_error_execution_result(validation_errors)
         return
+
+    if context.request.method != "WEBSOCKET":
+        _validate_http(context)
+        if context.result is not None:
+            return
 
 
 @use_lifecycle_hooks_async(hooks=undine_settings.EXECUTION_HOOKS)
@@ -481,7 +481,7 @@ async def _run_operation_websocket(context: LifecycleHookContext) -> WebSocketRe
     if context.result is None:
         await _validate_document_async(context)
         if context.result is None:
-            if is_subscription_operation(context.document):  # type: ignore[arg-type]
+            if is_subscription_operation(context.document, context.operation_name):  # type: ignore[arg-type]
                 return await _subscribe(context)
             return await _execute_async(context)
 
