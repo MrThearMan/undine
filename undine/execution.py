@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
     from graphql import DocumentNode, GraphQLOutputType, Node
     from graphql.execution.build_field_plan import FieldGroup
-    from graphql.execution.incremental_publisher import IncrementalDataRecord
+    from graphql.execution.execute import IncrementalContext
     from graphql.pyutils import AwaitableOrValue, Path
 
     from undine.dataclasses import GraphQLHttpParams
@@ -65,16 +65,18 @@ class UndineExecutionContext(ExecutionContext):
             return_type: GraphQLOutputType,
             field_group: FieldGroup,
             path: Path,
-            incremental_data_record: IncrementalDataRecord,
+            incremental_context: IncrementalContext | None = None,
         ) -> None:
+            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+
             error: GraphQLError | GraphQLErrorGroup
             match raw_error:
                 case ValidationError():
-                    error = located_validation_error(raw_error, field_group.to_nodes(), path.as_list())
-                    self.handle_field_error(error, return_type, field_group, path, incremental_data_record)
+                    error = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
+                    self.handle_field_error(error, return_type, field_group, path, incremental_context)
 
                 case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_data_record)
+                    self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
 
                 case _:
                     super().handle_field_error(
@@ -82,7 +84,7 @@ class UndineExecutionContext(ExecutionContext):
                         return_type=return_type,
                         field_group=field_group,
                         path=path,
-                        incremental_data_record=incremental_data_record,
+                        incremental_context=incremental_context,
                     )
 
         def handle_field_errors_group(
@@ -91,13 +93,15 @@ class UndineExecutionContext(ExecutionContext):
             return_type: GraphQLOutputType,
             field_group: FieldGroup,
             path: Path,
-            incremental_data_record: IncrementalDataRecord,
+            incremental_context: IncrementalContext | None = None,
         ) -> None:
+            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+
             for err in raw_error.flatten():
                 if not err.path:
                     err.path = path.as_list()
                 if not err.nodes:
-                    err.nodes = field_group.to_nodes()
+                    err.nodes = to_nodes(field_group)
 
             if is_non_null_type(return_type):
                 raise raw_error
@@ -108,7 +112,7 @@ class UndineExecutionContext(ExecutionContext):
                     return_type=return_type,
                     field_group=field_group,
                     path=path,
-                    incremental_data_record=incremental_data_record,
+                    incremental_context=incremental_context,
                 )
 
     else:
@@ -282,7 +286,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLNoExecutionResultError())
         return context.result
 
-    if isawaitable(result):
+    if exec_context.is_awaitable(result):
         ensure_future(result).cancel()
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
@@ -426,7 +430,7 @@ async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLNoExecutionResultError())
         return context.result
 
-    context.result = await result if isawaitable(result) else result
+    context.result = await result if exec_context.is_awaitable(result) else result
 
     if version_info >= (3, 3, 0):
         from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
@@ -579,7 +583,7 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
                 )
                 result = _execute(exec_context)
 
-                context.result = await result if isawaitable(result) else result
+                context.result = await result if exec_context.is_awaitable(result) else result
                 yield context.result
 
 
@@ -653,42 +657,55 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
 
 
 def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:
-    """Execution for graphql-core >= 3.3.0."""
-    from graphql.execution.incremental_publisher import InitialResultRecord  # noqa: PLC0415
-
-    incremental_publisher = context.incremental_publisher
-    initial_result_record = InitialResultRecord()
+    """Execution for graphql-core >= 3.3.0a10."""
+    from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
 
     try:
-        data_or_awaitable = context.execute_operation(initial_result_record)
+        data = context.execute_operation()
 
     except GraphQLError as error:
-        initial_result_record.errors.append(error)
-        return get_error_execution_result(initial_result_record.errors)
+        context.errors = context.errors or []
+        context.errors.append(error)
+        return get_error_execution_result(context.errors)
 
     except GraphQLErrorGroup as err:
-        initial_result_record.errors.extend(err.flatten())
-        return get_error_execution_result(initial_result_record.errors)
+        context.errors = context.errors or []
+        context.errors.extend(err.flatten())
+        return get_error_execution_result(context.errors)
 
-    if context.is_awaitable(data_or_awaitable):
+    if context.is_awaitable(data):
 
         async def await_result() -> ExecutionResult:
             try:
-                data = await data_or_awaitable
+                awaited_data = await data
 
             except GraphQLError as error:
-                initial_result_record.errors.append(error)
-                return get_error_execution_result(initial_result_record.errors)
+                context.errors = context.errors or []
+                context.errors.append(error)
+                return get_error_execution_result(context.errors)
 
             except GraphQLErrorGroup as err:
-                initial_result_record.errors.extend(err.flatten())
-                return get_error_execution_result(initial_result_record.errors)
+                context.errors = context.errors or []
+                context.errors.extend(err.flatten())
+                return get_error_execution_result(context.errors)
 
-            else:
-                graphql_errors_hook(initial_result_record.errors)
-                return incremental_publisher.build_data_response(initial_result_record, data)
+            if isinstance(awaited_data, ExecutionResult) and awaited_data.errors is not None:
+                graphql_errors_hook(awaited_data.errors)
+
+            if (
+                isinstance(awaited_data, ExperimentalIncrementalExecutionResults)
+                and awaited_data.initial_result.errors is not None
+            ):
+                graphql_errors_hook(awaited_data.initial_result.errors)
+
+            return awaited_data
 
         return await_result()
 
-    graphql_errors_hook(initial_result_record.errors)
-    return incremental_publisher.build_data_response(initial_result_record, data_or_awaitable)
+    if isinstance(data, ExecutionResult) and data.errors is not None:
+        graphql_errors_hook(data.errors)
+
+    if isinstance(data, ExperimentalIncrementalExecutionResults) and data.initial_result.errors is not None:
+        graphql_errors_hook(data.initial_result.errors)
+
+    return data
