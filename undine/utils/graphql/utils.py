@@ -206,18 +206,16 @@ def is_subscription_operation(document: DocumentNode, operation_name: str | None
         raise GraphQLRequestNoOperationError
 
     if len(operation_definitions) == 1:
-        operation_definition = operation_definitions[0]
-        if not isinstance(operation_definition, OperationDefinitionNode):
-            raise GraphQLRequestNoOperationError
-
-        return operation_definition.operation == OperationType.SUBSCRIPTION
+        return operation_definitions[0].operation == OperationType.SUBSCRIPTION
 
     if operation_name is None:
         raise GraphQLRequestMultipleOperationsNoOperationNameError
 
     for definition in operation_definitions:
-        if isinstance(definition, OperationDefinitionNode) and definition.name.value == operation_name:
-            return definition.operation == OperationType.SUBSCRIPTION
+        if definition.name is None or definition.name.value != operation_name:
+            continue
+
+        return definition.operation == OperationType.SUBSCRIPTION
 
     raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
 
@@ -293,23 +291,20 @@ def validate_get_request_operation(document: DocumentNode, operation_name: str |
     if len(operation_definitions) == 0:
         raise GraphQLRequestNoOperationError
 
+    if len(operation_definitions) == 1:
+        if operation_definitions[0].operation == OperationType.QUERY:
+            return
+
+        raise GraphQLGetRequestNonQueryOperationError
+
     if operation_name is None:
-        if len(operation_definitions) != 1:
-            raise GraphQLRequestMultipleOperationsNoOperationNameError
+        raise GraphQLRequestMultipleOperationsNoOperationNameError
 
-        if operation_definitions[0].operation != OperationType.QUERY:
-            raise GraphQLGetRequestNonQueryOperationError
-
-        return
-
-    for operation in operation_definitions:
-        if operation.name is None:
+    for definition in operation_definitions:
+        if definition.name is None or definition.name.value != operation_name:
             continue
 
-        if operation.name.value != operation_name:
-            continue
-
-        if operation.operation != OperationType.QUERY:
+        if definition.operation != OperationType.QUERY:
             raise GraphQLGetRequestNonQueryOperationError
 
         return
