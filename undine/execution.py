@@ -69,11 +69,10 @@ class UndineExecutionContext(ExecutionContext):
         ) -> None:
             from graphql.execution.execute import to_nodes  # noqa: PLC0415
 
-            error: GraphQLError | GraphQLErrorGroup
             match raw_error:
                 case ValidationError():
-                    error = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
-                    self.handle_field_error(error, return_type, field_group, path, incremental_context)
+                    error_group = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
+                    self.handle_field_errors_group(error_group, return_type, field_group, path, incremental_context)
 
                 case GraphQLErrorGroup():
                     self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
@@ -122,11 +121,10 @@ class UndineExecutionContext(ExecutionContext):
             path = error.path or []
             field_nodes = error.nodes or []
 
-            error: GraphQLError | GraphQLErrorGroup
             match raw_error:
                 case ValidationError():
-                    error = located_validation_error(raw_error, field_nodes, path)
-                    self.handle_field_error(error, return_type)
+                    error_group = located_validation_error(raw_error, field_nodes, path)
+                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)
 
                 case GraphQLErrorGroup():
                     self.handle_field_errors_group(raw_error, return_type, field_nodes, path)
@@ -292,8 +290,8 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result
 
     if version_info >= (3, 3, 0):
+        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
         from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-        from graphql.execution.incremental_publisher import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
 
         if isinstance(result, ExperimentalIncrementalExecutionResults):
             context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
@@ -361,8 +359,8 @@ async def _run_operation_async(context: LifecycleHookContext) -> ExecutionResult
         context.result = await context.result  # type: ignore[assignment]
 
     if version_info >= (3, 3, 0):
+        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
         from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-        from graphql.execution.incremental_publisher import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
 
         if isinstance(context.result, ExperimentalIncrementalExecutionResults):
             context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
@@ -433,8 +431,8 @@ async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
     context.result = await result if exec_context.is_awaitable(result) else result
 
     if version_info >= (3, 3, 0):
+        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
         from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-        from graphql.execution.incremental_publisher import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
 
         if isinstance(context.result, ExperimentalIncrementalExecutionResults):
             context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))

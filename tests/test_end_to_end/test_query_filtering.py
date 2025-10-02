@@ -885,3 +885,129 @@ async def test_end_to_end__filtering__custom_resolver__async(graphql_async, undi
             {"name": "baz"},
         ],
     }
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__incorrect_arg_value(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        contact_email = Filter("contact_email")
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    query = """
+        query {
+          tasks(filter: {contactEmail: "b"}) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is True, response
+
+    # TODO: It would be nice if this had the path to the field that caused the error.
+    assert response.errors == [
+        {
+            "message": "'Email' cannot represent value 'b': Enter a valid email address.",
+            "extensions": {
+                "error_code": "SCALAR_CONVERSION_ERROR",
+                "status_code": 400,
+            },
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__incorrect_variable_value(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        contact_email = Filter("contact_email")
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    query = """
+        query ($email: Email!) {
+          tasks(filter: {contactEmail: $email}) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query, variables={"email": "b"})
+    assert response.has_errors is True, response
+
+    # TODO: It would be nice if this had the path to the field that caused the error.
+    assert response.errors == [
+        {
+            "message": (
+                "Variable '$email' got invalid value 'b'; "
+                "'Email' cannot represent value 'b': Enter a valid email address."
+            ),
+            "extensions": {
+                "error_code": "SCALAR_CONVERSION_ERROR",
+                "status_code": 400,
+            },
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__incorrect_variable_value__object(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        contact_email = Filter("contact_email")
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    query = """
+        query ($input: TaskFilterSet!) {
+          tasks(filter: $input) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query, variables={"input": {"contactEmail": "b"}})
+    assert response.has_errors is True, response
+
+    # TODO: It would be nice if this had the path to the field that caused the error.
+    assert response.errors == [
+        {
+            "message": (
+                "Variable '$input' got invalid value 'b' at 'input.contactEmail'; "
+                "'Email' cannot represent value 'b': Enter a valid email address."
+            ),
+            "extensions": {
+                "error_code": "SCALAR_CONVERSION_ERROR",
+                "status_code": 400,
+            },
+        },
+    ]
