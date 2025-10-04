@@ -5,7 +5,7 @@ from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, GraphQLUni
 
 from example_project.app.models import Project, Task
 from tests.helpers import mock_gql_info
-from undine import Field, QueryType, UnionType
+from undine import Field, FilterSet, QueryType, UnionType
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 
@@ -134,3 +134,18 @@ def test_union__resolve_type() -> None:
 
     assert resolver(Task(), info, abs_type) == "TaskType"
     assert resolver(Project(), info, abs_type) == "ProjectType"
+
+
+def test_union__union_filter_set() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=True): ...
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert str(Commentable) == "union Commentable = TaskType | ProjectType"

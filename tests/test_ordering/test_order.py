@@ -102,7 +102,7 @@ def test_order__directives__not_applicable() -> None:
             name = Order(directives=directives)
 
     # Model not cleaned up since error occurred in OrderSet class body.
-    del OrderSetMeta.__model__
+    del OrderSetMeta.__models__
 
 
 def test_order__directives__matmul() -> None:

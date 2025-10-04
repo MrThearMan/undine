@@ -133,6 +133,15 @@ def _(ref: type[UnionType], **kwargs: Any) -> GraphQLArgumentMap:
             order_by_key = f"{undine_settings.QUERY_TYPE_ORDER_INPUT_KEY}{model.__name__}"
             arguments[order_by_key] = args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY]
 
+    if ref.__filterset__:
+        input_type = ref.__filterset__.__input_type__()
+        arguments[undine_settings.QUERY_TYPE_FILTER_INPUT_KEY] = GraphQLArgument(input_type)
+
+    if ref.__orderset__:
+        enum_type = ref.__orderset__.__enum_type__()
+        input_type = GraphQLList(GraphQLNonNull(enum_type))
+        arguments[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY] = GraphQLArgument(input_type)
+
     return arguments
 
 

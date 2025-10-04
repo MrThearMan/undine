@@ -15,7 +15,7 @@ from undine.converters import (
     is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
-from undine.exceptions import MismatchingModelError, MissingModelGenericError
+from undine.exceptions import MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModel
@@ -91,30 +91,19 @@ class QueryTypeMeta(type):
             for field_name, interface_field in interface.__field_map__.items():
                 _attrs.setdefault(field_name, interface_field.as_undine_field())
 
-        filterset = kwargs.get("filterset")
-        if filterset is not None and filterset.__model__ is not model:
-            raise MismatchingModelError(
-                name=filterset.__name__,
-                given_model=model,
-                target=_name,
-                expected_model=filterset.__model__,
-            )
-
-        orderset = kwargs.get("orderset")
-        if orderset is not None and orderset.__model__ is not model:
-            raise MismatchingModelError(
-                name=orderset.__name__,
-                given_model=model,
-                target=_name,
-                expected_model=orderset.__model__,
-            )
-
         query_type = super().__new__(cls, _name, _bases, _attrs)
 
         # Members should use `__dunder__` names to avoid name collisions with possible `Field` names.
         query_type.__model__ = model
-        query_type.__filterset__ = filterset
-        query_type.__orderset__ = orderset
+
+        query_type.__filterset__ = kwargs.get("filterset")
+        if query_type.__filterset__ is not None:
+            query_type.__filterset__.__add_to_query_type__(query_type)  # type: ignore[arg-type]
+
+        query_type.__orderset__ = kwargs.get("orderset")
+        if query_type.__orderset__ is not None:
+            query_type.__orderset__.__add_to_query_type__(query_type)  # type: ignore[arg-type]
+
         query_type.__field_map__ = get_members(query_type, Field)
         query_type.__schema_name__ = kwargs.get("schema_name", _name)
         query_type.__interfaces__ = interfaces

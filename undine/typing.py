@@ -848,6 +848,8 @@ class UnionTypeParams(TypedDict, total=False):
     """Arguments for an Undine `UnionType`."""
 
     schema_name: str
+    filterset: type[FilterSet]
+    orderset: type[OrderSet]
     directives: list[Directive]
     extensions: dict[str, Any]
 

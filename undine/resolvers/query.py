@@ -8,7 +8,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Generic, Optional
 
 from asgiref.sync import sync_to_async
-from django.db.models import Value
+from django.db.models import Q, Value
 from django.db.models.manager import BaseManager
 from graphql import GraphQLID, GraphQLObjectType
 
@@ -31,17 +31,23 @@ from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
 from undine.utils.graphql.undine_extensions import get_undine_query_type
-from undine.utils.graphql.utils import get_queried_field_name, get_underlying_type, pre_evaluate_request_user
+from undine.utils.graphql.utils import (
+    get_arguments,
+    get_queried_field_name,
+    get_underlying_type,
+    pre_evaluate_request_user,
+)
 from undine.utils.reflection import get_root_and_info_params, is_subclass
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import FunctionType
 
-    from django.db.models import Model, Q, QuerySet
+    from django.db.models import Model, QuerySet
     from graphql.pyutils import AwaitableOrValue
 
     from undine import Entrypoint, Field, InterfaceType, UnionType
+    from undine.dataclasses import OrderResults
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.relay import Connection, PaginationHandler
     from undine.typing import GQLInfo, QuerySetMap
@@ -1030,9 +1036,42 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         Then gather all pks for the page for each model and filter the individual querysets further before fetching.
         Only fetch from models that actually fit in the page.
         """
+        arg_values = get_arguments(info)
+
+        if self.union_type.__filterset__:
+            filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
+            filter_results = self.union_type.__filterset__.__build__(filter_data, info)
+            if filter_results.none:
+                return []
+
+            for qt, qs in result.queryset_map.items():
+                if filter_results.aliases:
+                    qs = qs.alias(**filter_results.aliases)  # noqa: PLW2901
+                if filter_results.distinct:
+                    qs = qs.distinct()  # noqa: PLW2901
+                if filter_results.filters:
+                    qs = qs.filter(Q(*filter_results.filters))  # noqa: PLW2901
+
+                result.queryset_map[qt] = qs
+
+        order_results: OrderResults | None = None
+        if self.union_type.__orderset__:
+            order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
+            order_results = self.union_type.__orderset__.__build__(order_data, info)
+
+            for qt, qs in result.queryset_map.items():
+                if order_results.aliases:
+                    qs = qs.alias(**order_results.aliases)  # noqa: PLW2901
+
+                result.queryset_map[qt] = qs
+
         union_qs: QuerySet = functools.reduce(lambda x, y: x.union(y), result.queryset_map.values())
-        # TODO: Allow filtering & ordering by common fields
-        union_qs = union_qs.order_by("pk").values("__typename", "pk")
+        union_qs = union_qs.order_by("pk")  # Default ordering
+
+        if order_results is not None and order_results.order_by:
+            union_qs = union_qs.order_by(*order_results.order_by)
+
+        union_qs = union_qs.values("__typename", "pk")
         union_qs = result.pagination.paginate_queryset(union_qs, info)
 
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in result.queryset_map}
@@ -1047,6 +1086,13 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             query_type = query_type_by_name[typename]
             queryset = result.queryset_map[query_type]
             queryset = queryset.filter(pk__in=pks)
+
+            if order_results is not None:
+                if order_results.aliases:
+                    queryset = queryset.alias(**order_results.aliases)
+                if order_results.order_by:
+                    queryset = queryset.order_by(*order_results.order_by)
+
             instances = evaluate_with_prefetch_hack_sync(queryset)
             self.check_permissions(root, info, query_type, instances)
             all_instances.extend(instances)

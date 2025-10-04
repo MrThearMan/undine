@@ -21,15 +21,21 @@ from undine.utils.model_utils import determine_output_field, get_model_field
 @convert_to_order_ref.register
 def _(ref: str, **kwargs: Any) -> Any:
     caller: Order = kwargs["caller"]
-    get_model_field(model=caller.orderset.__model__, lookup=ref)
+    # TODO: Handle multiple models
+    get_model_field(model=caller.orderset.__models__[0], lookup=ref)
     return F(ref)
 
 
 @convert_to_order_ref.register
 def _(_: None, **kwargs: Any) -> Any:
     caller: Order = kwargs["caller"]
-    get_model_field(model=caller.orderset.__model__, lookup=caller.field_name)
-    return F(caller.field_name)
+    return convert_to_order_ref(caller.field_name, **kwargs)
+
+
+@convert_to_order_ref.register
+def _(ref: ModelField, **kwargs: Any) -> Any:
+    # TODO: Handle multiple models
+    return F(ref.name)
 
 
 @convert_to_order_ref.register
@@ -40,13 +46,9 @@ def _(ref: F | Q, **kwargs: Any) -> Any:
 @convert_to_order_ref.register
 def _(ref: CombinableExpression, **kwargs: Any) -> Any:
     caller: Order = kwargs["caller"]
-    determine_output_field(ref, model=caller.orderset.__model__)
+    # TODO: Handle multiple models
+    determine_output_field(ref, model=caller.orderset.__models__[0])
     return ref
-
-
-@convert_to_order_ref.register
-def _(ref: ModelField, **kwargs: Any) -> Any:
-    return F(ref.name)
 
 
 @convert_to_order_ref.register
@@ -81,4 +83,5 @@ def _(ref: GenericRel, **kwargs: Any) -> Any:
 
 @convert_to_order_ref.register  # Required for Django<5.1
 def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
+    # TODO: Handle multiple models
     return F(ref.name)

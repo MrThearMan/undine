@@ -76,7 +76,15 @@ from graphql import (
 
 from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_lookup_to_graphql_type, convert_to_description, convert_to_graphql_type
-from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
+from undine.dataclasses import (
+    LazyGenericForeignKey,
+    LazyLambda,
+    LazyRelation,
+    LookupRef,
+    MaybeManyOrNonNull,
+    TypeRef,
+    UnionFilterRef,
+)
 from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
@@ -757,6 +765,12 @@ def _(ref: MaybeManyOrNonNull, **kwargs: Any) -> GraphQLInputType | GraphQLOutpu
         value = GraphQLNonNull(value)
 
     return value
+
+
+@convert_to_graphql_type.register
+def _(ref: UnionFilterRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    kwargs["model"] = ref.models[0]
+    return convert_to_graphql_type(ref.ref, **kwargs)
 
 
 @convert_to_graphql_type.register
