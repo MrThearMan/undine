@@ -291,10 +291,10 @@ make an `Entrypoint` nullable explicitly by adding the `nullable` argument.
 
 ### Limit
 
-The `limit` argument is used by [UnionTypes](unions.md#uniontype) and
-[InterfaceTypes](interfaces.md#interfacetype) to limit the number of objects
-that are fetched when those types are used in `Entrypoints`. It has no effect
-on other `Entrypoint` references.
+The `limit` argument is used by list `Entrypoints` (i.e. [`many=True`](#many)) based on either
+[`QueryTypes`](queries.md#querytypes), [`UnionTypes`](unions.md#uniontype),
+or [`InterfaceTypes`](interfaces.md#interfacetype) to limit the number of objects that are fetched.
+It has no effect on other `Entrypoint` references, like [`Connections`](pagination.md#connection).
 
 ### Permissions
 

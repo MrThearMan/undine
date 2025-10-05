@@ -56,19 +56,26 @@ __all__ = [
 
 
 @overload
-def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo) -> list[TModel]: ...
+def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, *, limit: int | None = None) -> list[TModel]: ...
 
 
 @overload
 def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
 
 
-def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> list[TModel] | TModel | None:
+def optimize_sync(
+    queryset: QuerySet[TModel],
+    info: GQLInfo,
+    *,
+    limit: int | None = None,
+    **kwargs: Any,
+) -> list[TModel] | TModel | None:
     """
     Optimize a queryset and return the results synchronously.
 
     :param queryset: The queryset to optimize.
     :param info: The GraphQL resolve info for the request.
+    :param limit: The maximum number of items to return. By default, all items are returned.
     :param kwargs: Filtering that will result in a single item being returned.
     """
     optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
@@ -77,6 +84,9 @@ def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> l
 
     if kwargs:
         optimized_queryset = optimized_queryset.filter(**kwargs)
+
+    if limit is not None:
+        optimized_queryset = optimized_queryset[:limit]
 
     instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
 
@@ -87,19 +97,26 @@ def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> l
 
 
 @overload
-async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo) -> list[TModel]: ...
+async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, *, limit: int | None = None) -> list[TModel]: ...
 
 
 @overload
 async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
 
 
-async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> list[TModel] | TModel | None:
+async def optimize_async(
+    queryset: QuerySet[TModel],
+    info: GQLInfo,
+    *,
+    limit: int | None = None,
+    **kwargs: Any,
+) -> list[TModel] | TModel | None:
     """
     Optimize a queryset and return the results asynchronously.
 
     :param queryset: The queryset to optimize.
     :param info: The GraphQL resolve info for the request.
+    :param limit: The maximum number of items to return. By default, all items are returned.
     :param kwargs: Filtering that will result in a single item being returned.
     """
     optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
@@ -108,6 +125,9 @@ async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: An
 
     if kwargs:
         optimized_queryset = optimized_queryset.filter(**kwargs)
+
+    if limit is not None:
+        optimized_queryset = optimized_queryset[:limit]
 
     instances = await evaluate_with_prefetch_hack_async(optimized_queryset)
 

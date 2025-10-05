@@ -1,4 +1,5 @@
 from undine import Entrypoint, QueryType, RootType, UnionType
+from undine.relay import Connection
 
 from .models import Project, Task
 
@@ -13,4 +14,4 @@ class SearchObjects(UnionType[TaskType, ProjectType]): ...
 
 
 class Query(RootType):
-    search_objects = Entrypoint(SearchObjects, many=True, limit=10)
+    search_objects = Entrypoint(Connection(SearchObjects))

@@ -19,6 +19,12 @@ Then, the `OrderSet` can be added to a `QueryType` using the `orderset` argument
 -8<- "ordering/orderset_basic.py"
 ```
 
+You can also add the `OrderSet` using decorator syntax.
+
+```python
+-8<- "ordering/orderset_decorator.py"
+```
+
 ### Auto-generation
 
 An `OrderSet` can automatically introspect its Django model and convert the model's fields

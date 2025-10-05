@@ -33,7 +33,7 @@ def test_orderset__attributes() -> None:
     class MyOrderSet(OrderSet[Task]):
         """Description."""
 
-    assert MyOrderSet.__model__ == Task
+    assert MyOrderSet.__models__ == (Task,)
     assert sorted(MyOrderSet.__order_map__) == [
         "acceptancecriteria",
         "assignees",

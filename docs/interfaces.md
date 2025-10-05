@@ -22,6 +22,12 @@ the `interfaces` argument in their class definition.
 -8<- "interfaces/interface_implement.py"
 ```
 
+You can also use a decorator syntax to add an `InterfaceType` to a `QueryType`.
+
+```python
+-8<- "interfaces/interface_implement_decorator.py"
+```
+
 `InterfaceTypes` can also implement other `InterfaceTypes`.
 
 ```python
@@ -79,26 +85,15 @@ type Query {
 
 This allows filtering the different types of models in the `InterfaceType` separately.
 
-The `InterfaceType` also provides a `__process_results__` method that can be used to filter the
-results of the union after everything has been fetched.
+#### Pagination
+
+To paginate `InterfaceTypes`, you can use the [`Connection`](pagination.md#connection) `Entrypoint`.
 
 ```python
--8<- "interfaces/interface_entrypoint_process_results.py"
+-8<- "interfaces/interface_entrypoint_connection.py"
 ```
 
-By default, the number of items returned is limited _per model implementing the `InterfaceType`_.
-This is set by the [`ENTRYPOINT_LIMIT_PER_MODEL`](settings.md#entrypoint_limit_per_model) setting,
-but can also be changed per `Entrypoint` using the `limit` argument:
-
-```python
--8<- "interfaces/interface_entrypoint_limit.py"
-```
-
-/// details | What about pagination?
-
-Pagination of `InterfaceTypes` is not supported yet.
-
-///
+See the [Pagination](pagination.md) section for more details on pagination.
 
 ### Schema name
 

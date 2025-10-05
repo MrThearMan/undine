@@ -7,7 +7,7 @@ import pytest
 from asgiref.sync import sync_to_async
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
-from example_project.app.models import Person, Task
+from example_project.app.models import Person, Project, Task
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory
 from undine import (
     Calculation,
@@ -20,10 +20,12 @@ from undine import (
     GQLInfo,
     QueryType,
     RootType,
+    UnionType,
     create_schema,
 )
 from undine.exceptions import EmptyFilterResult
 from undine.optimizer.optimizer import optimize_async, optimize_sync
+from undine.relay import Connection
 from undine.utils.graphql.utils import get_arguments
 
 
@@ -1008,6 +1010,314 @@ def test_end_to_end__filtering__incorrect_variable_value__object(graphql, undine
             "extensions": {
                 "error_code": "SCALAR_CONVERSION_ERROR",
                 "status_code": 400,
+            },
+        },
+    ]
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__union_type(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        comments = Entrypoint(Commentable, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          comments(
+            filter: {
+              nameContains: "b"
+            }
+          ) {
+            __typename
+            ... on TaskType {
+              name
+            }
+            ... on ProjectType {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "comments": [
+            {
+                "__typename": "ProjectType",
+                "name": "bar",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "bar",
+            },
+            {
+                "__typename": "ProjectType",
+                "name": "baz",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "baz",
+            },
+        ]
+    }
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__union_type__with_query_type_filtering(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name__contains = Filter("name", lookup="icontains")
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectFilterSet(FilterSet[Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @ProjectFilterSet
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        comments = Entrypoint(Commentable, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          comments(
+            filter: {
+              nameContains: "b"
+            }
+            filterTask: {
+              nameContains: "r"
+            }
+            filterProject: {
+              nameContains: "z"
+            }
+          ) {
+            __typename
+            ... on TaskType {
+              name
+            }
+            ... on ProjectType {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "comments": [
+            {
+                "__typename": "TaskType",
+                "name": "bar",
+            },
+            {
+                "__typename": "ProjectType",
+                "name": "baz",
+            },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__union_type__connection(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        comments = Entrypoint(Connection(Commentable))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          comments(
+            filter: {
+              nameContains: "b"
+            }
+          ) {
+            edges {
+              node {
+                __typename
+                ... on TaskType {
+                  name
+                }
+                ... on ProjectType {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.edges == [
+        {
+            "node": {
+                "__typename": "ProjectType",
+                "name": "bar",
+            },
+        },
+        {
+            "node": {
+                "__typename": "TaskType",
+                "name": "bar",
+            },
+        },
+        {
+            "node": {
+                "__typename": "ProjectType",
+                "name": "baz",
+            },
+        },
+        {
+            "node": {
+                "__typename": "TaskType",
+                "name": "baz",
+            },
+        },
+    ]
+
+
+@pytest.mark.django_db
+def test_end_to_end__filtering__union_type__connection__with_query_type_filtering(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name__contains = Filter("name", lookup="icontains")
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectFilterSet(FilterSet[Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @ProjectFilterSet
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        comments = Entrypoint(Connection(Commentable))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          comments(
+            filter: {
+              nameContains: "b"
+            }
+            filterTask: {
+              nameContains: "r"
+            }
+            filterProject: {
+              nameContains: "z"
+            }
+          ) {
+            edges {
+              node {
+                __typename
+                ... on TaskType {
+                  name
+                }
+                ... on ProjectType {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.edges == [
+        {
+            "node": {
+                "__typename": "TaskType",
+                "name": "bar",
+            },
+        },
+        {
+            "node": {
+                "__typename": "ProjectType",
+                "name": "baz",
             },
         },
     ]

@@ -28,7 +28,7 @@ from undine.resolvers import (
     UnionTypeResolver,
     UpdateResolver,
 )
-from undine.resolvers.query import UnionTypeConnectionResolver, _InterfaceConnectionResolver
+from undine.resolvers.query import InterfaceConnectionResolver, UnionTypeConnectionResolver
 from undine.typing import MutationKind
 from undine.utils.reflection import get_origin_or_noop, is_subclass
 
@@ -104,7 +104,7 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
         return UnionTypeConnectionResolver(connection=ref, entrypoint=caller)
 
     if ref.interface_type is not None:
-        return _InterfaceConnectionResolver(connection=ref, entrypoint=caller)
+        return InterfaceConnectionResolver(connection=ref, entrypoint=caller)
 
     return ConnectionResolver(connection=ref, entrypoint=caller)
 

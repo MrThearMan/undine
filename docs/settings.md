@@ -206,10 +206,10 @@ The key used to store an `Entrypoint` in the `extensions` of the `GraphQLField`.
 /// details | `ENTRYPOINT_LIMIT_PER_MODEL`
     attrs: {id: entrypoint_limit_per_model}
 
-Type `int` | Default: `100`
+Type `int | None` | Default: `None`
 
-Default number of objects that are fetched per model when fetching results in an abstract type
-(`UnionType` or `InterfaceType`) `Entrypoint`.
+Default number of objects that are fetched per model when fetching results from a list Entrypoint
+(not Connections). If None, all items are fetched.
 
 ///
 

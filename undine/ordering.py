@@ -1,28 +1,41 @@
 from __future__ import annotations
 
+import functools
+import itertools
+import operator
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from django.db.models import OrderBy
 from graphql import DirectiveLocation, GraphQLEnumValue, Undefined
 
-from undine.converters import convert_to_description, convert_to_order_ref
+from undine.converters import convert_to_description, convert_to_graphql_type, convert_to_order_ref
 from undine.dataclasses import OrderResults
-from undine.exceptions import GraphQLInvalidOrderDataError, MismatchingModelError, MissingModelGenericError
+from undine.exceptions import (
+    GraphQLInvalidOrderDataError,
+    MismatchingModelError,
+    MissingModelGenericError,
+    NotCompatibleWithError,
+    QueryTypeRequiresSingleModelError,
+    UnionTypeModelsDifferentError,
+    UnionTypeRequiresMultipleModelsError,
+)
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import TModel
+from undine.typing import TModels
 from undine.utils.graphql.type_registry import get_or_create_graphql_enum
 from undine.utils.graphql.utils import check_directives
-from undine.utils.model_utils import get_model_fields_for_graphql
-from undine.utils.reflection import get_members, get_wrapped_func
+from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
+from undine.utils.reflection import get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import Iterable
 
     from django.db.models import Model
-    from graphql import GraphQLEnumType
+    from graphql import GraphQLEnumType, GraphQLInputType
 
+    from undine import QueryType, UnionType
     from undine.directives import Directive
     from undine.typing import (
         DjangoExpression,
@@ -31,7 +44,8 @@ if TYPE_CHECKING:
         OrderAliasesFunc,
         OrderParams,
         OrderSetParams,
-        TQueryType,
+        T,
+        TModel,
         VisibilityFunc,
     )
 
@@ -45,7 +59,7 @@ class OrderSetMeta(type):
     """A metaclass that modifies how an `OrderSet` is created."""
 
     # Set in '__new__'
-    __model__: type[Model]
+    __models__: tuple[type[Model], ...]
     __order_map__: dict[str, Order]
     __schema_name__: str
     __directives__: list[Directive]
@@ -63,8 +77,8 @@ class OrderSetMeta(type):
             return super().__new__(cls, _name, _bases, _attrs)
 
         try:
-            model = OrderSetMeta.__model__
-            del OrderSetMeta.__model__
+            models = OrderSetMeta.__models__
+            del OrderSetMeta.__models__
         except AttributeError as error:
             raise MissingModelGenericError(name=_name, cls="OrderSet") from error
 
@@ -72,12 +86,16 @@ class OrderSetMeta(type):
         exclude = set(kwargs.get("exclude", []))
         if auto:
             exclude |= set(_attrs)
-            _attrs |= get_orders_for_model(model, exclude=exclude)
+
+            if len(models) == 1:
+                _attrs |= get_orders_for_model(models[0], exclude=exclude)
+            else:
+                _attrs |= get_orders_for_models(models, exclude=exclude)
 
         orderset = super().__new__(cls, _name, _bases, _attrs)
 
         # Members should use `__dunder__` names to avoid name collisions with possible `Order` names.
-        orderset.__model__ = model
+        orderset.__models__ = models
         orderset.__order_map__ = get_members(orderset, Order)
         orderset.__schema_name__ = kwargs.get("schema_name", _name)
         orderset.__directives__ = kwargs.get("directives", [])
@@ -95,13 +113,13 @@ class OrderSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_enum_type(cls.__enum_type__())
 
-    def __getitem__(cls, model: type[TModel]) -> type[OrderSet[TModel]]:
+    def __getitem__(cls, models: type[type[TModel]] | tuple[type[TModel], ...]) -> type[OrderSet[*TModels]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'OrderSet'!
-        OrderSetMeta.__model__ = model
+        OrderSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
         return cls  # type: ignore[return-value]
 
-    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+    def __call__(cls, ref: T) -> T:
         """
         Allow adding this OrderSet to a QueryType using a decorator syntax
 
@@ -110,16 +128,16 @@ class OrderSetMeta(type):
         >>> @TaskOrderSet
         >>> class TaskType(QueryType[Task]): ...
         """
-        if cls.__model__ is not query_type.__model__:
-            raise MismatchingModelError(
-                name=cls.__name__,
-                given_model=cls.__model__,
-                target=query_type.__name__,
-                expected_model=query_type.__model__,
-            )
+        from undine import QueryType, UnionType  # noqa: PLC0415
 
-        query_type.__orderset__ = cls  # type: ignore[assignment]
-        return query_type
+        if is_subclass(ref, QueryType):
+            cls.__add_to_query_type__(ref)
+        elif is_subclass(ref, UnionType):
+            cls.__add_to_union_type__(ref)
+        else:
+            raise NotCompatibleWithError(obj=cls, other=ref)
+
+        return ref
 
     def __build__(cls, order_data: list[str], info: GQLInfo) -> OrderResults:
         """
@@ -191,8 +209,36 @@ class OrderSetMeta(type):
         cls.__directives__.append(directive)
         return cls
 
+    def __add_to_query_type__(cls, query_type: type[QueryType]) -> None:
+        models = cls.__models__
+        if len(models) != 1:
+            raise QueryTypeRequiresSingleModelError(kind="OrderSet")
 
-class OrderSet(Generic[TModel], metaclass=OrderSetMeta):
+        if models[0] is not query_type.__model__:
+            raise MismatchingModelError(
+                name=cls.__name__,
+                given_model=models[0],
+                target=query_type.__name__,
+                expected_model=query_type.__model__,
+            )
+
+        query_type.__orderset__ = cls  # type: ignore[assignment]
+
+    def __add_to_union_type__(cls, union_type: type[UnionType]) -> None:
+        models = cls.__models__
+        if len(models) == 1:
+            raise UnionTypeRequiresMultipleModelsError(kind="OrderSet")
+
+        on_union_type = set(union_type.__query_types_by_model__)
+        on_orderset = set(models)
+
+        if on_union_type != on_orderset:
+            raise UnionTypeModelsDifferentError(kind="OrderSet")
+
+        union_type.__orderset__ = cls  # type: ignore[assignment]
+
+
+class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
     """
     A class for adding ordering for a `QueryType`.
 
@@ -223,7 +269,7 @@ class OrderSet(Generic[TModel], metaclass=OrderSetMeta):
     # Members should use `__dunder__` names to avoid name collisions with possible `Order` names.
 
     # Set in metaclass
-    __model__: ClassVar[type[Model]]
+    __models__: ClassVar[tuple[type[Model], ...]]
     __order_map__: ClassVar[dict[str, Order]]
     __schema_name__: ClassVar[str]
     __directives__: ClassVar[list[Directive]]
@@ -352,7 +398,7 @@ class Order:
         return self
 
 
-def get_orders_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Order]:
+def get_orders_for_model(model: type[Model], *, exclude: Iterable[str] = ()) -> dict[str, Order]:
     """Creates `Orders` for all the given model's fields, except those in the 'exclude' list."""
     result: dict[str, Order] = {}
 
@@ -362,6 +408,55 @@ def get_orders_for_model(model: type[Model], *, exclude: Container[str] = ()) ->
         is_primary_key = bool(getattr(model_field, "primary_key", False))
         if is_primary_key:
             field_name = "pk"
+
+        if field_name in exclude:
+            continue
+
+        result[field_name] = Order(field_name)
+
+    return result
+
+
+def get_orders_for_models(models: tuple[type[Model], ...], exclude: Iterable[str] = ()) -> dict[str, Order]:
+    result: dict[str, Order] = {}
+
+    fields_by_model: dict[type[Model], set[str]] = {}
+    for model in models:
+        fields: set[str] = set()
+
+        for model_field in get_model_fields_for_graphql(model):
+            field_name = model_field.name
+
+            is_primary_key = bool(getattr(model_field, "primary_key", False))
+            if is_primary_key:
+                field_name = "pk"
+
+            if field_name in exclude:
+                continue
+
+            fields.add(field_name)
+
+        fields_by_model[model] = fields
+
+    common_fields = functools.reduce(operator.and_, fields_by_model.values())
+
+    graphql_types_by_model: dict[str, dict[type[Model], GraphQLInputType]] = defaultdict(dict)
+    for model in fields_by_model:
+        for field_name in common_fields:
+            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)
+
+    usable_fields: set[str] = set()
+    for field_name, model_map in graphql_types_by_model.items():
+        is_usable = all(field_1 == field_2 for field_1, field_2 in itertools.combinations(model_map.values(), 2))
+        if is_usable:
+            usable_fields.add(field_name)
+
+    for field_name in usable_fields:
+        model_field = get_model_field(model=models[0], lookup=field_name)
+
+        is_primary_key = bool(getattr(model_field, "primary_key", False))
+        if is_primary_key:
+            field_name = "pk"  # noqa: PLW2901
 
         if field_name in exclude:
             continue

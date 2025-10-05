@@ -260,10 +260,10 @@ class NoFunctionParametersError(UndineError):
     msg = "Function '{func:dotpath}' must have at least one argument."
 
 
-class NotCompatibleWithDirectivesError(UndineError):
-    """Error raised if a directive is not compatible with another directive."""
+class NotCompatibleWithError(UndineError):
+    """Error raised if a given object is not compatible with some other object."""
 
-    msg = "Cannot use directive '{directive:dotpath}' with {other!r}"
+    msg = "Cannot use '{obj:dotpath}' with '{other:dotpath}'"
 
 
 class FunctionDispatcherError(UndineError):
@@ -341,6 +341,12 @@ class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):
     msg = "Unknown argument: {annotation!r}"
 
 
+class QueryTypeRequiresSingleModelError(UndineError):
+    """Error raised when a FilterSet or OrderSet with multiple models is added to a QueryType."""
+
+    msg = "Cannot add a {kind} with multiple models to a QueryType"
+
+
 class RegistryDuplicateError(UndineError):
     """Error raised if trying to register a value for the same key twice."""
 
@@ -357,6 +363,41 @@ class UnexpectedDirectiveArgumentError(UndineError):
     """Error raised if a directive argument is unexpected."""
 
     msg = "Unexpected directive arguments for directive '{directive:dotpath}': {kwargs}."
+
+
+class UnionModelFieldMismatchError(UndineError):
+    """
+    Error raised when trying to create a Filter or an Order from a string reference,
+    and the corresponding FilterSet or OrderSet contains multiple models,
+    but the string references convert to different graphql types.
+    """
+
+    msg = (
+        "'{ref}' is of type '{type_1}' when converted from model '{model_1:dotpath}' "
+        "but of type '{type_2}' when converted from model '{model_2:dotpath}'. "
+        "Cannot create a {kind} due to mismatching types."
+    )
+
+
+class UnionModelFieldDirectUsageError(UndineError):
+    """
+    Error raised when trying to create a Filter or an Order from a model field directly,
+    but the corresponding FilterSet or OrderSet contains many models.
+    """
+
+    msg = "Cannot use model reference when {kind} defined for multiple models"
+
+
+class UnionTypeModelsDifferentError(UndineError):
+    """Error raised when a FilterSet or OrderSet is added to a UnionType with different models."""
+
+    msg = "Cannot add a {kind} to a UnionType with different models"
+
+
+class UnionTypeRequiresMultipleModelsError(UndineError):
+    """Error raised when a FilterSet or OrderSet with a single model is added to a UnionType."""
+
+    msg = "Cannot add a {kind} with a single model to a UnionType"
 
 
 # GraphQL Errors

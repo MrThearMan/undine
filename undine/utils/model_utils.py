@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import functools
 from collections import Counter, defaultdict
 from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist
-from django.db import router  # noqa: ICN003
+from django.db import connections, router  # noqa: ICN003
 from django.db.models import (
     NOT_PROVIDED,
     CharField,
@@ -20,7 +21,7 @@ from django.db.models import (
 )
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
-from django.db.utils import IntegrityError
+from django.db.utils import DEFAULT_DB_ALIAS, IntegrityError
 from django.utils.encoding import force_str
 
 from undine.dataclasses import BulkCreateKwargs
@@ -45,7 +46,8 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
     from django.core.exceptions import ValidationError
-    from django.db.models import Field, Manager, ManyToManyRel, Model
+    from django.db.backends.base.features import BaseDatabaseFeatures
+    from django.db.models import Field, Manager, ManyToManyRel, Model, QuerySet
 
     from undine.typing import (
         CombinableExpression,
@@ -60,11 +62,13 @@ if TYPE_CHECKING:
 __all__ = [
     "SubqueryCount",
     "convert_integrity_errors",
+    "create_union_queryset",
     "determine_output_field",
     "generic_foreign_key_for_generic_relation",
     "generic_relations_for_generic_foreign_key",
     "get_allowed_bulk_create_fields",
     "get_bulk_create_update_fields",
+    "get_db_features",
     "get_instance_or_raise",
     "get_instances_or_raise",
     "get_many_to_many_through_field",
@@ -424,10 +428,10 @@ class SubqueryCount(Subquery):
         return f"<{self.__class__.__name__}{self.template % {'subquery': subquery}}>"
 
 
-def determine_output_field(expression: CombinableExpression, *, model: type[Model]) -> None:
+def determine_output_field(expression: CombinableExpression, *, model: type[Model]) -> Field:
     """Determine the `output_field` for the given expression if it doesn't have one."""
     if hasattr(expression, "output_field"):
-        return
+        return expression.output_field
 
     possible_output_fields: dict[type[Field], Any] = {}
     for expr in expression.get_source_expressions():
@@ -447,7 +451,23 @@ def determine_output_field(expression: CombinableExpression, *, model: type[Mode
     if len(possible_output_fields) > 1:
         raise ExpressionMultipleOutputFieldError(expr=expression, output_fields=list(possible_output_fields))
 
-    expression.output_field = next(iter(possible_output_fields.values()))
+    return next(iter(possible_output_fields.values()))
+
+
+def create_union_queryset(querysets: Iterable[QuerySet]) -> QuerySet:
+    """Create a union queryset from the given querysets."""
+    # Some databases (e.g. SQLite) don't support slicing or ordering inside the union components.
+    # In those cases, we have to remove any ordering from the querysets before union-ing them.
+    # This will affect the order of the results, but we can't do anything about that.
+    remove_order_by = not all(get_db_features(qs.db).supports_slicing_ordering_in_compound for qs in querysets)
+    if remove_order_by:
+        return functools.reduce(lambda x, y: x.order_by().union(y.order_by()), querysets)
+
+    return functools.reduce(lambda x, y: x.union(y), querysets)
+
+
+def get_db_features(db: str = DEFAULT_DB_ALIAS) -> BaseDatabaseFeatures:
+    return connections[db].features
 
 
 def set_forward_ids(instance: Model) -> None:

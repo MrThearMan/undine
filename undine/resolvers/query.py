@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import inspect
+import uuid
 from asyncio import iscoroutinefunction
 from collections import defaultdict
+from itertools import count
 from typing import TYPE_CHECKING, Any, Generic, Optional
 
 from asgiref.sync import sync_to_async
-from django.db.models import Value
+from django.db.models import Q, Value
 from django.db.models.manager import BaseManager
 from graphql import GraphQLID, GraphQLObjectType
 
@@ -31,17 +32,24 @@ from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
 from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
 from undine.utils.graphql.undine_extensions import get_undine_query_type
-from undine.utils.graphql.utils import get_queried_field_name, get_underlying_type, pre_evaluate_request_user
+from undine.utils.graphql.utils import (
+    get_arguments,
+    get_queried_field_name,
+    get_underlying_type,
+    pre_evaluate_request_user,
+)
+from undine.utils.model_utils import create_union_queryset
 from undine.utils.reflection import get_root_and_info_params, is_subclass
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Hashable
     from types import FunctionType
 
-    from django.db.models import Model, Q, QuerySet
+    from django.db.models import Model, QuerySet
     from graphql.pyutils import AwaitableOrValue
 
     from undine import Entrypoint, Field, InterfaceType, UnionType
+    from undine.dataclasses import FilterResults, OrderResults
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.relay import Connection, PaginationHandler
     from undine.typing import GQLInfo, QuerySetMap
@@ -484,7 +492,7 @@ class QueryTypeManyResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset = self.get_queryset(info)
-        instances = optimize_sync(queryset, info)
+        instances = optimize_sync(queryset, info, limit=self.entrypoint.limit)
         self.check_permissions(root, info, instances)
         return instances
 
@@ -493,7 +501,7 @@ class QueryTypeManyResolver(Generic[TModel]):
         await pre_evaluate_request_user(info)
 
         queryset = self.get_queryset(info)
-        instances = await optimize_async(queryset, info)
+        instances = await optimize_async(queryset, info, limit=self.entrypoint.limit)
         await self.check_permissions_async(root, info, instances)
         return instances
 
@@ -899,33 +907,108 @@ class UnionTypeResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset_map = self.optimize(info, **kwargs)
-        all_instances = self.fetch_instances(root, info, queryset_map)
-        return self.union_type.__process_results__(all_instances, info)
+        return self.fetch_instances(root, info, queryset_map)
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset_map = self.optimize(info, **kwargs)
-        all_instances = await self.fetch_instances_async(root, info, queryset_map)
-        return self.union_type.__process_results__(all_instances, info)
+        return await self.fetch_instances_async(root, info, queryset_map)
 
     def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
-        all_instances: list[TModel] = []
+        """
+        Fetch all instances from the querysets.
 
-        for query_type, queryset in queryset_map.items():
+        Use a union query to filter and order the results together before fetching them.
+        Then fetch the instances per-model and sort them in the same order as in the union query.
+        """
+        arg_values = get_arguments(info)
+
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
+
+        if self.union_type.__filterset__:
+            filter_results = self.filter_union(arg_values, info, queryset_map)
+            if filter_results.none:
+                return []
+
+        if self.union_type.__orderset__:
+            order_results = self.order_union(arg_values, info, queryset_map)
+            union_qs = union_qs.order_by(*order_results.order_by)
+
+        union_qs = union_qs.values("__typename", "pk")
+
+        if self.entrypoint.limit is not None:
+            union_qs = union_qs[: self.entrypoint.limit]
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[str, int]] = defaultdict(dict)
+        for index, item in enumerate(union_qs):
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = index
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = evaluate_with_prefetch_hack_sync(queryset)
             self.check_permissions(root, info, query_type, instances)
-            all_instances.extend(instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
-        all_instances: list[TModel] = []
+        arg_values = get_arguments(info)
 
-        for query_type, queryset in queryset_map.items():
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
+
+        if self.union_type.__filterset__:
+            filter_results = self.filter_union(arg_values, info, queryset_map)
+            if filter_results.none:
+                return []
+
+        if self.union_type.__orderset__:
+            order_results = self.order_union(arg_values, info, queryset_map)
+            union_qs = union_qs.order_by(*order_results.order_by)
+
+        union_qs = union_qs.values("__typename", "pk")
+
+        if self.entrypoint.limit is not None:
+            union_qs = union_qs[: self.entrypoint.limit]
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[str, Any]] = defaultdict(dict)
+        counter = count()
+        async for item in union_qs:
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = next(counter)
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = await evaluate_with_prefetch_hack_async(queryset)
             await self.check_permissions_async(root, info, query_type, instances)
-            all_instances.extend(instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     def check_permissions(
         self,
@@ -960,6 +1043,48 @@ class UnionTypeResolver(Generic[TModel]):
             else:
                 query_type.__permissions__(instance, info)
 
+    def filter_union(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> FilterResults:
+        filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
+        filter_results = self.union_type.__filterset__.__build__(filter_data, info)
+        if filter_results.none:
+            return filter_results
+
+        for query_type, queryset in queryset_map.items():
+            if filter_results.aliases:
+                queryset = queryset.alias(**filter_results.aliases)  # noqa: PLW2901
+            if filter_results.distinct:
+                queryset = queryset.distinct()  # noqa: PLW2901
+            if filter_results.filters:
+                queryset = queryset.filter(Q(*filter_results.filters))  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return filter_results
+
+    def order_union(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> OrderResults:
+        order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
+        order_results = self.union_type.__orderset__.__build__(order_data, info)
+
+        for query_type, queryset in queryset_map.items():
+            if order_results.aliases:
+                queryset = queryset.alias(**order_results.aliases)  # noqa: PLW2901
+            if order_results.order_by:
+                queryset = queryset.order_by(*order_results.order_by, *queryset.query.order_by)  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return order_results
+
     def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
         queryset_map: QuerySetMap = {}
 
@@ -982,12 +1107,16 @@ class UnionTypeResolver(Generic[TModel]):
 
             optimizer.handle_undine_query_type(query_type, args)
 
-            queryset = query_type.__get_queryset__(info)
-            optimized_queryset = optimizations.apply(queryset, info)
+            optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
 
-            queryset_map[query_type] = optimized_queryset[: self.entrypoint.limit]
+            queryset = query_type.__get_queryset__(info)
+            queryset_map[query_type] = optimizations.apply(queryset, info)
 
         return queryset_map
+
+    def coalesce_pk(self, item: Any) -> Any:
+        # Converting UUIDs to hex avoids an issue with union querysets with mixed int and UUID pks.
+        return item.hex if isinstance(item, uuid.UUID) else item
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -1026,57 +1155,101 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         """
         Fetch paginated instances from the querysets.
 
-        Select primary key and typename from all querysets in the union and paginate that.
-        Then gather all pks for the page for each model and filter the individual querysets further before fetching.
-        Only fetch from models that actually fit in the page.
+        Use a union query to filter, order, and paginate the results together before fetching them.
+        Then fetch the instances per-model and sort them in the same order as in the union query.
         """
-        union_qs: QuerySet = functools.reduce(lambda x, y: x.union(y), result.queryset_map.values())
-        # TODO: Allow filtering & ordering by common fields
-        union_qs = union_qs.order_by("pk").values("__typename", "pk")
-        union_qs = result.pagination.paginate_queryset(union_qs, info)
+        arg_values = get_arguments(info)
+        queryset_map = result.queryset_map
+        pagination = result.pagination
 
-        query_type_by_name = {query_type.__schema_name__: query_type for query_type in result.queryset_map}
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
 
-        pks_by_model: dict[str, set[Any]] = defaultdict(set)
-        for item in union_qs:
-            pks_by_model[item["__typename"]].add(item["pk"])
+        if self.union_type.__filterset__:
+            filter_results = self.filter_union(arg_values, info, queryset_map)
+            if filter_results.none:
+                return []
 
-        all_instances: list[TModel] = []
+        if self.union_type.__orderset__:
+            order_results = self.order_union(arg_values, info, queryset_map)
+            union_qs = union_qs.order_by(*order_results.order_by)
 
-        for typename, pks in pks_by_model.items():
+        union_qs = union_qs.values("__typename", "pk")
+        union_qs = pagination.paginate_queryset(union_qs, info)
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, int]] = defaultdict(dict)
+        for index, item in enumerate(union_qs):
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = index
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
             query_type = query_type_by_name[typename]
-            queryset = result.queryset_map[query_type]
-            queryset = queryset.filter(pk__in=pks)
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = evaluate_with_prefetch_hack_sync(queryset)
             self.check_permissions(root, info, query_type, instances)
-            all_instances.extend(instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
         """Async version of `fetch_instances`."""
-        union_qs: QuerySet = functools.reduce(lambda x, y: x.union(y), result.queryset_map.values())
-        # TODO: Allow filtering & ordering by common fields
-        union_qs = union_qs.order_by("pk").values("__typename", "pk")
-        union_qs = result.pagination.paginate_queryset(union_qs, info)
+        arg_values = get_arguments(info)
 
-        query_type_by_name = {query_type.__schema_name__: query_type for query_type in result.queryset_map}
+        queryset_map = result.queryset_map
+        pagination = result.pagination
 
-        pks_by_model: dict[str, set[Any]] = defaultdict(set)
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")
+
+        if self.union_type.__filterset__:
+            filter_results = self.filter_union(arg_values, info, queryset_map)
+            if filter_results.none:
+                return []
+
+        if self.union_type.__orderset__:
+            order_results = self.order_union(arg_values, info, queryset_map)
+            union_qs = union_qs.order_by(*order_results.order_by)
+
+        union_qs = union_qs.values("__typename", "pk")
+        # May call 'queryset.count()'.
+        union_qs = await sync_to_async(pagination.paginate_queryset)(union_qs, info)
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, int]] = defaultdict(dict)
+        counter = count()
         async for item in union_qs:
-            pks_by_model[item["__typename"]].add(item["pk"])
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = next(counter)
 
-        all_instances: list[TModel] = []
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
-        for typename, pks in pks_by_model.items():
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
             query_type = query_type_by_name[typename]
-            queryset = result.queryset_map[query_type]
-            queryset = queryset.filter(pk__in=pks)
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = await evaluate_with_prefetch_hack_async(queryset)
             await self.check_permissions_async(root, info, query_type, instances)
-            all_instances.extend(instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     def check_permissions(
         self,
@@ -1111,6 +1284,48 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             else:
                 query_type.__permissions__(instance, info)
 
+    def filter_union(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> FilterResults:
+        filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
+        filter_results = self.union_type.__filterset__.__build__(filter_data, info)
+        if filter_results.none:
+            return filter_results
+
+        for query_type, queryset in queryset_map.items():
+            if filter_results.aliases:
+                queryset = queryset.alias(**filter_results.aliases)  # noqa: PLW2901
+            if filter_results.distinct:
+                queryset = queryset.distinct()  # noqa: PLW2901
+            if filter_results.filters:
+                queryset = queryset.filter(Q(*filter_results.filters))  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return filter_results
+
+    def order_union(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> OrderResults:
+        order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
+        order_results = self.union_type.__orderset__.__build__(order_data, info)
+
+        for query_type, queryset in queryset_map.items():
+            if order_results.aliases:
+                queryset = queryset.alias(**order_results.aliases)  # noqa: PLW2901
+            if order_results.order_by:
+                queryset = queryset.order_by(*order_results.order_by, *queryset.query.order_by)  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return order_results
+
     def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination[TModel]:
         queryset_map: QuerySetMap = {}
         pagination: PaginationHandler | None = None
@@ -1141,9 +1356,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             optimizations.pagination = None
 
             queryset = query_type.__get_queryset__(info)
-            optimized_queryset = optimizations.apply(queryset, info)
-
-            queryset_map[query_type] = optimized_queryset
+            queryset_map[query_type] = optimizations.apply(queryset, info)
 
         return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)
 
@@ -1177,6 +1390,10 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         page_info = PageInfoDict(hasNextPage=False, hasPreviousPage=False, startCursor=None, endCursor=None)
         return ConnectionDict(totalCount=0, pageInfo=page_info, edges=[])
 
+    def coalesce_pk(self, item: Any) -> Any:
+        # Converting UUIDs to hex avoids an issue with union querysets with mixed int and UUID pks.
+        return item.hex if isinstance(item, uuid.UUID) else item
+
 
 # InterfaceType
 
@@ -1195,33 +1412,84 @@ class InterfaceResolver(Generic[TModel]):
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset_map = self.optimize(info, **kwargs)
-        all_instances = self.fetch_instances(info, root, queryset_map)
-        return self.interface.__process_results__(all_instances, info)
+        return self.fetch_instances(info, root, queryset_map)
 
     async def run_sync_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         queryset_map = self.optimize(info, **kwargs)
-        all_instances = await self.fetch_instances_async(info, root, queryset_map)
-        return self.interface.__process_results__(all_instances, info)
+        return await self.fetch_instances_async(info, root, queryset_map)
 
     def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
-        all_instances: list[TModel] = []
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
 
-        for query_type, queryset in queryset_map.items():
+        # TODO: Filtering and ordering
+
+        union_qs = union_qs.values("__typename", "pk")
+
+        if self.entrypoint.limit is not None:
+            union_qs = union_qs[: self.entrypoint.limit]
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, int]] = defaultdict(dict)
+        for index, item in enumerate(union_qs):
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = index
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = evaluate_with_prefetch_hack_sync(queryset)
-            self.check_permissions(info, root, query_type, instances)
-            all_instances.extend(instances)
+            self.check_permissions(root, info, query_type, instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
-        all_instances: list[TModel] = []
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
 
-        for query_type, queryset in queryset_map.items():
+        # TODO: Filtering and ordering
+
+        union_qs = union_qs.values("__typename", "pk")
+
+        if self.entrypoint.limit is not None:
+            union_qs = union_qs[: self.entrypoint.limit]
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, Any]] = defaultdict(dict)
+        counter = count()
+        async for item in union_qs:
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = next(counter)
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
             instances = await evaluate_with_prefetch_hack_async(queryset)
-            await self.check_permissions_async(info, root, query_type, instances)
-            all_instances.extend(instances)
+            await self.check_permissions_async(root, info, query_type, instances)
 
-        return all_instances
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
 
     def check_permissions(
         self,
@@ -1279,24 +1547,234 @@ class InterfaceResolver(Generic[TModel]):
 
             optimizer.handle_undine_query_type(query_type, args)
 
-            queryset = query_type.__get_queryset__(info)
-            optimized_queryset = optimizations.apply(queryset, info)
+            optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
 
-            queryset_map[query_type] = optimized_queryset[: self.entrypoint.limit]
+            queryset = query_type.__get_queryset__(info)
+            queryset_map[query_type] = optimizations.apply(queryset, info)
 
         return queryset_map
 
+    def coalesce_pk(self, item: Any) -> Any:
+        # Converting UUIDs to hex avoids an issue with union querysets with mixed int and UUID pks.
+        return item.hex if isinstance(item, uuid.UUID) else item
+
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class _InterfaceConnectionResolver:  # TODO: Implement
+class InterfaceConnectionResolver(Generic[TModel]):
     """Resolves a connection of interface type items."""
 
     connection: Connection
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
-        msg = "Interface connections are not implemented yet."
-        raise NotImplementedError(msg)
+    @property
+    def interface_type(self) -> type[InterfaceType]:
+        return self.connection.interface_type  # type: ignore[return-value]
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+        if undine_settings.ASYNC:
+            return self.run_async(root, info, **kwargs)
+        return self.run_sync(root, info, **kwargs)
+
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        result = self.optimize(info, **kwargs)
+        if not result.queryset_map:
+            return self.empty_connection()
+
+        all_instances = self.fetch_instances(root, info, result)
+        return self.to_connection(all_instances, pagination=result.pagination)
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+        result = self.optimize(info, **kwargs)
+        if not result.queryset_map:
+            return self.empty_connection()
+
+        all_instances = await self.fetch_instances_async(root, info, result)
+        return self.to_connection(all_instances, pagination=result.pagination)
+
+    def fetch_instances(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        """
+        Fetch paginated instances from the querysets.
+
+        Use a union query to filter, order, and paginate the results together before fetching them.
+        Then fetch the instances per-model and sort them in the same order as in the union query.
+        """
+        queryset_map = result.queryset_map
+        pagination = result.pagination
+
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")  # Default ordering
+
+        # TODO: Filtering and ordering
+
+        union_qs = union_qs.values("__typename", "pk")
+        union_qs = pagination.paginate_queryset(union_qs, info)
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, int]] = defaultdict(dict)
+        for index, item in enumerate(union_qs):
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = index
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
+            instances = evaluate_with_prefetch_hack_sync(queryset)
+            self.check_permissions(root, info, query_type, instances)
+
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
+
+    async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        """Async version of `fetch_instances`."""
+        queryset_map = result.queryset_map
+        pagination = result.pagination
+
+        union_qs = create_union_queryset(queryset_map.values())
+        union_qs = union_qs.order_by("pk")
+
+        # TODO: Filtering and ordering
+
+        union_qs = union_qs.values("__typename", "pk")
+        # May call 'queryset.count()'.
+        union_qs = await sync_to_async(pagination.paginate_queryset)(union_qs, info)
+
+        # Store the order in which the union query returned the items
+        # from each model, so that we can sort when the actual instances are fetched.
+        pks_by_typename: dict[str, dict[Hashable, int]] = defaultdict(dict)
+        counter = count()
+        async for item in union_qs:
+            pk = self.coalesce_pk(item["pk"])
+            pks_by_typename[item["__typename"]][pk] = next(counter)
+
+        all_instances: dict[int, TModel] = {}
+        query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
+
+        # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
+        for typename, pk_to_index in pks_by_typename.items():
+            query_type = query_type_by_name[typename]
+            queryset = queryset_map[query_type]
+            queryset = queryset.filter(pk__in=list(pk_to_index))
+            instances = await evaluate_with_prefetch_hack_async(queryset)
+            await self.check_permissions_async(root, info, query_type, instances)
+
+            # Set the instances in the same order as the union query returned them.
+            for instance in instances:
+                pk = self.coalesce_pk(instance.pk)
+                all_instances[pk_to_index[pk]] = instance
+
+        return [instance for _, instance in sorted(all_instances.items())]
+
+    def check_permissions(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                self.entrypoint.permissions_func(root, info, instance)
+            else:
+                query_type.__permissions__(instance, info)
+
+    async def check_permissions_async(
+        self,
+        root: Any,
+        info: GQLInfo,
+        query_type: type[QueryType[TModel]],
+        instances: list[TModel],
+    ) -> None:
+        for instance in instances:
+            if self.entrypoint.permissions_func is not None:
+                if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
+                    await self.entrypoint.permissions_func(root, info, instance)
+                else:
+                    self.entrypoint.permissions_func(root, info, instance)
+
+            elif inspect.iscoroutinefunction(query_type.__permissions__):
+                await query_type.__permissions__(instance, info)
+
+            else:
+                query_type.__permissions__(instance, info)
+
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination:
+        queryset_map: QuerySetMap = {}
+        pagination: PaginationHandler | None = None
+
+        for query_type in self.interface_type.__concrete_implementations__():
+            model = query_type.__model__
+            optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
+            optimizations = optimizer.compile()
+
+            # If nothing is selected from this union type member, don't fetch anything from it
+            if not optimizations:
+                continue
+
+            args: dict[str, Any] = {}
+            filter_key = f"{undine_settings.QUERY_TYPE_FILTER_INPUT_KEY}{model.__name__}"
+            order_by_key = f"{undine_settings.QUERY_TYPE_ORDER_INPUT_KEY}{model.__name__}"
+
+            if filter_key in kwargs:
+                args[undine_settings.QUERY_TYPE_FILTER_INPUT_KEY] = kwargs[filter_key]
+            if order_by_key in kwargs:
+                args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY] = kwargs[order_by_key]
+
+            optimizer.handle_undine_query_type(query_type, args)
+
+            optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
+
+            # Save pagination (should be the same for all query types)
+            pagination = optimizations.pagination
+            optimizations.pagination = None
+
+            queryset = query_type.__get_queryset__(info)
+            queryset_map[query_type] = optimizations.apply(queryset, info)
+
+        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)
+
+    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
+        typename = self.interface_type.__schema_name__
+        edges = [
+            NodeDict(
+                cursor=offset_to_cursor(typename, pagination.start + index),
+                node=instance,
+            )
+            for index, instance in enumerate(instances)
+        ]
+        return ConnectionDict(
+            totalCount=pagination.total_count or 0,
+            pageInfo=PageInfoDict(
+                hasNextPage=(
+                    False
+                    if pagination.stop is None
+                    else True
+                    if pagination.total_count is None
+                    else pagination.stop < pagination.total_count
+                ),
+                hasPreviousPage=pagination.start > 0,
+                startCursor=None if not edges else edges[0]["cursor"],
+                endCursor=None if not edges else edges[-1]["cursor"],
+            ),
+            edges=edges,
+        )
+
+    def empty_connection(self) -> ConnectionDict[TModel]:
+        page_info = PageInfoDict(hasNextPage=False, hasPreviousPage=False, startCursor=None, endCursor=None)
+        return ConnectionDict(totalCount=0, pageInfo=page_info, edges=[])
+
+    def coalesce_pk(self, item: Any) -> Any:
+        # Converting UUIDs to hex avoids an issue with union querysets with mixed int and UUID pks.
+        return item.hex if isinstance(item, uuid.UUID) else item
 
 
 # Miscellaneous

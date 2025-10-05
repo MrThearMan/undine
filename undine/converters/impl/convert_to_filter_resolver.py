@@ -10,6 +10,7 @@ from django.db.models.constants import LOOKUP_SEP
 
 from undine import Filter
 from undine.converters import convert_to_filter_resolver
+from undine.dataclasses import UnionFilterRef
 from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver, FilterQExpressionResolver
 from undine.typing import CombinableExpression, GraphQLFilterResolver, ModelField
 
@@ -21,6 +22,13 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFilterResolver:
 
 @convert_to_filter_resolver.register
 def _(_: ModelField, **kwargs: Any) -> GraphQLFilterResolver:
+    caller: Filter = kwargs["caller"]
+    lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
+    return FilterModelFieldResolver(lookup=lookup)
+
+
+@convert_to_filter_resolver.register
+def _(_: UnionFilterRef, **kwargs: Any) -> GraphQLFilterResolver:
     caller: Filter = kwargs["caller"]
     lookup = f"{caller.field_name}{LOOKUP_SEP}{caller.lookup}"
     return FilterModelFieldResolver(lookup=lookup)

@@ -87,7 +87,7 @@ def test_filterset__attributes() -> None:
     class MyFilterSet(FilterSet[Task]):
         """Description."""
 
-    assert MyFilterSet.__model__ == Task
+    assert MyFilterSet.__models__ == (Task,)
     assert MyFilterSet.__schema_name__ == "MyFilterSet"
     assert MyFilterSet.__directives__ == []
     assert MyFilterSet.__extensions__ == {"undine_filterset": MyFilterSet}

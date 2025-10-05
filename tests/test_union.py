@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, GraphQLUnionType
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString, GraphQLUnionType
 
 from example_project.app.models import Project, Task
 from tests.helpers import mock_gql_info
-from undine import Field, QueryType, UnionType
+from undine import Entrypoint, Field, FilterSet, OrderSet, QueryType, RootType, UnionType
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError
 
@@ -134,3 +134,80 @@ def test_union__resolve_type() -> None:
 
     assert resolver(Task(), info, abs_type) == "TaskType"
     assert resolver(Project(), info, abs_type) == "ProjectType"
+
+
+def test_union__filterset() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=True): ...
+
+    class Commentable(UnionType[TaskType, ProjectType], filterset=CommentableFilterSet): ...
+
+    assert Commentable.__filterset__ == CommentableFilterSet
+
+    class Query(RootType):
+        comments = Entrypoint(Commentable, many=True)
+
+    args = Query.comments.get_field_arguments()
+    assert list(args) == ["filter"]
+
+    input_type = CommentableFilterSet.__input_type__()
+    assert args["filter"] == GraphQLArgument(input_type)
+
+
+def test_union__filterset__decorator() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableFilterSet(FilterSet[Task, Project], auto=True): ...
+
+    @CommentableFilterSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert Commentable.__filterset__ == CommentableFilterSet
+
+
+def test_union__orderset() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableOrderSet(OrderSet[Task, Project], auto=True): ...
+
+    class Commentable(UnionType[TaskType, ProjectType], orderset=CommentableOrderSet): ...
+
+    assert Commentable.__orderset__ == CommentableOrderSet
+
+    class Query(RootType):
+        comments = Entrypoint(Commentable, many=True)
+
+    args = Query.comments.get_field_arguments()
+    assert list(args) == ["orderBy"]
+
+    enum_type = CommentableOrderSet.__enum_type__()
+    input_type = GraphQLList(GraphQLNonNull(enum_type))
+    assert args["orderBy"] == GraphQLArgument(input_type)
+
+
+def test_union__orderset__decorator() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentableOrderSet(OrderSet[Task, Project], auto=True): ...
+
+    @CommentableOrderSet
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert Commentable.__orderset__ == CommentableOrderSet

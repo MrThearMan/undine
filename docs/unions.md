@@ -39,12 +39,12 @@ query {
 
 ### Filtering
 
-By default, the `UnionType` will return all instances of the `QueryTypes` it contains.
+By default, the an `Entrypoint` for a `UnionType` will return all instances of all `QueryTypes` it contains.
 However, if those `QueryTypes` implement a [`FilterSet`](filtering.md#filterset) or an
 [`OrderSet`](ordering.md#orderset), those will also be available on the `UnionType` `Entrypoint`.
 
 ```python
--8<- "unions/union_type_entrypoint_filtersets_and_ordersets.py"
+-8<- "unions/union_type_entrypoint_query_type_filtersets_and_ordersets.py"
 ```
 
 This creates the following `Entrypoint`:
@@ -60,28 +60,40 @@ type Query {
 }
 ```
 
-This allows filtering the different types of models in the `UnionType` separately.
+This allows filtering and ordering the different types of models in the `UnionType` separately.
 
-The `UnionType` also provides a `__process_results__` method that can be used to filter the
-results of the union after everything has been fetched.
-
-```python
--8<- "unions/union_type_entrypoint_process_results.py"
-```
-
-By default, the number of items returned is limited _per model in the `UnionType`_.
-This is set by the [`ENTRYPOINT_LIMIT_PER_MODEL`](settings.md#entrypoint_limit_per_model) setting,
-but can also be changed per `Entrypoint` using the `limit` argument:
+To filter and order across different models in the `UnionType`, you can implement
+a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
+for the same models as the `UnionType` and add it to the `UnionType`.
 
 ```python
--8<- "unions/union_type_entrypoint_limit.py"
+-8<- "unions/union_type_entrypoint_union_type_filtersets_and_ordersets.py"
 ```
 
-/// details | What about pagination?
+This creates the following `Entrypoint`:
 
-Pagination of `UnionTypes` is not supported yet.
+```graphql
+type Query {
+  searchObjects(
+    filter: SearchObjectsFilterSet
+    orderBy: [SearchObjectsOrderSet!]
+  ): [Commentable!]!
+}
+```
 
-///
+Note that a `FilterSet` or `OrderSet` created for multiple models like this
+should only contain `Filters` and `Orders` which will work on all models in the `UnionType`,
+i.e. they are of the same type.
+
+#### Pagination
+
+To paginate `UnionTypes`, you can use the [`Connection`](pagination.md#connection) `Entrypoint`.
+
+```python
+-8<- "unions/union_type_entrypoint_connection.py"
+```
+
+See the [Pagination](pagination.md) section for more details on pagination.
 
 ### Schema name
 

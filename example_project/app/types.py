@@ -177,7 +177,15 @@ class TaskType(QueryType[Task]):
     #     return request.user.is_superuser
 
 
-class Commentable(UnionType[TaskType, ProjectType]):
+class CommentableFilterSet(FilterSet[Task, Project, Report], auto=True): ...
+
+
+class CommentableOrderSet(OrderSet[Task, Project, Report], auto=True): ...
+
+
+@CommentableFilterSet
+@CommentableOrderSet
+class Commentable(UnionType[TaskType, ProjectType, ReportType]):
     """All entities that can be commented on"""
 
     # @classmethod

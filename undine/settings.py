@@ -85,8 +85,11 @@ class UndineDefaultSettings(NamedTuple):
     CONNECTION_PAGE_SIZE: int | None = 100
     """The maximum number of items to return in a page of a Connection."""
 
-    ENTRYPOINT_LIMIT_PER_MODEL: int = 100
-    """Default number of objects that are fetched per model when fetching results in an abstract type Entrypoint."""
+    LIST_ENTRYPOINT_LIMIT: int | None = None
+    """
+    Default number of objects that are fetched when fetching results from a list Entrypoint (not Connections).
+    If None, all items are fetched.
+    """
 
     MAX_FILTERS_PER_TYPE: int = 20
     """The maximum number of filters allowed for a single `FilterSet`."""
@@ -331,10 +334,16 @@ IMPORT_STRINGS: set[str | bytes] = {
     "WEBSOCKET_PONG_HOOK",
 }
 
+
+REMOVED_SETTINGS: dict[str, Any] = {
+    "ENTRYPOINT_LIMIT_PER_MODEL": "LIST_ENTRYPOINT_LIMIT",
+}
+
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]
     setting_name=SETTING_NAME,
     defaults=DEFAULTS,
     import_strings=IMPORT_STRINGS,
+    removed_settings=REMOVED_SETTINGS,
 )
 
 reload_my_settings = reload_settings(SETTING_NAME, undine_settings)  # type: ignore[arg-type]

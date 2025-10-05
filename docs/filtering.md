@@ -20,6 +20,12 @@ Then, the `FilterSet` can be added to a `QueryType` using the `filterset` argume
 -8<- "filtering/filterset_basic.py"
 ```
 
+You can also add the `FilterSet` using decorator syntax.
+
+```python
+-8<- "filtering/filterset_decorator.py"
+```
+
 ### Auto-generation
 
 A `FilterSet` can automatically introspect its Django model and convert the model's fields

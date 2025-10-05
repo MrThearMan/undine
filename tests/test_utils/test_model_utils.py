@@ -259,8 +259,8 @@ def test_get_bulk_create_kwargs__non_concrete_field() -> None:
 
 def test_determine_output_field() -> None:
     expression = Upper("name")
-    determine_output_field(expression, model=Task)
-    assert expression.output_field.__class__.__name__ == "CharField"
+    output_field = determine_output_field(expression, model=Task)
+    assert output_field.__class__.__name__ == "CharField"
 
 
 def test_is_to_one() -> None:

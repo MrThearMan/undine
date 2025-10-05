@@ -103,12 +103,17 @@ from undine.exceptions import (
     MutateNeedsImplementationError,
     MutationTypeKindCannotBeDeterminedError,
     NoFunctionParametersError,
-    NotCompatibleWithDirectivesError,
+    NotCompatibleWithError,
+    QueryTypeRequiresSingleModelError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
     UndineError,
     UndineErrorGroup,
     UnexpectedDirectiveArgumentError,
+    UnionModelFieldDirectUsageError,
+    UnionModelFieldMismatchError,
+    UnionTypeModelsDifferentError,
+    UnionTypeRequiresMultipleModelsError,
     WebSocketConnectionInitAlreadyInProgressError,
     WebSocketConnectionInitForbiddenError,
     WebSocketConnectionInitTimeoutError,
@@ -332,10 +337,25 @@ class UndineErrorParams(NamedTuple):
             args={"func": my_func},
             message="Function 'tests.test_exceptions.my_func' must have at least one argument.",
         ),
-        "NotCompatibleWithDirectivesError": UndineErrorParams(
-            cls=NotCompatibleWithDirectivesError,
-            args={"directive": MyClass, "other": 1},
-            message="Cannot use directive 'tests.test_exceptions.MyClass' with 1",
+        "NotCompatibleWithError": UndineErrorParams(
+            cls=NotCompatibleWithError,
+            args={"obj": MyClass, "other": my_func},
+            message="Cannot use 'tests.test_exceptions.MyClass' with 'tests.test_exceptions.my_func'",
+        ),
+        "UnionTypeModelsDifferentError": UndineErrorParams(
+            cls=UnionTypeModelsDifferentError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet to a UnionType with different models",
+        ),
+        "QueryTypeRequiresSingleModelError": UndineErrorParams(
+            cls=QueryTypeRequiresSingleModelError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet with multiple models to a QueryType",
+        ),
+        "UnionTypeRequiresMultipleModelsError": UndineErrorParams(
+            cls=UnionTypeRequiresMultipleModelsError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet with a single model to a UnionType",
         ),
         "FunctionDispatcherImplementationNotFoundError": UndineErrorParams(
             cls=FunctionDispatcherImplementationNotFoundError,
@@ -393,6 +413,27 @@ class UndineErrorParams(NamedTuple):
             cls=UnexpectedDirectiveArgumentError,
             args={"directive": MyClass, "kwargs": {"foo": "bar"}},
             message="Unexpected directive arguments for directive 'tests.test_exceptions.MyClass': {'foo': 'bar'}.",
+        ),
+        "UnionModelFieldMismatchError": UndineErrorParams(
+            cls=UnionModelFieldMismatchError,
+            args={
+                "ref": "foo",
+                "type_1": "bar",
+                "model_1": MyClass,
+                "type_2": "baz",
+                "model_2": MyClass,
+                "kind": "Filter",
+            },
+            message=(
+                "'foo' is of type 'bar' when converted from model 'tests.test_exceptions.MyClass' "
+                "but of type 'baz' when converted from model 'tests.test_exceptions.MyClass'. "
+                "Cannot create a Filter due to mismatching types."
+            ),
+        ),
+        "UnionModelFieldDirectUsageError": UndineErrorParams(
+            cls=UnionModelFieldDirectUsageError,
+            args={"kind": "FilterSet"},
+            message="Cannot use model reference when FilterSet defined for multiple models",
         ),
     })
 )

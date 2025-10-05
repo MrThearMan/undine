@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from graphql import GraphQLAbstractType, GraphQLUnionType
 
-    from undine import GQLInfo, QueryType
+    from undine import FilterSet, GQLInfo, OrderSet, QueryType
     from undine.directives import Directive
     from undine.typing import DjangoRequestProtocol, UnionTypeParams
 
@@ -37,6 +37,8 @@ class UnionTypeMeta(type):
     # Set in '__new__'
     __query_types_by_model__: dict[type[Model], type[QueryType]]
     __schema_name__: str
+    __filterset__: type[FilterSet] | None
+    __orderset__: type[OrderSet] | None
     __directives__: list[Directive]
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
@@ -62,7 +64,17 @@ class UnionTypeMeta(type):
 
         union_type = super().__new__(cls, _name, _bases, _attrs)
 
+        # Members should use `__dunder__` names to avoid name collisions with possible `UnionType` names.
         union_type.__query_types_by_model__ = {query_type.__model__: query_type for query_type in query_types}
+
+        union_type.__filterset__ = kwargs.get("filterset")
+        if union_type.__filterset__ is not None:
+            union_type.__filterset__.__add_to_union_type__(union_type)  # type: ignore[arg-type]
+
+        union_type.__orderset__ = kwargs.get("orderset")
+        if union_type.__orderset__ is not None:
+            union_type.__orderset__.__add_to_union_type__(union_type)  # type: ignore[arg-type]
+
         union_type.__schema_name__ = kwargs.get("schema_name", _name)
         union_type.__directives__ = kwargs.get("directives", [])
         union_type.__extensions__ = kwargs.get("extensions", {})
@@ -142,11 +154,8 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     # Set in metaclass
     __query_types_by_model__: ClassVar[dict[type[Model], type[QueryType]]]
     __schema_name__: ClassVar[str]
+    __filterset__: ClassVar[type[FilterSet] | None]
+    __orderset__: ClassVar[type[OrderSet] | None]
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
-
-    @classmethod
-    def __process_results__(cls, instances: list[Any], info: GQLInfo) -> list[Any]:
-        """Filter and order results of the union after everything has been fetched."""
-        return instances

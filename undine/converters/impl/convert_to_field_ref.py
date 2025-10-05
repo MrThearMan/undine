@@ -56,7 +56,7 @@ def _(ref: Lambda, **kwargs: Any) -> Any:
 @convert_to_field_ref.register
 def _(ref: CombinableExpression, **kwargs: Any) -> Any:
     caller: UndineField = kwargs["caller"]
-    determine_output_field(ref, model=caller.query_type.__model__)
+    ref.output_field = determine_output_field(ref, model=caller.query_type.__model__)
 
     user_func = caller.optimizer_func
 

@@ -44,6 +44,7 @@ __all__ = [
     "RelInfo",
     "RootAndInfoParams",
     "TypeRef",
+    "UnionFilterRef",
 ]
 
 
@@ -111,6 +112,17 @@ class LookupRef:
 
     ref: Any
     lookup: str
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class UnionFilterRef:
+    """
+    A string reference that references a model field
+    that exists in all models of a FilterSet used for a UnionType.
+    """
+
+    ref: str
+    models: tuple[type[Model], ...]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

@@ -146,7 +146,7 @@ class Entrypoint:
         :param ref: The reference to use for the `Entrypoint`.
         :param many: Whether the `Entrypoint` should return a non-null list of the referenced type.
         :param nullable: Whether the referenced type can be null.
-        :param limit: For `UnionTypes` and `InterfaceTypes`, limits the number of objects that are fetched.
+        :param limit: For list Entrypoints, limits the number of objects that are fetched.
         :param description: Description for the `Entrypoint`.
         :param deprecation_reason: If the `Entrypoint` is deprecated, describes the reason for deprecation.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
@@ -157,7 +157,7 @@ class Entrypoint:
 
         self.many: bool = kwargs.get("many", False)
         self.nullable: bool = kwargs.get("nullable", False)
-        self.limit: int = kwargs.get("limit", undine_settings.ENTRYPOINT_LIMIT_PER_MODEL)
+        self.limit: int | None = kwargs.get("limit", undine_settings.LIST_ENTRYPOINT_LIMIT)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]

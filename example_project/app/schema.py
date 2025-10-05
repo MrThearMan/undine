@@ -27,11 +27,11 @@ class Query(RootType):
     node = Entrypoint(Node)
     paged_tasks = Entrypoint(Connection(TaskType))
 
-    named = Entrypoint(Named, many=True)
-    """All named objects."""
-
     commentable = Entrypoint(Commentable, many=True)
-    paged_commentable = Entrypoint(Connection(Commentable))  # WIP
+    paged_commentable = Entrypoint(Connection(Commentable))
+
+    named = Entrypoint(Named, many=True)
+    paged_named = Entrypoint(Connection(Named))
 
     @Entrypoint
     def function(self, arg: str = "None") -> list[str]:

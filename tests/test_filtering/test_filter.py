@@ -348,7 +348,7 @@ def test_filter__directives__not_applicable() -> None:
             name = Filter(directives=directives)
 
     # Model not cleaned up since error occurred in FilterSet class body.
-    del FilterSetMeta.__model__
+    del FilterSetMeta.__models__
 
 
 def test_filter__directives__matmul() -> None:

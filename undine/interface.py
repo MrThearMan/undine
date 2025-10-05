@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from undine.query import Field, QueryType
     from undine.typing import (
         DjangoRequestProtocol,
-        GQLInfo,
         InterfaceFieldParams,
         InterfaceTypeParams,
         TQueryType,
@@ -171,11 +170,6 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
-
-    @classmethod
-    def __process_results__(cls, instances: list[Any], info: GQLInfo) -> list[Any]:
-        """Filter and order results of the interface after everything has been fetched."""
-        return instances
 
 
 class InterfaceField:

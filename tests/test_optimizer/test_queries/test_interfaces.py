@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from django.db.models import Model
 from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices
@@ -11,7 +10,6 @@ from undine import (
     Field,
     Filter,
     FilterSet,
-    GQLInfo,
     InterfaceField,
     InterfaceType,
     Order,
@@ -71,12 +69,12 @@ def test_interfaces__entrypoint(graphql, undine_settings) -> None:
                 "name": "Project 1",
             },
             {
-                "pk": project_2.pk,
-                "name": "Project 2",
-            },
-            {
                 "name": "Task 1",
                 "type": "TASK",
+            },
+            {
+                "pk": project_2.pk,
+                "name": "Project 2",
             },
             {
                 "name": "Task 2",
@@ -85,10 +83,7 @@ def test_interfaces__entrypoint(graphql, undine_settings) -> None:
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -136,23 +131,20 @@ def test_interfaces__entrypoint__only_one_fragment(graphql, undine_settings) -> 
                 "name": "Project 1",
             },
             {
-                "name": "Project 2",
-            },
-            {
                 "name": "Task 1",
                 "type": "TASK",
+            },
+            {
+                "name": "Project 2",
             },
             {
                 "name": "Task 2",
                 "type": "STORY",
             },
-        ],
+        ]
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -197,21 +189,18 @@ def test_interfaces__entrypoint__only_interface_fields(graphql, undine_settings)
                 "name": "Project 1",
             },
             {
-                "name": "Project 2",
+                "name": "Task 1",
             },
             {
-                "name": "Task 1",
+                "name": "Project 2",
             },
             {
                 "name": "Task 2",
             },
-        ],
+        ]
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -261,10 +250,10 @@ def test_interfaces__entrypoint__only_fragment_fields(graphql, undine_settings) 
                 "pk": project_1.pk,
             },
             {
-                "pk": project_2.pk,
+                "type": "TASK",
             },
             {
-                "type": "TASK",
+                "pk": project_2.pk,
             },
             {
                 "type": "STORY",
@@ -272,10 +261,7 @@ def test_interfaces__entrypoint__only_fragment_fields(graphql, undine_settings) 
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -327,10 +313,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment(graphql
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # (Projects not fetched since nothing selected from it)
-    response.assert_query_count(1)
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -385,10 +368,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment__typena
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # (Projects not fetched since nothing selected from it)
-    response.assert_query_count(1)
+    response.assert_query_count(2)
 
 
 @pytest.mark.django_db
@@ -443,14 +423,14 @@ def test_interfaces__entrypoint__multiple_interface_fields(graphql, undine_setti
                 "name": "Project 1",
             },
             {
-                "id": project_2.pk,
-                "pk": project_2.pk,
-                "name": "Project 2",
-            },
-            {
                 "id": task_1.pk,
                 "name": "Task 1",
                 "type": "TASK",
+            },
+            {
+                "id": project_2.pk,
+                "pk": project_2.pk,
+                "name": "Project 2",
             },
             {
                 "id": task_2.pk,
@@ -460,10 +440,7 @@ def test_interfaces__entrypoint__multiple_interface_fields(graphql, undine_setti
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -517,14 +494,14 @@ def test_interfaces__entrypoint__typename(graphql, undine_settings) -> None:
                 "pk": project_1.pk,
             },
             {
-                "__typename": "ProjectType",
-                "name": "Project 2",
-                "pk": project_2.pk,
-            },
-            {
                 "__typename": "TaskType",
                 "name": "Task 1",
                 "type": "TASK",
+            },
+            {
+                "__typename": "ProjectType",
+                "name": "Project 2",
+                "pk": project_2.pk,
             },
             {
                 "__typename": "TaskType",
@@ -534,10 +511,7 @@ def test_interfaces__entrypoint__typename(graphql, undine_settings) -> None:
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -608,10 +582,7 @@ def test_interfaces__entrypoint__filtering(graphql, undine_settings) -> None:
         ],
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -664,74 +635,12 @@ def test_interfaces__entrypoint__ordering(graphql, undine_settings) -> None:
     assert response.data == {
         "named": [
             {"name": "Project 1"},
-            {"name": "Project 2"},
+            {"name": "Task 3"},
             {"name": "Project 3"},
             {"name": "Task 1"},
+            {"name": "Project 2"},
             {"name": "Task 2"},
-            {"name": "Task 3"},
-        ],
+        ]
     }
 
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
-
-
-@pytest.mark.django_db
-def test_interfaces__entrypoint__process_results(graphql, undine_settings) -> None:
-    class Named(InterfaceType):
-        name = InterfaceField(GraphQLNonNull(GraphQLString))
-
-        @classmethod
-        def __process_results__(cls, instances: list[Task | Project], info: GQLInfo) -> list[Model]:
-            return sorted(instances, key=lambda x: x.name)
-
-    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
-        pk = Field()
-
-    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
-        type = Field()
-
-    class Query(RootType):
-        named = Entrypoint(Named, many=True)
-
-        tasks = Entrypoint(TaskType, many=True)
-        projects = Entrypoint(ProjectType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    ProjectFactory.create(name="1")
-    ProjectFactory.create(name="4")
-    ProjectFactory.create(name="3")
-    TaskFactory.create(name="2")
-    TaskFactory.create(name="5")
-    TaskFactory.create(name="6")
-
-    query = """
-        query {
-          named {
-            name
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "named": [
-            {"name": "1"},
-            {"name": "2"},
-            {"name": "3"},
-            {"name": "4"},
-            {"name": "5"},
-            {"name": "6"},
-        ],
-    }
-
-    # Queries:
-    # - 1 query for Tasks
-    # - 1 query for Projects
-    response.assert_query_count(2)
+    response.assert_query_count(3)

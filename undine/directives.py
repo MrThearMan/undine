@@ -8,7 +8,7 @@ from graphql import DirectiveLocation, GraphQLArgument, Undefined
 from undine.exceptions import (
     MissingDirectiveArgumentError,
     MissingDirectiveLocationsError,
-    NotCompatibleWithDirectivesError,
+    NotCompatibleWithError,
     UnexpectedDirectiveArgumentError,
 )
 from undine.parsers import parse_class_attribute_docstrings
@@ -220,7 +220,7 @@ class Directive(metaclass=DirectiveMeta):
             other.__add_directive__(self)
             return other
 
-        raise NotCompatibleWithDirectivesError(directive=self, other=other)
+        raise NotCompatibleWithError(obj=self, other=other)
 
 
 class DirectiveArgument:

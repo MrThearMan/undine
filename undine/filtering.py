@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import functools
+import itertools
+import operator
 import operator as op
+from collections import defaultdict
+from collections.abc import Iterable
 from functools import reduce
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
-from django.db.models import Q
+from django.db.models import Model, Q
 from django.db.models.constants import LOOKUP_SEP
-from graphql import DirectiveLocation, GraphQLInputField, Undefined
+from graphql import DirectiveLocation, GraphQLInputField, GraphQLInputType, Undefined
 
 from undine.converters import (
     convert_to_description,
@@ -16,14 +21,28 @@ from undine.converters import (
     convert_to_graphql_type,
 )
 from undine.dataclasses import FilterResults, LookupRef, MaybeManyOrNonNull
-from undine.exceptions import EmptyFilterResult, MismatchingModelError, MissingModelGenericError
+from undine.exceptions import (
+    EmptyFilterResult,
+    MismatchingModelError,
+    MissingModelGenericError,
+    NotCompatibleWithError,
+    QueryTypeRequiresSingleModelError,
+    UnionTypeModelsDifferentError,
+    UnionTypeRequiresMultipleModelsError,
+)
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import ManyMatch, TModel
+from undine.typing import ManyMatch, TModels
 from undine.utils.graphql.type_registry import get_or_create_graphql_input_object_type
 from undine.utils.graphql.utils import check_directives
-from undine.utils.model_utils import get_model_fields_for_graphql, is_to_many, lookup_to_display_name
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
+from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql, is_to_many, lookup_to_display_name
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    cache_signature_if_function,
+    get_members,
+    get_wrapped_func,
+    is_subclass,
+)
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -32,6 +51,7 @@ if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
 
+    from undine import QueryType, UnionType
     from undine.directives import Directive
     from undine.typing import (
         DjangoExpression,
@@ -40,7 +60,8 @@ if TYPE_CHECKING:
         FilterParams,
         FilterSetParams,
         GQLInfo,
-        TQueryType,
+        T,
+        TModel,
         VisibilityFunc,
     )
 
@@ -54,7 +75,7 @@ class FilterSetMeta(type):
     """A metaclass that modifies how a `FilterSet` is created."""
 
     # Set in '__new__'
-    __model__: type[Model]
+    __models__: tuple[type[Model], ...]
     __filter_map__: dict[str, Filter]
     __schema_name__: str
     __directives__: list[Directive]
@@ -72,8 +93,8 @@ class FilterSetMeta(type):
             return super().__new__(cls, _name, _bases, _attrs)
 
         try:
-            model = FilterSetMeta.__model__
-            del FilterSetMeta.__model__
+            models = FilterSetMeta.__models__
+            del FilterSetMeta.__models__
         except AttributeError as error:
             raise MissingModelGenericError(name=_name, cls="FilterSet") from error
 
@@ -81,12 +102,16 @@ class FilterSetMeta(type):
         exclude = set(kwargs.get("exclude", []))
         if auto:
             exclude |= set(_attrs)
-            _attrs |= get_filters_for_model(model, exclude=exclude)
+
+            if len(models) == 1:
+                _attrs |= get_filters_for_model(models[0], exclude=exclude)
+            else:
+                _attrs |= get_filters_for_models(models, exclude=exclude)
 
         filterset = super().__new__(cls, _name, _bases, _attrs)
 
         # Members should use `__dunder__` names to avoid name collisions with possible `Filter` names.
-        filterset.__model__ = model
+        filterset.__models__ = models
         filterset.__filter_map__ = get_members(filterset, Filter)
         filterset.__schema_name__ = kwargs.get("schema_name", _name)
         filterset.__directives__ = kwargs.get("directives", [])
@@ -104,13 +129,13 @@ class FilterSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_input_object_type(cls.__input_type__())
 
-    def __getitem__(cls, model: type[TModel]) -> type[FilterSet[TModel]]:
+    def __getitem__(cls, models: type[type[TModel]] | tuple[type[TModel], ...]) -> type[FilterSet[*TModels]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'FilterSet'!
-        FilterSetMeta.__model__ = model
+        FilterSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
         return cls  # type: ignore[return-value]
 
-    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+    def __call__(cls, ref: T) -> T:
         """
         Allow adding this FilterSet to a QueryType using a decorator syntax
 
@@ -119,16 +144,16 @@ class FilterSetMeta(type):
         >>> @TaskFilterSet
         >>> class TaskType(QueryType[Task]): ...
         """
-        if cls.__model__ is not query_type.__model__:
-            raise MismatchingModelError(
-                name=cls.__name__,
-                given_model=cls.__model__,
-                target=query_type.__name__,
-                expected_model=query_type.__model__,
-            )
+        from undine import QueryType, UnionType  # noqa: PLC0415
 
-        query_type.__filterset__ = cls  # type: ignore[assignment]
-        return query_type
+        if is_subclass(ref, QueryType):
+            cls.__add_to_query_type__(ref)
+        elif is_subclass(ref, UnionType):
+            cls.__add_to_union_type__(ref)
+        else:
+            raise NotCompatibleWithError(obj=cls, other=ref)
+
+        return ref
 
     def __build__(cls, filter_data: dict[str, Any], info: GQLInfo) -> FilterResults:
         """
@@ -235,8 +260,36 @@ class FilterSetMeta(type):
         cls.__directives__.append(directive)
         return cls
 
+    def __add_to_query_type__(cls, query_type: type[QueryType]) -> None:
+        models = cls.__models__
+        if len(models) != 1:
+            raise QueryTypeRequiresSingleModelError(kind="FilterSet")
 
-class FilterSet(Generic[TModel], metaclass=FilterSetMeta):
+        if models[0] is not query_type.__model__:
+            raise MismatchingModelError(
+                name=cls.__name__,
+                given_model=models[0],
+                target=query_type.__name__,
+                expected_model=query_type.__model__,
+            )
+
+        query_type.__filterset__ = cls  # type: ignore[assignment]
+
+    def __add_to_union_type__(cls, union_type: type[UnionType]) -> None:
+        models = cls.__models__
+        if len(models) == 1:
+            raise UnionTypeRequiresMultipleModelsError(kind="FilterSet")
+
+        on_union_type = set(union_type.__query_types_by_model__)
+        on_filterset = set(models)
+
+        if on_union_type != on_filterset:
+            raise UnionTypeModelsDifferentError(kind="FilterSet")
+
+        union_type.__filterset__ = cls  # type: ignore[assignment]
+
+
+class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
     """
     A class for adding filtering for a `QueryType`.
 
@@ -267,7 +320,7 @@ class FilterSet(Generic[TModel], metaclass=FilterSetMeta):
     # Members should use `__dunder__` names to avoid name collisions with possible `Filter` names.
 
     # Set in metaclass
-    __model__: ClassVar[type[Model]]
+    __models__: ClassVar[tuple[type[Model], ...]]
     __filter_map__: ClassVar[dict[str, Filter]]
     __schema_name__: ClassVar[str]
     __directives__: ClassVar[list[Directive]]
@@ -378,7 +431,7 @@ class Filter:
     def get_field_type(self) -> GraphQLInputType:
         lookup = LookupRef(ref=self.ref, lookup=self.lookup)
         value = MaybeManyOrNonNull(lookup, many=self.many, nullable=not self.required)
-        return convert_to_graphql_type(value, model=self.filterset.__model__, is_input=True)  # type: ignore[return-value]
+        return convert_to_graphql_type(value, model=self.filterset.__models__[0], is_input=True)  # type: ignore[return-value]
 
     def aliases(self, func: FilterAliasesFunc | None = None, /) -> FilterAliasesFunc:
         """
@@ -443,6 +496,63 @@ def get_filters_for_model(model: type[Model], *, exclude: Iterable[str] = ()) ->
         lookups = sorted(convert_to_filter_lookups(model_field))  # type: ignore[arg-type]
 
         for lookup in lookups:
+            display_name = lookup_to_display_name(lookup, model_field)
+
+            name = f"{field_name}_{display_name}" if display_name else field_name
+            if name in exclude:
+                continue
+
+            result[name] = Filter(field_name, lookup=lookup, distinct=distinct)
+
+    return result
+
+
+def get_filters_for_models(models: tuple[type[TModel], ...], *, exclude: Iterable[str] = ()) -> dict[str, Filter]:
+    result: dict[str, Filter] = {}
+
+    # Lookups are separated by '__', but auto-generated names use '_' instead.
+    exclude = {"_".join(item.split(LOOKUP_SEP)) for item in exclude}
+
+    fields_by_model: dict[type[Model], set[str]] = {}
+    for model in models:
+        fields: set[str] = set()
+
+        for model_field in get_model_fields_for_graphql(model):
+            field_name = model_field.name
+
+            is_primary_key = bool(getattr(model_field, "primary_key", False))
+            if is_primary_key:
+                field_name = "pk"
+
+            if field_name in exclude:
+                continue
+
+            fields.add(field_name)
+
+        fields_by_model[model] = fields
+
+    common_fields = functools.reduce(operator.and_, fields_by_model.values())
+
+    graphql_types_by_model: dict[str, dict[type[Model], GraphQLInputType]] = defaultdict(dict)
+    for model in fields_by_model:
+        for field_name in common_fields:
+            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)
+
+    usable_fields: set[str] = set()
+    for field_name, model_map in graphql_types_by_model.items():
+        is_usable = all(field_1 == field_2 for field_1, field_2 in itertools.combinations(model_map.values(), 2))
+        if is_usable:
+            usable_fields.add(field_name)
+
+    for field_name in usable_fields:
+        model_field = get_model_field(model=models[0], lookup=field_name)
+
+        lookups = sorted(convert_to_filter_lookups(model_field))  # type: ignore[arg-type]
+
+        for lookup in lookups:
+            # Filters for many-to-many relations should always use `qs.distinct()`
+            distinct = is_to_many(model_field)
+
             display_name = lookup_to_display_name(lookup, model_field)
 
             name = f"{field_name}_{display_name}" if display_name else field_name
