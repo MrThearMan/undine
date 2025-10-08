@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import django
 import pytest
 
 from example_project.app.models import Project, Task, TaskTypeChoices
@@ -334,6 +335,10 @@ def test_optimizer__union__connection(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
+@pytest.mark.skipif(
+    django.VERSION < (5, 2),
+    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
+)
 @pytest.mark.django_db
 def test_optimizer__union__connection__total_count(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
