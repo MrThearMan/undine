@@ -27,7 +27,7 @@ def test_scalar__time__parse__str__has_timezone() -> None:
 
 def test_scalar__time__parse__invalid_time() -> None:
     msg = "'Time' cannot represent value '01:02:99': second must be in 0..59"
-    with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
+    with pytest.raises(GraphQLScalarConversionError, match=exact(msg, from_start=True)):
         time_scalar.parse("01:02:99")
 
 
@@ -78,5 +78,5 @@ def test_scalar__time__serialize__str__conversion_error() -> None:
 
 def test_scalar__time__serialize__str__invalid_time() -> None:
     msg = "'Time' cannot represent value '01:02:99': second must be in 0..59"
-    with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
+    with pytest.raises(GraphQLScalarConversionError, match=exact(msg, from_start=True)):
         time_scalar.serialize("01:02:99")

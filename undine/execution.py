@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from asyncio import ensure_future
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import aclosing, nullcontext
 from functools import wraps
@@ -28,6 +27,7 @@ from undine.utils.graphql.utils import (
     validate_get_request_operation,
 )
 from undine.utils.graphql.validation_rules import get_validation_rules
+from undine.utils.reflection import cancel_awaitable
 
 try:
     # graphql-core >= 3.3.0
@@ -203,7 +203,7 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result
 
     if isawaitable(context.result):
-        ensure_future(context.result).cancel()
+        cancel_awaitable(context.result)
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
@@ -285,7 +285,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result
 
     if exec_context.is_awaitable(result):
-        ensure_future(result).cancel()
+        cancel_awaitable(result)
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 

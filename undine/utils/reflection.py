@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
+import itertools
 import sys
+import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from functools import partial
 from traceback import format_tb
@@ -39,8 +42,10 @@ if TYPE_CHECKING:
 __all__ = [
     "FunctionEqualityWrapper",
     "as_coroutine_func_if_not",
+    "async_enumerate",
     "cache_signature_if_function",
     "can_be_literal_arg",
+    "cancel_awaitable",
     "get_flattened_generic_params",
     "get_instance_name",
     "get_members",
@@ -332,6 +337,13 @@ def reverse_enumerate(sequence: Sequence[T]) -> Generator[tuple[int, T], None, N
         yield index, sequence[index]
 
 
+async def async_enumerate(it: AsyncIterable[T]) -> AsyncGenerator[tuple[int, T], None]:
+    """Enumerate the given async iterable."""
+    counter = itertools.count()
+    async for item in it:
+        yield next(counter), item
+
+
 def get_traceback(traceback: TracebackType) -> list[str]:
     """Format the given traceback into a list of strings."""
     return [subline for line in format_tb(traceback) for subline in line.split("\n")]
@@ -342,3 +354,14 @@ def as_coroutine_func_if_not(func: Callable[P, AwaitableOrValue[T]], /) -> Calla
     if inspect.iscoroutinefunction(func):
         return func
     return sync_to_async(func)  # type: ignore[arg-type]
+
+
+def cancel_awaitable(value: Awaitable) -> None:
+    """Cancel the given awaitable."""
+    if isinstance(value, types.CoroutineType):
+        value.close()
+        return
+
+    if isinstance(value, asyncio.Future):
+        value.cancel()
+        return

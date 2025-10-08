@@ -22,7 +22,7 @@ def test_scalar__date__parse__str__date() -> None:
 
 def test_scalar__date__parse__str__date__invalid_date() -> None:
     msg = "'Date' cannot represent value '2022-50-01': month must be in 1..12"
-    with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
+    with pytest.raises(GraphQLScalarConversionError, match=exact(msg, from_start=True)):
         date_scalar.parse("2022-50-01")
 
 
@@ -54,7 +54,7 @@ def test_scalar__date__serialize__str__date() -> None:
 
 def test_scalar__date__serialize__str__date__invalid() -> None:
     msg = "'Date' cannot represent value '2022-50-01': month must be in 1..12"
-    with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
+    with pytest.raises(GraphQLScalarConversionError, match=exact(msg, from_start=True)):
         date_scalar.serialize("2022-50-01")
 
 

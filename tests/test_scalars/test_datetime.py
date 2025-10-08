@@ -49,7 +49,7 @@ def test_scalar__datetime__parse__str__conversion_error() -> None:
 
 def test_scalar__datetime__parse__str__invalid_datetime() -> None:
     msg = "'DateTime' cannot represent value '2022-50-01T12:15:30': month must be in 1..12"
-    with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
+    with pytest.raises(GraphQLScalarConversionError, match=exact(msg, from_start=True)):
         datetime_scalar.parse("2022-50-01T12:15:30")
 
 

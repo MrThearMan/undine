@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Framework :: Django",
     "Framework :: Django :: 5.0",
     "Framework :: Django :: 5.1",
@@ -468,7 +469,7 @@ max-bool-expr = 6
 
 [tool.coverage.run]
 relative_files = true
-branch = true
+# TODO: Broken in python 3.14: branch = true
 include = [
     "undine/*",
     "pytest_undine/*",

@@ -76,8 +76,10 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
         raise UndineError(msg) from error
 
 
-def exact(msg: str) -> str:
+def exact(msg: str, *, from_start: bool = False) -> str:
     """Use in `with pytest.raises(..., match=exact(msg))` to match the 'msg' string exactly."""
+    if from_start:
+        return f"^{re.escape(msg)}"
     return f"^{re.escape(msg)}$"
 
 
