@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-from example_project.app.models import Person, Project, Task, TaskStep, TaskTypeChoices
+from example_project.app.models import Comment, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory
-from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 
 
 @pytest.mark.django_db
@@ -722,3 +722,61 @@ def test_create_mutation__input_only_input(graphql, undine_settings):
     }
 
     assert input_only_data == "bar"
+
+
+@pytest.mark.django_db
+def test_create_mutation__generic_relation(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task]):
+        name = Field()
+
+    class CommentType(QueryType[Comment]):
+        contents = Field()
+        target = Field()
+
+    class CommentCreateMutation(MutationType[Comment]):
+        contents = Input()
+        target = Input()
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    class Mutation(RootType):
+        create_comment = Entrypoint(CommentCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    query = """
+        mutation($input: CommentCreateMutation!) {
+            createComment(input: $input) {
+                contents
+                target {
+                    __typename
+                    ... on TaskType {
+                        name
+                    }
+                }
+            }
+        }
+    """
+    input_data = {
+        "contents": "Comment",
+        "target": {
+            "task": {
+                "name": "Test Task",
+                "type": TaskTypeChoices.TASK,
+            }
+        },
+    }
+    response = graphql(query, variables={"input": input_data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "createComment": {
+            "contents": "Comment",
+            "target": {
+                "__typename": "TaskType",
+                "name": "Test Task",
+            },
+        },
+    }

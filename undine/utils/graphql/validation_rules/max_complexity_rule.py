@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from graphql import FieldNode, FragmentSpreadNode, GraphQLError, GraphQLObjectType, InlineFragmentNode, ValidationRule
 
 from undine.settings import undine_settings
-from undine.utils.graphql.undine_extensions import get_undine_field
+from undine.utils.graphql.undine_extensions import get_undine_entrypoint, get_undine_field
 from undine.utils.graphql.utils import get_underlying_type
 
 if TYPE_CHECKING:
@@ -71,6 +71,10 @@ class MaxComplexityRule(ValidationRule):
         graphql_field = parent_type.fields.get(field_node.name.value)
         if graphql_field is None:
             return
+
+        undine_entrypoint = get_undine_entrypoint(graphql_field)
+        if undine_entrypoint is not None:
+            self.complexity += undine_entrypoint.complexity
 
         undine_field = get_undine_field(graphql_field)
         if undine_field is not None:
