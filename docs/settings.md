@@ -203,8 +203,8 @@ The key used to store an `Entrypoint` in the `extensions` of the `GraphQLField`.
 
 ///
 
-/// details | `ENTRYPOINT_LIMIT_PER_MODEL`
-    attrs: {id: entrypoint_limit_per_model}
+/// details | `LIST_ENTRYPOINT_LIMIT`
+    attrs: {id: list_entrypoint_limit}
 
 Type `int | None` | Default: `None`
 

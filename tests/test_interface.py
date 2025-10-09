@@ -301,7 +301,7 @@ def test_interface_type__interface_field__as_undine_field() -> None:
     assert field.deprecation_reason is None
     assert field.schema_name == "name"
     assert field.directives == []
-    assert field.extensions == {"undine_field": field}
+    assert field.extensions == {"undine_field": field, "undine_interface_field": Named.name}
 
 
 def test_interface_type__interface_field__as_undine_field__resolvable_output_type() -> None:

@@ -245,6 +245,8 @@ class InterfaceField:
             deprecation_reason=self.deprecation_reason,
             schema_name=self.schema_name,
             directives=self.directives,
+            # Preserve knowledge that the Field was inherited from an InterfaceType.
+            extensions={undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY: self},
         )
 
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
