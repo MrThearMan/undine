@@ -31,6 +31,7 @@ def test_entrypoint__function__attributes() -> None:
     assert Query.double.many is False
     assert Query.double.description == "Description."
     assert Query.double.deprecation_reason is None
+    assert Query.double.complexity == 0
     assert Query.double.extensions == {"undine_entrypoint": Query.double}
     assert Query.double.root_type == Query
     assert Query.double.name == "double"

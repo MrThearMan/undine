@@ -789,6 +789,7 @@ class EntrypointParams(TypedDict, total=False):
     limit: int
     description: str | None
     deprecation_reason: str | None
+    complexity: int
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]

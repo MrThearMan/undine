@@ -355,6 +355,17 @@ This is for documentation purposes only and does not affect the use of the `Entr
 -8<- "schema/entrypoint_deprecation_reason.py"
 ```
 
+### Complexity
+
+The complexity value of an `Entrypoint` is used by Undine to calculate how expensive a given query
+to the schema would be. Queries are rejected by Undine if they would exceed the maximum allowed complexity,
+as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
+
+Usually, complexity is set by `QueryType` [`Fields`](queries.md#complexity), but you can also set
+complexity on the `Entrypoint` itself. This can be useful for declaring complexity of
+`Entrypoints` not based on `QueryTypes`. Note that when the `Entrypoint` _is_ based on a `QueryType`,
+this complexity _adds_ to any complexity calculated from the `QueryType's` `Fields`.
+
 ### Directives
 
 You can add directives to the `Entrypoint` by providing them using the `directives` argument.

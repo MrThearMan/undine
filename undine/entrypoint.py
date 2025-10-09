@@ -149,6 +149,7 @@ class Entrypoint:
         :param limit: For list Entrypoints, limits the number of objects that are fetched.
         :param description: Description for the `Entrypoint`.
         :param deprecation_reason: If the `Entrypoint` is deprecated, describes the reason for deprecation.
+        :param complexity: The complexity of resolving this field (not the entire Entrypoint).
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `Entrypoint`.
         :param extensions: GraphQL extensions for the `Entrypoint`.
@@ -160,6 +161,7 @@ class Entrypoint:
         self.limit: int | None = kwargs.get("limit", undine_settings.LIST_ENTRYPOINT_LIMIT)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
+        self.complexity: int = kwargs.get("complexity", 0)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
         self.directives: list[Directive] = kwargs.get("directives", [])
         self.extensions: dict[str, Any] = kwargs.get("extensions", {})
