@@ -268,7 +268,7 @@ class Field:
         :param nullable: Whether the referenced type can be null.
         :param description: Description for the `Field`.
         :param deprecation_reason: If the `Field` is deprecated, describes the reason for deprecation.
-        :param complexity: The complexity of resolving this field towards the maximum complexity of an `Entrypoint`.
+        :param complexity: The complexity of resolving this field.
         :param field_name: Name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name of the `Field` in the GraphQL schema. Can be used to alias the `Field`
                             for the schema, or when the desired name is a Python keyword (e.g. `if` or `from`).
