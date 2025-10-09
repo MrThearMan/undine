@@ -70,10 +70,6 @@ class TaskCreateMutationType(MutationType[Task]):
     input_only = Input(bool, default_value=True)
     custom = Input(CustomInput)
 
-    # @custom.visible
-    # def custom_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
-
     @Input
     def current_user(self, info: GQLInfo) -> int | None:
         return info.context.user.id
@@ -95,10 +91,6 @@ class TaskCreateMutationType(MutationType[Task]):
         if value == "foo":
             msg = "Name must not be 'foo'"
             raise ValueError(msg)
-
-    # @classmethod
-    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
 
 
 class CommentCreateMutationType(MutationType[Comment]): ...

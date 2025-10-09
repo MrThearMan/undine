@@ -59,14 +59,14 @@ __all__ = [
 ]
 
 
-__Schema: GraphQLObjectType = introspection_types["__Schema"]  # type: ignore[assignment]
-__Directive: GraphQLObjectType = introspection_types["__Directive"]  # type: ignore[assignment]
-__DirectiveLocation: GraphQLEnumType = introspection_types["__DirectiveLocation"]  # type: ignore[assignment]
-__Type: GraphQLObjectType = introspection_types["__Type"]  # type: ignore[assignment]
-__Field: GraphQLObjectType = introspection_types["__Field"]  # type: ignore[assignment]
-__InputValue: GraphQLObjectType = introspection_types["__InputValue"]  # type: ignore[assignment]
-__EnumValue: GraphQLObjectType = introspection_types["__EnumValue"]  # type: ignore[assignment]
-__TypeKind: GraphQLEnumType = introspection_types["__TypeKind"]  # type: ignore[assignment]
+schema_introspection_type: GraphQLObjectType = introspection_types["__Schema"]  # type: ignore[assignment]
+directive_introspection_type: GraphQLObjectType = introspection_types["__Directive"]  # type: ignore[assignment]
+directive_location_introspection_type: GraphQLEnumType = introspection_types["__DirectiveLocation"]  # type: ignore[assignment]
+type_introspection_type: GraphQLObjectType = introspection_types["__Type"]  # type: ignore[assignment]
+field_introspection_type: GraphQLObjectType = introspection_types["__Field"]  # type: ignore[assignment]
+input_value_introspection_type: GraphQLObjectType = introspection_types["__InputValue"]  # type: ignore[assignment]
+enum_value_introspection_type: GraphQLObjectType = introspection_types["__EnumValue"]  # type: ignore[assignment]
+type_kind_introspection_type: GraphQLEnumType = introspection_types["__TypeKind"]  # type: ignore[assignment]
 
 
 def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR0911, PLR0912, PLR0914, PLR0915, C901
@@ -78,7 +78,13 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
 
             connection = get_undine_connection(obj)
             if connection is not None:
-                return connection.query_type.__is_visible__(info.context)
+                if connection.query_type is not None:
+                    return connection.query_type.__is_visible__(info.context)
+                if connection.union_type is not None:
+                    return connection.union_type.__is_visible__(info.context)
+                if connection.interface_type is not None:
+                    return connection.interface_type.__is_visible__(info.context)
+                return True  # Should never happen
 
         case GraphQLInputObjectType():
             mutation_type = get_undine_mutation_type(obj)
@@ -176,23 +182,23 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
 def patch_introspection_schema() -> None:
     TypeMetaFieldDef.resolve = resolve_type_meta_field_def
 
-    __Schema._fields = get_schema_fields
-    __Directive._fields = get_directive_fields
-    __Type._fields = get_type_fields
-    __Field._fields = get_field_fields
+    schema_introspection_type._fields = get_schema_fields
+    directive_introspection_type._fields = get_directive_fields
+    type_introspection_type._fields = get_type_fields
+    field_introspection_type._fields = get_field_fields
 
     # Force re-evaluation of cached properties
-    if "fields" in __Schema.__dict__:
-        del __Schema.__dict__["fields"]
+    if "fields" in schema_introspection_type.__dict__:
+        del schema_introspection_type.__dict__["fields"]
 
-    if "fields" in __Directive.__dict__:
-        del __Directive.__dict__["fields"]
+    if "fields" in directive_introspection_type.__dict__:
+        del directive_introspection_type.__dict__["fields"]
 
-    if "fields" in __Type.__dict__:
-        del __Type.__dict__["fields"]
+    if "fields" in type_introspection_type.__dict__:
+        del type_introspection_type.__dict__["fields"]
 
-    if "fields" in __Field.__dict__:
-        del __Field.__dict__["fields"]
+    if "fields" in field_introspection_type.__dict__:
+        del field_introspection_type.__dict__["fields"]
 
 
 def resolve_type_meta_field_def(root: Any, info: GQLInfo, *, name: str) -> GraphQLNamedType | None:
@@ -216,27 +222,27 @@ def get_schema_fields() -> dict[str, GraphQLField]:
             resolve=resolve_schema_description,
         ),
         "types": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__Type))),
+            GraphQLNonNull(GraphQLList(GraphQLNonNull(type_introspection_type))),
             resolve=resolve_schema_types,
             description="A list of all types supported by this server.",
         ),
         "queryType": GraphQLField(
-            GraphQLNonNull(__Type),
+            GraphQLNonNull(type_introspection_type),
             resolve=resolve_schema_query_type,
             description="The type that query operations will be rooted at.",
         ),
         "mutationType": GraphQLField(
-            __Type,
+            type_introspection_type,
             resolve=resolve_schema_mutation_type,
             description="If this server supports mutation, the type that mutation operations will be rooted at.",
         ),
         "subscriptionType": GraphQLField(
-            __Type,
+            type_introspection_type,
             resolve=resolve_schema_subscription_type,
             description="If this server support subscription, the type that subscription operations will be rooted at.",
         ),
         "directives": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__Directive))),
+            GraphQLNonNull(GraphQLList(GraphQLNonNull(directive_introspection_type))),
             resolve=resolve_schema_directives,
             description="A list of all directives supported by this server.",
         ),
@@ -285,11 +291,11 @@ def get_directive_fields() -> dict[str, GraphQLField]:
             resolve=resolve_directive_is_repeatable,
         ),
         "locations": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
+            GraphQLNonNull(GraphQLList(GraphQLNonNull(directive_location_introspection_type))),
             resolve=resolve_directive_locations,
         ),
         "args": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
+            GraphQLNonNull(GraphQLList(GraphQLNonNull(input_value_introspection_type))),
             args={
                 "includeDeprecated": GraphQLArgument(GraphQLBoolean, default_value=False),
             },
@@ -329,7 +335,7 @@ def resolve_directive_args(root: GraphQLDirective, info: GQLInfo, **kwargs: Any)
 def get_type_fields() -> dict[str, GraphQLField]:
     return {
         "kind": GraphQLField(
-            GraphQLNonNull(__TypeKind),
+            GraphQLNonNull(type_kind_introspection_type),
             resolve=resolve_type_kind,
         ),
         "name": GraphQLField(
@@ -345,36 +351,36 @@ def get_type_fields() -> dict[str, GraphQLField]:
             resolve=resolve_type_specified_by_url,
         ),
         "fields": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Field)),
+            GraphQLList(GraphQLNonNull(field_introspection_type)),
             args={
                 "includeDeprecated": GraphQLArgument(GraphQLBoolean, default_value=False),
             },
             resolve=resolve_type_fields,
         ),
         "interfaces": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Type)),
+            GraphQLList(GraphQLNonNull(type_introspection_type)),
             resolve=resolve_type_interfaces,
         ),
         "possibleTypes": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Type)),
+            GraphQLList(GraphQLNonNull(type_introspection_type)),
             resolve=resolve_type_possible_types,
         ),
         "enumValues": GraphQLField(
-            GraphQLList(GraphQLNonNull(__EnumValue)),
+            GraphQLList(GraphQLNonNull(enum_value_introspection_type)),
             args={
                 "includeDeprecated": GraphQLArgument(GraphQLBoolean, default_value=False),
             },
             resolve=resolve_type_enum_values,
         ),
         "inputFields": GraphQLField(
-            GraphQLList(GraphQLNonNull(__InputValue)),
+            GraphQLList(GraphQLNonNull(input_value_introspection_type)),
             args={
                 "includeDeprecated": GraphQLArgument(GraphQLBoolean, default_value=False),
             },
             resolve=resolve_type_input_fields,
         ),
         "ofType": GraphQLField(
-            __Type,
+            type_introspection_type,
             resolve=resolve_type_of_type,
         ),
         "isOneOf": GraphQLField(
@@ -510,14 +516,14 @@ def get_field_fields() -> dict[str, GraphQLField]:
             resolve=resolve_field_description,
         ),
         "args": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
+            GraphQLNonNull(GraphQLList(GraphQLNonNull(input_value_introspection_type))),
             args={
                 "includeDeprecated": GraphQLArgument(GraphQLBoolean, default_value=False),
             },
             resolve=resolve_field_args,
         ),
         "type": GraphQLField(
-            GraphQLNonNull(__Type),
+            GraphQLNonNull(type_introspection_type),
             resolve=resolve_field_type,
         ),
         "isDeprecated": GraphQLField(

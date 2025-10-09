@@ -40,10 +40,6 @@ from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 class Named(InterfaceType):
     name = InterfaceField(GraphQLNonNull(GraphQLString))
 
-    # @name.visible
-    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
-
 
 @Node
 @Named
@@ -100,10 +96,6 @@ class TaskFilterSet(FilterSet[Task]):
     def has_project_visible(self, request: DjangoRequestProtocol) -> bool:
         return request.user.is_superuser
 
-    # @classmethod
-    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
-
 
 class TaskOrderSet(OrderSet[Task]):
     """Order description."""
@@ -111,10 +103,6 @@ class TaskOrderSet(OrderSet[Task]):
     name = Order("name")
     custom = Order(F("created_at"))
     length = Order(Length("name"))
-
-    # @name.visible
-    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
 
 
 class CustomerDetails(TypedDict):
@@ -127,17 +115,9 @@ class MyDirective(Directive, locations=[DirectiveLocation.FIELD]):
 
     name = DirectiveArgument(GraphQLString)
 
-    # @name.visible
-    # def name_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
-
 
 class ExampleCalculation(Calculation[int]):
     value = CalculationArgument(int)
-
-    # @value.visible
-    # def value_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
 
     def __call__(self, info: GQLInfo) -> DjangoExpression:
         return Value(self.value)
@@ -162,19 +142,11 @@ class TaskType(QueryType[Task]):
 
     assignee_count = Field(Coalesce(Count("assignees"), 0))
 
-    # @assignee_count.visible
-    # def assignees_count_visible(self, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
-
     @Field
     def customer(self, number: int = 18) -> CustomerDetails:
         return CustomerDetails(name="John", age=number)
 
     example = Field(ExampleCalculation)
-
-    # @classmethod
-    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
 
 
 class CommentableFilterSet(FilterSet[Task, Project, Report], auto=True): ...
@@ -187,7 +159,3 @@ class CommentableOrderSet(OrderSet[Task, Project, Report], auto=True): ...
 @CommentableOrderSet
 class Commentable(UnionType[TaskType, ProjectType, ReportType]):
     """All entities that can be commented on"""
-
-    # @classmethod
-    # def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-    #     return request.user.is_superuser
