@@ -6,6 +6,7 @@ from graphql import GraphQLError, ValidationRule
 from graphql.language import ast
 
 from undine import InterfaceType, MutationType, QueryType, UnionType
+from undine.relay import Connection
 from undine.utils.graphql.undine_extensions import (
     get_undine_calculation_argument,
     get_undine_directive,
@@ -21,6 +22,7 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_orderset,
     get_undine_query_type,
 )
+from undine.utils.graphql.utils import get_underlying_type
 from undine.utils.reflection import is_subclass
 
 if TYPE_CHECKING:
@@ -70,18 +72,15 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         undine_entrypoint = get_undine_entrypoint(graphql_field)
         if undine_entrypoint is not None:
-            self.handle_entrypoint(undine_entrypoint, parent_type, node)
-            return None
+            return self.handle_entrypoint(undine_entrypoint, parent_type, node)
 
         undine_field = get_undine_field(graphql_field)
         if undine_field is not None:
-            self.handle_field(undine_field, parent_type, node)
-            return None
+            return self.handle_field(undine_field, parent_type, node)
 
         undine_interface_field = get_undine_interface_field(graphql_field)
         if undine_interface_field is not None:
-            self.handle_interface_field(undine_interface_field, parent_type, node)
-            return None
+            return self.handle_interface_field(undine_interface_field, parent_type, node)
 
         return None
 
@@ -108,31 +107,28 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if undine_filterset is not None:
             if not undine_filterset.__is_visible__(self.request):
                 self.report_field_argument_error(parent_type, field_node, node)
-                return None
+                return self.BREAK
 
             object_value: ast.ObjectValueNode = node.value  # type: ignore[assignment]
-            self.handle_filters(graphql_input_type, object_value)
-            return None
+            return self.handle_filters(graphql_input_type, object_value)
 
         undine_orderset = get_undine_orderset(graphql_input_type)
         if undine_orderset is not None:
             if not undine_orderset.__is_visible__(self.request):
                 self.report_field_argument_error(parent_type, field_node, node)
-                return None
+                return self.BREAK
 
             list_value: ast.ListValueNode = node.value  # type: ignore[assignment]
-            self.handle_orders(graphql_input_type, list_value)
-            return None
+            return self.handle_orders(graphql_input_type, list_value)
 
         undine_mutation_type = get_undine_mutation_type(graphql_input_type)
         if undine_mutation_type is not None:
             if not undine_mutation_type.__is_visible__(self.request):
                 self.report_field_argument_error(parent_type, field_node, node)
-                return None
+                return self.BREAK
 
             input_node: ast.ObjectValueNode = node.value  # type: ignore[assignment]
-            self.handle_inputs(graphql_input_type, input_node)
-            return None
+            return self.handle_inputs(graphql_input_type, input_node)
 
         undine_calculation_arg = get_undine_calculation_argument(graphql_argument)
         if undine_calculation_arg is not None:
@@ -141,14 +137,13 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
             if not undine_calculation_arg.visible_func(undine_calculation_arg, self.request):
                 self.report_field_argument_error(parent_type, field_node, node)
-                return None
+                return self.BREAK
 
             return None
 
         graphql_directive = self.context.get_directive()
         if graphql_directive is not None:
-            self.handle_directive_arguments(graphql_directive, node)
-            return None
+            return self.handle_directive_arguments(graphql_directive, node)
 
         return None
 
@@ -163,6 +158,8 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if undine_query_type is not None:
             if not undine_query_type.__is_visible__(self.request):
                 self.report_type_error(graphql_type, node)
+                return self.BREAK
+
             return None
 
         return None
@@ -178,7 +175,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         if not undine_directive.__is_visible__(self.request):
             self.report_directive_error(graphql_directive, node)
-            return None
+            return self.BREAK
 
         return None
 
@@ -189,108 +186,139 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         undine_entrypoint: Entrypoint,
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if undine_entrypoint.visible_func is not None:
             if not undine_entrypoint.visible_func(undine_entrypoint, self.request):
                 self.report_field_error(parent_type, field_node)
-            return
+                return self.BREAK
+
+            return None
 
         ref = undine_entrypoint.ref
 
+        if isinstance(ref, Connection):
+            if ref.query_type is not None:
+                ref = ref.query_type
+            elif ref.union_type is not None:
+                ref = ref.union_type
+            elif ref.interface_type is not None:
+                ref = ref.interface_type
+
         if is_subclass(ref, QueryType):
-            self.handle_query_type(ref, parent_type, field_node)
+            return self.handle_query_type(ref, parent_type, field_node)
 
         if is_subclass(ref, MutationType):
-            self.handle_mutation_type(ref, parent_type, field_node)
+            return self.handle_mutation_type(ref, parent_type, field_node)
 
         if is_subclass(ref, InterfaceType):
-            self.handle_interface_type(ref, parent_type, field_node)
+            return self.handle_interface_type(ref, parent_type, field_node)
 
         if is_subclass(ref, UnionType):
-            self.handle_union_type(ref, parent_type, field_node)
+            return self.handle_union_type(ref, parent_type, field_node)
+
+        return None
 
     def handle_field(
         self,
         undine_field: Field,
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if undine_field.visible_func is not None:
             if not undine_field.visible_func(undine_field, self.request):
                 self.report_field_error(parent_type, field_node)
-            return
+                return self.BREAK
+
+            return None
 
         ref = undine_field.ref
 
+        if isinstance(ref, Connection) and ref.query_type is not None:
+            ref = ref.query_type
+
         if is_subclass(ref, QueryType):
-            self.handle_query_type(ref, parent_type, field_node)
+            return self.handle_query_type(ref, parent_type, field_node)
 
         if is_subclass(ref, MutationType):
-            self.handle_mutation_type(ref, parent_type, field_node)
+            return self.handle_mutation_type(ref, parent_type, field_node)
+
+        return None
 
     def handle_interface_field(
         self,
         undine_interface_field: InterfaceField,
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if undine_interface_field.visible_func is None:
-            return
+            return None
 
         if not undine_interface_field.visible_func(undine_interface_field, self.request):
             self.report_field_error(parent_type, field_node)
+            return self.BREAK
+
+        return None
 
     def handle_query_type(
         self,
         ref: type[QueryType],
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if not ref.__is_visible__(self.request):
             self.report_field_error(parent_type, field_node)
-            return
+            return self.BREAK
+
+        return None
 
     def handle_mutation_type(
         self,
         ref: type[MutationType],
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if not ref.__is_visible__(self.request):
             self.report_field_error(parent_type, field_node)
-            return
+            return self.BREAK
 
         output_type = ref.__output_type__()
         query_type = get_undine_query_type(output_type)
         if query_type is not None and not query_type.__is_visible__(self.request):
             self.report_field_error(parent_type, field_node)
-            return
+            return self.BREAK
+
+        return None
 
     def handle_interface_type(
         self,
         ref: type[InterfaceType],
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if not ref.__is_visible__(self.request):
             self.report_field_error(parent_type, field_node)
-            return
+            return self.BREAK
+
+        return None
 
     def handle_union_type(
         self,
         ref: type[UnionType],
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
-    ) -> None:
+    ) -> VisitorAction:
         if not ref.__is_visible__(self.request):
             self.report_field_error(parent_type, field_node)
-            return
+            return self.BREAK
+
+        return None
 
     def handle_filters(
         self,
         input_type: GraphQLInputObjectType,
         object_value: ast.ObjectValueNode,
-    ) -> None:
+    ) -> VisitorAction:
+        action: VisitorAction = None
         for field_node in self.flatten_object_field_nodes(object_value.fields[0]):
             filter_name = field_node.name.value
             input_field = input_type.fields.get(filter_name)
@@ -306,12 +334,16 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
             if not undine_filter.visible_func(undine_filter, self.request):
                 self.report_input_field_error(input_type, field_node)
+                action = self.BREAK
+
+        return action
 
     def handle_orders(
         self,
         enum_type: GraphQLEnumType,
         list_value: ast.ListValueNode,
-    ) -> None:
+    ) -> VisitorAction:
+        action: VisitorAction = None
         value_node: ast.EnumValueNode
         for value_node in list_value.values:
             enum_name = value_node.value
@@ -328,12 +360,16 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
             if not undine_order.visible_func(undine_order, self.request):
                 self.report_enum_error(enum_type, value_node)
+                action = self.BREAK
+
+        return action
 
     def handle_inputs(
         self,
         input_type: GraphQLInputObjectType,
         object_value: ast.ObjectValueNode,
-    ) -> None:
+    ) -> VisitorAction:
+        action: VisitorAction = None
         for field_node in object_value.fields:
             input_name = field_node.name.value
             input_field = input_type.fields.get(input_name)
@@ -345,29 +381,44 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                 continue
 
             if undine_input.visible_func is None:
+                undine_input_type: GraphQLInputObjectType = get_underlying_type(input_field.type)  # type: ignore[assignment]
+                undine_mutation_type = get_undine_mutation_type(undine_input_type)
+                if undine_mutation_type is None:
+                    continue
+
+                if not undine_mutation_type.__is_visible__(self.request):
+                    self.report_input_field_error(input_type, field_node)
+                    action = self.BREAK
+
                 continue
 
             if not undine_input.visible_func(undine_input, self.request):
                 self.report_input_field_error(input_type, field_node)
+                action = self.BREAK
+
+        return action
 
     def handle_directive_arguments(
         self,
         directive_type: GraphQLDirective,
         node: ast.ArgumentNode,
-    ) -> None:
+    ) -> VisitorAction:
         arg = directive_type.args.get(node.name.value)
         if arg is None:
-            return
+            return None
 
         undine_directive_arg = get_undine_directive_argument(arg)
         if undine_directive_arg is None:
-            return
+            return None
 
         if undine_directive_arg.visible_func is None:
-            return
+            return None
 
         if not undine_directive_arg.visible_func(undine_directive_arg, self.request):
             self.report_directive_argument_error(directive_type, node)
+            return self.BREAK
+
+        return None
 
     # Report errors
 
