@@ -552,7 +552,7 @@ def test_introspection__visibility__orderset__order(graphql, undine_settings, is
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
-def test_introspection__visibility__interface_type(graphql, undine_settings, is_visible) -> None:
+def test_introspection__visibility__interface(graphql, undine_settings, is_visible) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLString)
 
@@ -665,7 +665,7 @@ def test_introspection__visibility__interface__entrypoint__connection(graphql, u
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
-def test_introspection__visibility__union_type(graphql, undine_settings, is_visible) -> None:
+def test_introspection__visibility__union(graphql, undine_settings, is_visible) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -698,7 +698,7 @@ def test_introspection__visibility__union_type(graphql, undine_settings, is_visi
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
-def test_introspection__visibility__union_type__connection(graphql, undine_settings, is_visible) -> None:
+def test_introspection__visibility__union__connection(graphql, undine_settings, is_visible) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
