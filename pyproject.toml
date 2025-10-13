@@ -88,7 +88,7 @@ beautifulsoup4 = "4.14.2"
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.3.0"
 mypy = "1.18.2"
-django-stubs = "5.2.6"
+django-stubs = "5.2.7"
 py-spy = "0.4.1"
 httpx = "0.28.1"
 
