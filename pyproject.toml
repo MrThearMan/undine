@@ -69,12 +69,12 @@ pytest = "8.4.2"
 pytest-django = "4.11.1"
 pytest-asyncio = "1.2.0"
 coverage = "7.11.0"
-hypothesis = "6.142.1"
+hypothesis = "6.142.4"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2025.10.16"
 urllib3 = "2.5.0"
-psycopg = { version = "3.2.11", extras = ["binary", "pool"] }
+psycopg = { version = "3.2.12", extras = ["binary", "pool"] }
 django-modeltranslation = "0.19.17"
 uvicorn = { version = "0.38.0", extras = ["standard"] }
 
