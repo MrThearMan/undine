@@ -9,6 +9,7 @@ from graphql import GraphQLNamedType, GraphQLWrappingType
 
 from undine.converters import convert_to_description
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
@@ -82,6 +83,11 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:  # Required for Django<5.1
 
 @convert_to_description.register
 def _(ref: Connection, **kwargs: Any) -> Any:
+    return ref.description
+
+
+@convert_to_description.register
+def _(ref: OffsetPagination, **kwargs: Any) -> Any:
     return ref.description
 
 

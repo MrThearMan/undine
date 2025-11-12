@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-from types import FunctionType
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
 from undine.converters import (
     convert_to_description,
+    convert_to_entrypoint_ref,
     convert_to_entrypoint_resolver,
     convert_to_entrypoint_subscription,
     convert_to_graphql_argument_map,
     convert_to_graphql_type,
-    is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
-from undine.exceptions import MissingEntrypointRefError
-from undine.parsers import parse_class_attribute_docstrings, parse_is_nullable
+from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.graphql.utils import check_directives
@@ -179,12 +177,7 @@ class Entrypoint:
         self.name = name
         self.schema_name = self.schema_name or to_schema_name(name)
 
-        if self.ref is Undefined:
-            raise MissingEntrypointRefError(name=name, cls=root_type)
-
-        if isinstance(self.ref, FunctionType):
-            self.many = is_many(self.ref)
-            self.nullable = parse_is_nullable(self.ref)
+        self.ref = convert_to_entrypoint_ref(self.ref, caller=self)
 
         if self.description is Undefined:
             self.description = self.root_type.__attribute_docstrings__.get(name)

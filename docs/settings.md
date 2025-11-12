@@ -56,7 +56,7 @@ for `Fields` and `Entrypoints`. See [Async Support](async.md) for more informati
 /// details | `AUTOGENERATION`
     attrs: {id: autogeneration}
 
-Type `bool` | Default: `True`
+Type `bool` | Default: `False`
 
 Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `MutationTypes`,
 `Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on an individual
@@ -78,8 +78,8 @@ The key used to store a `CalculationArgument` in the `extensions` of the `GraphQ
 
 Type: `bool` | Default: `True`
 
-Should names be converted from _'snake_case'_ to _'camelCase'_ for the GraphQL schema?
-Conversion is not applied if `schema_name` is set manually.
+Should field names be converted from _'snake_case'_ to _'camelCase'_ for the GraphQL schema?
+Conversion is not applied if `schema_name` is set manually in on the `Entrypoint`, `Field`, `Input`, etc.
 
 ///
 
@@ -92,48 +92,12 @@ The key used to store a `Connection` in the `extensions` of the `GraphQLObjectTy
 
 ///
 
-/// details | `CONNECTION_INDEX_KEY`
-    attrs: {id: connection_index_key}
+/// details | `PAGINATION_INDEX_KEY`
+    attrs: {id: pagination_index_key}
 
 Type: `str` | Default: `"_undine_pagination_index"`
 
 The key to which a nested connection's pagination indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_PAGE_SIZE`
-    attrs: {id: connection_page_size}
-
-Type: `int` | Default: `100`
-
-The maximum number of items to return from a Connection at a time.
-
-///
-
-/// details | `CONNECTION_START_INDEX_KEY`
-    attrs: {id: connection_start_index_key}
-
-Type: `str` | Default: `"_undine_pagination_start"`
-
-The key to which a nested connection's pagination start indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_STOP_INDEX_KEY`
-    attrs: {id: connection_stop_index_key}
-
-Type: `str` | Default: `"_undine_pagination_stop"`
-
-The key to which a nested connection's pagination stop indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_TOTAL_COUNT_KEY`
-    attrs: {id: connection_total_count_key}
-
-Type: `str` | Default: `"_undine_pagination_total_count"`
-
-The key to which a nested connection's total counts are annotated to.
 
 ///
 
@@ -200,16 +164,6 @@ Disabled by default to improve performance of the schema creation.
 Type `str` | Default: `"undine_entrypoint"`
 
 The key used to store an `Entrypoint` in the `extensions` of the `GraphQLField`.
-
-///
-
-/// details | `LIST_ENTRYPOINT_LIMIT`
-    attrs: {id: list_entrypoint_limit}
-
-Type `int | None` | Default: `None`
-
-Default number of objects that are fetched per model when fetching results from a list Entrypoint
-(not Connections). If None, all items are fetched.
 
 ///
 
@@ -349,6 +303,16 @@ The key used to store an `InterfaceField` in the `extensions` of the `GraphQLFie
 Type: `str` | Default: `"undine_interface"`
 
 The key used to store a `InterfaceType` in the `extensions` of the `GraphQLInterfaceType`.
+
+///
+
+/// details | `LIST_ENTRYPOINT_LIMIT`
+    attrs: {id: list_entrypoint_limit}
+
+Type `int | None` | Default: `None`
+
+Maximum number of objects that can be returned from a list `Entrypoint` when not using pagination.
+If None, all items are fetched.
 
 ///
 
@@ -499,6 +463,15 @@ Whether to remove error location information to GraphQL errors.
 
 ///
 
+/// details | `OFFSET_PAGINATION_EXTENSIONS_KEY`
+    attrs: {id: offset_pagination_extensions_key}
+
+Type: `str` | Default: `"undine_offset_pagination"`
+
+The key used to store an `OffsetPagination` in the `extensions` of the `GraphQLObjectType`.
+
+///
+
 /// details | `OPERATION_HOOKS`
     attrs: {id: operation_hooks}
 
@@ -534,6 +507,42 @@ The key used to store an `Order` in the `extensions` of the `GraphQLEnumValue`.
 Type: `str` | Default: `"undine_orderset"`
 
 The key used to store a `OrderSet` in the `extensions` of the `GraphQLEnumType`.
+
+///
+
+/// details | `PAGINATION_PAGE_SIZE`
+    attrs: {id: pagination_page_size}
+
+Type: `int` | Default: `100`
+
+The maximum number of items to return from a page when paginating.
+
+///
+
+/// details | `PAGINATION_START_INDEX_KEY`
+    attrs: {id: pagination_start_index_key}
+
+Type: `str` | Default: `"_undine_pagination_start"`
+
+The key to which a nested pagination start indexes are annotated to.
+
+///
+
+/// details | `PAGINATION_STOP_INDEX_KEY`
+    attrs: {id: pagination_stop_index_key}
+
+Type: `str` | Default: `"_undine_pagination_stop"`
+
+The key to which a nested pagination stop indexes are annotated to.
+
+///
+
+/// details | `PAGINATION_TOTAL_COUNT_KEY`
+    attrs: {id: pagination_total_count_key}
+
+Type: `str` | Default: `"_undine_pagination_total_count"`
+
+The key to which a nested pagination total counts are annotated to.
 
 ///
 
@@ -615,8 +624,8 @@ The key used to store a `QueryType` in the `extensions` of the `GraphQLObjectTyp
 
 Type: `str` | Default: `"filter"`
 
-The key that the input argument based on a `FilterSet` of a `QueryType` is added to
-when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields`.
+The name of the input argument that is created for a `FilterSet` when a `QueryType`
+using that `FilterSet` is used in a list `Entrypoint` or many-related `Field`.
 
 ///
 
@@ -625,8 +634,8 @@ when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields
 
 Type: `str` | Default: `"orderBy"`
 
-The key that the input argument based on an `OrderSet` of a `QueryType` is added to
-when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields`.
+The name of the input argument that is created for an `OrderSet` when a `QueryType`
+using that `OrderSet` is used in a list `Entrypoint` or many-related `Field`.
 
 ///
 

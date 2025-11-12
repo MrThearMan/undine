@@ -23,6 +23,7 @@ from undine import Field as UndineField
 from undine.converters import convert_to_field_ref
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.optimizer.optimizer import OptimizationData
+from undine.pagination import OffsetPagination
 from undine.relay import Connection
 from undine.typing import CombinableExpression, GQLInfo, Lambda, ToManyField, ToOneField
 from undine.utils.graphql.utils import get_arguments, get_queried_field_name
@@ -218,6 +219,11 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
 
 @convert_to_field_ref.register
 def _(ref: Connection, **kwargs: Any) -> Any:
+    return ref
+
+
+@convert_to_field_ref.register
+def _(ref: OffsetPagination, **kwargs: Any) -> Any:
     return ref
 
 

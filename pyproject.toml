@@ -84,6 +84,7 @@ pymdown-extensions = "10.16.1"
 pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 beautifulsoup4 = "4.14.2"
+click = "8.2.1"  # TODO: Remove when https://github.com/mkdocs/mkdocs/issues/4032 is fixed
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.4.0"

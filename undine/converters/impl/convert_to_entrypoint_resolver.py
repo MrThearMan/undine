@@ -10,6 +10,7 @@ from graphql import GraphQLFieldResolver
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_entrypoint_resolver
 from undine.exceptions import InvalidEntrypointMutationTypeError
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection, Node
 from undine.resolvers import (
@@ -107,6 +108,19 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
         return InterfaceConnectionResolver(connection=ref, entrypoint=caller)
 
     return ConnectionResolver(connection=ref, entrypoint=caller)
+
+
+@convert_to_entrypoint_resolver.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
+    caller: Entrypoint = kwargs["caller"]
+
+    if ref.union_type is not None:
+        return UnionTypeResolver(union_type=ref.union_type, entrypoint=caller)
+
+    if ref.interface_type is not None:
+        return InterfaceResolver(interface=ref.interface_type, entrypoint=caller)
+
+    return QueryTypeManyResolver(query_type=ref.query_type, entrypoint=caller)
 
 
 @convert_to_entrypoint_resolver.register

@@ -3,8 +3,7 @@ description: File upload support in Undine.
 # File Upload
 
 In this section, we'll cover the everything necessary for adding support for file uploads
-to your GraphQL schema using the [GraphQL multipart request specification]{:target="_blank"}
-specification.
+to your GraphQL schema using the [GraphQL multipart request specification]{:target="_blank"}.
 
 [GraphQL multipart request specification]: https://github.com/jaydenseric/graphql-multipart-request-spec
 

@@ -1,5 +1,6 @@
 from undine import Entrypoint, QueryType, RootType
-from undine.relay import Connection, PaginationHandler
+from undine.pagination import PaginationHandler
+from undine.relay import Connection
 
 from .models import Task
 

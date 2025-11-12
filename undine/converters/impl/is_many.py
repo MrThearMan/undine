@@ -11,6 +11,7 @@ from undine import Calculation, MutationType, QueryType, UnionType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldDoesNotExistError, ModelFieldNotARelationOfModelError
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
@@ -104,6 +105,11 @@ def _(_: GenericForeignKey, **kwargs: Any) -> bool:
 def _(_: Connection, **kwargs: Any) -> bool:
     # Connection edges have many nodes, but the connection itself is a single node.
     return False
+
+
+@is_many.register
+def _(_: OffsetPagination, **kwargs: Any) -> bool:
+    return True
 
 
 @is_many.register

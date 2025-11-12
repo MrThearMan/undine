@@ -153,7 +153,7 @@ UNDINE = {
     "NO_ERROR_LOCATION": True,
     # "EXPERIMENTAL_VISIBILITY_CHECKS": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
-    # "INCLUDE_ERROR_TRACEBACK": True,
+    "INCLUDE_ERROR_TRACEBACK": True,
     "MIDDLEWARE": [
         "example_project.app.middleware.error_logging_middleware",
     ],

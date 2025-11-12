@@ -9,5 +9,6 @@ from .models import Task
 class MyDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT]): ...
 
 
-class TaskCreateMutation(MutationType[Task], directives=[MyDirective()]):
+@MyDirective()
+class TaskCreateMutation(MutationType[Task]):
     name = Input()

@@ -11,6 +11,7 @@ from undine import Calculation, Field, QueryType
 from undine.converters import convert_to_field_resolver
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
+from undine.pagination import OffsetPagination
 from undine.relay import Connection
 from undine.resolvers import (
     GlobalIDResolver,
@@ -23,6 +24,7 @@ from undine.resolvers import (
     NestedQueryTypeSingleResolver,
 )
 from undine.resolvers.query import FieldFunctionResolver
+from undine.settings import undine_settings
 from undine.typing import CombinableExpression, ModelField, ToManyField, ToOneField
 
 
@@ -131,3 +133,10 @@ def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
 def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Field = kwargs["caller"]
     return NestedConnectionResolver(connection=ref, field=caller)
+
+
+@convert_to_field_resolver.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
+    caller: Field = kwargs["caller"]
+    caller.extensions[undine_settings.OFFSET_PAGINATION_EXTENSIONS_KEY] = ref
+    return NestedQueryTypeManyResolver(query_type=ref.query_type, field=caller)

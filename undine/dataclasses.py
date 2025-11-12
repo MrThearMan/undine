@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from graphql import FieldNode, InlineFragmentNode
 
     from undine import QueryType
-    from undine.relay import PaginationHandler
+    from undine.pagination import PaginationHandler
     from undine.typing import (
         DispatchProtocol,
         DjangoExpression,

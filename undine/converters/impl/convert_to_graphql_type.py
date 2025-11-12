@@ -87,6 +87,7 @@ from undine.dataclasses import (
 )
 from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
 from undine.relay import Connection, PageInfoType
 from undine.resolvers.query import NamedTupleFieldResolver, TypedDictFieldResolver
@@ -832,6 +833,15 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             undine_settings.CONNECTION_EXTENSIONS_KEY: ref,
         },
     )
+
+
+@convert_to_graphql_type.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if ref.union_type is not None:
+        return convert_to_graphql_type(ref.union_type, **kwargs)
+    if ref.interface_type is not None:
+        return convert_to_graphql_type(ref.interface_type, **kwargs)
+    return convert_to_graphql_type(ref.query_type, **kwargs)
 
 
 @convert_to_graphql_type.register

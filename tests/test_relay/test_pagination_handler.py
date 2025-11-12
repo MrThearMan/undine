@@ -11,7 +11,8 @@ from example_project.app.models import Person, Task
 from tests.factories import PersonFactory, TaskFactory
 from tests.helpers import exact, mock_gql_info, parametrize_helper
 from undine.exceptions import GraphQLPaginationArgumentValidationError
-from undine.relay import PaginationHandler, offset_to_cursor
+from undine.pagination import PaginationHandler
+from undine.relay import offset_to_cursor
 from undine.typing import ToManyField
 
 
@@ -468,7 +469,7 @@ def test_pagination_handler__paginate_prefetch_queryset__last(undine_settings) -
     pagination = PaginationHandler(typename="Test", last=2, page_size=100)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(2), Value(0)))
@@ -481,7 +482,7 @@ def test_pagination_handler__paginate_prefetch_queryset__after_and_last(undine_s
     pagination = PaginationHandler(typename="Test", after=offset_to_cursor("Test", 50), last=10, page_size=100)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(10), Value(51)))
@@ -495,7 +496,7 @@ def test_pagination_handler__paginate_prefetch_queryset__requires_total_count(un
     pagination.requires_total_count = True
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    assert pagination.total_count == F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    assert pagination.total_count == F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
     assert pagination.start == 0
     assert pagination.stop == 100
 
@@ -524,7 +525,7 @@ def test_pagination_handler__paginate_prefetch_queryset__no_page_size__requires_
     pagination.requires_total_count = True
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    assert pagination.total_count == F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    assert pagination.total_count == F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
     assert pagination.start == 0
     assert pagination.stop is None
 
@@ -538,7 +539,7 @@ def test_pagination_handler__paginate_prefetch_queryset__no_page_size__last(undi
     pagination = PaginationHandler(typename="Test", last=2, page_size=None)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(2), Value(0)))

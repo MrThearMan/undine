@@ -11,6 +11,7 @@ from undine import Calculation, QueryType
 from undine import Field as UndineField
 from undine.converters import is_field_nullable
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression
@@ -112,4 +113,9 @@ def _(_: GenericRelation, **kwargs: Any) -> bool:
 
 @is_field_nullable.register
 def _(_: Connection, **kwargs: Any) -> bool:
+    return False
+
+
+@is_field_nullable.register
+def _(_: OffsetPagination, **kwargs: Any) -> bool:
     return False

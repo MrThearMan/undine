@@ -10,8 +10,8 @@ your GraphQL Schema.
 
 To use subscriptions, you'll need to turn on Undine's [async support](async.md),
 and use the [channels integration](integrations.md#channels). This will set you up
-with a web server capable of [GraphQL over WebSocket] protocol. You'll also need
-a client capable of using the protocol.
+with a web server capable of [GraphQL over WebSocket]{:target="blank"} protocol.
+You'll also need a client capable of using the protocol.
 
 [GraphQL over WebSocket]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
 
@@ -70,10 +70,10 @@ while the value of the `countdown` field is decreases from 10 to 1.
 ```
 
 The subscription's output type will be determined based on the first generic type parameter
-on the function's return type, so typing it is required.
+on the AsyncGenerator return type (in this case `int`), so typing it is required.
 
 To add arguments for the subscription, you can add them to the function signature.
-Typing these arguments is required to determine their input type.
+Typing these arguments is also required to determine their input type.
 
 ```python
 -8<- "subscriptions/subscription_arguments.py"
@@ -110,7 +110,7 @@ to raise multiple errors at once.
 ```
 
 You can also yield a `GraphQLError` from the subscription, which will send
-an error while keeping the subscription open. Adding the error to the return
+an error while keeping the subscription open. Furthermore, adding the error to the return
 type does not change the return type of the subscription.
 
 ```python
@@ -119,8 +119,8 @@ type does not change the return type of the subscription.
 
 ## Permissions
 
-As subscriptions use `Entrypoints`, you can use their permission checks to
-set per-value permissions for the subscription. Raising an exception from
+As subscriptions use `Entrypoints`, you can use their [permission checks](schema.md#permissions)
+to set per-value permissions for the subscription. Raising an exception from
 a permission check will close the subscription and send an error message
 to the client.
 

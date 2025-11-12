@@ -17,6 +17,7 @@ __all__ = [
     "convert_to_bad_lookups",
     "convert_to_default_value",
     "convert_to_description",
+    "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
     "convert_to_field_ref",
     "convert_to_field_resolver",
@@ -83,6 +84,19 @@ Arguments:
 
 `ref: Any`: The reference to parse description from.
 """
+
+
+convert_to_entrypoint_ref: FunctionDispatcher[Any] = FunctionDispatcher()  # TODO: Test and document
+"""
+Convert the given value to a reference that Entrypoint can deal with.
+
+Arguments:
+
+`ref: Any`: The value to convert.
+
+`caller: Entrypoint`: Entrypoint instance that is calling this function.
+"""
+
 
 convert_to_entrypoint_resolver: FunctionDispatcher[GraphQLFieldResolver] = FunctionDispatcher()
 """

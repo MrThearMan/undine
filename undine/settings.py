@@ -82,12 +82,9 @@ class UndineDefaultSettings(NamedTuple):
 
     # Limits
 
-    CONNECTION_PAGE_SIZE: int | None = 100
-    """The maximum number of items to return in a page of a Connection."""
-
     LIST_ENTRYPOINT_LIMIT: int | None = None
     """
-    Default number of objects that are fetched when fetching results from a list Entrypoint (not Connections).
+    Maximum number of objects that can be returned from a list Entrypoint when not using pagination.
     If None, all items are fetched.
     """
 
@@ -96,6 +93,23 @@ class UndineDefaultSettings(NamedTuple):
 
     MAX_ORDERS_PER_TYPE: int = 10
     """The maximum number of orders allowed for a single `OrderSet`."""
+
+    # Pagination
+
+    PAGINATION_PAGE_SIZE: int | None = 100
+    """The maximum number of items to return in a page when paginating."""
+
+    PAGINATION_START_INDEX_KEY: str = "_undine_pagination_start"
+    """The key to which the connection's pagination start index is annotated to or added to in the queryset hints."""
+
+    PAGINATION_STOP_INDEX_KEY: str = "_undine_pagination_stop"
+    """The key to which the connection's pagination stop index is annotated to or added to in the queryset hints."""
+
+    PAGINATION_INDEX_KEY: str = "_undine_pagination_index"
+    """The key to which nested connection node's pagination index is annotated to the queryset."""
+
+    PAGINATION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
+    """The key to which the connection's total count annotated to or added to in the queryset hints."""
 
     # GraphQL execution
 
@@ -202,18 +216,6 @@ class UndineDefaultSettings(NamedTuple):
 
     # Optimizer
 
-    CONNECTION_START_INDEX_KEY: str = "_undine_pagination_start"
-    """The key to which the connection's pagination start index is annotated to or added to in the queryset hints."""
-
-    CONNECTION_STOP_INDEX_KEY: str = "_undine_pagination_stop"
-    """The key to which the connection's pagination stop index is annotated to or added to in the queryset hints."""
-
-    CONNECTION_INDEX_KEY: str = "_undine_pagination_index"
-    """The key to which nested connection node's pagination index is annotated to the queryset."""
-
-    CONNECTION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
-    """The key to which the connection's total count annotated to or added to in the queryset hints."""
-
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
     """Disable optimizing fetched fields with `queryset.only()`."""
 
@@ -261,6 +263,9 @@ class UndineDefaultSettings(NamedTuple):
 
     CONNECTION_EXTENSIONS_KEY: str = "undine_connection"
     """The key to use for storing the connection in the extensions of the GraphQL type."""
+
+    OFFSET_PAGINATION_EXTENSIONS_KEY: str = "undine_offset_pagination"
+    """The key to use for storing the offset pagination in the extensions of the GraphQL field."""
 
     DIRECTIVE_ARGUMENT_EXTENSIONS_KEY: str = "undine_directive_argument"
     """The key used to store a Directive argument in the GraphQL extensions."""
@@ -337,6 +342,11 @@ IMPORT_STRINGS: set[str | bytes] = {
 
 REMOVED_SETTINGS: dict[str, Any] = {
     "ENTRYPOINT_LIMIT_PER_MODEL": "LIST_ENTRYPOINT_LIMIT",
+    "CONNECTION_PAGE_SIZE": "PAGINATION_PAGE_SIZE",
+    "CONNECTION_START_INDEX_KEY": "PAGINATION_START_INDEX_KEY",
+    "CONNECTION_STOP_INDEX_KEY": "PAGINATION_STOP_INDEX_KEY",
+    "CONNECTION_INDEX_KEY": "PAGINATION_INDEX_KEY",
+    "CONNECTION_TOTAL_COUNT_KEY": "PAGINATION_TOTAL_COUNT_KEY",
 }
 
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]

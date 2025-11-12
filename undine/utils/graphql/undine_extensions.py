@@ -37,6 +37,7 @@ if TYPE_CHECKING:
         UnionType,
     )
     from undine.directives import Directive, DirectiveArgument
+    from undine.pagination import OffsetPagination
     from undine.relay import Connection
     from undine.scalars import ScalarType
 
@@ -54,6 +55,7 @@ __all__ = [
     "get_undine_interface_field",
     "get_undine_interface_type",
     "get_undine_mutation_type",
+    "get_undine_offset_pagination",
     "get_undine_order",
     "get_undine_orderset",
     "get_undine_query_type",
@@ -118,6 +120,10 @@ def get_undine_order(value: GraphQLEnumValue) -> Order | None:
 
 def get_undine_connection(object_type: GraphQLObjectType) -> Connection | None:
     return object_type.extensions.get(undine_settings.CONNECTION_EXTENSIONS_KEY)
+
+
+def get_undine_offset_pagination(field: GraphQLField) -> OffsetPagination | None:
+    return field.extensions.get(undine_settings.OFFSET_PAGINATION_EXTENSIONS_KEY)
 
 
 def get_undine_directive(directive: GraphQLDirective) -> type[Directive] | None:
