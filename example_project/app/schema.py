@@ -11,6 +11,7 @@ from example_project.app.types import Commentable, CommentType, Named, ReportTyp
 from undine import Entrypoint, GQLInfo, RootType, create_schema
 from undine.directives import Directive, DirectiveArgument
 from undine.optimizer.optimizer import optimize_sync
+from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
 
 
@@ -26,6 +27,8 @@ class Query(RootType):
 
     node = Entrypoint(Node)
     paged_tasks = Entrypoint(Connection(TaskType))
+
+    limited_tasks = Entrypoint(OffsetPagination(TaskType))
 
     commentable = Entrypoint(Commentable, many=True)
     paged_commentable = Entrypoint(Connection(Commentable))

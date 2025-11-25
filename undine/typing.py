@@ -171,8 +171,10 @@ __all__ = [
     "ServerMessage",
     "SubscribeMessage",
     "SupportsLookup",
+    "TInterfaceType",
     "TModels",
     "TQueryType",
+    "TUnionType",
     "ToManyField",
     "ToOneField",
     "UndineErrorCodes",
@@ -212,6 +214,8 @@ GNT = TypeVar("GNT", bound=GraphQLNullableType)
 TTypeHint = TypeVar("TTypeHint", bound=TypeHint)
 TQueryType = TypeVar("TQueryType", bound="QueryType")
 TUnionType = TypeVar("TUnionType", bound="UnionType")
+TInterfaceType = TypeVar("TInterfaceType", bound="InterfaceType")
+TInterfaceQueryType = TypeVar("TInterfaceQueryType", bound="QueryType | InterfaceType")
 TQueryTypes = TypeVarTuple("TQueryTypes")
 TModels = TypeVarTuple("TModels")
 
@@ -837,9 +841,9 @@ class InterfaceFieldParams(TypedDict, total=False):
     """Arguments for an Undine `InterfaceField`."""
 
     args: GraphQLArgumentMap
-    resolvable_output_type: bool
     description: str | None
     deprecation_reason: str | None
+    field_name: str
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cache
 from typing import TYPE_CHECKING
 
-from undine.converters import convert_to_python_type
+from undine.converters import convert_model_field_to_python_type
 from undine.dataclasses import RelInfo
 from undine.typing import RelationType
 from undine.utils.model_utils import generic_foreign_key_for_generic_relation, get_related_name
@@ -44,13 +44,13 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
                 # Source details
                 field_name=name,
                 model=model,
-                model_pk_type=convert_to_python_type(fk_field),  # Type of the fk field, not related model pk.
+                model_pk_type=convert_model_field_to_python_type(fk_field),  # Type of the fk field
                 nullable=True,  # Reverse fields are always nullable.
                 #
                 # Target details
                 related_name=generic_fk_field.name,
                 related_model=generic_fk_field.model,
-                related_model_pk_type=convert_to_python_type(generic_fk_field.model._meta.pk),
+                related_model_pk_type=convert_model_field_to_python_type(generic_fk_field.model._meta.pk),
                 related_nullable=fk_field.null and ct_field.null,
             )
             continue
@@ -70,7 +70,7 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
                 # Source details
                 field_name=name,
                 model=model,
-                model_pk_type=convert_to_python_type(model._meta.pk),
+                model_pk_type=convert_model_field_to_python_type(model._meta.pk),
                 nullable=fk_field.null and ct_field.null,
                 #
                 # Target details
@@ -79,7 +79,9 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
                 # so we don't have a single model or related name.
                 related_name=None,
                 related_model=None,
-                related_model_pk_type=convert_to_python_type(fk_field),  # Type of the fk field, not related model pk.
+                related_model_pk_type=convert_model_field_to_python_type(
+                    fk_field
+                ),  # Type of the fk field, not related model pk.
                 related_nullable=True,  # Reverse fields are always nullable.
             )
             continue
@@ -99,13 +101,13 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
                 # Source details
                 field_name=name,
                 model=model,
-                model_pk_type=convert_to_python_type(model._meta.pk),
+                model_pk_type=convert_model_field_to_python_type(model._meta.pk),
                 nullable=nullable,
                 #
                 # Target details
                 related_name=get_related_name(field if is_self_relation else field.remote_field),  # type: ignore[arg-type]
                 related_model=related_model,
-                related_model_pk_type=convert_to_python_type(related_model._meta.pk),
+                related_model_pk_type=convert_model_field_to_python_type(related_model._meta.pk),
                 related_nullable=True,  # Reverse fields are always nullable
             )
             continue
@@ -123,13 +125,13 @@ def parse_model_relation_info(*, model: type[Model]) -> dict[str, RelInfo]:
                 # Source details
                 field_name=name,
                 model=model,
-                model_pk_type=convert_to_python_type(model._meta.pk),
+                model_pk_type=convert_model_field_to_python_type(model._meta.pk),
                 nullable=True,  # Reverse fields are always nullable
                 #
                 # Target details
                 related_name=forward_field.name,
                 related_model=forward_field.model,
-                related_model_pk_type=convert_to_python_type(forward_field.model._meta.pk),
+                related_model_pk_type=convert_model_field_to_python_type(forward_field.model._meta.pk),
                 related_nullable=nullable,
             )
             continue

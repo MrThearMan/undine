@@ -19,7 +19,8 @@ from undine.exceptions import (
     GraphQLNodeQueryTypeMissingError,
     GraphQLPermissionError,
 )
-from undine.relay import Connection, Node, PaginationHandler, offset_to_cursor, to_global_id
+from undine.pagination import PaginationHandler
+from undine.relay import Connection, Node, offset_to_cursor, to_global_id
 from undine.resolvers import ConnectionResolver, GlobalIDResolver, NestedConnectionResolver, NodeResolver
 from undine.typing import ConnectionDict, GQLInfo, NodeDict, PageInfoDict
 
@@ -320,9 +321,9 @@ def test_resolvers__nested_connection_resolver(undine_settings) -> None:
             "assignees",
             queryset=Person.objects.annotate(
                 **{
-                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
-                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
-                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                    undine_settings.PAGINATION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.PAGINATION_START_INDEX_KEY: Value(0),
+                    undine_settings.PAGINATION_STOP_INDEX_KEY: Value(1),
                 },
             ),
         ),
@@ -376,9 +377,9 @@ def test_resolvers__nested_connection_resolver__field_permissions(undine_setting
             "assignees",
             queryset=Person.objects.annotate(
                 **{
-                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
-                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
-                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                    undine_settings.PAGINATION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.PAGINATION_START_INDEX_KEY: Value(0),
+                    undine_settings.PAGINATION_STOP_INDEX_KEY: Value(1),
                 },
             ),
         ),
@@ -411,9 +412,9 @@ def test_resolvers__nested_connection_resolver__query_type_permissions(undine_se
             "assignees",
             queryset=Person.objects.annotate(
                 **{
-                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
-                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
-                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                    undine_settings.PAGINATION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.PAGINATION_START_INDEX_KEY: Value(0),
+                    undine_settings.PAGINATION_STOP_INDEX_KEY: Value(1),
                 },
             ),
         ),
@@ -443,9 +444,9 @@ def test_resolvers__nested_connection_resolver__to_attr(undine_settings) -> None
             "assignees",
             queryset=Person.objects.annotate(
                 **{
-                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
-                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
-                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                    undine_settings.PAGINATION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.PAGINATION_START_INDEX_KEY: Value(0),
+                    undine_settings.PAGINATION_STOP_INDEX_KEY: Value(1),
                 },
             ),
             to_attr="original_assignees",
@@ -499,9 +500,9 @@ async def test_resolvers__nested_connection_resolver__async(undine_settings) -> 
             "assignees",
             queryset=Person.objects.annotate(
                 **{
-                    undine_settings.CONNECTION_TOTAL_COUNT_KEY: Value(100),
-                    undine_settings.CONNECTION_START_INDEX_KEY: Value(0),
-                    undine_settings.CONNECTION_STOP_INDEX_KEY: Value(1),
+                    undine_settings.PAGINATION_TOTAL_COUNT_KEY: Value(100),
+                    undine_settings.PAGINATION_START_INDEX_KEY: Value(0),
+                    undine_settings.PAGINATION_STOP_INDEX_KEY: Value(1),
                 },
             ),
         ),

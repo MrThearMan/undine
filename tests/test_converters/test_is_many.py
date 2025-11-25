@@ -5,13 +5,25 @@ from typing import Any, NamedTuple, TypedDict
 import pytest
 from django.db.models import CharField, F, Q, QuerySet, Subquery, Value
 from django.db.models.functions import Now
+from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, MutationType, QueryType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    DjangoExpression,
+    GQLInfo,
+    InterfaceField,
+    InterfaceType,
+    MutationType,
+    QueryType,
+)
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldNotARelationOfModelError
+from undine.pagination import OffsetPagination
+from undine.relay import Connection
 
 
 class Params(NamedTuple):
@@ -235,3 +247,26 @@ def test_is_many__mutation_type__model__many() -> None:
 def test_is_many__mutation_type__model__not_correct() -> None:
     with pytest.raises(ModelFieldNotARelationOfModelError):
         assert is_many(Project, model=Task, name="assignees") is True
+
+
+def test_is_many__connection() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    connection = Connection(TaskType)
+
+    assert is_many(connection, model=Task, name="assignees") is False
+
+
+def test_is_many__offset_pagination() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = OffsetPagination(TaskType)
+
+    assert is_many(pagination, model=Task, name="assignees") is True
+
+
+def test_is_many__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert is_many(Named.name, model=Task, name="name") is False

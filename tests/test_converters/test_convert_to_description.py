@@ -5,13 +5,14 @@ from typing import Any, NamedTuple
 import pytest
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import CASCADE, CharField, Count, F, ForeignKey, Q, Value
-from graphql import GraphQLNonNull, GraphQLScalarType
+from graphql import GraphQLNonNull, GraphQLScalarType, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, QueryType
+from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, InterfaceField, InterfaceType, QueryType
 from undine.converters import convert_to_description
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
 
 
@@ -121,6 +122,34 @@ def test_parse_description__calculated() -> None:
     assert convert_to_description(ExampleCalculation) == "Description."
 
 
-
 def test_parse_description__model() -> None:
     assert convert_to_description(Task) is None
+
+
+def test_convert_to_description__offset_pagination() -> None:
+    class TaskType(QueryType[Task]):
+        """foo"""
+
+    pagination = OffsetPagination(TaskType, description="bar")
+
+    result = convert_to_description(pagination)
+    assert result == "bar"
+
+
+def test_convert_to_description__offset_pagination__from_query_type() -> None:
+    class TaskType(QueryType[Task]):
+        """foo"""
+
+    pagination = OffsetPagination(TaskType)
+
+    result = convert_to_description(pagination)
+    assert result == "foo"
+
+
+
+def test_convert_to_description__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString), description="foo")
+
+    result = convert_to_description(Named.name)
+    assert result == "foo"

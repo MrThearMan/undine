@@ -3,15 +3,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from django.db.models import Value
-from graphql import (
-    GraphQLDirective,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLNamedType,
-    GraphQLNonNull,
-    GraphQLSchema,
-    GraphQLString,
-)
+from graphql import GraphQLDirective, GraphQLInt, GraphQLNamedType, GraphQLNonNull, GraphQLSchema, GraphQLString
 from graphql.language import DirectiveLocation
 
 from example_project.app.models import Project, Task
@@ -36,6 +28,7 @@ from undine import (
 )
 from undine.directives import Directive, DirectiveArgument
 from undine.interface import InterfaceField
+from undine.relay import Node
 from undine.scalars import ScalarType
 from undine.utils.graphql.sdl_printer import SDLPrinter
 from undine.utils.graphql.type_registry import GraphQLComplexityDirective, GraphQLOneOfDirective
@@ -923,9 +916,6 @@ def test_sdl_printer__schema_with_directive() -> None:
 
 
 def test_sdl_printer__interface_type() -> None:
-    class Node(InterfaceType):
-        id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
-
     class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
         name = Field()
 
@@ -935,12 +925,15 @@ def test_sdl_printer__interface_type() -> None:
     schema = create_schema(query=Query)
 
     assert print_schema(schema) == gql_dedent(
-        """
+        '''
+        """An interface for objects with Global IDs."""
         interface Node {
+          """The Global ID of an object."""
           id: ID!
         }
 
         type TaskType implements Node {
+          """The Global ID of an object."""
           id: ID!
           name: String!
         }
@@ -950,14 +943,11 @@ def test_sdl_printer__interface_type() -> None:
             pk: Int!
           ): TaskType!
         }
-        """
+        '''
     )
 
 
 def test_sdl_printer__interface_type__multiple() -> None:
-    class Node(InterfaceType):
-        id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
-
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -969,16 +959,19 @@ def test_sdl_printer__interface_type__multiple() -> None:
     schema = create_schema(query=Query)
 
     assert print_schema(schema) == gql_dedent(
-        """
+        '''
         interface Named {
           name: String!
         }
 
+        """An interface for objects with Global IDs."""
         interface Node {
+          """The Global ID of an object."""
           id: ID!
         }
 
         type TaskType implements Node & Named {
+          """The Global ID of an object."""
           id: ID!
           name: String!
         }
@@ -988,14 +981,11 @@ def test_sdl_printer__interface_type__multiple() -> None:
             pk: Int!
           ): TaskType!
         }
-        """
+        '''
     )
 
 
 def test_sdl_printer__interface_type__hierarchical() -> None:
-    class Node(InterfaceType):
-        id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
-
     class Named(InterfaceType, interfaces=[Node]):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -1007,17 +997,21 @@ def test_sdl_printer__interface_type__hierarchical() -> None:
     schema = create_schema(query=Query)
 
     assert print_schema(schema) == gql_dedent(
-        """
+        '''
         interface Named implements Node {
+          """The Global ID of an object."""
           id: ID!
           name: String!
         }
 
+        """An interface for objects with Global IDs."""
         interface Node {
+          """The Global ID of an object."""
           id: ID!
         }
 
         type TaskType implements Node & Named {
+          """The Global ID of an object."""
           id: ID!
           name: String!
         }
@@ -1027,7 +1021,7 @@ def test_sdl_printer__interface_type__hierarchical() -> None:
             pk: Int!
           ): TaskType!
         }
-        """
+        '''
     )
 
 

@@ -18,6 +18,7 @@ from typing import (
     Protocol,
     TypeGuard,
     TypeVar,
+    Union,
     get_args,
     get_origin,
 )
@@ -26,7 +27,7 @@ from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
 from undine.dataclasses import RootAndInfoParams
-from undine.exceptions import FunctionSignatureParsingError
+from undine.exceptions import FunctionSignatureParsingError, UnionTypeMultipleTypesError
 from undine.settings import undine_settings
 from undine.typing import GQLInfo, LiteralArg, ParametrizedType
 
@@ -49,6 +50,7 @@ __all__ = [
     "get_flattened_generic_params",
     "get_instance_name",
     "get_members",
+    "get_non_null_type",
     "get_root_and_info_params",
     "get_signature",
     "get_traceback",
@@ -122,6 +124,30 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     Flattens any union types.
     """
     return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, UnionType) else (arg,)))
+
+
+def get_non_null_type(type_: type) -> Any:
+    """
+    Get a non-null version of a given python type.
+    If type is a Union, the Union must have exactly two members, one of which is a None.
+    """
+    # Remove any 'Required' or 'NotRequired' wrappers.
+    bare_type = type_
+    if is_required_type(type_) or is_not_required_type(type_):
+        bare_type = type_.__args__[0]
+
+    origin = get_origin(bare_type)
+    if origin not in {UnionType, Union}:
+        return bare_type
+
+    args = get_flattened_generic_params(bare_type)
+    if types.NoneType in args:
+        args = tuple(arg for arg in args if arg is not types.NoneType)
+
+    if len(args) > 1:
+        raise UnionTypeMultipleTypesError(args=args)
+
+    return args[0]
 
 
 def cache_signature_if_function(value: Callable[..., Any], *, depth: int = 0) -> Callable[..., Any]:
@@ -226,12 +252,12 @@ def is_lambda(func: Callable[..., Any]) -> TypeGuard[Lambda]:
     return isinstance(func, LambdaType) and func.__name__ == "<lambda>"
 
 
-def is_required_type(type_: Any) -> bool:
+def is_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
     """Check if the given type is a TypedDict `Required` type."""
     return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "Required"  # type: ignore[misc]
 
 
-def is_not_required_type(type_: Any) -> bool:
+def is_not_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
     """Check if the given type is a TypedDict `Required` type."""
     return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
 

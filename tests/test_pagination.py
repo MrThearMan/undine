@@ -11,16 +11,18 @@ from example_project.app.models import Person, Task
 from tests.factories import PersonFactory, TaskFactory
 from tests.helpers import exact, mock_gql_info, parametrize_helper
 from undine.exceptions import GraphQLPaginationArgumentValidationError
-from undine.relay import PaginationHandler, offset_to_cursor
+from undine.pagination import PaginationHandler
+from undine.relay import offset_to_cursor
 from undine.typing import ToManyField
 
 
 class PaginationParams(NamedTuple):
     first: str | int | None = None
     last: str | int | None = None
-    offset: str | int | None = None
     after: str | None = None
     before: str | None = None
+    offset: str | int | None = None
+    limit: str | int | None = None
     page_size: str | int | None = 100
     typename: str = "Test"
 
@@ -70,7 +72,12 @@ class ErrorParams(NamedTuple):
             start=1,
             stop=101,
         ),
-        "max limit": InputParams(
+        "limit": InputParams(
+            params=PaginationParams(limit=1),
+            start=0,
+            stop=1,
+        ),
+        "page size": InputParams(
             params=PaginationParams(page_size=1),
             start=0,
             stop=1,
@@ -174,6 +181,11 @@ class ErrorParams(NamedTuple):
             start=201,
             stop=301,
         ),
+        "offset and limit": InputParams(
+            params=PaginationParams(offset=1, limit=2),
+            start=1,
+            stop=3,
+        ),
     }),
 )
 @pytest.mark.django_db
@@ -207,13 +219,17 @@ def test_pagination_handler__paginate_queryset(params, start, stop, total_count,
             params=PaginationParams(last=-1),
             errors="Argument 'last' must be a positive integer.",
         ),
-        "first exceeds max limit": ErrorParams(
+        "first exceeds page size": ErrorParams(
             params=PaginationParams(first=2, page_size=1),
-            errors="Requesting first 2 records exceeds the limit of 1.",
+            errors="Requesting first 2 records exceeds the maximum page size of 1.",
         ),
-        "last exceeds max limit": ErrorParams(
+        "last exceeds page size": ErrorParams(
             params=PaginationParams(last=2, page_size=1),
-            errors="Requesting last 2 records exceeds the limit of 1.",
+            errors="Requesting last 2 records exceeds the maximum page size of 1.",
+        ),
+        "limit exceeds page size": ErrorParams(
+            params=PaginationParams(limit=2, page_size=1),
+            errors="Requesting 2 records exceeds the maximum page size of 1.",
         ),
         "after negative": ErrorParams(
             params=PaginationParams(after=offset_to_cursor("Test", -1)),
@@ -235,6 +251,10 @@ def test_pagination_handler__paginate_queryset(params, start, stop, total_count,
             params=PaginationParams(offset=1, before=offset_to_cursor("Test", 10)),
             errors="Can only use either `offset` or `before`/`after` for pagination.",
         ),
+        "offset negative": ErrorParams(
+            params=PaginationParams(offset=-1),
+            errors="Argument `offset` must be a positive integer.",
+        ),
         "first not int": ErrorParams(
             params=PaginationParams(first="0"),
             errors="Argument 'first' must be a positive integer.",
@@ -247,7 +267,11 @@ def test_pagination_handler__paginate_queryset(params, start, stop, total_count,
             params=PaginationParams(offset="0"),
             errors="Argument `offset` must be a positive integer.",
         ),
-        "max limit not int": ErrorParams(
+        "limit not int": ErrorParams(
+            params=PaginationParams(limit="0"),
+            errors="Argument `limit` must be a positive integer.",
+        ),
+        "page size not int": ErrorParams(
             params=PaginationParams(page_size="foo"),
             errors="`page_size` must be `None` or a positive integer, got: 'foo'",
         ),
@@ -352,7 +376,7 @@ def test_pagination_handler__paginate_queryset__no_page_size__filter_last(undine
             start=1,
             stop=101,
         ),
-        "max limit": InputParams(
+        "page size": InputParams(
             params=PaginationParams(page_size=1),
             start=0,
             stop=1,
@@ -468,7 +492,7 @@ def test_pagination_handler__paginate_prefetch_queryset__last(undine_settings) -
     pagination = PaginationHandler(typename="Test", last=2, page_size=100)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(2), Value(0)))
@@ -481,7 +505,7 @@ def test_pagination_handler__paginate_prefetch_queryset__after_and_last(undine_s
     pagination = PaginationHandler(typename="Test", after=offset_to_cursor("Test", 50), last=10, page_size=100)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(10), Value(51)))
@@ -495,7 +519,7 @@ def test_pagination_handler__paginate_prefetch_queryset__requires_total_count(un
     pagination.requires_total_count = True
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    assert pagination.total_count == F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    assert pagination.total_count == F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
     assert pagination.start == 0
     assert pagination.stop == 100
 
@@ -524,7 +548,7 @@ def test_pagination_handler__paginate_prefetch_queryset__no_page_size__requires_
     pagination.requires_total_count = True
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    assert pagination.total_count == F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    assert pagination.total_count == F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
     assert pagination.start == 0
     assert pagination.stop is None
 
@@ -538,7 +562,7 @@ def test_pagination_handler__paginate_prefetch_queryset__no_page_size__last(undi
     pagination = PaginationHandler(typename="Test", last=2, page_size=None)
     pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
 
-    total_count = F(undine_settings.CONNECTION_TOTAL_COUNT_KEY)
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
 
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(2), Value(0)))

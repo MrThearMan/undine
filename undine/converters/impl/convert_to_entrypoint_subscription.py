@@ -6,10 +6,15 @@ from typing import Any
 
 from graphql import GraphQLFieldResolver
 
-from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
+from undine import Entrypoint
 from undine.converters import convert_to_entrypoint_subscription
-from undine.relay import Connection, Node
 from undine.resolvers import FunctionSubscriptionResolver
+
+
+@convert_to_entrypoint_subscription.register
+def _(_: Any, **kwargs: Any) -> GraphQLFieldResolver | None:
+    # Don't create a subscription resolver for any Entrypoint reference that is not used for subscriptions
+    return None
 
 
 @convert_to_entrypoint_subscription.register
@@ -22,12 +27,3 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver | None:
     # but there is no harm in creating the resolver anyway.
     caller: Entrypoint = kwargs["caller"]
     return FunctionSubscriptionResolver(func=ref, entrypoint=caller)
-
-
-@convert_to_entrypoint_subscription.register
-def _(
-    _: type[QueryType | MutationType | UnionType | Node | InterfaceType] | Connection,
-    **kwargs: Any,
-) -> GraphQLFieldResolver | None:
-    # Don't create a subscription resolver for any entrypoint reference that is not used for subscriptions
-    return None

@@ -7,15 +7,16 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import F, Model, Q, QuerySet
 from graphql import GraphQLList, GraphQLNonNull, GraphQLType
 
-from undine import Calculation, MutationType, QueryType, UnionType
+from undine import Calculation, InterfaceField, MutationType, QueryType, UnionType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldDoesNotExistError, ModelFieldNotARelationOfModelError
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.model_utils import get_model_field
-from undine.utils.reflection import get_origin_or_noop
+from undine.utils.reflection import get_non_null_type, get_origin_or_noop
 
 
 @is_many.register
@@ -38,7 +39,8 @@ def _(ref: type[Model], **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: TypeRef, **kwargs: Any) -> bool:
-    annotation = get_origin_or_noop(ref.value)
+    ann = get_non_null_type(ref.value)
+    annotation = get_origin_or_noop(ann)
     return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
 
 
@@ -79,7 +81,8 @@ def _(ref: GraphQLType, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: FunctionType, **kwargs: Any) -> bool:
-    annotation = get_origin_or_noop(parse_return_annotation(ref))
+    ann = get_non_null_type(parse_return_annotation(ref))
+    annotation = get_origin_or_noop(ann)
     return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
 
 
@@ -107,7 +110,18 @@ def _(_: Connection, **kwargs: Any) -> bool:
 
 
 @is_many.register
+def _(_: OffsetPagination, **kwargs: Any) -> bool:
+    return True
+
+
+@is_many.register
 def _(_: type[UnionType], **kwargs: Any) -> bool:
     # You always want multiple results from a union,
     # otherwise you should know its type beforehand.
     return True
+
+
+@is_many.register
+def _(_: InterfaceField, **kwargs: Any) -> bool:
+    field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
+    return is_many(field, **kwargs)

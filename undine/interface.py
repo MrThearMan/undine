@@ -5,22 +5,23 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
 from undine.parsers import parse_class_attribute_docstrings
+from undine.query import QueryType
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_interface_type
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func
+from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLInterfaceType, GraphQLOutputType
 
     from undine.directives import Directive
-    from undine.query import Field, QueryType
+    from undine.query import Field
     from undine.typing import (
         DjangoRequestProtocol,
         InterfaceFieldParams,
         InterfaceTypeParams,
-        TQueryType,
+        TInterfaceQueryType,
         VisibilityFunc,
     )
 
@@ -53,6 +54,8 @@ class InterfaceTypeMeta(type):
             return super().__new__(cls, _name, _bases, _attrs)
 
         interfaces = kwargs.get("interfaces", [])
+        interfaces = get_with_inherited_interfaces(interfaces)
+
         for interface in interfaces:
             for field_name, interface_field in interface.__field_map__.items():
                 _attrs.setdefault(field_name, interface_field)
@@ -82,27 +85,30 @@ class InterfaceTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_interface_type(cls.__interface__())
 
-    def __call__(cls, query_type: type[TQueryType]) -> type[TQueryType]:
+    def __call__(cls, implementation: type[TInterfaceQueryType]) -> type[TInterfaceQueryType]:
         """
-        Allow adding this InterfaceType to a QueryType using a decorator syntax
+        Allow iheriting this InterfaceType to a QueryType or another InterfaceType using a decorator syntax.
 
         >>> class Named(InterfaceType): ...
         >>>
         >>> @Named
         >>> class TaskType(QueryType[Task]): ...
         """
-        for field_name, interface_field in cls.__field_map__.items():
-            if field_name in query_type.__field_map__:
-                continue
+        if is_subclass(implementation, QueryType):
+            for field_name, interface_field in cls.__field_map__.items():
+                field = interface_field.as_undine_field()
+                setattr(implementation, field_name, field)
+                implementation.__field_map__[field_name] = field
+                field.__connect__(implementation, field_name)
 
-            field = interface_field.as_undine_field()
-            setattr(query_type, field_name, field)
-            query_type.__field_map__[field_name] = field
-            field.__connect__(query_type, field_name)
+        elif is_subclass(implementation, InterfaceType):
+            for field_name, interface_field in cls.__field_map__.items():
+                setattr(implementation, field_name, interface_field)
+                implementation.__field_map__[field_name] = interface_field
 
-        query_type.__interfaces__.append(cls)  # type: ignore[assignment]
-        cls.__register_as_implementation__(query_type)
-        return query_type
+        implementation.__interfaces__.append(cls)  # type: ignore[assignment]
+        cls.__register_as_implementation__(implementation)
+        return implementation
 
     def __register_as_implementation__(cls, implementation: type[InterfaceType | QueryType]) -> None:
         cls.__implementations__.append(implementation)
@@ -159,7 +165,7 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
         GraphQL extensions for the created `GraphQLInterfaceType`.
 
     >>> class Node(InterfaceType)
-    >>>     id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
+    >>>     id = InterfaceField(GraphQLNonNull(GraphQLID), field_name="pk")
     """
 
     # Set in metaclass
@@ -177,8 +183,8 @@ class InterfaceField:
     A class for defining a field for an `InterfaceType`.
     Represents a field on a GraphQL `Interface` for the `InterfaceType` this is added to.
 
-    >>> class Node(InterfaceType):
-    >>>     id = InterfaceField(GraphQLNonNull(GraphQLID), resolvable_output_type=True)
+    >>> class Named(InterfaceType):
+    ...     name = InterfaceField(GraphQLNonNull(GraphQLString))
     """
 
     def __init__(self, output_type: GraphQLOutputType, **kwargs: Unpack[InterfaceFieldParams]) -> None:
@@ -187,20 +193,18 @@ class InterfaceField:
 
         :param output_type: The output type to use for the `InterfaceField`.
         :param args: GraphQL arguments for the `InterfaceField`.
-        :param resolvable_output_type: If True, the output type will be used as the reference of a `Field`
-                                       when the `InterfaceType` is added to a `QueryType`.
         :param description: Description for the `InterfaceField`.
         :param deprecation_reason: If the `InterfaceField` is deprecated, describes the reason for deprecation.
+        :param field_name: The name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `InterfaceField`.
         :param extensions: GraphQL extensions for the `InterfaceField`.
         """
         self.output_type = output_type
-
         self.args: GraphQLArgumentMap = kwargs.get("args", {})
-        self.resolvable_output_type: bool = kwargs.get("resolvable_output_type", False)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
+        self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
         self.directives: list[Directive] = kwargs.get("directives", [])
         self.extensions: dict[str, Any] = kwargs.get("extensions", {})
@@ -214,6 +218,7 @@ class InterfaceField:
         """Connect this `InterfaceField` to the given `InterfaceType` using the given name."""
         self.interface_type = interface_type
         self.name = name
+        self.field_name = self.field_name or name
         self.schema_name = self.schema_name or to_schema_name(name)
 
         if self.description is Undefined:
@@ -240,12 +245,11 @@ class InterfaceField:
         from undine.query import Field  # noqa: PLC0415
 
         return Field(
-            self.output_type if self.resolvable_output_type else None,
-            description=self.description,
+            self,
             deprecation_reason=self.deprecation_reason,
+            field_name=self.field_name,
             schema_name=self.schema_name,
             directives=self.directives,
-            # Preserve knowledge that the Field was inherited from an InterfaceType.
             extensions={undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY: self},
         )
 
@@ -255,7 +259,7 @@ class InterfaceField:
         Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
 
         >>> class Named(InterfaceType):
-        ...     name = InterfaceField()
+        ...     name = InterfaceField(GraphQLNonNull(GraphQLString))
         ...
         ...     @name.visible
         ...     def name_visible(self: InterfaceField, request: DjangoRequestProtocol) -> bool:
@@ -271,3 +275,20 @@ class InterfaceField:
         check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
         self.directives.append(directive)
         return self
+
+
+def get_with_inherited_interfaces(interfaces: list[type[InterfaceType]]) -> list[type[InterfaceType]]:
+    """
+    Given the list of interfaces that an `InterfaceType` might explicitly inherit,
+    add all implicitly inherited interfaces to the list (e.g. interfaces of interfaces).
+    """
+    all_interfaces: set[type[InterfaceType]] = set()
+
+    for interface in interfaces:
+        if interface in all_interfaces:
+            continue
+
+        all_interfaces.add(interface)
+        all_interfaces.update(get_with_inherited_interfaces(interface.__interfaces__))
+
+    return list(all_interfaces)

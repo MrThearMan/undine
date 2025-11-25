@@ -16,14 +16,21 @@ from django.db.models.fields.related_descriptors import (
     ReverseOneToOneDescriptor,
 )
 from django.db.models.query_utils import DeferredAttribute, Q
-from graphql import GraphQLType
+from graphql import GraphQLNonNull, GraphQLType
 
-from undine import Calculation, QueryType
+from undine import Calculation, InterfaceField, QueryType
 from undine import Field as UndineField
-from undine.converters import convert_to_field_ref
+from undine.converters import convert_to_field_ref, convert_to_graphql_argument_map, convert_to_graphql_type, is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.exceptions import (
+    InterfaceFieldDoesNotExistError,
+    InterfaceFieldTypeMismatchError,
+    ModelFieldDoesNotExistError,
+)
 from undine.optimizer.optimizer import OptimizationData
-from undine.relay import Connection
+from undine.pagination import OffsetPagination
+from undine.relay import Connection, Node
+from undine.settings import undine_settings
 from undine.typing import CombinableExpression, GQLInfo, Lambda, ToManyField, ToOneField
 from undine.utils.graphql.utils import get_arguments, get_queried_field_name
 from undine.utils.model_utils import determine_output_field, get_model_field
@@ -218,7 +225,60 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
 
 @convert_to_field_ref.register
 def _(ref: Connection, **kwargs: Any) -> Any:
+    caller: UndineField = kwargs["caller"]
+    caller.extensions[undine_settings.CONNECTION_EXTENSIONS_KEY] = ref
     return ref
+
+
+@convert_to_field_ref.register
+def _(ref: OffsetPagination, **kwargs: Any) -> Any:
+    caller: UndineField = kwargs["caller"]
+    caller.extensions[undine_settings.OFFSET_PAGINATION_EXTENSIONS_KEY] = ref
+    return ref
+
+
+@convert_to_field_ref.register
+def _(ref: InterfaceField, **kwargs: Any) -> Any:
+    caller: UndineField = kwargs["caller"]
+
+    try:
+        field = get_model_field(model=caller.query_type.__model__, lookup=caller.field_name)
+    except ModelFieldDoesNotExistError as error:
+        raise InterfaceFieldDoesNotExistError(
+            field=caller.schema_name,
+            interface=ref.interface_type,
+            model=caller.query_type.__model__,
+        ) from error
+
+    field_type = convert_to_graphql_type(field, model=caller.query_type.__model__)
+    if not field.null:
+        field_type = GraphQLNonNull(field_type)
+
+    many = is_many(field, model=caller.query_type.__model__, name=caller.field_name)
+    args = convert_to_graphql_argument_map(field, many=many)
+
+    if ref.output_type == field_type and ref.args == args:
+        return ref
+
+    # Node interface is special, since it converts primary key into string ID.
+    # In this case the types don't match, but the field will work.
+    if ref.interface_type is Node:
+        return ref
+
+    # The Node interface id field might also be inherited by another interface.
+    if (
+        Node in ref.interface_type.__interfaces__
+        and caller.schema_name == "id"
+        and ref.output_type == Node.id.output_type
+    ):
+        return ref
+
+    raise InterfaceFieldTypeMismatchError(
+        field=caller.schema_name,
+        interface=ref.interface_type,
+        output_type=ref.output_type,
+        field_type=field_type,
+    )
 
 
 @convert_to_field_ref.register

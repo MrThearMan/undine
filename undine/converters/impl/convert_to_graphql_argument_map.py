@@ -16,10 +16,11 @@ from graphql import (
     GraphQLType,
 )
 
-from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
+from undine import Calculation, InterfaceField, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import RegistryMissingTypeError
+from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser, parse_is_nullable, parse_parameters
 from undine.relay import Connection, Node
 from undine.settings import undine_settings
@@ -212,10 +213,31 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLArgumentMap:
             description="Number of items to return from the end (after evaluating first).",
             out_name="last",
         ),
+        **arguments,
+    }
+
+
+@convert_to_graphql_argument_map.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLArgumentMap:
+    kwargs["many"] = True
+
+    if ref.union_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.union_type, **kwargs)
+    elif ref.interface_type is not None:
+        arguments = convert_to_graphql_argument_map(ref.interface_type, **kwargs)
+    else:
+        arguments = convert_to_graphql_argument_map(ref.query_type, **kwargs)
+
+    return {
         "offset": GraphQLArgument(
             GraphQLInt,
             description="Number of items to skip from the start.",
             out_name="offset",
+        ),
+        "limit": GraphQLArgument(
+            GraphQLInt,
+            description="Maximum number of items to return from the start (after applying offset).",
+            out_name="limit",
         ),
         **arguments,
     }
@@ -240,6 +262,11 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLArgumentMap:
             arguments[order_by_key] = args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY]
 
     return arguments
+
+
+@convert_to_graphql_argument_map.register
+def _(ref: InterfaceField, **kwargs: Any) -> GraphQLArgumentMap:
+    return ref.args
 
 
 @convert_to_graphql_argument_map.register

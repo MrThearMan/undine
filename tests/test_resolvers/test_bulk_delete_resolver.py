@@ -28,7 +28,7 @@ def test_bulk_delete_resolver(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
         mutation_type=TaskDeleteMutation,
@@ -73,7 +73,7 @@ def test_bulk_delete_resolver__mutation_hooks(undine_settings) -> None:
             after_called = next(counter)
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
         mutation_type=TaskDeleteMutation,
@@ -100,7 +100,7 @@ async def test_bulk_delete_resolver__async(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
         mutation_type=TaskDeleteMutation,

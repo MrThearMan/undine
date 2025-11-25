@@ -10,6 +10,7 @@ from graphql import GraphQLFieldResolver
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_entrypoint_resolver
 from undine.exceptions import InvalidEntrypointMutationTypeError
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection, Node
 from undine.resolvers import (
@@ -20,7 +21,7 @@ from undine.resolvers import (
     CreateResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
-    InterfaceResolver,
+    InterfaceTypeResolver,
     NodeResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
@@ -28,7 +29,7 @@ from undine.resolvers import (
     UnionTypeResolver,
     UpdateResolver,
 )
-from undine.resolvers.query import InterfaceConnectionResolver, UnionTypeConnectionResolver
+from undine.resolvers.query import InterfaceTypeConnectionResolver, UnionTypeConnectionResolver
 from undine.typing import MutationKind
 from undine.utils.reflection import get_origin_or_noop, is_subclass
 
@@ -104,9 +105,22 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
         return UnionTypeConnectionResolver(connection=ref, entrypoint=caller)
 
     if ref.interface_type is not None:
-        return InterfaceConnectionResolver(connection=ref, entrypoint=caller)
+        return InterfaceTypeConnectionResolver(connection=ref, entrypoint=caller)
 
     return ConnectionResolver(connection=ref, entrypoint=caller)
+
+
+@convert_to_entrypoint_resolver.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
+    caller: Entrypoint = kwargs["caller"]
+
+    if ref.union_type is not None:
+        return UnionTypeResolver(union_type=ref.union_type, entrypoint=caller)
+
+    if ref.interface_type is not None:
+        return InterfaceTypeResolver(interface=ref.interface_type, entrypoint=caller)
+
+    return QueryTypeManyResolver(query_type=ref.query_type, entrypoint=caller)
 
 
 @convert_to_entrypoint_resolver.register
@@ -118,4 +132,4 @@ def _(_: type[Node], **kwargs: Any) -> GraphQLFieldResolver:
 @convert_to_entrypoint_resolver.register
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
-    return InterfaceResolver(interface=ref, entrypoint=caller)
+    return InterfaceTypeResolver(interface=ref, entrypoint=caller)

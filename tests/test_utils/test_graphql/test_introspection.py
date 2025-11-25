@@ -554,7 +554,7 @@ def test_introspection__visibility__orderset__order(graphql, undine_settings, is
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__interface(graphql, undine_settings, is_visible) -> None:
     class Named(InterfaceType):
-        name = InterfaceField(GraphQLString)
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @classmethod
         def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
@@ -583,7 +583,7 @@ def test_introspection__visibility__interface(graphql, undine_settings, is_visib
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__interface__field(graphql, undine_settings, is_visible) -> None:
     class Named(InterfaceType):
-        name = InterfaceField(GraphQLString)
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:

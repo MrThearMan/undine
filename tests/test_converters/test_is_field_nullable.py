@@ -5,12 +5,23 @@ from typing import Any, NamedTuple, TypedDict
 import pytest
 from django.db.models import CharField, DateTimeField, F, Q, Value
 from django.db.models.functions import Cast, Now
+from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, QueryType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    DjangoExpression,
+    Field,
+    GQLInfo,
+    InterfaceField,
+    InterfaceType,
+    QueryType,
+)
 from undine.converters import is_field_nullable
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation
+from undine.pagination import OffsetPagination
 
 
 class Params(NamedTuple):
@@ -161,3 +172,23 @@ def test_is_field_nullable__calculation__null() -> None:
             return Value([self.value])
 
     assert is_field_nullable(ExampleCalculation) is True
+
+
+def test_is_field_nullable__offset_pagination() -> None:
+    class PersonType(QueryType[Person]): ...
+
+    class TaskType(QueryType[Task]):
+        assignees = Field(PersonType)
+
+    assert is_field_nullable(OffsetPagination(TaskType), caller=TaskType.assignees) is False
+
+
+def test_is_field_nullable__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]):
+        name = Field()
+
+    assert is_field_nullable(Named.name, caller=TaskType.name) is False

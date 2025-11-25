@@ -7,8 +7,10 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import F, Model, Q
 from graphql import GraphQLNamedType, GraphQLWrappingType
 
+from undine import InterfaceField
 from undine.converters import convert_to_description
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
@@ -82,6 +84,22 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:  # Required for Django<5.1
 
 @convert_to_description.register
 def _(ref: Connection, **kwargs: Any) -> Any:
+    return ref.description
+
+
+@convert_to_description.register
+def _(ref: OffsetPagination, **kwargs: Any) -> Any:
+    if ref.description is not None:
+        return ref.description
+    if ref.interface_type:
+        return convert_to_description(ref.interface_type, **kwargs)
+    if ref.union_type:
+        return convert_to_description(ref.union_type, **kwargs)
+    return convert_to_description(ref.query_type, **kwargs)
+
+
+@convert_to_description.register
+def _(ref: InterfaceField, **kwargs: Any) -> Any:
     return ref.description
 
 

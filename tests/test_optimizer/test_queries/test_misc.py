@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import QuerySet, Value
 from django.db.models.functions import Left
 
-from example_project.app.models import Project, Task, TaskTypeChoices
+from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory, TeamFactory, UserFactory
 from undine import (
     Calculation,
@@ -22,6 +22,7 @@ from undine import (
     create_schema,
 )
 from undine.optimizer import OptimizationData
+from undine.pagination import OffsetPagination
 
 
 @pytest.mark.django_db
@@ -546,3 +547,101 @@ def test_optimizer__promote_to_prefetch__has_filterset_filter_queryset(graphql, 
     # but since the QueryType has a FilterSet with a '__filter_queryset__' method,
     # we need to use 'prefetch_related' instead of 'select_related'.
     assert len(response.queries) == 2
+
+
+@pytest.mark.django_db
+def test_optimizer__offset_pagination(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="Task 1")
+    TaskFactory.create(name="Task 2")
+    TaskFactory.create(name="Task 3")
+
+    query = """
+        query ($offset: Int!) {
+          tasks(offset: $offset) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query, variables={"offset": 1}, count_queries=True)
+
+    assert response.has_errors is False, response.errors
+    assert response.data == {
+        "tasks": [
+            {"name": "Task 2"},
+            {"name": "Task 3"},
+        ],
+    }
+
+    response.assert_query_count(1)
+
+
+@pytest.mark.django_db
+def test_optimizer__offset_pagination__nested(graphql, undine_settings) -> None:
+    class PersonType(QueryType[Person], auto=False):
+        name = Field()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        assignees = Field(OffsetPagination(PersonType))
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    person_1 = PersonFactory.create(name="Assignee 1")
+    person_2 = PersonFactory.create(name="Assignee 2")
+    person_3 = PersonFactory.create(name="Assignee 3")
+    person_4 = PersonFactory.create(name="Assignee 4")
+    person_5 = PersonFactory.create(name="Assignee 5")
+
+    TaskFactory.create(name="Task 1", assignees=[person_1, person_2, person_3])
+    TaskFactory.create(name="Task 2", assignees=[person_3, person_4])
+    TaskFactory.create(name="Task 3", assignees=[person_5])
+
+    query = """
+        query {
+          tasks {
+            name
+            assignees(offset: 1) {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+
+    assert response.has_errors is False, response.errors
+    assert response.data == {
+        "tasks": [
+            {
+                "name": "Task 1",
+                "assignees": [
+                    {"name": "Assignee 2"},
+                    {"name": "Assignee 3"},
+                ],
+            },
+            {
+                "name": "Task 2",
+                "assignees": [
+                    {"name": "Assignee 4"},
+                ],
+            },
+            {
+                "name": "Task 3",
+                "assignees": [],
+            },
+        ]
+    }
+
+    response.assert_query_count(2)

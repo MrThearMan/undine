@@ -16,9 +16,10 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_connection,
     get_undine_field,
     get_undine_mutation_type,
+    get_undine_offset_pagination,
     get_undine_query_type,
 )
-from undine.utils.graphql.utils import get_underlying_type, is_connection, is_typename_metafield, should_skip_node
+from undine.utils.graphql.utils import get_underlying_type, is_typename_metafield, should_skip_node
 from undine.utils.model_utils import get_default_manager, get_field_name, get_related_name
 from undine.utils.reflection import is_same_func
 
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from graphql import FieldNode, GraphQLInputObjectType, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType
 
     from undine import Calculation, MutationType, QueryType
-    from undine.relay import PaginationHandler
+    from undine.pagination import PaginationHandler
     from undine.typing import (
         DjangoExpression,
         FilterCallback,
@@ -56,7 +57,13 @@ __all__ = [
 
 
 @overload
-def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, *, limit: int | None = None) -> list[TModel]: ...
+def optimize_sync(
+    queryset: QuerySet[TModel],
+    info: GQLInfo,
+    *,
+    offset: int = 0,
+    limit: int | None = None,
+) -> list[TModel]: ...
 
 
 @overload
@@ -67,6 +74,7 @@ def optimize_sync(
     queryset: QuerySet[TModel],
     info: GQLInfo,
     *,
+    offset: int = 0,
     limit: int | None = None,
     **kwargs: Any,
 ) -> list[TModel] | TModel | None:
@@ -75,6 +83,7 @@ def optimize_sync(
 
     :param queryset: The queryset to optimize.
     :param info: The GraphQL resolve info for the request.
+    :param offset: The number of items to skip from the start. By default, no items are skipped.
     :param limit: The maximum number of items to return. By default, all items are returned.
     :param kwargs: Filtering that will result in a single item being returned.
     """
@@ -85,8 +94,8 @@ def optimize_sync(
     if kwargs:
         optimized_queryset = optimized_queryset.filter(**kwargs)
 
-    if limit is not None:
-        optimized_queryset = optimized_queryset[:limit]
+    if limit is not None or offset > 0:
+        optimized_queryset = optimized_queryset[offset : offset + limit]
 
     instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
 
@@ -97,7 +106,13 @@ def optimize_sync(
 
 
 @overload
-async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, *, limit: int | None = None) -> list[TModel]: ...
+async def optimize_async(
+    queryset: QuerySet[TModel],
+    info: GQLInfo,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[TModel]: ...
 
 
 @overload
@@ -108,6 +123,7 @@ async def optimize_async(
     queryset: QuerySet[TModel],
     info: GQLInfo,
     *,
+    offset: int = 0,
     limit: int | None = None,
     **kwargs: Any,
 ) -> list[TModel] | TModel | None:
@@ -116,6 +132,7 @@ async def optimize_async(
 
     :param queryset: The queryset to optimize.
     :param info: The GraphQL resolve info for the request.
+    :param offset: The number of items to skip from the start. By default, no items are skipped.
     :param limit: The maximum number of items to return. By default, all items are returned.
     :param kwargs: Filtering that will result in a single item being returned.
     """
@@ -126,8 +143,8 @@ async def optimize_async(
     if kwargs:
         optimized_queryset = optimized_queryset.filter(**kwargs)
 
-    if limit is not None:
-        optimized_queryset = optimized_queryset[:limit]
+    if limit is not None or offset > 0:
+        optimized_queryset = optimized_queryset[offset : offset + limit]
 
     instances = await evaluate_with_prefetch_hack_async(optimized_queryset)
 
@@ -163,11 +180,8 @@ class QueryOptimizer(GraphQLASTWalker):
 
         arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)
 
-        if is_connection(object_type):
-            undine_connection = get_undine_connection(object_type)
-            if undine_connection is None:  # pragma: no cover
-                return
-
+        undine_connection = get_undine_connection(object_type)
+        if undine_connection is not None:
             edge_type: GraphQLObjectType = get_underlying_type(object_type.fields["edges"].type)  # type: ignore[assignment]
             object_type = get_underlying_type(edge_type.fields["node"].type)  # type: ignore[assignment]
 
@@ -175,10 +189,18 @@ class QueryOptimizer(GraphQLASTWalker):
                 typename=object_type.name,
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
-                offset=arg_values.get("offset"),
                 after=arg_values.get("after"),
                 before=arg_values.get("before"),
                 page_size=undine_connection.page_size,
+            )
+
+        undine_offset_pagination = get_undine_offset_pagination(graphql_field)
+        if undine_offset_pagination is not None:
+            self.optimization_data.pagination = undine_offset_pagination.pagination_handler(
+                typename=object_type.name,
+                offset=arg_values.get("offset"),
+                limit=arg_values.get("limit"),
+                page_size=undine_offset_pagination.page_size,
             )
 
         # Check MutationType first so that it can override QueryType optimizations

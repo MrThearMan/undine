@@ -26,7 +26,7 @@ def test_delete_resolver(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
@@ -44,7 +44,7 @@ def test_delete_resolver__instance_not_found(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
@@ -59,7 +59,7 @@ def test_delete_resolver__lookup_field_not_found(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
@@ -110,7 +110,7 @@ def test_delete_resolver__mutation_hooks(undine_settings) -> None:
             after_called = next(counter)
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 
@@ -133,7 +133,7 @@ async def test_delete_resolver__async(undine_settings) -> None:
     class TaskDeleteMutation(MutationType[Task]): ...
 
     class Mutation(RootType):
-        delete_task = Entrypoint(Task)
+        delete_task = Entrypoint(TaskDeleteMutation)
 
     resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
 

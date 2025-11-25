@@ -7,10 +7,11 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.db.models import F, Field, ManyToManyRel, ManyToOneRel, OneToOneRel, Q
 from graphql import GraphQLNonNull, GraphQLType
 
-from undine import Calculation, QueryType
+from undine import Calculation, InterfaceField, QueryType
 from undine import Field as UndineField
 from undine.converters import is_field_nullable
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression
@@ -113,3 +114,15 @@ def _(_: GenericRelation, **kwargs: Any) -> bool:
 @is_field_nullable.register
 def _(_: Connection, **kwargs: Any) -> bool:
     return False
+
+
+@is_field_nullable.register
+def _(_: OffsetPagination, **kwargs: Any) -> bool:
+    return False
+
+
+@is_field_nullable.register
+def _(_: InterfaceField, **kwargs: Any) -> bool:
+    caller: UndineField = kwargs["caller"]
+    field = get_model_field(model=caller.query_type.__model__, lookup=caller.field_name)
+    return is_field_nullable(field, **kwargs)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Hashable
-from types import FunctionType, NoneType, UnionType
+from types import FunctionType, UnionType
 from typing import TYPE_CHECKING, Any, Generic, Literal, Union, get_origin
 
 from graphql import Undefined
@@ -14,7 +14,6 @@ from undine.exceptions import (
     FunctionDispatcherNoArgumentAnnotationError,
     FunctionDispatcherNoArgumentsError,
     FunctionDispatcherRegistrationError,
-    FunctionDispatcherUnionTypeError,
     FunctionDispatcherUnknownArgumentError,
 )
 from undine.typing import Lambda, LiteralArg, T
@@ -23,11 +22,10 @@ from .reflection import (
     can_be_literal_arg,
     get_flattened_generic_params,
     get_instance_name,
+    get_non_null_type,
     get_origin_or_noop,
     get_signature,
     is_lambda,
-    is_not_required_type,
-    is_required_type,
 )
 
 if TYPE_CHECKING:
@@ -65,13 +63,13 @@ class FunctionDispatcher(Generic[T]):
 
     def __call__(self, value: Any, /, **kwargs: Any) -> T:
         """Find the implementation for the given key and call it with the given keyword arguments."""
-        key = self._remove_null(value)
+        key = get_non_null_type(value)
         implementation = self[value]
         return implementation(key, **kwargs)
 
     def __getitem__(self, original_key: Any) -> DispatchProtocol[T]:
         """Find the implementation for the given key."""
-        non_null_key = self._remove_null(original_key)
+        non_null_key = get_non_null_type(original_key)
         key = get_origin_or_noop(non_null_key)
 
         if is_lambda(key):
@@ -141,24 +139,6 @@ class FunctionDispatcher(Generic[T]):
             implementations[arg] = self.wrapper(func) if self.wrapper else func
 
         return func
-
-    def _remove_null(self, key: Any) -> Any:
-        bare_key = key
-        if is_required_type(key) or is_not_required_type(key):
-            bare_key = key.__args__[0]
-
-        origin = get_origin(bare_key)
-        if origin not in {UnionType, Union}:
-            return bare_key
-
-        args = get_flattened_generic_params(bare_key)
-        if NoneType in args:
-            args = tuple(arg for arg in args if arg is not NoneType)
-
-        if len(args) > 1:
-            raise FunctionDispatcherUnionTypeError(args=args)
-
-        return args[0]
 
     def _first_param_type(self, func: FunctionType, *, depth: int = 0) -> Any:
         """Get the type of the first parameter of the given function."""

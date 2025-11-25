@@ -3,20 +3,29 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from graphql import GraphQLNonNull, GraphQLString
 
-from example_project.app.models import Task
-from undine import Entrypoint, Input, MutationType, QueryType, RootType
+from example_project.app.models import Project, Task
+from undine import Entrypoint, Input, InterfaceField, InterfaceType, MutationType, QueryType, RootType, UnionType
 from undine.converters import convert_to_entrypoint_resolver
 from undine.exceptions import InvalidEntrypointMutationTypeError
+from undine.pagination import OffsetPagination
+from undine.relay import Connection, Node
 from undine.resolvers import (
     BulkCreateResolver,
     BulkDeleteResolver,
     BulkUpdateResolver,
+    ConnectionResolver,
     CreateResolver,
     DeleteResolver,
     EntrypointFunctionResolver,
+    InterfaceTypeConnectionResolver,
+    InterfaceTypeResolver,
+    NodeResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
+    UnionTypeConnectionResolver,
+    UnionTypeResolver,
     UpdateResolver,
 )
 from undine.typing import GQLInfo
@@ -268,3 +277,139 @@ def test_convert_entrypoint_ref_to_resolver__mutation_type__related() -> None:
 
     with pytest.raises(InvalidEntrypointMutationTypeError):
         convert_to_entrypoint_resolver(TaskMutation, caller=Mutation.bad_mutation)
+
+
+def test_convert_entrypoint_ref_to_resolver__offset_pagination__query_type() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = OffsetPagination(TaskType)
+
+    class Query(RootType):
+        tasks = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.tasks)
+
+    assert isinstance(resolver, QueryTypeManyResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__offset_pagination__union_type() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    pagination = OffsetPagination(Commentable)
+
+    class Query(RootType):
+        commentable = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.commentable)
+
+    assert isinstance(resolver, UnionTypeResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__offset_pagination__interface_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]): ...
+
+    pagination = OffsetPagination(Named)
+
+    class Query(RootType):
+        named = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.named)
+
+    assert isinstance(resolver, InterfaceTypeResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__connection__query_type() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = Connection(TaskType)
+
+    class Query(RootType):
+        tasks = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.tasks)
+
+    assert isinstance(resolver, ConnectionResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__connection__union_type() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    pagination = Connection(Commentable)
+
+    class Query(RootType):
+        commentable = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.commentable)
+
+    assert isinstance(resolver, UnionTypeConnectionResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__connection__interface_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]): ...
+
+    pagination = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(pagination)
+
+    resolver = convert_to_entrypoint_resolver(pagination, caller=Query.named)
+
+    assert isinstance(resolver, InterfaceTypeConnectionResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__union_type() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        commentable = Entrypoint(Commentable)
+
+    resolver = convert_to_entrypoint_resolver(Commentable, caller=Query.commentable)
+
+    assert isinstance(resolver, UnionTypeResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__interface_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        named = Entrypoint(Named)
+
+    resolver = convert_to_entrypoint_resolver(Named, caller=Query.named)
+
+    assert isinstance(resolver, InterfaceTypeResolver)
+
+
+def test_convert_entrypoint_ref_to_resolver__node() -> None:
+    @Node
+    class TaskType(QueryType[Task]): ...
+
+    class Query(RootType):
+        node = Entrypoint(Node)
+
+    resolver = convert_to_entrypoint_resolver(Node, caller=Query.node)
+
+    assert isinstance(resolver, NodeResolver)

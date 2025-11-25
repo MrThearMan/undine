@@ -352,47 +352,6 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-def test_optimizer__relay__connection__offset(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
-        name = Field()
-
-    class Query(RootType):
-        tasks = Entrypoint(Connection(TaskType))
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
-
-    query = """
-        query ($offset: Int!) {
-          tasks(offset: $offset) {
-            edges {
-              node {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    response = graphql(query, variables={"offset": 1}, count_queries=True)
-
-    assert response.has_errors is False, response.errors
-    assert response.data == {
-        "tasks": {
-            "edges": [
-                {"node": {"name": "Task 2"}},
-                {"node": {"name": "Task 3"}},
-            ],
-        },
-    }
-
-    response.assert_query_count(1)
-
-
-@pytest.mark.django_db
 def test_optimizer__relay__connection__connection_info(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
         name = Field()
@@ -1627,91 +1586,6 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
                             "edges": [
                                 {"node": {"name": "Assignee 5"}},
                             ],
-                        },
-                    },
-                },
-            ],
-        },
-    }
-
-    response.assert_query_count(2)
-
-
-@pytest.mark.django_db
-def test_optimizer__relay__nested_connection__offset(graphql, undine_settings) -> None:
-    class PersonType(QueryType[Person], auto=False, interfaces=[Node]):
-        name = Field()
-
-    class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
-        name = Field()
-        assignees = Field(Connection(PersonType))
-
-    class Query(RootType):
-        tasks = Entrypoint(Connection(TaskType))
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    person_1 = PersonFactory.create(name="Assignee 1")
-    person_2 = PersonFactory.create(name="Assignee 2")
-    person_3 = PersonFactory.create(name="Assignee 3")
-    person_4 = PersonFactory.create(name="Assignee 4")
-    person_5 = PersonFactory.create(name="Assignee 5")
-
-    TaskFactory.create(name="Task 1", assignees=[person_1, person_2, person_3])
-    TaskFactory.create(name="Task 2", assignees=[person_3, person_4])
-    TaskFactory.create(name="Task 3", assignees=[person_5])
-
-    query = """
-        query {
-          tasks {
-            edges {
-              node {
-                name
-                assignees(offset: 1) {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-
-    assert response.has_errors is False, response.errors
-    assert response.data == {
-        "tasks": {
-            "edges": [
-                {
-                    "node": {
-                        "name": "Task 1",
-                        "assignees": {
-                            "edges": [
-                                {"node": {"name": "Assignee 2"}},
-                                {"node": {"name": "Assignee 3"}},
-                            ],
-                        },
-                    },
-                },
-                {
-                    "node": {
-                        "name": "Task 2",
-                        "assignees": {
-                            "edges": [
-                                {"node": {"name": "Assignee 4"}},
-                            ],
-                        },
-                    },
-                },
-                {
-                    "node": {
-                        "name": "Task 3",
-                        "assignees": {
-                            "edges": [],
                         },
                     },
                 },

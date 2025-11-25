@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from .definitions import (
     convert_lookup_to_graphql_type,
+    convert_model_field_to_python_type,
     convert_to_default_value,
     convert_to_description,
+    convert_to_entrypoint_ref,
     convert_to_entrypoint_resolver,
     convert_to_entrypoint_subscription,
     convert_to_field_complexity,
@@ -16,7 +18,6 @@ from .definitions import (
     convert_to_graphql_type,
     convert_to_input_ref,
     convert_to_order_ref,
-    convert_to_python_type,
     extend_expression,
     is_field_nullable,
     is_input_hidden,
@@ -27,8 +28,10 @@ from .definitions import (
 
 __all__ = [
     "convert_lookup_to_graphql_type",
+    "convert_model_field_to_python_type",
     "convert_to_default_value",
     "convert_to_description",
+    "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
     "convert_to_entrypoint_subscription",
     "convert_to_field_complexity",
@@ -41,7 +44,6 @@ __all__ = [
     "convert_to_graphql_type",
     "convert_to_input_ref",
     "convert_to_order_ref",
-    "convert_to_python_type",
     "extend_expression",
     "is_field_nullable",
     "is_input_hidden",

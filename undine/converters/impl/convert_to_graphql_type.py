@@ -74,7 +74,7 @@ from graphql import (
     Undefined,
 )
 
-from undine import Calculation, InterfaceType, MutationType, QueryType, UnionType
+from undine import Calculation, InterfaceField, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_lookup_to_graphql_type, convert_to_description, convert_to_graphql_type
 from undine.dataclasses import (
     LazyGenericForeignKey,
@@ -87,6 +87,7 @@ from undine.dataclasses import (
 )
 from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
 from undine.mutation import MutationTypeMeta
+from undine.pagination import OffsetPagination
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
 from undine.relay import Connection, PageInfoType
 from undine.resolvers.query import NamedTupleFieldResolver, TypedDictFieldResolver
@@ -835,8 +836,22 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 
 @convert_to_graphql_type.register
+def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if ref.union_type is not None:
+        return convert_to_graphql_type(ref.union_type, **kwargs)
+    if ref.interface_type is not None:
+        return convert_to_graphql_type(ref.interface_type, **kwargs)
+    return convert_to_graphql_type(ref.query_type, **kwargs)
+
+
+@convert_to_graphql_type.register
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return ref.__interface__()
+
+
+@convert_to_graphql_type.register
+def _(ref: InterfaceField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return ref.output_type
 
 
 with suppress(ImportError):

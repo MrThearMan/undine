@@ -23,7 +23,6 @@ from undine.exceptions import (
     FunctionDispatcherNoArgumentsError,
     FunctionDispatcherNonRuntimeProtocolError,
     FunctionDispatcherRegistrationError,
-    FunctionDispatcherUnionTypeError,
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
     GraphQLAsyncNotSupportedError,
@@ -86,6 +85,8 @@ from undine.exceptions import (
     GraphQLUnsupportedContentTypeError,
     GraphQLUseWebSocketsForSubscriptionsError,
     GraphQLValidationError,
+    InterfaceFieldDoesNotExistError,
+    InterfaceFieldTypeMismatchError,
     InvalidDocstringParserError,
     InvalidEntrypointMutationTypeError,
     InvalidInputMutationTypeError,
@@ -113,6 +114,7 @@ from undine.exceptions import (
     UnionModelFieldDirectUsageError,
     UnionModelFieldMismatchError,
     UnionTypeModelsDifferentError,
+    UnionTypeMultipleTypesError,
     UnionTypeRequiresMultipleModelsError,
     WebSocketConnectionInitAlreadyInProgressError,
     WebSocketConnectionInitForbiddenError,
@@ -232,6 +234,22 @@ class UndineErrorParams(NamedTuple):
                 "Check if it's inside a `if TYPE_CHECKING` block or another class/function. "
                 "The type needs to be available at the runtime so that "
                 "the signature of 'my_func' can be inspected."
+            ),
+        ),
+        "InterfaceFieldDoesNotExistError": UndineErrorParams(
+            cls=InterfaceFieldDoesNotExistError,
+            args={"interface": MyClass, "field": "foo", "model": Task},
+            message=(
+                "Field 'foo' from interface 'tests.test_exceptions.MyClass' does not exist "
+                "on Model 'example_project.app.models.Task'."
+            ),
+        ),
+        "InterfaceFieldTypeMismatchError": UndineErrorParams(
+            cls=InterfaceFieldTypeMismatchError,
+            args={"interface": MyClass, "field": "foo", "output_type": str, "field_type": int},
+            message=(
+                "Field 'foo' from interface 'tests.test_exceptions.MyClass' expects type '<class 'str'>' "
+                "but Model field generated type '<class 'int'>'"
             ),
         ),
         "InvalidInputMutationTypeError": UndineErrorParams(
@@ -390,7 +408,7 @@ class UndineErrorParams(NamedTuple):
             message="Can only register functions with 'foo'. Got 1.",
         ),
         "FunctionDispatcherUnionTypeError": UndineErrorParams(
-            cls=FunctionDispatcherUnionTypeError,
+            cls=UnionTypeMultipleTypesError,
             args={"args": [1, 2]},
             message="Union type must have a single non-null type argument, got [1, 2].",
         ),

@@ -61,6 +61,8 @@ from tests.helpers import exact, mock_gql_info, parametrize_helper
 from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, MutationType, QueryType
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
+from undine.pagination import OffsetPagination
+from undine.relay import Connection
 from undine.resolvers.query import TypedDictFieldResolver
 from undine.scalars import (
     GraphQLAny,
@@ -1084,3 +1086,23 @@ def test_convert_to_graphql_type__maybe_many_or_non_null__many() -> None:
 def test_convert_to_graphql_type__maybe_many_or_non_null__both() -> None:
     value = MaybeManyOrNonNull(GraphQLString, many=True, nullable=False)
     assert convert_to_graphql_type(value) == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
+
+
+def test_convert_to_graphql_type__connection() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    connection = Connection(TaskType)
+
+    result = convert_to_graphql_type(connection)
+    assert isinstance(result, GraphQLObjectType)
+
+    assert result.name == "TaskTypeConnection"
+    assert sorted(result.fields) == ["edges", "pageInfo", "totalCount"]
+
+
+def test_convert_to_graphql_type__offset_pagination() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = OffsetPagination(TaskType)
+
+    assert convert_to_graphql_type(pagination) == TaskType.__output_type__()

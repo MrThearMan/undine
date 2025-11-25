@@ -134,6 +134,27 @@ class FunctionSignatureParsingError(UndineError):
     )
 
 
+class InterfaceFieldDoesNotExistError(UndineError):
+    """
+    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
+    but the field doesn't exist on the Model.
+    """
+
+    msg = "Field '{field}' from interface '{interface:dotpath}' does not exist on Model '{model:dotpath}'."
+
+
+class InterfaceFieldTypeMismatchError(UndineError):
+    """
+    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
+    but its converted GraphQL type doesn't match the GraphQL type converted from the matching Model field.
+    """
+
+    msg = (
+        "Field '{field}' from interface '{interface:dotpath}' expects type '{output_type}' "
+        "but Model field generated type '{field_type}'"
+    )
+
+
 class InvalidInputMutationTypeError(UndineError):
     """Error raised when trying to create an `Input` using a `MutationType` with a `kind` other than 'related'."""
 
@@ -323,15 +344,6 @@ class FunctionDispatcherRegistrationError(FunctionDispatcherError):
     msg = "Can only register functions with '{name}'. Got {value!r}."
 
 
-class FunctionDispatcherUnionTypeError(FunctionDispatcherError):
-    """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
-    with a Union type that has more than one non-null type.
-    """
-
-    msg = "Union type must have a single non-null type argument, got {args}."
-
-
 class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):
     """
     Error raised when a trying to register an implementation for a `FunctionDispatcher`
@@ -363,6 +375,15 @@ class UnexpectedDirectiveArgumentError(UndineError):
     """Error raised if a directive argument is unexpected."""
 
     msg = "Unexpected directive arguments for directive '{directive:dotpath}': {kwargs}."
+
+
+class UnionTypeMultipleTypesError(FunctionDispatcherError):
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a Union type that has more than one non-null type.
+    """
+
+    msg = "Union type must have a single non-null type argument, got {args}."
 
 
 class UnionModelFieldMismatchError(UndineError):

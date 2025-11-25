@@ -14,9 +14,11 @@ from undine.utils.reflection import has_callable_attribute, is_subclass
 
 __all__ = [
     "convert_lookup_to_graphql_type",
+    "convert_model_field_to_python_type",
     "convert_to_bad_lookups",
     "convert_to_default_value",
     "convert_to_description",
+    "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
     "convert_to_field_ref",
     "convert_to_field_resolver",
@@ -27,7 +29,6 @@ __all__ = [
     "convert_to_graphql_type",
     "convert_to_input_ref",
     "convert_to_order_ref",
-    "convert_to_python_type",
     "extend_expression",
     "is_field_nullable",
     "is_input_hidden",
@@ -50,6 +51,15 @@ Arguments:
 `lookup: str`: The lookup made to the Model field.
 
 `default_type: GraphQLInputType | GraphQLOutputType`: The GraphQL Type for the parent field the lookup is for.
+"""
+
+convert_model_field_to_python_type: FunctionDispatcher[type] = FunctionDispatcher()
+"""
+Convert the given Model field to a python type.
+
+Arguments:
+
+`ref: Any`: The Model field to convert.
 """
 
 convert_to_bad_lookups: FunctionDispatcher[set[str]] = FunctionDispatcher()
@@ -83,6 +93,19 @@ Arguments:
 
 `ref: Any`: The reference to parse description from.
 """
+
+
+convert_to_entrypoint_ref: FunctionDispatcher[Any] = FunctionDispatcher()
+"""
+Convert the given value to a reference that Entrypoint can deal with.
+
+Arguments:
+
+`ref: Any`: The value to convert.
+
+`caller: Entrypoint`: Entrypoint instance that is calling this function.
+"""
+
 
 convert_to_entrypoint_resolver: FunctionDispatcher[GraphQLFieldResolver] = FunctionDispatcher()
 """
@@ -209,16 +232,6 @@ Arguments:
 `caller: Order`: The Order instance that is calling this function.
 """
 
-convert_to_python_type: FunctionDispatcher[type] = FunctionDispatcher()
-"""
-Convert the given value to a python type.
-
-Arguments:
-
-`ref: Any`: The reference to convert.
-
-`is_input: bool = False`: (Optional) Whether the type is for an input or output.
-"""
 
 extend_expression: FunctionDispatcher[DjangoExpression] = FunctionDispatcher()
 """

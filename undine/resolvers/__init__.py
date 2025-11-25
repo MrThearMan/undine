@@ -21,7 +21,8 @@ from .query import (
     EntrypointFunctionResolver,
     FieldFunctionResolver,
     GlobalIDResolver,
-    InterfaceResolver,
+    InterfaceTypeConnectionResolver,
+    InterfaceTypeResolver,
     ModelAttributeResolver,
     ModelGenericForeignKeyResolver,
     ModelManyRelatedFieldResolver,
@@ -32,6 +33,7 @@ from .query import (
     NodeResolver,
     QueryTypeManyResolver,
     QueryTypeSingleResolver,
+    UnionTypeConnectionResolver,
     UnionTypeResolver,
 )
 from .subscription import FunctionSubscriptionResolver, SubscriptionValueResolver
@@ -51,7 +53,8 @@ __all__ = [
     "FilterQExpressionResolver",
     "FunctionSubscriptionResolver",
     "GlobalIDResolver",
-    "InterfaceResolver",
+    "InterfaceTypeConnectionResolver",
+    "InterfaceTypeResolver",
     "ModelAttributeResolver",
     "ModelGenericForeignKeyResolver",
     "ModelManyRelatedFieldResolver",
@@ -63,6 +66,7 @@ __all__ = [
     "QueryTypeManyResolver",
     "QueryTypeSingleResolver",
     "SubscriptionValueResolver",
+    "UnionTypeConnectionResolver",
     "UnionTypeResolver",
     "UpdateResolver",
 ]

@@ -3,14 +3,25 @@ from __future__ import annotations
 import pytest
 from django.db.models import Subquery, Value
 from django.db.models.functions import Now
-from graphql import GraphQLInt
+from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import exact
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, QueryType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    DjangoExpression,
+    Field,
+    GQLInfo,
+    InterfaceField,
+    InterfaceType,
+    QueryType,
+)
 from undine.converters import convert_to_field_resolver
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import FunctionDispatcherError
+from undine.pagination import OffsetPagination
+from undine.relay import Connection
 from undine.resolvers import (
     FieldFunctionResolver,
     ModelAttributeResolver,
@@ -19,7 +30,7 @@ from undine.resolvers import (
     NestedQueryTypeManyResolver,
     NestedQueryTypeSingleResolver,
 )
-from undine.resolvers.query import ModelGenericForeignKeyResolver
+from undine.resolvers.query import ModelGenericForeignKeyResolver, NestedConnectionResolver
 from undine.typing import RelatedField
 
 
@@ -280,3 +291,42 @@ def test_convert_field_ref_to_resolver__graphql_type() -> None:
     msg = "Must define a custom resolve for 'total' since using GraphQLType 'Int' as a reference."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         convert_to_field_resolver(GraphQLInt, caller=TaskType.total)
+
+
+def test_convert_field_ref_to_resolver__connection() -> None:
+    class PersonType(QueryType[Person]): ...
+
+    connection = Connection(PersonType)
+
+    class TaskType(QueryType[Task]):
+        assignees = Field(connection)
+
+    resolver = convert_to_field_resolver(connection, caller=TaskType.assignees)
+
+    assert isinstance(resolver, NestedConnectionResolver)
+
+
+def test_convert_field_ref_to_resolver__offset_pagination() -> None:
+    class PersonType(QueryType[Person]): ...
+
+    pagination = OffsetPagination(PersonType)
+
+    class TaskType(QueryType[Task]):
+        assignees = Field(pagination)
+
+    resolver = convert_to_field_resolver(pagination, caller=TaskType.assignees)
+
+    assert isinstance(resolver, NestedQueryTypeManyResolver)
+
+
+def test_convert_field_ref_to_resolver__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]):
+        name = Field()
+
+    resolver = convert_to_field_resolver(Named.name, caller=TaskType.name)
+
+    assert isinstance(resolver, ModelAttributeResolver)

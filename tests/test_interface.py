@@ -3,7 +3,7 @@ from __future__ import annotations
 from inspect import cleandoc
 
 import pytest
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLField, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLField, GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Task
 from undine import Field, InterfaceType, QueryType
@@ -148,7 +148,6 @@ def test_interface_type__interface_field() -> None:
 
     assert Named.name.output_type == GraphQLNonNull(GraphQLString)
     assert Named.name.args == {}
-    assert Named.name.resolvable_output_type is False
     assert Named.name.description is None
     assert Named.name.deprecation_reason is None
     assert Named.name.schema_name == "name"
@@ -296,22 +295,13 @@ def test_interface_type__interface_field__as_undine_field() -> None:
     field = Named.name.as_undine_field()
 
     assert isinstance(field, Field)
-    assert field.ref is None
-    assert field.description is None
+    assert field.ref == Named.name
+    assert field.description is Undefined
     assert field.deprecation_reason is None
+    assert field.field_name == "name"
     assert field.schema_name == "name"
     assert field.directives == []
     assert field.extensions == {"undine_field": field, "undine_interface_field": Named.name}
-
-
-def test_interface_type__interface_field__as_undine_field__resolvable_output_type() -> None:
-    class Named(InterfaceType):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), resolvable_output_type=True)
-
-    field = Named.name.as_undine_field()
-
-    assert isinstance(field, Field)
-    assert field.ref == GraphQLNonNull(GraphQLString)
 
 
 def test_interface_type__add_to_query_type() -> None:

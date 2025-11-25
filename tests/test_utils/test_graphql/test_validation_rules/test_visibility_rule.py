@@ -639,7 +639,7 @@ def test_validation_rules__visibility_rule__interface(graphql, undine_settings, 
     undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLString)
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @classmethod
         def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
@@ -686,7 +686,7 @@ def test_validation_rules__visibility_rule__interface__field(graphql, undine_set
     undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLString)
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -733,7 +733,7 @@ def test_validation_rules__visibility_rule__interface__connection(graphql, undin
     undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLString)
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @classmethod
         def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:

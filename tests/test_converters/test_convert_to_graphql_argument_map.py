@@ -23,12 +23,16 @@ from undine import (
     FilterSet,
     GQLInfo,
     Input,
+    InterfaceField,
+    InterfaceType,
     MutationType,
     OrderSet,
     QueryType,
 )
 from undine.converters import convert_to_graphql_argument_map
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.pagination import OffsetPagination
+from undine.relay import Connection
 from undine.utils.reflection import get_signature
 
 
@@ -475,3 +479,47 @@ def test_to_argument_map__calculated__nullable() -> None:
             extensions={"undine_calculation_argument": ExampleCalculation.value},
         ),
     }
+
+
+def test_to_argument_map__offset_pagination() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = OffsetPagination(TaskType)
+
+    result = convert_to_graphql_argument_map(pagination, many=True)
+    assert sorted(result) == ["limit", "offset"]
+
+    assert isinstance(result["limit"], GraphQLArgument)
+    assert result["limit"].type == GraphQLInt
+
+    assert isinstance(result["offset"], GraphQLArgument)
+    assert result["offset"].type == GraphQLInt
+
+
+def test_to_argument_map__connection() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    pagination = Connection(TaskType)
+
+    result = convert_to_graphql_argument_map(pagination, many=True)
+    assert sorted(result) == ["after", "before", "first", "last"]
+
+    assert isinstance(result["after"], GraphQLArgument)
+    assert result["after"].type == GraphQLString
+
+    assert isinstance(result["before"], GraphQLArgument)
+    assert result["before"].type == GraphQLString
+
+    assert isinstance(result["first"], GraphQLArgument)
+    assert result["first"].type == GraphQLInt
+
+    assert isinstance(result["last"], GraphQLArgument)
+    assert result["last"].type == GraphQLInt
+
+
+def test_to_argument_map__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    result = convert_to_graphql_argument_map(Named.name, many=False)
+    assert sorted(result) == []

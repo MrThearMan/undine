@@ -8,13 +8,26 @@ from typing import NamedTuple
 import pytest
 from django.db.models import F, Q, Subquery, Value
 from django.db.models.functions import Now
+from graphql import GraphQLNonNull, GraphQLString
 
-from example_project.app.models import Comment, Project, Task, TaskTypeChoices
+from example_project.app.models import Comment, Person, Project, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info, parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, QueryType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    DjangoExpression,
+    Field,
+    GQLInfo,
+    InterfaceField,
+    InterfaceType,
+    QueryType,
+)
 from undine.converters import convert_to_field_ref
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.exceptions import InterfaceFieldDoesNotExistError, InterfaceFieldTypeMismatchError
 from undine.optimizer import OptimizationData
+from undine.pagination import OffsetPagination
+from undine.relay import Connection, Node
 
 
 def test_convert_to_field_ref__str() -> None:
@@ -306,3 +319,80 @@ def test_convert_to_field_ref__calculation() -> None:
         name = Field(ExampleCalculation)
 
     assert convert_to_field_ref(ExampleCalculation, caller=TaskType.name) == ExampleCalculation
+
+
+def test_convert_to_field_ref__connection(undine_settings) -> None:
+    class PersonType(QueryType[Person]): ...
+
+    connection = Connection(PersonType)
+
+    class TaskType(QueryType[Task]):
+        assignees = Field(connection)
+
+    assert convert_to_field_ref(connection, caller=TaskType.assignees) == connection
+
+    assert TaskType.assignees.extensions[undine_settings.CONNECTION_EXTENSIONS_KEY] == connection
+
+
+def test_convert_to_field_ref__offset_pagination(undine_settings) -> None:
+    class PersonType(QueryType[Person]): ...
+
+    pagination = OffsetPagination(PersonType)
+
+    class TaskType(QueryType[Task]):
+        assignees = Field(pagination)
+
+    assert convert_to_field_ref(pagination, caller=TaskType.assignees) == pagination
+
+    assert TaskType.assignees.extensions[undine_settings.OFFSET_PAGINATION_EXTENSIONS_KEY] == pagination
+
+
+def test_convert_to_field_ref__interface_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]):
+        name = Field()
+
+    assert convert_to_field_ref(Named.name, caller=TaskType.name) == Named.name
+
+
+def test_convert_to_field_ref__interface_field__model_does_not_fulfill_interface() -> None:
+    class Named(InterfaceType):
+        foo = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    with pytest.raises(InterfaceFieldDoesNotExistError):
+
+        @Named
+        class TaskType(QueryType[Task]): ...
+
+
+def test_convert_to_field_ref__interface_field__type_mismatch() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLString)
+
+    with pytest.raises(InterfaceFieldTypeMismatchError):
+
+        @Named
+        class TaskType(QueryType[Task]): ...
+
+
+def test_convert_to_field_ref__interface_field__node() -> None:
+    @Node
+    class TaskType(QueryType[Task]):
+        id = Field()
+
+    assert convert_to_field_ref(Node.id, caller=TaskType.id) == Node.id
+
+
+def test_convert_to_field_ref__interface_field__node__inherited() -> None:
+    @Node
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]):
+        id = Field()
+
+    assert convert_to_field_ref(Named.id, caller=TaskType.id) == Named.id

@@ -51,7 +51,8 @@ if TYPE_CHECKING:
     from undine import Entrypoint, Field, InterfaceType, UnionType
     from undine.dataclasses import FilterResults, OrderResults
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.relay import Connection, PaginationHandler
+    from undine.pagination import PaginationHandler
+    from undine.relay import Connection
     from undine.typing import GQLInfo, QuerySetMap
 
 __all__ = [
@@ -59,7 +60,7 @@ __all__ = [
     "EntrypointFunctionResolver",
     "FieldFunctionResolver",
     "GlobalIDResolver",
-    "InterfaceResolver",
+    "InterfaceTypeResolver",
     "ModelAttributeResolver",
     "ModelManyRelatedFieldResolver",
     "ModelSingleRelatedFieldResolver",
@@ -861,9 +862,9 @@ class NestedConnectionResolver(Generic[TModel]):
 
         # Not optimal, as we don't know the actual pagination params if there are no results.
         if instances:
-            total_count = getattr(instances[0], undine_settings.CONNECTION_TOTAL_COUNT_KEY, None)
-            start = getattr(instances[0], undine_settings.CONNECTION_START_INDEX_KEY, 0)
-            stop = getattr(instances[0], undine_settings.CONNECTION_STOP_INDEX_KEY, None)
+            total_count = getattr(instances[0], undine_settings.PAGINATION_TOTAL_COUNT_KEY, None)
+            start = getattr(instances[0], undine_settings.PAGINATION_START_INDEX_KEY, 0)
+            stop = getattr(instances[0], undine_settings.PAGINATION_STOP_INDEX_KEY, None)
 
         return start, stop, total_count
 
@@ -1399,7 +1400,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class InterfaceResolver(Generic[TModel]):
+class InterfaceTypeResolver(Generic[TModel]):
     """Resolves an interface type to all of its implementations."""
 
     interface: type[InterfaceType]
@@ -1560,7 +1561,7 @@ class InterfaceResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class InterfaceConnectionResolver(Generic[TModel]):
+class InterfaceTypeConnectionResolver(Generic[TModel]):
     """Resolves a connection of interface type items."""
 
     connection: Connection
