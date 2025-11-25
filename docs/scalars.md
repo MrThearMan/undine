@@ -25,7 +25,7 @@ in Python.
 
 ### `Any`
 
-Represent any value accepted by GraphQL. Used for e.g. for union types.
+Represent any value accepted by GraphQL. Used for e.g. for [`UnionTypes`](unions.md).
 
 ### `Base16`
 
@@ -125,16 +125,18 @@ See [RFC 9562](https://datatracker.ietf.org/doc/html/rfc9562){:target="_blank"}.
 
 ## Modifying existing scalars
 
-All scalars have two functions that define its operation: `parse` and `serialize` These are used to
-parse incoming data to python types and serialize python data to GraphQL accepted types respectively.
+All scalars have two functions that define its operation:
 
-In Undine's additional built-in scalars, these functions are _single dispatch generic functions_.
-This means that we can register different implementations for the functions which are called
-depending on the type of the input value — think of it like a dynamic switch statement.
-This allows us to replace or extend the behavior of a scalar depending on our use case.
+1. `parse`, which is used to parse incoming data to python types
+2. `serialize`, which is used to serialize python data to GraphQL accepted types
 
-For example, we might want to use the [whenever]{:target="_blank"} library instead
-or in addition to python's built-in `datetime`. To do this, we can register a new
+For Undine's additional built-in scalars, these functions are _single dispatch generic functions_.
+This means that you can register different implementations for the functions which are used
+depending on the type of the input value. Think of them like a dynamic switch statement.
+This allows you to replace or extend the behavior of a scalar depending on your use case.
+
+For example, you might want to use the [whenever]{:target="_blank"} library instead
+or in addition to python's built-in `datetime`. To do this, you can register a new
 implementation for the `parse` function of the `DateTime` scalar.
 
 [whenever]: https://github.com/ariebovenberg/whenever
@@ -145,7 +147,7 @@ implementation for the `parse` function of the `DateTime` scalar.
 
 ## Custom scalars
 
-We can also define our own scalars to represent types that cannot be represented
+You can also define your own scalars to represent types that cannot be represented
 by any of Undine's built-in scalars. Let's create a new scalar named `Vector3`
 that represents a 3D vector using a tuple of three integers.
 
@@ -153,7 +155,8 @@ that represents a 3D vector using a tuple of three integers.
 -8<- "scalars/custom_scalar.py"
 ```
 
-If `Vector3` corresponds to a Django model field, we could also let Undine know
-about it by registering it for its many built-in converters. This way a model field
-can be converted automatically to our scalar for `QueryType` `Fields` and `MutationType` `Inputs`.
+If `Vector3` corresponds to a Django Model field, you could also let Undine know
+about it by registering it for its many built-in converters. This way a Model field
+can be converted automatically to your scalar for [`Fields`](queries.md#fields),
+[`Inputs`](mutations.md#inputs), [`Filters`](filtering.md#filter), and [`Orders`](ordering.md#order).
 More on this in the ["Hacking Undine"](hacking-undine.md) section.

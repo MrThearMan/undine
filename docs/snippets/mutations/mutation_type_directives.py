@@ -6,7 +6,7 @@ from undine.directives import Directive
 from .models import Task
 
 
-class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+class MyDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT]): ...
 
 
 class TaskCreateMutation(MutationType[Task], directives=[MyDirective()]):

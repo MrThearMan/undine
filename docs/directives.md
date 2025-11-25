@@ -2,7 +2,7 @@ description: Documentation on GraphQL directives in Undine.
 
 # Directives
 
-In this section, we'll cover the GraphQL directives in Undine.
+In this section, we'll cover how you can use GraphQL directives in Undine.
 Directives are a way to add metadata to your GraphQL schema,
 which can be accessed during query execution or by clients consuming your schema.
 
@@ -14,13 +14,13 @@ In Undine, a GraphQL directive is implemented by subclassing the `Directive` cla
 -8<- "directives/directive.py"
 ```
 
-Note that a `Directive` by itself does not do anything. It is only used as a way to define
-additional metadata, which the GraphQL server can use at runtime.
+Note that a `Directive` by itself doesn't do anything. It is only used as a way to define
+additional metadata, which the GraphQL server or client can use at runtime.
 If the directive implies some behavior, you'll need to add it, e.g., using a [`ValidationRule`](validation-rules.md).
 
 Note that declared `Directives` are automatically added to the schema, even if they are not used.
 
-A `Directive` always requires the _**locations**_ it will be used in to be set using the `locations` argument.
+A `Directive` always requires the _**locations**_ it can be used in to be set using the `locations` argument.
 The locations can be divided into two categories: [_executable locations_](#executable-locations)
 and [_type system locations_](#type-system-locations).
 
@@ -30,6 +30,14 @@ Executable locations identify places in a GraphQL _document_ (i.e. "request") wh
 See the example below on what these locations are.
 
 #### `QUERY`
+
+The `QUERY` location corresponds to _query_ operation.
+
+```python
+-8<- "directives/directive_location_query.py"
+```
+
+In schema definition:
 
 ```graphql
 query ($pk: Int!) @new {
@@ -43,6 +51,14 @@ query ($pk: Int!) @new {
 
 #### `MUTATION`
 
+The `MUTATION` location corresponds to _mutation_ operation.
+
+```python
+-8<- "directives/directive_location_mutation.py"
+```
+
+In schema definition:
+
 ```graphql
 mutation ($input: CreateTaskMutation!) @new {
   createTask(input: $input) {
@@ -52,6 +68,14 @@ mutation ($input: CreateTaskMutation!) @new {
 ```
 
 #### `SUBSCRIPTION`
+
+The `SUBSCRIPTION` location corresponds to _subscription_ operation.
+
+```python
+-8<- "directives/directive_location_subscription.py"
+```
+
+In schema definition:
 
 ```graphql
 subscription @new {
@@ -64,6 +88,14 @@ subscription @new {
 
 #### `FIELD`
 
+The `FIELD` location corresponds to a field selection on an operation.
+
+```python
+-8<- "directives/directive_location_field.py"
+```
+
+In schema definition:
+
 ```graphql
 query {
   task(pk: 1) {
@@ -75,6 +107,14 @@ query {
 ```
 
 #### `FRAGMENT_DEFINITION`
+
+The `FRAGMENT_DEFINITION` location corresponds to a fragment definition.
+
+```python
+-8<- "directives/directive_location_fragment_definition.py"
+```
+
+In schema definition:
 
 ```graphql
 query {
@@ -92,6 +132,14 @@ fragment taskFragment on TaskType @new {
 
 #### `FRAGMENT_SPREAD`
 
+The `FRAGMENT_SPREAD` location corresponds to a fragment spread.
+
+```python
+-8<- "directives/directive_location_fragment_spread.py"
+```
+
+In schema definition:
+
 ```graphql
 query {
   task(pk: 1) {
@@ -108,6 +156,14 @@ fragment taskFragment on TaskType {
 
 #### `INLINE_FRAGMENT`
 
+The `INLINE_FRAGMENT` location corresponds to an inline fragment.
+
+```python
+-8<- "directives/directive_location_inline_fragment.py"
+```
+
+In schema definition:
+
 ```graphql
 query {
   node(id: "U3Vyc29yOnVzZXJuYW1lOjE=") {
@@ -120,6 +176,14 @@ query {
 ```
 
 #### `VARIABLE_DEFINITION`
+
+The `VARIABLE_DEFINITION` location corresponds to a variable definition.
+
+```python
+-8<- "directives/directive_location_variable_fragment.py"
+```
+
+In schema definition:
 
 ```graphql
 query ($pk: Int! @new) {
@@ -135,7 +199,7 @@ query ($pk: Int! @new) {
 
 Type system locations identify places in a GraphQL _schema_ (i.e. "API") where a directive can be used.
 Since Undine is used to define the schema, each type system location corresponds to an Undine
-object that accepts that type of directive.
+object that accepts that "type" of directive.
 
 #### `SCHEMA`
 
@@ -143,22 +207,19 @@ The `SCHEMA` location corresponds to the schema definition itself.
 Directives can be added here by using the `schema_definition_directives` argument
 in the `create_schema` function.
 
-```python
+```python hl_lines="16"
 -8<- "directives/directive_location_schema.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on SCHEMA
+directive @new on SCHEMA
 
-schema @version(value: "v1.0.0") {
+schema @new {
   query: Query
-  mutation: Mutation
 }
 ```
-
-///
 
 #### `SCALAR`
 
@@ -169,15 +230,14 @@ In Undine, `ScalarType` accepts `Directives` declared for this location.
 -8<- "directives/directive_location_scalar.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on SCALAR
+directive @new on SCALAR
 
-scalar Vector3 @version(value: "1.0.0")
+scalar Vector3 @new
 ```
 
-///
 
 #### `OBJECT`
 
@@ -188,23 +248,20 @@ In Undine, `QueryTypes` and `RootTypes` accepts `Directives` declared for this l
 -8<- "directives/directive_location_object.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on OBJECT
+directive @new on OBJECT
 
-type TaskType @version(value: "v1.0.0") {
+type TaskType @new {
   name: String!
-  done: Boolean!
   createdAt: DateTime!
 }
 
-type Query @version(value: "v1.0.0") {
+type Query @new {
   tasks: [TaskType!]!
 }
 ```
-
-///
 
 #### `FIELD_DEFINITION`
 
@@ -215,27 +272,24 @@ In Undine, `Fields`, `InterfaceFields` and `Entrypoints` accepts `Directives` de
 -8<- "directives/directive_location_field_definition.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @addedIn(version: String!) on FIELD_DEFINITION
+directive @new on FIELD_DEFINITION
 
 interface Named {
-  name: String! @addedIn(version: "v1.0.0")
+  name: String! @new
 }
 
 type TaskType implements Named {
   name: String!
-  done: Boolean!
-  createdAt: DateTime! @addedIn(version: "v1.0.0")
+  createdAt: DateTime! @new
 }
 
 type Query {
-  tasks: [TaskType!]! @addedIn(version: "v1.0.0")
+  tasks: [TaskType!]! @new
 }
 ```
-
-///
 
 #### `ARGUMENT_DEFINITION`
 
@@ -246,23 +300,21 @@ In Undine, `CalculationArguments` and `DirectiveArguments` accepts `Directives` 
 -8<- "directives/directive_location_argument_definition.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @addedIn(version: String!) on ARGUMENT_DEFINITION
+directive @new on ARGUMENT_DEFINITION
 
-directive @new (
-  version: String! @addedIn(version: "v1.0.0")
+directive @version (
+  value: String! @new
 ) on FIELD_DEFINITION
 
 type TaskType {
   calc(
-    value: Int! @addedIn(version: "v1.0.0")
+    value: Int! @new
   ): Int!
 }
 ```
-
-///
 
 #### `INTERFACE`
 
@@ -273,17 +325,15 @@ In Undine, `InterfaceType` accepts `Directives` declared for this location.
 -8<- "directives/directive_location_interface.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on INTERFACE
+directive @new on INTERFACE
 
-interface Named @version(value: "v1.0.0") {
+interface Named @new {
   name: String!
 }
 ```
-
-///
 
 #### `UNION`
 
@@ -294,15 +344,13 @@ In Undine, `UnionType` accepts `Directives` declared for this location.
 -8<- "directives/directive_location_union.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on UNION
+directive @new on UNION
 
-union SearchObject @version(value: "v1.0.0") = TaskType | ProjectType
+union SearchObject @new = TaskType | ProjectType
 ```
-
-///
 
 #### `ENUM`
 
@@ -313,18 +361,16 @@ In Undine, `OrderSet` accepts `Directives` declared for this location.
 -8<- "directives/directive_location_enum.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on ENUM
+directive @new on ENUM
 
-enum TaskOrderSet @version(value: "v1.0.0") {
+enum TaskOrderSet @new {
   nameAsc
   nameDesc
 }
 ```
-
-///
 
 #### `ENUM_VALUE`
 
@@ -335,18 +381,16 @@ In Undine, `Order` accepts `Directives` declared for this location.
 -8<- "directives/directive_location_enum_value.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @addedIn(version: String!) on ENUM_VALUE
+directive @new on ENUM_VALUE
 
 enum TaskOrderSet {
-  nameAsc @addedIn(version: "v1.0.0")
-  nameDesc @addedIn(version: "v1.0.0")
+  nameAsc @new
+  nameDesc @new
 }  
 ```
-
-///
 
 #### `INPUT_OBJECT`
 
@@ -357,21 +401,19 @@ In Undine, `MutationType` and `FilterSet` accept `Directives` declared for this 
 -8<- "directives/directive_location_input_object.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) on INPUT_OBJECT
+directive @new on INPUT_OBJECT
 
-input TaskFilterSet @version(value: "v1.0.0") {
+input TaskFilterSet @new {
   name: String
 }
 
-input TaskCreateMutation @version(value: "v1.0.0") {
+input TaskCreateMutation @new {
   name: String
 }
 ```
-
-///
 
 #### `INPUT_FIELD_DEFINITION`
 
@@ -382,21 +424,19 @@ In Undine, `Input` and `Filter` accept `Directives` declared for this location.
 -8<- "directives/directive_location_input_field_definition.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @addedIn(version: String!) on INPUT_FIELD_DEFINITION
+directive @new on INPUT_FIELD_DEFINITION
 
 input TaskFilterSet {
-  name: String @addedIn(version: "v1.0.0")
+  name: String @new
 }
 
 input TaskCreateMutation {
-  name: String @addedIn(version: "v1.0.0")
+  name: String @new
 }
 ```
-
-///
 
 ### Is repeatable
 
@@ -407,25 +447,24 @@ This means that the directive can be used multiple times in the same location.
 -8<- "directives/directive_is_repeatable.py"
 ```
 
-/// details | In schema definition
+In schema definition:
 
 ```graphql
-directive @version(value: String!) repeatable on FIELD_DEFINITION
+directive @new repeatable on FIELD_DEFINITION
 
 type Query {
-  example: String! @version(value: "v1.0.0") @version(value: "v2.0.0")
+  example: String! @new @new
 }
 ```
 
-///
-
 ### Schema name
 
-By default, the name of the generated `Directive` is the same as the name of the `Directive` class.
-You can change this by setting the `schema_name` argument to the `Directive` class.
+By default, the name of the generated GraphQL directive for a `Directive` class
+is the name of the `Directive` class. If you want to change the name separately,
+you can do so by setting the `schema_name` argument:
 
 ```python
--8<- "directives/directive_extensions.py"
+-8<- "directives/directive_schema_name.py"
 ```
 
 ### Extensions
@@ -438,9 +477,10 @@ however you wish to extend the functionality of the `Directive`.
 -8<- "directives/directive_extensions.py"
 ```
 
-`Directive` extensions are made available in the GraphQL `Directive` extensions
-after the schema is created. The `Directive` itself is found in the `extensions`
-under a key defined by the `DIRECTIVE_EXTENSIONS_KEY` setting.
+`Directive` extensions are made available in the GraphQL directive extensions
+after the schema is created. The `Directive` itself is found in the GraphQL directive extensions
+under a key defined by the [`DIRECTIVE_EXTENSIONS_KEY`](settings.md#directive_extensions_key)
+setting.
 
 ## DirectiveArgument
 
@@ -454,13 +494,18 @@ A `DirectiveArgument` always requires _input type_ of the argument, which needs 
 
 ### Schema name
 
-By default, the name of the argument is the same as the name of the attribute
-to which the `DirectiveArgument` was defined to in the `Directive` class.
-You can change this by setting the `schema_name` argument to the `DirectiveArgument` class.
+By default, the name of the GraphQL directive argument generated from a `DirectiveArgument` is the same
+as the name of the `DirectiveArgument` on the `Directive` class (converted to _camelCase_ if
+[`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
+If you want to change the name of the GraphQL directive argument separately,
+you can do so by setting the `schema_name` argument:
 
 ```python
 -8<- "directives/directive_argument_schema_name.py"
 ```
+
+This can be useful when the desired name of the GraphQL directive argument is a Python keyword
+and cannot be used as the `DirectiveArgument` attribute name.
 
 ### Description
 
@@ -494,6 +539,53 @@ A `deprecation_reason` can be provided to mark the `DirectiveArgument` as deprec
 -8<- "directives/directive_argument_deprecation_reason.py"
 ```
 
+### Directives
+
+You can add directives to the `DirectiveArgument` by providing them using the `directives` argument.
+The directive must be usable in the `ARGUMENT_DEFINITION` location.
+
+```python
+-8<- "directives/directive_argument_directives.py"
+```
+
+You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
+
+```python
+-8<- "directives/directive_argument_directives_matmul.py"
+```
+
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `DirectiveArgument` from certain users by decorating a method with the
+`<arg_name>.visible` decorator. Hiding a `DirectiveArgument` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `DirectiveArgument` didn't exist in the first place.
+
+```python
+-8<- "directives/directive_argument_visible.py"
+```
+
+/// details | About method signature
+
+The decorated method is treated as a static method by the `DirectiveArgument`.
+
+The `self` argument is not an instance of the `Directive`,
+but the instance of the `DirectiveArgument` that is being used.
+
+Since visibility checks occur in the validation phase of the GraphQL request,
+GraphQL resolver info is not yet available. However, you can access the
+Django request object using the `request` argument.
+From this, you can, e.g., access the request user for permission checks.
+
+///
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
+
 ### Extensions
 
 You can provide custom extensions for the `DirectiveArgument` by providing a
@@ -504,6 +596,7 @@ however you wish to extend the functionality of the `DirectiveArgument`.
 -8<- "directives/directive_argument_extensions.py"
 ```
 
-`DirectiveArgument` extensions are made available in the GraphQL `Argument` extensions
-after the schema is created. The `DirectiveArgument` itself is found in the `extensions`
-under a key defined by the `DIRECTIVE_ARGUMENT_EXTENSIONS_KEY` setting.
+`DirectiveArgument` extensions are made available in the GraphQL argument extensions
+after the schema is created. The `DirectiveArgument` itself is found in the GraphQL argument extensions
+under a key defined by the [`DIRECTIVE_ARGUMENT_EXTENSIONS_KEY`](settings.md#directive_argument_extensions_key)
+setting.

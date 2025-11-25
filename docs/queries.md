@@ -3,18 +3,18 @@ description: Documentation on queries in Undine.
 # Queries
 
 In this section, we'll cover Undine's [`QueryTypes`](#querytypes)
-which allow you to expose your Django models through the GraphQL schema for querying,
-expanding on the basics introduced in the [Tutorial](tutorial.md).
+which allow you to expose your Django Models through the GraphQL schema for querying.
 
-If you need to query data outside of your Django models,
+For queries not concerning your Django Models,
 see the [function references](schema.md#function-references) section
-in the schema documentation.
+in the Schema documentation.
 
 ## QueryTypes
 
-A `QueryType` represents a GraphQL `ObjectType` for querying data from a Django model
+A `QueryType` represents a GraphQL `ObjectType` for querying data from a Django Model
 in the GraphQL schema. A basic `QueryType` is created by subclassing `QueryType`
-and adding a Django model to it as a generic type parameter:
+and adding a Django Model to it as a generic type parameter. You must also add at least one
+[`Field`](#fields) to the class body of the `QueryType`.
 
 ```python
 -8<- "queries/query_type_basic.py"
@@ -22,7 +22,7 @@ and adding a Django model to it as a generic type parameter:
 
 ### Auto-generation
 
-A `QueryType` can automatically introspect its Django model and convert the model's fields
+A `QueryType` can automatically introspect its Django Model and convert the Model's fields
 to `Fields` on the `QueryType`. For example, if the `Task` model has the following fields:
 
 ```python
@@ -42,13 +42,14 @@ type TaskType {
 
 To use auto-generation, either set [`AUTOGENERATION`](settings.md#autogeneration) setting to `True`
 to enable it globally, or set the `auto` argument to `True` in the `QueryType` class definition.
-With this, you can leave the `QueryType` class body empty.
+With this, you can leave the `QueryType` class body empty, as fields will be automatically added
+based on the Django Model.
 
 ```python
 -8<- "queries/query_type_auto.py"
 ```
 
-You can exclude some model fields from the auto-generation by setting the `exclude` argument:
+You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "queries/query_type_exclude.py"
@@ -56,12 +57,13 @@ You can exclude some model fields from the auto-generation by setting the `exclu
 
 ### Filtering
 
-Results from `QueryTypes` can be filtered in two ways:
+When a `QueryType` is used to return multiple items, either in a list [`Entrypoint`](schema.md#entrypoints)
+or a many-related [`Field`](#fields), its results can be filtered in one of two ways:
 
 1) Adding a `FilterSet` to the `QueryType`. These are explained in detail in the [Filtering](filtering.md) section.
 
-2) Defining a `__filter_queryset__` classmethod. This method is used to filter
-   all results returned by the `QueryType`. Use it to filter out items that should
+2) Defining a `__filter_queryset__` classmethod. This method will always be called even if no
+   other filtering is applied to the results. Use it to filter out items that should
    never be returned by the `QueryType`, e.g. archived items.
 
 ```python
@@ -70,12 +72,13 @@ Results from `QueryTypes` can be filtered in two ways:
 
 ### Ordering
 
-Results from `QueryTypes` can be ordered in two ways:
+When a `QueryType` is used to return multiple items, either in a list [`Entrypoint`](schema.md#entrypoints)
+or a many-related [`Field`](#fields), its results can be ordered in one of two ways:
 
 1) Adding an `OrderSet` to the `QueryType`. These are explained in detail in the [Ordering](ordering.md) section.
 
 2) Defining a `__filter_queryset__` classmethod.
-   Same as custom [filtering](#filtering), this is used for all results returned by the `QueryType`.
+   Same as custom [filtering](#filtering), this ordering is always applied to results returned by the `QueryType`.
    However, since queryset ordering is reset when a new ordering is applied to the queryset,
    ordering added here serves as the default ordering for the `QueryType`, and is overridden if
    any ordering is applied using an `OrderSet`.
@@ -94,10 +97,12 @@ adding a `__permissions__` classmethod it.
 ```
 
 This method will be called for each instance of `Task` that is returned
-by this `QueryType`. For lists, this means that the method will be called
-for each item in the list.
+by this `QueryType` in `Entrypoints` or related `Fields`.
 
-Instead of raising an exception, you might want to filter out items the user
+You can raise any `GraphQLError` when a permission check fails, but it's recommended to
+raise a `GraphQLPermissionError` from the `undine.exceptions` module.
+
+Instead of raising an exception from a permission check, you might want to filter out items the user
 doesn't have permission to access. You can do this using the `__filter_queryset__`
 classmethod.
 
@@ -105,7 +110,7 @@ classmethod.
 -8<- "queries/query_type_permissions_filter_queryset.py"
 ```
 
-Now, when the `QueryType` is used in a list entrypoint or in "to-many" relations,
+Now, when the `QueryType` is used in a list `Entrypoint` or many related `Field`,
 items that the user doesn't have permission to access will be filtered out.
 For single-item entrypoints or "to-one" relations, a `null` value will be returned
 instead. Note that you'll need to manually check all `Fields` and `Entrypoints`
@@ -117,30 +122,30 @@ checks don't cause an excessive database queries.
 
 ### QueryType registry
 
-When a new `QueryType` is created, Undine automatically registers it for its given model.
-This allows other `QueryTypes` to look up the `QueryType` for linking relations
+When a new `QueryType` is created, Undine automatically registers it for its given Model.
+This allows other `QueryTypes` to look up the `QueryType` for linking related `Fields`
 (see [relations](#relations)), and `MutationTypes` to find out their matching output type
 (see [mutation output types](mutations.md#output-type)).
 
-The `QueryType` registry only allows one `QueryType` to be registered for each model.
-During `QueryType` registration, if a `QueryType` is already registered for the model,
+The `QueryType` registry only allows one `QueryType` to be registered for each Model.
+During `QueryType` registration, if a `QueryType` is already registered for the Model,
 an error will be raised.
 
-If you need to create multiple `QueryTypes` for the same model, you can choose to not
-register a `QueryType` for the model by setting the `register` argument to `False` in the
+If you need to create multiple `QueryTypes` for the same Model, you can choose to not
+register a `QueryType` in the registry by setting the `register` argument to `False` in the
 `QueryType` class definition.
 
 ```python
 -8<- "queries/query_type_no_register.py"
 ```
 
-You then need to use this `QueryType` explicitly when required.
+You'll then need to use this `QueryType` explicitly when required.
 
 ### Custom optimizations
 
 > The optimizer is covered more thoroughly in the [Optimizer](optimizer.md) section.
 
-Usually touching the `QueryType` optimizations is not necessary, but if required,
+Usually adding `QueryType` optimizations is not necessary, but if required,
 you can override the `__optimizations__` classmethod on the `QueryType` to do so.
 
 ```python
@@ -152,8 +157,8 @@ to e.g. make permission checks.
 
 ### Schema name
 
-By default, the name of the generated `ObjectType` for a `QueryType` is the same
-as the name of the `QueryType` class. If you want to change the name of the `ObjectType`,
+By default, the name of the generated GraphQL `ObjectType` for a `QueryType` class
+is the name of the `QueryType` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
@@ -162,7 +167,7 @@ you can do so by setting the `schema_name` argument:
 
 ### Description
 
-To provide a description for the  `QueryType`, you can add a docstring to the class.
+You can provide a description for the `QueryType` by adding a docstring to the class.
 
 ```python
 -8<- "queries/query_type_description.py"
@@ -176,14 +181,27 @@ You can add interfaces to the `QueryType` by providing them using the `interface
 -8<- "queries/query_type_interfaces.py"
 ```
 
+You can also add interfaces using decorator syntax.
+
+```python
+-8<- "queries/query_type_interfaces_decorator.py"
+```
+
 See the [Interfaces](interfaces.md) section for more details on interfaces.
 
 ### Directives
 
 You can add directives to the `QueryType` by providing them using the `directives` argument.
+The directive must be usable in the `OBJECT` location.
 
 ```python
 -8<- "queries/query_type_directives.py"
+```
+
+You can also add directives using decorator syntax.
+
+```python
+-8<- "queries/query_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -193,14 +211,18 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `QueryType` from certain users by adding the `visible` argument to the `QueryType`.
-Hiding a query type means that it will not be included in introspection queries for that user,
-and entrypoints (query _or_ mutation output) and relations using that query type
-cannot be used in operations by that user.
+You can hide a `QueryType` from certain users by using the `__is_visible__` method.
+Hiding the `QueryType` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Entrypoint` or `Field` using the `QueryType` didn't exist in the first place.
 
 ```python
 -8<- "queries/query_type_visible.py"
 ```
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 
@@ -213,43 +235,43 @@ however you wish to extend the functionality of the `QueryType`.
 ```
 
 `QueryType` extensions are made available in the GraphQL `ObjectType` extensions
-after the schema is created. The `QueryType` itself is found in the `extensions`
+after the schema is created. The `QueryType` itself is found in the GraphQL `ObjectType` extensions
 under a key defined by the [`QUERY_TYPE_EXTENSIONS_KEY`](settings.md#query_type_extensions_key)
 setting.
 
 ## Fields
 
-A `Field` is a class that is used to define a queryable value for a `QueryType`.
-Usually `Fields` correspond to fields on the Django model for their respective `QueryType`.
-In GraphQL, a `Field` represents a `GraphQLField` in an `ObjectType`.
+A `Field` is used to define a queryable value on a `QueryType`.
+Usually `Fields` correspond to fields on the Django Model for their respective `QueryType`.
+In GraphQL, a `Field` represents a `GraphQLField` on an `ObjectType`.
 
 A `Field` always requires a _**reference**_ from which it will create the proper GraphQL resolver,
 output type, and arguments for the `Field`.
 
 ### Model field references
 
-For `Fields` corresponding to Django model fields, the `Field` can be used without passing in a reference,
+For `Fields` corresponding to Django Model fields, the `Field` can be used without passing in a reference,
 as its attribute name in the `QueryType` class body can be used to identify
-the corresponding model field.
+the corresponding Model field.
 
 ```python
 -8<- "queries/field.py"
 ```
 
-To be a bit more explicit, you could use a string referencing the model field:
+To be a bit more explicit, you could use a string referencing the Model field:
 
 ```python
 -8<- "queries/field_string.py"
 ```
 
-For better type safety, you can also use the model field itself:
+For better type safety, you can also use the Model field itself:
 
 ```python
 -8<- "queries/field_field.py"
 ```
 
 Being explicit like this is only required if the name of the field in the GraphQL schema
-is different from the model field name.
+is different from the Model field name.
 
 ```python
 -8<- "queries/field_alias.py"
@@ -257,8 +279,8 @@ is different from the model field name.
 
 ### Expression references
 
-Django ORM expressions can also be used as the references.
-These create an annotation on the model instances when fetched.
+Django ORM expressions can also be used as references.
+These create an annotation on the Model instances when fetched.
 
 ```python
 -8<- "queries/field_expression.py"
@@ -293,7 +315,7 @@ it's recommended to change the argument's name to `root`,
 as defined by the [`RESOLVER_ROOT_PARAM_NAME`](settings.md#resolver_root_param_name)
 setting.
 
-The value of the `root` argument for a `Field` is the **_model instance_** being queried.
+The value of the `root` argument for a `Field` is the **_Model instance_** being queried.
 
 The `info` argument can be left out, but if it's included, it should always
 have the `GQLInfo` type annotation.
@@ -326,7 +348,7 @@ the `Calculation` class and adding the required `CalculationArguments` to its cl
 
 `Calculation` objects always require the generic type argument to be set,
 which describes the return type of the calculation. This should be a python type
-matching the expression that is returned in the `__call__` method.
+matching the Django ORM expression that is returned in the `__call__` method.
 
 `CalculationArguments` can be defined in the class body of the `Calculation` class.
 These define the input arguments for the calculation. When the calculation is executed,
@@ -384,9 +406,11 @@ type TaskType {
 }
 ```
 
+Undine will make sure that queries between the relations are optimized.
+
 ### Permissions
 
-You can add a permissions for querying any data from an individual `Field` by
+You can add a permission check for querying any data from an individual `Field` by
 decorating a method with `@<field_name>.permissions`.
 
 ```python
@@ -410,10 +434,70 @@ returning `None` when permission is denied. Note that you'll need to manually se
 -8<- "queries/field_permissions_resolver.py"
 ```
 
+### Many
+
+By default, a `Field` is able to determine whether it returns a list of items based on its reference.
+For example, for a Model field, a `ManyToManyField` will return a list of items.
+If you want to configure this manually, you can do so by adding the `many` argument to the `Field`.
+
+```python
+-8<- "queries/field_many.py"
+```
+
+### Nullable
+
+By default, a `Field` is able to determine whether it's nullable or not based on its reference.
+For example, for a Model field, nullability is determined from its `null` attribute.
+If you want to configure this manually, you can do so by adding the `nullable` argument to the `Field`.
+
+```python
+-8<- "queries/field_nullable.py"
+```
+
+### Complexity
+
+The complexity value of a `Field` is used by Undine to calculate how expensive a given query
+to the schema would be. Queries are rejected by Undine if they would exceed the maximum allowed complexity,
+as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
+
+By default, a `Field` is able to determine its complexity based on its reference.
+For example, a related Model field has a complexity of 1, and a regular Model field has a complexity of 0.
+If you want to configure this manually, you can do so by adding the `complexity` argument to the `Field`.
+
+```python
+-8<- "queries/field_complexity.py"
+```
+
+### Field name
+
+A `field_name` can be provided to explicitly set the Django Model field
+that the `Field` corresponds to.
+
+```python
+-8<- "queries/field_field_name.py"
+```
+
+This can be useful when the `Field` has a different name and type in the GraphQL schema than in the Model.
+
+### Schema name
+
+By default, the name of the `ObjectType` field generated from a `Field` is the same
+as the name of the `Field` on the `QueryType` class (converted to _camelCase_ if
+[`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
+If you want to change the name of the `ObjectType` field separately,
+you can do so by setting the `schema_name` argument:
+
+```python hl_lines="13"
+-8<- "queries/field_schema_name.py"
+```
+
+This can be useful when the desired name of the `ObjectType` field is a Python keyword
+and cannot be used as the `Field` attribute name.
+
 ### Descriptions
 
 By default, a `Field` is able to determine its description based on its reference.
-For example, for a model field, the description is taken from its `help_text`.
+For example, for a [Model field](#model-field-references), the description is taken from its `help_text`.
 If the reference has no description, or you wish to add a different one,
 you can provide a description in one of two ways:
 
@@ -436,61 +520,6 @@ you add a docstring to the function/method used as the reference instead.
 -8<- "queries/field_decorator_docstring.py"
 ```
 
-### Many
-
-By default, a `Field` is able to determine whether it returns a list of items based on its reference.
-For example, for a model field, a `ManyToManyField` will return a list of items.
-If you want to configure this manually, you can do so by adding the `many` argument to the `Field`.
-
-```python
--8<- "queries/field_many.py"
-```
-
-### Nullable
-
-By default, a `Field` is able to determine whether it's nullable or not based on its reference.
-For example, for a model field, nullability is determined from its `null` attribute.
-If you want to configure this manually, you can do so by adding the `nullable` argument to the `Field`.
-
-```python
--8<- "queries/field_nullable.py"
-```
-
-### Complexity
-
-The complexity value of a `Field` is used by Undine to calculate how expensive a given query
-to the schema would be. Queries are rejected by Undine if they would exceed the maximum allowed complexity,
-as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
-
-By default, a `Field` is able to determine its complexity based on its reference.
-For example, a related field has a complexity of 1, and a regular model field has a complexity of 0.
-If you want to configure this manually, you can do so by adding the `complexity` argument to the `Field`.
-
-```python
--8<- "queries/field_complexity.py"
-```
-
-### Field name
-
-A `field_name` can be provided to explicitly set the Django model field name
-that the `Field` corresponds to. This can be useful when you need multiple `Fields`
-for the same model field, or when the field has a different name and type
-in the GraphQL schema than in the model.
-
-```python
--8<- "queries/field_field_name.py"
-```
-
-### Schema name
-
-A `schema_name` can be provided to override the name of the `Field` in the GraphQL schema.
-This can be useful for renaming fields for the schema, or when the desired name is a Python keyword
-and cannot be used as the `Field` attribute name.
-
-```python hl_lines="13"
--8<- "queries/field_schema_name.py"
-```
-
 ### Deprecation reason
 
 A `deprecation_reason` can be provided to mark the `Field` as deprecated.
@@ -503,8 +532,8 @@ This is for documentation purposes only, and does not affect the use of the `Fie
 ### Custom resolvers
 
 > Usually using a custom `Field` resolver is not necessary, and should be avoided
-> if possible. This is because most modifications to resolvers can result in canceling
-> query optimizations (see the [optimizer](optimizer.md) section for details).
+> if possible. This is because use of Model fields in resolvers without
+> [additional optimizations](#custom-optimizations) can result in a lot of database queries.
 
 You can override the resolver for a `Field` by adding a method to the class body of the `QueryType`
 and decorating it with the `@<field_name>.resolve` decorator.
@@ -548,9 +577,16 @@ to e.g. make permission checks.
 ### Directives
 
 You can add directives to the `Field` by providing them using the `directives` argument.
+The directive must be usable in the `FIELD_DEFINITION` location.
 
 ```python
 -8<- "queries/field_directives.py"
+```
+
+You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
+
+```python
+-8<- "queries/field_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -560,13 +596,32 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `Field` from certain users by adding the `visible` argument to the `Field`.
-Hiding a field means that it will not be included in introspection queries for that user,
-and it cannot be used in operations by that user.
+You can hide a `Field` from certain users by decorating a method with the
+`<field_name>.visible` decorator. Hiding a `Field` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Field` didn't exist in the first place.
 
 ```python
 -8<- "queries/field_visible.py"
 ```
+
+/// details | About method signature
+
+The decorated method is treated as a static method by the `Field`.
+
+The `self` argument is not an instance of the `QueryType`,
+but the instance of the `Field` that is being used.
+
+Since visibility checks occur in the validation phase of the GraphQL request,
+GraphQL resolver info is not yet available. However, you can access the
+Django request object using the `request` argument.
+From this, you can, e.g., access the request user for permission checks.
+
+///
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 
@@ -578,7 +633,7 @@ however you wish to extend the functionality of the `Field`.
 -8<- "queries/field_extensions.py"
 ```
 
-`Field` extensions are made available in the GraphQL `ObjectType` extensions
-after the schema is created. The `QueryType` itself is found in the `extensions`
+`Field` extensions are made available in the GraphQL `ObjectType` field extensions
+after the schema is created. The `QueryType` itself is found in the GraphQL field extensions
 under a key defined by the [`QUERY_TYPE_EXTENSIONS_KEY`](settings.md#query_type_extensions_key)
 setting.

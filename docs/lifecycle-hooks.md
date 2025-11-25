@@ -11,21 +11,19 @@ A GraphQL operation is executed in a series of steps. These steps are:
 
 1. **Parsing** the GraphQL source document to a GraphQL AST.
 2. **Validation** of the GraphQL AST against the GraphQL schema.
-3. **Execution** of the GraphQL operation.
+3. **Execution** of the GraphQL operation according to the GraphQL AST.
 
 `LifecycleHooks` allow you to hook into the these steps to run custom logic
-before or after each of these steps, or before and after the whole operation.
-Here is a basic example of a `LifecycleHook`.
+before or after them (or the whole operation). Here is a basic example of a `LifecycleHook`.
 
 ```python
 -8<- "lifecycle_hooks/example_hook.py"
 ```
 
 To implement a hook, you need to create a class that inherits from `LifecycleHook`
-and implement the `run` method. `run` should be a generator function that yields
-once, marking the point in which the hook should run. Anything before the yield
-statement will be executed before the hooking point, and anything after the yield
-statement will be executed after the hooking point.
+and implement the `run` method. `run` should be a generator function that yields once.
+Anything before the yield statement will be executed before the hooking point,
+and anything after the yield statement will be executed after the hooking point.
 
 You can add this hook the different steps using settings:
 
@@ -43,7 +41,7 @@ in the order they are registered. This means that the first hook registered will
 have its "before" portion run first and its "after" portion run last. You can think
 of them as a stack of context managers.
 
-Lifecycle hooks can have a different implementation in [async context](async.md)
+`LifecycleHooks` can have a different implementation in [async context](async.md)
 using the `run_async` method. If no async implementation is provided,
 the synchronous version will be used.
 
@@ -65,7 +63,8 @@ This includes:
 - `operation_name`: The name of the GraphQL operation.
 - `extensions`: GraphQL operation extensions received from the client.
 - `request`: Django request during which the GraphQL request is being executed.
-- `result`: Execution result of the GraphQL operation.
+- `result`: Execution result of the GraphQL operation. Adding a result to this will
+  cause the operation to exit early with the result.
 
 ## Examples
 

@@ -12,3 +12,8 @@ class TaskMutation(MutationType[Task], kind="create"):
     def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
         # Some custom mutation logic here
         return instance
+
+    @classmethod
+    def __bulk_mutate__(cls, instances: list[Task], info: GQLInfo, input_data: list[dict[str, Any]]) -> list[Task]:
+        # Some custom bulk mutation logic here
+        return instances

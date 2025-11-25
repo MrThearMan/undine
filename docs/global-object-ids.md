@@ -2,17 +2,17 @@ description: Relay Global Object Identification specification support in Undine.
 
 # Global Object IDs
 
-In this section, we'll cover how to add support for object refetching and client caching using the Relay
+In this section, we'll cover how you can add support for object refetching and client caching using the
 [Global Object Identification]{:target="_blank"} specification.
 
 [Global Object Identification]: https://relay.dev/graphql/objectidentification.htm
 
-For Relay-compliant clients, see the [Connection](pagination.md#connection) section
+For Relay-compliant clients, see the [Connection](pagination.md#cursor-pagination) section
 for adding support for pagination with `Connections`.
 
 ## Node Interface
 
-Your `QueryTypes` can implement the `Node` interface to add support for _Global Object IDs_.
+Your `QueryTypes` can implement the `Node` [interface](interfaces.md) to add support for _Global Object IDs_.
 
 ```python
 -8<- "global_object_ids/node_interface.py"
@@ -20,13 +20,14 @@ Your `QueryTypes` can implement the `Node` interface to add support for _Global 
 
 This will add an `id` field to the `TaskType` for resolving _Global Object IDs_.
 
-```graphql
+```graphql hl_lines="2 6"
 interface Node {
   id: ID!
 }
 
 type TaskType implements Node {
   id: ID!
+  pk: Int!
   name: String!
   # Rest of the fields...
 }
@@ -40,7 +41,7 @@ model `id` field, you can use the `pk` field instead.
 
 A _Global Object ID_ can be used for refetching objects from a special `Node` `Entrypoint`.
 
-```python
+```python hl_lines="11"
 -8<- "global_object_ids/node_entrypoint.py"
 ```
 

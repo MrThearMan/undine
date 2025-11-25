@@ -1,19 +1,25 @@
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation
 
 from undine import Entrypoint, RootType
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import Directive
 
 
-class VersionDirective(
+class NewDirective(
     Directive,
     locations=[DirectiveLocation.FIELD_DEFINITION],
-    schema_name="version",
+    schema_name="new",
     is_repeatable=True,
-):
-    value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+): ...
 
 
 class Query(RootType):
-    @Entrypoint(directives=[VersionDirective(value="v1.0.0"), VersionDirective(value="v2.0.0")])
+    @Entrypoint(directives=[NewDirective(), NewDirective()])
     def example(self) -> str:
+        return "Example"
+
+    # Alternatively...
+    @NewDirective()
+    @NewDirective()
+    @Entrypoint()
+    def example_alt(self) -> str:
         return "Example"

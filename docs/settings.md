@@ -19,7 +19,7 @@ UNDINE = {
 
 Type: `list[type[ASTValidationRule]]` | Default: `[]`
 
-Additional validation rules to use for validating the GraphQL schema.
+Additional validation rules to use for validating GraphQL documents (i.e. "requests").
 Values should be given as the dotted paths to the validation rules used.
 
 ///
@@ -30,6 +30,12 @@ Values should be given as the dotted paths to the validation rules used.
 Type: `bool` | Default: `False`
 
 Whether to allow the _'did you mean'_ suggestions on error messages.
+Disabled by default so that information on the schema structure cannot
+be gained from error messages when trying to find schem entrypoint through
+trial and error (a form of security through obscurity).
+
+This should be left disabled when using
+[`EXPERIMENTAL_VISIBILITY_CHECKS`](#experimental_visibility_checks).
 
 ///
 
@@ -38,8 +44,11 @@ Whether to allow the _'did you mean'_ suggestions on error messages.
 
 Type `bool` | Default: `False`
 
-Whether schema introspection queries are allowed or not. Should set this to `True`
-if using GraphiQL.
+Whether schema introspection queries are allowed or not.
+Disabled by default so that information on the schema structure cannot
+be gained through introspection (a form of security through obscurity).
+
+Should set this to `True` if using [GraphiQL](#graphiql).
 
 ///
 
@@ -48,15 +57,15 @@ if using GraphiQL.
 
 Type `bool` | Default: `False`
 
-Whether to use async view for the GraphQL endpoint or not. Allows using async resolvers
-for `Fields` and `Entrypoints`. See [Async Support](async.md) for more information.
+Whether to use async view for the GraphQL endpoint or not.
+See Undine's [Async](async.md) documentation for more information.
 
 ///
 
 /// details | `AUTOGENERATION`
     attrs: {id: autogeneration}
 
-Type `bool` | Default: `True`
+Type `bool` | Default: `False`
 
 Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `MutationTypes`,
 `Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on an individual
@@ -69,7 +78,7 @@ Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `Mutat
 
 Type: `str` | Default: `"undine_calculation_argument"`
 
-The key used to store a `CalculationArgument` in the `extensions` of the `GraphQLArgument`.
+The key used to store a `CalculationArgument` in the `extensions` of its `GraphQLArgument`.
 
 ///
 
@@ -78,8 +87,8 @@ The key used to store a `CalculationArgument` in the `extensions` of the `GraphQ
 
 Type: `bool` | Default: `True`
 
-Should names be converted from _'snake_case'_ to _'camelCase'_ for the GraphQL schema?
-Conversion is not applied if `schema_name` is set manually.
+Should field names be converted from _'snake_case'_ to _'camelCase'_ for the GraphQL schema?
+Conversion is not applied if `schema_name` is set manually in on the `Entrypoint`, `Field`, `Input`, etc.
 
 ///
 
@@ -88,52 +97,7 @@ Conversion is not applied if `schema_name` is set manually.
 
 Type: `str` | Default: `"undine_connection"`
 
-The key used to store a `Connection` in the `extensions` of the `GraphQLObjectType`.
-
-///
-
-/// details | `CONNECTION_INDEX_KEY`
-    attrs: {id: connection_index_key}
-
-Type: `str` | Default: `"_undine_pagination_index"`
-
-The key to which a nested connection's pagination indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_PAGE_SIZE`
-    attrs: {id: connection_page_size}
-
-Type: `int` | Default: `100`
-
-The maximum number of items to return from a Connection at a time.
-
-///
-
-/// details | `CONNECTION_START_INDEX_KEY`
-    attrs: {id: connection_start_index_key}
-
-Type: `str` | Default: `"_undine_pagination_start"`
-
-The key to which a nested connection's pagination start indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_STOP_INDEX_KEY`
-    attrs: {id: connection_stop_index_key}
-
-Type: `str` | Default: `"_undine_pagination_stop"`
-
-The key to which a nested connection's pagination stop indexes are annotated to.
-
-///
-
-/// details | `CONNECTION_TOTAL_COUNT_KEY`
-    attrs: {id: connection_total_count_key}
-
-Type: `str` | Default: `"_undine_pagination_total_count"`
-
-The key to which a nested connection's total counts are annotated to.
+The key used to store a `Connection` in the `extensions` of its `GraphQLObjectType`.
 
 ///
 
@@ -142,7 +106,7 @@ The key to which a nested connection's total counts are annotated to.
 
 Type: `str` | Default: `"undine_directive_argument"`
 
-The key used to store a `DirectiveArgument` in the `extensions` of the `GraphQLArgument`.
+The key used to store a `DirectiveArgument` in the `extensions` of its `GraphQLArgument`.
 
 ///
 
@@ -151,7 +115,7 @@ The key used to store a `DirectiveArgument` in the `extensions` of the `GraphQLA
 
 Type `str` | Default: `"undine_directive"`
 
-The key used to store a `Directive` in the `extensions` of the `GraphQLDirective`.
+The key used to store a `Directive` in the `extensions` of its `GraphQLDirective`.
 
 ///
 
@@ -169,7 +133,7 @@ Disable optimizing fetched fields with `queryset.only()`.
 
 Type `type[DocstringParserProtocol]` | Default: `"undine.parsers.parse_docstring.RSTDocstringParser"`
 
-The docstring parser to use.
+The docstring parser to use to parse function docstrings to schema descriptions.
 Should be given as the dotted path to the docstring parser class.
 
 ///
@@ -179,8 +143,8 @@ Should be given as the dotted path to the docstring parser class.
 
 Type `Container[Any]` | Default: `(None, "", [], {})`
 
-By default, if a Filter receives any of these values, it will be ignored.
-Can be changed on per-filter basis using the [`empty_values`](filtering.md#empty-values) argument.
+By default, if a `Filter` receives any of these values, that filter will be ignored.
+Can be changed on per-`Filter` basis using the [`empty_values`](filtering.md#empty-values) argument.
 
 ///
 
@@ -199,17 +163,7 @@ Disabled by default to improve performance of the schema creation.
 
 Type `str` | Default: `"undine_entrypoint"`
 
-The key used to store an `Entrypoint` in the `extensions` of the `GraphQLField`.
-
-///
-
-/// details | `LIST_ENTRYPOINT_LIMIT`
-    attrs: {id: list_entrypoint_limit}
-
-Type `int | None` | Default: `None`
-
-Default number of objects that are fetched per model when fetching results from a list Entrypoint
-(not Connections). If None, all items are fetched.
+The key used to store an `Entrypoint` in the `extensions` of its `GraphQLField`.
 
 ///
 
@@ -228,7 +182,8 @@ Should be given as the dotted path to the execution context class.
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during execution phase the GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+Hooks to run during execution phase the GraphQL request.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -239,12 +194,13 @@ Values should be given as the dotted paths to the lifecycle hooks used.
 Type: `bool` | Default: `False`
 
 Whether to enable experimental visibility checks.
+
 When enabled, parts of the schema can be hidden from certain users according to
 specified visibility checks. When a field is not visible to a user, it will not be
 included in introspection queries and it cannot be used in operations.
 
-Note that visibility does not affect "did you mean" suggestions, so it is advised to disable
-these using [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](#allow_did_you_mean_suggestions)
+Note that visibility does not affect "did you mean" suggestions, so it's advised to disable
+these using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](#allow_did_you_mean_suggestions) setting
 when using this feature.
 
 ///
@@ -254,7 +210,7 @@ when using this feature.
 
 Type: `str` | Default: `"undine_field"`
 
-The key used to store a `Field` in the `extensions` of the `GraphQLField`.
+The key used to store a `Field` in the `extensions` of its `GraphQLField`.
 
 ///
 
@@ -273,7 +229,7 @@ See [file uploads](file-upload.md) for more information.
 
 Type: `str` | Default: `"undine_filter"`
 
-The key used to store a `Filter` in the `extensions` of the `GraphQLInputField`.
+The key used to store a `Filter` in the `extensions` of its `GraphQLInputField`.
 
 ///
 
@@ -282,7 +238,7 @@ The key used to store a `Filter` in the `extensions` of the `GraphQLInputField`.
 
 Type: `str` | Default: `"undine_filterset"`
 
-The key used to store a `FilterSet` in the `extensions` of the `GraphQLInputObjectType`.
+The key used to store a `FilterSet` in the `extensions` of its `GraphQLInputObjectType`.
 
 ///
 
@@ -291,8 +247,10 @@ The key used to store a `FilterSet` in the `extensions` of the `GraphQLInputObje
 
 Type: `bool` | Default: `False`
 
-Whether to enable GraphiQL. Should also set [`ALLOW_INTROSPECTION_QUERIES`](#allow_introspection_queries)
+Whether to enable [GraphiQL]. Should also set [`ALLOW_INTROSPECTION_QUERIES`](#allow_introspection_queries)
 to `True`, so that GraphiQL can introspect the GraphQL schema.
+
+[GraphiQL]: https://github.com/graphql/graphiql
 
 ///
 
@@ -321,7 +279,10 @@ if it's included using `path("", include("undine.http.urls"))`.
 
 Type: `bool` | Default: `False`
 
-Whether to include the error traceback in the response error extensions.
+When a GraphQL request returns an error response,
+and the error is based on a non-GraphQL exception,
+if this setting is enabled, the error traceback will be included in the response.
+Useful for debugging.
 
 ///
 
@@ -330,7 +291,7 @@ Whether to include the error traceback in the response error extensions.
 
 Type: `str` | Default: `"undine_input"`
 
-The key used to store an `Input` in the `extensions` of the `GraphQLInputField`.
+The key used to store an `Input` in the `extensions` of its `GraphQLInputField`.
 
 ///
 
@@ -339,7 +300,7 @@ The key used to store an `Input` in the `extensions` of the `GraphQLInputField`.
 
 Type: `str` | Default: `"undine_interface_field"`
 
-The key used to store an `InterfaceField` in the `extensions` of the `GraphQLField`.
+The key used to store an `InterfaceField` in the `extensions` of its `GraphQLField`.
 
 ///
 
@@ -348,7 +309,17 @@ The key used to store an `InterfaceField` in the `extensions` of the `GraphQLFie
 
 Type: `str` | Default: `"undine_interface"`
 
-The key used to store a `InterfaceType` in the `extensions` of the `GraphQLInterfaceType`.
+The key used to store a `InterfaceType` in the `extensions` of its `GraphQLInterfaceType`.
+
+///
+
+/// details | `LIST_ENTRYPOINT_LIMIT`
+    attrs: {id: list_entrypoint_limit}
+
+Type `int | None` | Default: `None`
+
+Maximum number of objects that can be returned from a list `Entrypoint` when not using pagination.
+If None, all items are fetched.
 
 ///
 
@@ -375,7 +346,7 @@ The maximum number of directives allowed in a single operation.
 
 Type: `int` | Default: `100`
 
-The maximum number of validation errors allowed in a GraphQL request before it is rejected,
+The maximum number of validation errors allowed in a GraphQL request before it's rejected,
 even if validation is still not complete.
 
 ///
@@ -404,6 +375,7 @@ The maximum number of orderings allowed to be used for ordering a single `QueryT
 Type: `int` | Default: `10`
 
 Maximum query complexity that is allowed to be queried in a single operation.
+See the [field complexity](queries.md#complexity) documentation for more information.
 
 ///
 
@@ -424,8 +396,8 @@ parse before it rejects a request. By default, this is set to `None` which means
 
 Type: `list[type[GraphQLFieldResolver]]` | Default: `[]`
 
-Middleware to use during GraphQL field resolving.
-See [Custom Middleware]{:target="_blank"} in the GraphQL-core documentation for more information.
+GraphQL field middleware to use for all field resolvers.
+See [Custom Middleware]{:target="_blank"} in the `graphql-core` documentation for more information.
 
 [Custom Middleware]: https://graphql-core-3.readthedocs.io/en/latest/diffs.html#custom-middleware
 
@@ -456,9 +428,9 @@ See [the integration description](integrations.md#django-modeltranslation) for m
 
 Type: `bool` | Default: `True`
 
-Whether to run `model.full_clean()` when mutating a model. Turning this off can reduce
-the number of database queries during mutations, but may introduce issues that would
-be solved by running full model validation.
+Whether to run `model.full_clean()` when creating or updating Model using `MutationTypes`.
+Turning this off can reduce the number of database queries during mutations,
+but may introduce issues that would be solved by running full Model validation.
 
 ///
 
@@ -467,7 +439,7 @@ be solved by running full model validation.
 
 Type: `int` | Default: `100`
 
-The maximum number of objects that can be mutated in a single mutation.
+The maximum number of objects that can be mutated in a single bulk mutation.
 
 ///
 
@@ -486,7 +458,7 @@ when said `MutationType` is used in `Entrypoints`.
 
 Type: `str` | Default: `"undine_mutation_type"`
 
-The key used to store a `MutationType` in the `extensions` of the `GraphQLInputObjectType`.
+The key used to store a `MutationType` in the `extensions` of its `GraphQLInputObjectType`.
 
 ///
 
@@ -499,12 +471,22 @@ Whether to remove error location information to GraphQL errors.
 
 ///
 
+/// details | `OFFSET_PAGINATION_EXTENSIONS_KEY`
+    attrs: {id: offset_pagination_extensions_key}
+
+Type: `str` | Default: `"undine_offset_pagination"`
+
+The key used to store an `OffsetPagination` in the `extensions` of its `GraphQLObjectType`.
+
+///
+
 /// details | `OPERATION_HOOKS`
     attrs: {id: operation_hooks}
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run encompassing the entire GraphQL operation. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+Hooks to run encompassing the entire GraphQL operation.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -524,7 +506,7 @@ Value should be given as the dotted path to the optimizer class.
 
 Type: `str` | Default: `"undine_order"`
 
-The key used to store an `Order` in the `extensions` of the `GraphQLEnumValue`.
+The key used to store an `Order` in the `extensions` of its `GraphQLEnumValue`.
 
 ///
 
@@ -533,7 +515,52 @@ The key used to store an `Order` in the `extensions` of the `GraphQLEnumValue`.
 
 Type: `str` | Default: `"undine_orderset"`
 
-The key used to store a `OrderSet` in the `extensions` of the `GraphQLEnumType`.
+The key used to store a `OrderSet` in the `extensions` of its `GraphQLEnumType`.
+
+///
+
+/// details | `PAGINATION_INDEX_KEY`
+    attrs: {id: pagination_index_key}
+
+Type: `str` | Default: `"_undine_pagination_index"`
+
+The key to which a nested pagination indexes are annotated to.
+
+///
+
+/// details | `PAGINATION_PAGE_SIZE`
+    attrs: {id: pagination_page_size}
+
+Type: `int` | Default: `100`
+
+The maximum number of items to return from a page when paginating.
+
+///
+
+/// details | `PAGINATION_START_INDEX_KEY`
+    attrs: {id: pagination_start_index_key}
+
+Type: `str` | Default: `"_undine_pagination_start"`
+
+The key to which a nested pagination start indexes are annotated to.
+
+///
+
+/// details | `PAGINATION_STOP_INDEX_KEY`
+    attrs: {id: pagination_stop_index_key}
+
+Type: `str` | Default: `"_undine_pagination_stop"`
+
+The key to which a nested pagination stop indexes are annotated to.
+
+///
+
+/// details | `PAGINATION_TOTAL_COUNT_KEY`
+    attrs: {id: pagination_total_count_key}
+
+Type: `str` | Default: `"_undine_pagination_total_count"`
+
+The key to which a nested pagination total counts are annotated to.
 
 ///
 
@@ -542,7 +569,8 @@ The key used to store a `OrderSet` in the `extensions` of the `GraphQLEnumType`.
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during parsing phase of a GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+Hooks to run during parsing phase of a GraphQL request.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
@@ -588,7 +616,7 @@ The name of given to the persisted documents registration view in the URLconf.
 
 Type: `str` | Default: `"_undine_ts_vector"`
 
-A prefix to use for the filter aliases of postgres full text search Filters.
+A prefix to use for the filter aliases of postgres full text search `Filters`.
 
 ///
 
@@ -606,7 +634,7 @@ The key to use for storing the prefetch hack cache in the queryset hints.
 
 Type: `str` | Default: `"undine_query_type"`
 
-The key used to store a `QueryType` in the `extensions` of the `GraphQLObjectType`.
+The key used to store a `QueryType` in the `extensions` of its `GraphQLObjectType`.
 
 ///
 
@@ -615,8 +643,8 @@ The key used to store a `QueryType` in the `extensions` of the `GraphQLObjectTyp
 
 Type: `str` | Default: `"filter"`
 
-The key that the input argument based on a `FilterSet` of a `QueryType` is added to
-when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields`.
+The name of the input argument that is created for a `FilterSet` when a `QueryType`
+using that `FilterSet` is used in a list `Entrypoint` or many-related `Field`.
 
 ///
 
@@ -625,8 +653,8 @@ when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields
 
 Type: `str` | Default: `"orderBy"`
 
-The key that the input argument based on an `OrderSet` of a `QueryType` is added to
-when said `QueryType` is used in list `Entrypoints` or "to-many" related `Fields`.
+The name of the input argument that is created for an `OrderSet` when a `QueryType`
+using that `OrderSet` is used in a list `Entrypoint` or many-related `Field`.
 
 ///
 
@@ -644,7 +672,7 @@ The name of the root/parent parameter in `Field`/`Entrypoint` resolvers.
 
 Type: `str` | Default: `"undine_root_type"`
 
-The key used to store a `RootType` in the `extensions` of the `GraphQLObjectType`.
+The key used to store a `RootType` in the `extensions` of its `GraphQLObjectType`.
 
 ///
 
@@ -663,7 +691,7 @@ from the `root` argument.
 
 Type: `str` | Default: `"undine_scalar"`
 
-The key used to store a Undine `ScalarType` in the `extensions` of the `GraphQLScalarType`.
+The key used to store a Undine `ScalarType` in the `extensions` of its `GraphQLScalarType`.
 
 ///
 
@@ -682,7 +710,7 @@ Value should be given as the dotted path, usually created using `undine.schema.c
 
 Type: `str` | Default: `"undine_schema_directives"`
 
-The key used to store the schema definition directives in the `extensions` of the `GraphQLSchema`.
+The key used to store the schema definition directives in the `extensions` of its `GraphQLSchema`.
 
 ///
 
@@ -722,8 +750,8 @@ Type: `type[Model]` | Default: `"undine.persisted_documents.models.PersistedDocu
 
 **NOTE**: This setting should be set in the top level of the settings file, not in the `UNDINE` dictionary!
 
-The model to use for the `PersistedDocument` model. Works similarly to
-[`AUTH_USER_MODEL`][AUTH_USER_MODEL]{:target="_blank"},
+The model to use for the `PersistedDocument` model.
+Works similarly to [`AUTH_USER_MODEL`][AUTH_USER_MODEL]{:target="_blank"},
 so must be set before running migrations for the persisted documents app.
 
 [AUTH_USER_MODEL]: https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model
@@ -735,7 +763,7 @@ so must be set before running migrations for the persisted documents app.
 
 Type: `str` | Default: `"undine_union_type"`
 
-The key used to store a Undine `UnionType` in the `extensions` of the `GraphQLUnion`.
+The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
 
 ///
 
@@ -744,7 +772,8 @@ The key used to store a Undine `UnionType` in the `extensions` of the `GraphQLUn
 
 Type: `list[type[LifecycleHook]]` | Default: `[]`
 
-Hooks to run during validation the GraphQL request. See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+Hooks to run during validation the GraphQL request.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///

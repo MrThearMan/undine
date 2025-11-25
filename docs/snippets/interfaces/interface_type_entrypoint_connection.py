@@ -10,10 +10,12 @@ class Named(InterfaceType):
     name = InterfaceField(GraphQLNonNull(GraphQLString))
 
 
-class TaskType(QueryType[Task], interfaces=[Named]): ...
+@Named
+class TaskType(QueryType[Task]): ...
 
 
-class StepType(QueryType[Step], interfaces=[Named]): ...
+@Named
+class StepType(QueryType[Step]): ...
 
 
 class Query(RootType):

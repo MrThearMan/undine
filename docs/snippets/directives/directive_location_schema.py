@@ -1,11 +1,10 @@
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation
 
 from undine import Entrypoint, RootType, create_schema
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import Directive
 
 
-class VersionDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="version"):
-    value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+class NewDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="new"): ...
 
 
 class Query(RootType):
@@ -14,7 +13,4 @@ class Query(RootType):
         return value
 
 
-schema = create_schema(
-    query=Query,
-    schema_definition_directives=[VersionDirective(value="v1.0.0")],
-)
+schema = create_schema(query=Query, schema_definition_directives=[NewDirective()])

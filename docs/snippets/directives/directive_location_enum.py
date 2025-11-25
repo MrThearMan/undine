@@ -1,13 +1,19 @@
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation
 
 from undine import OrderSet
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import Directive
 
 from .models import Task
 
 
-class VersionDirective(Directive, locations=[DirectiveLocation.ENUM], schema_name="version"):
-    value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+class NewDirective(Directive, locations=[DirectiveLocation.ENUM], schema_name="new"): ...
 
 
-class TaskOrderSet(OrderSet[Task], directives=[VersionDirective(value="v1.0.0")]): ...
+class TaskOrderSet(OrderSet[Task], directives=[NewDirective()]): ...
+
+
+# Alternatively...
+
+
+@NewDirective()
+class TaskOrderSetAlt(OrderSet[Task]): ...

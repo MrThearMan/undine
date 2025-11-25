@@ -1,17 +1,14 @@
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation
 
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import Directive
 from undine.scalars import ScalarType
 
 
-class VersionDirective(Directive, locations=[DirectiveLocation.SCALAR], schema_name="version"):
-    value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+class NewDirective(Directive, locations=[DirectiveLocation.SCALAR], schema_name="new"): ...
 
 
-Vector3 = tuple[int, int, int]
+vector3_scalar = ScalarType(name="Vector3", directives=[NewDirective()])
 
-vector3_scalar: ScalarType[Vector3, str] = ScalarType(
-    name="Vector3",
-    description="Represents a 3D vector as a string in format 'X,Y,Z'.",
-    directives=[VersionDirective(value="v1.0.0")],
-)
+# Alternatively...
+
+vector3_scalar_alt = ScalarType(name="Vector3") @ NewDirective()

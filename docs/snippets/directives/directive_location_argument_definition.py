@@ -5,20 +5,21 @@ from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo
 from undine.directives import Directive, DirectiveArgument
 
 
-# Actual directive can be defined in multiple locations, but omit those for brevity.
-class AddedInDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION], schema_name="addedIn"):
-    version = DirectiveArgument(GraphQLNonNull(GraphQLString))
+class NewDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION], schema_name="new"): ...
 
 
-class NewDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="new"):
-    version = DirectiveArgument(
-        GraphQLNonNull(GraphQLString),
-        directives=[AddedInDirective(version="v1.0.0")],
-    )
+class VersionDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="version"):
+    value = DirectiveArgument(GraphQLNonNull(GraphQLString), directives=[NewDirective()])
+
+    # Alternatively...
+    value_alt = DirectiveArgument(GraphQLNonNull(GraphQLString)) @ NewDirective()
 
 
 class Calc(Calculation[int]):
-    value = CalculationArgument(int, directives=[AddedInDirective(version="v1.0.0")])
+    value = CalculationArgument(int, directives=[NewDirective()])
+
+    # Alternatively...
+    value_alt = CalculationArgument(int) @ NewDirective()
 
     def __call__(self, info: GQLInfo) -> DjangoExpression:
         return Value(self.value)

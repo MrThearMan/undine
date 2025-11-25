@@ -1,16 +1,19 @@
-# Validation rules
+-# Validation rules
 
 > This is an advanced GraphQL core feature. For validating mutations, see
 > the [Mutations](mutations.md#validation) documentation.
 
-A GraphQL operation consists of three main parts: parsing, validation, and execution.
-The parsing step transforms the GraphQL source document (string) into an AST (abstract syntax tree),
-which is then validated against the GraphQL schema. Finally, the execution step executes
-the AST against the schema to produce a result.
+A GraphQL operation is executed in a series of steps. These steps are:
 
-By default, GraphQL Core (which Undine uses under the hood) comes with a set of validation rules
+1. **Parsing** the GraphQL source document to a GraphQL AST.
+2. **Validation** of the GraphQL AST against the GraphQL schema.
+3. **Execution** of the GraphQL operation according to the GraphQL AST.
+
+By default, [graphql-core]{:target="_blank"} (which Undine uses under the hood) comes with a set of validation rules
 which make sure that a GraphQL operation is valid according to the GraphQL specification.
 Undine adds a few more validation rules of its own, and allows you to add your own as well.
+
+[graphql-core]: https://github.com/graphql-python/graphql-core
 
 ## Additional Rules
 
@@ -18,20 +21,32 @@ Undine adds a few more validation rules of its own, and allows you to add your o
 
 This validation rule checks that the number of aliases in a GraphQL operation does not exceed the maximum allowed,
 as set by the [`MAX_ALLOWED_ALIASES`](settings.md#max_allowed_aliases) setting.
+This is used to prevent denial-of-service attacks and heap overflow from "alias overloading" which happens
+when a GraphQL operation is executed multiple times in a single request by aliasing it over and over again,
+leading to high execution time and thus high CPU and memory usage.
 
 ### `MaxComplexityRule`
 
 This validation rule checks that the complexity of a GraphQL operation does not exceed the maximum allowed,
 as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
+This is used to prevent denial-of-service attacks that could arise from slow execution of
+a GraphQL operation due to the complexity of generated database queries or API calls.
+See the [complexity](queries.md#complexity) documentation for more information.
 
 ### `MaxDirectiveCountRule`
 
 This validation rule checks that the number of directives in a GraphQL operation does not exceed the maximum allowed,
 as set by the [`MAX_ALLOWED_DIRECTIVES`](settings.md#max_allowed_directives) setting.
+This is used to prevent denial-of-service attacks, heap overflow or server overloading from "directive overloading"
+that could arise from having to parse, validate, and process too many directives.
 
 ### `OneOfInputObjectTypeRule`
 
 This validation rule checks that a one-of input object is used correctly.
+Only added when `graphql-core` version is below [v3.2.7]{:target="_blank"}
+since `oneOf` input object support was added in that version.
+
+[v3.2.7]: https://github.com/graphql-python/graphql-core/releases/tag/v3.2.7
 
 ### `VisibilityRule`
 
@@ -49,29 +64,11 @@ visit the node before or after its children.
 These methods have the following signature (example for `NameNode`):
 
 ```python
-from graphql import NameNode, Node, ValidationRule, VisitorAction
-
-class MyValidationRule(ValidationRule):
-    def enter_name(
-        self,
-        Node: NameNode,
-        key: str | int | None,
-        parent: Node | tuple[Node, ...] | None,
-        path: list[str | int],
-        ancestors: list[Node | tuple[Node, ...]],
-    ) -> VisitorAction:
-        return None
-
-    def leave_name(
-        self,
-        Node: NameNode,
-        key: str | int | None,
-        parent: Node | tuple[Node, ...] | None,
-        path: list[str | int],
-        ancestors: list[Node | tuple[Node, ...]],
-    ) -> VisitorAction:
-        return None
+-8<- "validation_rules/custom_rule.py"
 ```
+
+When you have created your custom validation rule, you can register it using the
+[`ADDITIONAL_VALIDATION_RULES`](settings.md#additional_validation_rules) setting.
 
 For clarity, here is a list of `Node` types that can be visited during
 the GraphQL document validation phase:
@@ -177,8 +174,25 @@ A `FragmentDefinitionNode` is visited for each fragment definition in the GraphQ
 
 Hooks `enter_named_type` and `leave_named_type` | Node: `graphql.language.ast.NamedTypeNode`
 
-A `NamedTypeNode` is visited for each named type is references in the GraphQL document.
-These are hit when using inline fragments or defining fragments.
+A `NamedTypeNode` is visited for each named type referenced in the GraphQL document.
+Named types are referenced when using inline fragments or defining fragments.
+
+Example:
+
+```graphql
+query {
+  node(id: "123") {
+    ... on User {  # NamedTypeNode "User"
+      ...Data
+    }
+  }
+}
+
+fragment Data on User {  # NamedTypeNode "User"
+  id
+  name
+}
+```
 
 ///
 
@@ -308,14 +322,11 @@ Values can be used in arguments or variables.
 
 ///
 
-> There are other nodes which can be visited if validation rules are run against
+> There are other node types which can be visited if validation rules are run against
 > the GraphQL schema, but these are not covered in this documentation.
 
 A `ValidationRule` instance has access to the [`ValidationContext`][ValidationContext]{:target="_blank"}
-instance, through which you can access to commonly useful contextual information from within a validation rule.
+instance, through which you can access to useful contextual information relative to the visited node.
 For example, you can access the current GraphQL type for the node using `self.context.get_type()`.
 
 [ValidationContext]: https://github.com/graphql-python/graphql-core/blob/main/src/graphql/validation/validation_context.py
-
-Custom `ValidationRules` should be registered using the
-[`ADDITIONAL_VALIDATION_RULES`](settings.md#additional_validation_rules) setting.

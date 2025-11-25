@@ -15,11 +15,9 @@ class SearchObjectsFilterSet(FilterSet[Task, Project]): ...
 class SearchObjectsOrderSet(OrderSet[Task, Project]): ...
 
 
-class SearchObjects(
-    UnionType[TaskType, ProjectType],
-    filterset=SearchObjectsFilterSet,
-    orderset=SearchObjectsOrderSet,
-): ...
+@SearchObjectsFilterSet
+@SearchObjectsOrderSet
+class SearchObjects(UnionType[TaskType, ProjectType]): ...
 
 
 class Query(RootType):

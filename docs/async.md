@@ -2,7 +2,7 @@ description: Documentation on async support for Undine.
 
 # Async support
 
-In this section, we'll look at how you can make you schema support async operations.
+In this section, we'll cover how you can make you schema support async operations.
 
 > Note that asynchronous execution will require an [ASGI capable web server]{:target="_blank"}.
 
@@ -18,8 +18,8 @@ UNDINE = {
 }
 ```
 
-With this, your GraphQL endpoint will change from a sync view to an async view.
-This allows you to write your Entrypoint resolvers as coroutines.
+Now your GraphQL endpoint will change from a sync view to an async view.
+This allows you to write your `Entrypoint` resolvers as coroutines.
 
 ```python
 -8<- "async/entrypoint_async.py"
@@ -45,8 +45,7 @@ based on the `ASYNC` setting.
 
 Another small detail that is worth noting when `ASYNC` is enabled is that `info.context.user`
 is always fetched eagerly, even if it's not used in the operation. This allows using
-the request user in synchronous parts of the code, like in permission checks (which
-cannot be made async due to internal implementation details), without causing an
+the request user in synchronous parts of the code without causing an
 error due to using the Django ORM directly in an async context.
 
 Asynchronous execution is also _slightly_ slower than synchronous execution

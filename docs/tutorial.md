@@ -68,7 +68,7 @@ query {
 }
 ```
 
-You should see the following response:
+/// details | You should see this response:
 
 ```json
 {
@@ -78,23 +78,25 @@ You should see the following response:
 }
 ```
 
+///
+
 ---
 
 ## Part 2: Creating the Schema
 
 Next, let's replace the example schema with your own. Create a file called
-`schema.py` in your `service` app directory, and add the following to it:
+`schema.py` in your `service` app directory and add the following to it:
 
 ```python
 -8<- "tutorial/create_schema.py"
 ```
 
-This code creates the same schema as Undine's example schema. To make it your own,
+This creates the same schema as Undine's example schema. To make it your own,
 simply modify the return value of the `testing` method with your own custom message.
 
 In Undine, [`Entrypoints`](schema.md#entrypoints) are used in the class bodies of
 [`RootTypes`](schema.md#roottypes) to define the operations that can be executed
-at the root of the GraphQL schema.
+from your GraphQL schema.
 
 Now you need to tell Undine to use your custom schema instead of the example one.
 Add the `SCHEMA` setting to Undine's configuration and set it to point
@@ -125,16 +127,16 @@ You should see your own message instead of the example one.
 
 ## Part 3: Adding Queries
 
-Now that you have your own schema, let's start exposing Django models through it.
-In your `models.py` file, add the following model:
+Now that you have your own schema, let's start exposing Django Models through it.
+In your `models.py` file, add the following Model:
 
 ```python
 -8<- "tutorial/models_1.py"
 ```
 
-Create and run migrations for this model.
+Create and run migrations for this Model.
 
-To add the `Task` model to the schema, let's add two `Entrypoints`:
+To add the `Task` Model to the schema, let's add two `Entrypoints`:
 one for fetching a single `Task`, and another for fetching all `Tasks`. Replace the
 current `schema.py` file with the following:
 
@@ -143,8 +145,8 @@ current `schema.py` file with the following:
 ```
 
 A [`QueryType`](queries.md#querytypes) is a class that represents a GraphQL `ObjectType` for
-a Django model in the GraphQL schema. By adding [`Fields`](queries.md#fields) to its class body,
-you can expose the model's fields in the GraphQL schema.
+a Django Model in the GraphQL schema. By adding [`Fields`](queries.md#fields) to its class body,
+you can expose the Model's fields in the GraphQL schema.
 
 To create `Entrypoints` for this `QueryType`, you simply use the `QueryType` as an
 argument to the `Entrypoint` class instead of decorating a method like you did before.
@@ -153,7 +155,7 @@ For fetching all `Tasks`, pass `many=True` to indicate a list endpoint.
 
 Now it's time to try out your new schema. But wait, first you need some data to query!
 In your terminal, run `python manage.py shell` to start Django's shell and
-create a few rows for the `Task` model.
+create a few rows for the `Task` Model.
 
 ```pycon
 >>> from service.models import Task
@@ -182,13 +184,13 @@ query {
 
 ///
 
-Next, let's add a couple more models to your project.
+Next, let's add a couple more Models to your project.
 
 ```python hl_lines="4 5 13 16 17 18 19 20"
 -8<- "tutorial/models_2.py"
 ```
 
-Create and run migrations for these models, then create some data for them:
+Create and run migrations for these Models, then create some data for them:
 
 ```pycon
 >>> from service.models import Project, Step, Task
@@ -208,8 +210,8 @@ Create and run migrations for these models, then create some data for them:
 >>> step_5 = Step.objects.create(name="Step 5", done=true, task=task_3)
 ```
 
-Then, add these models to your schema by creating a `QueryType` for each of them.
-We can also link the `QueryTypes` to each other by adding `Fields` for the model's relations.
+Then, add these Models to your schema by creating a `QueryType` for each of them.
+Your can also link the `QueryTypes` to each other by adding `Fields` for the Model related fields.
 
 ```python hl_lines="6 7 8 9 17 18 21 22 23 24 25"
 -8<- "tutorial/adding_more_query_types.py"
@@ -260,8 +262,9 @@ Add the following to the `schema.py` file:
 
 Undine will know that the [`MutationType`](mutations.md#mutationtypes) `TaskCreateMutation`
 is a create mutation because the class has the word _"create"_ in its name. Similarly,
-having _"update"_ in the name will create an update mutation, and _"delete"_ will create a delete mutation.
-Create, update and delete mutations are executed differently, more on this in the [Mutations](mutations.md) section.
+having _"update"_ in the name will make an update mutation, and _"delete"_ will make a delete mutation.
+Create, update and delete mutations are executed differently
+(see the [Mutations](mutations.md) section for more details).
 
 You could also use the `kind` argument in the `MutationType` class definition to be more explicit.
 
@@ -269,11 +272,11 @@ You could also use the `kind` argument in the `MutationType` class definition to
 -8<- "tutorial/mutation_type_explicit_kind.py"
 ```
 
-Undine will use the `TaskType` `QueryType` as the output type for `MutationTypes` automatically
-since they share the same model. All mutations require a `QueryType` for the same model to
-be created, even if it's not otherwise usable from the GraphQL schema.
+The `TaskCreateMutation` `MutationType` will use the `TaskType` `QueryType` as the output type
+since they share the same Model. In fact, all `MutationTypes` require a `QueryType` for the same Model
+to be created, even if it's not otherwise usable from the GraphQL schema.
 
-Let's try out the new mutations. Boot up the Django server and make the following request:
+Let's try out the new mutation. Boot up the Django server and make the following request:
 
 ```graphql
 mutation {
@@ -410,7 +413,7 @@ mutation {
 ## Part 5: Adding Permissions
 
 In Undine, you can add permission checks to `QueryTypes` or `MutationTypes`
-as well as individual `Fields` or `Inputs`. Let's add a permission check for querying `Tasks`.
+as well as individual `Fields` or `Inputs`. First, let's add a permission check for querying `Tasks`.
 
 ```python hl_lines="8 9 10 11 12"
 -8<- "tutorial/query_type_permissions.py"
@@ -435,33 +438,31 @@ query {
 
 ///
 
-The permission check will be called for each instance returned by the `QueryType`.
+The permission check will be called for each `Task` instance returned by the `QueryType`.
 
-For `Field` permissions, you first need to define a `Field` explicitly on the `QueryType`
-and then decorate a method with `@<field_name>.permissions`.
+For `Field` permissions, decorate a method with `@<field_name>.permissions`.
 
 ```python hl_lines="10 11 12 13 14"
 -8<- "tutorial/query_type_field_permissions.py"
 ```
 
-Now users need to be logged in to be able to query Task names.
+Now users need to be logged in to be able to query `Task` names.
 
-Mutation permissions work similarly to query permissions.
+Mutation permissions using `MutationTypes` work similarly to query permissions using `QueryTypes`.
 
 ```python hl_lines="10 11 12 13 14"
 -8<- "tutorial/mutation_type_permissions.py"
 ```
 
-Now users need to be staff members to be able to create new Tasks using `TaskCreateMutation`.
+Now users need to be staff members to be able to create new `Tasks` using `TaskCreateMutation`.
 
-You can also restrict the usage of specific `Inputs` by defining the input on the
-`MutationType` and decorating a method with `@<input_name>.permissions`.
+You can also restrict the usage of specific `Inputs` by decorating a method with `@<input_name>.permissions`.
 
 ```python hl_lines="10 11 12 13 14"
 -8<- "tutorial/mutation_type_input_permissions.py"
 ```
 
-Now only superusers can add Tasks that are already done,
+Now only superusers can add `Tasks` that are already done,
 since in this case the default value of `Task.done` is `False`,
 and `Input` permissions are only checked for non-default values.
 
@@ -478,7 +479,7 @@ To add validation for a `MutationType`, add the `__validate__` classmethod to it
 -8<- "tutorial/mutation_type_validation.py"
 ```
 
-Now users cannot create tasks that are already marked as done.
+Now users cannot create `Tasks` that are already marked as done.
 Boot up the Django server and make the following request:
 
 ```graphql
@@ -497,26 +498,28 @@ mutation {
 
 ///
 
-To add validation for an `Input`, define the input on the `MutationType`
-and decorate a method with `@<input_name>.validate`.
+To add validation for an `Input`, decorate a method with `@<input_name>.validate`.
 
 ```python hl_lines="10 11 12 13 14"
 -8<- "tutorial/mutation_type_input_validate.py"
 ```
 
-Now users cannot create tasks with names that are less than 3 characters long.
+Now users cannot create `Tasks` with names that are less than 3 characters long.
 
 ---
 
 ## Part 7: Adding Filtering
 
 Results from `QueryTypes` can be filtered using [`Filters`](filtering.md#filter)
-defined in a [`FilterSet`](filtering.md#filterset).
-To filter results, create a `FilterSet` for the `Task` model and add it to your `TaskType`.
+defined in a [`FilterSet`](filtering.md#filterset). Create a `FilterSet` for the `Task` Model
+and add it to your `TaskType`.
 
 ```python hl_lines="1 6 7 8 11"
 -8<- "tutorial/adding_filters.py"
 ```
+
+Now all `Entrypoints` created from this `QueryType` will have a `filter` argument that contains
+the filtering options defined by the `FilterSet`.
 
 Boot up the Django server and make the following request:
 
@@ -533,7 +536,7 @@ query {
 }
 ```
 
-Check the response. You should only see tasks with names that contain the letter "a".
+Check the response. You should only see `Tasks` with names that contain the letter "a".
 
 Different `Filters` can also be combined to narrow down the results.
 
@@ -551,7 +554,7 @@ query {
 }
 ```
 
-With this query, you should only see tasks that contain the letter "a" _and_ are not done.
+With this query, you should only see `Tasks` that contain the letter "a" _and_ are not done.
 
 If you wanted to see _either_ tasks containing the letter a _or_ tasks that are not done,
 you could put the filters inside an `OR` block:
@@ -579,12 +582,15 @@ Similar logical blocks exist for `AND`, `NOT` and `XOR`, and they can be nested 
 ## Part 8: Adding Ordering
 
 Results from `QueryTypes` can be ordered using [`Orders`](ordering.md#order)
-defined in an [`OrderSet`](ordering.md#orderset).
-To order results, create an `OrderSet` for the `Task` model and add it to your `TaskType`.
+defined in an [`OrderSet`](ordering.md#orderset). Create an `OrderSet` for the `Task` Model
+and add it to your `TaskType`.
 
 ```python hl_lines="1 6 7 8 11"
 -8<- "tutorial/adding_ordering.py"
 ```
+
+Now all `Entrypoints` created from this `QueryType` will have an `orderBy` argument that contains
+the ordering options defined by the `OrderSet`.
 
 Adding an ordering enables you to order by that fields in both ascending and descending directions.
 Boot up the Django server and make the following request:
@@ -603,7 +609,7 @@ query {
 }
 ```
 
-With this ordering, you should see the tasks ordered primarily by name in ascending order,
+With this ordering, you should see the `Tasks` ordered primarily by name in ascending order,
 and secondarily by primary key in descending order.
 
 ---

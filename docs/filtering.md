@@ -7,20 +7,23 @@ results returned by your [`QueryTypes`](queries.md#querytypes).
 
 ## FilterSet
 
-A `FilterSet` is a collection of [`Filter`](#filter) objects that can be applied
-to a `QueryType`. In GraphQL, they represent an `InputObjectType`, which when
-added to a `QueryType` creates an input argument for filtering the
-results of a `QueryType`.
+A `FilterSet` is a collection of [`Filter`](#filter) objects that represents
+an `InputObjectType` in the GraphQL schema. When added to a `QueryType`,
+it creates an input argument (as determined by the
+[`QUERY_TYPE_FILTER_INPUT_KEY`](settings.md#query_type_filter_input_key) setting)
+on any list `Entrypoint` or many-related `Field` that is created using that `QueryType`.
+That input can then be used to filter the results returned by the `Entrypoint` or `Field`.
 
 A basic `FilterSet` is created by subclassing `FilterSet`
-and adding its Django Model as a generic type parameter.
-Then, the `FilterSet` can be added to a `QueryType` using the `filterset` argument.
+and adding a Django Model to it as a generic type parameter.
+You must also add at least one `Filter` to the class body of the `FilterSet`.
+Then the `FilterSet` can be added to a `QueryType` using the `filterset` argument.
 
 ```python
 -8<- "filtering/filterset_basic.py"
 ```
 
-You can also add the `FilterSet` using decorator syntax.
+You can also add the `FilterSet` to the `QueryType` using decorator syntax.
 
 ```python
 -8<- "filtering/filterset_decorator.py"
@@ -28,14 +31,14 @@ You can also add the `FilterSet` using decorator syntax.
 
 ### Auto-generation
 
-A `FilterSet` can automatically introspect its Django model and convert the model's fields
+A `FilterSet` can automatically introspect its Django Model and convert the Model's fields
 to `Filters` on the `FilterSet`. For example, if the `Task` model has the following fields:
 
 ```python
 -8<- "filtering/models_1.py"
 ```
 
-An auto-generated `FilterSet` will have all of the `Task` model's fields and those fields'
+An auto-generated `FilterSet` will have all of the `Task` Model's fields and those fields'
 lookups translated into input arguments.
 
 /// details | Here is the generated `InputObjectType`
@@ -229,7 +232,7 @@ With this, you can leave the `FilterSet` class body empty.
 -8<- "filtering/filterset_auto.py"
 ```
 
-You can exclude some model fields from the auto-generation by setting the `exclude` argument:
+You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "filtering/filterset_exclude.py"
@@ -240,10 +243,10 @@ You can also exclude specific model lookups, e.g. `created_at__gte`.
 ### Logical operators
 
 A `FilterSet` always provides the logical operators `NOT`, `AND`, `OR`, `XOR`,
-allowing users to freely create more complex conditions from defined filters.
+allowing users to freely create more complex filter conditions from defined `Filters`.
 Let's assume you've added an [auto-generated](#auto-generation) `TaskFilterSet`
-to a `QueryType` named `TaskType`. Normally, when multiple filter's are used,
-we'll get results where all results match all filters.
+for a `QueryType` named `TaskType`. Normally, when multiple `Filters` are used,
+you'll get results that match all filter conditions.
 
 ```graphql
 query {
@@ -258,8 +261,8 @@ query {
 }
 ```
 
-However, by adding the filter to an `OR` block, we can get results where any of the
-conditions match:
+By putting the filter conditions inside an `OR` block,
+we can get results that match any of the conditions.
 
 ```graphql
 query {
@@ -298,21 +301,23 @@ query {
 
 ### Filter queryset
 
-Together with its [`Filters`](#filter), a `FilterSet` also provides a `__filter_queryset__`
-classmethod. This method can be used to add filtering that should always be applied
-when fetching objects through `QueryTypes` using this `FilterSet`.
+In addition to [`Filters`](#filter), `FilterSet` also includes a `__filter_queryset__`
+classmethod, which can be used to add filtering that should always be applied
+when fetching objects through `QueryTypes` using the given `FilterSet`.
 
 ```python
 -8<- "filtering/filterset_filter_queryset.py"
 ```
 
-As `QueryTypes` also have a `__filter_queryset__` classmethod, its important to note
-the [order in which these are applied by the Optimizer](optimizer.md#order-of-optimizations).
+Note that `QueryTypes` also have a `__filter_queryset__` classmethod, which is run _before_
+any `FilterSet` `Filters`, and that `FilterSet's` `__filter_queryset__` is run _after_.
+See the Optimizer's [order of operations](optimizer.md#order-of-optimizations) for more details.
 
 ### Schema name
 
-By default, the name of the generated `InputObjectType` is the same as the name of the `FilterSet` class.
-If you want to change the name, you can do so by setting the `schema_name` argument:
+By default, the name of the generated GraphQL `InputObjectType` for a `FilterSet` class
+is the name of the `FilterSet` class. If you want to change the name separately,
+you can do so by setting the `schema_name` argument:
 
 ```python
 -8<- "filtering/filterset_schema_name.py"
@@ -320,7 +325,7 @@ If you want to change the name, you can do so by setting the `schema_name` argum
 
 ### Description
 
-You can provide a description using the `description` argument.
+You can provide a description for a `FilterSet` by adding a docstring to the class.
 
 ```python
 -8<- "filtering/filterset_description.py"
@@ -328,10 +333,17 @@ You can provide a description using the `description` argument.
 
 ### Directives
 
-You can add directives to the `FilterSet` by providing them using the `directives` argument.
+You can add directives to a `FilterSet` by providing them using the `directives` argument.
+The directive must be usable in the `INPUT_OBJECT` location.
 
 ```python
 -8<- "filtering/filterset_directives.py"
+```
+
+You can also add directives using decorator syntax.
+
+```python
+-8<- "filtering/filterset_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -341,13 +353,18 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `FilterSet` from certain users by adding the `visible` argument to the `FilterSet`.
-Hiding a filterset means that it will not be included in introspection queries for that user,
-and it cannot be used in operations by that user.
+You can hide a `FilterSet` from certain users by using the `__is_visible__` method.
+Hiding the `FilterSet` means that it will not be included in introspection queries for that user,
+and trying to use it in operations will result in an error that looks exactly like
+the argument for the `FilterSet` didn't exist in the first place.
 
 ```python
 -8<- "filtering/filterset_visible.py"
 ```
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 
@@ -360,43 +377,46 @@ however you wish to extend the functionality of the `FilterSet`.
 ```
 
 `FilterSet` extensions are made available in the GraphQL `InputObjectType` extensions
-after the schema is created. The `FilterSet` itself is found in the `extensions`
+after the schema is created. The `FilterSet` itself is found in the GraphQL `InputObjectType` extensions
 under a key defined by the [`FILTERSET_EXTENSIONS_KEY`](settings.md#filterset_extensions_key)
 setting.
 
 ## Filter
 
-A `Filter` is a class that is used to define a possible filter input for a `FilterSet`.
-Usually `Filters` correspond to fields on the Django model for their respective `FilterSet`.
-In GraphQL, it represents an `GraphQLInputField` in an `InputObjectType`.
+A `Filter` defines a way of filtering the results returned by an `Entrypoint` or `Field` using a `QueryType`.
+A `Filter` corresponds to anything that can be passed to a `queryset.filter()` call,
+usually a [lookup expression] on the Django Model of the `FilterSet` it belongs to.
+In GraphQL, a `Filter` represents a `GraphQLInputField` on an `InputObjectType`.
 
-A `Filter` always requires a _**reference**_ from which it will create the proper GraphQL resolver,
-input type for the `Filter`.
+[lookup expression]: https://docs.djangoproject.com/en/stable/topics/db/queries/#field-lookups
+
+A `Filter` always requires a _**reference**_ from which it will create the proper GraphQL resolver
+and input type for the `Filter`.
 
 ### Model field references
 
-For `Filters` corresponding to Django model fields, the `Filter` can be used without passing in a reference,
-as its attribute name in the `FilterSet` class body can be used to identify
-the corresponding model field.
+For `Filters` corresponding to Django Model fields, the `Filter` can be used without passing in a reference,
+as its attribute name on the `FilterSet` class body can be used to identify
+the corresponding Model field.
 
 ```python
 -8<- "filtering/filter.py"
 ```
 
-To be a bit more explicit, you could use a string referencing the model field:
+To be a bit more explicit, you could use a string referencing the Model field:
 
 ```python
 -8<- "filtering/filter_string.py"
 ```
 
-For better type safety, you can also use the model field itself:
+For better type safety, you can also use the Model field itself:
 
 ```python
 -8<- "filtering/filter_field.py"
 ```
 
 Being explicit like this is only required if the name of the attribute in the GraphQL schema
-is different from the model field name.
+is different from the Model field name.
 
 ```python
 -8<- "filtering/filter_alias.py"
@@ -404,8 +424,7 @@ is different from the model field name.
 
 ### Expression references
 
-Django ORM expressions can also be used as the references.
-These create an alias in the queryset when the `Filter` is used.
+Django ORM expressions can also be used as `Filter` references.
 
 ```python
 -8<- "filtering/filter_expression.py"
@@ -426,7 +445,7 @@ This can be done by decorating a method with the `Filter` class.
 -8<- "filtering/filter_decorator.py"
 ```
 
-The `Filter` method should return a `Q` expression.
+These types of `Filters` should return a `Q` expression.
 The type of the `value` argument is used as the input type for the `Filter`, so typing it is required.
 
 /// details | About method signature
@@ -446,7 +465,7 @@ and is required to be a keyword only argument.
 
 ### Lookup
 
-By default, when defining a `Filter` on a `FilterSet`, the "exact" [lookup expression]
+By default, when a `Filter` is defined on a `FilterSet`, the "exact" [lookup expression]
 is used. This can be changed by providing the `lookup` argument to the `Filter`.
 
 [lookup expression]: https://docs.djangoproject.com/en/stable/ref/models/querysets/#field-lookups
@@ -457,8 +476,8 @@ is used. This can be changed by providing the `lookup` argument to the `Filter`.
 
 ### Many
 
-The `many` argument changes the behavior of the `Filter` such that it takes
-a list of values instead of a single value. Then, each of the values are combined
+The `many` argument changes the behavior of a `Filter` such that it takes
+a list of values instead of a single value. Then, each of the given values are combined
 as defined by the [`match`](#match) argument to form a single filter condition.
 
 ```python
@@ -478,7 +497,7 @@ the filter condition would be `Q(name__icontains="foo") | Q(name__icontains="bar
 
 ### Match
 
-The `match` changes the behavior of the [`many`](#many) argument to combine the
+The `match` argument changes the behavior of the [`many`](#many) argument to combine the
 provided values with a different operation. The default is `any`, which means
 that the filter condition will include an item if it matches any of the provided values.
 
@@ -491,9 +510,8 @@ or `one_of` if only one of the values should match.
 
 ### Distinct
 
-If using some `Filter` would require a call to `queryset.distinct()`
-(e.g. lookups spanning "to-many" relations), you can use the `distinct` argument
-to tell the `FilterSet` for the `Filter` to do that if the `Filter` is used in a query.
+If using a `Filter` would require a call to `queryset.distinct()` to remove duplicates
+(e.g. lookups spanning "to-many" relations), you can set the `distinct` argument to `True`.
 
 ```python
 -8<- "filtering/filter_distinct.py"
@@ -501,12 +519,17 @@ to tell the `FilterSet` for the `Filter` to do that if the `Filter` is used in a
 
 ### Required
 
-By default, all `Filter` are not required (nullable in GraphQL terms).
+By default, all `Filters` are non-required (nullable in GraphQL terms).
 If you want to make a `Filter` required, you can do so by setting the `required` argument to `True`.
 
 ```python
 -8<- "filtering/filter_required.py"
 ```
+
+Making a `Filter` required means that if any filtering is done on an `Entrypoint` of related `Field`
+using a `QueryType` with the `FilterSet` this `Filter` belongs to, this `Filter` must be used in
+addition to any other `Filters` you might want to use. It must also be used in any logical
+blocks that users might want to make.
 
 ### Aliases
 
@@ -522,7 +545,7 @@ that returns a dictionary of expressions and decorate it with the `aliases` deco
 
 By default, `Filters` will ignore some values which are considered _"empty"_ in the context of filtering.
 These values are set globally by the [`EMPTY_VALUES`](settings.md#empty_values) setting.
-Usually this is what you want, as it allows you to set default values in our GraphQL variables.
+Usually this is what you want, as it allows you to set default values in your GraphQL variables.
 
 If you wish to change what's considered an empty value for an individual `Filter`,
 you can do so by setting the `empty_values` argument to a list of values.
@@ -533,29 +556,35 @@ you can do so by setting the `empty_values` argument to a list of values.
 
 ### Field name
 
-A `field_name` can be provided to explicitly set the Django model field name
-that the `Filter` corresponds to. This can be useful when the field has a different
-name and type in the GraphQL schema than in the model.
+A `field_name` can be provided to explicitly set the Django Model field
+that the `Filter` corresponds to.
 
 ```python
 -8<- "filtering/filter_field_name.py"
 ```
 
+This can be useful when the Model field corresponding to the `Filter`
+has a different name and type in the GraphQL schema than in the Model.
+
 ### Schema name
 
-A `schema_name` can be provided to override the name of the `Filter` in the GraphQL schema.
-This can be useful for renaming fields for the schema, or when the desired name is a Python keyword
-and cannot be used as the `Filter` attribute name.
+By default, the name of the `InputObjectType` field generated from a `Filter` is the same
+as the name of the `Filter` on the `FilterSet` class (converted to _camelCase_ if
+[`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
+If you want to change the name of the `InputObjectType` field separately,
+you can do so by setting the `schema_name` argument:
 
 ```python hl_lines="13"
 -8<- "filtering/filter_schema_name.py"
 ```
 
+This can be useful when the desired name of the `InputObjectType` field is a Python keyword
+and cannot be used as the `Input` attribute name.
+
 ### Description
 
 By default, a `Filter` is able to determine its description based on its reference.
-For example, for a model field, the description is taken from its `help_text`.
-
+For example, for a [Model field](#model-field-references), the description is taken from its `help_text`.
 If the reference has no description, or you wish to add a different one,
 this can be done in two ways:
 
@@ -587,29 +616,21 @@ This is for documentation purposes only, and does not affect the use of the `Fil
 -8<- "filtering/filter_deprecation_reason.py"
 ```
 
-### Empty filter result
-
-A special `EmptyFilterResult` exception can be raised from a `Filter` to indicate
-that the usage of the `Filter` should result in an empty queryset, e.g. because
-of the value given or for permission reasons.
-
-```python
--8<- "filtering/filter_empty_filter_result.py"
-```
-
-Raising this exceptions skips the rest of the `Filter` logic and results in an empty queryset.
-
 ### Permissions
 
-You can add permissions check to individual `Filters` by using a custom function
+You can add permissions check to individual `Filters` by using `Filter` [functions](#function-references)
 and adding the permission check inline.
 
 ```python
 -8<- "filtering/filter_permissions.py"
 ```
 
-You can also raise the [`EmptyFilterResult`](#empty-filter-result) exception if the usage of the filter
-should result in an empty queryset instead of an error.
+A special `EmptyFilterResult` exception can also be raised to indicate that
+an empty queryset should be returned instead of an error.
+
+```python
+-8<- "filtering/filter_empty_filter_result.py"
+```
 
 ### Directives
 
@@ -619,6 +640,12 @@ You can add directives to the `Filter` by providing them using the `directives` 
 -8<- "filtering/filter_directives.py"
 ```
 
+You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
+
+```python
+-8<- "filtering/filter_directives_matmul.py"
+```
+
 See the [Directives](directives.md) section for more details on directives.
 
 ### Visibility
@@ -626,9 +653,10 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `Filter` from certain users by adding the `visible` argument to the `Filter`.
-Hiding a filter means that it will not be included in introspection queries for that user,
-and it cannot be used in operations by that user.
+You can hide a `Filter` from certain users by decorating a method with the
+`<filter_name>.visible` decorator. Hiding a `Filter` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Filter` didn't exist in the first place.
 
 ```python
 -8<- "filtering/filter_visible.py"
@@ -644,7 +672,7 @@ however you wish to extend the functionality of the `Filter`.
 -8<- "filtering/filter_extensions.py"
 ```
 
-`Filter` extensions are made available in the GraphQL `InputField` extensions
-after the schema is created. The `Filter` itself is found in the `extensions`
+`Filter` extensions are made available in the GraphQL `InputObjectType` field extensions
+after the schema is created. The `Filter` itself is found in the GraphQL input field extensions
 under a key defined by the [`FILTER_EXTENSIONS_KEY`](settings.md#filter_extensions_key)
 setting.

@@ -13,21 +13,22 @@ first to get a better understanding of what GraphQL is and how it works, and use
 
 ## New to Django?
 
-We recommend going though the [official Django tutorial]{:target="_blank"}
-first before diving into Undine, since we'll assume you have some familiarity with Django.
+It's recommended to go through the [official Django tutorial]{:target="_blank"}
+first before trying to learn Undine, since these docs assume you have some familiarity with Django.
 
 [official Django tutorial]: https://docs.djangoproject.com/en/stable/intro/
 
 ## New to Undine?
 
-After going thought the [installation steps](#installation) below, we have a
+After going through the [installation steps](#installation) below, we have a
 [tutorial](tutorial.md) that will walk you through creating a simple GraphQL server using Undine.
 
 Undine is built on top of [graphql-core]{:target="_blank"},
-which is port of the GraphQL.js reference implementation of GraphQL. Knowing how graphql-core
+which is port of the [GraphQL.js] reference implementation of GraphQL. Knowing how graphql-core
 works can help you understand how Undine works, but is not required to get started.
 
 [graphql-core]: https://github.com/graphql-python/graphql-core
+[GraphQL.js]: https://github.com/graphql/graphql-js
 
 ## Installation
 

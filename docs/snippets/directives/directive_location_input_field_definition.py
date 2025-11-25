@@ -1,18 +1,23 @@
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation
 
 from undine import Filter, FilterSet, Input, MutationType
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import Directive
 
 from .models import Task
 
 
-class AddedInDirective(Directive, locations=[DirectiveLocation.INPUT_FIELD_DEFINITION], schema_name="addedIn"):
-    value = DirectiveArgument(GraphQLNonNull(GraphQLString))
+class NewDirective(Directive, locations=[DirectiveLocation.INPUT_FIELD_DEFINITION], schema_name="new"): ...
 
 
 class TaskFilterSet(FilterSet[Task]):
-    name = Filter(directives=[AddedInDirective(value="v1.0.0")])
+    name = Filter(directives=[NewDirective()])
+
+    # Alternatively...
+    name_alt = Filter() @ NewDirective()
 
 
 class CreateTaskMutation(MutationType[Task]):
-    name = Input(directives=[AddedInDirective(value="v1.0.0")])
+    name = Input(directives=[NewDirective()])
+
+    # Alternatively...
+    name_alt = Input() @ NewDirective()

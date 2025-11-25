@@ -3,18 +3,17 @@ description: Documentation on mutations in Undine.
 # Mutations
 
 In this section, we'll cover Undine's [`MutationTypes`](#mutationtypes)
-which allow you to expose your Django models through the GraphQL schema for mutations,
-expanding on the basics introduced in the [Tutorial](tutorial.md).
+which allow you to create mutations base on your Django Models.
 
-If you to mutate data outside of your Django models,
-see the [Function References](schema.md#function-references) section
-in the Schema documentation.
+For mutations not concerning your Django Models,
+you can create [function](schema.md#function-references) `Entrypoints`.
 
 ## MutationTypes
 
-A `MutationType` represents a GraphQL `InputObjectType` for mutating a Django model
-in the GraphQL schema. A basic `MutationType` is created by subclassing `MutationType`
-and adding a Django model to it as a generic type parameter:
+A `MutationType` represents a GraphQL `InputObjectType` for mutating a Django Model in the GraphQL schema.
+A basic `MutationType` is created by subclassing `MutationType`
+and adding a Django Model to it as a generic type parameter. You must also add at least one
+[`Input`](#inputs) to the class body of the `MutationType`.
 
 ```python
 -8<- "mutations/mutation_type_basic.py"
@@ -22,10 +21,11 @@ and adding a Django model to it as a generic type parameter:
 
 ### Mutation kind
 
-`MutationType` can be used for `create`, `update`, `delete` as well as `custom` mutations.
-The _kind_ of mutation a certain `MutationType` is for is determined by its
-`kind`, which can be set in the `MutationType` class definition.
-This allows Undine link the correct mutation resolver to the `MutationType`.
+How a mutation using a `MutationType` resolves is determined by its `kind`.
+The basic types of mutations are `create`, `update`, and `delete`, which can be used
+to create, update and delete instances of a `MutationType's` Model respectively.
+There are also two special mutation kinds: `custom` and `related`, which are covered
+in [custom mutations](#custom-mutations) and [related mutations](#related-mutations) respectively.
 
 ```python
 -8<- "mutations/mutation_type_kind.py"
@@ -38,7 +38,7 @@ will determine the mutation `kind` using these rules:
 2. If the word `update` can be found in the name of the `MutationType`, `kind` will be `update`.
 3. If the word `delete` can be found in the name of the `MutationType`, `kind` will be `delete`.
 4. If either the `__mutate__` or `__bulk_mutate__` method has been defined on the `MutationType`,
-   `kind` will be `custom` (see [custom mutations](#custom-mutations)).
+   `kind` will be `custom`.
 5. Otherwise, an error will be raised.
 
 ```python
@@ -47,7 +47,7 @@ will determine the mutation `kind` using these rules:
 
 ### Auto-generation
 
-A `MutationType` can automatically introspect its Django model and convert the model's fields
+A `MutationType` can automatically introspect its Django Model and convert the Model's fields
 to `Inputs` on the `MutationType`. For example, if the `Task` model has the following fields:
 
 ```python
@@ -66,7 +66,7 @@ input TaskCreateMutation {
 
 For an `update` mutation, the `pk` field is included for selecting the
 mutation target, the rest of the fields are all made nullable (=not required),
-and no default values are added.
+and no default values are added. This is essentially a fully partial update mutation.
 
 ```graphql
 input TaskUpdateMutation {
@@ -77,7 +77,7 @@ input TaskUpdateMutation {
 ```
 
 For a `delete` mutation, only the `pk` field is included for selecting the
-mutation target.
+instance to delete.
 
 ```graphql
 input TaskDeleteMutation {
@@ -93,7 +93,7 @@ With this, you can leave the `MutationType` class body empty.
 -8<- "mutations/mutation_type_auto.py"
 ```
 
-You can exclude some model fields from the auto-generation by setting the `exclude` argument:
+You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "mutations/mutation_type_exclude.py"
@@ -101,19 +101,17 @@ You can exclude some model fields from the auto-generation by setting the `exclu
 
 ### Output type
 
-A `MutationType` requires a `QueryType` for the same model to exist in the schema,
-since the `MutationType` will use the `ObjectType` generated from the `QueryType`
-as the output type of the mutation.
-
+By default, a `MutationType` uses a `QueryType` with the same Model as its output type.
+This means that one must be created, even if not used for querying outside of the `MutationType`.
 You don't need to explicitly link the `QueryType` to the `MutationType`
-since `MutationType` will automatically look up the `QueryType` for the same model
+since the `MutationType` will automatically look up the `QueryType`
 from the [`QueryType` registry](queries.md#querytype-registry).
 
 ```python
--8<- "mutations/mutation_type_output.py"
+-8<- "mutations/mutation_type_output_type.py"
 ```
 
-This would generate the following mutation in the GraphQL schema:
+This would create the following mutation in the GraphQL schema:
 
 ```graphql
 type TaskType {
@@ -137,12 +135,19 @@ If you wanted to link the `QueryType` explicitly, you could do so by overriding 
 `__query_type__` classmethod.
 
 ```python
--8<- "mutations/mutation_type_output_explicit.py"
+-8<- "mutations/mutation_type_query_type.py"
+```
+
+If you wanted a fully custom output type, you can override the `__output_type__` classmethod.
+
+```python
+-8<- "mutations/mutation_type_output_type_custom.py"
 ```
 
 ### Permissions
 
-You can add mutation-level permission checks for a `MutationType` by defining the `__permissions__` classmethod.
+You can add mutation-level permission checks to mutations executed using a `MutationType`
+by defining the `__permissions__` classmethod.
 
 ```python
 -8<- "mutations/mutation_type_permissions.py"
@@ -150,25 +155,24 @@ You can add mutation-level permission checks for a `MutationType` by defining th
 
 /// details | About method signature
 
-For `create` mutations, the `instance` is a brand new instance of the model,
-without any of the `input_data` values applied. This also means that it doesn't
-have a primary key yet.
+For `create` mutations, the `instance` is a brand new instance of the model.
+Note that this also means that it doesn't have a primary key yet.
 
-For `update` and `delete` mutations, the `instance` is the instance that is being
-mutated, with the `input_data` values applied.
+For `update` and `delete` mutations, `instance` is the existing model
+instance that is being mutated.
 
 ///
 
 This method will be called for each instance of `Task` that is mutated
-by this `MutationType`. For bulk mutations, this means that the method will be called
-for each item in the mutation input data.
+by this `MutationType`.
 
-You can raise any `GraphQLError` when validation fails, but it's recommended to
+You can raise any `GraphQLError` when a permission check fails, but it's recommended to
 raise a `GraphQLPermissionError` from the `undine.exceptions` module.
 
 ### Validation
 
-You can add mutation-level validation for a `MutationType` by defining the `__validate__` classmethod.
+You can add mutation-level validation to mutations executed using a `MutationType`
+by defining the `__validate__` classmethod.
 
 ```python
 -8<- "mutations/mutation_type_validate.py"
@@ -176,16 +180,15 @@ You can add mutation-level validation for a `MutationType` by defining the `__va
 
 /// details | About method signature
 
-For `create` mutations, the `instance` is a brand new instance of the model,
-without any of the `input_data` values applied. This also means that it doesn't
-have a primary key yet.
+For `create` mutations, the `instance` is a brand new instance of the model.
+Note that this also means that it doesn't have a primary key yet.
 
-For `update` and `delete` mutations, the `instance` is the instance that is being
-mutated, with the `input_data` values applied.
+For `update` and `delete` mutations, `instance` is the existing model
+instance that is being mutated.
 
 ///
 
-You can raise any `GraphQLError` when validation fails, but it's recommended to
+You can raise any `GraphQLError` when a validation check fails, but it's recommended to
 raise a `GraphQLValidationError` from the `undine.exceptions` module.
 
 ### After mutation handling
@@ -199,14 +202,14 @@ classmethod on the `MutationType`.
 
 /// details | About method signature
 
-For `create` and `update` mutations, the `instance` is the instance that was either
-created or updated, with the `input_data` values applied.
+For `create` and `update` mutations, `instance` is the model instance that was either
+created or updated.
 
-`input_data` contains the input data for the mutation.
-
-For `delete` mutations, the `instance` is the instance that was deleted.
+For `delete` mutations, `instance` is the instance that was deleted.
 This means that its relations have been disconnected, and its primary key
 has been set to `None`.
+
+`input_data` contains the input data that was used in the mutation.
 
 ///
 
@@ -221,9 +224,10 @@ the `MutationType` class for single or bulk mutations respectively.
 -8<- "mutations/mutation_type_custom.py"
 ```
 
-In the above example, the `MutationType` is still considered a `create` kind of mutation,
+In the above example, the `MutationType` still a `create` mutation,
 just with some custom mutation logic. The `MutationType` `kind` still affects [auto-generation](#auto-generation),
-which resolvers are used, as well as some inference rules for its `Inputs`.
+which resolvers are used (whether the mutation creates a new instance or modifies an existing one),
+as well as some inference rules for its `Inputs`.
 
 You can also use a special `custom` mutation `kind` when using custom resolvers.
 
@@ -236,17 +240,17 @@ This affects the creation of the `MutationType` in the following ways:
 - [Auto-generation](#auto-generation) is not used, even if it is enabled
 - No `Input` is [input-only](#input-only-inputs) by default
 
-These `MutationTypes` will otherwise resolve like create or update mutations, depending
-on if an `Input` named `pk` is present in the `MutationType`.
+`Custom` mutations will resolve like create or update mutations, depending
+on if an `Input` named `pk` is present on the `MutationType`.
 
 By default, the output type of a custom mutation is still the `ObjectType`
-from the `QueryType` matching the `MutationType's` model. If your custom
-mutation returns an instance of that model, it will work without additional changes.
+from the `QueryType` matching the `MutationType's` Model. If your custom
+mutation returns an instance of that Model, it will work without additional changes.
 However, if you want to return a different type, you can do so by overriding
 the `__output_type__` classmethod on the `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_custom_output_type.py"
+-8<- "mutations/mutation_type_output_type_custom.py"
 ```
 
 ### Related mutations
@@ -340,7 +344,8 @@ mutation {
 ```
 
 Permission an validation checks are run for `related` `MutationTypes` and their `Inputs` as well,
-although existing instances are not fetched from the database even if the input contains its primary key.
+although existing instances are not fetched from the database even if the input contains its primary key
+(for performance reasons).
 
 ```python
 -8<- "mutations/mutation_type_related_permissions.py"
@@ -389,13 +394,17 @@ instead.
 
 The order of operations for executing a mutation using a `MutationType` is as follows:
 
-1. `MutationType` [permissions](#permissions) and `Input` [permissions](#permissions_1) are checked
-2. `MutationType` [validation](#validation) and `Input` [validation](#validation_1) are run
-3. Mutation is executed
-4. `MutationType` [after handling](#after-mutation-handling) is run
+1. [Model inputs](#model-field-references) have their Model instances fetched.
+2. [Hidden inputs](#hidden-inputs) are be added to the input data.
+3. [Function inputs](#function-references) are run.
+4. `MutationType` [permissions](#permissions) and `Input` [permissions](#permissions_1) are checked.
+5. `MutationType` [validation](#validation) and `Input` [validation](#validation_1) are run.
+6. [Input-only inputs](#input-only-inputs) are removed from the input data.
+7. Mutation is executed.
+8. `MutationType` [after handling](#after-mutation-handling) is run.
 
-If `GraphQLErrors` are raised during steps 1 and 2, the validation and permission checks continue until
-step 3, and then all exceptions are raised at once. The error's `path` will point to the `Input` where
+If multiple `GraphQLErrors` are raised in the permission or validation steps for different inputs,
+those errors are returned together. The error's `path` will point to the `Input` where
 the exception was raised.
 
 /// details | Example result with multiple errors
@@ -428,8 +437,9 @@ the exception was raised.
 
 ### Schema name
 
-By default, the name of the generated `InputObjectType` is the same as the name of the `MutationType` class.
-If you want to change the name, you can do so by setting the `schema_name` argument:
+By default, the name of the generated GraphQL `InputObjectType` for a `MutationType` class
+is the name of the `MutationType` class. If you want to change the name separately,
+you can do so by setting the `schema_name` argument:
 
 ```python
 -8<- "mutations/mutation_type_schema_name.py"
@@ -446,9 +456,16 @@ To provide a description for the `MutationType`, you can add a docstring to the 
 ### Directives
 
 You can add directives to the `MutationType` by providing them using the `directives` argument.
+The directive must be usable in the `INPUT_OBJECT` location.
 
 ```python
 -8<- "mutations/mutation_type_directives.py"
+```
+
+You can also add them using the decorator syntax.
+
+```python
+-8<- "mutations/mutation_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -458,13 +475,18 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `MutationType` from certain users by adding the `visible` argument to the `MutationType`.
-Hiding a mutation type means that it will not be included in introspection queries for that user,
-and entrypoints using that mutation type cannot be used in operations by that user.
+You can hide a `MutationType` from certain users using the `__is_visible__` method.
+Hiding an `MutationType` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Entrypoint` or `Input` using the `MutationType` didn't exist in the first place.
 
 ```python
 -8<- "mutations/mutation_type_visible.py"
 ```
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 
@@ -477,21 +499,21 @@ however you wish to extend the functionality of the `MutationType`.
 ```
 
 `MutationType` extensions are made available in the GraphQL `InputObjectType` extensions
-after the schema is created. The `MutationType` itself is found in the `extensions`
+after the schema is created. The `MutationType` itself is found in the GraphQL `InputObjectType` extensions
 under a key defined by the `MUTATION_TYPE_EXTENSIONS_KEY` setting.
 
 ## Inputs
 
-An `Input` is a class that is used to define a possible input for a `MutationType`.
-Usually `Inputs` correspond to fields on the Django model for their respective `MutationType`.
-In GraphQL, an `Input` represents a `GraphQLInputField` in an `InputObjectType`.
+An `Input` is used to define a possible input in a `MutationType`.
+Usually `Inputs` correspond to fields on the Django Model for their respective `MutationType`.
+In GraphQL, an `Input` represents a `GraphQLInputField` on an `InputObjectType`.
 
 An `Input` always requires a _**reference**_ from which it will create the proper
 input type and default value for the `Input`.
 
 ### Model field references
 
-For `Inputs` corresponding to Django model fields, the `Input` can be used without passing in a reference,
+For `Inputs` corresponding to Django Model fields, the `Input` can be used without passing in a reference,
 as its attribute name in the `MutationType` class body can be used to identify
 the corresponding model field.
 
@@ -525,38 +547,35 @@ This can be done by decorating a method with the `Input` class.
 The decorated method is treated as a static method by the `Input`.
 
 The `self` argument is not an instance of the `MutationType`,
-but the **_model instance_** that is being mutated.
+but the **_Model instance_** that is being mutated.
 
 The `info` argument can be left out, but if it's included, it should always
 have the `GQLInfo` type annotation.
 
-The `value` argument can be left out:
+///
+
+The `value` argument determines the input given by the user, which can then be transformed
+into the input data for the mutation in the function. The type of the `value` argument
+determines the input type of the function input in. The `value` argument can also be left out,
+in which case the input will become a [`hidden`](#hidden-inputs) input.
 
 ```python
 -8<- "mutations/input_decorator_hidden.py"
 ```
 
-This makes the `Input` [`hidden`](#hidden-inputs) in the GraphQL
-schema since it takes no user input.
-
-Also, since `current_user` is not a field on the `Task` model,
-the `Input` is also [`input_only`](#input-only-inputs).
-
-///
-
 ### Model references
 
-Models classes can also be used as `Input` references.
-In this case, the model will be fetched to the input data before
-permission and validation checks.
+A Model class can also be used as an `Input` reference.
+In this case, a Model instance will be fetched to the input data from a primary key
+provided to the `Input` before permission and validation checks (see [order of operation](#order-of-operations)).
+If an instance is not found, the `Input` will raise an error before any other checks are run.
 
 ```python
 -8<- "mutations/input_model_reference.py"
 ```
 
-The model doesn't necessarily need to be a related model of the parent `MutationType` model,
-but if it is not, the input will be an input-only input by default. Otherwise, if the model
-instance is not found, the input will raise an error before any other checks are run.
+The Model doesn't necessarily need to be a related Model of the parent `MutationType` Model,
+but if it is not, the input will be an [input-only](#input-only-inputs) input by default.
 
 ### Permissions
 
@@ -579,10 +598,6 @@ The `info` argument is the GraphQL resolve info for the request.
 The `value` argument is the value provided for the input.
 
 ///
-
-This method will be called for each instance of `Task` that is mutated
-by this `MutationType`. For bulk mutations, this means that the method will be called
-for each item in the mutation input data.
 
 You can raise any `GraphQLError` when validation fails, but it's recommended to
 raise a `GraphQLPermissionError` from the `undine.exceptions` module.
@@ -624,7 +639,7 @@ the `@<input_name>.convert` decorator.
 /// details | About method signature
 
 The `self` argument is not an instance of the `MutationType`,
-but the `Input` whose value is being coerced.
+but the `Input` whose value is being converted.
 
 The `value` argument is the value provided for the `Input`.
 
@@ -635,9 +650,9 @@ Note that conversion functions are also run for [default values](#default-values
 ### Default values
 
 By default, an `Input` is able to determine its default value based on its reference.
-For example, for a model field, the default value is taken from its `default` attribute.
-However, default values are only added automatically for create mutations,
-as update mutations should only update fields that have been provided.
+For example, for a [Model field](#model-field-references), the default value is taken
+from its `default` attribute. However, default values are only added automatically for
+create mutations, as update mutations should only update fields that have been provided.
 
 If you want to set the default value for an `Input` manually, you can set
 the `default_value` argument on the `Input`.
@@ -646,28 +661,32 @@ the `default_value` argument on the `Input`.
 -8<- "mutations/input_default_value.py"
 ```
 
-Note that the default value needs to be a valid GraphQL default value
-(i.e. a string, integer, float, boolean, or null, or a list or dictionary of these).
+Note that the default value needs to be a valid GraphQL default value,
+i.e., a string, integer, float, boolean, or null, or a list or dictionary of these.
+
+> Note that you, indeed, can use lists and dictionaries as default values, even though they
+> are mutable. Undine will make a copy of any non-hashable default value before
+> mutating it, so that you won't accidentally change the default value.
 
 ### Input-only inputs
 
-Input-only `Inputs` show up in the GraphQL schema, but are not part of the actual mutation,
-usually because they are not part of the model being mutated.
-They can be used as additional data for validation and permissions checks.
+Input-only `Inputs` show up in the GraphQL schema, but their values are removed from the mutation data
+before the actual mutation (see [order of operations](#order-of-operations)),
+usually because they are not part of the Model being mutated. They can be used as additional data for
+validation and permissions checks, e.g. flags to control the behavior of the mutation.
 
 ```python
 -8<- "mutations/input_input_only.py"
 ```
 
 Notice that the `Input` reference is `bool`. This is to indicate the input type,
-as there is no model field to infer the type from. For the same reason, you don't
-_actually_ need to specify the `input_only` argument.
+as there is no Model field to infer the type from.
 
 ### Hidden inputs
 
 Hidden `Inputs` are not included in the GraphQL schema, but their values are added before
-the mutation is executed. They can be used, for example, to set default values
-for fields that should not be overridden by users.
+the mutation is executed (see [order of operations](#order-of-operations)).
+They can be used, for example, to set default values for fields that should not be overridden by users.
 
 ```python
 -8<- "mutations/input_hidden.py"
@@ -675,7 +694,7 @@ for fields that should not be overridden by users.
 
 One common use case for hidden inputs is to set the current user
 as the default value for a relational field. Let's suppose that
-the `Task` model has a foreign key `user` to the `User` model.
+the `Task` model has a foreign key `user` to the `User` Model.
 To assign a new task to the current user during creation,
 you can define a hidden input for the `user` field:
 
@@ -687,39 +706,48 @@ See [Function References](#function-references) for more details.
 
 ### Required inputs
 
-By default, an `Input` is able to determine whether it is required or not based on
-is reference, as well as the `kind` of `MutationType` it is used in. If you want to
-override this, you can set the `required` argument on the `Input`.
+By default, an `Input` is able to determine whether it's required or not based on
+its reference, as well as the `kind` of `MutationType` it's used in. If you want to
+set this manually, you can set the `required` argument on the `Input`.
 
 ```python
 -8<- "mutations/input_required.py"
 ```
 
+> Note that due to GraphQL implementation details, there is no distinction between
+> _required_ and _nullable_. Therefore, non-required `Inputs` can always accept `null` values,
+> and required inputs cannot accept `null` values.
+
 ### Field name
 
-A `field_name` can be provided to explicitly set the Django model field name
-that the `Input` corresponds to. This can be useful when the field has a different
-name and type in the GraphQL schema than in the model.
+A `field_name` can be provided to explicitly set the Django Model field
+that the `Input` corresponds to.
 
 ```python
 -8<- "mutations/input_field_name.py"
 ```
 
+This can be useful when the `Input` has a different name and type in the GraphQL schema than in the Model.
+
 ### Schema name
 
-An `Input` is also able to override the name of the `Input` in the GraphQL schema.
-This can be useful for renaming fields for the schema, or when the desired name is a Python keyword
-and cannot be used as the `Input` attribute name.
+By default, the name of the `InputObjectType` field generated from an `Input` is the same
+as the name of the `Input` on the `MutationType` class (converted to _camelCase_ if
+[`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
+If you want to change the name of the `InputObjectType` field separately,
+you can do so by setting the `schema_name` argument:
 
 ```python
 -8<- "mutations/input_schema_name.py"
 ```
 
+This can be useful when the desired name of the `InputObjectType` field is a Python keyword
+and cannot be used as the `Input` attribute name.
+
 ### Descriptions
 
 By default, an `Input` is able to determine its description based on its reference.
-For example, for a model field, the description is taken from its `help_text`.
-
+For example, for a [Model field](#model-field-references), the description is taken from its `help_text`.
 If the reference has no description, or you wish to add a different one,
 this can be done in two ways:
 
@@ -744,7 +772,7 @@ you add a docstring to the function/method used as the reference instead.
 
 ### Deprecation reason
 
-A `deprecation_reason` can be provided to mark the `Input` Input
+A `deprecation_reason` can be provided to mark the `Input` as deprecated.
 This is for documentation purposes only, and does not affect the use of the `Field`.
 
 ```python hl_lines="13"
@@ -754,9 +782,16 @@ This is for documentation purposes only, and does not affect the use of the `Fie
 ### Directives
 
 You can add directives to the `Input` by providing them using the `directives` argument.
+The directive must be usable in the `INPUT_FIELD_DEFINITION` location.
 
 ```python
 -8<- "mutations/input_directives.py"
+```
+
+You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
+
+```python
+-8<- "mutations/input_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -766,13 +801,32 @@ See the [Directives](directives.md) section for more details on directives.
 > This is an experimental feature that needs to be enabled using the
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
-You can hide a `Input` from certain users by adding the `visible` argument to the `Input`.
-Hiding an input means that it will not be included in introspection queries for that user,
-and it cannot be used in operations by that user.
+You can hide an `Input` from certain users by decorating a method with the
+`<input_name>.visible` decorator. Hiding an `Input` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Input` didn't exist in the first place.
 
 ```python
 -8<- "mutations/input_visible.py"
 ```
+
+/// details | About method signature
+
+The decorated method is treated as a static method by the `Input`.
+
+The `self` argument is not an instance of the `MutationType`,
+but the instance of the `Input` that is being used.
+
+Since visibility checks occur in the validation phase of the GraphQL request,
+GraphQL resolver info is not yet available. However, you can access the
+Django request object using the `request` argument.
+From this, you can, e.g., access the request user for permission checks.
+
+///
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 
@@ -784,7 +838,7 @@ however you wish to extend the functionality of the `Input`.
 -8<- "mutations/input_extensions.py"
 ```
 
-`Input` extensions are made available in the GraphQL `InputField` extensions
-after the schema is created. The `Input` itself is found in the `extensions`
+`Input` extensions are made available in the GraphQL `InputObjectType` field extensions
+after the schema is created. The `Input` itself is found in the GraphQL input field extensions
 under a key defined by the [`INPUT_EXTENSIONS_KEY`](settings.md#input_extensions_key)
 setting.

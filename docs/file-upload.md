@@ -3,8 +3,7 @@ description: File upload support in Undine.
 # File Upload
 
 In this section, we'll cover the everything necessary for adding support for file uploads
-to your GraphQL schema using the [GraphQL multipart request specification]{:target="_blank"}
-specification.
+to your GraphQL schema using the [GraphQL multipart request specification]{:target="_blank"}.
 
 [GraphQL multipart request specification]: https://github.com/jaydenseric/graphql-multipart-request-spec
 
@@ -18,9 +17,11 @@ a ["simple request"]{:target="_blank"}.
 [CORS preflight request]: https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request
 ["simple request"]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#simple_requests
 
-Therefore, you should make sure CSRF protection is enabled on the GraphQL endpoint.
-This can be done by making sure that the GraphQL view has the `@csrf_protect` decorator,
-or that the `CsrfViewMiddleware` exists in your `MIDDLEWARE` setting (and the view is not using `@csrf_exempt`).
+Therefore, you should make sure CSRF protection is enabled on the GraphQL endpoint
+if you want to use file uploads. This can be done by making sure that
+
+1. The GraphQL view is decorated with `@csrf_protect`, _OR_
+2. `CsrfViewMiddleware` exists in your `MIDDLEWARE` setting (and the GraphQL view is not decorated with `@csrf_exempt`)
 
 ```python
 MIDDLEWARE = [
@@ -40,27 +41,26 @@ UNDINE = {
 
 ## Uploading files
 
-Undine has two [Scalars](scalars.md) for uploading files: `File` for uploading general files,
-and `Image` for uploading images. They correspond to Django's `FileField` and `ImageField` respectively.
-The `Image` scalar performs additional validations on the uploaded image,
-such as checking if the uploaded file is an image file.
+Undine has two [Scalars](scalars.md) for uploading files: [`File`](scalars.md#file) and [`Image`](scalars.md#image).
+They correspond to Django's `FileField` and `ImageField` respectively.
+The `File` scalar if for general files while the `Image` scalar validates that the file is an image file.
 
 > Like Django's `ImageField`, using the `Image` scalar requires the `Pillow` library to be installed.
 > You can install it together with Undine using `pip install undine[image]`.
 
-Now, let's suppose we have the following model:
+Now, let's suppose you have the following Model.
 
 ```python
 -8<- "file_uploads/models.py"
 ```
 
-If we create a basic setup for creating a `Task`:
+If you add a create mutation to the GraphQL schema like this
 
 ```python
 -8<- "file_uploads/mutation_type.py"
 ```
 
-Our GraphQL schema will have the following input object type:
+...the `TaskCreateMutation` mutation `InputObjectType` will look like this:
 
 ```graphql
 input TaskCreateMutation {
