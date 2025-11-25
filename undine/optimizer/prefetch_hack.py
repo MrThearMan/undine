@@ -51,11 +51,9 @@ def register_for_prefetch_hack(queryset: QuerySet, field: ManyToManyField | Many
     forward_field = field if isinstance(field, ManyToManyField) else field.remote_field  # type: ignore[assignment]
     through = forward_field.m2m_db_table()
 
-    cache: PrefetchHackCacheType = defaultdict(lambda: defaultdict(set))
-    cache[db_table][field_name].add(through)
-
     key = undine_settings.PREFETCH_HACK_CACHE_KEY
-    queryset._hints.setdefault(key, cache)  # type: ignore[attr-defined]
+    cache: PrefetchHackCacheType = queryset._hints.setdefault(key, defaultdict(lambda: defaultdict(set)))  # type: ignore[attr-defined]
+    cache[db_table][field_name].add(through)
 
 
 def _prefetch_hack(queryset: QuerySet, field_name: str, instances: list[Model]) -> QuerySet:
