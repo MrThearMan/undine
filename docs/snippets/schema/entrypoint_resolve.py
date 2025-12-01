@@ -1,5 +1,5 @@
 from undine import Entrypoint, GQLInfo, QueryType, RootType
-from undine.optimizer.optimizer import optimize_sync
+from undine.optimizer import optimize_sync
 
 from .models import Task
 

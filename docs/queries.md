@@ -428,7 +428,7 @@ Instead of raising an exception, you might want a failed permission check to
 result in a `null` value instead of an error. You can do this overriding the
 `Field's` [resolver](#custom-resolvers) and manually checking the permissions there,
 returning `None` when permission is denied. Note that you'll need to manually set the
-`Field` as nullable if it would otherwise not be.
+`Field` as [nullable](#nullable) if it would otherwise not be.
 
 ```python
 -8<- "queries/field_permissions_resolver.py"

@@ -51,6 +51,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - Subscriptions with websockets
 - Optional persisted documents support
 - Lifecycle hooks for customizing the GraphQL request cycle
+- Hiding fields and types from schema (experimental)
 - Built-in testing tools
 
 ```python

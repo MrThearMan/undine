@@ -1,4 +1,4 @@
--# Validation rules
+# Validation rules
 
 > This is an advanced GraphQL core feature. For validating mutations, see
 > the [Mutations](mutations.md#validation) documentation.

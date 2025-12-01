@@ -38,7 +38,7 @@ Whether you decide to do this or not, remember to run migrations afterwards.
 ## Usage
 
 Once the app is installed, Undine is ready to accept persisted documents.
-Persisted documents work though the same GraphQL endpoint used for regular GraphQL requests,
+Persisted documents work through the same GraphQL endpoint used for regular GraphQL requests,
 but instead of a `query` string, you must provide a `documentId` instead.
 
 ```json
@@ -75,12 +75,28 @@ setting. The view accepts a dictionary of `documents` like this
 ```
 
 ...where each key in the `documents` dictionary is defined by the user,
-so that a `documentId` corresponding to a `query` is returned in the same key.
+so that a `documentId` corresponding to a document is returned in the same key.
 The keys are not used for anything else.
+
 Response for this view follows the [GraphQL response format],
 so any errors are returned in the _"errors"_ key.
 
 [GraphQL response format]: https://spec.graphql.org/draft/#sec-Response-Format.Response
+
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Validation error",
+      "extensions": {
+        "status_code": 400
+      }
+    }
+  ]
+}
+```
+
 
 > Note that a document with the same selection set produces a different `documentId`
 > if they have different whitespace, newlines, or comments. This is to ensure that

@@ -3,8 +3,8 @@ description: Documentation on GraphQL directives in Undine.
 # Directives
 
 In this section, we'll cover how you can use GraphQL directives in Undine.
-Directives are a way to add metadata to your GraphQL schema,
-which can be accessed during query execution or by clients consuming your schema.
+Directives are a way to add metadata to a GraphQL document or schema,
+which can be accessed during document execution or by clients consuming your schema.
 
 ## Directive
 

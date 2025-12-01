@@ -31,7 +31,7 @@ Type: `bool` | Default: `False`
 
 Whether to allow the _'did you mean'_ suggestions on error messages.
 Disabled by default so that information on the schema structure cannot
-be gained from error messages when trying to find schem entrypoint through
+be gained from error messages when trying to find schema entrypoints through
 trial and error (a form of security through obscurity).
 
 This should be left disabled when using
