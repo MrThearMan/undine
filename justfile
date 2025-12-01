@@ -38,6 +38,10 @@ importmap:
 lint:
     @poetry run pre-commit run --all-files
 
+# Lock dependencies
+lock:
+    @poetry lock
+
 # Run migrations
 migrate:
     @poetry run python manage.py migrate

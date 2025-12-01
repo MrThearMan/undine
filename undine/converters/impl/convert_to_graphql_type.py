@@ -7,7 +7,6 @@ from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import suppress
 from decimal import Decimal
 from enum import Enum, IntEnum, StrEnum
-from functools import partial
 from importlib import import_module
 from types import FunctionType
 from typing import Any, Union, get_origin, is_typeddict
@@ -115,10 +114,6 @@ from undine.utils.graphql.type_registry import (
     get_or_create_graphql_enum,
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
-)
-from undine.utils.graphql.validation_rules.one_of_input_object import (
-    get_one_of_input_object_type_extension,
-    validate_one_of_input_object_variable_value,
 )
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
@@ -577,8 +572,7 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLInputType | GraphQLOutput
     return get_or_create_graphql_input_object_type(
         name=input_object_name,
         fields=FunctionEqualityWrapper(fields, context=ref),
-        extensions=get_one_of_input_object_type_extension(),
-        out_type=partial(validate_one_of_input_object_variable_value, typename=input_object_name),
+        is_one_of=True,
     )
 
 

@@ -4,6 +4,7 @@ import pytest
 
 from example_project.app.models import Comment, Project, Task, TaskTypeChoices
 from undine import Entrypoint, Field, Input, MutationType, QueryType, RootType, create_schema
+from undine.utils.graphql.validation_rules import core_implements_one_of_directive
 
 
 @pytest.mark.django_db
@@ -61,9 +62,21 @@ def test_validation_rules__one_of_input_object__multiple_keys(graphql, undine_se
     }
     response = graphql(query, variables={"input": input_data})
 
+    # Different error message due to how input argument validation is implemented
+    # in GraphQL core 3.2.7 onwards, this is part of `coerce_input_value`, and before
+    # that it's implemented using a custom 'out_type' function.
+    if core_implements_one_of_directive():
+        msg = (
+            "Variable '$input' got invalid value "
+            "{'task': {'name': 'Test Task', 'type': 'TASK'}, 'project': {'name': 'Test Project'}} at 'input.target'; "
+            "Exactly one key must be specified for OneOf type 'CommentTargetInput'."
+        )
+    else:
+        msg = "OneOf Input Object 'CommentTargetInput' must specify exactly one key."
+
     assert response.errors == [
         {
-            "message": "OneOf Input Object 'CommentTargetInput' must specify exactly one key.",
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]
@@ -112,9 +125,17 @@ def test_validation_rules__one_of_input_object__null_key(graphql, undine_setting
     }
     response = graphql(query, variables={"input": input_data})
 
+    # Different error message due to how input argument validation is implemented
+    # in GraphQL core 3.2.7 onwards, this is part of `coerce_input_value`, and before
+    # that it's implemented using a custom 'out_type' function.
+    if core_implements_one_of_directive():
+        msg = "Variable '$input' got invalid value None at 'input.target.task'; Field 'task' must be non-null."
+    else:
+        msg = "OneOf Input Object 'CommentTargetInput' must specify exactly one key."
+
     assert response.errors == [
         {
-            "message": "Field 'CommentTargetInput.task' must be non-null.",
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]

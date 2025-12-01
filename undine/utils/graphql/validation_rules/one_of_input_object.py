@@ -28,7 +28,7 @@ __all__ = [
 
 class OneOfInputObjectTypeRule(ValidationRule):
     """
-    Forwards `@oneOf` directive validation from GraphQL core `v3.3.0a8`
+    Forwards `@oneOf` directive validation that exists in `ValuesOfCorrectTypeRule` from GraphQL core `v3.2.7`
 
     See: graphql/validation/rules/values_of_correct_type.py
     """
@@ -102,6 +102,8 @@ def validate_one_of_input_object_variable_value(value: dict[str, Any], *, typena
 
 
 def is_one_of_input_object(input_object_type: GraphQLInputObjectType) -> bool:
+    if core_implements_one_of_directive():
+        return input_object_type.is_one_of
     return input_object_type.extensions.get("_undine_is_one_of", False)
 
 
