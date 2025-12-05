@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Callable, Coroutine
 
     from undine import Entrypoint, GQLInfo
+    from undine.subscription import SignalSubscription
 
 
 __all__ = [
@@ -66,14 +67,46 @@ class FunctionSubscriptionResolver:
         async with manager:
             try:
                 async for result in iterable:
-                    if isinstance(result, GraphQLError):
-                        yield located_error(result, nodes=info.field_nodes, path=info.path.as_list())
-                        continue
-
                     if isinstance(result, GraphQLErrorGroup):
                         yield result.located(path=info.path.as_list())
                         continue
 
+                    if isinstance(result, GraphQLError):
+                        yield located_error(result, nodes=info.field_nodes, path=info.path.as_list())
+                        continue
+
+                    if self.entrypoint.permissions_func is not None:
+                        self.entrypoint.permissions_func(root, info, result)
+
+                    yield result
+
+            except GraphQLErrorGroup as error:
+                raise error.located(path=info.path.as_list()) from error
+
+            except Exception as error:
+                raise located_error(error, nodes=info.field_nodes, path=info.path.as_list()) from error
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class SignalSubscriptionResolver:
+    """Subscription resolver for a signal subscription."""
+
+    signal_subscription: SignalSubscription
+    entrypoint: Entrypoint
+
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
+        return self.gen(root, info, **kwargs)
+
+    async def gen(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
+        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        await pre_evaluate_request_user(info)
+
+        subscriber = self.signal_subscription.subscribe()
+        generator = subscriber.wait_for_events()
+
+        async with aclosing(generator):
+            try:
+                async for result in generator:
                     if self.entrypoint.permissions_func is not None:
                         self.entrypoint.permissions_func(root, info, result)
 

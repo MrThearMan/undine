@@ -145,6 +145,7 @@ __all__ = [
     "JsonObject",
     "Lambda",
     "LiteralArg",
+    "M2MChangedParams",
     "ManyMatch",
     "ModelField",
     "MutationKind",
@@ -160,6 +161,10 @@ __all__ = [
     "ParametrizedType",
     "PingMessage",
     "PongMessage",
+    "PostDeleteParams",
+    "PostSaveParams",
+    "PreDeleteParams",
+    "PreSaveParams",
     "ProtocolType",
     "QueryTypeParams",
     "RelatedField",
@@ -968,6 +973,47 @@ class CalculationArgumentParams(TypedDict, total=False):
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]
+
+
+class PreSaveParams(TypedDict, Generic[TModel]):
+    sender: type[TModel]
+    instance: TModel
+    raw: bool
+    using: str
+    update_fields: set[str] | None
+
+
+class PostSaveParams(TypedDict, Generic[TModel]):
+    sender: type[TModel]
+    instance: TModel
+    created: bool
+    raw: bool
+    using: str
+    update_fields: set[str] | None
+
+
+class PreDeleteParams(TypedDict, Generic[TModel]):
+    sender: type[TModel]
+    instance: TModel
+    using: str
+    origin: TModel | QuerySet[TModel]
+
+
+class PostDeleteParams(TypedDict, Generic[TModel]):
+    sender: type[TModel]
+    instance: TModel
+    using: str
+    origin: TModel | QuerySet[TModel]
+
+
+class M2MChangedParams(TypedDict, Generic[TModel]):
+    sender: type[Model]
+    instance: TModel
+    action: Literal["pre_add", "post_add", "pre_remove", "post_remove"]
+    reverse: bool
+    model: type[TModel]
+    pk_set: set[Any]
+    using: str
 
 
 class PostgresFTSLangSpecificFields(TypedDict, total=False):
