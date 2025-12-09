@@ -946,6 +946,14 @@ class GraphQLSubscriptionNoEventStreamError(GraphQLStatusError):
     code = UndineErrorCodes.NO_EVENT_STREAM
 
 
+class GraphQLSubscriptionTimeoutError(GraphQLStatusError):
+    """Error raised when a subscription times out."""
+
+    msg = "Subscription timed out"
+    status = HTTPStatus.REQUEST_TIMEOUT
+    code = UndineErrorCodes.SUBSCRIPTION_TIMEOUT
+
+
 class GraphQLTooManyFiltersError(GraphQLStatusError):
     """Error raised when too many filters are used for a single `FilterSet`."""
 

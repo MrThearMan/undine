@@ -85,7 +85,7 @@ class CreateResolver(Generic[TModel]):
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
@@ -160,7 +160,7 @@ class UpdateResolver(Generic[TModel]):
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
@@ -231,7 +231,7 @@ class DeleteResolver(Generic[TModel]):
         return SimpleNamespace(pk=pk)
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> SimpleNamespace:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
@@ -311,7 +311,7 @@ class BulkCreateResolver(Generic[TModel]):
         return resolver.run_sync(root, info)
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
@@ -398,7 +398,7 @@ class BulkUpdateResolver(Generic[TModel]):
         return resolver.run_sync(root, info)
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
@@ -477,7 +477,7 @@ class BulkDeleteResolver(Generic[TModel]):
         return [SimpleNamespace(pk=pk) for pk in pks]
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[SimpleNamespace]:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]

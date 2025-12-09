@@ -145,6 +145,7 @@ __all__ = [
     "JsonObject",
     "Lambda",
     "LiteralArg",
+    "M2MChangedParams",
     "ManyMatch",
     "ModelField",
     "MutationKind",
@@ -160,6 +161,10 @@ __all__ = [
     "ParametrizedType",
     "PingMessage",
     "PongMessage",
+    "PostDeleteParams",
+    "PostSaveParams",
+    "PreDeleteParams",
+    "PreSaveParams",
     "ProtocolType",
     "QueryTypeParams",
     "RelatedField",
@@ -663,6 +668,7 @@ class UndineErrorCodes(StrEnum):
     SCALAR_CONVERSION_ERROR = auto()
     SCALAR_INVALID_VALUE = auto()
     SCALAR_TYPE_NOT_SUPPORTED = auto()
+    SUBSCRIPTION_TIMEOUT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()
     UNEXPECTED_CALCULATION_ARGUMENT = auto()
@@ -968,6 +974,121 @@ class CalculationArgumentParams(TypedDict, total=False):
     schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]
+
+
+class PreSaveParams(TypedDict, Generic[TModel]):
+    """Parameters for a pre-save signal"""
+
+    sender: type[TModel]
+    """The model whose instance is being saved"""
+
+    instance: TModel
+    """The instance being saved"""
+
+    raw: bool
+    """
+    Is the model is saved exactly as presented (i.e. when loading a fixture).
+    One should not query/modify other records in the database as the database might not be in a consistent state yet.
+    """
+
+    using: str
+    """The database alias being used"""
+
+    update_fields: set[str] | None
+    """The fields that are being updated (as passed to Model.save())"""
+
+
+class PostSaveParams(TypedDict, Generic[TModel]):
+    """Parameters for a post-save signal"""
+
+    sender: type[TModel]
+    """The model whose instance was saved"""
+
+    instance: TModel
+    """The instance was saved"""
+
+    created: bool
+    """Whether the instance was created or updated"""
+
+    raw: bool
+    """
+    Is the model is saved exactly as presented (i.e. when loading a fixture).
+    One should not query/modify other records in the database as the database might not be in a consistent state yet.
+    """
+
+    using: str
+    """The database alias being used"""
+
+    update_fields: set[str] | None
+    """The fields that are being updated (as passed to Model.save())"""
+
+
+class PreDeleteParams(TypedDict, Generic[TModel]):
+    """Parameters for a pre-delete signal"""
+
+    sender: type[TModel]
+    """The model whose instance is being deleted"""
+
+    instance: TModel
+    """The instance being deleted"""
+
+    using: str
+    """The database alias being used"""
+
+    origin: TModel | QuerySet[TModel]
+    """The Model or QuerySet instance from which the deletion originated."""
+
+
+class PostDeleteParams(TypedDict, Generic[TModel]):
+    """Parameters for a post-delete signal"""
+
+    sender: type[TModel]
+    """The model whose instance was deleted"""
+
+    instance: TModel
+    """The instance that was deleted.
+    Note that the instance will no longer be in the database,
+    so its pk will be None and all relations have been disconnected.
+    """
+
+    using: str
+    """The database alias being used"""
+
+    origin: TModel | QuerySet[TModel]
+    """The Model or QuerySet instance from which the deletion originated."""
+
+
+class M2MChangedParams(TypedDict):
+    """Parameters for a m2m-changed signal"""
+
+    sender: type[Model]
+    """The through model that is being modified"""
+
+    instance: Model
+    """
+    The instance whose many to many relation is being modified.
+    Can be either the model with the many to many relation, or the related model.
+    The 'reverse' argument will be `True` if it's the latter.
+    """
+
+    action: Literal["pre_add", "post_add", "pre_remove", "post_remove"]
+    """The action being performed on the relation"""
+
+    reverse: bool
+    """Whether the reverse relation being modified or not"""
+
+    model: type[Model]
+    """
+    The model whose instances are being added to or removed from the relation.
+    Can be either the model with the many to many relation, or the related model.
+    The 'reverse' argument will be `False` if it's the latter.
+    """
+
+    pk_set: set[Any]
+    """The primary keys of the instances being added to or removed from the relation"""
+
+    using: str
+    """The database alias being used"""
 
 
 class PostgresFTSLangSpecificFields(TypedDict, total=False):

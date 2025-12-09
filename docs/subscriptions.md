@@ -16,16 +16,15 @@ You'll also need a client capable of using the protocol.
 [GraphQL over WebSocket]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
 
 Now, you can create a new [`RootType`](schema.md#roottypes) called `Subscription`
-and add `Entrypoints` that return an [AsyncIterable]{:target="_blank"}, usually
-an [AsyncGenerator]{:target="_blank"}.
-
-[AsyncIterable]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=close-,AsyncIterable,-%5B1%5D
-[AsyncGenerator]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=__aiter__-,AsyncGenerator,-%5B1%5D
+and add [`Entrypoints`](schema.md#entrypoints) to it. Let's go over the different
+`Entrypoint` references that can be used to create subscriptions.
 
 ## AsyncGenerators
 
+The simplest way of creating subscriptions is by using an [`AsyncGenerator`][AsyncGenerator] function.
 Let's take a look at a simple example of a subscription that counts down from 10 to 0.
-This subscription is set up using an `AsyncGenerator` function.
+
+[AsyncGenerator]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=__aiter__-,AsyncGenerator,-%5B1%5D
 
 ```python
 -8<- "subscriptions/subscription.py"
@@ -70,7 +69,7 @@ while the value of the `countdown` field is decreases from 10 to 1.
 ```
 
 The subscription's output type will be determined based on the first generic type parameter
-on the AsyncGenerator return type (in this case `int`), so typing it is required.
+on the `AsyncGenerator` return type (in this case `int`), so typing it is required.
 
 To add arguments for the subscription, you can add them to the function signature.
 Typing these arguments is also required to determine their input type.
@@ -87,20 +86,7 @@ type Subscription {
 }
 ```
 
-## AsyncIterables
-
-You can also use an `AsyncIterable` instead of creating an `AsyncGenerator` function.
-Note that the `AsyncIterable` needs to be returned from the `Entrypoint` function,
-not used as the `Entrypoint` reference itself. Otherwise, they work similarly to
-`AsyncGenerators`.
-
-```python
--8<- "subscriptions/subscription_async_iterable.py"
-```
-
-## Exceptions
-
-If an exception is raised in the subscription, the subscription will be closed
+If an exception is raised in the function, the subscription will be closed
 and an error message will be sent to the client. You should raise exceptions
 subclassing `GraphQLError` for better error messages, or use the `GraphQLErrorGroup`
 to raise multiple errors at once.
@@ -109,13 +95,50 @@ to raise multiple errors at once.
 -8<- "subscriptions/subscription_exception.py"
 ```
 
-You can also yield a `GraphQLError` from the subscription, which will send
+You can also yield a `GraphQLError` from the function, which will send
 an error while keeping the subscription open. Furthermore, adding the error to the return
 type does not change the return type of the subscription.
 
 ```python
 -8<- "subscriptions/subscription_exception_return.py"
 ```
+
+## AsyncIterables
+
+You can also use an [`AsyncIterable`][AsyncIterable] instead of creating an `AsyncGenerator` function.
+Note that the `AsyncIterable` needs to be returned from the `Entrypoint` function,
+not used as the `Entrypoint` reference itself. Otherwise, they work similarly to
+`AsyncGenerators`.
+
+[AsyncIterable]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=close-,AsyncIterable,-%5B1%5D
+
+```python
+-8<- "subscriptions/subscription_async_iterable.py"
+```
+
+## Signal subscriptions
+
+Undine also supports creating subscriptions for [Django signals]{:target="blank"}
+using `SignalSubscriptions`. For example, if you wanted to listen to new `Tasks`
+being created, you could add a `ModelCreateSubscription` for the `Task` Model like this.
+
+[Django signals]: https://docs.djangoproject.com/en/stable/ref/signals/
+
+```python
+-8<- "subscriptions/subscription_signals.py"
+```
+
+Similar subscriptions exists for Model updates (`ModelUpdateSubscription`), deletes (`ModelDeleteSubscription`),
+and overall saves (`ModelSaveSubscription`). These subscriptions return data through `QueryTypes`
+so queries to them are optimized just like any other query.
+
+> For delete subscriptions, note that the Model instance may have been deleted by the time
+> the subscription is executed, so you should not rely on the instance existing in the database
+> or its relations being connected like you would with a normal query.
+
+For other signals, you can create custom subscriptions by subclassing `undine.subscriptions.SignalSubscription`
+and adding the appropriate converters in order to use it in your schema.
+See the ["Hacking Undine"](hacking-undine.md#entrypoints) section for more information on how to do this.
 
 ## Permissions
 

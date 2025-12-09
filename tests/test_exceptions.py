@@ -76,6 +76,7 @@ from undine.exceptions import (
     GraphQLScalarTypeNotSupportedError,
     GraphQLStatusError,
     GraphQLSubscriptionNoEventStreamError,
+    GraphQLSubscriptionTimeoutError,
     GraphQLTooManyFiltersError,
     GraphQLTooManyOrdersError,
     GraphQLUnexpectedCalculationArgumentError,
@@ -801,6 +802,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Subscription did not return an event stream",
             extensions={"error_code": "NO_EVENT_STREAM", "status_code": 500},
+        ),
+        "GraphQLSubscriptionTimeoutError": GQLErrorParams(
+            cls=GraphQLSubscriptionTimeoutError,
+            args={},
+            message="Subscription timed out",
+            extensions={"error_code": "SUBSCRIPTION_TIMEOUT", "status_code": 408},
         ),
         "GraphQLTooManyFiltersError": GQLErrorParams(
             cls=GraphQLTooManyFiltersError,

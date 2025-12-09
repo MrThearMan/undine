@@ -24,6 +24,7 @@ from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser, parse_is_nullable, parse_parameters
 from undine.relay import Connection, Node
 from undine.settings import undine_settings
+from undine.subscriptions import SignalSubscription
 from undine.typing import CombinableExpression, ModelField, RelatedField
 from undine.utils.model_utils import get_model_field
 from undine.utils.text import get_docstring, to_schema_name
@@ -278,6 +279,11 @@ def _(ref: type[Node], **kwargs: Any) -> GraphQLArgumentMap:
             out_name=ref.id.name,
         ),
     }
+
+
+@convert_to_graphql_argument_map.register
+def _(_: SignalSubscription, **kwargs: Any) -> GraphQLArgumentMap:
+    return {}
 
 
 # --- GraphQL types ------------------------------------------------------------------------------------------------

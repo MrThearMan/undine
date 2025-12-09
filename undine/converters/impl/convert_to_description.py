@@ -13,6 +13,7 @@ from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, 
 from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser
 from undine.relay import Connection
+from undine.subscriptions import SignalSubscription
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.text import get_docstring
 
@@ -100,6 +101,11 @@ def _(ref: OffsetPagination, **kwargs: Any) -> Any:
 
 @convert_to_description.register
 def _(ref: InterfaceField, **kwargs: Any) -> Any:
+    return ref.description
+
+
+@convert_to_description.register
+def _(ref: SignalSubscription, **kwargs: Any) -> Any:
     return ref.description
 
 

@@ -30,6 +30,7 @@ from undine.resolvers import (
     UpdateResolver,
 )
 from undine.resolvers.query import InterfaceTypeConnectionResolver, UnionTypeConnectionResolver
+from undine.subscriptions import SignalSubscription
 from undine.typing import MutationKind
 from undine.utils.reflection import get_origin_or_noop, is_subclass
 
@@ -133,3 +134,8 @@ def _(_: type[Node], **kwargs: Any) -> GraphQLFieldResolver:
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
     return InterfaceTypeResolver(interface=ref, entrypoint=caller)
+
+
+@convert_to_entrypoint_resolver.register
+def _(_: SignalSubscription, **kwargs: Any) -> GraphQLFieldResolver:
+    return SubscriptionValueResolver()

@@ -109,6 +109,7 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.settings import undine_settings
+from undine.subscriptions import QueryTypeSignalSubscription
 from undine.typing import CombinableExpression, ModelField, eval_type
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_enum,
@@ -846,6 +847,11 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLInputType | GraphQLOutp
 @convert_to_graphql_type.register
 def _(ref: InterfaceField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return ref.output_type
+
+
+@convert_to_graphql_type.register
+def _(ref: QueryTypeSignalSubscription, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return convert_to_graphql_type(ref.query_type, **kwargs)
 
 
 with suppress(ImportError):

@@ -103,7 +103,7 @@ class EntrypointFunctionResolver:
         return result
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         self.set_kwargs(kwargs, root, info)
@@ -443,7 +443,7 @@ class QueryTypeSingleResolver(Generic[TModel]):
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         queryset = self.query_type.__get_queryset__(info)
@@ -498,7 +498,7 @@ class QueryTypeManyResolver(Generic[TModel]):
         return instances
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         queryset = self.get_queryset(info)
@@ -720,7 +720,7 @@ class ConnectionResolver(Generic[TModel]):
         return self.to_connection(instances, pagination=results.pagination)
 
     async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
-        # Fetch user eagerly so that its available e.g. for permission checks in synchronous parts of the code.
+        # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         results = await self.run_optimizer_async(info)

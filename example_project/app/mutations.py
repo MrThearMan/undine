@@ -93,4 +93,7 @@ class TaskCreateMutationType(MutationType[Task]):
             raise ValueError(msg)
 
 
+class TaskDeleteMutationType(MutationType[Task]): ...
+
+
 class CommentCreateMutationType(MutationType[Comment]): ...

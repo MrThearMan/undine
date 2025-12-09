@@ -6,13 +6,14 @@ from collections.abc import AsyncGenerator
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
-from example_project.app.mutations import CommentCreateMutationType, TaskCreateMutationType
+from example_project.app.mutations import CommentCreateMutationType, TaskCreateMutationType, TaskDeleteMutationType
 from example_project.app.types import Commentable, CommentType, Named, ReportType, TaskType
 from undine import Entrypoint, GQLInfo, RootType, create_schema
 from undine.directives import Directive, DirectiveArgument
 from undine.optimizer.optimizer import optimize_sync
 from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
+from undine.subscriptions import ModelDeleteSubscription, ModelSaveSubscription
 
 
 class VersionDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="version"):
@@ -56,6 +57,8 @@ class Mutation(RootType):
     create_task = Entrypoint(TaskCreateMutationType)
     create_comment = Entrypoint(CommentCreateMutationType)
 
+    delete_task = Entrypoint(TaskDeleteMutationType)
+
     bulk_create_task = Entrypoint(TaskCreateMutationType, many=True)
 
 
@@ -65,6 +68,9 @@ class Subscription(RootType):
         for i in range(start, 0, -1):
             await asyncio.sleep(1)
             yield i
+
+    saved_tasks = Entrypoint(ModelSaveSubscription(TaskType))
+    deleted_tasks = Entrypoint(ModelDeleteSubscription(TaskType))
 
 
 schema = create_schema(

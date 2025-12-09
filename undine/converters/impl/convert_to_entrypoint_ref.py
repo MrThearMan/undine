@@ -12,6 +12,7 @@ from undine.pagination import OffsetPagination
 from undine.parsers import parse_is_nullable
 from undine.relay import Connection, Node
 from undine.settings import undine_settings
+from undine.subscriptions import SignalSubscription
 
 
 @convert_to_entrypoint_ref.register
@@ -72,4 +73,11 @@ def _(ref: OffsetPagination, **kwargs: Any) -> Any:
     caller: Entrypoint = kwargs["caller"]
     caller.many = True
     caller.extensions[undine_settings.OFFSET_PAGINATION_EXTENSIONS_KEY] = ref
+    return ref
+
+
+@convert_to_entrypoint_ref.register
+def _(ref: SignalSubscription, **kwargs: Any) -> Any:
+    caller: Entrypoint = kwargs["caller"]
+    caller.many = False
     return ref
