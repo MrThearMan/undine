@@ -242,6 +242,9 @@ class UndineDefaultSettings(NamedTuple):
     TOTAL_COUNT_PARAM_NAME: str = "totalCount"
     """The name of the total count parameter in connection resolvers."""
 
+    DATA_LOADER_CACHE_PREFIX: str = "undine_data_loader"  # TODO: Document
+    """The prefix to use for the cache keys of DataLoaders."""
+
     # Other
 
     DOCSTRING_PARSER: type[DocstringParserProtocol] = "undine.parsers.parse_docstring.RSTDocstringParser"  # type: ignore[assignment]

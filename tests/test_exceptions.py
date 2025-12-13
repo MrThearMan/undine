@@ -26,6 +26,8 @@ from undine.exceptions import (
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
     GraphQLAsyncNotSupportedError,
+    GraphQLDataLoaderDidNotReturnSortedSequenceError,
+    GraphQLDataLoaderWrongNumberOfValuesReturnedError,
     GraphQLDuplicatePrimaryKeysError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
@@ -487,6 +489,18 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="GraphQL execution failed to complete synchronously.",
             extensions={"error_code": "ASYNC_NOT_SUPPORTED", "status_code": 500},
+        ),
+        "GraphQLDataLoaderDidNotReturnSortedSequenceError": GQLErrorParams(
+            cls=GraphQLDataLoaderDidNotReturnSortedSequenceError,
+            args={"got": set},
+            message="DataLoader returned wrong type of object, got 'set' but expected 'list' or 'tuple'",
+            extensions={"error_code": "DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE", "status_code": 500},
+        ),
+        "GraphQLDataLoaderWrongNumberOfValuesReturnedError": GQLErrorParams(
+            cls=GraphQLDataLoaderWrongNumberOfValuesReturnedError,
+            args={"got": 1, "expected": 2},
+            message="Wrong number of values returned from a DataLoader, got 1 but expected 2",
+            extensions={"error_code": "DATA_LOADER_WRONG_NUMBER_OF_VALUES_RETURNED", "status_code": 500},
         ),
         "GraphQLDuplicatePrimaryKeysError": GQLErrorParams(
             cls=GraphQLDuplicatePrimaryKeysError,
