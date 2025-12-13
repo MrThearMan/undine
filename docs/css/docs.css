@@ -3,7 +3,7 @@ Variables
 */
 :root {
     --undine-nav-width: 250px;
-    --undine-mobile-nav-width: 85%;
+    --undine-mobile-nav-width: 100%;
 
     --undine-text-color: #bbbbbb;
     --undine-nav-color: #191919;
@@ -108,6 +108,8 @@ body {
             */
             nav.wy-nav-top {
                 background-color: var(--undine-nav-color);
+                position: sticky;
+                top: 0;
             }
 
             .wy-nav-content {
@@ -142,12 +144,18 @@ body {
             nav.wy-nav-side {
 
                 &.shift {
+                    position: fixed;
+                    top: 63px;
                     width: var(--undine-mobile-nav-width);
                 }
 
                 .wy-side-scroll {
                     .wy-menu-vertical {
                         width: auto;
+                    }
+
+                    .wy-side-nav-search > a.icon-home {
+                        display: none;
                     }
                 }
 
@@ -160,12 +168,15 @@ body {
                 margin-left: 0;
 
                 &.shift {
-                    position: fixed;
+                    position: relative;
                     min-width: 100%;
-                    left: var(--undine-mobile-nav-width);
+                    left: 0;
                     top: 0;
                     height: 100%;
                     overflow: hidden;
+                    scrollbar-gutter: stable;
+                    color: var(--undine-nav-color);
+                    background-color: var(--undine-nav-color);
                 }
             }
 
