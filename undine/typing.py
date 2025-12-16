@@ -192,6 +192,13 @@ __all__ = [
     "WebSocketResult",
 ]
 
+# Common TypeVars
+
+T = TypeVar("T")
+P = ParamSpec("P")
+T_co = TypeVar("T_co", covariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
+
 # Misc.
 
 TypedDictType: TypeAlias = _TypedDictMeta
@@ -205,13 +212,10 @@ JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
 WebSocketResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
 ExecutionResultGen: TypeAlias = AsyncGenerator[ExecutionResult, None]
+SortedSequence: TypeAlias = list[T] | tuple[T, ...]
 
-# TypeVars
+# Bound TypeVars
 
-T = TypeVar("T")
-P = ParamSpec("P")
-T_co = TypeVar("T_co", covariant=True)
-T_contra = TypeVar("T_contra", contravariant=True)
 TModel = TypeVar("TModel", bound=Model)
 TUser = TypeVar("TUser", bound="AbstractUser", covariant=True)  # noqa: PLC0105
 TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
@@ -623,6 +627,9 @@ class UndineErrorCodes(StrEnum):
 
     ASYNC_NOT_SUPPORTED = auto()
     CONTENT_TYPE_MISSING = auto()
+    DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE = auto()
+    DATA_LOADER_PRIMING_ERROR = auto()
+    DATA_LOADER_WRONG_NUMBER_OF_VALUES_RETURNED = auto()
     DUPLICATE_PRIMARY_KEYS = auto()
     DUPLICATE_TYPE = auto()
     FIELD_NOT_NULLABLE = auto()

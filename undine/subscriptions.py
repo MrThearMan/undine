@@ -78,7 +78,7 @@ class SignalSubscription(ABC, Generic[T]):
         return SignalSubscriber(self)
 
     def receiver(self, *args: Any, **kwargs: Any) -> None:
-        """Receiver fo the Django signal."""
+        """Receiver for the Django signal."""
         # Some signals might send the 'sender' argument as a positional argument
         if args:
             kwargs["sender"] = args[0]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import types
 import uuid
@@ -365,7 +366,7 @@ def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) 
 
     origin = get_origin(return_type)
     if origin not in {types.UnionType, Union}:
-        return convert_to_graphql_type(TypeRef(return_type))
+        return convert_to_graphql_type(TypeRef(return_type), **kwargs)
 
     args = get_flattened_generic_params(return_type)
     nullable = types.NoneType in args
@@ -376,7 +377,35 @@ def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) 
     if len(args) != 1:
         return GraphQLAny
 
-    graphql_type = convert_to_graphql_type(TypeRef(args[0]))
+    graphql_type = convert_to_graphql_type(TypeRef(args[0]), **kwargs)
+    if nullable and isinstance(graphql_type, GraphQLNonNull):
+        graphql_type = graphql_type.of_type
+
+    return graphql_type
+
+
+@convert_to_graphql_type.register
+def _(ref: type[asyncio.Future | asyncio.Task], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    if not hasattr(ref, "__args__"):
+        msg = f"Cannot convert {ref!r} to GraphQL type without generic type arguments."
+        raise FunctionDispatcherError(msg)
+
+    return_type = ref.__args__[0]  # type: ignore[attr-defined]
+
+    origin = get_origin(return_type)
+    if origin not in {types.UnionType, Union}:
+        return convert_to_graphql_type(TypeRef(return_type), **kwargs)
+
+    args = get_flattened_generic_params(return_type)
+    nullable = types.NoneType in args
+
+    # Exceptions can be returned by DataLoaders in order to raise errors.
+    args = tuple(arg for arg in args if arg is not types.NoneType and not issubclass(arg, BaseException))
+
+    if len(args) != 1:
+        return GraphQLAny
+
+    graphql_type = convert_to_graphql_type(TypeRef(args[0]), **kwargs)
     if nullable and isinstance(graphql_type, GraphQLNonNull):
         graphql_type = graphql_type.of_type
 

@@ -536,6 +536,30 @@ class GraphQLAsyncNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.ASYNC_NOT_SUPPORTED
 
 
+class GraphQLDataLoaderDidNotReturnSortedSequenceError(GraphQLStatusError):
+    """Error raised when a data loader returns a non-sorted sequence."""
+
+    msg = "DataLoader returned wrong type of object, got '{got:name}' but expected 'list' or 'tuple'"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE
+
+
+class GraphQLDataLoaderPrimingError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a trying to prime keys and values of different lengths."""
+
+    msg = "Cannot prime DataLoader from {keys} keys to {values} values"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.DATA_LOADER_PRIMING_ERROR
+
+
+class GraphQLDataLoaderWrongNumberOfValuesReturnedError(GraphQLStatusError):
+    """Error raised when a data loader returns the wrong number of values."""
+
+    msg = "Wrong number of values returned from a DataLoader, got {got} but expected {expected}"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.DATA_LOADER_WRONG_NUMBER_OF_VALUES_RETURNED
+
+
 class GraphQLDuplicatePrimaryKeysError(GraphQLStatusError):
     """Error raised when bulk update did not receive primary keys for all input dicts."""
 

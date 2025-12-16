@@ -4,6 +4,7 @@ import base64
 import dataclasses
 import json
 import re
+from collections.abc import Generator
 from contextlib import contextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files.uploadedfile import UploadedFile
     from graphql import FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
+    from pytest_django import DjangoDbBlocker
 
     from undine.typing import RequestMethod
 
@@ -257,3 +259,33 @@ def cache_content_types() -> None:
     ContentType.objects.get_for_model(Task)
     ContentType.objects.get_for_model(Project)
     ContentType.objects.get_for_model(Report)
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class DBAccessLog:
+    count: int = 0
+
+
+@contextmanager
+def count_db_accesses(blocker: DjangoDbBlocker) -> Generator[DBAccessLog, None, None]:
+    """
+    Count the number of database accesses made during the context.
+
+    >>> def test_example(django_db_blocker: DjangoDbBlocker) -> None:
+    >>> with count_db_accesses(django_db_blocker) as log:
+    ...     ...  # Do something that accesses the database
+    >>> assert log.count == 1
+    """
+    access_log = DBAccessLog()
+
+    def _logging_wrapper(*args: Any, **kwargs: Any) -> Any:
+        # Mirrors how the `DjangoDbBlocker.unblock() method works.
+        access_log.count += 1
+        return blocker._real_ensure_connection(*args, **kwargs)  # noqa: SLF001
+
+    blocker._save_active_wrapper()  # noqa: SLF001
+    blocker._dj_db_wrapper.ensure_connection = _logging_wrapper  # noqa: SLF001
+    try:
+        yield access_log
+    finally:
+        blocker.restore()

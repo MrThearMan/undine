@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from asyncio import Future
 from contextlib import suppress
 from decimal import Decimal
 from enum import Enum, IntEnum, StrEnum
@@ -206,6 +207,14 @@ class Params(NamedTuple):
         ),
         "AsyncIterable[int | Exception | None]": Params(
             input_type=AsyncIterable[int | Exception | None],
+            output_type=GraphQLInt,
+        ),
+        "Future[int]": Params(
+            input_type=Future[int],
+            output_type=GraphQLNonNull(GraphQLInt),
+        ),
+        "Future[int | None]": Params(
+            input_type=Future[int | None],
             output_type=GraphQLInt,
         ),
     }),
