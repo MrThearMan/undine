@@ -353,6 +353,9 @@ ignore = [
     "PLR2004",  # Allow magic values
     "T201",     # Allowing print statements for debugging here
     "ARG005",   # Allow unused arguments in snippets
+    "RUF029",   # Allow async functions without async used
+    "FURB118",  # No need to operator.itemgettr()
+    "A002",     # Argument shadowing is ok in snippets
 ]
 "example_project/app/schema.py" = [
     # No type-checking blocks in graphql schema

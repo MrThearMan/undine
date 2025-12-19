@@ -22,6 +22,7 @@ nav:
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
   - Async Support: async.md
+  - DataLoaders: dataloaders.md
   - Lifecycle Hooks: lifecycle-hooks.md
   - Validation Rules: validation-rules.md
   - Integrations: integrations.md
