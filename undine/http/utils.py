@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import json
-from asyncio import iscoroutinefunction
 from collections.abc import Awaitable, Callable
 from enum import StrEnum
 from functools import cached_property, wraps
@@ -158,7 +158,7 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
             supported_types.append("text/html")
         return supported_types
 
-    if iscoroutinefunction(func):
+    if inspect.iscoroutinefunction(func):
 
         @wraps(func)
         async def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:

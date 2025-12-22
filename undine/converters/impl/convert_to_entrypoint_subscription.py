@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from inspect import isasyncgenfunction, iscoroutinefunction
+import inspect
 from types import FunctionType
 from typing import Any
 
@@ -21,7 +21,7 @@ def _(_: Any, **kwargs: Any) -> GraphQLFieldResolver | None:
 
 @convert_to_entrypoint_subscription.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver | None:
-    if not isasyncgenfunction(ref) and not iscoroutinefunction(ref):
+    if not inspect.isasyncgenfunction(ref) and not inspect.iscoroutinefunction(ref):
         return None
 
     # We don't know if the function submitted here is actually for a subscription,

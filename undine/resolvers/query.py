@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import inspect
 import uuid
-from asyncio import iscoroutinefunction
 from collections import defaultdict
 from itertools import count
 from typing import TYPE_CHECKING, Any, Generic, Optional
@@ -92,7 +91,7 @@ class EntrypointFunctionResolver:
         object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        if undine_settings.ASYNC and iscoroutinefunction(self.func):
+        if undine_settings.ASYNC and inspect.iscoroutinefunction(self.func):
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
@@ -166,7 +165,7 @@ class FieldFunctionResolver:
         object.__setattr__(self, "info_param", params.info_param)
 
     def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        if undine_settings.ASYNC and iscoroutinefunction(self.func):
+        if undine_settings.ASYNC and inspect.iscoroutinefunction(self.func):
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 

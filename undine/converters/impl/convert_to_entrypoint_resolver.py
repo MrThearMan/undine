@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import inspect
 from collections.abc import AsyncIterable
-from inspect import isasyncgenfunction, iscoroutinefunction
 from types import FunctionType
 from typing import Any
 
@@ -38,10 +38,10 @@ from undine.utils.reflection import get_origin_or_noop, is_subclass
 @convert_to_entrypoint_resolver.register
 def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
-    if isasyncgenfunction(ref):
+    if inspect.isasyncgenfunction(ref):
         return SubscriptionValueResolver()
 
-    if iscoroutinefunction(ref):
+    if inspect.iscoroutinefunction(ref):
         ann = parse_return_annotation(ref)
         origin = get_origin_or_noop(ann)
         if is_subclass(origin, AsyncIterable):
