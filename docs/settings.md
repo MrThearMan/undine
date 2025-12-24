@@ -177,17 +177,6 @@ Should be given as the dotted path to the execution context class.
 
 ///
 
-/// details | `EXECUTION_HOOKS`
-    attrs: {id: execution_hooks}
-
-Type: `list[type[LifecycleHook]]` | Default: `[]`
-
-Hooks to run during execution phase the GraphQL request.
-See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
-Values should be given as the dotted paths to the lifecycle hooks used.
-
-///
-
 /// details | `EXPERIMENTAL_VISIBILITY_CHECKS`
     attrs: {id: experimental_visibility_checks}
 
@@ -313,6 +302,17 @@ The key used to store a `InterfaceType` in the `extensions` of its `GraphQLInter
 
 ///
 
+/// details | `LIFECYCLE_HOOKS`
+    attrs: {id: lifecycle_hooks}
+
+Type: `list[type[LifecycleHook]]` | Default: `[]`
+
+Hooks to use during the GraphQL request.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+Values should be given as the dotted paths to the lifecycle hooks used.
+
+///
+
 /// details | `LIST_ENTRYPOINT_LIMIT`
     attrs: {id: list_entrypoint_limit}
 
@@ -388,18 +388,6 @@ Maximum number of [GraphQL document tokens]{:target="_blank"} the GraphQL parser
 parse before it rejects a request. By default, this is set to `None` which means no limit.
 
 [GraphQL document tokens]: https://github.com/graphql-python/graphql-core/blob/main/src/graphql/language/token_kind.py
-
-///
-
-/// details | `MIDDLEWARE`
-    attrs: {id: middleware}
-
-Type: `list[type[GraphQLFieldResolver]]` | Default: `[]`
-
-GraphQL field middleware to use for all field resolvers.
-See [Custom Middleware]{:target="_blank"} in the `graphql-core` documentation for more information.
-
-[Custom Middleware]: https://graphql-core-3.readthedocs.io/en/latest/diffs.html#custom-middleware
 
 ///
 
@@ -480,17 +468,6 @@ The key used to store an `OffsetPagination` in the `extensions` of its `GraphQLO
 
 ///
 
-/// details | `OPERATION_HOOKS`
-    attrs: {id: operation_hooks}
-
-Type: `list[type[LifecycleHook]]` | Default: `[]`
-
-Hooks to run encompassing the entire GraphQL operation.
-See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
-Values should be given as the dotted paths to the lifecycle hooks used.
-
-///
-
 /// details | `OPTIMIZER_CLASS`
     attrs: {id: optimizer_class}
 
@@ -561,17 +538,6 @@ The key to which a nested pagination stop indexes are annotated to.
 Type: `str` | Default: `"_undine_pagination_total_count"`
 
 The key to which a nested pagination total counts are annotated to.
-
-///
-
-/// details | `PARSE_HOOKS`
-    attrs: {id: parse_hooks}
-
-Type: `list[type[LifecycleHook]]` | Default: `[]`
-
-Hooks to run during parsing phase of a GraphQL request.
-See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
-Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
 
@@ -764,17 +730,6 @@ so must be set before running migrations for the persisted documents app.
 Type: `str` | Default: `"undine_union_type"`
 
 The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
-
-///
-
-/// details | `VALIDATION_HOOKS`
-    attrs: {id: validation_hooks}
-
-Type: `list[type[LifecycleHook]]` | Default: `[]`
-
-Hooks to run during validation the GraphQL request.
-See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
-Values should be given as the dotted paths to the lifecycle hooks used.
 
 ///
 

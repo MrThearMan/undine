@@ -4,12 +4,15 @@ from undine.hooks import LifecycleHook
 
 
 class ExampleHook(LifecycleHook):
-    def run(self) -> Generator[None, None, None]:
+    """Example hook"""
+
+    def on_validation(self) -> Generator[None, None, None]:
         print("before")
         yield
         print("after")
 
-    async def run_async(self) -> AsyncGenerator[None, None]:
+    # Async hook uses synchronous version if not implemented.
+    async def on_validation_async(self) -> AsyncGenerator[None, None]:
         print("before async")
         yield
         print("after async")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-import traceback
+import logging
 from typing import TYPE_CHECKING, Any
 
 from undine.hooks import LifecycleHook
@@ -9,23 +9,37 @@ from undine.hooks import LifecycleHook
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from graphql import GraphQLFieldResolver
     from graphql.pyutils import AwaitableOrValue
 
+    from undine import GQLInfo
     from undine.utils.graphql.websocket import WebSocketRequest
 
 
+logger = logging.getLogger(__name__)
+
+
 class ExampleHook(LifecycleHook):
-    def run(self) -> Generator[None, None, None]:
+    def on_operation(self) -> Generator[None, None, None]:
+        yield
+
+    def on_parse(self) -> Generator[None, None, None]:
+        yield
+
+    def on_validation(self) -> Generator[None, None, None]:
+        yield
+
+    def on_execution(self) -> Generator[None, None, None]:
         yield
 
 
-class ErrorLoggingHook(LifecycleHook):
-    def run(self) -> Generator[None, None, None]:
+class ErrorLoggingMiddleware(LifecycleHook):
+    def resolve(self, resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         try:
-            yield
-        except Exception:
-            print(traceback.format_exc())  # noqa: T201,RUF100
-            raise
+            return resolver(root, info, **kwargs)
+        except Exception as err:
+            logger.exception("Error occurred")
+            return err
 
 
 def ping_hook(request: WebSocketRequest) -> AwaitableOrValue[dict[str, Any] | None]:

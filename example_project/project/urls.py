@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from undine.http.views import graphql_view_async
+from undine.http.views import graphql_view_async, graphql_view_sync
 
 urlpatterns = [
     path("", include("undine.http.urls")),
@@ -13,6 +13,7 @@ urlpatterns = [
     path("", include("example_project.app.urls")),
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
+    path("graphql/sync/", graphql_view_sync, name="graphql_sync"),
     path("graphql/async/", graphql_view_async, name="graphql_async"),
 ]
 

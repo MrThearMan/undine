@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from typing import AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Generator
 
 import pytest
-from graphql import ExecutionResult, GraphQLError
+from graphql import GraphQLFieldResolver
 
+from tests.helpers import mock_gql_info
+from undine import Entrypoint, GQLInfo, RootType, create_schema
+from undine.execution import _get_middleware_manager  # noqa: PLC2701
 from undine.hooks import (
+    ExecutionLifecycleHookManager,
     LifecycleHook,
     LifecycleHookContext,
-    LifecycleHookManager,
-    use_lifecycle_hooks_async,
-    use_lifecycle_hooks_sync,
+    OperationLifecycleHookManager,
+    ParseLifecycleHookManager,
+    ValidationLifecycleHookManager,
 )
 
 
@@ -26,305 +30,383 @@ def get_default_context() -> LifecycleHookContext:
     )
 
 
-def test_lifecycle_hook() -> None:
+def test_lifecycle_hook__operation_manager() -> None:
     call_stack: list[str] = []
 
     class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            yield
-            call_stack.append("after")
-
-    hook = MyHook(context=get_default_context())
-
-    with hook.use_sync():
-        call_stack.append("inside")
-
-    assert call_stack == ["before", "inside", "after"]
-
-
-def test_lifecycle_hook__context() -> None:
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            self.context.variables["hello"] = "world"
-            yield
-            self.context.variables["hello"] = "undine"
-
-    context = get_default_context()
-    context.variables["hello"] = "you"
-
-    hook = MyHook(context=context)
-
-    assert context.variables["hello"] == "you"
-
-    with hook.use_sync():
-        assert context.variables["hello"] == "world"
-
-    assert context.variables["hello"] == "undine"
-
-
-def test_lifecycle_hook_manager() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            nonlocal call_stack
-
+        def on_operation(self) -> Generator[None, None, None]:
             call_stack.append("my before")
             yield
             call_stack.append("my after")
 
     class YourHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
+        def on_operation(self) -> Generator[None, None, None]:
             call_stack.append("your before")
             yield
             call_stack.append("your after")
 
     context = get_default_context()
 
-    with LifecycleHookManager(hooks=[MyHook, YourHook], context=context):
+    hooks = [MyHook(context=context), YourHook(context=context)]
+
+    with OperationLifecycleHookManager(hooks=hooks):
         call_stack.append("inside")
 
     assert call_stack == ["my before", "your before", "inside", "your after", "my after"]
 
 
-def test_use_lifecycle_hooks_sync() -> None:
+def test_lifecycle_hook__operation_manager__hook_not_used() -> None:
+    class MyHook(LifecycleHook): ...
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context)]
+    manager = OperationLifecycleHookManager(hooks=hooks)
+
+    assert manager.enter_sync(hooks[0]) is None
+    assert manager.enter_async(hooks[0]) is None
+
+
+def test_lifecycle_hook__parse_manager() -> None:
     call_stack: list[str] = []
 
     class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+        def on_parse(self) -> Generator[None, None, None]:
+            call_stack.append("my before")
             yield
-            call_stack.append("after")
+            call_stack.append("my after")
 
-    @use_lifecycle_hooks_sync(hooks=[MyHook])
-    def func(context: LifecycleHookContext) -> None:
-        call_stack.append("inside")
-
-    ctx = get_default_context()
-
-    func(ctx)
-
-    assert call_stack == ["before", "inside", "after"]
-
-
-def test_use_lifecycle_hooks_sync__error_raised() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+    class YourHook(LifecycleHook):
+        def on_parse(self) -> Generator[None, None, None]:
+            call_stack.append("your before")
             yield
-            call_stack.append("after")
+            call_stack.append("your after")
 
-    @use_lifecycle_hooks_sync(hooks=[MyHook])
-    def func(context: LifecycleHookContext) -> None:
+    context = get_default_context()
+
+    hooks = [MyHook(context=context), YourHook(context=context)]
+
+    with ParseLifecycleHookManager(hooks=hooks):
         call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
 
-    ctx = get_default_context()
-
-    with pytest.raises(ValueError, match="Error"):
-        func(ctx)
-
-    assert call_stack == ["before", "inside"]
-
-    assert ctx.result is None
+    assert call_stack == ["my before", "your before", "inside", "your after", "my after"]
 
 
-def test_use_lifecycle_hooks_sync__error_raised__catch() -> None:
+def test_lifecycle_hook__parse_manager__hook_not_used() -> None:
+    class MyHook(LifecycleHook): ...
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context)]
+    manager = ParseLifecycleHookManager(hooks=hooks)
+
+    assert manager.enter_sync(hooks[0]) is None
+    assert manager.enter_async(hooks[0]) is None
+
+
+def test_lifecycle_hook__validation_manager() -> None:
     call_stack: list[str] = []
 
     class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            try:
-                yield
-            except ValueError as error:
-                call_stack.append("after")
-                self.context.result = ExecutionResult(errors=[GraphQLError(str(error))])
+        def on_validation(self) -> Generator[None, None, None]:
+            call_stack.append("my before")
+            yield
+            call_stack.append("my after")
 
-    @use_lifecycle_hooks_sync(hooks=[MyHook])
-    def func(context: LifecycleHookContext) -> None:
+    class YourHook(LifecycleHook):
+        def on_validation(self) -> Generator[None, None, None]:
+            call_stack.append("your before")
+            yield
+            call_stack.append("your after")
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context), YourHook(context=context)]
+
+    with ValidationLifecycleHookManager(hooks=hooks):
         call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
 
-    ctx = get_default_context()
+    assert call_stack == ["my before", "your before", "inside", "your after", "my after"]
 
-    func(ctx)
 
-    assert call_stack == ["before", "inside", "after"]
+def test_lifecycle_hook__validation_manager__hook_not_used() -> None:
+    class MyHook(LifecycleHook): ...
 
-    assert isinstance(ctx.result, ExecutionResult)
-    assert ctx.result.data is None
-    assert ctx.result.errors == [GraphQLError("Error")]
+    context = get_default_context()
+
+    hooks = [MyHook(context=context)]
+    manager = ValidationLifecycleHookManager(hooks=hooks)
+
+    assert manager.enter_sync(hooks[0]) is None
+    assert manager.enter_async(hooks[0]) is None
+
+
+def test_lifecycle_hook__execution_manager() -> None:
+    call_stack: list[str] = []
+
+    class MyHook(LifecycleHook):
+        def on_execution(self) -> Generator[None, None, None]:
+            call_stack.append("my before")
+            yield
+            call_stack.append("my after")
+
+    class YourHook(LifecycleHook):
+        def on_execution(self) -> Generator[None, None, None]:
+            call_stack.append("your before")
+            yield
+            call_stack.append("your after")
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context), YourHook(context=context)]
+
+    with ExecutionLifecycleHookManager(hooks=hooks):
+        call_stack.append("inside")
+
+    assert call_stack == ["my before", "your before", "inside", "your after", "my after"]
+
+
+def test_lifecycle_hook__execution_manager__hook_not_used() -> None:
+    class MyHook(LifecycleHook): ...
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context)]
+    manager = ExecutionLifecycleHookManager(hooks=hooks)
+
+    assert manager.enter_sync(hooks[0]) is None
+    assert manager.enter_async(hooks[0]) is None
+
+
+def test_lifecycle_hook__resolver() -> None:
+    call_stack: list[str] = []
+
+    class MyHook(LifecycleHook):
+        def resolve(self, resolve: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+            call_stack.append("my before")
+            result = resolve(root, info, **kwargs)
+            call_stack.append("my after")
+            return result
+
+    class YourHook(LifecycleHook):
+        def resolve(self, resolve: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+            call_stack.append("your before")
+            result = resolve(root, info, **kwargs)
+            call_stack.append("your after")
+            return result
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context), YourHook(context=context)]
+
+    manager = _get_middleware_manager(hooks)
+
+    def resolver(root, info, **kwargs):
+        call_stack.append("inside")
+
+    field_resolver = manager.get_field_resolver(field_resolver=resolver)
+
+    field_resolver(root=None, info=mock_gql_info())
+
+    assert call_stack == ["my before", "your before", "inside", "your after", "my after"]
+
+
+def test_lifecycle_hook__field_resolver__hook_not_used() -> None:
+    class MyHook(LifecycleHook): ...
+
+    context = get_default_context()
+
+    hooks = [MyHook(context=context)]
+    assert _get_middleware_manager(hooks) is None
+
+
+def test_lifecycle_hook__request(graphql, undine_settings) -> None:
+    undine_settings.GRAPHQL_PATH = "graphql/sync/"
+
+    call_stack: list[str] = []
+
+    class MyHook(LifecycleHook):
+        def on_operation(self) -> Generator[None, None, None]:
+            call_stack.append("before operation")
+            yield
+            call_stack.append("after operation")
+
+        def on_parse(self) -> Generator[None, None, None]:
+            call_stack.append("before parse")
+            yield
+            call_stack.append("after parse")
+
+        def on_validation(self) -> Generator[None, None, None]:
+            call_stack.append("before validation")
+            yield
+            call_stack.append("after validation")
+
+        def on_execution(self) -> Generator[None, None, None]:
+            call_stack.append("before execution")
+            yield
+            call_stack.append("after execution")
+
+        def resolve(self, resolve: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+            call_stack.append("before resolver")
+            result = resolve(root, info, **kwargs)
+            call_stack.append("after resolver")
+            return result
+
+    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self, info: GQLInfo) -> str:
+            call_stack.append("in entrypoint")
+            return "Hello World"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    result = graphql("query { example }")
+
+    assert result.has_errors is False, result.errors
+    assert result.data == {"example": "Hello World"}
+
+    assert call_stack == [
+        "before operation",
+        "before parse",
+        "after parse",
+        "before validation",
+        "after validation",
+        "before execution",
+        "before resolver",
+        "in entrypoint",
+        "after resolver",
+        "after execution",
+        "after operation",
+    ]
 
 
 @pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async() -> None:
+@pytest.mark.django_db(transaction=True)
+async def test_lifecycle_hook__request__async(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
     call_stack: list[str] = []
 
     class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+        async def on_operation_async(self) -> AsyncGenerator[None, None]:
+            call_stack.append("before operation")
             yield
-            call_stack.append("after")
+            call_stack.append("after operation")
 
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
+        async def on_parse_async(self) -> AsyncGenerator[None, None]:
+            call_stack.append("before parse")
+            yield
+            call_stack.append("after parse")
 
-    ctx = get_default_context()
+        async def on_validation_async(self) -> AsyncGenerator[None, None]:
+            call_stack.append("before validation")
+            yield
+            call_stack.append("after validation")
 
-    await func(ctx)
+        async def on_execution_async(self) -> AsyncGenerator[None, None]:
+            call_stack.append("before execution")
+            yield
+            call_stack.append("after execution")
 
-    assert call_stack == ["before", "inside", "after"]
+        def resolve(self, resolve: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+            call_stack.append("before resolver")
+            result = resolve(root, info, **kwargs)
+            call_stack.append("after resolver")
+            return result
+
+    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self, info: GQLInfo) -> str:
+            call_stack.append("in entrypoint")
+            return "Hello World"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    result = await graphql_async("query { example }")
+
+    assert result.has_errors is False, result.errors
+    assert result.data == {"example": "Hello World"}
+
+    assert call_stack == [
+        "before operation",
+        "before parse",
+        "after parse",
+        "before validation",
+        "after validation",
+        "before execution",
+        "before resolver",
+        "in entrypoint",
+        "after resolver",
+        "after execution",
+        "after operation",
+    ]
 
 
 @pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async__error_raised() -> None:
+@pytest.mark.django_db(transaction=True)
+async def test_lifecycle_hook__request__async__using_sync_methods(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
     call_stack: list[str] = []
 
     class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+        def on_operation(self) -> Generator[None, None]:
+            call_stack.append("before operation")
             yield
-            call_stack.append("after")
+            call_stack.append("after operation")
 
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
-
-    ctx = get_default_context()
-
-    with pytest.raises(ValueError, match="Error"):
-        await func(ctx)
-
-    assert call_stack == ["before", "inside"]
-
-
-@pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async__error_raised__catch() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            try:
-                yield
-            except ValueError as error:
-                call_stack.append("after")
-                self.context.result = ExecutionResult(errors=[GraphQLError(str(error))])
-
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
-
-    ctx = get_default_context()
-
-    await func(ctx)
-
-    assert call_stack == ["before", "inside", "after"]
-
-    assert isinstance(ctx.result, ExecutionResult)
-    assert ctx.result.data is None
-    assert ctx.result.errors == [GraphQLError("Error")]
-
-
-@pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async__run_async() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+        def on_parse(self) -> Generator[None, None]:
+            call_stack.append("before parse")
             yield
-            call_stack.append("after")
+            call_stack.append("after parse")
 
-        async def run_async(self) -> AsyncGenerator[None, None]:
-            call_stack.append("before async")
+        def on_validation(self) -> Generator[None, None]:
+            call_stack.append("before validation")
             yield
-            call_stack.append("after async")
+            call_stack.append("after validation")
 
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
-
-    ctx = get_default_context()
-
-    await func(ctx)
-
-    assert call_stack == ["before async", "inside", "after async"]
-
-
-@pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async__run_async__error_raised() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
+        def on_execution(self) -> Generator[None, None]:
+            call_stack.append("before execution")
             yield
-            call_stack.append("after")
+            call_stack.append("after execution")
 
-        async def run_async(self) -> AsyncGenerator[None, None]:
-            call_stack.append("before async")
-            yield
-            call_stack.append("after async")
+        def resolve(self, resolve: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+            call_stack.append("before resolver")
+            result = resolve(root, info, **kwargs)
+            call_stack.append("after resolver")
+            return result
 
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
+    undine_settings.LIFECYCLE_HOOKS = [MyHook]
 
-    ctx = get_default_context()
+    class Query(RootType):
+        @Entrypoint
+        def example(self, info: GQLInfo) -> str:
+            call_stack.append("in entrypoint")
+            return "Hello World"
 
-    with pytest.raises(ValueError, match="Error"):
-        await func(ctx)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
-    assert call_stack == ["before async", "inside"]
+    result = await graphql_async("query { example }")
 
+    assert result.has_errors is False, result.errors
+    assert result.data == {"example": "Hello World"}
 
-@pytest.mark.asyncio
-async def test_use_lifecycle_hooks_async__run_async__error_raised__catch() -> None:
-    call_stack: list[str] = []
-
-    class MyHook(LifecycleHook):
-        def run(self) -> Generator[None, None, None]:
-            call_stack.append("before")
-            try:
-                yield
-            except ValueError as error:
-                call_stack.append("after")
-                self.context.result = ExecutionResult(errors=[GraphQLError(str(error))])
-
-        async def run_async(self) -> AsyncGenerator[None, None]:
-            call_stack.append("before async")
-            try:
-                yield
-            except ValueError as error:
-                call_stack.append("after async")
-                self.context.result = ExecutionResult(errors=[GraphQLError(str(error))])
-
-    @use_lifecycle_hooks_async(hooks=[MyHook])
-    async def func(context: LifecycleHookContext) -> None:  # noqa: RUF029
-        call_stack.append("inside")
-        msg = "Error"
-        raise ValueError(msg)
-
-    ctx = get_default_context()
-
-    await func(ctx)
-
-    assert call_stack == ["before async", "inside", "after async"]
-
-    assert isinstance(ctx.result, ExecutionResult)
-    assert ctx.result.data is None
-    assert ctx.result.errors == [GraphQLError("Error")]
+    assert call_stack == [
+        "before operation",
+        "before parse",
+        "after parse",
+        "before validation",
+        "after validation",
+        "before execution",
+        "before resolver",
+        "in entrypoint",
+        "after resolver",
+        "after execution",
+        "after operation",
+    ]

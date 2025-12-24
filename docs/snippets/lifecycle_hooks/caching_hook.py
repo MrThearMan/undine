@@ -12,8 +12,8 @@ class CachingHook(LifecycleHook):
 
     TIMEOUT = 60
 
-    def run(self) -> Generator[None, None, None]:
-        cache_key = f"{self.context.source}:{json.dumps(self.context.variables)}:{self.context.request.user.pk}"
+    def on_operation(self) -> Generator[None, None, None]:
+        cache_key = f"undine:{self.context.source}:{json.dumps(self.context.variables)}:{self.context.request.user.pk}"
         was_cached = False
 
         # Check if the result is already cached.

@@ -11,7 +11,7 @@ from settings_holder import SettingsHolder, reload_settings
 if TYPE_CHECKING:
     from collections.abc import Container
 
-    from graphql import ASTValidationRule, GraphQLFieldResolver
+    from graphql import ASTValidationRule
 
     from undine.execution import UndineExecutionContext
     from undine.hooks import LifecycleHook
@@ -119,6 +119,9 @@ class UndineDefaultSettings(NamedTuple):
     EXECUTION_CONTEXT_CLASS: type[UndineExecutionContext] = "undine.execution.UndineExecutionContext"  # type: ignore[assignment]
     """GraphQL execution context class used by the schema."""
 
+    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = []
+    """Lifecycle hooks to use during GraphQL operations."""
+
     MAX_ALLOWED_ALIASES: int = 15
     """The maximum number of aliases allowed in a single operation."""
 
@@ -134,9 +137,6 @@ class UndineDefaultSettings(NamedTuple):
     MAX_TOKENS: int | None = None
     """Maximum number of tokens the GraphQL parser will parse before it rejects a request"""
 
-    MIDDLEWARE: list[GraphQLFieldResolver] = []
-    """Middleware to use in GraphQL field resolving."""
-
     MUTATION_INSTANCE_LIMIT: int = 100
     """The maximum number of objects that can be mutated in a single mutation."""
 
@@ -145,20 +145,6 @@ class UndineDefaultSettings(NamedTuple):
 
     ROOT_VALUE: Any = None
     """The root value for the GraphQL execution."""
-
-    # Hooks
-
-    OPERATION_HOOKS: list[type[LifecycleHook]] = []
-    """Hooks to run during the operation."""
-
-    PARSE_HOOKS: list[type[LifecycleHook]] = []
-    """Hooks to run during parsing the GraphQL request."""
-
-    VALIDATION_HOOKS: list[type[LifecycleHook]] = []
-    """Hooks to run during validation the GraphQL request."""
-
-    EXECUTION_HOOKS: list[type[LifecycleHook]] = []
-    """Hooks to run during execution the GraphQL request."""
 
     # Testing client
 
@@ -325,15 +311,11 @@ IMPORT_STRINGS: set[str | bytes] = {
     "ADDITIONAL_VALIDATION_RULES.0",
     "DOCSTRING_PARSER",
     "EXECUTION_CONTEXT_CLASS",
-    "EXECUTION_HOOKS.0",
-    "MIDDLEWARE.0",
-    "OPERATION_HOOKS.0",
+    "LIFECYCLE_HOOKS.0",
     "OPTIMIZER_CLASS",
-    "PARSE_HOOKS.0",
     "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
     "SCHEMA",
     "SDL_PRINTER",
-    "VALIDATION_HOOKS.0",
     "WEBSOCKET_CONNECTION_INIT_HOOK",
     "WEBSOCKET_PING_HOOK",
     "WEBSOCKET_PONG_HOOK",
@@ -347,6 +329,11 @@ REMOVED_SETTINGS: dict[str, Any] = {
     "CONNECTION_STOP_INDEX_KEY": "PAGINATION_STOP_INDEX_KEY",
     "CONNECTION_INDEX_KEY": "PAGINATION_INDEX_KEY",
     "CONNECTION_TOTAL_COUNT_KEY": "PAGINATION_TOTAL_COUNT_KEY",
+    "OPERATION_HOOKS": "LIFECYCLE_HOOKS",
+    "PARSE_HOOKS": "LIFECYCLE_HOOKS",
+    "VALIDATION_HOOKS": "LIFECYCLE_HOOKS",
+    "EXECUTION_HOOKS": "LIFECYCLE_HOOKS",
+    "MIDDLEWARE": "LIFECYCLE_HOOKS",
 }
 
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]

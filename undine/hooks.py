@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import dataclasses
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self
+
+from undine.settings import undine_settings
+from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
-    from types import TracebackType
+    from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
 
-    from graphql import DocumentNode, ExecutionResult
+    from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol
+    from undine.typing import DjangoRequestProtocol, GQLInfo
 
 __all__ = [
+    "ExecutionLifecycleHookManager",
     "LifecycleHook",
     "LifecycleHookContext",
-    "LifecycleHookManager",
-    "delegate_to_subgenerator",
-    "use_lifecycle_hooks_async",
-    "use_lifecycle_hooks_sync",
+    "OperationLifecycleHookManager",
+    "ParseLifecycleHookManager",
+    "ValidationLifecycleHookManager",
 ]
 
 
-@dataclasses.dataclass(slots=True, kw_only=True)
+@dataclasses.dataclass(kw_only=True)
 class LifecycleHookContext:
     """Context passed to a lifecycle hook."""
 
@@ -51,6 +51,12 @@ class LifecycleHookContext:
     result: ExecutionResult | Awaitable[ExecutionResult | AsyncIterator[ExecutionResult]] | None
     """Execution result of the GraphQL operation. Adding a result here will cause an early exit."""
 
+    lifecycle_hooks: list[LifecycleHook] = dataclasses.field(init=False)
+    """Lifecycle hooks for this operation."""
+
+    def __post_init__(self) -> None:
+        self.lifecycle_hooks = [hook(context=self) for hook in undine_settings.LIFECYCLE_HOOKS]
+
     @classmethod
     def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
         return cls(
@@ -64,231 +70,167 @@ class LifecycleHookContext:
         )
 
 
-@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
-class LifecycleHook(ABC):
-    """Base class for lifecycle hooks."""
+class LifecycleHook:
+    """
+    Base class for lifecycle hooks.
 
-    context: LifecycleHookContext
+    Override methods to hook into the lifecycle of the GraphQL execution.
+    Only overridden methods will be used.
+    """
 
-    @contextmanager
-    def use_sync(self) -> Generator[None, None, None]:
-        yield from self.run()
-
-    @asynccontextmanager
-    async def use_async(self) -> AsyncGenerator[None, None]:
-        gen = self.run_async()
-        async with delegate_to_subgenerator(gen):
-            async for _ in gen:
-                yield
-
-    @abstractmethod
-    def run(self) -> Generator[None, None, None]:
+    def __init__(self, context: LifecycleHookContext) -> None:
         """
-        Override this method to define how the hook should be executed.
-        Anything before the yield statement will be executed before the hooking point.
-        Anything after the yield statement will be executed after the hooking point.
+        Initialize a hook to use for an operation.
+
+        :param context: The context for the hook.
         """
+        self.context = context
+        """Information on the GraphQL operation is being executed."""
+
+    # Sync hooks.
+    # Anything before the yield statement will be executed before the hooking point.
+    # Anything after the yield statement will be executed after the hooking point.
+
+    def on_operation(self) -> Generator[None, None, None]:
+        """Hooking point that encompasses the entire GraphQL operation (parsing, validation, and execution)."""
         yield
 
-    async def run_async(self) -> AsyncGenerator[None, None]:
-        """
-        Override this method to define how the hook should be executed in an async context.
-        Uses the `run` method by default.
-        """
-        with delegate_to_subgenerator(self.run()) as gen:
+    def on_parse(self) -> Generator[None, None, None]:
+        """Hooking point that encompasses the parsing of the GraphQL document into an AST."""
+        yield
+
+    def on_validation(self) -> Generator[None, None, None]:
+        """Hooking point that encompasses the GraphQL AST validation."""
+        yield
+
+    def on_execution(self) -> Generator[None, None, None]:
+        """Hooking point that encompasses the execution of the GraphQL AST against the GraphQL schema."""
+        yield
+
+    # Resolver hook must be named 'resolve' to be compatible with 'MiddlewareManager'.
+    # Should always call the resolver with the arguments as shown below.
+    def resolve(self, resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        """Hooking point that encompasses the resolution of each GraphQL field."""
+        return resolver(root, info, **kwargs)
+
+    # Async versions delegate to the sync versions by default
+
+    async def on_operation_async(self) -> AsyncGenerator[None, None]:
+        """Same as `on_operation`, but async. Use sync version by default."""
+        with delegate_to_subgenerator(self.on_operation()) as gen:
+            for _ in gen:
+                yield
+
+    async def on_parse_async(self) -> AsyncGenerator[None, None]:
+        """Same as `on_parse`, but async. Use sync version by default."""
+        with delegate_to_subgenerator(self.on_parse()) as gen:
+            for _ in gen:
+                yield
+
+    async def on_validation_async(self) -> AsyncGenerator[None, None]:
+        """Same as `on_validation`, but async. Use sync version by default."""
+        with delegate_to_subgenerator(self.on_validation()) as gen:
+            for _ in gen:
+                yield
+
+    async def on_execution_async(self) -> AsyncGenerator[None, None]:
+        """Same as `on_execution`, but async. Use sync version by default."""
+        with delegate_to_subgenerator(self.on_execution()) as gen:
             for _ in gen:
                 yield
 
 
-TLifecycleHook = TypeVar("TLifecycleHook", bound=LifecycleHook)
-
-
-class LifecycleHookManager(ExitStack, AsyncExitStack):
+class BaseLifecycleHookManager(ExitStack, AsyncExitStack, ABC):
     """Allows executing multiple lifecycle hooks at once."""
 
-    def __init__(self, *, hooks: list[type[TLifecycleHook]], context: LifecycleHookContext) -> None:
-        self.hooks: list[TLifecycleHook] = [hook(context=context) for hook in hooks]
+    def __init__(self, *, hooks: list[LifecycleHook]) -> None:
+        self.hooks = hooks
         super().__init__()
+
+    @abstractmethod
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]]: ...
+
+    @abstractmethod
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]]: ...
 
     def __enter__(self) -> Self:
         for hook in self.hooks:
-            self.enter_context(hook.use_sync())
+            method = self.enter_sync(hook)
+            if method is not None:
+                self.enter_context(contextmanager(method)())
         return super().__enter__()
 
     async def __aenter__(self) -> Self:
         for hook in self.hooks:
-            await self.enter_async_context(hook.use_async())
+            method = self.enter_async(hook)
+            if method is not None:
+                await self.enter_async_context(asynccontextmanager(method)())
         return await super().__aenter__()
 
 
-R = TypeVar("R")
-HookableSync = Callable[[LifecycleHookContext], R]
-HookableAsync = Callable[[LifecycleHookContext], Awaitable[R]]
+class OperationLifecycleHookManager(BaseLifecycleHookManager):
+    """Manager for lifecycle hooks for the whole operation."""
+
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+        if hook.__class__.on_operation == LifecycleHook.on_operation:
+            return None
+        return hook.on_operation
+
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+        if (
+            hook.__class__.on_operation == LifecycleHook.on_operation
+            and hook.__class__.on_operation_async == LifecycleHook.on_operation_async
+        ):
+            return None
+        return hook.on_operation_async
 
 
-def use_lifecycle_hooks_sync(hooks: list[type[TLifecycleHook]]) -> Callable[[HookableSync[R]], HookableSync[R]]:
-    """Run given function using the given lifecycle hooks."""
+class ParseLifecycleHookManager(BaseLifecycleHookManager):
+    """Manager for lifecycle hooks in the parse step."""
 
-    def decorator(func: HookableSync[R]) -> HookableSync[R]:
-        @wraps(func)
-        def wrapper(context: LifecycleHookContext) -> R:
-            with LifecycleHookManager(hooks=hooks, context=context):
-                return func(context)
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+        if hook.__class__.on_parse == LifecycleHook.on_parse:
+            return None
+        return hook.on_parse
 
-        return wrapper
-
-    return decorator
-
-
-def use_lifecycle_hooks_async(hooks: list[type[TLifecycleHook]]) -> Callable[[HookableAsync[R]], HookableAsync[R]]:
-    """Run given function using the given lifecycle hooks."""
-
-    def decorator(func: HookableAsync[R]) -> HookableAsync[R]:
-        @wraps(func)
-        async def wrapper(context: LifecycleHookContext) -> R:  # type: ignore[return]
-            async with LifecycleHookManager(hooks=hooks, context=context):
-                return await func(context)
-
-        return wrapper
-
-    return decorator
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+        if (
+            hook.__class__.on_parse == LifecycleHook.on_parse
+            and hook.__class__.on_parse_async == LifecycleHook.on_parse_async
+        ):
+            return None
+        return hook.on_parse_async
 
 
-class delegate_to_subgenerator:  # noqa: N801
-    """
-    Allows delegating how a generator exists to a subgenerator.
+class ValidationLifecycleHookManager(BaseLifecycleHookManager):
+    """Manager for lifecycle hooks in the validation step."""
 
-    >>> def subgenerator():
-    ...     for _ in range(2):
-    ...         yield
-    >>>
-    >>> def generator():
-    >>>     with delegate_to_subgenerator(subgenerator()) as sub:
-    ...         for _ in sub:
-    ...             yield
-    >>>
-    >>> for item in generator():
-    ...     pass
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+        if hook.__class__.on_validation == LifecycleHook.on_validation:
+            return None
+        return hook.on_validation
 
-    If the generator exists normally, the subgenerator will be closed.
-    If the generator exists with an exception, the error is propagated to the subgenerator
-    so that it may handle the error.
-    """
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+        if (
+            hook.__class__.on_validation == LifecycleHook.on_validation
+            and hook.__class__.on_validation_async == LifecycleHook.on_validation_async
+        ):
+            return None
+        return hook.on_validation_async
 
-    def __init__(self, gen: Generator[None, None, None] | AsyncGenerator[None, None]) -> None:
-        """
-        Allows delegating how a generator exists to a subgenerator.
 
-        :param gen: The generator to delegate to. If generator is an async generator,
-                    must use `async with` syntax to delegate. For regular generators,
-                    plain `with` syntax must be used.
-        """
-        self.gen = gen
+class ExecutionLifecycleHookManager(BaseLifecycleHookManager):
+    """Manager for lifecycle hooks in the execution step."""
 
-    def __enter__(self) -> Generator[None, None, None]:
-        if not isinstance(self.gen, Generator):
-            msg = "Given object is not a Generator"
-            raise TypeError(msg)
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+        if hook.__class__.on_execution == LifecycleHook.on_execution:
+            return None
+        return hook.on_execution
 
-        return self.gen
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
-        if not isinstance(self.gen, Generator):  # type: ignore[unreachable]
-            msg = "Given object is not a Generator"
-            raise TypeError(msg)
-
-        # If no exception was raised, close the generator.
-        if exc_type is None:
-            self.gen.close()
-            return False
-
-        # Otherwise, allow the subgenerator to handle the exception.
-        # This has mostly been copied from `contextlib._GeneratorContextManager.__exit__`.
-        if exc_value is None:
-            exc_value = exc_type()
-
-        try:
-            self.gen.throw(exc_value)
-
-        except StopIteration as error:
-            return error is not exc_value
-
-        except RuntimeError as error:
-            if error is exc_value:
-                error.__traceback__ = traceback
-                return False
-            if isinstance(exc_value, StopIteration) and error.__cause__ is exc_value:
-                exc_value.__traceback__ = traceback
-                return False
-            raise
-
-        except BaseException as error:
-            if error is not exc_value:
-                raise
-            error.__traceback__ = traceback
-            return False
-
-        try:
-            msg = "generator didn't stop after throw()"
-            raise RuntimeError(msg)
-        finally:
-            self.gen.close()
-
-    async def __aenter__(self) -> AsyncGenerator[None, None]:
-        if not isinstance(self.gen, AsyncGenerator):
-            msg = "Given object is not an AsyncGenerator"
-            raise TypeError(msg)
-
-        return self.gen
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> bool:
-        if not isinstance(self.gen, AsyncGenerator):
-            msg = "Given object is not an AsyncGenerator"
-            raise TypeError(msg)
-
-        # If no exception was raised, close the generator.
-        if exc_type is None:
-            await self.gen.aclose()
-            return False
-
-        # Otherwise, allow the subgenerator to handle the exception.
-        # This has mostly been copied from `contextlib._AsyncGeneratorContextManager.__aexit__`.
-        if exc_value is None:
-            exc_value = exc_type()
-
-        try:
-            await self.gen.athrow(exc_value)
-
-        except StopAsyncIteration as error:
-            return error is not exc_value
-
-        except RuntimeError as error:
-            if error is exc_value:
-                error.__traceback__ = traceback
-                return False
-            if isinstance(exc_value, (StopIteration, StopAsyncIteration)) and error.__cause__ is exc_value:
-                exc_value.__traceback__ = traceback
-                return False
-            raise
-
-        except BaseException as error:
-            if error is not exc_value:
-                raise
-            error.__traceback__ = traceback
-            return False
-
-        try:
-            msg = "generator didn't stop after athrow()"
-            raise RuntimeError(msg)
-        finally:
-            await self.gen.aclose()
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+        if (
+            hook.__class__.on_execution == LifecycleHook.on_execution
+            and hook.__class__.on_execution_async == LifecycleHook.on_execution_async
+        ):
+            return None
+        return hook.on_execution_async

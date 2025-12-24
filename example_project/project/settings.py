@@ -154,19 +154,8 @@ UNDINE = {
     # "EXPERIMENTAL_VISIBILITY_CHECKS": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,
-    "MIDDLEWARE": [
-        "example_project.app.middleware.error_logging_middleware",
-    ],
-    "PARSE_HOOKS": [
-        "example_project.app.hooks.ExampleHook",
-    ],
-    "VALIDATION_HOOKS": [
-        "example_project.app.hooks.ExampleHook",
-    ],
-    "EXECUTION_HOOKS": [
-        "example_project.app.hooks.ExampleHook",
-    ],
-    "OPERATION_HOOKS": [
+    "LIFECYCLE_HOOKS": [
+        "example_project.app.hooks.ErrorLoggingMiddleware",
         "example_project.app.hooks.ExampleHook",
     ],
 }

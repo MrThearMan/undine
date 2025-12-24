@@ -7,7 +7,16 @@ from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
-from graphql import ExecutionContext, ExecutionResult, GraphQLError, is_non_null_type, parse, validate, version_info
+from graphql import (
+    ExecutionContext,
+    ExecutionResult,
+    GraphQLError,
+    MiddlewareManager,
+    is_non_null_type,
+    parse,
+    validate,
+    version_info,
+)
 
 from undine.exceptions import (
     GraphQLAsyncNotSupportedError,
@@ -17,7 +26,14 @@ from undine.exceptions import (
     GraphQLUnexpectedError,
     GraphQLUseWebSocketsForSubscriptionsError,
 )
-from undine.hooks import LifecycleHookContext, LifecycleHookManager, use_lifecycle_hooks_async, use_lifecycle_hooks_sync
+from undine.hooks import (
+    ExecutionLifecycleHookManager,
+    LifecycleHook,
+    LifecycleHookContext,
+    OperationLifecycleHookManager,
+    ParseLifecycleHookManager,
+    ValidationLifecycleHookManager,
+)
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import (
     get_error_execution_result,
@@ -190,27 +206,28 @@ def execute_graphql_http_sync(params: GraphQLHttpParams, request: DjangoRequestP
     return _run_operation_sync(context)
 
 
-@use_lifecycle_hooks_sync(hooks=undine_settings.OPERATION_HOOKS)
 def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
-    _parse_source_sync(context)
-    if context.result is None:
-        _validate_document_sync(context)
+    with OperationLifecycleHookManager(hooks=context.lifecycle_hooks):
         if context.result is None:
-            return _execute_sync(context)
+            with ParseLifecycleHookManager(hooks=context.lifecycle_hooks):
+                _parse_source_sync(context)
 
-    if context.result is None:  # pragma: no cover
-        context.result = get_error_execution_result(GraphQLNoExecutionResultError())
+            if context.result is None:
+                with ValidationLifecycleHookManager(hooks=context.lifecycle_hooks):
+                    _validate_document_sync(context)
+
+                if context.result is None:
+                    with ExecutionLifecycleHookManager(hooks=context.lifecycle_hooks):
+                        return _execute_sync(context)
+
+        if isawaitable(context.result):
+            cancel_awaitable(context.result)
+            context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
+            return context.result
+
         return context.result
 
-    if isawaitable(context.result):
-        cancel_awaitable(context.result)
-        context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
-        return context.result
 
-    return context.result
-
-
-@use_lifecycle_hooks_sync(hooks=undine_settings.PARSE_HOOKS)
 def _parse_source_sync(context: LifecycleHookContext) -> None:
     if context.result is not None:
         return
@@ -228,7 +245,6 @@ def _parse_source_sync(context: LifecycleHookContext) -> None:
         context.result = get_error_execution_result(error)
 
 
-@use_lifecycle_hooks_sync(hooks=undine_settings.VALIDATION_HOOKS)
 def _validate_document_sync(context: LifecycleHookContext) -> None:
     if context.result is not None:
         return
@@ -264,7 +280,6 @@ def _validate_http(context: LifecycleHookContext) -> None:
         return
 
 
-@use_lifecycle_hooks_sync(hooks=undine_settings.EXECUTION_HOOKS)
 def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
     try:
         exec_context = _get_execution_context(
@@ -273,6 +288,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
             context_value=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
+            middleware=_get_middleware_manager(context.lifecycle_hooks),
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -339,37 +355,38 @@ async def execute_graphql_http_async(params: GraphQLHttpParams, request: DjangoR
     return await _run_operation_async(context)
 
 
-@use_lifecycle_hooks_async(hooks=undine_settings.OPERATION_HOOKS)
 async def _run_operation_async(context: LifecycleHookContext) -> ExecutionResult:
-    await _parse_source_async(context)
-    if context.result is None:
-        await _validate_document_async(context)
+    async with OperationLifecycleHookManager(hooks=context.lifecycle_hooks):
         if context.result is None:
-            return await _execute_async(context)
+            async with ParseLifecycleHookManager(hooks=context.lifecycle_hooks):
+                await _parse_source_async(context)
 
-    if context.result is None:  # pragma: no cover
-        context.result = get_error_execution_result(GraphQLNoExecutionResultError())
-        return context.result
+            if context.result is None:
+                async with ValidationLifecycleHookManager(hooks=context.lifecycle_hooks):
+                    await _validate_document_async(context)
 
-    if isinstance(context.result, AsyncIterator):
-        context.result = get_error_execution_result(GraphQLUseWebSocketsForSubscriptionsError())
-        return context.result
+                if context.result is None:
+                    async with ExecutionLifecycleHookManager(hooks=context.lifecycle_hooks):
+                        return await _execute_async(context)
 
-    if isawaitable(context.result):
-        context.result = await context.result  # type: ignore[assignment]
-
-    if version_info >= (3, 3, 0):
-        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
-        from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-
-        if isinstance(context.result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
+        if isinstance(context.result, AsyncIterator):
+            context.result = get_error_execution_result(GraphQLUseWebSocketsForSubscriptionsError())
             return context.result
 
-    return context.result  # type: ignore[return-value]
+        if isawaitable(context.result):
+            context.result = await context.result  # type: ignore[assignment]
+
+        if version_info >= (3, 3, 0):
+            from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
+            from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
+
+            if isinstance(context.result, ExperimentalIncrementalExecutionResults):
+                context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
+                return context.result
+
+        return context.result  # type: ignore[return-value]
 
 
-@use_lifecycle_hooks_async(hooks=undine_settings.PARSE_HOOKS)
 async def _parse_source_async(context: LifecycleHookContext) -> None:  # noqa: RUF029
     if context.result is not None:
         return
@@ -387,7 +404,6 @@ async def _parse_source_async(context: LifecycleHookContext) -> None:  # noqa: R
         context.result = get_error_execution_result(error)
 
 
-@use_lifecycle_hooks_async(hooks=undine_settings.VALIDATION_HOOKS)
 async def _validate_document_async(context: LifecycleHookContext) -> None:  # noqa: RUF029
     if context.result is not None:
         return
@@ -408,7 +424,6 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
             return
 
 
-@use_lifecycle_hooks_async(hooks=undine_settings.EXECUTION_HOOKS)
 async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
     try:
         exec_context = _get_execution_context(
@@ -417,6 +432,7 @@ async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
             context_value=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
+            middleware=_get_middleware_manager(context.lifecycle_hooks),
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -477,24 +493,27 @@ async def execute_graphql_websocket(params: GraphQLHttpParams, request: DjangoRe
     return await _run_operation_websocket(context)
 
 
-@use_lifecycle_hooks_async(hooks=undine_settings.OPERATION_HOOKS)
 async def _run_operation_websocket(context: LifecycleHookContext) -> WebSocketResult:
-    await _parse_source_async(context)
-    if context.result is None:
-        await _validate_document_async(context)
+    async with OperationLifecycleHookManager(hooks=context.lifecycle_hooks):
         if context.result is None:
-            if is_subscription_operation(context.document, context.operation_name):  # type: ignore[arg-type]
-                return await _subscribe(context)
-            return await _execute_async(context)
+            async with ParseLifecycleHookManager(hooks=context.lifecycle_hooks):
+                await _parse_source_async(context)
 
-    if context.result is None:  # pragma: no cover
-        context.result = get_error_execution_result(GraphQLNoExecutionResultError())
-        return context.result
+            if context.result is None:
+                async with ValidationLifecycleHookManager(hooks=context.lifecycle_hooks):
+                    await _validate_document_async(context)
 
-    if isawaitable(context.result):
-        context.result = await context.result  # type: ignore[assignment]
+                if context.result is None:
+                    if is_subscription_operation(context.document, context.operation_name):  # type: ignore[arg-type]
+                        return await _subscribe(context)
 
-    return context.result  # type: ignore[return-value]
+                    async with ExecutionLifecycleHookManager(hooks=context.lifecycle_hooks):
+                        return await _execute_async(context)
+
+        if isawaitable(context.result):
+            context.result = await context.result  # type: ignore[assignment]
+
+        return context.result  # type: ignore[return-value]
 
 
 async def _subscribe(context: LifecycleHookContext) -> WebSocketResult:
@@ -518,6 +537,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
             context_value=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
+            middleware=_get_middleware_manager(context.lifecycle_hooks),
         )
     except GraphQLErrorGroup as error:
         return get_error_execution_result(error)
@@ -552,7 +572,7 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
         while True:
             context.result = None
 
-            async with LifecycleHookManager(hooks=undine_settings.EXECUTION_HOOKS, context=context):
+            async with ExecutionLifecycleHookManager(hooks=context.lifecycle_hooks):
                 if context.result is not None:
                     yield context.result
                     continue
@@ -578,6 +598,7 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
                     context_value=context.request,
                     variable_values=context.variables,
                     operation_name=context.operation_name,
+                    middleware=_get_middleware_manager(context.lifecycle_hooks),
                 )
                 result = _execute(exec_context)
 
@@ -589,11 +610,13 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
 
 
 def _get_execution_context(
+    *,
     document: DocumentNode,
     root_value: Any,
     context_value: Any,
     variable_values: dict[str, Any],
     operation_name: str | None,
+    middleware: MiddlewareManager | None,
 ) -> UndineExecutionContext:
     context_or_errors = undine_settings.EXECUTION_CONTEXT_CLASS.build(
         schema=undine_settings.SCHEMA,
@@ -602,13 +625,18 @@ def _get_execution_context(
         context_value=context_value,
         raw_variable_values=variable_values,
         operation_name=operation_name,
-        middleware=undine_settings.MIDDLEWARE,
+        middleware=middleware,
     )
 
     if isinstance(context_or_errors, list):
         raise GraphQLErrorGroup(errors=context_or_errors)
 
     return context_or_errors
+
+
+def _get_middleware_manager(lifecycle_hooks: list[LifecycleHook]) -> MiddlewareManager | None:
+    hooks = [hook for hook in lifecycle_hooks if hook.__class__.resolve != LifecycleHook.resolve]
+    return MiddlewareManager(*reversed(hooks)) if hooks else None
 
 
 def _execute(context: UndineExecutionContext) -> ExecutionResult:
