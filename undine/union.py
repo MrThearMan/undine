@@ -114,13 +114,6 @@ class UnionTypeMeta(type):
             extensions=cls.__extensions__,
         )
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given union is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this union."""
         check_directives([directive], location=DirectiveLocation.UNION)
@@ -159,3 +152,11 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `UnionType` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True

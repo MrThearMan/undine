@@ -4,10 +4,10 @@ import string
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from graphql import GraphQLError, parse, validate
+from graphql import GraphQLError, parse
 
+from undine.execution import _validate
 from undine.settings import undine_settings
-from undine.utils.graphql.validation_rules import get_validation_rules
 
 __all__ = [
     "validate_document",
@@ -45,11 +45,6 @@ def validate_document(value: Any) -> None:
     except GraphQLError as parse_error:
         raise ValidationError(parse_error.message) from parse_error
 
-    validation_errors = validate(
-        schema=undine_settings.SCHEMA,
-        document_ast=document,
-        rules=get_validation_rules(),
-        max_errors=undine_settings.MAX_ERRORS,
-    )
+    validation_errors = _validate(document=document)
     if validation_errors:
         raise ValidationError([error.message for error in validation_errors])

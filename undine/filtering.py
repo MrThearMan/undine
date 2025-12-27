@@ -247,13 +247,6 @@ class FilterSetMeta(type):
         """Defer creating fields until all QueryTypes have been registered."""
         return {frt.schema_name: frt.as_graphql_input_field() for frt in cls.__filter_map__.values()}
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given filterset is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this `FilterSet`."""
         check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
@@ -331,6 +324,14 @@ class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
     def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         """Filtering that should be done to the queryset after all other filters have been applied."""
         return queryset  # pragma: no cover
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `FilterSet` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
 
 class Filter:

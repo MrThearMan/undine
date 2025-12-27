@@ -1050,6 +1050,14 @@ class GraphQLValidationError(GraphQLStatusError):
     code = UndineErrorCodes.VALIDATION_ERROR
 
 
+class GraphQLValidationAbortedError(GraphQLStatusError):
+    """Error raised when the validation step of the GraphQL request is aborted, e.g., due to too many errors."""
+
+    msg = "Too many validation errors, error limit reached. Validation aborted."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.VALIDATION_ABORTED
+
+
 # WebSocket errors
 
 

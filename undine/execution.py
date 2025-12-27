@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
-from contextlib import aclosing, nullcontext
+from contextlib import aclosing, nullcontext, suppress
 from functools import wraps
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
@@ -12,10 +12,15 @@ from graphql import (
     ExecutionResult,
     GraphQLError,
     MiddlewareManager,
+    ParallelVisitor,
+    TypeInfo,
+    TypeInfoVisitor,
+    ValidationContext,
+    ast_from_value,
     is_non_null_type,
     parse,
-    validate,
     version_info,
+    visit,
 )
 
 from undine.exceptions import (
@@ -25,6 +30,7 @@ from undine.exceptions import (
     GraphQLSubscriptionNoEventStreamError,
     GraphQLUnexpectedError,
     GraphQLUseWebSocketsForSubscriptionsError,
+    GraphQLValidationAbortedError,
 )
 from undine.hooks import (
     ExecutionLifecycleHookManager,
@@ -55,7 +61,7 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from graphql import DocumentNode, GraphQLOutputType, Node
+    from graphql import DocumentNode, GraphQLInputType, GraphQLOutputType, GraphQLSchema, Node, ValueNode
     from graphql.execution.build_field_plan import FieldGroup
     from graphql.execution.execute import IncrementalContext
     from graphql.pyutils import AwaitableOrValue, Path
@@ -63,109 +69,12 @@ if TYPE_CHECKING:
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol, ExecutionResultGen, P, WebSocketResult
 
+
 __all__ = [
     "execute_graphql_http_async",
     "execute_graphql_http_sync",
     "execute_graphql_websocket",
 ]
-
-
-class UndineExecutionContext(ExecutionContext):
-    """Custom GraphQL execution context class."""
-
-    if version_info >= (3, 3, 0):
-
-        def handle_field_error(
-            self,
-            raw_error: Exception,
-            return_type: GraphQLOutputType,
-            field_group: FieldGroup,
-            path: Path,
-            incremental_context: IncrementalContext | None = None,
-        ) -> None:
-            from graphql.execution.execute import to_nodes  # noqa: PLC0415
-
-            match raw_error:
-                case ValidationError():
-                    error_group = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
-                    self.handle_field_errors_group(error_group, return_type, field_group, path, incremental_context)
-
-                case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
-
-                case _:
-                    super().handle_field_error(
-                        raw_error=raw_error,
-                        return_type=return_type,
-                        field_group=field_group,
-                        path=path,
-                        incremental_context=incremental_context,
-                    )
-
-        def handle_field_errors_group(
-            self,
-            raw_error: GraphQLErrorGroup,
-            return_type: GraphQLOutputType,
-            field_group: FieldGroup,
-            path: Path,
-            incremental_context: IncrementalContext | None = None,
-        ) -> None:
-            from graphql.execution.execute import to_nodes  # noqa: PLC0415
-
-            for err in raw_error.flatten():
-                if not err.path:
-                    err.path = path.as_list()
-                if not err.nodes:
-                    err.nodes = to_nodes(field_group)
-
-            if is_non_null_type(return_type):
-                raise raw_error
-
-            for err in raw_error.flatten():
-                self.handle_field_error(
-                    raw_error=err,
-                    return_type=return_type,
-                    field_group=field_group,
-                    path=path,
-                    incremental_context=incremental_context,
-                )
-
-    else:
-
-        def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:
-            raw_error: Exception = error.original_error or error
-            path = error.path or []
-            field_nodes = error.nodes or []
-
-            match raw_error:
-                case ValidationError():
-                    error_group = located_validation_error(raw_error, field_nodes, path)
-                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)
-
-                case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_nodes, path)
-
-                case _:
-                    super().handle_field_error(error=error, return_type=return_type)
-
-        def handle_field_errors_group(
-            self,
-            raw_error: GraphQLErrorGroup,
-            return_type: GraphQLOutputType,
-            field_nodes: list[Node],
-            path: list[str | int],
-        ) -> None:
-            for err in raw_error.flatten():
-                if not err.path:
-                    err.path = path
-                if not err.nodes:
-                    err.nodes = field_nodes
-
-            if is_non_null_type(return_type):
-                raise raw_error
-
-            for err in raw_error.flatten():
-                self.handle_field_error(err, return_type)
 
 
 # HTTP sync execution
@@ -249,11 +158,10 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
     if context.result is not None:
         return
 
-    validation_errors = validate(
-        schema=undine_settings.SCHEMA,
-        document_ast=context.document,  # type: ignore[arg-type]
-        rules=get_validation_rules(context.request),
-        max_errors=undine_settings.MAX_ERRORS,
+    validation_errors = _validate(
+        document=context.document,
+        variables=context.variables,
+        request=context.request,
     )
     if validation_errors:
         context.result = get_error_execution_result(validation_errors)
@@ -408,11 +316,10 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
     if context.result is not None:
         return
 
-    validation_errors = validate(
-        schema=undine_settings.SCHEMA,
-        document_ast=context.document,  # type: ignore[arg-type]
-        rules=get_validation_rules(context.request),
-        max_errors=undine_settings.MAX_ERRORS,
+    validation_errors = _validate(
+        document=context.document,
+        variables=context.variables,
+        request=context.request,
     )
     if validation_errors:
         context.result = get_error_execution_result(validation_errors)
@@ -639,6 +546,39 @@ def _get_middleware_manager(lifecycle_hooks: list[LifecycleHook]) -> MiddlewareM
     return MiddlewareManager(*reversed(hooks)) if hooks else None
 
 
+def _validate(
+    document: DocumentNode,
+    variables: dict[str, Any] | None = None,
+    request: DjangoRequestProtocol | None = None,
+) -> list[GraphQLError]:
+    errors: list[GraphQLError] = []
+
+    def on_error(error: GraphQLError) -> None:
+        if len(errors) >= undine_settings.MAX_ERRORS:
+            errors.append(GraphQLValidationAbortedError())
+            raise GraphQLValidationAbortedError
+
+        errors.append(error)
+
+    type_info = TypeInfo(schema=undine_settings.SCHEMA)
+
+    context = UndineValidationContext(
+        schema=undine_settings.SCHEMA,
+        document=document,
+        variables=variables or {},
+        request=request,
+        type_info=type_info,
+        on_error=on_error,
+    )
+
+    visitors = [rule(context) for rule in get_validation_rules(inside_request=request is not None)]
+
+    with suppress(GraphQLValidationAbortedError):
+        visit(document, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
+
+    return errors
+
+
 def _execute(context: UndineExecutionContext) -> ExecutionResult:
     if version_info < (3, 3, 0):
         return _execute_old(context)
@@ -735,3 +675,132 @@ def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
         graphql_errors_hook(data.initial_result.errors)
 
     return data
+
+
+# Contexts
+
+
+class UndineExecutionContext(ExecutionContext):
+    """Custom GraphQL execution context class."""
+
+    if version_info >= (3, 3, 0):
+
+        def handle_field_error(
+            self,
+            raw_error: Exception,
+            return_type: GraphQLOutputType,
+            field_group: FieldGroup,
+            path: Path,
+            incremental_context: IncrementalContext | None = None,
+        ) -> None:
+            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+
+            match raw_error:
+                case ValidationError():
+                    error_group = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
+                    self.handle_field_errors_group(error_group, return_type, field_group, path, incremental_context)
+
+                case GraphQLErrorGroup():
+                    self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
+
+                case _:
+                    super().handle_field_error(
+                        raw_error=raw_error,
+                        return_type=return_type,
+                        field_group=field_group,
+                        path=path,
+                        incremental_context=incremental_context,
+                    )
+
+        def handle_field_errors_group(
+            self,
+            raw_error: GraphQLErrorGroup,
+            return_type: GraphQLOutputType,
+            field_group: FieldGroup,
+            path: Path,
+            incremental_context: IncrementalContext | None = None,
+        ) -> None:
+            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+
+            for err in raw_error.flatten():
+                if not err.path:
+                    err.path = path.as_list()
+                if not err.nodes:
+                    err.nodes = to_nodes(field_group)
+
+            if is_non_null_type(return_type):
+                raise raw_error
+
+            for err in raw_error.flatten():
+                self.handle_field_error(
+                    raw_error=err,
+                    return_type=return_type,
+                    field_group=field_group,
+                    path=path,
+                    incremental_context=incremental_context,
+                )
+
+    else:
+
+        def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:
+            raw_error: Exception = error.original_error or error
+            path = error.path or []
+            field_nodes = error.nodes or []
+
+            match raw_error:
+                case ValidationError():
+                    error_group = located_validation_error(raw_error, field_nodes, path)
+                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)
+
+                case GraphQLErrorGroup():
+                    self.handle_field_errors_group(raw_error, return_type, field_nodes, path)
+
+                case _:
+                    super().handle_field_error(error=error, return_type=return_type)
+
+        def handle_field_errors_group(
+            self,
+            raw_error: GraphQLErrorGroup,
+            return_type: GraphQLOutputType,
+            field_nodes: list[Node],
+            path: list[str | int],
+        ) -> None:
+            for err in raw_error.flatten():
+                if not err.path:
+                    err.path = path
+                if not err.nodes:
+                    err.nodes = field_nodes
+
+            if is_non_null_type(return_type):
+                raise raw_error
+
+            for err in raw_error.flatten():
+                self.handle_field_error(err, return_type)
+
+
+class UndineValidationContext(ValidationContext):
+    """Custom GraphQL validation context class."""
+
+    def __init__(  # noqa: PLR0917
+        self,
+        schema: GraphQLSchema,
+        document: DocumentNode,
+        variables: dict[str, Any],
+        request: DjangoRequestProtocol | None,
+        type_info: TypeInfo,
+        on_error: Callable[[GraphQLError], None],
+    ) -> None:
+        super().__init__(schema=schema, ast=document, type_info=type_info, on_error=on_error)
+        self.variables = variables
+        self.request = request
+
+    def variable_as_ast(self, variable: str, type_: GraphQLInputType) -> ValueNode | None:
+        """Get the AST for the given variable."""
+        value = self.variables.get(variable)
+        if value is None:
+            return None
+
+        try:
+            return ast_from_value(value, type_)
+        except Exception:  # noqa: BLE001
+            return None

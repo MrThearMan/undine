@@ -88,6 +88,7 @@ from undine.exceptions import (
     GraphQLUnionResolveTypeModelNotFoundError,
     GraphQLUnsupportedContentTypeError,
     GraphQLUseWebSocketsForSubscriptionsError,
+    GraphQLValidationAbortedError,
     GraphQLValidationError,
     InterfaceFieldDoesNotExistError,
     InterfaceFieldTypeMismatchError,
@@ -883,6 +884,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Validation error.",
             extensions={"error_code": "VALIDATION_ERROR", "status_code": 400},
+        ),
+        "GraphQLValidationAbortedError": GQLErrorParams(
+            cls=GraphQLValidationAbortedError,
+            args={},
+            message="Too many validation errors, error limit reached. Validation aborted.",
+            extensions={"error_code": "VALIDATION_ABORTED", "status_code": 400},
         ),
     })
 )

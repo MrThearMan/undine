@@ -160,7 +160,6 @@ def test_introspection__visibility__entrypoint(graphql, undine_settings, is_visi
 
     types = get_types(response)
 
-    # TODO: Probably should hide types with 0 fields?
     assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
 
 
@@ -482,7 +481,6 @@ def test_introspection__visibility__filterset__filter(graphql, undine_settings, 
     types = get_types(response)
 
     # Still contains the logical input methods
-    # TODO: Probably should hide filtersets if only logical input fields?
     assert len(types["TaskFilterSet"]["inputFields"]) == (5 if is_visible else 4)
 
 
@@ -547,7 +545,6 @@ def test_introspection__visibility__orderset__order(graphql, undine_settings, is
     types = get_types(response)
 
     # Contains both ascending and descending orders
-    # TODO: Probably should hide enums with 0 enum values?
     assert len(types["TaskOrderSet"]["enumValues"]) == (2 if is_visible else 0)
 
 
@@ -579,6 +576,9 @@ def test_introspection__visibility__interface(graphql, undine_settings, is_visib
 
     assert ("Named" in types) is is_visible
 
+    # Inherited fields should be hidden
+    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
+
 
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__interface__field(graphql, undine_settings, is_visible) -> None:
@@ -606,9 +606,8 @@ def test_introspection__visibility__interface__field(graphql, undine_settings, i
 
     types = get_types(response)
 
-    # TODO: Should also hide QueryType fields that inherited the field from the InterfaceType?
-    # TODO: Should hide interfaces with 0 fields?
     assert len(types["Named"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])

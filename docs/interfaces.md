@@ -257,9 +257,10 @@ See the [Directives](directives.md) section for more details on directives.
 > [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
 
 You can hide a `InterfaceField` from certain users by decorating a method with the
-`<interface_field_name>.visible` decorator. Hiding a `InterfaceField` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `InterfaceField` didn't exist in the first place.
+`<interface_field_name>.visible` decorator. Hiding a `InterfaceField` means that it
+will not be included in introspection queries, and trying to use it in operations
+will result in an error that looks exactly like the `InterfaceField` or any
+`QueryType` `Field` inherited from the `InterfaceField` didn't exist in the first place.
 
 ```python
 -8<- "interfaces/interface_field_visible.py"

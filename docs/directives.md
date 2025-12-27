@@ -467,6 +467,24 @@ you can do so by setting the `schema_name` argument:
 -8<- "directives/directive_schema_name.py"
 ```
 
+### Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `Directive` from certain users by using the `__is_visible__` method.
+Hiding the `Directive` means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the `Directive` didn't exist in the first place.
+
+```python
+-8<- "directives/directive_visible.py"
+```
+
+> When using visibility checks, you should also disable "did you mean" suggestions
+> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
+> Otherwise, a hidden field might show up in them.
+
 ### Extensions
 
 You can provide custom extensions for the `Directive` by providing a

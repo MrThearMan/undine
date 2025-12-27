@@ -93,13 +93,6 @@ class DirectiveMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_directive(cls.__directive__())
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given directive is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __directive__(cls) -> GraphQLDirective:
         """Creates the `GraphQLDirective` for this `Directive`."""
         return get_or_create_graphql_directive(
@@ -161,6 +154,14 @@ class Directive(metaclass=DirectiveMeta):
             raise UnexpectedDirectiveArgumentError(directive=type(self), kwargs=kwargs)
 
         self.__parameters__: MappingProxyType[str, Any] = MappingProxyType(parameters)
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `Directive` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     def __repr__(self) -> str:
         args = ", ".join(f"{name}={value!r}" for name, value in self.__parameters__.items())
@@ -286,8 +287,7 @@ class DirectiveArgument:
 
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
-        Decorate a function to change the argument's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        Decorate a function to change the DirectiveArgument's visibility in the schema.
 
         >>> class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
         ...     name = DirectiveArgument(GraphQLNonNull(GraphQLString))

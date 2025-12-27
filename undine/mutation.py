@@ -211,13 +211,6 @@ class MutationTypeMeta(type):
                 input_data[key] = inpt.convertion_func(inpt, value)
         return input_data
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given mutation type is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this mutation."""
         check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
@@ -302,6 +295,14 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         """A function that is used to filter the queryset returned by this `MutationType`."""
         return queryset
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `MutationType` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
 
 class Input:

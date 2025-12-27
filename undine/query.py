@@ -158,13 +158,6 @@ class QueryTypeMeta(type):
         # Purposely not using `isinstance` here since models can inherit from other models.
         return type(value) is cls.__model__
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given query type is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this query."""
         check_directives([directive], location=DirectiveLocation.OBJECT)
@@ -242,6 +235,14 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
         Hook for modifying the optimization data outside the GraphQL resolver context.
         Can be used to e.g. optimize data for permissions checks.
         """
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `QueryType` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
     @classmethod
     def __get_queryset__(cls, info: GQLInfo) -> QuerySet[TModel]:

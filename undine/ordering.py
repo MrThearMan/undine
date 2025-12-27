@@ -196,13 +196,6 @@ class OrderSetMeta(type):
 
         return enum_values
 
-    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given orderset is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
-        return True
-
     def __add_directive__(cls, directive: Directive, /) -> Self:
         """Add a directive to this orderset."""
         check_directives([directive], location=DirectiveLocation.ENUM)
@@ -275,6 +268,14 @@ class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
     __directives__: ClassVar[list[Directive]]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `OrderSet` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
 
 
 class Order:

@@ -24,6 +24,8 @@ from graphql import (
 )
 from graphql.pyutils import inspect
 
+from undine import InterfaceField
+
 from .undine_extensions import (
     get_undine_calculation_argument,
     get_undine_connection,
@@ -125,7 +127,12 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
             field = get_undine_field(obj)
             if field is not None:
                 if field.visible_func is not None:
-                    return field.visible_func(entrypoint, info.context)
+                    return field.visible_func(field, info.context)
+                if isinstance(field.ref, InterfaceField):
+                    if not field.ref.interface_type.__is_visible__(info.context):
+                        return False
+                    if field.ref.visible_func is not None:
+                        return field.ref.visible_func(field.ref, info.context)
                 return True
 
             interface_field = get_undine_interface_field(obj)

@@ -51,7 +51,7 @@ The points you can hook into are:
 ```
 
 Created hooks need to be registered using the [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) setting.
-When where are multiple hooks that run logic on the same step, they will be run
+When there are multiple hooks that run logic on the same step, they will be run
 in the order they are added in the `LIFECYCLE_HOOKS` setting list.
 Specifically, the first hook registered will have its "before" portion run first
 and its "after" portion run last. You can think of them as a stack of context managers.

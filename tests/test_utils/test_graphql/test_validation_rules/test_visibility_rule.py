@@ -4,7 +4,7 @@ import pytest
 from django.db.models import Value
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from example_project.app.models import Project, Task
+from example_project.app.models import Project, Task, TaskTypeChoices
 from undine import (
     Calculation,
     CalculationArgument,
@@ -363,6 +363,48 @@ def test_validation_rules__visibility_rule__mutation_type__input(graphql, undine
                 "extensions": {"status_code": 400},
             }
         ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__mutation_type__input__as_variable(graphql, undine_settings):
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        bulk_create_task = Entrypoint(TaskCreateMutation, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+    }
+    # Unusual use of variables, but should still work.
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            bulkCreateTask(input: [$input]) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "bulkCreateTask": [
+            {
+                "name": "Test Task",
+            },
+        ],
+    }
 
 
 @pytest.mark.parametrize("is_visible", [True, False])

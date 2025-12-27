@@ -685,6 +685,7 @@ class UndineErrorCodes(StrEnum):
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
     USE_WEBSOCKETS_FOR_SUBSCRIPTIONS = auto()
+    VALIDATION_ABORTED = auto()
     VALIDATION_ERROR = auto()
 
 
