@@ -5,7 +5,10 @@ from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from typing import TYPE_CHECKING, Any, Self
 
+from django.db import transaction  # noqa: ICN003
+
 from undine.settings import undine_settings
+from undine.utils.graphql.utils import get_operation, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
@@ -55,7 +58,8 @@ class LifecycleHookContext:
     """Lifecycle hooks for this operation."""
 
     def __post_init__(self) -> None:
-        self.lifecycle_hooks = [hook(context=self) for hook in undine_settings.LIFECYCLE_HOOKS]
+        hooks = [*undine_settings.LIFECYCLE_HOOKS, AtomicMutationHook]
+        self.lifecycle_hooks = [hook(context=self) for hook in hooks]
 
     @classmethod
     def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
@@ -138,6 +142,39 @@ class LifecycleHook:
         with delegate_to_subgenerator(self.on_execution()) as gen:
             for _ in gen:
                 yield
+
+
+# Builtin hooks
+
+
+class AtomicMutationHook(LifecycleHook):
+    """Hook for marking executing a GraphQL mutation atomically."""
+
+    def on_execution(self) -> Generator[None, None, None]:
+        """Mark the operation as atomic."""
+        operation_definition = get_operation(self.context.document, self.context.operation_name)
+
+        if is_atomic_mutation(operation_definition):
+            atomic = transaction.atomic()
+
+            atomic.__enter__()  # noqa: PLC2801
+            try:
+                yield
+            except Exception as error:
+                atomic.__exit__(type(error), error, error.__traceback__)
+                raise
+            else:
+                # TODO: Determine if any mutation failed and rollback the transaction.
+                if self.context.result is not None and self.context.result.data is None:
+                    atomic.__exit__(Exception, None, None)
+                else:
+                    atomic.__exit__(None, None, None)
+
+        else:
+            yield
+
+
+# Hook managers
 
 
 class BaseLifecycleHookManager(ExitStack, AsyncExitStack, ABC):
