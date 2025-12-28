@@ -37,9 +37,9 @@ class ErrorLoggingMiddleware(LifecycleHook):
     def resolve(self, resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
         try:
             return resolver(root, info, **kwargs)
-        except Exception as err:
+        except Exception:
             logger.exception("Error occurred")
-            return err
+            raise
 
 
 def ping_hook(request: WebSocketRequest) -> AwaitableOrValue[dict[str, Any] | None]:

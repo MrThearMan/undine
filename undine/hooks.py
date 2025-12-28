@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
+import itertools
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from typing import TYPE_CHECKING, Any, Self
 
+from django.db import transaction  # noqa: ICN003
+
+from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
+from undine.utils.graphql.utils import get_operation, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
@@ -55,7 +60,8 @@ class LifecycleHookContext:
     """Lifecycle hooks for this operation."""
 
     def __post_init__(self) -> None:
-        self.lifecycle_hooks = [hook(context=self) for hook in undine_settings.LIFECYCLE_HOOKS]
+        hooks = itertools.chain(undine_settings.LIFECYCLE_HOOKS, [AtomicMutationHook])
+        self.lifecycle_hooks = [hook(context=self) for hook in hooks]
 
     @classmethod
     def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
@@ -138,6 +144,73 @@ class LifecycleHook:
         with delegate_to_subgenerator(self.on_execution()) as gen:
             for _ in gen:
                 yield
+
+
+# Builtin hooks
+
+
+class AtomicMutationHook(LifecycleHook):
+    """
+    Hook for executing multiple GraphQL mutations atomically
+    if the `@atomic` directive is used on a mutation.
+    """
+
+    def __init__(self, context: LifecycleHookContext) -> None:
+        super().__init__(context)
+
+        self.is_atomic_mutation: bool = False
+        self.error: BaseException | None = None
+
+    def on_execution(self) -> Generator[None, None, None]:
+        operation_definition = get_operation(self.context.document, self.context.operation_name)
+        self.is_atomic_mutation = is_atomic_mutation(operation_definition)
+
+        if not self.is_atomic_mutation:
+            yield
+            return
+
+        atomic = transaction.atomic()
+        atomic.__enter__()  # noqa: PLC2801
+        try:
+            yield
+
+        except BaseException as error:
+            atomic.__exit__(error.__class__, error, error.__traceback__)
+            raise
+
+        else:
+            if self.error is not None:
+                atomic.__exit__(self.error.__class__, self.error, self.error.__traceback__)
+            else:
+                atomic.__exit__(None, None, None)
+
+        finally:
+            self.error = None
+
+    async def on_execution_async(self) -> AsyncGenerator[None, None]:
+        operation_definition = get_operation(self.context.document, self.context.operation_name)
+        self.is_atomic_mutation = is_atomic_mutation(operation_definition)
+
+        if not self.is_atomic_mutation:
+            yield
+            return
+
+        # `transaction.atomic` is not supported in async contexts.
+        raise GraphQLAsyncAtomicMutationNotSupportedError
+
+    def resolve(self, func: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+        try:
+            return func(root, info, **kwargs)
+
+        except BaseException as error:
+            # If an exception is thrown in a top-level resolver, it's likely that the mutation did not complete
+            # correctly (e.g. a permission or a validation error) and we should rollback the transaction.
+            if self.is_atomic_mutation and len(info.path.as_list()) == 1:
+                self.error = error
+            raise
+
+
+# Hook managers
 
 
 class BaseLifecycleHookManager(ExitStack, AsyncExitStack, ABC):

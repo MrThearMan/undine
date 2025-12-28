@@ -625,6 +625,7 @@ class UndineErrorCodes(StrEnum):
     def _generate_next_value_(name: str, start: Any, count: int, last_values: list[Any]) -> Any:  # noqa: ARG004
         return name
 
+    ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED = auto()
     ASYNC_NOT_SUPPORTED = auto()
     CONTENT_TYPE_MISSING = auto()
     DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE = auto()

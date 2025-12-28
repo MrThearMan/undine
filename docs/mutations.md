@@ -842,3 +842,32 @@ however you wish to extend the functionality of the `Input`.
 after the schema is created. The `Input` itself is found in the GraphQL input field extensions
 under a key defined by the [`INPUT_EXTENSIONS_KEY`](settings.md#input_extensions_key)
 setting.
+
+
+## Atomic mutations
+
+If you want to execute multiple mutations in a single operation atomically,
+you can use the `@atomic` directive on the mutation. Let's say you have the following schema:
+
+```python
+-8<- "mutations/atomic_mutation.py"
+```
+
+You can create both a `Task` and a `Project` atomically by adding the `@atomic` directive to the mutation:
+
+```graphql hl_lines="1"
+mutation ($taskInput: TaskCreateMutation! $projectInput: ProjectCreateMutation!) @atomic {
+  createTask(input: $taskInput) {
+    pk
+  }
+  createProject(input: $projectInput) {
+    pk
+  }
+}
+```
+
+Now if any of the mutations fail, all created objects during the execution phase
+of the mutation will be rolled back. Specifically, a rollback will be triggered
+if any errors are thrown from top-level resolvers of a mutation operation.
+
+> Note that atomic mutations are not supported when [async mode](async.md) is enabled.

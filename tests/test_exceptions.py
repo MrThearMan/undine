@@ -25,6 +25,7 @@ from undine.exceptions import (
     FunctionDispatcherRegistrationError,
     FunctionDispatcherUnknownArgumentError,
     FunctionSignatureParsingError,
+    GraphQLAsyncAtomicMutationNotSupportedError,
     GraphQLAsyncNotSupportedError,
     GraphQLDataLoaderDidNotReturnSortedSequenceError,
     GraphQLDataLoaderPrimingError,
@@ -486,6 +487,12 @@ class GQLErrorParams(NamedTuple):
 
 @pytest.mark.parametrize(
     **parametrize_helper({
+        "GraphQLAsyncAtomicMutationNotSupportedError": GQLErrorParams(
+            cls=GraphQLAsyncAtomicMutationNotSupportedError,
+            args={},
+            message="Atomic mutations are not supported when using async views.",
+            extensions={"error_code": "ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED", "status_code": 500},
+        ),
         "GraphQLAsyncNotSupportedError": GQLErrorParams(
             cls=GraphQLAsyncNotSupportedError,
             args={},

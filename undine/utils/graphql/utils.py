@@ -69,10 +69,13 @@ __all__ = [
     "check_directives",
     "get_arguments",
     "get_error_execution_result",
+    "get_error_execution_result",
+    "get_operation",
     "get_queried_field_name",
     "get_underlying_type",
     "graphql_error_path",
     "graphql_errors_hook",
+    "is_atomic_mutation",
     "is_connection",
     "is_edge",
     "is_node_interface",
@@ -135,14 +138,40 @@ def get_field_def(schema: GraphQLSchema, parent_type: GraphQLCompositeType, fiel
         return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)
 
 
-async def pre_evaluate_request_user(info: GQLInfo) -> None:
-    """
-    Fetches the request user from the context and caches it to the request.
-    This is a workaround when current user is required in an async event loop,
-    but the function itself is not async.
-    """
-    # '_current_user' would be set by 'django.contrib.auth.middleware.get_user' when calling 'request.user'
-    info.context._cached_user = await info.context.auser()  # type: ignore[attr-defined]  # noqa: SLF001
+def get_operation(document: DocumentNode, operation_name: str | None) -> OperationDefinitionNode:
+    operation_definitions: list[OperationDefinitionNode] = [
+        definition_node
+        for definition_node in document.definitions
+        if isinstance(definition_node, OperationDefinitionNode)
+    ]
+
+    if len(operation_definitions) == 0:
+        raise GraphQLRequestNoOperationError
+
+    if len(operation_definitions) == 1:
+        return operation_definitions[0]
+
+    if operation_name is None:
+        raise GraphQLRequestMultipleOperationsNoOperationNameError
+
+    for definition in operation_definitions:
+        if definition.name is not None and definition.name.value == operation_name:
+            return definition
+
+    raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
+
+
+def get_error_execution_result(error: GraphQLError | GraphQLErrorGroup | list[GraphQLError]) -> ExecutionResult:
+    if isinstance(error, list):
+        errors = graphql_errors_hook(error)
+        return ExecutionResult(data=None, errors=errors)
+
+    if isinstance(error, GraphQLErrorGroup):
+        errors = graphql_errors_hook(list(error.flatten()))
+        return ExecutionResult(data=None, errors=errors)
+
+    errors = graphql_errors_hook([error])
+    return ExecutionResult(data=None, errors=errors)
 
 
 # Predicates
@@ -196,28 +225,8 @@ def is_relation_id(field: ModelField, field_node: FieldNode) -> TypeGuard[Field]
 
 
 def is_subscription_operation(document: DocumentNode, operation_name: str | None = None) -> bool:
-    operation_definitions: list[OperationDefinitionNode] = [
-        definition_node
-        for definition_node in document.definitions
-        if isinstance(definition_node, OperationDefinitionNode)
-    ]
-
-    if len(operation_definitions) == 0:
-        raise GraphQLRequestNoOperationError
-
-    if len(operation_definitions) == 1:
-        return operation_definitions[0].operation == OperationType.SUBSCRIPTION
-
-    if operation_name is None:
-        raise GraphQLRequestMultipleOperationsNoOperationNameError
-
-    for definition in operation_definitions:
-        if definition.name is None or definition.name.value != operation_name:
-            continue
-
-        return definition.operation == OperationType.SUBSCRIPTION
-
-    raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
+    operation_definition = get_operation(document, operation_name)
+    return operation_definition.operation == OperationType.SUBSCRIPTION
 
 
 def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -> bool:
@@ -233,7 +242,26 @@ def is_non_null_default_value(default_value: Any) -> bool:
     return not isinstance(default_value, Hashable) or default_value not in {Undefined, None}
 
 
+def is_atomic_mutation(operation: OperationDefinitionNode) -> bool:
+    """Check if the current operation is an atomic mutation."""
+    if operation.operation != OperationType.MUTATION:
+        return False
+
+    # Note: String "atomic" is from `GraphQLAtomicDirective.name` but don't import that here just for that
+    return "atomic" in {directive.name.value for directive in operation.directives}
+
+
 # Misc.
+
+
+async def pre_evaluate_request_user(info: GQLInfo) -> None:
+    """
+    Fetches the request user from the context and caches it to the request.
+    This is a workaround when current user is required in an async event loop,
+    but the function itself is not async.
+    """
+    # '_current_user' would be set by 'django.contrib.auth.middleware.get_user' when calling 'request.user'
+    info.context._cached_user = await info.context.auser()  # type: ignore[attr-defined]  # noqa: SLF001
 
 
 @contextmanager
@@ -282,47 +310,9 @@ def check_directives(directives: Iterable[Directive] | None, *, location: Direct
 
 def validate_get_request_operation(document: DocumentNode, operation_name: str | None = None) -> None:
     """Validates that the operation in the document can be executed in an HTTP GET request."""
-    operation_definitions: list[OperationDefinitionNode] = [
-        definition_node
-        for definition_node in document.definitions
-        if isinstance(definition_node, OperationDefinitionNode)
-    ]
-
-    if len(operation_definitions) == 0:
-        raise GraphQLRequestNoOperationError
-
-    if len(operation_definitions) == 1:
-        if operation_definitions[0].operation == OperationType.QUERY:
-            return
-
+    operation_definition = get_operation(document, operation_name)
+    if operation_definition.operation != OperationType.QUERY:
         raise GraphQLGetRequestNonQueryOperationError
-
-    if operation_name is None:
-        raise GraphQLRequestMultipleOperationsNoOperationNameError
-
-    for definition in operation_definitions:
-        if definition.name is None or definition.name.value != operation_name:
-            continue
-
-        if definition.operation != OperationType.QUERY:
-            raise GraphQLGetRequestNonQueryOperationError
-
-        return
-
-    raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
-
-
-def get_error_execution_result(error: GraphQLError | GraphQLErrorGroup | list[GraphQLError]) -> ExecutionResult:
-    if isinstance(error, list):
-        errors = graphql_errors_hook(error)
-        return ExecutionResult(data=None, errors=errors)
-
-    if isinstance(error, GraphQLErrorGroup):
-        errors = graphql_errors_hook(list(error.flatten()))
-        return ExecutionResult(data=None, errors=errors)
-
-    errors = graphql_errors_hook([error])
-    return ExecutionResult(data=None, errors=errors)
 
 
 def graphql_errors_hook(errors: list[GraphQLError]) -> list[GraphQLError]:

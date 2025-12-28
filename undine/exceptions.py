@@ -528,6 +528,14 @@ class GraphQLErrorGroup(ExceptionGroup):
         return self
 
 
+class GraphQLAsyncAtomicMutationNotSupportedError(GraphQLStatusError):
+    """Error raised when a trying to use atomic mutations with async views."""
+
+    msg = "Atomic mutations are not supported when using async views."
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED
+
+
 class GraphQLAsyncNotSupportedError(GraphQLStatusError):
     """Error raised when a GraphQL request is made asynchronously."""
 

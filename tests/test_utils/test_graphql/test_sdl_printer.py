@@ -31,7 +31,7 @@ from undine.interface import InterfaceField
 from undine.relay import Node
 from undine.scalars import ScalarType
 from undine.utils.graphql.sdl_printer import SDLPrinter
-from undine.utils.graphql.type_registry import GraphQLComplexityDirective, GraphQLOneOfDirective
+from undine.utils.graphql.type_registry import GraphQLAtomicDirective, GraphQLComplexityDirective, GraphQLOneOfDirective
 
 
 def gql_dedent(text: str) -> str:
@@ -40,6 +40,7 @@ def gql_dedent(text: str) -> str:
 
 def directive_filter(directive: GraphQLDirective) -> bool:
     return SDLPrinter.default_directive_filter(directive) and directive.name not in {
+        GraphQLAtomicDirective.name,
         GraphQLComplexityDirective.name,
         GraphQLOneOfDirective.name,
     }

@@ -8,6 +8,7 @@ import pytest
 from example_project.app.models import Comment, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
+from undine.exceptions import GraphQLPermissionError
 
 
 @pytest.mark.django_db
@@ -780,3 +781,73 @@ def test_create_mutation__generic_relation(graphql, undine_settings) -> None:
             },
         },
     }
+
+
+@pytest.mark.django_db
+def test_create_mutation__atomic_mutation(graphql, undine_settings):
+    undine_settings.LIFECYCLE_HOOKS = []
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class ProjectCreateMutation(MutationType[Project]):
+        @classmethod
+        def __permissions__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            raise GraphQLPermissionError
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+        projects = Entrypoint(ProjectType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+        create_project = Entrypoint(ProjectCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task_data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+    }
+    project_data = {
+        "name": "Test Project",
+    }
+    # Important: create task first and project second
+    query = """
+        mutation($taskInput: TaskCreateMutation! $projectInput: ProjectCreateMutation!) @atomic {
+            createTask(input: $taskInput) {
+                name
+            }
+            createProject(input: $projectInput) {
+                name
+            }
+        }
+    """
+
+    assert Task.objects.count() == 0
+    assert Project.objects.count() == 0
+
+    response = graphql(query, variables={"taskInput": task_data, "projectInput": project_data})
+
+    if undine_settings.ASYNC:
+        assert response.errors == [
+            {
+                "message": "Atomic mutations are not supported when using async views.",
+                "extensions": {"error_code": "ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED", "status_code": 500},
+            }
+        ]
+    else:
+        assert response.errors == [
+            {
+                "message": "Permission denied.",
+                "path": ["createProject"],
+                "extensions": {"error_code": "PERMISSION_DENIED", "status_code": 403},
+            }
+        ]
+
+    # Since project creation fails, task creation is rolled back with atomic.
+    assert Task.objects.count() == 0
+    assert Project.objects.count() == 0

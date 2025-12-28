@@ -416,6 +416,14 @@ GraphQLOneOfDirective = GraphQLDirective(
 """Used to indicate an Input Object is a OneOf Input Object."""
 
 
+GraphQLAtomicDirective = GraphQLDirective(
+    name="atomic",
+    locations=[DirectiveLocation.MUTATION],
+    description="Indicates that all mutations in the operation should be executed atomically.",
+)
+"""Used to indicate that all mutations in the operation should be executed atomically."""
+
+
 def register_builtins() -> None:
     from undine.utils.graphql.validation_rules import core_implements_one_of_directive  # noqa: PLC0415
 
@@ -426,6 +434,7 @@ def register_builtins() -> None:
         GRAPHQL_REGISTRY[directive.name] = directive
 
     GRAPHQL_REGISTRY[GraphQLComplexityDirective.name] = GraphQLComplexityDirective
+    GRAPHQL_REGISTRY[GraphQLAtomicDirective.name] = GraphQLAtomicDirective
 
     # graphql-core < 3.3.0
     if not core_implements_one_of_directive():

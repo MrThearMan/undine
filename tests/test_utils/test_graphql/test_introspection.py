@@ -112,6 +112,7 @@ def test_introspection(graphql, undine_settings):
     directives = get_directives(response)
 
     assert sorted(directives) == [
+        "atomic",
         "complexity",
         "deprecated",
         "include",
