@@ -35,6 +35,7 @@ body:
         If you are not using the latest version, please try to also reproduce the bug
         on the latest version before opening the issue.
       options:
+        - "0.2.2"
         - "0.2.1"
         - "0.2.0"
         - "0.1.8"
@@ -58,12 +59,13 @@ body:
     attributes:
       label: What operating system are you on?
       description: >-
-        Please note operating systems not available below may not be supported.
-        Only the latest versions of these operating systems are tested.
+        Please note that the project is only tested against the latest versions of Windows, MacOS, and Ubuntu
+        running on Github Actions. Other versions and operating systems may not be supported.
       options:
         - "Windows"
-        - "Mac"
+        - "MacOS"
         - "Ubuntu"
+        - "Other"
     validations:
       required: true
   - type: textarea
