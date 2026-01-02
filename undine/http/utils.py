@@ -30,11 +30,14 @@ if TYPE_CHECKING:
     from undine.typing import RequestMethod
 
 __all__ = [
+    "HttpEventSourcingNotAllowedResponse",
     "HttpMethodNotAllowedResponse",
     "HttpUnsupportedContentTypeResponse",
     "decode_body",
     "get_preferred_response_content_type",
     "graphql_result_response",
+    "is_sse_request",
+    "is_websocket_request",
     "load_json_dict",
     "parse_json_body",
     "render_graphiql",
@@ -55,6 +58,14 @@ class HttpUnsupportedContentTypeResponse(HttpResponse):
         msg = "Server does not support any of the requested content types."
         super().__init__(content=msg, status=HTTPStatus.NOT_ACCEPTABLE, content_type="text/plain; charset=utf-8")
         self["Accept"] = ", ".join(supported_types)
+
+
+class HttpEventSourcingNotAllowedResponse(HttpResponse):
+    def __init__(self) -> None:
+        msg = "Cannot use Server-Sent Events with HTTP protocol lower than 2.0."
+        super().__init__(content=msg, status=HTTPStatus.UPGRADE_REQUIRED, content_type="text/plain; charset=utf-8")
+        self["Upgrade"] = "HTTP/2.0"
+        self["Connection"] = "Upgrade"
 
 
 def get_preferred_response_content_type(accepted: list[MediaType], supported: list[str]) -> str | None:
@@ -119,6 +130,38 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
     return data
 
 
+def is_sse_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a Server-Sent Events request."""
+    if not request.response_content_type:
+        return False
+
+    content_type = MediaType(request.response_content_type)
+    return content_type.match("text/event-stream")
+
+
+def is_websocket_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a WebSocket request."""
+    return request.method == "WEBSOCKET"
+
+
+def get_http_version(request: DjangoRequestProtocol) -> tuple[int, ...]:
+    """
+    Get the HTTP version of the given request.
+    Only really reliable for ASGI requests.
+    """
+    # ASGI requests will have the HTTP version in the ASGI scope
+    scope: dict[str, Any] | None = getattr(request, "scope", None)
+    if scope is not None:
+        protocol = scope["http_version"]
+
+    # WSGI requests will have the server protocol in the META, but this might be
+    # different to what the client is sending if behind a proxy.
+    else:
+        protocol = request.META.get("SERVER_PROTOCOL", "0").removeprefix("HTTP/")
+
+    return tuple(int(part) for part in str(float(protocol)).split("."))
+
+
 def graphql_result_response(
     result: ExecutionResult,
     *,
@@ -153,7 +196,11 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
     methods: list[RequestMethod] = ["GET", "POST"]
 
     def get_supported_types() -> list[str]:
-        supported_types = ["application/graphql-response+json", "application/json"]
+        supported_types = [
+            "application/graphql-response+json",
+            "application/json",
+            "text/event-stream",
+        ]
         if undine_settings.GRAPHIQL_ENABLED:
             supported_types.append("text/html")
         return supported_types

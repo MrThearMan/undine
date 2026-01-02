@@ -150,6 +150,7 @@ UNDINE = {
     "FILE_UPLOAD_ENABLED": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,
+    "ALLOW_SSE_WITH_HTTP_1_1": True,
     "NO_ERROR_LOCATION": True,
     # "EXPERIMENTAL_VISIBILITY_CHECKS": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",

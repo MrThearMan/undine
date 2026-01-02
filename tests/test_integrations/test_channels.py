@@ -37,6 +37,8 @@ async def test_channels__pong(graphql) -> None:
 
 
 async def test_channels__subscribe(graphql, undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+
     class Query(RootType):
         @Entrypoint
         def test(self) -> str:

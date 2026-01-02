@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Literal
 
-from graphql import Undefined
+from graphql import FormattedExecutionResult, Undefined
 
-from undine.typing import TModel
+from undine.typing import T, TModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -239,9 +240,6 @@ class BulkCreateKwargs(Mapping[str, Any]):
         return self.update_conflicts and bool(self.update_fields) and bool(self.unique_fields)
 
 
-T = TypeVar("T")
-
-
 @dataclasses.dataclass(frozen=True, slots=True)
 class DispatchImplementations(Generic[T]):
     """Holds the implementations of a `FunctionDispatcher`."""
@@ -257,3 +255,161 @@ class AbstractSelections:
 
     field_nodes: list[FieldNode] = dataclasses.field(default_factory=list)
     inline_fragments: list[InlineFragmentNode] = dataclasses.field(default_factory=list)
+
+
+# SSE Subscriptions
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventDC:
+    """'Next' event sent in 'distinct connections' mode."""
+
+    event: Literal["next"]
+    data: FormattedExecutionResult
+
+    def __str__(self) -> str:
+        data = json.dumps(self.data, separators=(",", ":"))
+        return f"event: {self.event}\ndata: {data}\n\n"
+
+    def encode(self) -> str:
+        return str(self)
+
+    @classmethod
+    def decode(cls, event_data: bytes | str) -> NextEventDC:
+        event: Literal["next"] | None = None
+        data: FormattedExecutionResult | None = None
+
+        if isinstance(event_data, bytes):
+            event_data = event_data.decode()
+
+        for part in event_data.split("\n"):
+            part = part.strip()  # noqa: PLW2901
+            if not part:
+                continue
+
+            key, value = part.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            match key:
+                case "event":
+                    if value != "next":
+                        msg = f"Expected 'next' event, got {value!r}"
+                        raise ValueError(msg)
+
+                    event = value
+
+                case "data":
+                    data = FormattedExecutionResult(**json.loads(value))
+
+                case _:
+                    msg = f"Unknown key: {key!r}"
+                    raise ValueError(msg)
+
+        if event is None:
+            msg = "Missing 'event' key"
+            raise ValueError(msg)
+
+        if data is None:
+            msg = "Missing 'data' key"
+            raise ValueError(msg)
+
+        return cls(event=event, data=data)
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventDC:
+    """'Complete' event sent in 'distinct connections' mode."""
+
+    event: Literal["complete"]
+    data: None  # Only to comply with 'EventSource' Web API interface
+
+    def __str__(self) -> str:
+        return f"event: {self.event}\ndata: \n\n"
+
+    def encode(self) -> str:
+        return str(self)
+
+    @classmethod
+    def decode(cls, event_data: bytes | str) -> CompletedEventDC:
+        event: Literal["complete"] | None = None
+
+        if isinstance(event_data, bytes):
+            event_data = event_data.decode()
+
+        for part in event_data.split("\n"):
+            part = part.strip()  # noqa: PLW2901
+            if not part:
+                continue
+
+            key, value = part.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            match key:
+                case "event":
+                    if value != "complete":
+                        msg = f"Expected 'complete' event, got {value!r}"
+                        raise ValueError(msg)
+
+                    event = value
+
+                case "data":
+                    if value:
+                        msg = "Unexpected value for 'data' key"
+                        raise ValueError(msg)
+
+                case _:
+                    msg = f"Unknown key: {key!r}"
+                    raise ValueError(msg)
+
+        if event is None:
+            msg = "Missing 'event' key"
+            raise ValueError(msg)
+
+        return cls(event=event, data=None)
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventDataSC:
+    id: str
+    data: FormattedExecutionResult
+
+    def __str__(self) -> str:
+        data = {"id": self.id, "data": self.data}
+        return json.dumps(data, separators=(",", ":"))
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventSC:
+    """'Next' event sent in 'single connection' mode."""
+
+    event: Literal["next"]
+    data: NextEventDataSC
+
+    def __str__(self) -> str:
+        return f"event: {self.event}\ndata: {self.data}\n\n"
+
+    def encode(self) -> str:
+        return str(self)
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventDataSC:
+    id: str
+
+    def __str__(self) -> str:
+        data = {"id": self.id}
+        return json.dumps(data, separators=(",", ":"))
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventSC:
+    """'Complete' event sent in 'single connection' mode."""
+
+    event: Literal["complete"]
+    data: CompletedEventDataSC
+
+    def __str__(self) -> str:
+        return f"event: {self.event}\ndata: {self.data}\n\n"
+
+    def encode(self) -> str:
+        return str(self)
