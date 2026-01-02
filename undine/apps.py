@@ -70,7 +70,10 @@ class UndineConfig(AppConfig):
         """Patch `django-debug-toolbar` to work with Undine if it's installed."""
         try:
             from undine.integrations.debug_toolbar import monkeypatch_middleware  # noqa: PLC0415
-        except ImportError:
+
+        # `ImportError` raised if debug-toolbar is not installed in Python environment
+        # `RuntimeError` raised if debug-toolbar is not installed in Django project
+        except (ImportError, RuntimeError):
             return
 
         monkeypatch_middleware()
