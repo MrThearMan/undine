@@ -36,6 +36,7 @@ from typing import _eval_type  # type: ignore[attr-defined]  # isort: skip  # no
 
 from collections.abc import Iterable
 
+from asgiref.typing import HTTPScope, WebSocketScope
 from django.db.models import (
     Expression,
     F,
@@ -77,10 +78,21 @@ from graphql import (
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import AsyncIterable, Container
     from http.cookies import SimpleCookie
 
-    from asgiref.typing import ASGISendEvent
+    from asgiref.typing import (
+        HTTPDisconnectEvent,
+        HTTPResponseBodyEvent,
+        HTTPResponseStartEvent,
+        HTTPResponseTrailersEvent,
+        HTTPServerPushEvent,
+        WebSocketAcceptEvent,
+        WebSocketCloseEvent,
+        WebSocketResponseBodyEvent,
+        WebSocketResponseStartEvent,
+        WebSocketSendEvent,
+    )
     from django.contrib.auth.models import AbstractUser, AnonymousUser, User
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
     from django.contrib.sessions.backends.base import SessionBase
@@ -104,6 +116,7 @@ if TYPE_CHECKING:
     from graphql.pyutils import Path
 
     from undine import FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
+    from undine.dataclasses import GraphQLHttpParams
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -171,10 +184,13 @@ __all__ = [
     "RequestMethod",
     "ReverseField",
     "RootTypeParams",
+    "SSEState",
+    "SSEStreamState",
     "Selections",
     "Self",
     "ServerMessage",
     "SubscribeMessage",
+    "SubscriptionResult",
     "SupportsLookup",
     "TInterfaceType",
     "TModels",
@@ -189,7 +205,6 @@ __all__ = [
     "WebSocketConnectionPingHook",
     "WebSocketConnectionPongHook",
     "WebSocketProtocol",
-    "WebSocketResult",
 ]
 
 # Common TypeVars
@@ -210,7 +225,7 @@ LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
 TypeHint: TypeAlias = type | types.UnionType | types.GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
-WebSocketResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
+SubscriptionResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
 ExecutionResultGen: TypeAlias = AsyncGenerator[ExecutionResult, None]
 SortedSequence: TypeAlias = list[T] | tuple[T, ...]
 
@@ -305,11 +320,11 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
 
     @property
     def GET(self) -> QueryDict:  # noqa: N802
-        """A dictionary-like object containing all given HTTP GET parameters."""
+        """A dictionary-like object containing all given HTTP GET parameters (i.e. query/search string)."""
 
     @property
     def POST(self) -> QueryDict:  # noqa: N802
-        """A dictionary-like object containing all given HTTP POST parameters."""
+        """A dictionary-like object containing all given HTTP POST parameters (i.e. form data)."""
 
     @property
     def COOKIES(self) -> dict[str, str]:  # noqa: N802
@@ -627,6 +642,13 @@ class UndineErrorCodes(StrEnum):
 
     ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED = auto()
     ASYNC_NOT_SUPPORTED = auto()
+    CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST = auto()
+    CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS = auto()
+    CANNOT_USE_SSE_FOR_MUTATIONS = auto()
+    CANNOT_USE_SSE_FOR_MUTATIONS_NON_POST_REQUEST = auto()
+    CANNOT_USE_SSE_FOR_QUERIES = auto()
+    CANNOT_USE_WEBSOCKETS_FOR_MUTATIONS = auto()
+    CANNOT_USE_WEBSOCKETS_FOR_QUERIES = auto()
     CONTENT_TYPE_MISSING = auto()
     DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE = auto()
     DATA_LOADER_PRIMING_ERROR = auto()
@@ -637,7 +659,6 @@ class UndineErrorCodes(StrEnum):
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()
     INVALID_INPUT_DATA = auto()
-    INVALID_OPERATION_FOR_METHOD = auto()
     INVALID_ORDER_DATA = auto()
     INVALID_PAGINATION_ARGUMENTS = auto()
     LOOKUP_VALUE_MISSING = auto()
@@ -676,6 +697,14 @@ class UndineErrorCodes(StrEnum):
     SCALAR_CONVERSION_ERROR = auto()
     SCALAR_INVALID_VALUE = auto()
     SCALAR_TYPE_NOT_SUPPORTED = auto()
+    SSE_OPERATION_ALREADY_EXISTS = auto()
+    SSE_OPERATION_ID_MISSING = auto()
+    SSE_SINGLE_CONNECTION_NOT_AUTHENTICATED = auto()
+    SSE_SINGLE_CONNECTION_NOT_SUPPORTED = auto()
+    SSE_STREAM_ALREADY_OPEN = auto()
+    SSE_STREAM_ALREADY_REGISTERED = auto()
+    SSE_STREAM_NOT_FOUND = auto()
+    SSE_STREAM_TOKEN_MISSING = auto()
     SUBSCRIPTION_TIMEOUT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()
@@ -685,7 +714,6 @@ class UndineErrorCodes(StrEnum):
     UNION_RESOLVE_TYPE_INVALID_VALUE = auto()
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
-    USE_WEBSOCKETS_FOR_SUBSCRIPTIONS = auto()
     VALIDATION_ABORTED = auto()
     VALIDATION_ERROR = auto()
 
@@ -1247,7 +1275,7 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
     return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover
 
 
-# Subscriptions
+# Websocket Subscriptions
 
 
 class ConnectionInitMessage(TypedDict):
@@ -1307,21 +1335,17 @@ class UrlRoute(TypedDict):
     kwargs: dict[str, str]
 
 
-class WebSocketASGIScope(TypedDict):
-    type: str
-    asgi: dict[str, str]
-    http_version: str
-    scheme: str
-    server: tuple[str, int]
-    client: tuple[str, int]
-    root_path: str
-    path: str
-    raw_path: bytes
-    query_string: bytes
-    headers: list[tuple[bytes, bytes]]
-    subprotocols: list[str]
-    state: dict[str, Any]
-    extensions: dict[str, Any]
+class HTTPASGIScope(HTTPScope):
+    # Added by middleware
+    cookies: dict[str, str]
+    session: SessionBase
+    user: User | AnonymousUser
+    path_remaining: str
+    url_route: UrlRoute
+
+
+class WebSocketASGIScope(WebSocketScope):
+    # Added by middleware
     cookies: dict[str, str]
     session: SessionBase
     user: User | AnonymousUser
@@ -1426,4 +1450,52 @@ class WebSocketProtocol(Protocol):
     @property
     def scope(self) -> WebSocketASGIScope: ...
 
-    async def send(self, message: ASGISendEvent) -> None: ...
+    async def send(
+        self,
+        message: (
+            WebSocketAcceptEvent
+            | WebSocketSendEvent
+            | WebSocketResponseStartEvent
+            | WebSocketResponseBodyEvent
+            | WebSocketCloseEvent
+        ),
+    ) -> None: ...
+
+
+class SSEProtocol(Protocol):
+    @property
+    def scope(self) -> HTTPASGIScope: ...
+
+    async def send(
+        self,
+        message: (
+            HTTPResponseStartEvent
+            | HTTPResponseBodyEvent
+            | HTTPResponseTrailersEvent
+            | HTTPServerPushEvent
+            | HTTPDisconnectEvent
+        ),
+    ) -> None: ...
+
+    async def get_stream(self, stream_token: str) -> AsyncIterable[str]: ...
+
+    async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None: ...
+
+    async def cancel_operation(self, stream_token: str, operation_id: str) -> None: ...
+
+
+class SSEState(StrEnum):
+    """State of the GraphQL over SSE stream in single connection mode."""
+
+    REGISTERED = "registered"
+    """The stream has been registered for this session but not yet opened."""
+
+    OPENED = "opened"
+    """The stream is open and in use."""
+
+
+class SSEStreamState(TypedDict):
+    """State of the GraphQL over SSE stream in single connection mode."""
+
+    state: SSEState
+    stream_token: str

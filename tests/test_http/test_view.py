@@ -160,7 +160,7 @@ def test_graphql_view__content_negotiation__application_xml(undine_settings) -> 
     assert isinstance(response, HttpResponse)
 
     assert response.status_code == 406
-    assert response["Accept"] == "application/graphql-response+json, application/json, text/html"
+    assert response["Accept"] == "application/graphql-response+json, application/json, text/event-stream, text/html"
     assert response.content.decode() == "Server does not support any of the requested content types."
 
 
@@ -237,7 +237,7 @@ def test_graphql_view__content_negotiation__unsupported_type(undine_settings) ->
     assert isinstance(response, HttpUnsupportedContentTypeResponse)
 
     assert response.status_code == 406
-    assert response["Accept"] == "application/graphql-response+json, application/json, text/html"
+    assert response["Accept"] == "application/graphql-response+json, application/json, text/event-stream, text/html"
     assert response.content.decode() == "Server does not support any of the requested content types."
 
 

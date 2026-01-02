@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Literal
 
 from graphql import Undefined
 
-from undine.typing import TModel
+from undine.typing import T, TModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q, QuerySet
-    from graphql import FieldNode, InlineFragmentNode
+    from graphql import FieldNode, FormattedExecutionResult, InlineFragmentNode
 
     from undine import QueryType
     from undine.pagination import PaginationHandler
@@ -31,6 +32,9 @@ if TYPE_CHECKING:
 __all__ = [
     "AbstractSelections",
     "BulkCreateKwargs",
+    "CompletedEventDC",
+    "CompletedEventDataSC",
+    "CompletedEventSC",
     "FilterResults",
     "GraphQLHttpParams",
     "LazyGenericForeignKey",
@@ -38,6 +42,9 @@ __all__ = [
     "LazyRelation",
     "LookupRef",
     "MaybeManyOrNonNull",
+    "NextEventDC",
+    "NextEventDataSC",
+    "NextEventSC",
     "OptimizationWithPagination",
     "OrderResults",
     "Parameter",
@@ -239,9 +246,6 @@ class BulkCreateKwargs(Mapping[str, Any]):
         return self.update_conflicts and bool(self.update_fields) and bool(self.unique_fields)
 
 
-T = TypeVar("T")
-
-
 @dataclasses.dataclass(frozen=True, slots=True)
 class DispatchImplementations(Generic[T]):
     """Holds the implementations of a `FunctionDispatcher`."""
@@ -257,3 +261,92 @@ class AbstractSelections:
 
     field_nodes: list[FieldNode] = dataclasses.field(default_factory=list)
     inline_fragments: list[InlineFragmentNode] = dataclasses.field(default_factory=list)
+
+
+# SSE Subscriptions
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventDC:
+    """'Next' event sent in 'distinct connections' mode."""
+
+    event: Literal["next"] = dataclasses.field(init=False, default="next")
+    data: FormattedExecutionResult
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        data = json.dumps(self.data, separators=(",", ":"))
+        return f"event: {self.event}\ndata: {data}\n\n"
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventDC:
+    """'Complete' event sent in 'distinct connections' mode."""
+
+    event: Literal["complete"] = dataclasses.field(init=False, default="complete")
+    data: None = dataclasses.field(init=False, default=None)
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        # 'data: ' Only to comply with 'EventSource' Web API interface
+        return f"event: {self.event}\ndata: \n\n"
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventDataSC:
+    id: str
+    data: FormattedExecutionResult
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        data = {"id": self.id, "data": self.data}
+        return json.dumps(data, separators=(",", ":"))
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class NextEventSC:
+    """'Next' event sent in 'single connection' mode."""
+
+    event: Literal["next"] = dataclasses.field(init=False, default="next")
+    operation_id: str
+    data: FormattedExecutionResult
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        data = NextEventDataSC(id=self.operation_id, data=self.data).encode()
+        return f"event: {self.event}\ndata: {data}\n\n"
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventDataSC:
+    id: str
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        data = {"id": self.id}
+        return json.dumps(data, separators=(",", ":"))
+
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class CompletedEventSC:
+    """'Complete' event sent in 'single connection' mode."""
+
+    event: Literal["complete"] = dataclasses.field(init=False, default="complete")
+    operation_id: str
+
+    def __str__(self) -> str:
+        return self.encode()
+
+    def encode(self) -> str:
+        data = CompletedEventDataSC(id=self.operation_id).encode()
+        return f"event: {self.event}\ndata: {data}\n\n"
