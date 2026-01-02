@@ -71,8 +71,11 @@ def test_execute_graphql__non_query_operation_on_get_request(undine_settings) ->
 
     assert result.data is None
     assert result.errors is not None
-    assert result.errors[0].message == "Only query operations are allowed on GET requests."
-    assert result.errors[0].extensions == {"error_code": "INVALID_OPERATION_FOR_METHOD", "status_code": 405}
+    assert result.errors[0].message == "Cannot use HTTP for mutations if not sent as a POST request."
+    assert result.errors[0].extensions == {
+        "error_code": "CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST",
+        "status_code": 405,
+    }
 
 
 def test_execute_graphql__validation_error(undine_settings) -> None:

@@ -52,6 +52,42 @@ Should set this to `True` if using [GraphiQL](#graphiql).
 
 ///
 
+/// details | `ALLOW_QUERIES_WITH_SSE`
+    attrs: {id: allow_queries_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_SSE`
+    attrs: {id: allow_mutations_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_QUERIES_WITH_WEBSOCKETS`
+    attrs: {id: allow_queries_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over WebSockets.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_WEBSOCKETS`
+    attrs: {id: allow_mutations_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over WebSockets.
+
+///
+
 /// details | `ASYNC`
     attrs: {id: async}
 

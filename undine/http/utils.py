@@ -35,6 +35,8 @@ __all__ = [
     "decode_body",
     "get_preferred_response_content_type",
     "graphql_result_response",
+    "is_sse_request",
+    "is_websocket_request",
     "load_json_dict",
     "parse_json_body",
     "render_graphiql",
@@ -119,6 +121,20 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
     return data
 
 
+def is_sse_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a Server-Sent Events request."""
+    if not request.response_content_type:
+        return False
+
+    content_type = MediaType(request.response_content_type)
+    return content_type.match("text/event-stream")
+
+
+def is_websocket_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a WebSocket request."""
+    return request.method == "WEBSOCKET"
+
+
 def graphql_result_response(
     result: ExecutionResult,
     *,
@@ -153,7 +169,11 @@ def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | Asy
     methods: list[RequestMethod] = ["GET", "POST"]
 
     def get_supported_types() -> list[str]:
-        supported_types = ["application/graphql-response+json", "application/json"]
+        supported_types = [
+            "application/graphql-response+json",
+            "application/json",
+            "text/event-stream",
+        ]
         if undine_settings.GRAPHIQL_ENABLED:
             supported_types.append("text/html")
         return supported_types

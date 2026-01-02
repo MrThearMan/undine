@@ -570,6 +570,8 @@ async def test_websocket_handler__receive__pong__invalid() -> None:
 
 
 async def test_websocket_handler__receive__subscribe(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+
     class Query(RootType):
         @Entrypoint
         async def test(self) -> str:
@@ -660,6 +662,8 @@ async def test_websocket_handler__receive__subscribe__payload__parsing_error(und
 
 
 async def test_websocket_handler__receive__subscribe__error(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+
     class Query(RootType):
         @Entrypoint
         async def test(self) -> str:

@@ -177,6 +177,12 @@ class UndineDefaultSettings(NamedTuple):
 
     # WebSocket
 
+    ALLOW_QUERIES_WITH_WEBSOCKETS: bool = False
+    """Whether queries can be executed over WebSockets."""
+
+    ALLOW_MUTATIONS_WITH_WEBSOCKETS: bool = False
+    """Whether mutations can be executed over WebSockets."""
+
     WEBSOCKET_CONNECTION_INIT_HOOK: WebSocketConnectionInitHook = "undine.utils.graphql.websocket.connection_init_hook"  # type: ignore[assignment]
     """The function to use for custom `ConnectionInit` logic."""
 
@@ -191,6 +197,14 @@ class UndineDefaultSettings(NamedTuple):
 
     WEBSOCKET_PONG_HOOK: WebSocketConnectionPongHook = "undine.utils.graphql.websocket.pong_hook"  # type: ignore[assignment]
     """The function to for specifying custom `Pong` message logic."""
+
+    # Server-Sent Events
+
+    ALLOW_QUERIES_WITH_SSE: bool = False
+    """Whether queries can be executed over Server-Sent Events."""
+
+    ALLOW_MUTATIONS_WITH_SSE: bool = False
+    """Whether mutations can be executed over Server-Sent Events."""
 
     # Django-modeltranslation
 

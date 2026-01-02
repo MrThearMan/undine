@@ -175,6 +175,7 @@ __all__ = [
     "Self",
     "ServerMessage",
     "SubscribeMessage",
+    "SubscriptionResult",
     "SupportsLookup",
     "TInterfaceType",
     "TModels",
@@ -189,7 +190,6 @@ __all__ = [
     "WebSocketConnectionPingHook",
     "WebSocketConnectionPongHook",
     "WebSocketProtocol",
-    "WebSocketResult",
 ]
 
 # Common TypeVars
@@ -210,7 +210,7 @@ LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
 TypeHint: TypeAlias = type | types.UnionType | types.GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
-WebSocketResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
+SubscriptionResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
 ExecutionResultGen: TypeAlias = AsyncGenerator[ExecutionResult, None]
 SortedSequence: TypeAlias = list[T] | tuple[T, ...]
 
@@ -627,6 +627,13 @@ class UndineErrorCodes(StrEnum):
 
     ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED = auto()
     ASYNC_NOT_SUPPORTED = auto()
+    CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST = auto()
+    CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS = auto()
+    CANNOT_USE_SSE_FOR_MUTATIONS = auto()
+    CANNOT_USE_SSE_FOR_MUTATIONS_NON_POST_REQUEST = auto()
+    CANNOT_USE_SSE_FOR_QUERIES = auto()
+    CANNOT_USE_WEBSOCKETS_FOR_MUTATIONS = auto()
+    CANNOT_USE_WEBSOCKETS_FOR_QUERIES = auto()
     CONTENT_TYPE_MISSING = auto()
     DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE = auto()
     DATA_LOADER_PRIMING_ERROR = auto()
@@ -637,7 +644,6 @@ class UndineErrorCodes(StrEnum):
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()
     INVALID_INPUT_DATA = auto()
-    INVALID_OPERATION_FOR_METHOD = auto()
     INVALID_ORDER_DATA = auto()
     INVALID_PAGINATION_ARGUMENTS = auto()
     LOOKUP_VALUE_MISSING = auto()
@@ -685,7 +691,6 @@ class UndineErrorCodes(StrEnum):
     UNION_RESOLVE_TYPE_INVALID_VALUE = auto()
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
-    USE_WEBSOCKETS_FOR_SUBSCRIPTIONS = auto()
     VALIDATION_ABORTED = auto()
     VALIDATION_ERROR = auto()
 
@@ -1247,7 +1252,7 @@ def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: di
     return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover
 
 
-# Subscriptions
+# Websocket Subscriptions
 
 
 class ConnectionInitMessage(TypedDict):
