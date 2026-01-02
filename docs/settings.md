@@ -52,6 +52,42 @@ Should set this to `True` if using [GraphiQL](#graphiql).
 
 ///
 
+/// details | `ALLOW_QUERIES_WITH_SSE`
+    attrs: {id: allow_queries_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_SSE`
+    attrs: {id: allow_mutations_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_QUERIES_WITH_WEBSOCKETS`
+    attrs: {id: allow_queries_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over WebSockets.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_WEBSOCKETS`
+    attrs: {id: allow_mutations_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over WebSockets.
+
+///
+
 /// details | `ASYNC`
     attrs: {id: async}
 
@@ -689,6 +725,33 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 ///
 
+/// details | `SSE_STREAM_SESSION_KEY`
+    attrs: {id: sse_stream_session_key}
+
+Type: `str` | Default: `"graphql-over-sse-stream"`
+
+Key used to store the GraphQL over SSE stream state in the user's session.
+
+///
+
+/// details | `SSE_TOKEN_HEADER_NAME`
+    attrs: {id: sse_token_header_name}
+
+Type: `str` | Default: `"X-GraphQL-Event-Stream-Token"`
+
+The name of the HTTP header to use for the GraphQL over SSE event stream token.
+
+///
+
+/// details | `SSE_TOKEN_QUERY_PARAM_NAME`
+    attrs: {id: sse_token_query_param_name}
+
+Type: `str` | Default: `"token"`
+
+The name of the query string parameter to use for the GraphQL over SSE event stream token.
+
+///
+
 /// details | `TESTING_CLIENT_FULL_STACKTRACE`
     attrs: {id: testing_client_full_stacktrace}
 
@@ -730,6 +793,18 @@ so must be set before running migrations for the persisted documents app.
 Type: `str` | Default: `"undine_union_type"`
 
 The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
+
+///
+
+/// details | `USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`
+    attrs: {id: use_sse_distinct_connections_for_http_1}
+
+Type: `bool` | Default: `False`
+
+Whether Server-Sent Events should use distinct connections mode even with a HTTP/1.1 connection.
+Note that when using HTTP/1.1, the maximum number of open connections is limited to 6 per domain
+and browser. That means you will likely hit the limit in a real production environment
+with multiple requests and browser tabs.
 
 ///
 

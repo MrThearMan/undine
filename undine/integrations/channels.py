@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import asyncio
+import io
+from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Never
 
 from channels.auth import AuthMiddlewareStack
 from channels.consumer import AsyncConsumer
@@ -8,18 +11,42 @@ from channels.db import aclose_old_connections
 from channels.exceptions import StopConsumer
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
+from django.core.handlers.asgi import ASGIRequest
 from django.urls import re_path
 
+from undine.dataclasses import CompletedEventSC
+from undine.http.utils import get_graphql_event_stream_token
 from undine.settings import undine_settings
+from undine.utils.graphql.server_sent_events import (
+    GraphQLOverSSESingleConnectionHandler,
+    SSERequest,
+    execute_graphql_sse_sc,
+)
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler
 
 if TYPE_CHECKING:
-    from asgiref.typing import WebSocketConnectEvent, WebSocketDisconnectEvent, WebSocketReceiveEvent
+    from collections.abc import AsyncIterable, Awaitable
+
+    from asgiref.typing import (
+        ASGI3Application,
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        HTTPDisconnectEvent,
+        HTTPRequestEvent,
+        WebSocketConnectEvent,
+        WebSocketDisconnectEvent,
+        WebSocketReceiveEvent,
+    )
     from django.core.handlers.asgi import ASGIHandler
 
+    from undine.dataclasses import GraphQLHttpParams
+    from undine.typing import DjangoRequestProtocol, HTTPASGIScope
 
 __all__ = [
+    "GraphQLSSESingleConnectionConsumer",
     "GraphQLWebSocketConsumer",
+    "get_sse_enabled_app",
+    "get_websocket_and_sse_enabled_app",
     "get_websocket_enabled_app",
 ]
 
@@ -43,7 +70,159 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
         raise StopConsumer
 
 
-def get_websocket_enabled_app(asgi_application: ASGIHandler) -> ProtocolTypeRouter:  # pragma: no cover
+class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
+    """Single connection mode consumer for GraphQL over Server-Sent Events."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.handler = GraphQLOverSSESingleConnectionHandler(sse=self)
+        self.messages: list[HTTPRequestEvent] = []
+
+        # Request is always set in `http_request` before any other method is called.
+        self.request: DjangoRequestProtocol = None  # type: ignore[assignment]
+
+        # Set by the stream consumer.
+        self.event_queue: asyncio.Queue[str] = asyncio.Queue()
+
+        # Used by operation consumers.
+        self.operation: asyncio.Task | None = None
+
+    # HTTP interface
+
+    async def http_request(self, message: HTTPRequestEvent) -> None:
+        self.messages.append(message)
+
+        if not message.get("more_body"):
+            self.request = SSERequest(scope=self.scope, messages=self.messages)  # type: ignore[assignment]
+            try:
+                await self.handler.receive(request=self.request)
+            finally:
+                await self.disconnect()
+            raise StopConsumer
+
+    async def http_disconnect(self, message: HTTPDisconnectEvent) -> Never:
+        await self.disconnect()
+        await aclose_old_connections()
+        raise StopConsumer
+
+    async def disconnect(self) -> None:
+        if self.operation is not None:
+            self.operation.cancel()
+            with suppress(BaseException):
+                await self.operation
+
+        self.event_queue.shutdown(immediate=True)
+
+    # SSE interface
+
+    async def get_stream(self, stream_token: str) -> AsyncIterable[str]:
+        stream_group_name = get_stream_group_name(stream_token=stream_token)
+
+        await self.channel_layer.group_add(group=stream_group_name, channel=self.channel_name)
+
+        async def stream() -> AsyncIterable[str]:
+            try:
+                while True:
+                    try:
+                        yield await self.event_queue.get()
+                    except (asyncio.CancelledError, asyncio.QueueShutDown):
+                        break
+
+            finally:
+                await self.channel_layer.group_discard(group=stream_group_name, channel=self.channel_name)
+
+        return stream()
+
+    async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
+        stream_group_name = get_stream_group_name(stream_token=stream_token)
+        operation_group_name = get_operation_group_name(stream_token=stream_token, operation_id=operation_id)
+        message_type = self.sse_operation_event.__name__.replace("_", ".")
+
+        await self.channel_layer.group_add(group=operation_group_name, channel=self.channel_name)
+
+        async def execute() -> None:
+            completed: bool = False
+            try:
+                async for event in execute_graphql_sse_sc(operation_id, params, self.request):
+                    completed = completed or event.event == "complete"
+                    await self.channel_layer.group_send(
+                        group=stream_group_name,
+                        message={"type": message_type, "event": event.encode()},
+                    )
+
+            except asyncio.CancelledError:
+                # Make sure completed event is sent even if the subscription is cancelled.
+                if not completed:
+                    event = CompletedEventSC(operation_id=operation_id)
+                    await self.channel_layer.group_send(
+                        group=stream_group_name,
+                        message={"type": message_type, "event": event.encode()},
+                    )
+
+        try:
+            self.operation = asyncio.create_task(execute())
+            await self.operation
+        finally:
+            await self.channel_layer.group_discard(group=operation_group_name, channel=self.channel_name)
+
+    async def cancel_operation(self, stream_token: str, operation_id: str) -> None:
+        operation_group_name = get_operation_group_name(stream_token=stream_token, operation_id=operation_id)
+        message_type = self.sse_operation_cancel.__name__.replace("_", ".")
+        await self.channel_layer.group_send(group=operation_group_name, message={"type": message_type})
+
+    # Consumer group methods
+
+    async def sse_operation_event(self, event: str) -> None:
+        await self.event_queue.put(event)
+
+    async def sse_operation_cancel(self) -> None:
+        if self.operation is not None:
+            self.operation.cancel()
+
+
+def get_stream_group_name(*, stream_token: str) -> str:
+    return f"graphql.sse.{stream_token}"
+
+
+def get_operation_group_name(*, stream_token: str, operation_id: str) -> str:
+    return f"graphql.sse.{stream_token}.{operation_id}"
+
+
+class GraphQLSSERouter:
+    """
+    Router that sends GraphQL over Server-Sent Events requests
+    to the single connection mode handler when required.
+    """
+
+    def __init__(self, asgi_application: ASGI3Application, sse_application: ASGI3Application) -> None:
+        self.asgi_application = asgi_application
+        self.sse_application = sse_application
+
+    def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> Awaitable[None]:
+        path = scope["path"].removesuffix("/")
+        graphql_path = undine_settings.GRAPHQL_PATH.removesuffix("/")
+
+        # Only the GraphQL endpoint can have GraphQL over SSE requests.
+        if path != graphql_path:
+            return self.asgi_application(scope, receive, send)
+
+        # If distinct connections mode can be used, use it.
+        http_version = tuple(int(part) for part in str(float(scope["http_version"])).split("."))
+        if http_version >= (2, 0) or undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1:
+            return self.asgi_application(scope, receive, send)
+
+        # Otherwise, if this request is one of the GraphQL over SSE requests,
+        # single connection mode is required and needs to be routed to the SSE application.
+        request = ASGIRequest(scope=scope, body_file=io.BytesIO())
+        if request.method in {"PUT", "DELETE"} or (
+            request.method in {"GET", "POST"} and get_graphql_event_stream_token(request)
+        ):
+            return self.sse_application(scope, receive, send)
+
+        return self.asgi_application(scope, receive, send)
+
+
+def get_websocket_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
     """
     Create the default routing configuration for supporting GraphQL over WebSocket.
 
@@ -63,6 +242,55 @@ def get_websocket_enabled_app(asgi_application: ASGIHandler) -> ProtocolTypeRout
     websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]
 
     return ProtocolTypeRouter({
-        "http": asgi_application,
+        "http": django_application,
+        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
+    })
+
+
+def get_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
+    """
+    Create the default routing configuration for supporting GraphQL over Server-Sent Events.
+    Onlt required when using the single connection mode.
+
+    >>> # asgi.py
+    >>> import os
+    >>>
+    >>> from django.core.asgi import get_asgi_application
+    >>>
+    >>> os.environ.setdefault("DJANGO_SETTINGS_MODULE", "...")
+    >>> django_application = get_asgi_application()
+    >>>
+    >>> # Needs to be imported after 'django_application' is created!
+    >>> from undine.integrations.channels import get_sse_enabled_app
+    >>>
+    >>> application = get_sse_enabled_app(django_application)
+    """
+    sse_urlpatterns = [re_path(undine_settings.GRAPHQL_PATH, GraphQLSSESingleConnectionConsumer.as_asgi())]
+    sse_application = AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(sse_urlpatterns)))
+
+    return GraphQLSSERouter(asgi_application=django_application, sse_application=sse_application)
+
+
+def get_websocket_and_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
+    """
+    Create the default routing configuration for supporting GraphQL over WebSocket and SSE.
+
+    >>> # asgi.py
+    >>> import os
+    >>>
+    >>> from django.core.asgi import get_asgi_application
+    >>>
+    >>> os.environ.setdefault("DJANGO_SETTINGS_MODULE", "...")
+    >>> django_application = get_asgi_application()
+    >>>
+    >>> # Needs to be imported after 'django_application' is created!
+    >>> from undine.integrations.channels import get_websocket_and_sse_enabled_app
+    >>>
+    >>> application = get_websocket_and_sse_enabled_app(django_application)
+    """
+    websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]
+
+    return ProtocolTypeRouter({
+        "http": get_sse_enabled_app(django_application),
         "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
     })

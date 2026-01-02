@@ -3,13 +3,15 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
+from asgiref.typing import ASGIVersions
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
 from graphql import FormattedExecutionResult
 
+from undine.dataclasses import CompletedEventDC, NextEventDC
 from undine.http.files import extract_files
 from undine.persisted_documents.utils import to_document_id
 from undine.settings import undine_settings
@@ -18,11 +20,12 @@ from undine.typing import WebSocketASGIScope
 from .query_logging import capture_database_queries
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, AsyncIterator
     from http.cookies import SimpleCookie
 
     from django.contrib.auth.models import User
     from django.core.files import File
+    from django.http import StreamingHttpResponse
     from graphql import GraphQLFormattedError
 
     from undine.typing import DjangoTestClientResponseProtocol
@@ -132,18 +135,18 @@ class WebSocketMixin:
             msg = "The `channels` library is not installed. Cannot create websocket."
             raise RuntimeError(msg)
 
-        scope = self._get_default_scope()
+        scope = self._get_websocket_scope()
         scope.update(kwargs)  # type: ignore[typeddict-item]
 
         return TestWebSocket(scope=scope)
 
-    def _get_default_scope(self) -> WebSocketASGIScope:
+    def _get_websocket_scope(self) -> WebSocketASGIScope:
         # From 'django.test.client.AsyncRequestFactory._base_scope'
         cookies = (f"{morsel.key}={morsel.coded_value}".encode("ascii") for morsel in self.cookies.values())
         path = f"/{undine_settings.WEBSOCKET_PATH}"
         return WebSocketASGIScope(  # type: ignore[typeddict-item]
             type="websocket",
-            asgi={"version": "3.0"},
+            asgi=ASGIVersions(version="3.0", spec_version="1.0"),
             http_version="1.1",
             scheme="ws",
             server=("testserver", 80),
@@ -170,6 +173,81 @@ class WebSocketMixin:
             #
             # 'user' and 'session' are set in the `WebSocketContextManager` `AuthMiddlewareStack`.
         )  # type: ignore[typeddict-item]
+
+
+class SSEMixin:
+    """Mixin to support GraphQL over SSE requests."""
+
+    cookies: SimpleCookie
+
+    async def over_sse(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+        count_queries: bool = False,
+    ) -> AsyncGenerator[GraphQLClientSSEResponse, None]:
+        """
+        Send a GraphQL over SSE request in distinct connection mode and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+        headers = headers or {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        headers["Accept"] = "text/event-stream"
+
+        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
+            path=f"/{undine_settings.GRAPHQL_PATH}",
+            data=body,
+            content_type="application/json",
+            headers=headers,
+        )
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+
+        while True:
+            with capture_database_queries(enabled=count_queries) as results:
+                try:
+                    event_data = await anext(responses)
+                except StopAsyncIteration as error:
+                    msg = "Stream ended without complete event"
+                    raise RuntimeError(msg) from error
+
+            event: NextEventDC | CompletedEventDC | None = None
+            for decode in [_decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
+                with suppress(Exception):
+                    event = decode(event_data)
+                    break
+
+            if event is None:
+                msg = "Unknown event type"
+                raise RuntimeError(msg)
+
+            if isinstance(event, CompletedEventDC):
+                break
+
+            yield GraphQLClientSSEResponse(event.data, results)
 
 
 class GraphQLClient(WebSocketMixin, Client):
@@ -249,7 +327,7 @@ class GraphQLClient(WebSocketMixin, Client):
         return user
 
 
-class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
+class AsyncGraphQLClient(SSEMixin, WebSocketMixin, AsyncClient):
     """An async GraphQL client for testing."""
 
     async def __call__(
@@ -310,7 +388,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             **kwargs,
         }
         user, _ = await get_user_model().objects.aget_or_create(username=username, defaults=defaults)
-        self.force_login(user)
+        await self.aforce_login(user)
         return user
 
     async def login_with_regular_user(self, username: str = "user", **kwargs: Any) -> User:
@@ -322,7 +400,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             **kwargs,
         }
         user, _ = await get_user_model().objects.aget_or_create(username=username, defaults=defaults)
-        self.force_login(user)
+        await self.aforce_login(user)
         return user
 
 
@@ -530,6 +608,19 @@ class GraphQLClientWebSocketResponse(BaseGraphQLClientResponse):
         return self.result
 
 
+class GraphQLClientSSEResponse(BaseGraphQLClientResponse):
+    """A Server-Sent Events response from the GraphQLClient."""
+
+    def __init__(self, result: FormattedExecutionResult, database_queries: DBQueryData) -> None:
+        self.result = result
+        super().__init__(database_queries=database_queries)
+
+    @property
+    def json(self) -> FormattedExecutionResult:
+        """Return the JSON content of the response."""
+        return self.result
+
+
 def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
     path_map: dict[str, list[str]] = {}
     files_map: dict[str, File] = {}
@@ -542,3 +633,83 @@ def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -
         "map": json.dumps(path_map),
         **files_map,
     }
+
+
+def _decode_sse_next_event_dc(event_data: bytes | str) -> NextEventDC:
+    event: Literal["next"] | None = None
+    data: FormattedExecutionResult | None = None
+
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    for part in event_data.split("\n"):
+        part = part.strip()  # noqa: PLW2901
+        if not part:
+            continue
+
+        key, value = part.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        match key:
+            case "event":
+                if value != "next":
+                    msg = f"Expected 'next' event, got {value!r}"
+                    raise ValueError(msg)
+
+                event = value
+
+            case "data":
+                # TODO: Validate data
+                data = FormattedExecutionResult(**json.loads(value))
+
+            case _:
+                msg = f"Unknown key: {key!r}"
+                raise ValueError(msg)
+
+    if event is None:
+        msg = "Missing 'event' key"
+        raise ValueError(msg)
+
+    if data is None:
+        msg = "Missing 'data' key"
+        raise ValueError(msg)
+
+    return NextEventDC(data=data)
+
+
+def _decode_sse_complete_event_dc(event_data: bytes | str) -> CompletedEventDC:
+    event: Literal["complete"] | None = None
+
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    for part in event_data.split("\n"):
+        part = part.strip()  # noqa: PLW2901
+        if not part:
+            continue
+
+        key, value = part.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        match key:
+            case "event":
+                if value != "complete":
+                    msg = f"Expected 'complete' event, got {value!r}"
+                    raise ValueError(msg)
+
+                event = value
+
+            case "data":
+                if value:
+                    msg = "Unexpected value for 'data' key"
+                    raise ValueError(msg)
+
+            case _:
+                msg = f"Unknown key: {key!r}"
+                raise ValueError(msg)
+
+    if event is None:
+        msg = "Missing 'event' key"
+        raise ValueError(msg)
+
+    return CompletedEventDC()

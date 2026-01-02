@@ -15,3 +15,7 @@ def websocket_testing(request: HttpRequest) -> HttpResponse:
         "ws_path": undine_settings.WEBSOCKET_PATH,
     }
     return render(request, "app/websocket_testing.html", context=context)
+
+
+def sse_testing(request: HttpRequest) -> HttpResponse:
+    return render(request, "app/sse_testing.html")
