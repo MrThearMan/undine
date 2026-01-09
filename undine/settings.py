@@ -200,14 +200,23 @@ class UndineDefaultSettings(NamedTuple):
 
     # Server-Sent Events
 
-    ALLOW_SSE_WITH_HTTP_1_1: bool = False  # TODO: Document
-    """Whether Server-Sent Events can be used with HTTP/1.1."""
-
     ALLOW_QUERIES_WITH_SSE: bool = False
     """Whether queries can be executed over Server-Sent Events."""
 
     ALLOW_MUTATIONS_WITH_SSE: bool = False
     """Whether mutations can be executed over Server-Sent Events."""
+
+    SSE_CACHE_PREFIX: str = "undine_sse"
+    """The prefix for the cache key used for storing the SSE stream."""
+
+    SSE_TOKEN_HEADER_NAME: str = "X-GraphQL-Event-Stream-Token"  # noqa: S105
+    """The name of the HTTP header to use for the GraphQL over SSE event stream token."""
+
+    SSE_TOKEN_QUERY_PARAM_NAME: str = "token"  # noqa: S105
+    """The name of the query string parameter to use for the GraphQL over SSE event stream token."""
+
+    USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
+    """Whether Server-Sent Events should use distinct connections mode without a HTTP/2 connection."""
 
     # Django-modeltranslation
 

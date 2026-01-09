@@ -1018,6 +1018,30 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.SCALAR_TYPE_NOT_SUPPORTED
 
 
+class GraphQLSSEOperationIdMissingError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE DELETE request is missing operationId query parameter."""
+
+    msg = "Missing `operationId` query parameter"
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.SSE_OPERATION_ID_MISSING
+
+
+class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE PUT request is trying to create a stream for a user when one already exists."""
+
+    msg = "Stream already open"
+    status = HTTPStatus.CONFLICT
+    code = UndineErrorCodes.SSE_STREAM_ALREADY_OPEN
+
+
+class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE DELETE request is trying to delete a stream for a user that doesn't exist."""
+
+    msg = "Stream not found"
+    status = HTTPStatus.NOT_FOUND
+    code = UndineErrorCodes.SSE_STREAM_NOT_FOUND
+
+
 class GraphQLSubscriptionNoEventStreamError(GraphQLStatusError):
     """Error raised when a subscription does not return an event stream."""
 

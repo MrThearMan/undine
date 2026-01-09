@@ -88,18 +88,6 @@ Whether mutations can be executed over WebSockets.
 
 ///
 
-/// details | `ALLOWE_SSE_WITH_HTTP_1_1`
-    attrs: {id: allowed_sse_with_http_1_1}
-
-Type: `bool` | Default: `False`
-
-Whether Server-Sent Events can be used with HTTP/1.1.
-See the warning about this [here][http_1_1_sse].
-
-[http_1_1_sse]: https://developer.mozilla.org/en-US/docs/Web/API/EventSource#:~:text=web%20storage.-,Warning,-%3A%20When%20not
-
-///
-
 /// details | `ASYNC`
     attrs: {id: async}
 
@@ -737,6 +725,24 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 ///
 
+/// details | `SSE_TOKEN_HEADER_NAME`
+    attrs: {id: sse_token_header_name}
+
+Type: `str` | Default: `"X-GraphQL-Event-Stream-Token"`
+
+The name of the HTTP header to use for the GraphQL over SSE event stream token.
+
+///
+
+/// details | `SSE_TOKEN_QUERY_PARAM_NAME`
+    attrs: {id: sse_token_query_param_name}
+
+Type: `str` | Default: `"token"`
+
+The name of the query string parameter to use for the GraphQL over SSE event stream token.
+
+///
+
 /// details | `TESTING_CLIENT_FULL_STACKTRACE`
     attrs: {id: testing_client_full_stacktrace}
 
@@ -778,6 +784,18 @@ so must be set before running migrations for the persisted documents app.
 Type: `str` | Default: `"undine_union_type"`
 
 The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
+
+///
+
+/// details | `USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`
+    attrs: {id: use_sse_distinct_connections_for_http_1}
+
+Type: `bool` | Default: `False`
+
+Whether Server-Sent Events should use distinct connections mode without a HTTP/2 connection.
+See the warning about this [here][http_1_1_sse].
+
+[http_1_1_sse]: https://developer.mozilla.org/en-US/docs/Web/API/EventSource#:~:text=web%20storage.-,Warning,-%3A%20When%20not
 
 ///
 

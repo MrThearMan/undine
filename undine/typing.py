@@ -36,6 +36,7 @@ from typing import _eval_type  # type: ignore[attr-defined]  # isort: skip  # no
 
 from collections.abc import Iterable
 
+from asgiref.typing import HTTPScope, WebSocketScope
 from django.db.models import (
     Expression,
     F,
@@ -78,6 +79,7 @@ from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
     from collections.abc import Container
+    from http import HTTPStatus
     from http.cookies import SimpleCookie
 
     from asgiref.typing import ASGISendEvent
@@ -305,11 +307,11 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
 
     @property
     def GET(self) -> QueryDict:  # noqa: N802
-        """A dictionary-like object containing all given HTTP GET parameters."""
+        """A dictionary-like object containing all given HTTP GET parameters (i.e. query/search string)."""
 
     @property
     def POST(self) -> QueryDict:  # noqa: N802
-        """A dictionary-like object containing all given HTTP POST parameters."""
+        """A dictionary-like object containing all given HTTP POST parameters (i.e. form data)."""
 
     @property
     def COOKIES(self) -> dict[str, str]:  # noqa: N802
@@ -682,6 +684,9 @@ class UndineErrorCodes(StrEnum):
     SCALAR_CONVERSION_ERROR = auto()
     SCALAR_INVALID_VALUE = auto()
     SCALAR_TYPE_NOT_SUPPORTED = auto()
+    SSE_OPERATION_ID_MISSING = auto()
+    SSE_STREAM_ALREADY_OPEN = auto()
+    SSE_STREAM_NOT_FOUND = auto()
     SUBSCRIPTION_TIMEOUT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()
@@ -1312,21 +1317,17 @@ class UrlRoute(TypedDict):
     kwargs: dict[str, str]
 
 
-class WebSocketASGIScope(TypedDict):
-    type: str
-    asgi: dict[str, str]
-    http_version: str
-    scheme: str
-    server: tuple[str, int]
-    client: tuple[str, int]
-    root_path: str
-    path: str
-    raw_path: bytes
-    query_string: bytes
-    headers: list[tuple[bytes, bytes]]
-    subprotocols: list[str]
-    state: dict[str, Any]
-    extensions: dict[str, Any]
+class HTTPASGIScope(HTTPScope):
+    # Added by middleware
+    cookies: dict[str, str]
+    session: SessionBase
+    user: User | AnonymousUser
+    path_remaining: str
+    url_route: UrlRoute
+
+
+class WebSocketASGIScope(WebSocketScope):
+    # Added by middleware
     cookies: dict[str, str]
     session: SessionBase
     user: User | AnonymousUser
@@ -1432,3 +1433,10 @@ class WebSocketProtocol(Protocol):
     def scope(self) -> WebSocketASGIScope: ...
 
     async def send(self, message: ASGISendEvent) -> None: ...
+
+
+class SSEProtocol(Protocol):
+    @property
+    def scope(self) -> HTTPASGIScope: ...
+
+    async def send_response(self, status: HTTPStatus, headers: dict[str, str] | None = None) -> None: ...

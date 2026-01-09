@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import dataclasses
-import inspect
 import json
 from collections.abc import Awaitable, Callable
 from enum import StrEnum
 from functools import cached_property, wraps
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from django.http import HttpRequest, HttpResponse
 from django.http.request import MediaType
@@ -41,7 +40,8 @@ __all__ = [
     "load_json_dict",
     "parse_json_body",
     "render_graphiql",
-    "require_graphql_request",
+    "require_graphql_request_async",
+    "require_graphql_request_sync",
     "require_persisted_documents_request",
 ]
 
@@ -69,7 +69,13 @@ class HttpEventSourcingNotAllowedResponse(HttpResponse):
 
 
 def get_preferred_response_content_type(accepted: list[MediaType], supported: list[str]) -> str | None:
-    """Get the first supported media type matching given accepted types."""
+    """
+    Get the first supported media type matching given accepted types.
+
+    :param accepted: The accepted media types.
+    :param supported: The supported media types, in order of preference.
+    :returns: The first supported media type matching given accepted types.
+    """
     for accepted_type in accepted:
         for supported_type in supported:
             if accepted_type.match(supported_type):
@@ -162,6 +168,15 @@ def get_http_version(request: DjangoRequestProtocol) -> tuple[int, ...]:
     return tuple(int(part) for part in str(float(protocol)).split("."))
 
 
+def get_graphql_event_stream_token(request: DjangoRequestProtocol) -> str | None:
+    """Get the GraphQL over SSE event stream token from the given request."""
+    if undine_settings.SSE_TOKEN_HEADER_NAME in request.headers:
+        return request.headers[undine_settings.SSE_TOKEN_HEADER_NAME]
+    if undine_settings.SSE_TOKEN_QUERY_PARAM_NAME in request.GET:
+        return request.GET[undine_settings.SSE_TOKEN_QUERY_PARAM_NAME]
+    return None
+
+
 def graphql_result_response(
     result: ExecutionResult,
     *,
@@ -180,66 +195,108 @@ SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
 AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 
 
-@overload
-def require_graphql_request(func: SyncViewIn) -> SyncViewOut: ...
-
-
-@overload
-def require_graphql_request(func: AsyncViewIn) -> AsyncViewOut: ...
-
-
-def require_graphql_request(func: SyncViewIn | AsyncViewIn) -> SyncViewOut | AsyncViewOut:
+def require_graphql_request_sync(func: SyncViewIn) -> SyncViewOut:
     """
-    Perform various checks on the request to ensure it's suitable for GraphQL operations.
+    Perform various checks on the request to ensure it's suitable for GraphQL operations in a synchronous server.
     Can also return early to display GraphiQL.
     """
-    methods: list[RequestMethod] = ["GET", "POST"]
+    allowed_methods: list[RequestMethod] = ["GET", "POST"]
 
-    def get_supported_types() -> list[str]:
-        supported_types = [
+    @wraps(func)
+    def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
+        if request.method not in allowed_methods:
+            return HttpMethodNotAllowedResponse(allowed_methods=allowed_methods)
+
+        supported_types: list[str] = [
             "application/graphql-response+json",
             "application/json",
-            "text/event-stream",
         ]
         if undine_settings.GRAPHIQL_ENABLED:
             supported_types.append("text/html")
-        return supported_types
 
-    if inspect.iscoroutinefunction(func):
+        media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
+        if media_type is None:
+            return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
-        @wraps(func)
-        async def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
-            if request.method not in methods:
-                return HttpMethodNotAllowedResponse(allowed_methods=methods)
+        # 'test/html' is reserved for GraphiQL which must use GET
+        if media_type == "text/html":
+            if request.method != "GET":
+                return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
+            return render_graphiql(request)  # type: ignore[arg-type]
 
-            supported_types = get_supported_types()
-            media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
-            if media_type is None:
-                return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
+        request.response_content_type = media_type
+        return func(request)  # type: ignore[return-value]
 
-            if media_type == "text/html":
-                return render_graphiql(request)  # type: ignore[arg-type]
+    return wrapper  # type: ignore[return-value]
 
-            request.response_content_type = media_type
-            return await func(request)
 
-    else:
+def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
+    """
+    Perform various checks on the request to ensure it's suitable for GraphQL operations in an asynchronous server.
+    Can also return early to display GraphiQL.
+    """
 
-        @wraps(func)
-        def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
-            if request.method not in methods:
-                return HttpMethodNotAllowedResponse(allowed_methods=methods)
+    @wraps(func)
+    async def wrapper(request: DjangoRequestProtocol) -> DjangoResponseProtocol | HttpResponse:
+        supported_types: list[str] = []
+        match request.method:
+            # GET requests can be:
+            # 1) For executing GraphQL over HTTP operations.
+            # 2) For displaying GraphiQL.
+            # 3) For executing GraphQL over SSE operations in distinct connections mode.
+            # 4) For receiving the GraphQL over SSE connection in single connections mode.
+            case "GET":
+                if get_graphql_event_stream_token(request):
+                    supported_types.append("text/event-stream")
+                else:
+                    supported_types += [
+                        "application/graphql-response+json",
+                        "application/json",
+                        "text/event-stream",
+                    ]
+                    if undine_settings.GRAPHIQL_ENABLED:
+                        supported_types.append("text/html")
 
-            supported_types = get_supported_types()
-            media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
-            if media_type is None:
-                return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
+            # Post requests can be:
+            # 1) For executing GraphQL over HTTP operations.
+            # 2) For executing GraphQL over SSE operations in distinct connections mode.
+            # 3) For enqueuing GraphQL over SSE operations in single connections mode.
+            case "POST":
+                if get_graphql_event_stream_token(request):
+                    request.response_content_type = "text/plain"  # Not important
+                    return await func(request)
 
-            if media_type == "text/html":
-                return render_graphiql(request)  # type: ignore[arg-type]
+                supported_types += [
+                    "application/graphql-response+json",
+                    "application/json",
+                    "text/event-stream",
+                ]
 
-            request.response_content_type = media_type
-            return func(request)  # type: ignore[return-value]
+            # Put requests can be:
+            # 1) For reserving a SSE connection in GraphQL over SSE single connection mode.
+            case "PUT":
+                supported_types.append("text/plain")
+
+            # Delete requests can be:
+            # 1) For closing subscriptions in GraphQL over SSE single connection mode.
+            case "DELETE":
+                request.response_content_type = "text/plain"  # Not important
+                return await func(request)
+
+            case _:
+                return HttpMethodNotAllowedResponse(allowed_methods=["GET", "POST", "PUT", "DELETE"])
+
+        media_type = get_preferred_response_content_type(accepted=request.accepted_types, supported=supported_types)
+        if media_type is None:
+            return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
+
+        if media_type == "text/html":
+            if request.method != "GET":
+                return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
+            return render_graphiql(request)  # type: ignore[arg-type]
+
+        request.response_content_type = media_type
+        return await func(request)
 
     return wrapper  # type: ignore[return-value]
 
