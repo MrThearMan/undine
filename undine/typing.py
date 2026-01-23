@@ -78,7 +78,7 @@ from graphql import (
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Container
+    from collections.abc import Container
     from http.cookies import SimpleCookie
 
     from asgiref.typing import (
@@ -1477,7 +1477,7 @@ class SSEProtocol(Protocol):
         ),
     ) -> None: ...
 
-    async def get_stream(self, stream_token: str) -> AsyncIterable[str]: ...
+    async def start_stream(self, stream_token: str) -> None: ...
 
     async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None: ...
 
@@ -1499,3 +1499,16 @@ class SSEStreamState(TypedDict):
 
     state: SSEState
     stream_token: str
+
+
+class SSEOperationResultEvent(TypedDict):
+    """A new result for an operation."""
+
+    type: Literal["sse.operation.event"]
+    event: str
+
+
+class SSEOperationCancelEvent(TypedDict):
+    """A request to cancel an operation."""
+
+    type: Literal["sse.operation.cancel"]

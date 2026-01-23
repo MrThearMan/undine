@@ -3,12 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from django.core.management.utils import get_random_secret_key
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
-SECRET_KEY = get_random_secret_key()
+SECRET_KEY = "test-secret-key"  # noqa: S105
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 ROOT_URLCONF = "example_project.project.urls"
 WSGI_APPLICATION = "example_project.project.wsgi.application"
@@ -67,11 +65,12 @@ DATABASES = {
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
     },
 }
 
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -150,7 +149,7 @@ UNDINE = {
     "FILE_UPLOAD_ENABLED": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,
-    "USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1": True,
+    "USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1": False,
     "NO_ERROR_LOCATION": True,
     # "EXPERIMENTAL_VISIBILITY_CHECKS": True,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
