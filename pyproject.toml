@@ -69,8 +69,8 @@ channels = { version = ">=4.2.2", optional = true }
 pytest = "9.0.2"
 pytest-django = "4.11.1"
 pytest-asyncio = "1.3.0"
-coverage = "7.13.1"
-hypothesis = "6.150.2"
+coverage = "7.13.2"
+hypothesis = "6.151.2"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2025.11.12"
@@ -81,7 +81,7 @@ uvicorn = { version = "0.40.0", extras = ["standard"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.20"
+pymdown-extensions = "10.20.1"
 pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 beautifulsoup4 = "4.14.3"
@@ -90,7 +90,7 @@ click = "8.3.1"  # TODO: Remove when https://github.com/mkdocs/mkdocs/issues/403
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.5.1"
 mypy = "1.19.1"
-django-stubs = "5.2.8"
+django-stubs = "5.2.9"
 py-spy = "0.4.1"
 httpx = "0.28.1"
 
