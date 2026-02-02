@@ -15,8 +15,10 @@ from django.core.handlers.asgi import ASGIRequest
 from django.urls import re_path
 
 from undine.dataclasses import CompletedEventSC
+from undine.exceptions import ContinueConsumer
 from undine.http.utils import get_graphql_event_stream_token
 from undine.settings import undine_settings
+from undine.typing import SSEOperationCancelEvent, SSEOperationResultEvent
 from undine.utils.graphql.server_sent_events import (
     GraphQLOverSSESingleConnectionHandler,
     SSERequest,
@@ -25,7 +27,7 @@ from undine.utils.graphql.server_sent_events import (
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Awaitable
+    from collections.abc import Awaitable
 
     from asgiref.typing import (
         ASGI3Application,
@@ -70,6 +72,7 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
         raise StopConsumer
 
 
+# TODO: Maybe split this into separate consumers for each method? Simpler?
 class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
     """Single connection mode consumer for GraphQL over Server-Sent Events."""
 
@@ -82,9 +85,9 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
         self.request: DjangoRequestProtocol = None  # type: ignore[assignment]
 
         # Set by the stream consumer.
-        self.event_queue: asyncio.Queue[str] = asyncio.Queue()
+        self.stream_group_name: str = ""
 
-        # Used by operation consumers.
+        # Set by operation consumers.
         self.operation: asyncio.Task | None = None
 
     # HTTP interface
@@ -94,13 +97,21 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
 
         if not message.get("more_body"):
             self.request = SSERequest(scope=self.scope, messages=self.messages)  # type: ignore[assignment]
+
             try:
                 await self.handler.receive(request=self.request)
-            finally:
-                await self.disconnect()
+            except ContinueConsumer:
+                return
+
+            await self.disconnect()
             raise StopConsumer
 
     async def http_disconnect(self, message: HTTPDisconnectEvent) -> Never:
+        # TODO: Any channel consumer may receive this event.
+        #  This can be either the consumer handling the event stream
+        #  or any consumer handling an ongoing operation.
+        # TODO: When subscription ends, client sends a 'disconnect' message.
+        #  but the event stream should still be open.
         await self.disconnect()
         await aclose_old_connections()
         raise StopConsumer
@@ -111,27 +122,15 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
             with suppress(BaseException):
                 await self.operation
 
-        self.event_queue.shutdown(immediate=True)
+        if self.stream_group_name:
+            await self.channel_layer.group_discard(group=self.stream_group_name, channel=self.channel_name)
+            await self.handler.stop_event_stream(request=self.request)
 
     # SSE interface
 
-    async def get_stream(self, stream_token: str) -> AsyncIterable[str]:
-        stream_group_name = get_stream_group_name(stream_token=stream_token)
-
-        await self.channel_layer.group_add(group=stream_group_name, channel=self.channel_name)
-
-        async def stream() -> AsyncIterable[str]:
-            try:
-                while True:
-                    try:
-                        yield await self.event_queue.get()
-                    except (asyncio.CancelledError, asyncio.QueueShutDown):
-                        break
-
-            finally:
-                await self.channel_layer.group_discard(group=stream_group_name, channel=self.channel_name)
-
-        return stream()
+    async def start_stream(self, stream_token: str) -> None:
+        self.stream_group_name = get_stream_group_name(stream_token=stream_token)
+        await self.channel_layer.group_add(group=self.stream_group_name, channel=self.channel_name)
 
     async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
         stream_group_name = get_stream_group_name(stream_token=stream_token)
@@ -147,7 +146,7 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
                     completed = completed or event.event == "complete"
                     await self.channel_layer.group_send(
                         group=stream_group_name,
-                        message={"type": message_type, "event": event.encode()},
+                        message=SSEOperationResultEvent(type=message_type, event=event.encode()),
                     )
 
             except asyncio.CancelledError:
@@ -156,7 +155,7 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
                     event = CompletedEventSC(operation_id=operation_id)
                     await self.channel_layer.group_send(
                         group=stream_group_name,
-                        message={"type": message_type, "event": event.encode()},
+                        message=SSEOperationResultEvent(type=message_type, event=event.encode()),
                     )
 
         try:
@@ -168,14 +167,19 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
     async def cancel_operation(self, stream_token: str, operation_id: str) -> None:
         operation_group_name = get_operation_group_name(stream_token=stream_token, operation_id=operation_id)
         message_type = self.sse_operation_cancel.__name__.replace("_", ".")
-        await self.channel_layer.group_send(group=operation_group_name, message={"type": message_type})
+        event = SSEOperationCancelEvent(type=message_type)
+        # TODO: Doesn't work since we would need to get back to the consumer loop
+        #  for the group message to be processed.
+        await self.channel_layer.group_send(group=operation_group_name, message=event)
 
     # Consumer group methods
 
-    async def sse_operation_event(self, event: str) -> None:
-        await self.event_queue.put(event)
+    async def sse_operation_event(self, event: SSEOperationResultEvent) -> None:
+        """Called in the stream consumer to send an event to the client."""
+        await self.handler.send_body(body=event["event"], more_body=True)
 
-    async def sse_operation_cancel(self) -> None:
+    async def sse_operation_cancel(self, event: SSEOperationCancelEvent) -> None:
+        """Called in an operation consumer to cancel its operation."""
         if self.operation is not None:
             self.operation.cancel()
 
@@ -188,7 +192,7 @@ def get_operation_group_name(*, stream_token: str, operation_id: str) -> str:
     return f"graphql.sse.{stream_token}.{operation_id}"
 
 
-class GraphQLSSERouter:
+class GraphQLSSERouter:  # TODO: test
     """
     Router that sends GraphQL over Server-Sent Events requests
     to the single connection mode handler when required.
@@ -199,8 +203,8 @@ class GraphQLSSERouter:
         self.sse_application = sse_application
 
     def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> Awaitable[None]:
-        path = scope["path"].removesuffix("/")
-        graphql_path = undine_settings.GRAPHQL_PATH.removesuffix("/")
+        path = scope["path"].removeprefix("/").removesuffix("/")
+        graphql_path = undine_settings.GRAPHQL_PATH.removeprefix("/").removesuffix("/")
 
         # Only the GraphQL endpoint can have GraphQL over SSE requests.
         if path != graphql_path:
@@ -266,7 +270,7 @@ def get_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no c
     >>> application = get_sse_enabled_app(django_application)
     """
     sse_urlpatterns = [re_path(undine_settings.GRAPHQL_PATH, GraphQLSSESingleConnectionConsumer.as_asgi())]
-    sse_application = AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(sse_urlpatterns)))
+    sse_application = AuthMiddlewareStack(URLRouter(sse_urlpatterns))
 
     return GraphQLSSERouter(asgi_application=django_application, sse_application=sse_application)
 

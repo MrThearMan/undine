@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from django.http import HttpResponsePermanentRedirect
 from django.shortcuts import render
+from django.urls import reverse
 
 from undine.settings import undine_settings
 
@@ -18,4 +20,12 @@ def websocket_testing(request: HttpRequest) -> HttpResponse:
 
 
 def sse_testing(request: HttpRequest) -> HttpResponse:
-    return render(request, "app/sse_testing.html")
+    return HttpResponsePermanentRedirect(redirect_to=reverse("sse_testing_dc"))
+
+
+def sse_testing_dc(request: HttpRequest) -> HttpResponse:
+    return render(request, "app/sse_testing_dc.html")
+
+
+def sse_testing_sc(request: HttpRequest) -> HttpResponse:
+    return render(request, "app/sse_testing_sc.html")

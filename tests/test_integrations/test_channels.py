@@ -16,6 +16,7 @@ import pytest
 from asgiref.typing import (
     ASGIReceiveEvent,
     ASGIVersions,
+    HTTPDisconnectEvent,
     HTTPRequestEvent,
     HTTPResponseBodyEvent,
     HTTPResponseStartEvent,
@@ -140,6 +141,10 @@ async def sse_sc_request(
     response_body: list[bytes] = []
 
     async def receive() -> ASGIReceiveEvent:  # noqa: RUF029
+        if is_streaming:
+            # Don't send anything else, just end the stream.
+            return HTTPDisconnectEvent(type="http.disconnect")
+
         return HTTPRequestEvent(type="http.request", body=body.encode("utf-8"), more_body=False)
 
     async def send(event: HTTPResponseStartEvent | HTTPResponseBodyEvent) -> None:  # noqa: RUF029
@@ -157,8 +162,6 @@ async def sse_sc_request(
                 content_type = response_headers.get("Content-Type")
                 if content_type is not None and MediaType(content_type).match("text/event-stream"):
                     is_streaming = True
-                    # Too much trouble to test the event stream properly,so just end the stream immediately.
-                    task.cancel()
 
             case "http.response.body":
                 response_body.append(event["body"])

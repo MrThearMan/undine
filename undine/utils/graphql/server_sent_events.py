@@ -17,6 +17,7 @@ from graphql import GraphQLError
 
 from undine.dataclasses import CompletedEventDC, CompletedEventSC, NextEventDC, NextEventSC
 from undine.exceptions import (
+    ContinueConsumer,
     GraphQLErrorGroup,
     GraphQLSSEOperationAlreadyExistsError,
     GraphQLSSEOperationIdMissingError,
@@ -39,7 +40,7 @@ from undine.typing import DjangoRequestProtocol, SSEState, SSEStreamState
 from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Awaitable, Callable
+    from collections.abc import Awaitable, Callable
 
     from asgiref.typing import HTTPRequestEvent
     from django.contrib.auth.models import AnonymousUser, User
@@ -153,6 +154,9 @@ def raised_exceptions_to_responses(func: Callable[P, Awaitable[None]]) -> Callab
             await self.send_graphql_error_response(error)
             return None
 
+        except ContinueConsumer:
+            raise
+
         except Exception as error:  # noqa: BLE001
             await self.send_graphql_error_response(GraphQLUnexpectedError(message=str(error)))
             return None
@@ -186,7 +190,7 @@ class GraphQLOverSSESingleConnectionHandler:
                 # Must ask for 'text/event-stream' specifically, not any less specific media type.
                 if any(a.main_type == "text" and a.sub_type == "event-stream" for a in request.accepted_types):
                     request.response_content_type = "text/event-stream"
-                    await self.get_event_stream(request)
+                    await self.start_event_stream(request)
                     return
 
                 request.response_content_type = "text/plain"
@@ -219,8 +223,8 @@ class GraphQLOverSSESingleConnectionHandler:
         response = HttpResponse(content=stream_token, content_type="text/plain", status=HTTPStatus.CREATED)
         await self.send_http_response(response)
 
-    async def get_event_stream(self, request: DjangoRequestProtocol) -> None:
-        """Handle the 'GET' or 'POST' request to get an event stream."""
+    async def start_event_stream(self, request: DjangoRequestProtocol) -> None:
+        """Handle the 'GET' or 'POST' request to start the event stream."""
         stream_token = get_graphql_event_stream_token(request)
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
@@ -240,13 +244,27 @@ class GraphQLOverSSESingleConnectionHandler:
         await request.session.aset(key=session_key, value=stream_state)
         await request.session.asave()
 
-        stream = await self.sse.get_stream(stream_token=stream_token)
+        headers: dict[str, str] = {
+            "Connection": "keep-alive",
+            "Cache-Control": "no-cache",
+            "Content-Encoding": "none",
+            "Content-Type": "text/event-stream; charset=utf-8",
+        }
 
-        try:
-            await self.send_streaming_response(stream)
-        finally:
-            await request.session.apop(key=session_key, default=None)
-            await request.session.asave()
+        await self.send_headers(status=HTTPStatus.OK, headers=headers)
+        await self.send_body(body="", more_body=True)
+
+        await self.sse.start_stream(stream_token=stream_token)
+        raise ContinueConsumer
+
+    async def stop_event_stream(self, request: DjangoRequestProtocol) -> None:
+        """Handle stopping the event stream on disconnect."""
+        session_key = undine_settings.SSE_STREAM_SESSION_KEY
+
+        await request.session.apop(key=session_key, default=None)
+        await request.session.asave()
+
+        await self.send_body(body="", more_body=False)
 
     async def subscribe(self, request: DjangoRequestProtocol) -> None:
         """Handle the 'GET' or 'POST' request to add an operation to the event stream."""
@@ -345,27 +363,6 @@ class GraphQLOverSSESingleConnectionHandler:
     ) -> None:
         await self.send_headers(status=status, headers=headers)
         await self.send_body(body=body)
-
-    async def send_streaming_response(
-        self,
-        stream: AsyncIterable[str],
-        status: HTTPStatus = HTTPStatus.OK,
-        headers: dict[str, Any] | None = None,
-    ) -> None:
-        headers = {key.title(): value for key, value in (headers or {}).items()} | {
-            "Connection": "keep-alive",
-            "Cache-Control": "no-cache",
-            "Content-Encoding": "none",
-            "Content-Type": "text/event-stream; charset=utf-8",
-        }
-
-        await self.send_headers(status=status, headers=headers)
-
-        try:
-            async for chunk in stream:
-                await self.send_body(body=chunk, more_body=True)
-        finally:
-            await self.send_body(body="", more_body=False)
 
     # Low-level interface
 

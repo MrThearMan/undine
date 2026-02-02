@@ -38,6 +38,10 @@ class ErrorMessageFormatter(Formatter):
         return super().format_field(value, format_spec)
 
 
+class ContinueConsumer(Exception):  # noqa: N818
+    """Raised in SSE integration to keep consumer alive for streaming responses."""
+
+
 # Undine Errors
 
 
@@ -1298,33 +1302,3 @@ class WebSocketUnsupportedSubProtocolError(WebSocketError):
 class WebSocketConnectionClosedError(WebSocketError):
     reason = "Connection closed"
     code = GraphQLWebSocketCloseCode.NORMAL_CLOSURE
-
-
-# SSE errors
-
-
-class ServerSentEventError(Exception):
-    """Base class for all Server-Sent Events errors."""
-
-    msg: ClassVar[str] = ""
-    status: ClassVar[int] = HTTPStatus.INTERNAL_SERVER_ERROR
-    error_formatter = ErrorMessageFormatter()
-
-    def __init__(
-        self,
-        msg: str = "",
-        **kwargs: Any,
-    ) -> None:
-        msg = msg or self.msg
-        if kwargs:
-            msg = self.error_formatter.format(msg, **kwargs)
-
-        super().__init__(msg)
-
-
-class ServerSentEventInternalServerError(ServerSentEventError):
-    """Error raised when an unexpected error occurs."""
-
-    msg = "Internal server error"
-    status = HTTPStatus.INTERNAL_SERVER_ERROR
-    error_formatter = ErrorMessageFormatter()

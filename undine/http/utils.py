@@ -138,6 +138,9 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
 
 def is_sse_request(request: DjangoRequestProtocol) -> bool:
     """Check if the given request is a Server-Sent Events request."""
+    if get_graphql_event_stream_token(request):
+        return True
+
     if not request.response_content_type:
         return False
 
