@@ -235,14 +235,14 @@ class ModuleVersion(StrEnum):
     # Note that changing the versions here will break integrity checks!
     # Integrity values can be generated using the `update_import_map` management command.
 
-    REACT = "19.1.1"
-    GRAPHIQL = "5.2.0"
+    REACT = "19.2.4"
+    GRAPHIQL = "5.2.2"
     EXPLORER = "5.1.1"
-    GRAPHIQL_REACT = "0.37.1"
+    GRAPHIQL_REACT = "0.37.3"
     GRAPHIQL_TOOLKIT = "0.11.3"
-    GRAPHQL = "16.11.0"
-    MONACO_EDITOR = "0.52.2"
-    MONACO_GRAPHQL = "1.7.2"
+    GRAPHQL = "16.12.0"
+    MONACO_EDITOR = "0.55.1"
+    MONACO_GRAPHQL = "1.7.3"
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -268,27 +268,27 @@ class ModuleInfo:
     REACT = ModuleInfoItem(
         latest="https://esm.sh/react@latest",
         version=ModuleVersion.REACT,
-        integrity="sha384-9OJoKubDZJQFG2UMdUOdDcnYWkODV+gH9m+SAlT9CjHa82SyzSkej2hzbO5QAMpj",
+        integrity="sha384-w+4QrjFjcEk/AIJMWVUzEOT0QT/s+K0xDQulhBdT/j9PWKIG08nWLFD90h0Yuj5R",
     )
     REACT_JSX_RUNTIME = ModuleInfoItem(
         latest="https://esm.sh/react@latest/jsx-runtime",
         version=ModuleVersion.REACT,
-        integrity="sha384-3NEvPP3wjioeToUCcSPmCv3hnmoZaViS/8dYJK5EGgMXDyAEaoNe5lFp7FktwR6h",
+        integrity="sha384-tF8wVaUz4YlU1j0peVFFcFrYwW8xKrWBIJmWifljDFrTVp6IgDCF5KiiwOsCuvCk",
     )
     REACT_DOM = ModuleInfoItem(
         latest="https://esm.sh/react-dom@latest",
         version=ModuleVersion.REACT,
-        integrity="sha384-AkbP9ShtoY9QW6TG7svAPqnTjTRM/eMwSY13/zh0pDEyBLfNqUJvrfJSwQEdyMIF",
+        integrity="sha384-RWUKf5R/P6U794/65YB+OKpYxJbldLkbnJSNjiByqjgea+hKkDK6vnJ2qut4Lf7W",
     )
     REACT_DOM_CLIENT = ModuleInfoItem(
         latest="https://esm.sh/react-dom@latest/client",
         version=ModuleVersion.REACT,
-        integrity="sha384-iXvysXIHXb2s4DgTQrnYhOy/v/3MBGJKfiedt0fZ4pcaFy+cvBGgWGw82BYJxlR9",
+        integrity="sha384-vZBAyOxuzVp8vJEzmS08VRItX9xKtEGa2wnM04OsCKTY2o2GWJegZzr5qWhJVQkv",
     )
     GRAPHIQL = ModuleInfoItem(
         latest="https://esm.sh/graphiql@latest?standalone&external=react,react-dom,@graphiql/react,graphql",
         version=ModuleVersion.GRAPHIQL,
-        integrity="sha384-32Vv0P2Qy9UWdE0/n9/nFmGh8tM5/vMgpAarsa+UdD6So+aS6DVBQZDIjS2lU52e",
+        integrity="sha384-SzHBEbcQfhvmwqh5Vtat9k7b/kIzmdVO3KMzQiAYwcxCA9x7vZwFRUgjzN1AeV3q",
     )
     EXPLORER = ModuleInfoItem(
         latest="https://esm.sh/@graphiql/plugin-explorer@latest?standalone&external=react,@graphiql/react,graphql",
@@ -298,7 +298,7 @@ class ModuleInfo:
     GRAPHIQL_REACT = ModuleInfoItem(
         latest="https://esm.sh/@graphiql/react@latest?standalone&external=react,react-dom,graphql",
         version=ModuleVersion.GRAPHIQL_REACT,
-        integrity="sha384-nmxT3c47Z+ZSy1Bz3TPMhyVKyF85pJI3+L9MK80JdALLMea2Z94RVLYeICwaoLbI",
+        integrity="sha384-wfIx2dG/NtlavUysWLCBT3mRQLLZDpU3b7tHWduxZnxfPBT0WHPJpCvq0nRN2PmT",
     )
     GRAPHIQL_TOOLKIT = ModuleInfoItem(
         latest="https://esm.sh/@graphiql/toolkit@latest?standalone&external=graphql",
@@ -308,22 +308,22 @@ class ModuleInfo:
     GRAPHQL = ModuleInfoItem(
         latest="https://esm.sh/graphql@latest",
         version=ModuleVersion.GRAPHQL,
-        integrity="sha384-uhRXaGfgCFqosYlwSLNd7XpDF9kcSUycv5yVbjjhH5OrE675kd0+MNIAAaSc+1Pi",
+        integrity="sha384-Oosnx71vGzeLRLBj0HblPGTSLgNCn3tEUKVdBubTBLQ9xAW9538VZvjesbp8unrb",
     )
     MONACO_EDITOR_EDITOR_WORKER = ModuleInfoItem(
         latest="https://esm.sh/monaco-editor@latest/esm/vs/editor/editor.worker.js?worker",
         version=ModuleVersion.MONACO_EDITOR,
-        integrity="sha384-lvRBk9hT6IKcVMAynOrBJUj/OCVkEaWBvzZdzvpPUqdrPW5bPsIBF7usVLLkQQxa",
+        integrity="sha384-BZ9obgm4ph1IXs2lMAaAIuWIPd1QexxQY9xMo12xtszYy7U7BiR4kAoL+K+3PTaO",
     )
     MONACO_EDITOR_JSON_WORKER = ModuleInfoItem(
         latest="https://esm.sh/monaco-editor@latest/esm/vs/language/json/json.worker.js?worker",
         version=ModuleVersion.MONACO_EDITOR,
-        integrity="sha384-8UXA1aePGFu/adc7cEQ8PPlVJityyzV0rDqM9Tjq1tiFFT0E7jIDQlOS4X431c+O",
+        integrity="sha384-7qiEK1wseX41PKB4yorOxh7EUGEIcCgIG+rMfScdSLOjX0e22HDeWlMqSKXGbC90",
     )
     MONACO_GRAPHQL_GRAPHQL_WORKER = ModuleInfoItem(
         latest="https://esm.sh/monaco-graphql@latest/esm/graphql.worker.js?worker",
         version=ModuleVersion.MONACO_GRAPHQL,
-        integrity="sha384-Ji9h9Rhy4GB+oB6VrRLZ59jpS2ab0Q1KjJu6KmbVaoTgrTjGlyodHINJ0tDivxe4",
+        integrity="sha384-AGoKY52vhA4n/sG/QGEmqHQwxnADb4WiOp9OCxOxJJJRpLaeyRG8TO3Lxf5MWvF4",
     )
     GRAPHIQL_CSS = ModuleInfoItem(
         latest="https://esm.sh/graphiql@latest/dist/style.css",
