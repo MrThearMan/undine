@@ -5,15 +5,13 @@ import hashlib
 import inspect
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 from django.core.management.base import BaseCommand
 
-from undine.http.utils import ModuleInfo
-
-if TYPE_CHECKING:
-    from undine.http.utils import ModuleInfoItem
+from undine.integrations.graphiql import ModuleInfo, ModuleInfoItem
+from undine.utils.reflection import get_members
 
 
 class Command(BaseCommand):
@@ -24,22 +22,9 @@ class Command(BaseCommand):
 
 
 def update_import_map() -> None:
-    mapping: dict[str, str] = {
-        ModuleInfo.REACT.name: sri_from_url(ModuleInfo.REACT),
-        ModuleInfo.REACT_JSX_RUNTIME.name: sri_from_url(ModuleInfo.REACT_JSX_RUNTIME),
-        ModuleInfo.REACT_DOM.name: sri_from_url(ModuleInfo.REACT_DOM),
-        ModuleInfo.REACT_DOM_CLIENT.name: sri_from_url(ModuleInfo.REACT_DOM_CLIENT),
-        ModuleInfo.GRAPHIQL.name: sri_from_url(ModuleInfo.GRAPHIQL),
-        ModuleInfo.EXPLORER.name: sri_from_url(ModuleInfo.EXPLORER),
-        ModuleInfo.GRAPHIQL_REACT.name: sri_from_url(ModuleInfo.GRAPHIQL_REACT),
-        ModuleInfo.GRAPHIQL_TOOLKIT.name: sri_from_url(ModuleInfo.GRAPHIQL_TOOLKIT),
-        ModuleInfo.GRAPHQL.name: sri_from_url(ModuleInfo.GRAPHQL),
-        ModuleInfo.MONACO_EDITOR_EDITOR_WORKER.name: sri_from_url(ModuleInfo.MONACO_EDITOR_EDITOR_WORKER),
-        ModuleInfo.MONACO_EDITOR_JSON_WORKER.name: sri_from_url(ModuleInfo.MONACO_EDITOR_JSON_WORKER),
-        ModuleInfo.MONACO_GRAPHQL_GRAPHQL_WORKER.name: sri_from_url(ModuleInfo.MONACO_GRAPHQL_GRAPHQL_WORKER),
-        ModuleInfo.GRAPHIQL_CSS.name: sri_from_url(ModuleInfo.GRAPHIQL_CSS),
-        ModuleInfo.EXPLORER_CSS.name: sri_from_url(ModuleInfo.EXPLORER_CSS),
-    }
+    mapping: dict[str, str] = {}
+    for name, value in get_members(ModuleInfo, ModuleInfoItem).items():
+        mapping[name] = sri_from_url(value)
 
     replace_integrity_in_module_info(mapping)
 
