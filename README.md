@@ -37,7 +37,7 @@ pip install undine
 
 **Source Code**: [https://github.com/MrThearMan/undine/](https://github.com/MrThearMan/undine/)
 
-**Contributing**: [https://github.com/MrThearMan/undine/blob/main/CONTRIBUTING.md](https://github.com/MrThearMan/undine/blob/main/CONTRIBUTING.md)
+**Contributing**: [https://mrthearman.github.io/undine/contributing/](https://mrthearman.github.io/undine/contributing/)
 
 ---
 
