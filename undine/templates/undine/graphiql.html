@@ -42,12 +42,35 @@
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { GraphiQL, HISTORY_PLUGIN } from 'graphiql';
-    import { createGraphiQLFetcher } from '@graphiql/toolkit';
+    import { createGraphiQLFetcher, StorageAPI } from '@graphiql/toolkit';
     import { explorerPlugin } from '@graphiql/plugin-explorer';
     import 'graphiql/setup-workers/esm.sh';
 
+    const storage = new StorageAPI();
+
     const currentURL = new URL(window.location.href)
     const params = new URLSearchParams(currentURL.search);
+
+    if (!params.has("document")) {
+      const val = storage.get("query");
+      if (val) {
+        params.set("document", val);
+      }
+    }
+
+    if (!params.has("variables")) {
+      const val = storage.get("variables");
+      if (val) {
+        params.set("variables", val);
+      }
+    }
+
+    if (!params.has("headers")) {
+      const val = storage.get("headers");
+      if (val) {
+        params.set("headers", val);
+      }
+    }
 
     function updateHistory() {
       params.sort();
