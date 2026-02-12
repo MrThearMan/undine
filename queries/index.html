@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Queries - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Queries";
+        var mkdocs_page_input_path = "queries.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on queries in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Queries</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#querytypes">QueryTypes</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#auto-generation">Auto-generation</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#filtering">Filtering</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ordering">Ordering</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#permissions">Permissions</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#querytype-registry">QueryType registry</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-optimizations">Custom optimizations</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#schema-name">Schema name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#description">Description</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#interfaces">Interfaces</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#directives">Directives</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#visibility">Visibility</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#graphql-extensions">GraphQL extensions</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#fields">Fields</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#model-field-references">Model field references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#expression-references">Expression references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#function-references">Function references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#calculation-references">Calculation references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#relations">Relations</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#permissions_1">Permissions</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#many">Many</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#nullable">Nullable</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#complexity">Complexity</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#field-name">Field name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#schema-name_1">Schema name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#descriptions">Descriptions</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#deprecation-reason">Deprecation reason</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-resolvers">Custom resolvers</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-optimizations_1">Custom optimizations</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#directives_1">Directives</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#visibility_1">Visibility</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#graphql-extensions_1">GraphQL extensions</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Queries</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover Undine's <a href="#querytypes"><code>QueryTypes</code></a>
+which allow you to expose your Django Models through the GraphQL schema for querying.</p>
+<p>For queries not concerning your Django Models,
+see the <a href="../schema/#function-references">function references</a> section
+in the Schema documentation.</p>
+<h2 id="querytypes">QueryTypes<a class="headerlink" href="#querytypes" title="Permanent link">🔗</a></h2>
+<p>A <code>QueryType</code> represents a GraphQL <code>ObjectType</code> for querying data from a Django Model
+in the GraphQL schema. A basic <code>QueryType</code> is created by subclassing <code>QueryType</code>
+and adding a Django Model to it as a generic type parameter. You must also add at least one
+<a href="#fields"><code>Field</code></a> to the class body of the <code>QueryType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">4</a></span>
+<span class="normal"><a href="#__codelineno-0-5">5</a></span>
+<span class="normal"><a href="#__codelineno-0-6">6</a></span>
+<span class="normal"><a href="#__codelineno-0-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="auto-generation">Auto-generation<a class="headerlink" href="#auto-generation" title="Permanent link">🔗</a></h3>
+<p>A <code>QueryType</code> can automatically introspect its Django Model and convert the Model's fields
+to <code>Fields</code> on the <code>QueryType</code>. For example, if the <code>Task</code> model has the following fields:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span>
+<span class="normal"><a href="#__codelineno-1-5">5</a></span>
+<span class="normal"><a href="#__codelineno-1-6">6</a></span>
+<span class="normal"><a href="#__codelineno-1-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Then the GraphQL <code>ObjectType</code> for the <code>QueryType</code> using auto-generation would be:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">    </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>To use auto-generation, either set <a href="../settings/#autogeneration"><code>AUTOGENERATION</code></a> setting to <code>True</code>
+to enable it globally, or set the <code>auto</code> argument to <code>True</code> in the <code>QueryType</code> class definition.
+With this, you can leave the <code>QueryType</code> class body empty, as fields will be automatically added
+based on the Django Model.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryType</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>You can exclude some Model fields from the auto-generation by setting the <code>exclude</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span>
+<span class="normal"><a href="#__codelineno-4-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryType</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">🔗</a></h3>
+<p>When a <code>QueryType</code> is used to return multiple items, either in a list <a href="../schema/#entrypoints"><code>Entrypoint</code></a>
+or a many-related <a href="#fields"><code>Field</code></a>, its results can be filtered in one of two ways:</p>
+<p>1) Adding a <code>FilterSet</code> to the <code>QueryType</code>. These are explained in detail in the <a href="../filtering/">Filtering</a> section.</p>
+<p>2) Defining a <code>__filter_queryset__</code> classmethod. This method will always be called even if no
+   other filtering is applied to the results. Use it to filter out items that should
+   never be returned by the <code>QueryType</code>, e.g. archived items.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span>
+<span class="normal"><a href="#__codelineno-5-12">12</a></span>
+<span class="normal"><a href="#__codelineno-5-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuerySet</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a>
+<a id="__codelineno-5-11" name="__codelineno-5-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__filter_queryset__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">queryset</span><span class="p">:</span> <span class="n">QuerySet</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuerySet</span><span class="p">:</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13"></a>        <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">archived</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="ordering">Ordering<a class="headerlink" href="#ordering" title="Permanent link">🔗</a></h3>
+<p>When a <code>QueryType</code> is used to return multiple items, either in a list <a href="../schema/#entrypoints"><code>Entrypoint</code></a>
+or a many-related <a href="#fields"><code>Field</code></a>, its results can be ordered in one of two ways:</p>
+<p>1) Adding an <code>OrderSet</code> to the <code>QueryType</code>. These are explained in detail in the <a href="../ordering/">Ordering</a> section.</p>
+<p>2) Defining a <code>__filter_queryset__</code> classmethod.
+   Same as custom <a href="#filtering">filtering</a>, this ordering is always applied to results returned by the <code>QueryType</code>.
+   However, since queryset ordering is reset when a new ordering is applied to the queryset,
+   ordering added here serves as the default ordering for the <code>QueryType</code>, and is overridden if
+   any ordering is applied using an <code>OrderSet</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-6-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-6-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-6-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-6-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-6-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-6-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-6-10">10</a></span>
+<span class="normal"><a href="#__codelineno-6-11">11</a></span>
+<span class="normal"><a href="#__codelineno-6-12">12</a></span>
+<span class="normal"><a href="#__codelineno-6-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuerySet</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10"></a>
+<a id="__codelineno-6-11" name="__codelineno-6-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__filter_queryset__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">queryset</span><span class="p">:</span> <span class="n">QuerySet</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuerySet</span><span class="p">:</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13"></a>        <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">🔗</a></h3>
+<p>You can add a permission check for querying data from a <code>QueryType</code> by
+adding a <code>__permissions__</code> classmethod it.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-7-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-7-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-7-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-7-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-7-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-7-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-7-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-7-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-7-10">10</a></span>
+<span class="normal"><a href="#__codelineno-7-11">11</a></span>
+<span class="normal"><a href="#__codelineno-7-12">12</a></span>
+<span class="normal"><a href="#__codelineno-7-13">13</a></span>
+<span class="normal"><a href="#__codelineno-7-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9"></a>
+<a id="__codelineno-7-10" name="__codelineno-7-10"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Only authenticated users can query tasks."</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This method will be called for each instance of <code>Task</code> that is returned
+by this <code>QueryType</code> in <code>Entrypoints</code> or related <code>Fields</code>.</p>
+<p>You can raise any <code>GraphQLError</code> when a permission check fails, but it's recommended to
+raise a <code>GraphQLPermissionError</code> from the <code>undine.exceptions</code> module.</p>
+<p>Instead of raising an exception from a permission check, you might want to filter out items the user
+doesn't have permission to access. You can do this using the <code>__filter_queryset__</code>
+classmethod.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span>
+<span class="normal"><a href="#__codelineno-8-11">11</a></span>
+<span class="normal"><a href="#__codelineno-8-12">12</a></span>
+<span class="normal"><a href="#__codelineno-8-13">13</a></span>
+<span class="normal"><a href="#__codelineno-8-14">14</a></span>
+<span class="normal"><a href="#__codelineno-8-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuerySet</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a>
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__filter_queryset__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">queryset</span><span class="p">:</span> <span class="n">QuerySet</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuerySet</span><span class="p">:</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14"></a>            <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">none</span><span class="p">()</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15"></a>        <span class="k">return</span> <span class="n">queryset</span>
+</code></pre></div></td></tr></table></div>
+<p>Now, when the <code>QueryType</code> is used in a list <code>Entrypoint</code> or many related <code>Field</code>,
+items that the user doesn't have permission to access will be filtered out.
+For single-item entrypoints or "to-one" relations, a <code>null</code> value will be returned
+instead. Note that you'll need to manually check all <code>Fields</code> and <code>Entrypoints</code>
+where the <code>QueryType</code> is used and mark them as <em>nullable</em> if they would otherwise not be.</p>
+<p>If your permissions check requires data from outside of the GraphQL execution context,
+you should check the <a href="../optimizer/">Optimizer</a> section on how you can make sure permissions
+checks don't cause an excessive database queries.</p>
+<h3 id="querytype-registry">QueryType registry<a class="headerlink" href="#querytype-registry" title="Permanent link">🔗</a></h3>
+<p>When a new <code>QueryType</code> is created, Undine automatically registers it for its given Model.
+This allows other <code>QueryTypes</code> to look up the <code>QueryType</code> for linking related <code>Fields</code>
+(see <a href="#relations">relations</a>), and <code>MutationTypes</code> to find out their matching output type
+(see <a href="../mutations/#output-type">mutation output types</a>).</p>
+<p>The <code>QueryType</code> registry only allows one <code>QueryType</code> to be registered for each Model.
+During <code>QueryType</code> registration, if a <code>QueryType</code> is already registered for the Model,
+an error will be raised.</p>
+<p>If you need to create multiple <code>QueryTypes</code> for the same Model, you can choose to not
+register a <code>QueryType</code> in the registry by setting the <code>register</code> argument to <code>False</code> in the
+<code>QueryType</code> class definition.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">OtherTaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>You'll then need to use this <code>QueryType</code> explicitly when required.</p>
+<h3 id="custom-optimizations">Custom optimizations<a class="headerlink" href="#custom-optimizations" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>The optimizer is covered more thoroughly in the <a href="../optimizer/">Optimizer</a> section.</p>
+</blockquote>
+<p>Usually adding <code>QueryType</code> optimizations is not necessary, but if required,
+you can override the <code>__optimizations__</code> classmethod on the <code>QueryType</code> to do so.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-10-10">10</a></span>
+<span class="normal"><a href="#__codelineno-10-11">11</a></span>
+<span class="normal"><a href="#__codelineno-10-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizationData</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9"></a>
+<a id="__codelineno-10-10" name="__codelineno-10-10"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__optimizations__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">OptimizationData</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12"></a>        <span class="k">pass</span>  <span class="c1"># Some optimization here</span>
+</code></pre></div></td></tr></table></div>
+<p>This hook can be helpful when you require data from outside the GraphQL execution context
+to e.g. make permission checks.</p>
+<h3 id="schema-name">Schema name<a class="headerlink" href="#schema-name" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the generated GraphQL <code>ObjectType</code> for a <code>QueryType</code> class
+is the name of the <code>QueryType</code> class. If you want to change the name separately,
+you can do so by setting the <code>schema_name</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span>
+<span class="normal"><a href="#__codelineno-11-4">4</a></span>
+<span class="normal"><a href="#__codelineno-11-5">5</a></span>
+<span class="normal"><a href="#__codelineno-11-6">6</a></span>
+<span class="normal"><a href="#__codelineno-11-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"Task"</span><span class="p">):</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="description">Description<a class="headerlink" href="#description" title="Permanent link">🔗</a></h3>
+<p>You can provide a description for the <code>QueryType</code> by adding a docstring to the class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
+<span class="normal"><a href="#__codelineno-12-2">2</a></span>
+<span class="normal"><a href="#__codelineno-12-3">3</a></span>
+<span class="normal"><a href="#__codelineno-12-4">4</a></span>
+<span class="normal"><a href="#__codelineno-12-5">5</a></span>
+<span class="normal"><a href="#__codelineno-12-6">6</a></span>
+<span class="normal"><a href="#__codelineno-12-7">7</a></span>
+<span class="normal"><a href="#__codelineno-12-8">8</a></span>
+<span class="normal"><a href="#__codelineno-12-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="w">    </span><span class="sd">"""Description."""</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="interfaces">Interfaces<a class="headerlink" href="#interfaces" title="Permanent link">🔗</a></h3>
+<p>You can add interfaces to the <code>QueryType</code> by providing them using the <code>interfaces</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
+<span class="normal"><a href="#__codelineno-13-2">2</a></span>
+<span class="normal"><a href="#__codelineno-13-3">3</a></span>
+<span class="normal"><a href="#__codelineno-13-4">4</a></span>
+<span class="normal"><a href="#__codelineno-13-5">5</a></span>
+<span class="normal"><a href="#__codelineno-13-6">6</a></span>
+<span class="normal"><a href="#__codelineno-13-7">7</a></span>
+<span class="normal"><a href="#__codelineno-13-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.relay</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">interfaces</span><span class="o">=</span><span class="p">[</span><span class="n">Node</span><span class="p">]):</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add interfaces using decorator syntax.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span>
+<span class="normal"><a href="#__codelineno-14-2">2</a></span>
+<span class="normal"><a href="#__codelineno-14-3">3</a></span>
+<span class="normal"><a href="#__codelineno-14-4">4</a></span>
+<span class="normal"><a href="#__codelineno-14-5">5</a></span>
+<span class="normal"><a href="#__codelineno-14-6">6</a></span>
+<span class="normal"><a href="#__codelineno-14-7">7</a></span>
+<span class="normal"><a href="#__codelineno-14-8">8</a></span>
+<span class="normal"><a href="#__codelineno-14-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.relay</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="nd">@Node</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../interfaces/">Interfaces</a> section for more details on interfaces.</p>
+<h3 id="directives">Directives<a class="headerlink" href="#directives" title="Permanent link">🔗</a></h3>
+<p>You can add directives to the <code>QueryType</code> by providing them using the <code>directives</code> argument.
+The directive must be usable in the <code>OBJECT</code> location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-15-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-15-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-15-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-15-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-15-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-15-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-15-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-15-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-15-10">10</a></span>
+<span class="normal"><a href="#__codelineno-15-11">11</a></span>
+<span class="normal"><a href="#__codelineno-15-12">12</a></span>
+<span class="normal"><a href="#__codelineno-15-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7"></a>
+<a id="__codelineno-15-8" name="__codelineno-15-8"></a>
+<a id="__codelineno-15-9" name="__codelineno-15-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10"></a>
+<a id="__codelineno-15-11" name="__codelineno-15-11"></a>
+<a id="__codelineno-15-12" name="__codelineno-15-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()]):</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add directives using decorator syntax.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-16-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-16-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-16-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-16-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-16-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-16-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-16-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-16-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-16-10">10</a></span>
+<span class="normal"><a href="#__codelineno-16-11">11</a></span>
+<span class="normal"><a href="#__codelineno-16-12">12</a></span>
+<span class="normal"><a href="#__codelineno-16-13">13</a></span>
+<span class="normal"><a href="#__codelineno-16-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a>
+<a id="__codelineno-16-8" name="__codelineno-16-8"></a>
+<a id="__codelineno-16-9" name="__codelineno-16-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">OBJECT</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10"></a>
+<a id="__codelineno-16-11" name="__codelineno-16-11"></a>
+<a id="__codelineno-16-12" name="__codelineno-16-12"></a><span class="nd">@MyDirective</span><span class="p">()</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="visibility">Visibility<a class="headerlink" href="#visibility" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>This is an experimental feature that needs to be enabled using the
+<a href="../settings/#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a> setting.</p>
+</blockquote>
+<p>You can hide a <code>QueryType</code> from certain users by using the <code>__is_visible__</code> method.
+Hiding the <code>QueryType</code> means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the <code>Entrypoint</code> or <code>Field</code> using the <code>QueryType</code> didn't exist in the first place.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-17-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-17-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-17-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-17-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-17-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-17-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-17-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-17-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-17-10">10</a></span>
+<span class="normal"><a href="#__codelineno-17-11">11</a></span>
+<span class="normal"><a href="#__codelineno-17-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DjangoRequestProtocol</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a>
+<a id="__codelineno-17-6" name="__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9"></a>
+<a id="__codelineno-17-10" name="__codelineno-17-10"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__is_visible__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">DjangoRequestProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12"></a>        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span>
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>When using visibility checks, you should also disable "did you mean" suggestions
+using the <a href="../settings/#allow_did_you_mean_suggestions"><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code></a> setting.
+Otherwise, a hidden field might show up in them.</p>
+</blockquote>
+<h3 id="graphql-extensions">GraphQL extensions<a class="headerlink" href="#graphql-extensions" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>QueryType</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>QueryType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span>
+<span class="normal"><a href="#__codelineno-18-2">2</a></span>
+<span class="normal"><a href="#__codelineno-18-3">3</a></span>
+<span class="normal"><a href="#__codelineno-18-4">4</a></span>
+<span class="normal"><a href="#__codelineno-18-5">5</a></span>
+<span class="normal"><a href="#__codelineno-18-6">6</a></span>
+<span class="normal"><a href="#__codelineno-18-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"foo"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">}):</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p><code>QueryType</code> extensions are made available in the GraphQL <code>ObjectType</code> extensions
+after the schema is created. The <code>QueryType</code> itself is found in the GraphQL <code>ObjectType</code> extensions
+under a key defined by the <a href="../settings/#query_type_extensions_key"><code>QUERY_TYPE_EXTENSIONS_KEY</code></a>
+setting.</p>
+<h2 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">🔗</a></h2>
+<p>A <code>Field</code> is used to define a queryable value on a <code>QueryType</code>.
+Usually <code>Fields</code> correspond to fields on the Django Model for their respective <code>QueryType</code>.
+In GraphQL, a <code>Field</code> represents a <code>GraphQLField</code> on an <code>ObjectType</code>.</p>
+<p>A <code>Field</code> always requires a <em><strong>reference</strong></em> from which it will create the proper GraphQL resolver,
+output type, and arguments for the <code>Field</code>.</p>
+<h3 id="model-field-references">Model field references<a class="headerlink" href="#model-field-references" title="Permanent link">🔗</a></h3>
+<p>For <code>Fields</code> corresponding to Django Model fields, the <code>Field</code> can be used without passing in a reference,
+as its attribute name in the <code>QueryType</code> class body can be used to identify
+the corresponding Model field.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span>
+<span class="normal"><a href="#__codelineno-19-2">2</a></span>
+<span class="normal"><a href="#__codelineno-19-3">3</a></span>
+<span class="normal"><a href="#__codelineno-19-4">4</a></span>
+<span class="normal"><a href="#__codelineno-19-5">5</a></span>
+<span class="normal"><a href="#__codelineno-19-6">6</a></span>
+<span class="normal"><a href="#__codelineno-19-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>To be a bit more explicit, you could use a string referencing the Model field:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
+<span class="normal"><a href="#__codelineno-20-2">2</a></span>
+<span class="normal"><a href="#__codelineno-20-3">3</a></span>
+<span class="normal"><a href="#__codelineno-20-4">4</a></span>
+<span class="normal"><a href="#__codelineno-20-5">5</a></span>
+<span class="normal"><a href="#__codelineno-20-6">6</a></span>
+<span class="normal"><a href="#__codelineno-20-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For better type safety, you can also use the Model field itself:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span>
+<span class="normal"><a href="#__codelineno-21-2">2</a></span>
+<span class="normal"><a href="#__codelineno-21-3">3</a></span>
+<span class="normal"><a href="#__codelineno-21-4">4</a></span>
+<span class="normal"><a href="#__codelineno-21-5">5</a></span>
+<span class="normal"><a href="#__codelineno-21-6">6</a></span>
+<span class="normal"><a href="#__codelineno-21-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4"></a>
+<a id="__codelineno-21-5" name="__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Being explicit like this is only required if the name of the field in the GraphQL schema
+is different from the Model field name.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span>
+<span class="normal"><a href="#__codelineno-22-2">2</a></span>
+<span class="normal"><a href="#__codelineno-22-3">3</a></span>
+<span class="normal"><a href="#__codelineno-22-4">4</a></span>
+<span class="normal"><a href="#__codelineno-22-5">5</a></span>
+<span class="normal"><a href="#__codelineno-22-6">6</a></span>
+<span class="normal"><a href="#__codelineno-22-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a>
+<a id="__codelineno-22-6" name="__codelineno-22-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7"></a>    <span class="n">title</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="expression-references">Expression references<a class="headerlink" href="#expression-references" title="Permanent link">🔗</a></h3>
+<p>Django ORM expressions can also be used as references.
+These create an annotation on the Model instances when fetched.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span>
+<span class="normal"><a href="#__codelineno-23-2">2</a></span>
+<span class="normal"><a href="#__codelineno-23-3">3</a></span>
+<span class="normal"><a href="#__codelineno-23-4">4</a></span>
+<span class="normal"><a href="#__codelineno-23-5">5</a></span>
+<span class="normal"><a href="#__codelineno-23-6">6</a></span>
+<span class="normal"><a href="#__codelineno-23-7">7</a></span>
+<span class="normal"><a href="#__codelineno-23-8">8</a></span>
+<span class="normal"><a href="#__codelineno-23-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models.functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Upper</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6"></a>
+<a id="__codelineno-23-7" name="__codelineno-23-7"></a>
+<a id="__codelineno-23-8" name="__codelineno-23-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9"></a>    <span class="n">upper_name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">Upper</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+<p>Remember that subqueries are also counted as expressions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-24-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-24-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-24-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-24-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-24-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-24-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-24-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-24-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-24-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">OuterRef</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.utils.model_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubqueryCount</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7"></a>
+<a id="__codelineno-24-8" name="__codelineno-24-8"></a>
+<a id="__codelineno-24-9" name="__codelineno-24-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10"></a>    <span class="n">copies</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">SubqueryCount</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">OuterRef</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))))</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="function-references">Function references<a class="headerlink" href="#function-references" title="Permanent link">🔗</a></h3>
+<p>Functions (or methods) can also be used to create <code>Fields</code>.
+This can be done by decorating a method with the <code>Field</code> class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span>
+<span class="normal"><a href="#__codelineno-25-2">2</a></span>
+<span class="normal"><a href="#__codelineno-25-3">3</a></span>
+<span class="normal"><a href="#__codelineno-25-4">4</a></span>
+<span class="normal"><a href="#__codelineno-25-5">5</a></span>
+<span class="normal"><a href="#__codelineno-25-6">6</a></span>
+<span class="normal"><a href="#__codelineno-25-7">7</a></span>
+<span class="normal"><a href="#__codelineno-25-8">8</a></span>
+<span class="normal"><a href="#__codelineno-25-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5"></a>
+<a id="__codelineno-25-6" name="__codelineno-25-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7"></a>    <span class="nd">@Field</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">greeting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9"></a>        <span class="k">return</span> <span class="s2">"Hello World!"</span>
+</code></pre></div></td></tr></table></div>
+<p>The <code>Field</code> will use the decorated method as its GraphQL resolver.
+The method's return type will be used as the output type for the <code>Field</code>, so typing it is required.
+You can even use a <code>TypedDict</code> to return an object with multiple fields.</p>
+<details>
+<summary>About method signature</summary>
+<p>The decorated method is treated as a static method by the <code>Field</code>.</p>
+<p>The <code>self</code> argument is not an instance of the <code>QueryType</code>,
+but <code>root</code> argument of the <code>GraphQLField</code> resolver. To clarify this,
+it's recommended to change the argument's name to <code>root</code>,
+as defined by the <a href="../settings/#resolver_root_param_name"><code>RESOLVER_ROOT_PARAM_NAME</code></a>
+setting.</p>
+<p>The value of the <code>root</code> argument for a <code>Field</code> is the <strong><em>Model instance</em></strong> being queried.</p>
+<p>The <code>info</code> argument can be left out, but if it's included, it should always
+have the <code>GQLInfo</code> type annotation.</p>
+</details>
+<p>Arguments added to the function signatures will be added as <code>Field</code> arguments in the GraphQL schema.
+Typing these arguments is required to determine their input type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span>
+<span class="normal"><a href="#__codelineno-26-2">2</a></span>
+<span class="normal"><a href="#__codelineno-26-3">3</a></span>
+<span class="normal"><a href="#__codelineno-26-4">4</a></span>
+<span class="normal"><a href="#__codelineno-26-5">5</a></span>
+<span class="normal"><a href="#__codelineno-26-6">6</a></span>
+<span class="normal"><a href="#__codelineno-26-7">7</a></span>
+<span class="normal"><a href="#__codelineno-26-8">8</a></span>
+<span class="normal"><a href="#__codelineno-26-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a>
+<a id="__codelineno-26-3" name="__codelineno-26-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7"></a>    <span class="nd">@Field</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">greeting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!"</span>
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>If the method requires fields from the <code>root</code> instance, you should add custom optimization
+rules for the <code>Field</code> so that the fields are available when the resolver is called.
+See <a href="#custom-optimizations">custom optimizations</a> for how to add these, although it might be
+simpler to use a <a href="#calculation-references">Calculation reference</a>.</p>
+</blockquote>
+<h3 id="calculation-references">Calculation references<a class="headerlink" href="#calculation-references" title="Permanent link">🔗</a></h3>
+<p>A <code>Calculation</code> reference is like a combination of <a href="#function-references">function references</a> and
+<a href="#expression-references">expression references</a>. They can accept data from input arguments
+like a function reference, and return an expression that should be annotated to a queryset
+like an expression reference. A <code>Calculation</code> references can be created by subclassing
+the <code>Calculation</code> class and adding the required <code>CalculationArguments</code> to its class body.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-27-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-27-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-27-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-27-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-27-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-27-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-27-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-27-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-27-10">10</a></span>
+<span class="normal"><a href="#__codelineno-27-11">11</a></span>
+<span class="normal"><a href="#__codelineno-27-12">12</a></span>
+<span class="normal"><a href="#__codelineno-27-13">13</a></span>
+<span class="normal"><a href="#__codelineno-27-14">14</a></span>
+<span class="normal"><a href="#__codelineno-27-15">15</a></span>
+<span class="normal"><a href="#__codelineno-27-16">16</a></span>
+<span class="normal"><a href="#__codelineno-27-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Value</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a>
+<a id="__codelineno-27-3" name="__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">CalculationArgument</span><span class="p">,</span> <span class="n">DjangoExpression</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4"></a>
+<a id="__codelineno-27-5" name="__codelineno-27-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6"></a>
+<a id="__codelineno-27-7" name="__codelineno-27-7"></a>
+<a id="__codelineno-27-8" name="__codelineno-27-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">ExampleCalculation</span><span class="p">(</span><span class="n">Calculation</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9"></a>    <span class="n">value</span> <span class="o">=</span> <span class="n">CalculationArgument</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10"></a>
+<a id="__codelineno-27-11" name="__codelineno-27-11"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DjangoExpression</span><span class="p">:</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12"></a>        <span class="c1"># Some impressive calculation here</span>
+<a id="__codelineno-27-13" name="__codelineno-27-13"></a>        <span class="k">return</span> <span class="n">Value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14"></a>
+<a id="__codelineno-27-15" name="__codelineno-27-15"></a>
+<a id="__codelineno-27-16" name="__codelineno-27-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-27-17" name="__codelineno-27-17"></a>    <span class="n">calc</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ExampleCalculation</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p><code>Calculation</code> objects always require the generic type argument to be set,
+which describes the return type of the calculation. This should be a python type
+matching the Django ORM expression that is returned in the <code>__call__</code> method.</p>
+<p><code>CalculationArguments</code> can be defined in the class body of the <code>Calculation</code> class.
+These define the input arguments for the calculation. When the calculation is executed,
+the <code>CalculationArguments</code> can be used to access the input data for that specific argument.</p>
+<p>The <code>__call__</code> method should always be defined in the <code>Calculation</code> class. This should
+return a Django ORM expression that can be annotated to a queryset. You may
+access other fields using <code>F</code>-expressions and use request-specific data from the <code>info</code> argument.</p>
+<p>The <code>Field</code> will look like this in the GraphQL schema:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span>
+<span class="normal"><a href="#__codelineno-28-2">2</a></span>
+<span class="normal"><a href="#__codelineno-28-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a><span class="w">    </span><span class="n">calc</span><span class="p">(</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="no">Int</span><span class="err">!</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>A <code>Calculation</code> reference is a good replacement for a function reference
+when the calculation is expensive enough that resolving it for each field would be slow.
+However, the calculation needs to be able to be executed in the database
+since <code>__call__</code> needs to return a Django ORM expression to be annotated to a queryset.</p>
+<p>A <code>Calculation</code> reference is a good replacement for an expression reference
+when the expression requires input data from the request.</p>
+<h3 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">🔗</a></h3>
+<p>Let's say there is a <code>Task</code> model with a <code>ForeignKey</code> to a <code>Project</code> model:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-29-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-29-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-29-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-29-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-29-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-29-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-29-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-29-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-29-10">10</a></span>
+<span class="normal"><a href="#__codelineno-29-11">11</a></span>
+<span class="normal"><a href="#__codelineno-29-12">12</a></span>
+<span class="normal"><a href="#__codelineno-29-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">Project</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+</span><a id="__codelineno-29-5" name="__codelineno-29-5"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+</span><a id="__codelineno-29-6" name="__codelineno-29-6"></a>
+<a id="__codelineno-29-7" name="__codelineno-29-7"></a>
+<a id="__codelineno-29-8" name="__codelineno-29-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-29-9" name="__codelineno-29-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-29-11" name="__codelineno-29-11"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-29-12" name="__codelineno-29-12"></a>
+<a id="__codelineno-29-13" name="__codelineno-29-13"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Project</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">CASCADE</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>You can then create <code>QueryTypes</code> for both models and add <code>Fields</code> for the related fields.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-30-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-30-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-30-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-30-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-30-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-30-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-30-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-30-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-30-10">10</a></span>
+<span class="normal"><a href="#__codelineno-30-11">11</a></span>
+<span class="normal"><a href="#__codelineno-30-12">12</a></span>
+<span class="normal"><a href="#__codelineno-30-13">13</a></span>
+<span class="normal"><a href="#__codelineno-30-14">14</a></span>
+<span class="normal"><a href="#__codelineno-30-15">15</a></span>
+<span class="normal"><a href="#__codelineno-30-16">16</a></span>
+<span class="normal"><a href="#__codelineno-30-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a>
+<a id="__codelineno-30-3" name="__codelineno-30-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9"></a><span class="hll">    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-30-10" name="__codelineno-30-10"></a>
+<a id="__codelineno-30-11" name="__codelineno-30-11"></a>
+<a id="__codelineno-30-12" name="__codelineno-30-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-14" name="__codelineno-30-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-30-17" name="__codelineno-30-17"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<p>The <code>QueryTypes</code> will be linked together in the GraphQL schema by their relations:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-31-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-31-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-31-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-31-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-31-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-31-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-31-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-31-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-31-10">10</a></span>
+<span class="normal"><a href="#__codelineno-31-11">11</a></span>
+<span class="normal"><a href="#__codelineno-31-12">12</a></span>
+<span class="normal"><a href="#__codelineno-31-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="k">type</span><span class="w"> </span><span class="err">ProjectType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a><span class="w">    </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a><span class="w">    </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4"></a><span class="hll"><span class="w">    </span><span class="nl">tasks</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">TaskType</span><span class="err">!]!</span>
+</span><a id="__codelineno-31-5" name="__codelineno-31-5"></a><span class="p">}</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6"></a>
+<a id="__codelineno-31-7" name="__codelineno-31-7"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8"></a><span class="w">    </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9"></a><span class="w">    </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10"></a><span class="w">    </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11"></a><span class="w">    </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12"></a><span class="hll"><span class="w">    </span><span class="nl">project</span><span class="p">:</span><span class="w"> </span><span class="n">ProjectType</span><span class="err">!</span>
+</span><a id="__codelineno-31-13" name="__codelineno-31-13"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Undine will make sure that queries between the relations are optimized.</p>
+<h3 id="permissions_1">Permissions<a class="headerlink" href="#permissions_1" title="Permanent link">🔗</a></h3>
+<p>You can add a permission check for querying any data from an individual <code>Field</code> by
+decorating a method with <code>@&lt;field_name&gt;.permissions</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-32-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-32-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-32-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-32-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-32-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-32-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-32-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-32-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-32-10">10</a></span>
+<span class="normal"><a href="#__codelineno-32-11">11</a></span>
+<span class="normal"><a href="#__codelineno-32-12">12</a></span>
+<span class="normal"><a href="#__codelineno-32-13">13</a></span>
+<span class="normal"><a href="#__codelineno-32-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3"></a>
+<a id="__codelineno-32-4" name="__codelineno-32-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5"></a>
+<a id="__codelineno-32-6" name="__codelineno-32-6"></a>
+<a id="__codelineno-32-7" name="__codelineno-32-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9"></a>
+<a id="__codelineno-32-10" name="__codelineno-32-10"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">permissions</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-32-13" name="__codelineno-32-13"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Only authenticated users can query task names."</span>
+<a id="__codelineno-32-14" name="__codelineno-32-14"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>If <code>Field</code> permissions are defined for a related field, the related <code>QueryType</code> permissions
+are overridden by the <code>Field</code> permissions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-33-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-33-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-33-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-33-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-33-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-33-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-33-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-33-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-33-10">10</a></span>
+<span class="normal"><a href="#__codelineno-33-11">11</a></span>
+<span class="normal"><a href="#__codelineno-33-12">12</a></span>
+<span class="normal"><a href="#__codelineno-33-13">13</a></span>
+<span class="normal"><a href="#__codelineno-33-14">14</a></span>
+<span class="normal"><a href="#__codelineno-33-15">15</a></span>
+<span class="normal"><a href="#__codelineno-33-16">16</a></span>
+<span class="normal"><a href="#__codelineno-33-17">17</a></span>
+<span class="normal"><a href="#__codelineno-33-18">18</a></span>
+<span class="normal"><a href="#__codelineno-33-19">19</a></span>
+<span class="normal"><a href="#__codelineno-33-20">20</a></span>
+<span class="normal"><a href="#__codelineno-33-21">21</a></span>
+<span class="normal"><a href="#__codelineno-33-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3"></a>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a>
+<a id="__codelineno-33-7" name="__codelineno-33-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Project</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10"></a>        <span class="c1"># Not called if 'ProjectType' is accessed from 'TaskType.project'</span>
+<a id="__codelineno-33-11" name="__codelineno-33-11"></a>        <span class="c1"># because it has a permissions check already</span>
+<a id="__codelineno-33-12" name="__codelineno-33-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span><span class="p">:</span>
+<a id="__codelineno-33-13" name="__codelineno-33-13"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-33-14" name="__codelineno-33-14"></a>
+<a id="__codelineno-33-15" name="__codelineno-33-15"></a>
+<a id="__codelineno-33-16" name="__codelineno-33-16"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-33-17" name="__codelineno-33-17"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-33-18" name="__codelineno-33-18"></a>
+<a id="__codelineno-33-19" name="__codelineno-33-19"></a>    <span class="nd">@project</span><span class="o">.</span><span class="n">permissions</span>
+<a id="__codelineno-33-20" name="__codelineno-33-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">project_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Project</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-33-21" name="__codelineno-33-21"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-33-22" name="__codelineno-33-22"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span>
+</code></pre></div></td></tr></table></div>
+<p>Instead of raising an exception, you might want a failed permission check to
+result in a <code>null</code> value instead of an error. You can do this overriding the
+<code>Field's</code> <a href="#custom-resolvers">resolver</a> and manually checking the permissions there,
+returning <code>None</code> when permission is denied. Note that you'll need to manually set the
+<code>Field</code> as <a href="#nullable">nullable</a> if it would otherwise not be.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-34-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-34-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-34-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-34-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-34-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-34-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-34-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-34-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-34-10">10</a></span>
+<span class="normal"><a href="#__codelineno-34-11">11</a></span>
+<span class="normal"><a href="#__codelineno-34-12">12</a></span>
+<span class="normal"><a href="#__codelineno-34-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2"></a>
+<a id="__codelineno-34-3" name="__codelineno-34-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4"></a>
+<a id="__codelineno-34-5" name="__codelineno-34-5"></a>
+<a id="__codelineno-34-6" name="__codelineno-34-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8"></a>
+<a id="__codelineno-34-9" name="__codelineno-34-9"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name_resolver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-34-11" name="__codelineno-34-11"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-34-12" name="__codelineno-34-12"></a>            <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-34-13" name="__codelineno-34-13"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="many">Many<a class="headerlink" href="#many" title="Permanent link">🔗</a></h3>
+<p>By default, a <code>Field</code> is able to determine whether it returns a list of items based on its reference.
+For example, for a Model field, a <code>ManyToManyField</code> will return a list of items.
+If you want to configure this manually, you can do so by adding the <code>many</code> argument to the <code>Field</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1">1</a></span>
+<span class="normal"><a href="#__codelineno-35-2">2</a></span>
+<span class="normal"><a href="#__codelineno-35-3">3</a></span>
+<span class="normal"><a href="#__codelineno-35-4">4</a></span>
+<span class="normal"><a href="#__codelineno-35-5">5</a></span>
+<span class="normal"><a href="#__codelineno-35-6">6</a></span>
+<span class="normal"><a href="#__codelineno-35-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2"></a>
+<a id="__codelineno-35-3" name="__codelineno-35-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4"></a>
+<a id="__codelineno-35-5" name="__codelineno-35-5"></a>
+<a id="__codelineno-35-6" name="__codelineno-35-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="nullable">Nullable<a class="headerlink" href="#nullable" title="Permanent link">🔗</a></h3>
+<p>By default, a <code>Field</code> is able to determine whether it's nullable or not based on its reference.
+For example, for a Model field, nullability is determined from its <code>null</code> attribute.
+If you want to configure this manually, you can do so by adding the <code>nullable</code> argument to the <code>Field</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span>
+<span class="normal"><a href="#__codelineno-36-2">2</a></span>
+<span class="normal"><a href="#__codelineno-36-3">3</a></span>
+<span class="normal"><a href="#__codelineno-36-4">4</a></span>
+<span class="normal"><a href="#__codelineno-36-5">5</a></span>
+<span class="normal"><a href="#__codelineno-36-6">6</a></span>
+<span class="normal"><a href="#__codelineno-36-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2"></a>
+<a id="__codelineno-36-3" name="__codelineno-36-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4"></a>
+<a id="__codelineno-36-5" name="__codelineno-36-5"></a>
+<a id="__codelineno-36-6" name="__codelineno-36-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="complexity">Complexity<a class="headerlink" href="#complexity" title="Permanent link">🔗</a></h3>
+<p>The complexity value of a <code>Field</code> is used by Undine to calculate how expensive a given query
+to the schema would be. Queries are rejected by Undine if they would exceed the maximum allowed complexity,
+as set by the <a href="../settings/#max_query_complexity"><code>MAX_QUERY_COMPLEXITY</code></a> setting.</p>
+<p>By default, a <code>Field</code> is able to determine its complexity based on its reference.
+For example, a related Model field has a complexity of 1, and a regular Model field has a complexity of 0.
+If you want to configure this manually, you can do so by adding the <code>complexity</code> argument to the <code>Field</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1">1</a></span>
+<span class="normal"><a href="#__codelineno-37-2">2</a></span>
+<span class="normal"><a href="#__codelineno-37-3">3</a></span>
+<span class="normal"><a href="#__codelineno-37-4">4</a></span>
+<span class="normal"><a href="#__codelineno-37-5">5</a></span>
+<span class="normal"><a href="#__codelineno-37-6">6</a></span>
+<span class="normal"><a href="#__codelineno-37-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4"></a>
+<a id="__codelineno-37-5" name="__codelineno-37-5"></a>
+<a id="__codelineno-37-6" name="__codelineno-37-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">complexity</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="field-name">Field name<a class="headerlink" href="#field-name" title="Permanent link">🔗</a></h3>
+<p>A <code>field_name</code> can be provided to explicitly set the Django Model field
+that the <code>Field</code> corresponds to.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1">1</a></span>
+<span class="normal"><a href="#__codelineno-38-2">2</a></span>
+<span class="normal"><a href="#__codelineno-38-3">3</a></span>
+<span class="normal"><a href="#__codelineno-38-4">4</a></span>
+<span class="normal"><a href="#__codelineno-38-5">5</a></span>
+<span class="normal"><a href="#__codelineno-38-6">6</a></span>
+<span class="normal"><a href="#__codelineno-38-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2"></a>
+<a id="__codelineno-38-3" name="__codelineno-38-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4"></a>
+<a id="__codelineno-38-5" name="__codelineno-38-5"></a>
+<a id="__codelineno-38-6" name="__codelineno-38-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-38-7" name="__codelineno-38-7"></a>    <span class="n">title</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">field_name</span><span class="o">=</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This can be useful when the <code>Field</code> has a different name and type in the GraphQL schema than in the Model.</p>
+<h3 id="schema-name_1">Schema name<a class="headerlink" href="#schema-name_1" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the <code>ObjectType</code> field generated from a <code>Field</code> is the same
+as the name of the <code>Field</code> on the <code>QueryType</code> class (converted to <em>camelCase</em> if
+<a href="../settings/#camel_case_schema_fields"><code>CAMEL_CASE_SCHEMA_FIELDS</code></a> is enabled).
+If you want to change the name of the <code>ObjectType</code> field separately,
+you can do so by setting the <code>schema_name</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1">1</a></span>
+<span class="normal"><a href="#__codelineno-39-2">2</a></span>
+<span class="normal"><a href="#__codelineno-39-3">3</a></span>
+<span class="normal"><a href="#__codelineno-39-4">4</a></span>
+<span class="normal"><a href="#__codelineno-39-5">5</a></span>
+<span class="normal"><a href="#__codelineno-39-6">6</a></span>
+<span class="normal"><a href="#__codelineno-39-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2"></a>
+<a id="__codelineno-39-3" name="__codelineno-39-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4"></a>
+<a id="__codelineno-39-5" name="__codelineno-39-5"></a>
+<a id="__codelineno-39-6" name="__codelineno-39-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">schema_name</span><span class="o">=</span><span class="s2">"title"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This can be useful when the desired name of the <code>ObjectType</code> field is a Python keyword
+and cannot be used as the <code>Field</code> attribute name.</p>
+<h3 id="descriptions">Descriptions<a class="headerlink" href="#descriptions" title="Permanent link">🔗</a></h3>
+<p>By default, a <code>Field</code> is able to determine its description based on its reference.
+For example, for a <a href="#model-field-references">Model field</a>, the description is taken from its <code>help_text</code>.
+If the reference has no description, or you wish to add a different one,
+you can provide a description in one of two ways:</p>
+<p>1) By setting the <code>description</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1">1</a></span>
+<span class="normal"><a href="#__codelineno-40-2">2</a></span>
+<span class="normal"><a href="#__codelineno-40-3">3</a></span>
+<span class="normal"><a href="#__codelineno-40-4">4</a></span>
+<span class="normal"><a href="#__codelineno-40-5">5</a></span>
+<span class="normal"><a href="#__codelineno-40-6">6</a></span>
+<span class="normal"><a href="#__codelineno-40-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2"></a>
+<a id="__codelineno-40-3" name="__codelineno-40-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4"></a>
+<a id="__codelineno-40-5" name="__codelineno-40-5"></a>
+<a id="__codelineno-40-6" name="__codelineno-40-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-40-7" name="__codelineno-40-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"The name of the task."</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>2) As class attribute docstrings, if <a href="../settings/#enable_class_attribute_docstrings"><code>ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS</code></a> is enabled.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1">1</a></span>
+<span class="normal"><a href="#__codelineno-41-2">2</a></span>
+<span class="normal"><a href="#__codelineno-41-3">3</a></span>
+<span class="normal"><a href="#__codelineno-41-4">4</a></span>
+<span class="normal"><a href="#__codelineno-41-5">5</a></span>
+<span class="normal"><a href="#__codelineno-41-6">6</a></span>
+<span class="normal"><a href="#__codelineno-41-7">7</a></span>
+<span class="normal"><a href="#__codelineno-41-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2"></a>
+<a id="__codelineno-41-3" name="__codelineno-41-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4"></a>
+<a id="__codelineno-41-5" name="__codelineno-41-5"></a>
+<a id="__codelineno-41-6" name="__codelineno-41-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-41-7" name="__codelineno-41-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8"></a><span class="w">    </span><span class="sd">"""The name of the task."""</span>
+</code></pre></div></td></tr></table></div>
+<p>When using <a href="#function-references">function references</a>, instead of a class attribute docstring,
+you add a docstring to the function/method used as the reference instead.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-42-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-42-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-42-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-42-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-42-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-42-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-42-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-42-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-42-10">10</a></span>
+<span class="normal"><a href="#__codelineno-42-11">11</a></span>
+<span class="normal"><a href="#__codelineno-42-12">12</a></span>
+<span class="normal"><a href="#__codelineno-42-13">13</a></span>
+<span class="normal"><a href="#__codelineno-42-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2"></a>
+<a id="__codelineno-42-3" name="__codelineno-42-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4"></a>
+<a id="__codelineno-42-5" name="__codelineno-42-5"></a>
+<a id="__codelineno-42-6" name="__codelineno-42-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-42-7" name="__codelineno-42-7"></a>    <span class="nd">@Field</span>
+<a id="__codelineno-42-8" name="__codelineno-42-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-42-9" name="__codelineno-42-9"></a><span class="w">        </span><span class="sd">"""</span>
+<a id="__codelineno-42-10" name="__codelineno-42-10"></a><span class="sd">        Return a greeting.</span>
+<a id="__codelineno-42-11" name="__codelineno-42-11"></a>
+<a id="__codelineno-42-12" name="__codelineno-42-12"></a><span class="sd">        :param name: The name to greet.</span>
+<a id="__codelineno-42-13" name="__codelineno-42-13"></a><span class="sd">        """</span>
+<a id="__codelineno-42-14" name="__codelineno-42-14"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Hello, </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">!"</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="deprecation-reason">Deprecation reason<a class="headerlink" href="#deprecation-reason" title="Permanent link">🔗</a></h3>
+<p>A <code>deprecation_reason</code> can be provided to mark the <code>Field</code> as deprecated.
+This is for documentation purposes only, and does not affect the use of the <code>Field</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-43-1">1</a></span>
+<span class="normal"><a href="#__codelineno-43-2">2</a></span>
+<span class="normal"><a href="#__codelineno-43-3">3</a></span>
+<span class="normal"><a href="#__codelineno-43-4">4</a></span>
+<span class="normal"><a href="#__codelineno-43-5">5</a></span>
+<span class="normal"><a href="#__codelineno-43-6">6</a></span>
+<span class="normal"><a href="#__codelineno-43-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2"></a>
+<a id="__codelineno-43-3" name="__codelineno-43-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-43-4" name="__codelineno-43-4"></a>
+<a id="__codelineno-43-5" name="__codelineno-43-5"></a>
+<a id="__codelineno-43-6" name="__codelineno-43-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-43-7" name="__codelineno-43-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">deprecation_reason</span><span class="o">=</span><span class="s2">"Use something else."</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="custom-resolvers">Custom resolvers<a class="headerlink" href="#custom-resolvers" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>Usually using a custom <code>Field</code> resolver is not necessary, and should be avoided
+if possible. This is because use of Model fields in resolvers without
+<a href="#custom-optimizations">additional optimizations</a> can result in a lot of database queries.</p>
+</blockquote>
+<p>You can override the resolver for a <code>Field</code> by adding a method to the class body of the <code>QueryType</code>
+and decorating it with the <code>@&lt;field_name&gt;.resolve</code> decorator.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-44-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-44-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-44-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-44-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-44-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-44-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-44-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-44-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-44-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-44-10">10</a></span>
+<span class="normal"><a href="#__codelineno-44-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2"></a>
+<a id="__codelineno-44-3" name="__codelineno-44-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4"></a>
+<a id="__codelineno-44-5" name="__codelineno-44-5"></a>
+<a id="__codelineno-44-6" name="__codelineno-44-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-44-7" name="__codelineno-44-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-44-8" name="__codelineno-44-8"></a>
+<a id="__codelineno-44-9" name="__codelineno-44-9"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-44-10" name="__codelineno-44-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-44-11" name="__codelineno-44-11"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>About method signature</summary>
+<p>The decorated method is treated as a static method by the <code>Field</code>.</p>
+<p>The <code>self</code> argument is not an instance of the <code>QueryType</code>,
+but <code>root</code> argument of the <code>GraphQLField</code> resolver. To clarify this,
+it's recommended to change the argument's name to <code>root</code>,
+as defined by the <a href="../settings/#resolver_root_param_name"><code>RESOLVER_ROOT_PARAM_NAME</code></a>
+setting.</p>
+<p>The value of the <code>root</code> argument for a <code>Field</code> is the <strong><em>model instance</em></strong> being queried.</p>
+<p>The <code>info</code> argument can be left out, but if it's included, it should always
+have the <code>GQLInfo</code> type annotation.</p>
+</details>
+<h3 id="custom-optimizations_1">Custom optimizations<a class="headerlink" href="#custom-optimizations_1" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>The optimizer is covered more thoroughly in the <a href="../optimizer/">Optimizer</a> section.</p>
+</blockquote>
+<p>Usually touching the <code>Field</code> optimizations is not necessary, but if required,
+you can do so by adding a method to the class body of the <code>QueryType</code> and
+decorating it with the <code>@&lt;field_name&gt;.optimize</code> decorator.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-45-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-45-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-45-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-45-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-45-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-45-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-45-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-45-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-45-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-45-10">10</a></span>
+<span class="normal"><a href="#__codelineno-45-11">11</a></span>
+<span class="normal"><a href="#__codelineno-45-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizationData</span>
+<a id="__codelineno-45-3" name="__codelineno-45-3"></a>
+<a id="__codelineno-45-4" name="__codelineno-45-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5"></a>
+<a id="__codelineno-45-6" name="__codelineno-45-6"></a>
+<a id="__codelineno-45-7" name="__codelineno-45-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-45-9" name="__codelineno-45-9"></a>
+<a id="__codelineno-45-10" name="__codelineno-45-10"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">optimize</span>
+<a id="__codelineno-45-11" name="__codelineno-45-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">optimize_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">OptimizationData</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-45-12" name="__codelineno-45-12"></a>        <span class="k">pass</span>  <span class="c1"># Some optimization here</span>
+</code></pre></div></td></tr></table></div>
+<p>This hook can be helpful when you require data from outside the GraphQL execution context
+to e.g. make permission checks.</p>
+<h3 id="directives_1">Directives<a class="headerlink" href="#directives_1" title="Permanent link">🔗</a></h3>
+<p>You can add directives to the <code>Field</code> by providing them using the <code>directives</code> argument.
+The directive must be usable in the <code>FIELD_DEFINITION</code> location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-46-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-46-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-46-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-46-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-46-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-46-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-46-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-46-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-46-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-46-10">10</a></span>
+<span class="normal"><a href="#__codelineno-46-11">11</a></span>
+<span class="normal"><a href="#__codelineno-46-12">12</a></span>
+<span class="normal"><a href="#__codelineno-46-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-46-2" name="__codelineno-46-2"></a>
+<a id="__codelineno-46-3" name="__codelineno-46-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-46-4" name="__codelineno-46-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-46-5" name="__codelineno-46-5"></a>
+<a id="__codelineno-46-6" name="__codelineno-46-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-46-7" name="__codelineno-46-7"></a>
+<a id="__codelineno-46-8" name="__codelineno-46-8"></a>
+<a id="__codelineno-46-9" name="__codelineno-46-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-46-10" name="__codelineno-46-10"></a>
+<a id="__codelineno-46-11" name="__codelineno-46-11"></a>
+<a id="__codelineno-46-12" name="__codelineno-46-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-46-13" name="__codelineno-46-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()])</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add them using the <code>@</code> operator (which kind of looks like GraphQL syntax):</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-47-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-47-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-47-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-47-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-47-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-47-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-47-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-47-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-47-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-47-10">10</a></span>
+<span class="normal"><a href="#__codelineno-47-11">11</a></span>
+<span class="normal"><a href="#__codelineno-47-12">12</a></span>
+<span class="normal"><a href="#__codelineno-47-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-47-2" name="__codelineno-47-2"></a>
+<a id="__codelineno-47-3" name="__codelineno-47-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-47-4" name="__codelineno-47-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-47-5" name="__codelineno-47-5"></a>
+<a id="__codelineno-47-6" name="__codelineno-47-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-47-7" name="__codelineno-47-7"></a>
+<a id="__codelineno-47-8" name="__codelineno-47-8"></a>
+<a id="__codelineno-47-9" name="__codelineno-47-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-47-10" name="__codelineno-47-10"></a>
+<a id="__codelineno-47-11" name="__codelineno-47-11"></a>
+<a id="__codelineno-47-12" name="__codelineno-47-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-47-13" name="__codelineno-47-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">MyDirective</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="visibility_1">Visibility<a class="headerlink" href="#visibility_1" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>This is an experimental feature that needs to be enabled using the
+<a href="../settings/#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a> setting.</p>
+</blockquote>
+<p>You can hide a <code>Field</code> from certain users by decorating a method with the
+<code>&lt;field_name&gt;.visible</code> decorator. Hiding a <code>Field</code> means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the <code>Field</code> didn't exist in the first place.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-48-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-48-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-48-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-48-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-48-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-48-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-48-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-48-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-48-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-48-10">10</a></span>
+<span class="normal"><a href="#__codelineno-48-11">11</a></span>
+<span class="normal"><a href="#__codelineno-48-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DjangoRequestProtocol</span>
+<a id="__codelineno-48-3" name="__codelineno-48-3"></a>
+<a id="__codelineno-48-4" name="__codelineno-48-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-48-5" name="__codelineno-48-5"></a>
+<a id="__codelineno-48-6" name="__codelineno-48-6"></a>
+<a id="__codelineno-48-7" name="__codelineno-48-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-48-8" name="__codelineno-48-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-48-9" name="__codelineno-48-9"></a>
+<a id="__codelineno-48-10" name="__codelineno-48-10"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">visible</span>
+<a id="__codelineno-48-11" name="__codelineno-48-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name_visible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">DjangoRequestProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-48-12" name="__codelineno-48-12"></a>        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>About method signature</summary>
+<p>The decorated method is treated as a static method by the <code>Field</code>.</p>
+<p>The <code>self</code> argument is not an instance of the <code>QueryType</code>,
+but the instance of the <code>Field</code> that is being used.</p>
+<p>Since visibility checks occur in the validation phase of the GraphQL request,
+GraphQL resolver info is not yet available. However, you can access the
+Django request object using the <code>request</code> argument.
+From this, you can, e.g., access the request user for permission checks.</p>
+</details>
+<blockquote>
+<p>When using visibility checks, you should also disable "did you mean" suggestions
+using the <a href="../settings/#allow_did_you_mean_suggestions"><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code></a> setting.
+Otherwise, a hidden field might show up in them.</p>
+</blockquote>
+<h3 id="graphql-extensions_1">GraphQL extensions<a class="headerlink" href="#graphql-extensions_1" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>Field</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>Field</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-49-1">1</a></span>
+<span class="normal"><a href="#__codelineno-49-2">2</a></span>
+<span class="normal"><a href="#__codelineno-49-3">3</a></span>
+<span class="normal"><a href="#__codelineno-49-4">4</a></span>
+<span class="normal"><a href="#__codelineno-49-5">5</a></span>
+<span class="normal"><a href="#__codelineno-49-6">6</a></span>
+<span class="normal"><a href="#__codelineno-49-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-49-2" name="__codelineno-49-2"></a>
+<a id="__codelineno-49-3" name="__codelineno-49-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-49-4" name="__codelineno-49-4"></a>
+<a id="__codelineno-49-5" name="__codelineno-49-5"></a>
+<a id="__codelineno-49-6" name="__codelineno-49-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-49-7" name="__codelineno-49-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"foo"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<p><code>Field</code> extensions are made available in the GraphQL <code>ObjectType</code> field extensions
+after the schema is created. The <code>QueryType</code> itself is found in the GraphQL field extensions
+under a key defined by the <a href="../settings/#query_type_extensions_key"><code>QUERY_TYPE_EXTENSIONS_KEY</code></a>
+setting.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../schema/" title="Schema"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../mutations/" title="Mutations">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../schema/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../mutations/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>
