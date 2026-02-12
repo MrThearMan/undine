@@ -32,6 +32,9 @@ description: Undine: A batteries-included GraphQL library for Django.
 ```shell
 pip install undine
 ```
+**Source Code**: [https://github.com/MrThearMan/undine/](https://github.com/MrThearMan/undine/)
+
+---
 
 Undine is a GraphQL library for Django. It's designed to be easy to use and extend
 while providing out-of-the-box solutions for many common issues GraphQL developers face.
