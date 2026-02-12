@@ -137,7 +137,7 @@
     currentURL.pathname = "/{{ http_path }}"
     const url = currentURL.href;
 
-    currentURL.protocol = location.protocol.replace('/^http/', 'ws');
+    currentURL.protocol = location.protocol.replace(/^http/, 'ws');
     currentURL.pathname = "/{{ ws_path }}";
     const subscriptionUrl = currentURL.href;
 
