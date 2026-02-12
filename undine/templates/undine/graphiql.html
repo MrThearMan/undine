@@ -34,30 +34,82 @@
 
 {% block js %}
   <script type="module">
+    /*
+    * Based on this example: https://github.com/graphql/graphiql/blob/54ed55cbb75c1dd5b38f7afa6a1a14c2b58ed0ab/examples/graphiql-cdn/index.html
+    * To update, see the latest version: https://github.com/graphql/graphiql/blob/main/examples/graphiql-cdn/index.html
+    * */
+
     import React from 'react';
     import ReactDOM from 'react-dom/client';
-
     import { GraphiQL, HISTORY_PLUGIN } from 'graphiql';
     import { createGraphiQLFetcher } from '@graphiql/toolkit';
     import { explorerPlugin } from '@graphiql/plugin-explorer';
-
-    import createJSONWorker from 'monaco-editor/json-worker';
-    import createEditorWorker from 'monaco-editor/editor-worker';
-    import createGraphQLWorker from 'monaco-graphql/graphql-worker';
-
-    globalThis.MonacoEnvironment = {
-      getWorker(_workerId, label) {
-        switch (label) {
-          case 'json':
-            return createJSONWorker();
-          case 'graphql':
-            return createGraphQLWorker();
-        }
-        return createEditorWorker();
-      },
-    };
+    import 'graphiql/setup-workers/esm.sh';
 
     const currentURL = new URL(window.location.href)
+    const params = new URLSearchParams(currentURL.search);
+
+    function updateHistory() {
+      params.sort();
+      const search = params.toString();
+      if (search === "") {
+        history.replaceState(null, null, currentURL.pathname);
+      } else {
+        history.replaceState(null, null, "?" + search);
+      }
+    }
+
+    /**
+     * @param {string|null} data
+     * @returns {Record<string, string> | null}
+     * */
+    function parseStringRecord(data) {
+      if (data === null) {
+        return null;
+      }
+
+      let obj;
+      try {
+        obj = JSON.parse(data);
+      } catch (e) {
+        return null;
+      }
+
+      if (
+        typeof obj !== "object"
+        || Array.isArray(obj)
+        || Object.getOwnPropertySymbols(obj).length > 0
+        || !Object.getOwnPropertyNames(obj).every(prop => typeof obj[prop] === "string")
+      ) {
+        return null;
+      }
+
+      return obj;
+    }
+
+    /**
+     * @param {Record<string, string>} obj
+     * @param {boolean} compact
+     * @returns {string}
+     * */
+    function formatStringRecord(obj, compact = false) {
+      return JSON.stringify(obj, null, compact ? 0 : 2);
+    }
+
+    /**
+     * @param {string} key
+     * @param {string} value
+     * @param {string[]} emptyValues
+     * */
+    function updateParam(key, value, emptyValues) {
+      if (emptyValues.includes(value)) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    }
+
+    updateHistory();
 
     currentURL.pathname = "/{{ http_path }}"
     const url = currentURL.href;
@@ -66,15 +118,83 @@
     currentURL.pathname = "/{{ ws_path }}";
     const subscriptionUrl = currentURL.href;
 
-    const headers = {}
+    const defaultHeaders = {}
     const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]").value;
-    if (csrftoken) headers['X-CSRFToken'] = csrftoken;
+    if (csrftoken) defaultHeaders['X-CSRFToken'] = csrftoken;
 
     function App() {
+      const initialGraphQLDocument = params.get("document")
+      const initialVariables = parseStringRecord(params.get("variables"))
+      const initialHeaders = parseStringRecord(params.get("headers"))
+
+      const [graphQLDocument, setGraphQLDocument] = React.useState(initialGraphQLDocument);
+      const [variables, setVariables] = React.useState(initialVariables ? formatStringRecord(initialVariables) : null);
+      const [headers, setHeaders] = React.useState(initialHeaders ? formatStringRecord(initialHeaders) : null);
+
+      /**
+       * @param {string} newGraphQLDocument
+       * */
+      function onEditQuery(newGraphQLDocument) {
+        const value = newGraphQLDocument.trim();
+
+        setGraphQLDocument(value);
+        updateParam("document", value, [""]);
+        updateHistory();
+      }
+
+      /**
+       * @param {string} newVariables
+       * */
+      function onEditVariables(newVariables) {
+        if (newVariables.trim() === "") {
+          setVariables(null);
+          updateParam("variables", "", [""]);
+          updateHistory();
+        }
+
+        const value = parseStringRecord(newVariables);
+        if (value === null) {
+          return;
+        }
+
+        setVariables(formatStringRecord(value));
+        updateParam("variables", formatStringRecord(value, true), ["{}"]);
+        updateHistory();
+      }
+
+      /**
+       * @param {string} newHeaders
+       * */
+      function onEditHeaders(newHeaders) {
+        if (newHeaders.trim() === "") {
+          setHeaders(null);
+          updateParam("headers", "", [""]);
+          updateHistory();
+        }
+
+        const value = parseStringRecord(newHeaders);
+        if (value === null) {
+          return;
+        }
+
+        setHeaders(formatStringRecord(value));
+        updateParam("headers", formatStringRecord(value, true), ["{}"]);
+        updateHistory();
+      }
+
       return React.createElement(GraphiQL, {
-        fetcher: createGraphiQLFetcher({ url, subscriptionUrl, headers }),
+        fetcher: createGraphiQLFetcher({ url, subscriptionUrl, headers: defaultHeaders }),
         plugins: [HISTORY_PLUGIN, explorerPlugin()],
+        initialQuery: graphQLDocument,
+        initialVariables: variables,
+        initialHeaders: headers,
+        onEditQuery: onEditQuery,
+        onEditVariables: onEditVariables,
+        onEditHeaders: onEditHeaders,
         defaultEditorToolsVisibility: true,
+        inputValueDeprecation: true,
+        isHeadersEditorEnabled: true,
+        shouldPersistHeaders: true,
       });
     }
 
