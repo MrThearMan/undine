@@ -30,6 +30,7 @@ mypy.ini
 
 # venv
 /.venv/
+.venv
 
 # Node
 /node_modules/

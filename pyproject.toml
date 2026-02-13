@@ -496,6 +496,9 @@ exclude_also = [
 DJANGO_SETTINGS_MODULE = "example_project.project.settings"
 addopts = "--disable-warnings"
 
+[tool.zuban]
+python_executable = ".venv/bin/python"
+
 [tool.mypy]
 plugins = [
     "mypy_django_plugin.main",
