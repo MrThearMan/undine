@@ -1002,6 +1002,14 @@ class GraphQLTooManyOrdersError(GraphQLStatusError):
     code = UndineErrorCodes.TOO_MANY_ORDERS
 
 
+class GraphQLTypedDictAnnotatedIncorrectMetadataError(GraphQLStatusError):
+    """Error raised when a TypedDict key is annotated with an incorrect metadata."""
+
+    msg = "TypedDict '{typed_dict:name}' key '{field}' Annotated metadata must be an instance of '{expected:dotpath}'."
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.TYPED_DICT_ANNOTATED_INCORRECT_METADATA
+
+
 class GraphQLUnionResolveTypeInvalidValueError(GraphQLStatusError):
     """Error raised when a union resolver fails to resolve a type for an invalid value."""
 

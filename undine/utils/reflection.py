@@ -11,6 +11,7 @@ from traceback import format_tb
 from types import FunctionType, GenericAlias, LambdaType, TracebackType, UnionType
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Generic,
     NamedTuple,
@@ -56,6 +57,7 @@ __all__ = [
     "get_traceback",
     "get_wrapped_func",
     "has_callable_attribute",
+    "is_annotated",
     "is_generic_list",
     "is_lambda",
     "is_list_of",
@@ -270,6 +272,11 @@ def is_namedtuple(obj: Any) -> TypeGuard[type[NamedTuple]]:
         and getattr(obj, "_field_defaults", None) is not None
         and getattr(obj, "_asdict", None) is not None
     )
+
+
+def is_annotated(obj: Any) -> TypeGuard[Annotated]:
+    """Check if the given object is an `Annotated` instance or not."""
+    return get_origin_or_noop(obj) is Annotated
 
 
 def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType | Callable[..., Any], /) -> bool:

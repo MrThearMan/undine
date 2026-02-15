@@ -6,7 +6,17 @@ from asyncio import Future
 from contextlib import suppress
 from decimal import Decimal
 from enum import Enum, IntEnum, StrEnum
-from typing import Any, AsyncGenerator, AsyncIterable, AsyncIterator, NamedTuple, NotRequired, Required, TypedDict
+from typing import (
+    Annotated,
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    AsyncIterator,
+    NamedTuple,
+    NotRequired,
+    Required,
+    TypedDict,
+)
 
 import pytest
 from django.db.models import (
@@ -59,9 +69,10 @@ from graphql import (
 
 from example_project.app.models import Comment, Project, Task
 from tests.helpers import exact, mock_gql_info, parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, MutationType, QueryType
+from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, Input, MutationType, QueryType
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
+from undine.exceptions import GraphQLTypedDictAnnotatedIncorrectMetadataError
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
 from undine.resolvers.query import TypedDictFieldResolver
@@ -396,6 +407,114 @@ def test_convert_to_graphql_type__typed_dict__not_required() -> None:
         "fizz": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="fizz")),
         "buzz": GraphQLField(GraphQLString, resolve=TypedDictFieldResolver(key="buzz")),
     }
+
+
+class AnnotatedOutputTypedDict(TypedDict):
+    foo: Annotated[str, Field(description="Foo description.")]
+    bar: Annotated[str | None, Field(description="Bar description.", deprecation_reason="To be removed.")]
+
+
+def test_convert_to_graphql_type__typed_dict__annotated_output() -> None:
+    result = convert_to_graphql_type(AnnotatedOutputTypedDict)
+
+    assert isinstance(result, GraphQLObjectType)
+    assert result.fields == {
+        "foo": GraphQLField(
+            GraphQLNonNull(GraphQLString),
+            description="Foo description.",
+            resolve=TypedDictFieldResolver(key="foo"),
+            extensions=result.fields["foo"].extensions,
+        ),
+        "bar": GraphQLField(
+            GraphQLString,
+            description="Bar description.",
+            resolve=TypedDictFieldResolver(key="bar"),
+            deprecation_reason="To be removed.",
+            extensions=result.fields["bar"].extensions,
+        ),
+    }
+
+
+class AnnotatedInputTypedDict(TypedDict):
+    foo: Annotated[str, Input(description="Foo description.")]
+    bar: Annotated[str | None, Input(description="Bar description.", default_value="Default value.")]
+
+
+def test_convert_to_graphql_type__typed_dict__annotated_input() -> None:
+    result = convert_to_graphql_type(AnnotatedInputTypedDict, is_input=True)
+
+    assert isinstance(result, GraphQLInputObjectType)
+    assert result.fields == {
+        "foo": GraphQLInputField(
+            GraphQLNonNull(GraphQLString),
+            description="Foo description.",
+            out_name="foo",
+            extensions=result.fields["foo"].extensions,
+        ),
+        "bar": GraphQLInputField(
+            GraphQLString,
+            description="Bar description.",
+            default_value="Default value.",
+            out_name="bar",
+            extensions=result.fields["bar"].extensions,
+        ),
+    }
+
+
+class AnnotatedDescriptionTypedDict(TypedDict):
+    foo: Annotated[str, "Foo description."]
+    bar: Annotated[str | None, "Bar description."]
+
+
+def test_convert_to_graphql_type__typed_dict__annotated_output__str() -> None:
+    result = convert_to_graphql_type(AnnotatedDescriptionTypedDict)
+
+    assert isinstance(result, GraphQLObjectType)
+    assert result.fields == {
+        "foo": GraphQLField(
+            GraphQLNonNull(GraphQLString),
+            description="Foo description.",
+            resolve=TypedDictFieldResolver(key="foo"),
+            extensions=result.fields["foo"].extensions,
+        ),
+        "bar": GraphQLField(
+            GraphQLString,
+            description="Bar description.",
+            resolve=TypedDictFieldResolver(key="bar"),
+            extensions=result.fields["bar"].extensions,
+        ),
+    }
+
+
+def test_convert_to_graphql_type__typed_dict__annotated_input__str() -> None:
+    result = convert_to_graphql_type(AnnotatedDescriptionTypedDict, is_input=True)
+
+    assert isinstance(result, GraphQLInputObjectType)
+    assert result.fields == {
+        "foo": GraphQLInputField(
+            GraphQLNonNull(GraphQLString),
+            description="Foo description.",
+            out_name="foo",
+            extensions=result.fields["foo"].extensions,
+        ),
+        "bar": GraphQLInputField(
+            GraphQLString,
+            description="Bar description.",
+            out_name="bar",
+            extensions=result.fields["bar"].extensions,
+        ),
+    }
+
+
+class AnnotatedIncorrectTypedDict(TypedDict):
+    foo: Annotated[str, 1]
+    bar: Annotated[str | None, 2]
+
+
+@pytest.mark.parametrize("is_input", [True, False], ids=["input", "output"])
+def test_convert_to_graphql_type__typed_dict__annotated_output__incorrect_metadata(is_input) -> None:
+    with pytest.raises(GraphQLTypedDictAnnotatedIncorrectMetadataError):
+        convert_to_graphql_type(AnnotatedIncorrectTypedDict, is_input=is_input)
 
 
 @pytest.mark.parametrize(

@@ -83,6 +83,7 @@ from undine.exceptions import (
     GraphQLSubscriptionTimeoutError,
     GraphQLTooManyFiltersError,
     GraphQLTooManyOrdersError,
+    GraphQLTypedDictAnnotatedIncorrectMetadataError,
     GraphQLUnexpectedCalculationArgumentError,
     GraphQLUnexpectedError,
     GraphQLUnionResolveTypeInvalidValueError,
@@ -849,6 +850,15 @@ class GQLErrorParams(NamedTuple):
             args={"name": "foo", "filter_count": 100, "max_count": 50},
             message="'foo' received 100 orders which is more than the maximum allowed of 50.",
             extensions={"error_code": "TOO_MANY_ORDERS", "status_code": 400},
+        ),
+        "GraphQLTypedDictAnnotatedIncorrectMetadataError": GQLErrorParams(
+            cls=GraphQLTypedDictAnnotatedIncorrectMetadataError,
+            args={"typed_dict": MyClass, "field": "foo", "expected": MyClass},
+            message=(
+                "TypedDict 'MyClass' key 'foo' Annotated metadata "
+                "must be an instance of 'tests.test_exceptions.MyClass'."
+            ),
+            extensions={"error_code": "TYPED_DICT_ANNOTATED_INCORRECT_METADATA", "status_code": 500},
         ),
         "GraphQLUnionResolveTypeInvalidValueError": GQLErrorParams(
             cls=GraphQLUnionResolveTypeInvalidValueError,
