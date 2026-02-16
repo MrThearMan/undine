@@ -6,6 +6,7 @@
 </head>
 <body>
 
+<h1>GraphQL over Websocket testing</h1>
 <textarea id="log" cols="120" rows="50"></textarea>
 <br>
 <button id="create-websocket">Create WebSocket</button>
@@ -19,67 +20,70 @@
 <button id="clear">Clear</button>
 
 <script>
+  let allowNewWebSocket = false;
+
   function createWebSocket() {
     const currentURL = new URL(window.location.href)
 
     currentURL.pathname = "/{{ ws_path }}";
     const url = currentURL.href;
 
-    console.log('Connecting to', url);
+    console.log("Connecting to", url);
     const webSocket = new WebSocket(url, "graphql-transport-ws");
     console.log("Connected to", url);
 
     webSocket.onopen = (e) => {
-      console.log('Socket opened', e);
-      document.querySelector('#log').value += ("Opened: " + e.type + '\n');
+      console.log("Socket opened", e);
+      document.querySelector("#log").value += ("Opened: " + e.type + "\n");
       allowNewWebSocket = false;
     };
     webSocket.onclose = (e) => {
-      console.error('Socket closed', e);
-      document.querySelector('#log').value += ("Closed: (" + e.code + ") " + e.reason + '\n');
+      console.error("Socket closed", e);
+      document.querySelector("#log").value += ("Closed: (" + e.code + ") " + e.reason + "\n");
       allowNewWebSocket = true;
     };
     webSocket.onerror = (e) => {
-      console.error('Socket error', e);
-      document.querySelector('#log').value += ("Error: " + e.type + '\n');
+      console.error("Socket error", e);
+      document.querySelector("#log").value += ("Error: " + e.type + "\n");
     };
     webSocket.onmessage = (e) => {
-      console.log('Received message', e);
-      document.querySelector('#log').value += ("Received: " + e.data + '\n');
+      console.log("Received message", e);
+      document.querySelector("#log").value += ("Received: " + e.data + "\n");
     };
+    allowNewWebSocket = false;
     return webSocket;
   }
 
   let webSocket = createWebSocket();
-  let allowNewWebSocket = false;
 
-  window.addEventListener('beforeunload', (e) => {
-    console.log('Closing socket', e);
-    webSocket.close(1000, 'Closing connection');
+  window.addEventListener("beforeunload", (e) => {
+    console.log("Closing socket", e);
+    webSocket.close(1000, "Closing connection");
+    allowNewWebSocket = true;
   });
 
-  document.querySelector('#create-websocket').onclick = (e) => {
+  document.querySelector("#create-websocket").onclick = (e) => {
     if (allowNewWebSocket) {
       webSocket = createWebSocket();
     } else {
-      console.log('Cannot create new WebSocket, already connected');
-      document.querySelector('#log').value += ("WebSocket already exists" + '\n');
+      console.log("Cannot create new WebSocket, already connected");
+      document.querySelector("#log").value += ("WebSocket already exists" + "\n");
     }
   };
 
-  document.querySelector('#send-connection-init').onclick = (e) => {
+  document.querySelector("#send-connection-init").onclick = (e) => {
     const message = {
-      type: 'connection_init',
+      type: "connection_init",
       payload: {
-        message: 'Hello!',
+        message: "Hello!",
       },
     }
     send(message);
   };
 
-  document.querySelector('#send-ping').onclick = (e) => {
+  document.querySelector("#send-ping").onclick = (e) => {
     const message = {
-      type: 'ping',
+      type: "ping",
       payload: {
         timestamp: Date.now(),
       },
@@ -87,9 +91,9 @@
     send(message);
   };
 
-  document.querySelector('#send-pong').onclick = (e) => {
+  document.querySelector("#send-pong").onclick = (e) => {
     const message = {
-      type: 'pong',
+      type: "pong",
       payload: {
         timestamp: Date.now(),
       },
@@ -97,13 +101,13 @@
     send(message);
   };
 
-  document.querySelector('#send-query').onclick = (e) => {
+  document.querySelector("#send-query").onclick = (e) => {
     const message = {
-      type: 'subscribe',
-      id: '1',
+      type: "subscribe",
+      id: "1",
       payload: {
-        operationName: 'TestOperation',
-        query: 'query TestOperation { tasks { pk name } }',
+        operationName: "TestOperation",
+        query: "query TestOperation { tasks { pk name } }",
         variables: {},
         extensions: {},
       },
@@ -111,13 +115,13 @@
     send(message);
   };
 
-  document.querySelector('#send-subscribe').onclick = (e) => {
+  document.querySelector("#send-subscribe").onclick = (e) => {
     const message = {
-      type: 'subscribe',
-      id: '2',
+      type: "subscribe",
+      id: "2",
       payload: {
         operationName: null,
-        query: 'subscription { countdown }',
+        query: "subscription { countdown }",
         variables: {},
         extensions: {},
       },
@@ -125,27 +129,28 @@
     send(message);
   };
 
-  document.querySelector('#send-complete-message').onclick = (e) => {
+  document.querySelector("#send-complete-message").onclick = (e) => {
     const message = {
-      type: 'complete',
-      id: '2',
+      type: "complete",
+      id: "2",
     }
     send(message);
   };
 
-  document.querySelector('#send-close-connection').onclick = (e) => {
-    console.log('Closing socket normally');
-    webSocket.close(1000, 'Normal closure');
+  document.querySelector("#send-close-connection").onclick = (e) => {
+    console.log("Closing socket normally");
+    webSocket.close(1000, "Normal closure");
+    allowNewWebSocket = true;
   };
 
-  document.querySelector('#clear').onclick = (e) => {
-    document.querySelector('#log').value = '';
+  document.querySelector("#clear").onclick = (e) => {
+    document.querySelector("#log").value = "";
   };
 
   function send(message) {
-    console.log('Sent:', message);
+    console.log("Sent:", message);
     const data = JSON.stringify(message)
-    document.querySelector('#log').value += ("Sent: " + data + '\n');
+    document.querySelector("#log").value += ("Sent: " + data + "\n");
     webSocket.send(data);
   }
 </script>
