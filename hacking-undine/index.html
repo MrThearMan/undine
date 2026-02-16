@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Hacking Undine - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Hacking Undine";
+        var mkdocs_page_input_path = "hacking-undine.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Hacking Undine with converters." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Hacking Undine</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#converters">Converters</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_graphql_type">convert_to_graphql_type</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_graphql_argument_map">convert_to_graphql_argument_map</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_lookup_to_graphql_type">convert_lookup_to_graphql_type</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_model_field_to_python_type">convert_to_model_field_to_python_type</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_entrypoint_ref">convert_to_entrypoint_ref</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_field_ref">convert_to_field_ref</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_input_ref">convert_to_input_ref</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_order_ref">convert_to_order_ref</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_filter_ref">convert_to_filter_ref</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_field_resolver">convert_to_field_resolver</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_entrypoint_resolver">convert_to_entrypoint_resolver</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_filter_resolver">convert_to_filter_resolver</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_entrypoint_subscription">convert_to_entrypoint_subscription</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_description">convert_to_description</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_default_value">convert_to_default_value</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_bad_lookups">convert_to_bad_lookups</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#convert_to_field_complexity">convert_to_field_complexity</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#is_field_nullable">is_field_nullable</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#is_input_hidden">is_input_hidden</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#is_input_only">is_input_only</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#is_input_required">is_input_required</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#is_many">is_many</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#extend_expression">extend_expression</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#registering-implementations">Registering implementations</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#supporting-new-references">Supporting new references</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#entrypoints">Entrypoints</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fields">Fields</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#inputs">Inputs</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#filters">Filters</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#orders">Orders</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#interfaces">Interfaces</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#unions">Unions</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Hacking Undine</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="hacking-undine">Hacking Undine<a class="headerlink" href="#hacking-undine" title="Permanent link">🔗</a></h1>
+<p>While Undine aims to offer a batteries-included solution for
+building GraphQL APIs on top of Django, it is designed to be
+easy to modify and extend to suit the needs of any project.
+For example, your project may include custom Model fields,
+or require dates or times to be parsed in a specific way.</p>
+<h2 id="converters">Converters<a class="headerlink" href="#converters" title="Permanent link">🔗</a></h2>
+<p>In this section, we will go through Undine's many converters,
+which are used by Undine to process values in various parts of its objects.
+These converters are implemented using <em>single-dispatch generic functions</em>.
+A <em>singe-dispatch generic function</em> is a function that has different implementations
+based on the type of the argument it receives. You can think of it as a dynamic switch statement.
+You may know the <a href="https://peps.python.org/pep-0443/" target="_blank"><code>@singledispatch</code></a>
+decorator from the python standard library, which implements this pattern.
+Undine implements its own version of it, which allows for more flexible dispatching.</p>
+<p>This pattern allows users to override and extend the behavior of any
+converter without having to modify Undine's code directly.
+The different converters available are listed below.</p>
+<h3 id="convert_to_graphql_type"><code>convert_to_graphql_type</code><a class="headerlink" href="#convert_to_graphql_type" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL input or output type.
+For example, a <code>QueryType</code> <code>Field</code> may be based on a model field,
+and so the <code>Field</code> needs to know which GraphQL type corresponds to the model's field.</p>
+<p>In addition to the value to convert, the function also accepts a <code>model</code>
+parameter, which is the Django Model associated with the value, and a <code>is_input</code>
+parameter, which is a boolean indicating whether the converter should return an input
+or output type.</p>
+<h3 id="convert_to_graphql_argument_map"><code>convert_to_graphql_argument_map</code><a class="headerlink" href="#convert_to_graphql_argument_map" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL argument map.
+It's used by <code>Fields</code> and <code>Entrypoints</code> to figure out which
+parameters their GraphQL fields should have. For example, if a <code>QueryType</code>
+is used in a list <code>Entrypoint</code>, it should get its <code>FilterSet</code> and/or
+<code>OrderSet</code> as arguments. Similarly, a <code>Connection</code> should get its
+pagination arguments from this converter.</p>
+<p>In addition to the value to convert, the function also accepts a <code>many</code>
+parameter, which is a boolean indicating whether the converter should return
+a list of arguments or not, and a <code>entrypoint</code> parameter, which is
+a boolean indicating whether the converter is used in an <code>Entrypoint</code> or not.</p>
+<h3 id="convert_lookup_to_graphql_type"><code>convert_lookup_to_graphql_type</code><a class="headerlink" href="#convert_lookup_to_graphql_type" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a lookup expression to a GraphQL type.
+It's used in <code>Filters</code> to figure out the <code>Filter's</code> input type after the its
+lookup expression has been added. For example a <code>__date</code> lookup changes the expected
+input for a <code>DateTimeField</code> <code>Filter</code> from <code>DateTime</code> to <code>Date</code>.</p>
+<p>In addition to the lookup expression to convert, the function also accepts a <code>default_type</code>
+parameter, which is the GraphQLType for the parent field the lookup is for.</p>
+<h3 id="convert_to_model_field_to_python_type"><code>convert_to_model_field_to_python_type</code><a class="headerlink" href="#convert_to_model_field_to_python_type" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a model fields to a Python type.
+It's used in parsing Model relation types, which are used by
+various parts of Undine when working with Model relations.</p>
+<h3 id="convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code><a class="headerlink" href="#convert_to_entrypoint_ref" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Entrypoints</code> to handle their given reference.
+Most of the time, registering an implementation for this converter
+is only required to allow a new kind of <code>Entrypoint</code> reference to be used,
+but may also be used to add additional handling for the reference.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Entrypoint</code> instance that is calling this function.
+This allows the converter to access the <code>Entrypoint's</code> attributes however it
+sees fit.</p>
+<h3 id="convert_to_field_ref"><code>convert_to_field_ref</code><a class="headerlink" href="#convert_to_field_ref" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Fields</code> to handle their given reference.
+Otherwise, it works the same as <a href="#convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code></a>,
+with the <code>caller</code> parameter set to the <code>Field</code> instance.</p>
+<h3 id="convert_to_input_ref"><code>convert_to_input_ref</code><a class="headerlink" href="#convert_to_input_ref" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Inputs</code> to handle their given reference.
+Otherwise, it works the same as <a href="#convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code></a>,
+with the <code>caller</code> parameter set to the <code>Input</code> instance.</p>
+<h3 id="convert_to_order_ref"><code>convert_to_order_ref</code><a class="headerlink" href="#convert_to_order_ref" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Orders</code> to handle their given reference.
+Otherwise, it works the same as <a href="#convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code></a>,
+with the <code>caller</code> parameter set to the <code>Order</code> instance.</p>
+<h3 id="convert_to_filter_ref"><code>convert_to_filter_ref</code><a class="headerlink" href="#convert_to_filter_ref" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Filters</code> to handle their given reference.
+Otherwise, it works the same as <a href="#convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code></a>,
+with the <code>caller</code> parameter set to the <code>Filter</code> instance.</p>
+<h3 id="convert_to_field_resolver"><code>convert_to_field_resolver</code><a class="headerlink" href="#convert_to_field_resolver" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL field resolver.
+It's used by <code>Fields</code> to figure out which resolver function should be used
+to resolve the field during a query. For example, related fields require
+a different resolver from a regular field.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Field</code> instance that is calling this function.</p>
+<h3 id="convert_to_entrypoint_resolver"><code>convert_to_entrypoint_resolver</code><a class="headerlink" href="#convert_to_entrypoint_resolver" title="Permanent link">🔗</a></h3>
+<p>This function is the <code>Entrypoint</code> equivalent of the
+<a href="#convert_to_field_resolver"><code>convert_to_field_resolver</code></a> converter.
+A separate converter is needed since <code>Entrypoints</code> may resolve differently
+than <code>Fields</code>, or they can run the Optimizer.</p>
+<h3 id="convert_to_filter_resolver"><code>convert_to_filter_resolver</code><a class="headerlink" href="#convert_to_filter_resolver" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a <code>Filter</code> expression resolver.
+It's used by <code>Filters</code> to figure out which resolver function should be used
+for filtering. A <code>Filter</code> resolver function always returns a Django expression.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Filter</code> instance that is calling this function.</p>
+<h3 id="convert_to_entrypoint_subscription"><code>convert_to_entrypoint_subscription</code><a class="headerlink" href="#convert_to_entrypoint_subscription" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL subscription resolver.
+It's used by <code>Entrypoints</code> to figure out which resolver function should be used
+for subscriptions.</p>
+<h3 id="convert_to_description"><code>convert_to_description</code><a class="headerlink" href="#convert_to_description" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL description.
+It's used by <code>Fields</code>, <code>Inputs</code>, <code>Filters</code> and <code>Orders</code> to figure out
+the description to use for their GraphQL types. For example, the description
+for a Model field is its <code>help_text</code> attribute.</p>
+<h3 id="convert_to_default_value"><code>convert_to_default_value</code><a class="headerlink" href="#convert_to_default_value" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a value to a GraphQL default value.
+It's used by <code>Inputs</code> to figure out the default value for their GraphQL
+types. For example, a Model field's default value is its <code>default</code> attribute.
+However, a default value is only added to an Input for a create mutation.</p>
+<h3 id="convert_to_bad_lookups"><code>convert_to_bad_lookups</code><a class="headerlink" href="#convert_to_bad_lookups" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a given Model field to a list of lookups
+that are not supported by the field, even if the given lookup is registered for it.</p>
+<p>For example, if you check <code>BooleanField.get_lookups()</code>, it show many generic
+lookups registered for the base <code>Field</code> class, which don't actually work
+on a <code>BooleanField</code> (e.g. <code>contains</code> or <code>iendswith</code>). This function is used
+to remove those lookups when auto-generating <code>Filters</code> for a <code>FilterSet</code>.</p>
+<h3 id="convert_to_field_complexity"><code>convert_to_field_complexity</code><a class="headerlink" href="#convert_to_field_complexity" title="Permanent link">🔗</a></h3>
+<p>This function is used to convert a <code>Field</code> reference to its <a href="../queries/#complexity">complexity</a> value.
+By default, any reference passed to it has a complexity of 0 if not specified.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Field</code> instance that is calling this function.</p>
+<h3 id="is_field_nullable"><code>is_field_nullable</code><a class="headerlink" href="#is_field_nullable" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Fields</code> to determine whether their reference is nullable or not.
+For example, a Model field reference is nullable if its <code>null</code> attribute is <code>True</code>.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Field</code> instance that is calling this function.</p>
+<h3 id="is_input_hidden"><code>is_input_hidden</code><a class="headerlink" href="#is_input_hidden" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Inputs</code> to determine whether their reference indicates
+a hidden input, meaning an input that is not included in the schema.
+For example, a Model field can be hidden if its <code>hidden</code> attribute is <code>True</code>,
+for example for the reverse side of a <code>ForeignKey</code> that starts with a "+".</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Input</code> instance that is calling this function.</p>
+<h3 id="is_input_only"><code>is_input_only</code><a class="headerlink" href="#is_input_only" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Inputs</code> to determine whether their reference is only used for input,
+or also saved on the Model instance that is the target of the mutation.
+For example, a non-Model field is input-only since it doesn't get saved to the database.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Input</code> instance that is calling this function.</p>
+<h3 id="is_input_required"><code>is_input_required</code><a class="headerlink" href="#is_input_required" title="Permanent link">🔗</a></h3>
+<p>This function is used by <code>Inputs</code> to determine whether their reference is required.
+For example, a Model field is required depending on the mutation it's used in,
+if it has a default value, if it has <code>null=True</code>, etc.</p>
+<p>In addition to the value to convert, the function also accepts a <code>caller</code>
+parameter, which is the <code>Input</code> instance that is calling this function.</p>
+<h3 id="is_many"><code>is_many</code><a class="headerlink" href="#is_many" title="Permanent link">🔗</a></h3>
+<p>This function is used to determine whether a value indicates a list of objects or not.
+For example, a "many-to-many" field would return <code>True</code>.</p>
+<p>In addition to the value to convert, the function also accepts a <code>model</code>
+parameter, which is the Django Model associated with the value, and a <code>name</code>
+parameter, which is a name associated with the value (e.g. field name).</p>
+<h3 id="extend_expression"><code>extend_expression</code><a class="headerlink" href="#extend_expression" title="Permanent link">🔗</a></h3>
+<p>This function is used to rewrite a Django expression as if it was referenced
+from a given Model field. For example, an <code>F</code> expression <code>F("name")</code> can be
+rewritten to extend from <code>field_name</code> as <code>F("field_name__name")</code>, and similarly,
+a <code>Q(name__exact="foo")</code> can be rewritten as <code>Q(field_name__name__exact="foo")</code>.
+This is used by the optimizer to rewrite expressions from "to-one" fields
+to the fields if the related Model can be fetched using <code>select_related</code>.</p>
+<p>In addition to the expression to convert, the function also accepts a <code>field_name</code>
+parameter, which is the name of the field to extend the expression from.</p>
+<h2 id="registering-implementations">Registering implementations<a class="headerlink" href="#registering-implementations" title="Permanent link">🔗</a></h2>
+<p>To register new implementations for a converter, you need to decorate a
+function using the <code>&lt;converter&gt;.register</code> method.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>    <span class="k">return</span> <span class="n">GraphQLString</span>
+</code></pre></div></td></tr></table></div>
+<p>With this implementation registered fo the <code>convert_to_graphql_type</code> converter,
+calling <code>convert_to_graphql_type(str)</code> will return a <code>GraphQLString</code> object.
+However, calling <code>convert_to_graphql_type("foo")</code> will not, since registration
+distinguishes between types and instances of types. To register for an instance,
+do this instead:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.utils.model_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_model_field</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="n">model_field</span> <span class="o">=</span> <span class="n">get_model_field</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span> <span class="n">lookup</span><span class="o">=</span><span class="n">ref</span><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    <span class="k">return</span> <span class="n">convert_to_graphql_type</span><span class="p">(</span><span class="n">model_field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>A converter implementation should always accept <code>**kwargs: Any</code>, since those can
+be used to pass any additional arguments required by the converter. For example,
+the <code>convert_to_graphql_type</code> converter gets a <code>model</code> parameter, which indicates
+the Django model associated with the value.</p>
+<p>If an implementation can be used for many different types, you can register it
+using a type union.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">CharField</span><span class="p">,</span> <span class="n">TextField</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">CharField</span> <span class="o">|</span> <span class="n">TextField</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11"></a>    <span class="k">return</span> <span class="n">GraphQLString</span>
+</code></pre></div></td></tr></table></div>
+<p>If the implementation of a superclass is can be used for a child class,
+you don't need to register implementations for the child class.
+Converters will automatically look up implementations based on the
+method resolution order of a class if an implementation is not found for the
+exact type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span>
+<span class="normal"><a href="#__codelineno-3-12">12</a></span>
+<span class="normal"><a href="#__codelineno-3-13">13</a></span>
+<span class="normal"><a href="#__codelineno-3-14">14</a></span>
+<span class="normal"><a href="#__codelineno-3-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BooleanField</span><span class="p">,</span> <span class="n">NullBooleanField</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLBoolean</span><span class="p">,</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="n">BooleanField</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a>    <span class="k">return</span> <span class="n">GraphQLBoolean</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13"></a>
+<a id="__codelineno-3-14" name="__codelineno-3-14"></a><span class="c1"># Uses the implementation for BooleanField, since NullBooleanField inherits from BooleanField.</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="n">convert_to_graphql_type</span><span class="p">(</span><span class="n">NullBooleanField</span><span class="p">())</span>
+</code></pre></div></td></tr></table></div>
+<p>Implementations can be registered for literal values as well,
+in which case an implementation is registered for all the possible values of the <code>Literal</code>.
+When the converter is called with a value which can be a literal value, the converter will first check
+for any implementations for literals before checking for implementations for the type itself.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"foo"</span><span class="p">,</span> <span class="s2">"bar"</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10"></a>    <span class="k">return</span> <span class="n">GraphQLString</span>
+</code></pre></div></td></tr></table></div>
+<p>If you need a different implementation for lambda functions as opposed to regular
+functions, you can register an implementation for the special <code>Lambda</code> type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLInputType</span><span class="p">,</span> <span class="n">GraphQLOutputType</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_to_graphql_type</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lambda</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="nd">@convert_to_graphql_type</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">Lambda</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GraphQLInputType</span> <span class="o">|</span> <span class="n">GraphQLOutputType</span><span class="p">:</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11"></a>    <span class="k">return</span> <span class="n">GraphQLString</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also register a default implementation for a converter using <code>Any</code>.
+Usually this is not needed and should be left for Undine to handle, since
+its likely you want an error to be raised by a converter for an unsupported
+type.</p>
+<h2 id="supporting-new-references">Supporting new references<a class="headerlink" href="#supporting-new-references" title="Permanent link">🔗</a></h2>
+<p>Using the converters described above, we can extend the functionality of Undine objects
+to support new references by registering new implementations for specific converters.
+A new implementation might not be required for all converters if the new type
+is a subtype of some existing type, which already has a implementation that works for it.</p>
+<h3 id="entrypoints">Entrypoints<a class="headerlink" href="#entrypoints" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>Entrypoint</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_entrypoint_ref"><code>convert_to_entrypoint_ref</code></a> to allow the new reference to be used in <code>Entrypoints</code>.</li>
+<li><a href="#convert_to_entrypoint_resolver"><code>convert_to_entrypoint_resolver</code></a> to convert the reference to a resolver function.</li>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_graphql_argument_map"><code>convert_to_graphql_argument_map</code></a> to convert the reference to a GraphQL argument map.</li>
+<li><a href="#convert_to_entrypoint_subscription"><code>convert_to_entrypoint_subscription</code></a> to convert the reference to a GraphQL subscription resolver function.</li>
+<li><a href="#convert_to_description"><code>convert_to_description</code></a> to convert the reference to a description.</li>
+</ol>
+<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>Field</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_field_ref"><code>convert_to_field_ref</code></a> to allow the new reference to be used in <code>Fields</code>.</li>
+<li><a href="#convert_to_field_resolver"><code>convert_to_field_resolver</code></a> to convert the reference to a resolver function.</li>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_graphql_argument_map"><code>convert_to_graphql_argument_map</code></a> to convert the reference to a GraphQL argument map.</li>
+<li><a href="#convert_to_field_complexity"><code>convert_to_field_complexity</code></a> to know the complexity of resolving the field.</li>
+<li><a href="#convert_to_description"><code>convert_to_description</code></a> to convert the reference to a description.</li>
+<li><a href="#is_field_nullable"><code>is_field_nullable</code></a> to know whether the reference is nullable or not.</li>
+<li><a href="#is_many"><code>is_many</code></a> to know whether the reference contains many objects or not.</li>
+</ol>
+<h3 id="inputs">Inputs<a class="headerlink" href="#inputs" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>Input</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_input_ref"><code>convert_to_input_ref</code></a> to allow the new reference to be used in <code>Inputs</code>.</li>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_default_value"><code>convert_to_default_value</code></a> to determine the default value of the input.</li>
+<li><a href="#convert_to_description"><code>convert_to_description</code></a> to convert the reference to a description.</li>
+<li><a href="#is_input_only"><code>is_input_only</code></a> to know whether the reference is only used for input or not.</li>
+<li><a href="#is_input_hidden"><code>is_input_hidden</code></a> to know whether the reference is hidden from the schema or not.</li>
+<li><a href="#is_input_required"><code>is_input_required</code></a> to know whether the reference is required or not.</li>
+<li><a href="#is_many"><code>is_many</code></a> to know whether the reference contains many objects or not.</li>
+</ol>
+<h3 id="filters">Filters<a class="headerlink" href="#filters" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>Filter</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_filter_ref"><code>convert_to_filter_ref</code></a> to allow the new reference to be used in <code>Filters</code>.</li>
+<li><a href="#convert_to_filter_resolver"><code>convert_to_filter_resolver</code></a> to convert the reference to a resolver function.</li>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_description"><code>convert_to_description</code></a> to convert the reference to a description.</li>
+</ol>
+<h3 id="orders">Orders<a class="headerlink" href="#orders" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>Order</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_order_ref"><code>convert_to_order_ref</code></a> to allow the new reference to be used in <code>Orders</code>.</li>
+<li><a href="#convert_to_description"><code>convert_to_description</code></a> to convert the reference to a description.</li>
+</ol>
+<h3 id="interfaces">Interfaces<a class="headerlink" href="#interfaces" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>InterfaceType</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_graphql_argument_map"><code>convert_to_graphql_argument_map</code></a> to convert the reference to a GraphQL argument map.</li>
+<li><a href="#convert_to_entrypoint_resolver"><code>convert_to_entrypoint_resolver</code></a> to convert the reference to a resolver function.</li>
+</ol>
+<h3 id="unions">Unions<a class="headerlink" href="#unions" title="Permanent link">🔗</a></h3>
+<p>Here are the converters that a new <code>UnionType</code> reference might need to implement:</p>
+<ol>
+<li><a href="#convert_to_graphql_type"><code>convert_to_graphql_type</code></a> to convert the reference to a GraphQL type.</li>
+<li><a href="#convert_to_graphql_argument_map"><code>convert_to_graphql_argument_map</code></a> to convert the reference to a GraphQL argument map.</li>
+<li><a href="#convert_to_entrypoint_resolver"><code>convert_to_entrypoint_resolver</code></a> to convert the reference to a resolver function.</li>
+</ol>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../directives/" title="Directives"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../optimizer/" title="Optimizer">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../directives/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../optimizer/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

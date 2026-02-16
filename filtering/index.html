@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Filtering - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Filtering";
+        var mkdocs_page_input_path = "filtering.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on query filtering in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Filtering</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#filterset">FilterSet</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#auto-generation">Auto-generation</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#logical-operators">Logical operators</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#filter-queryset">Filter queryset</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#schema-name">Schema name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#description">Description</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#directives">Directives</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#visibility">Visibility</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#graphql-extensions">GraphQL extensions</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#filter">Filter</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#model-field-references">Model field references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#expression-references">Expression references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#function-references">Function references</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#lookup">Lookup</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#many">Many</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#match">Match</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#distinct">Distinct</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#required">Required</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#aliases">Aliases</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#empty-values">Empty values</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#field-name">Field name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#schema-name_1">Schema name</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#description_1">Description</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#deprecation-reason">Deprecation reason</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#permissions">Permissions</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#directives_1">Directives</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#visibility_1">Visibility</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#graphql-extensions_1">GraphQL extensions</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Filtering</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the everything necessary for filtering
+results returned by your <a href="../queries/#querytypes"><code>QueryTypes</code></a>.</p>
+<h2 id="filterset">FilterSet<a class="headerlink" href="#filterset" title="Permanent link">🔗</a></h2>
+<p>A <code>FilterSet</code> is a collection of <a href="#filter"><code>Filter</code></a> objects that represents
+an <code>InputObjectType</code> in the GraphQL schema. When added to a <code>QueryType</code>,
+it creates an input argument (as determined by the
+<a href="../settings/#query_type_filter_input_key"><code>QUERY_TYPE_FILTER_INPUT_KEY</code></a> setting)
+on any list <code>Entrypoint</code> or many-related <code>Field</code> that is created using that <code>QueryType</code>.
+That input can then be used to filter the results returned by the <code>Entrypoint</code> or <code>Field</code>.</p>
+<p>A basic <code>FilterSet</code> is created by subclassing <code>FilterSet</code>
+and adding a Django Model to it as a generic type parameter.
+You must also add at least one <code>Filter</code> to the class body of the <code>FilterSet</code>.
+Then the <code>FilterSet</code> can be added to a <code>QueryType</code> using the <code>filterset</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">filterset</span><span class="o">=</span><span class="n">TaskFilterSet</span><span class="p">):</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add the <code>FilterSet</code> to the <code>QueryType</code> using decorator syntax.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="nd">@TaskFilterSet</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="auto-generation">Auto-generation<a class="headerlink" href="#auto-generation" title="Permanent link">🔗</a></h3>
+<p>A <code>FilterSet</code> can automatically introspect its Django Model and convert the Model's fields
+to <code>Filters</code> on the <code>FilterSet</code>. For example, if the <code>Task</code> model has the following fields:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span>
+<span class="normal"><a href="#__codelineno-2-12">12</a></span>
+<span class="normal"><a href="#__codelineno-2-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Project</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Project</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">CASCADE</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s2">"tasks"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>An auto-generated <code>FilterSet</code> will have all of the <code>Task</code> Model's fields and those fields'
+lookups translated into input arguments.</p>
+<details>
+<summary>Here is the generated <code>InputObjectType</code></summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">  1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">  2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">  3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">  4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">  5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">  6</a></span>
+<span class="normal"><a href="#__codelineno-3-7">  7</a></span>
+<span class="normal"><a href="#__codelineno-3-8">  8</a></span>
+<span class="normal"><a href="#__codelineno-3-9">  9</a></span>
+<span class="normal"><a href="#__codelineno-3-10"> 10</a></span>
+<span class="normal"><a href="#__codelineno-3-11"> 11</a></span>
+<span class="normal"><a href="#__codelineno-3-12"> 12</a></span>
+<span class="normal"><a href="#__codelineno-3-13"> 13</a></span>
+<span class="normal"><a href="#__codelineno-3-14"> 14</a></span>
+<span class="normal"><a href="#__codelineno-3-15"> 15</a></span>
+<span class="normal"><a href="#__codelineno-3-16"> 16</a></span>
+<span class="normal"><a href="#__codelineno-3-17"> 17</a></span>
+<span class="normal"><a href="#__codelineno-3-18"> 18</a></span>
+<span class="normal"><a href="#__codelineno-3-19"> 19</a></span>
+<span class="normal"><a href="#__codelineno-3-20"> 20</a></span>
+<span class="normal"><a href="#__codelineno-3-21"> 21</a></span>
+<span class="normal"><a href="#__codelineno-3-22"> 22</a></span>
+<span class="normal"><a href="#__codelineno-3-23"> 23</a></span>
+<span class="normal"><a href="#__codelineno-3-24"> 24</a></span>
+<span class="normal"><a href="#__codelineno-3-25"> 25</a></span>
+<span class="normal"><a href="#__codelineno-3-26"> 26</a></span>
+<span class="normal"><a href="#__codelineno-3-27"> 27</a></span>
+<span class="normal"><a href="#__codelineno-3-28"> 28</a></span>
+<span class="normal"><a href="#__codelineno-3-29"> 29</a></span>
+<span class="normal"><a href="#__codelineno-3-30"> 30</a></span>
+<span class="normal"><a href="#__codelineno-3-31"> 31</a></span>
+<span class="normal"><a href="#__codelineno-3-32"> 32</a></span>
+<span class="normal"><a href="#__codelineno-3-33"> 33</a></span>
+<span class="normal"><a href="#__codelineno-3-34"> 34</a></span>
+<span class="normal"><a href="#__codelineno-3-35"> 35</a></span>
+<span class="normal"><a href="#__codelineno-3-36"> 36</a></span>
+<span class="normal"><a href="#__codelineno-3-37"> 37</a></span>
+<span class="normal"><a href="#__codelineno-3-38"> 38</a></span>
+<span class="normal"><a href="#__codelineno-3-39"> 39</a></span>
+<span class="normal"><a href="#__codelineno-3-40"> 40</a></span>
+<span class="normal"><a href="#__codelineno-3-41"> 41</a></span>
+<span class="normal"><a href="#__codelineno-3-42"> 42</a></span>
+<span class="normal"><a href="#__codelineno-3-43"> 43</a></span>
+<span class="normal"><a href="#__codelineno-3-44"> 44</a></span>
+<span class="normal"><a href="#__codelineno-3-45"> 45</a></span>
+<span class="normal"><a href="#__codelineno-3-46"> 46</a></span>
+<span class="normal"><a href="#__codelineno-3-47"> 47</a></span>
+<span class="normal"><a href="#__codelineno-3-48"> 48</a></span>
+<span class="normal"><a href="#__codelineno-3-49"> 49</a></span>
+<span class="normal"><a href="#__codelineno-3-50"> 50</a></span>
+<span class="normal"><a href="#__codelineno-3-51"> 51</a></span>
+<span class="normal"><a href="#__codelineno-3-52"> 52</a></span>
+<span class="normal"><a href="#__codelineno-3-53"> 53</a></span>
+<span class="normal"><a href="#__codelineno-3-54"> 54</a></span>
+<span class="normal"><a href="#__codelineno-3-55"> 55</a></span>
+<span class="normal"><a href="#__codelineno-3-56"> 56</a></span>
+<span class="normal"><a href="#__codelineno-3-57"> 57</a></span>
+<span class="normal"><a href="#__codelineno-3-58"> 58</a></span>
+<span class="normal"><a href="#__codelineno-3-59"> 59</a></span>
+<span class="normal"><a href="#__codelineno-3-60"> 60</a></span>
+<span class="normal"><a href="#__codelineno-3-61"> 61</a></span>
+<span class="normal"><a href="#__codelineno-3-62"> 62</a></span>
+<span class="normal"><a href="#__codelineno-3-63"> 63</a></span>
+<span class="normal"><a href="#__codelineno-3-64"> 64</a></span>
+<span class="normal"><a href="#__codelineno-3-65"> 65</a></span>
+<span class="normal"><a href="#__codelineno-3-66"> 66</a></span>
+<span class="normal"><a href="#__codelineno-3-67"> 67</a></span>
+<span class="normal"><a href="#__codelineno-3-68"> 68</a></span>
+<span class="normal"><a href="#__codelineno-3-69"> 69</a></span>
+<span class="normal"><a href="#__codelineno-3-70"> 70</a></span>
+<span class="normal"><a href="#__codelineno-3-71"> 71</a></span>
+<span class="normal"><a href="#__codelineno-3-72"> 72</a></span>
+<span class="normal"><a href="#__codelineno-3-73"> 73</a></span>
+<span class="normal"><a href="#__codelineno-3-74"> 74</a></span>
+<span class="normal"><a href="#__codelineno-3-75"> 75</a></span>
+<span class="normal"><a href="#__codelineno-3-76"> 76</a></span>
+<span class="normal"><a href="#__codelineno-3-77"> 77</a></span>
+<span class="normal"><a href="#__codelineno-3-78"> 78</a></span>
+<span class="normal"><a href="#__codelineno-3-79"> 79</a></span>
+<span class="normal"><a href="#__codelineno-3-80"> 80</a></span>
+<span class="normal"><a href="#__codelineno-3-81"> 81</a></span>
+<span class="normal"><a href="#__codelineno-3-82"> 82</a></span>
+<span class="normal"><a href="#__codelineno-3-83"> 83</a></span>
+<span class="normal"><a href="#__codelineno-3-84"> 84</a></span>
+<span class="normal"><a href="#__codelineno-3-85"> 85</a></span>
+<span class="normal"><a href="#__codelineno-3-86"> 86</a></span>
+<span class="normal"><a href="#__codelineno-3-87"> 87</a></span>
+<span class="normal"><a href="#__codelineno-3-88"> 88</a></span>
+<span class="normal"><a href="#__codelineno-3-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-3-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-3-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-3-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-3-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-3-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-3-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-3-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-3-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-3-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-3-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-3-100">100</a></span>
+<span class="normal"><a href="#__codelineno-3-101">101</a></span>
+<span class="normal"><a href="#__codelineno-3-102">102</a></span>
+<span class="normal"><a href="#__codelineno-3-103">103</a></span>
+<span class="normal"><a href="#__codelineno-3-104">104</a></span>
+<span class="normal"><a href="#__codelineno-3-105">105</a></span>
+<span class="normal"><a href="#__codelineno-3-106">106</a></span>
+<span class="normal"><a href="#__codelineno-3-107">107</a></span>
+<span class="normal"><a href="#__codelineno-3-108">108</a></span>
+<span class="normal"><a href="#__codelineno-3-109">109</a></span>
+<span class="normal"><a href="#__codelineno-3-110">110</a></span>
+<span class="normal"><a href="#__codelineno-3-111">111</a></span>
+<span class="normal"><a href="#__codelineno-3-112">112</a></span>
+<span class="normal"><a href="#__codelineno-3-113">113</a></span>
+<span class="normal"><a href="#__codelineno-3-114">114</a></span>
+<span class="normal"><a href="#__codelineno-3-115">115</a></span>
+<span class="normal"><a href="#__codelineno-3-116">116</a></span>
+<span class="normal"><a href="#__codelineno-3-117">117</a></span>
+<span class="normal"><a href="#__codelineno-3-118">118</a></span>
+<span class="normal"><a href="#__codelineno-3-119">119</a></span>
+<span class="normal"><a href="#__codelineno-3-120">120</a></span>
+<span class="normal"><a href="#__codelineno-3-121">121</a></span>
+<span class="normal"><a href="#__codelineno-3-122">122</a></span>
+<span class="normal"><a href="#__codelineno-3-123">123</a></span>
+<span class="normal"><a href="#__codelineno-3-124">124</a></span>
+<span class="normal"><a href="#__codelineno-3-125">125</a></span>
+<span class="normal"><a href="#__codelineno-3-126">126</a></span>
+<span class="normal"><a href="#__codelineno-3-127">127</a></span>
+<span class="normal"><a href="#__codelineno-3-128">128</a></span>
+<span class="normal"><a href="#__codelineno-3-129">129</a></span>
+<span class="normal"><a href="#__codelineno-3-130">130</a></span>
+<span class="normal"><a href="#__codelineno-3-131">131</a></span>
+<span class="normal"><a href="#__codelineno-3-132">132</a></span>
+<span class="normal"><a href="#__codelineno-3-133">133</a></span>
+<span class="normal"><a href="#__codelineno-3-134">134</a></span>
+<span class="normal"><a href="#__codelineno-3-135">135</a></span>
+<span class="normal"><a href="#__codelineno-3-136">136</a></span>
+<span class="normal"><a href="#__codelineno-3-137">137</a></span>
+<span class="normal"><a href="#__codelineno-3-138">138</a></span>
+<span class="normal"><a href="#__codelineno-3-139">139</a></span>
+<span class="normal"><a href="#__codelineno-3-140">140</a></span>
+<span class="normal"><a href="#__codelineno-3-141">141</a></span>
+<span class="normal"><a href="#__codelineno-3-142">142</a></span>
+<span class="normal"><a href="#__codelineno-3-143">143</a></span>
+<span class="normal"><a href="#__codelineno-3-144">144</a></span>
+<span class="normal"><a href="#__codelineno-3-145">145</a></span>
+<span class="normal"><a href="#__codelineno-3-146">146</a></span>
+<span class="normal"><a href="#__codelineno-3-147">147</a></span>
+<span class="normal"><a href="#__codelineno-3-148">148</a></span>
+<span class="normal"><a href="#__codelineno-3-149">149</a></span>
+<span class="normal"><a href="#__codelineno-3-150">150</a></span>
+<span class="normal"><a href="#__codelineno-3-151">151</a></span>
+<span class="normal"><a href="#__codelineno-3-152">152</a></span>
+<span class="normal"><a href="#__codelineno-3-153">153</a></span>
+<span class="normal"><a href="#__codelineno-3-154">154</a></span>
+<span class="normal"><a href="#__codelineno-3-155">155</a></span>
+<span class="normal"><a href="#__codelineno-3-156">156</a></span>
+<span class="normal"><a href="#__codelineno-3-157">157</a></span>
+<span class="normal"><a href="#__codelineno-3-158">158</a></span>
+<span class="normal"><a href="#__codelineno-3-159">159</a></span>
+<span class="normal"><a href="#__codelineno-3-160">160</a></span>
+<span class="normal"><a href="#__codelineno-3-161">161</a></span>
+<span class="normal"><a href="#__codelineno-3-162">162</a></span>
+<span class="normal"><a href="#__codelineno-3-163">163</a></span>
+<span class="normal"><a href="#__codelineno-3-164">164</a></span>
+<span class="normal"><a href="#__codelineno-3-165">165</a></span>
+<span class="normal"><a href="#__codelineno-3-166">166</a></span>
+<span class="normal"><a href="#__codelineno-3-167">167</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskFilterSet</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span><span class="nl">createdAtDate</span><span class="p">:</span><span class="w"> </span><span class="n">Date</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">  </span><span class="nl">createdAtDateGt</span><span class="p">:</span><span class="w"> </span><span class="n">Date</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">  </span><span class="nl">createdAtDateGte</span><span class="p">:</span><span class="w"> </span><span class="n">Date</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">  </span><span class="nl">createdAtDateIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Date</span><span class="err">!]</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">  </span><span class="nl">createdAtDateLt</span><span class="p">:</span><span class="w"> </span><span class="n">Date</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="w">  </span><span class="nl">createdAtDateLte</span><span class="p">:</span><span class="w"> </span><span class="n">Date</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">  </span><span class="nl">createdAtDateRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Date</span><span class="err">!]</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="w">  </span><span class="nl">createdAtDay</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">  </span><span class="nl">createdAtDayContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">  </span><span class="nl">createdAtDayEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="w">  </span><span class="nl">createdAtDayGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14"></a><span class="w">  </span><span class="nl">createdAtDayGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="w">  </span><span class="nl">createdAtDayIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16"></a><span class="w">  </span><span class="nl">createdAtDayLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17"></a><span class="w">  </span><span class="nl">createdAtDayLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18"></a><span class="w">  </span><span class="nl">createdAtDayRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19"></a><span class="w">  </span><span class="nl">createdAtDayStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20"></a><span class="w">  </span><span class="nl">createdAtGt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21"></a><span class="w">  </span><span class="nl">createdAtGte</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22"></a><span class="w">  </span><span class="nl">createdAtHour</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23"></a><span class="w">  </span><span class="nl">createdAtHourContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24"></a><span class="w">  </span><span class="nl">createdAtHourEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25"></a><span class="w">  </span><span class="nl">createdAtHourGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26"></a><span class="w">  </span><span class="nl">createdAtHourGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27"></a><span class="w">  </span><span class="nl">createdAtHourIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28"></a><span class="w">  </span><span class="nl">createdAtHourLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29"></a><span class="w">  </span><span class="nl">createdAtHourLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30"></a><span class="w">  </span><span class="nl">createdAtHourRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31"></a><span class="w">  </span><span class="nl">createdAtHourStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32"></a><span class="w">  </span><span class="nl">createdAtIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">DateTime</span><span class="err">!]</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDay</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-40" name="__codelineno-3-40"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-42" name="__codelineno-3-42"></a><span class="w">  </span><span class="nl">createdAtIsoWeekDayStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43"></a><span class="w">  </span><span class="nl">createdAtIsoYear</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-44" name="__codelineno-3-44"></a><span class="w">  </span><span class="nl">createdAtIsoYearContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-45" name="__codelineno-3-45"></a><span class="w">  </span><span class="nl">createdAtIsoYearEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46"></a><span class="w">  </span><span class="nl">createdAtIsoYearGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-47" name="__codelineno-3-47"></a><span class="w">  </span><span class="nl">createdAtIsoYearGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-48" name="__codelineno-3-48"></a><span class="w">  </span><span class="nl">createdAtIsoYearIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-49" name="__codelineno-3-49"></a><span class="w">  </span><span class="nl">createdAtIsoYearLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50"></a><span class="w">  </span><span class="nl">createdAtIsoYearLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51"></a><span class="w">  </span><span class="nl">createdAtIsoYearRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-52" name="__codelineno-3-52"></a><span class="w">  </span><span class="nl">createdAtIsoYearStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-53" name="__codelineno-3-53"></a><span class="w">  </span><span class="nl">createdAtLt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span>
+<a id="__codelineno-3-54" name="__codelineno-3-54"></a><span class="w">  </span><span class="nl">createdAtLte</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span>
+<a id="__codelineno-3-55" name="__codelineno-3-55"></a><span class="w">  </span><span class="nl">createdAtMinute</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-56" name="__codelineno-3-56"></a><span class="w">  </span><span class="nl">createdAtMinuteContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-57" name="__codelineno-3-57"></a><span class="w">  </span><span class="nl">createdAtMinuteEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-58" name="__codelineno-3-58"></a><span class="w">  </span><span class="nl">createdAtMinuteGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-59" name="__codelineno-3-59"></a><span class="w">  </span><span class="nl">createdAtMinuteGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-60" name="__codelineno-3-60"></a><span class="w">  </span><span class="nl">createdAtMinuteIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-61" name="__codelineno-3-61"></a><span class="w">  </span><span class="nl">createdAtMinuteLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-62" name="__codelineno-3-62"></a><span class="w">  </span><span class="nl">createdAtMinuteLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-63" name="__codelineno-3-63"></a><span class="w">  </span><span class="nl">createdAtMinuteRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-64" name="__codelineno-3-64"></a><span class="w">  </span><span class="nl">createdAtMinuteStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-65" name="__codelineno-3-65"></a><span class="w">  </span><span class="nl">createdAtMonth</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-66" name="__codelineno-3-66"></a><span class="w">  </span><span class="nl">createdAtMonthContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-67" name="__codelineno-3-67"></a><span class="w">  </span><span class="nl">createdAtMonthEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-68" name="__codelineno-3-68"></a><span class="w">  </span><span class="nl">createdAtMonthGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-69" name="__codelineno-3-69"></a><span class="w">  </span><span class="nl">createdAtMonthGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-70" name="__codelineno-3-70"></a><span class="w">  </span><span class="nl">createdAtMonthIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-71" name="__codelineno-3-71"></a><span class="w">  </span><span class="nl">createdAtMonthLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-72" name="__codelineno-3-72"></a><span class="w">  </span><span class="nl">createdAtMonthLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-73" name="__codelineno-3-73"></a><span class="w">  </span><span class="nl">createdAtMonthRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-74" name="__codelineno-3-74"></a><span class="w">  </span><span class="nl">createdAtMonthStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-75" name="__codelineno-3-75"></a><span class="w">  </span><span class="nl">createdAtQuarter</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-76" name="__codelineno-3-76"></a><span class="w">  </span><span class="nl">createdAtQuarterContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-77" name="__codelineno-3-77"></a><span class="w">  </span><span class="nl">createdAtQuarterEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-78" name="__codelineno-3-78"></a><span class="w">  </span><span class="nl">createdAtQuarterGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-79" name="__codelineno-3-79"></a><span class="w">  </span><span class="nl">createdAtQuarterGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-80" name="__codelineno-3-80"></a><span class="w">  </span><span class="nl">createdAtQuarterIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-81" name="__codelineno-3-81"></a><span class="w">  </span><span class="nl">createdAtQuarterLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-82" name="__codelineno-3-82"></a><span class="w">  </span><span class="nl">createdAtQuarterLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-83" name="__codelineno-3-83"></a><span class="w">  </span><span class="nl">createdAtQuarterRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-84" name="__codelineno-3-84"></a><span class="w">  </span><span class="nl">createdAtQuarterStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-85" name="__codelineno-3-85"></a><span class="w">  </span><span class="nl">createdAtRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">DateTime</span><span class="err">!]</span>
+<a id="__codelineno-3-86" name="__codelineno-3-86"></a><span class="w">  </span><span class="nl">createdAtSecond</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-87" name="__codelineno-3-87"></a><span class="w">  </span><span class="nl">createdAtSecondContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-88" name="__codelineno-3-88"></a><span class="w">  </span><span class="nl">createdAtSecondEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-89" name="__codelineno-3-89"></a><span class="w">  </span><span class="nl">createdAtSecondGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-90" name="__codelineno-3-90"></a><span class="w">  </span><span class="nl">createdAtSecondGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-91" name="__codelineno-3-91"></a><span class="w">  </span><span class="nl">createdAtSecondIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-92" name="__codelineno-3-92"></a><span class="w">  </span><span class="nl">createdAtSecondLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-93" name="__codelineno-3-93"></a><span class="w">  </span><span class="nl">createdAtSecondLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-94" name="__codelineno-3-94"></a><span class="w">  </span><span class="nl">createdAtSecondRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-95" name="__codelineno-3-95"></a><span class="w">  </span><span class="nl">createdAtSecondStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-96" name="__codelineno-3-96"></a><span class="w">  </span><span class="nl">createdAtTime</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-97" name="__codelineno-3-97"></a><span class="w">  </span><span class="nl">createdAtTimeContains</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-98" name="__codelineno-3-98"></a><span class="w">  </span><span class="nl">createdAtTimeEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-99" name="__codelineno-3-99"></a><span class="w">  </span><span class="nl">createdAtTimeGt</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-100" name="__codelineno-3-100"></a><span class="w">  </span><span class="nl">createdAtTimeGte</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-101" name="__codelineno-3-101"></a><span class="w">  </span><span class="nl">createdAtTimeIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Time</span><span class="err">!]</span>
+<a id="__codelineno-3-102" name="__codelineno-3-102"></a><span class="w">  </span><span class="nl">createdAtTimeLt</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-103" name="__codelineno-3-103"></a><span class="w">  </span><span class="nl">createdAtTimeLte</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-104" name="__codelineno-3-104"></a><span class="w">  </span><span class="nl">createdAtTimeRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Time</span><span class="err">!]</span>
+<a id="__codelineno-3-105" name="__codelineno-3-105"></a><span class="w">  </span><span class="nl">createdAtTimeStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Time</span>
+<a id="__codelineno-3-106" name="__codelineno-3-106"></a><span class="w">  </span><span class="nl">createdAtWeek</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-107" name="__codelineno-3-107"></a><span class="w">  </span><span class="nl">createdAtWeekContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-108" name="__codelineno-3-108"></a><span class="w">  </span><span class="nl">createdAtWeekDay</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-109" name="__codelineno-3-109"></a><span class="w">  </span><span class="nl">createdAtWeekDayContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-110" name="__codelineno-3-110"></a><span class="w">  </span><span class="nl">createdAtWeekDayEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-111" name="__codelineno-3-111"></a><span class="w">  </span><span class="nl">createdAtWeekDayGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-112" name="__codelineno-3-112"></a><span class="w">  </span><span class="nl">createdAtWeekDayGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-113" name="__codelineno-3-113"></a><span class="w">  </span><span class="nl">createdAtWeekDayIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-114" name="__codelineno-3-114"></a><span class="w">  </span><span class="nl">createdAtWeekDayLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-115" name="__codelineno-3-115"></a><span class="w">  </span><span class="nl">createdAtWeekDayLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-116" name="__codelineno-3-116"></a><span class="w">  </span><span class="nl">createdAtWeekDayRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-117" name="__codelineno-3-117"></a><span class="w">  </span><span class="nl">createdAtWeekDayStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-118" name="__codelineno-3-118"></a><span class="w">  </span><span class="nl">createdAtWeekEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-119" name="__codelineno-3-119"></a><span class="w">  </span><span class="nl">createdAtWeekGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-120" name="__codelineno-3-120"></a><span class="w">  </span><span class="nl">createdAtWeekGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-121" name="__codelineno-3-121"></a><span class="w">  </span><span class="nl">createdAtWeekIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-122" name="__codelineno-3-122"></a><span class="w">  </span><span class="nl">createdAtWeekLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-123" name="__codelineno-3-123"></a><span class="w">  </span><span class="nl">createdAtWeekLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-124" name="__codelineno-3-124"></a><span class="w">  </span><span class="nl">createdAtWeekRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-125" name="__codelineno-3-125"></a><span class="w">  </span><span class="nl">createdAtWeekStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-126" name="__codelineno-3-126"></a><span class="w">  </span><span class="nl">createdAtYear</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-127" name="__codelineno-3-127"></a><span class="w">  </span><span class="nl">createdAtYearContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-128" name="__codelineno-3-128"></a><span class="w">  </span><span class="nl">createdAtYearEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-129" name="__codelineno-3-129"></a><span class="w">  </span><span class="nl">createdAtYearGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-130" name="__codelineno-3-130"></a><span class="w">  </span><span class="nl">createdAtYearGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-131" name="__codelineno-3-131"></a><span class="w">  </span><span class="nl">createdAtYearIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-132" name="__codelineno-3-132"></a><span class="w">  </span><span class="nl">createdAtYearLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-133" name="__codelineno-3-133"></a><span class="w">  </span><span class="nl">createdAtYearLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-134" name="__codelineno-3-134"></a><span class="w">  </span><span class="nl">createdAtYearRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-135" name="__codelineno-3-135"></a><span class="w">  </span><span class="nl">createdAtYearStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-136" name="__codelineno-3-136"></a><span class="w">  </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span>
+<a id="__codelineno-3-137" name="__codelineno-3-137"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-138" name="__codelineno-3-138"></a><span class="w">  </span><span class="nl">nameContains</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-139" name="__codelineno-3-139"></a><span class="w">  </span><span class="nl">nameContainsExact</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-140" name="__codelineno-3-140"></a><span class="w">  </span><span class="nl">nameEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-141" name="__codelineno-3-141"></a><span class="w">  </span><span class="nl">nameEndsWithExact</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-142" name="__codelineno-3-142"></a><span class="w">  </span><span class="nl">nameExact</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-143" name="__codelineno-3-143"></a><span class="w">  </span><span class="nl">nameIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">!]</span>
+<a id="__codelineno-3-144" name="__codelineno-3-144"></a><span class="w">  </span><span class="nl">nameStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-145" name="__codelineno-3-145"></a><span class="w">  </span><span class="nl">nameStartsWithExact</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<a id="__codelineno-3-146" name="__codelineno-3-146"></a><span class="w">  </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-147" name="__codelineno-3-147"></a><span class="w">  </span><span class="nl">pkContains</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-148" name="__codelineno-3-148"></a><span class="w">  </span><span class="nl">pkEndsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-149" name="__codelineno-3-149"></a><span class="w">  </span><span class="nl">pkGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-150" name="__codelineno-3-150"></a><span class="w">  </span><span class="nl">pkGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-151" name="__codelineno-3-151"></a><span class="w">  </span><span class="nl">pkIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-152" name="__codelineno-3-152"></a><span class="w">  </span><span class="nl">pkLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-153" name="__codelineno-3-153"></a><span class="w">  </span><span class="nl">pkLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-154" name="__codelineno-3-154"></a><span class="w">  </span><span class="nl">pkRange</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-155" name="__codelineno-3-155"></a><span class="w">  </span><span class="nl">pkStartsWith</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-156" name="__codelineno-3-156"></a><span class="w">  </span><span class="nl">project</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-157" name="__codelineno-3-157"></a><span class="w">  </span><span class="nl">projectGt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-158" name="__codelineno-3-158"></a><span class="w">  </span><span class="nl">projectGte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-159" name="__codelineno-3-159"></a><span class="w">  </span><span class="nl">projectIn</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Int</span><span class="err">!]</span>
+<a id="__codelineno-3-160" name="__codelineno-3-160"></a><span class="w">  </span><span class="nl">projectIsNull</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span>
+<a id="__codelineno-3-161" name="__codelineno-3-161"></a><span class="w">  </span><span class="nl">projectLt</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-162" name="__codelineno-3-162"></a><span class="w">  </span><span class="nl">projectLte</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<a id="__codelineno-3-163" name="__codelineno-3-163"></a><span class="w">  </span><span class="nl">NOT</span><span class="p">:</span><span class="w"> </span><span class="n">TaskFilterSet</span>
+<a id="__codelineno-3-164" name="__codelineno-3-164"></a><span class="w">  </span><span class="nl">AND</span><span class="p">:</span><span class="w"> </span><span class="n">TaskFilterSet</span>
+<a id="__codelineno-3-165" name="__codelineno-3-165"></a><span class="w">  </span><span class="nl">OR</span><span class="p">:</span><span class="w"> </span><span class="n">TaskFilterSet</span>
+<a id="__codelineno-3-166" name="__codelineno-3-166"></a><span class="w">  </span><span class="nl">XOR</span><span class="p">:</span><span class="w"> </span><span class="n">TaskFilterSet</span>
+<a id="__codelineno-3-167" name="__codelineno-3-167"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<details>
+<summary>About <code>Filter</code> names</summary>
+<p>Usually the names of the <code>Filters</code> generated by auto-generation correspond to the lookup
+in Django, but for text-based fields, names are changed slightly to lean towards using
+case-insensitive lookups first: Filter <code>name</code> uses <code>__iexact</code> and <code>nameExact</code> uses <code>__exact</code>.
+Similarly, <code>nameStartsWith</code> uses <code>__istartswith</code> while <code>nameStartsWithExact</code> uses <code>__startswith</code>, etc.</p>
+</details>
+<p>To use auto-generation, either set <a href="../settings/#autogeneration"><code>AUTOGENERATION</code></a> setting to <code>True</code>
+to enable it globally, or set the <code>auto</code> argument to <code>True</code> in the <code>FilterSet</code> class definition.
+With this, you can leave the <code>FilterSet</code> class body empty.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span>
+<span class="normal"><a href="#__codelineno-4-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterSet</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>You can exclude some Model fields from the auto-generation by setting the <code>exclude</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span>
+<span class="normal"><a href="#__codelineno-5-5">5</a></span>
+<span class="normal"><a href="#__codelineno-5-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterSet</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also exclude specific model lookups, e.g. <code>created_at__gte</code>.</p>
+<h3 id="logical-operators">Logical operators<a class="headerlink" href="#logical-operators" title="Permanent link">🔗</a></h3>
+<p>A <code>FilterSet</code> always provides the logical operators <code>NOT</code>, <code>AND</code>, <code>OR</code>, <code>XOR</code>,
+allowing users to freely create more complex filter conditions from defined <code>Filters</code>.
+Let's assume you've added an <a href="#auto-generation">auto-generated</a> <code>TaskFilterSet</code>
+for a <code>QueryType</code> named <code>TaskType</code>. Normally, when multiple <code>Filters</code> are used,
+you'll get results that match all filter conditions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-6-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-6-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-6-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-6-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-6-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-6-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-6-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-6-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-6-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">      </span><span class="n">nameStartsWith</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">      </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>By putting the filter conditions inside an <code>OR</code> block,
+we can get results that match any of the conditions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-7-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-7-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-7-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-7-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-7-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-7-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-7-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-7-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-7-10">10</a></span>
+<span class="normal"><a href="#__codelineno-7-11">11</a></span>
+<span class="normal"><a href="#__codelineno-7-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">      </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">        </span><span class="n">nameStartsWith</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="w">        </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Note that only the results <em>inside</em> the conditional block will use that logical combinator.
+For example, in the following example, only tasks that contains an "e" AND EITHER start with "a"
+OR are done will be returned:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span>
+<span class="normal"><a href="#__codelineno-8-11">11</a></span>
+<span class="normal"><a href="#__codelineno-8-12">12</a></span>
+<span class="normal"><a href="#__codelineno-8-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">      </span><span class="n">nameContains</span><span class="p">:</span><span class="w"> </span><span class="s">"e"</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">      </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">        </span><span class="n">nameStartsWith</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">        </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="filter-queryset">Filter queryset<a class="headerlink" href="#filter-queryset" title="Permanent link">🔗</a></h3>
+<p>In addition to <a href="#filter"><code>Filters</code></a>, <code>FilterSet</code> also includes a <code>__filter_queryset__</code>
+classmethod, which can be used to add filtering that should always be applied
+when fetching objects through <code>QueryTypes</code> using the given <code>FilterSet</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span>
+<span class="normal"><a href="#__codelineno-9-13">13</a></span>
+<span class="normal"><a href="#__codelineno-9-14">14</a></span>
+<span class="normal"><a href="#__codelineno-9-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuerySet</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__filter_queryset__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">queryset</span><span class="p">:</span> <span class="n">QuerySet</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuerySet</span><span class="p">:</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_staff</span><span class="p">:</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14"></a>            <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">none</span><span class="p">()</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15"></a>        <span class="k">return</span> <span class="n">queryset</span>
+</code></pre></div></td></tr></table></div>
+<p>Note that <code>QueryTypes</code> also have a <code>__filter_queryset__</code> classmethod, which is run <em>before</em>
+any <code>FilterSet</code> <code>Filters</code>, and that <code>FilterSet's</code> <code>__filter_queryset__</code> is run <em>after</em>.
+See the Optimizer's <a href="../optimizer/#order-of-optimizations">order of operations</a> for more details.</p>
+<h3 id="schema-name">Schema name<a class="headerlink" href="#schema-name" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the generated GraphQL <code>InputObjectType</code> for a <code>FilterSet</code> class
+is the name of the <code>FilterSet</code> class. If you want to change the name separately,
+you can do so by setting the <code>schema_name</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">5</a></span>
+<span class="normal"><a href="#__codelineno-10-6">6</a></span>
+<span class="normal"><a href="#__codelineno-10-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"TaskFilterInput"</span><span class="p">):</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="description">Description<a class="headerlink" href="#description" title="Permanent link">🔗</a></h3>
+<p>You can provide a description for a <code>FilterSet</code> by adding a docstring to the class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span>
+<span class="normal"><a href="#__codelineno-11-4">4</a></span>
+<span class="normal"><a href="#__codelineno-11-5">5</a></span>
+<span class="normal"><a href="#__codelineno-11-6">6</a></span>
+<span class="normal"><a href="#__codelineno-11-7">7</a></span>
+<span class="normal"><a href="#__codelineno-11-8">8</a></span>
+<span class="normal"><a href="#__codelineno-11-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="w">    </span><span class="sd">"""Description."""</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="directives">Directives<a class="headerlink" href="#directives" title="Permanent link">🔗</a></h3>
+<p>You can add directives to a <code>FilterSet</code> by providing them using the <code>directives</code> argument.
+The directive must be usable in the <code>INPUT_OBJECT</code> location.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span>
+<span class="normal"><a href="#__codelineno-12-11">11</a></span>
+<span class="normal"><a href="#__codelineno-12-12">12</a></span>
+<span class="normal"><a href="#__codelineno-12-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_OBJECT</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a>
+<a id="__codelineno-12-11" name="__codelineno-12-11"></a>
+<a id="__codelineno-12-12" name="__codelineno-12-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()]):</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add directives using decorator syntax.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-13-10">10</a></span>
+<span class="normal"><a href="#__codelineno-13-11">11</a></span>
+<span class="normal"><a href="#__codelineno-13-12">12</a></span>
+<span class="normal"><a href="#__codelineno-13-13">13</a></span>
+<span class="normal"><a href="#__codelineno-13-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_OBJECT</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10"></a>
+<a id="__codelineno-13-11" name="__codelineno-13-11"></a>
+<a id="__codelineno-13-12" name="__codelineno-13-12"></a><span class="nd">@MyDirective</span><span class="p">()</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="visibility">Visibility<a class="headerlink" href="#visibility" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>This is an experimental feature that needs to be enabled using the
+<a href="../settings/#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a> setting.</p>
+</blockquote>
+<p>You can hide a <code>FilterSet</code> from certain users by using the <code>__is_visible__</code> method.
+Hiding the <code>FilterSet</code> means that it will not be included in introspection queries for that user,
+and trying to use it in operations will result in an error that looks exactly like
+the argument for the <code>FilterSet</code> didn't exist in the first place.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span>
+<span class="normal"><a href="#__codelineno-14-11">11</a></span>
+<span class="normal"><a href="#__codelineno-14-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DjangoRequestProtocol</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9"></a>
+<a id="__codelineno-14-10" name="__codelineno-14-10"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__is_visible__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">DjangoRequestProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12"></a>        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span>
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>When using visibility checks, you should also disable "did you mean" suggestions
+using the <a href="../settings/#allow_did_you_mean_suggestions"><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code></a> setting.
+Otherwise, a hidden field might show up in them.</p>
+</blockquote>
+<h3 id="graphql-extensions">GraphQL extensions<a class="headerlink" href="#graphql-extensions" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>FilterSet</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>FilterSet</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span>
+<span class="normal"><a href="#__codelineno-15-2">2</a></span>
+<span class="normal"><a href="#__codelineno-15-3">3</a></span>
+<span class="normal"><a href="#__codelineno-15-4">4</a></span>
+<span class="normal"><a href="#__codelineno-15-5">5</a></span>
+<span class="normal"><a href="#__codelineno-15-6">6</a></span>
+<span class="normal"><a href="#__codelineno-15-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"foo"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">}):</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p><code>FilterSet</code> extensions are made available in the GraphQL <code>InputObjectType</code> extensions
+after the schema is created. The <code>FilterSet</code> itself is found in the GraphQL <code>InputObjectType</code> extensions
+under a key defined by the <a href="../settings/#filterset_extensions_key"><code>FILTERSET_EXTENSIONS_KEY</code></a>
+setting.</p>
+<h2 id="filter">Filter<a class="headerlink" href="#filter" title="Permanent link">🔗</a></h2>
+<p>A <code>Filter</code> defines a way of filtering the results returned by an <code>Entrypoint</code> or <code>Field</code> using a <code>QueryType</code>.
+A <code>Filter</code> corresponds to anything that can be passed to a <code>queryset.filter()</code> call,
+usually a <a href="https://docs.djangoproject.com/en/stable/ref/models/querysets/#field-lookups">lookup expression</a> on the Django Model of the <code>FilterSet</code> it belongs to.
+In GraphQL, a <code>Filter</code> represents a <code>GraphQLInputField</code> on an <code>InputObjectType</code>.</p>
+<p>A <code>Filter</code> always requires a <em><strong>reference</strong></em> from which it will create the proper GraphQL resolver
+and input type for the <code>Filter</code>.</p>
+<h3 id="model-field-references">Model field references<a class="headerlink" href="#model-field-references" title="Permanent link">🔗</a></h3>
+<p>For <code>Filters</code> corresponding to Django Model fields, the <code>Filter</code> can be used without passing in a reference,
+as its attribute name on the <code>FilterSet</code> class body can be used to identify
+the corresponding Model field.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span>
+<span class="normal"><a href="#__codelineno-16-2">2</a></span>
+<span class="normal"><a href="#__codelineno-16-3">3</a></span>
+<span class="normal"><a href="#__codelineno-16-4">4</a></span>
+<span class="normal"><a href="#__codelineno-16-5">5</a></span>
+<span class="normal"><a href="#__codelineno-16-6">6</a></span>
+<span class="normal"><a href="#__codelineno-16-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>To be a bit more explicit, you could use a string referencing the Model field:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span>
+<span class="normal"><a href="#__codelineno-17-2">2</a></span>
+<span class="normal"><a href="#__codelineno-17-3">3</a></span>
+<span class="normal"><a href="#__codelineno-17-4">4</a></span>
+<span class="normal"><a href="#__codelineno-17-5">5</a></span>
+<span class="normal"><a href="#__codelineno-17-6">6</a></span>
+<span class="normal"><a href="#__codelineno-17-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a>
+<a id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For better type safety, you can also use the Model field itself:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span>
+<span class="normal"><a href="#__codelineno-18-2">2</a></span>
+<span class="normal"><a href="#__codelineno-18-3">3</a></span>
+<span class="normal"><a href="#__codelineno-18-4">4</a></span>
+<span class="normal"><a href="#__codelineno-18-5">5</a></span>
+<span class="normal"><a href="#__codelineno-18-6">6</a></span>
+<span class="normal"><a href="#__codelineno-18-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Being explicit like this is only required if the name of the attribute in the GraphQL schema
+is different from the Model field name.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span>
+<span class="normal"><a href="#__codelineno-19-2">2</a></span>
+<span class="normal"><a href="#__codelineno-19-3">3</a></span>
+<span class="normal"><a href="#__codelineno-19-4">4</a></span>
+<span class="normal"><a href="#__codelineno-19-5">5</a></span>
+<span class="normal"><a href="#__codelineno-19-6">6</a></span>
+<span class="normal"><a href="#__codelineno-19-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7"></a>    <span class="n">title</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="expression-references">Expression references<a class="headerlink" href="#expression-references" title="Permanent link">🔗</a></h3>
+<p>Django ORM expressions can also be used as <code>Filter</code> references.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
+<span class="normal"><a href="#__codelineno-20-2">2</a></span>
+<span class="normal"><a href="#__codelineno-20-3">3</a></span>
+<span class="normal"><a href="#__codelineno-20-4">4</a></span>
+<span class="normal"><a href="#__codelineno-20-5">5</a></span>
+<span class="normal"><a href="#__codelineno-20-6">6</a></span>
+<span class="normal"><a href="#__codelineno-20-7">7</a></span>
+<span class="normal"><a href="#__codelineno-20-8">8</a></span>
+<span class="normal"><a href="#__codelineno-20-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models.functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Upper</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a>
+<a id="__codelineno-20-8" name="__codelineno-20-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9"></a>    <span class="n">name_upper</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">Upper</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+<p>Remember that subqueries are also counted as expressions.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-21-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-21-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-21-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-21-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-21-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-21-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-21-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-21-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-21-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">OuterRef</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.utils.model_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubqueryCount</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8"></a>
+<a id="__codelineno-21-9" name="__codelineno-21-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10"></a>    <span class="n">copies</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">SubqueryCount</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">OuterRef</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))))</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="function-references">Function references<a class="headerlink" href="#function-references" title="Permanent link">🔗</a></h3>
+<p>Functions (or methods) can also be used to create <code>Filters</code>.
+This can be done by decorating a method with the <code>Filter</code> class.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-22-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-22-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-22-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-22-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-22-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-22-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-22-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-22-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-22-10">10</a></span>
+<span class="normal"><a href="#__codelineno-22-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6"></a>
+<a id="__codelineno-22-7" name="__codelineno-22-7"></a>
+<a id="__codelineno-22-8" name="__codelineno-22-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9"></a>    <span class="nd">@Filter</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Q</span><span class="p">:</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11"></a>        <span class="k">return</span> <span class="n">Q</span><span class="p">(</span><span class="n">name__iexact</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>These types of <code>Filters</code> should return a <code>Q</code> expression.
+The type of the <code>value</code> argument is used as the input type for the <code>Filter</code>, so typing it is required.</p>
+<details>
+<summary>About method signature</summary>
+<p>The decorated method is treated as a static method by the <code>Filter</code>.</p>
+<p>The <code>self</code> argument is not an instance of the <code>FilterSet</code>,
+but the instance of the <code>Filter</code> that is being used.</p>
+<p>The <code>info</code> argument can be left out, but if it's included, it should always
+have the <code>GQLInfo</code> type annotation.</p>
+<p>The <code>value</code> argument is the value provided for the filter. It should always be named "value",
+and is required to be a keyword only argument.</p>
+</details>
+<h3 id="lookup">Lookup<a class="headerlink" href="#lookup" title="Permanent link">🔗</a></h3>
+<p>By default, when a <code>Filter</code> is defined on a <code>FilterSet</code>, the "exact" <a href="https://docs.djangoproject.com/en/stable/ref/models/querysets/#field-lookups">lookup expression</a>
+is used. This can be changed by providing the <code>lookup</code> argument to the <code>Filter</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span>
+<span class="normal"><a href="#__codelineno-23-2">2</a></span>
+<span class="normal"><a href="#__codelineno-23-3">3</a></span>
+<span class="normal"><a href="#__codelineno-23-4">4</a></span>
+<span class="normal"><a href="#__codelineno-23-5">5</a></span>
+<span class="normal"><a href="#__codelineno-23-6">6</a></span>
+<span class="normal"><a href="#__codelineno-23-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a>
+<a id="__codelineno-23-6" name="__codelineno-23-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">lookup</span><span class="o">=</span><span class="s2">"icontains"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="many">Many<a class="headerlink" href="#many" title="Permanent link">🔗</a></h3>
+<p>The <code>many</code> argument changes the behavior of a <code>Filter</code> such that it takes
+a list of values instead of a single value. Then, each of the given values are combined
+as defined by the <a href="#match"><code>match</code></a> argument to form a single filter condition.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span>
+<span class="normal"><a href="#__codelineno-24-2">2</a></span>
+<span class="normal"><a href="#__codelineno-24-3">3</a></span>
+<span class="normal"><a href="#__codelineno-24-4">4</a></span>
+<span class="normal"><a href="#__codelineno-24-5">5</a></span>
+<span class="normal"><a href="#__codelineno-24-6">6</a></span>
+<span class="normal"><a href="#__codelineno-24-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="s2">"icontains"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This would create the following filter input:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span>
+<span class="normal"><a href="#__codelineno-25-2">2</a></span>
+<span class="normal"><a href="#__codelineno-25-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskFilterSet</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">!]</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>So if a query is filtered using this filter with the value <code>["foo", "bar"]</code>,
+the filter condition would be <code>Q(name__icontains="foo") | Q(name__icontains="bar")</code>.</p>
+<h3 id="match">Match<a class="headerlink" href="#match" title="Permanent link">🔗</a></h3>
+<p>The <code>match</code> argument changes the behavior of the <a href="#many"><code>many</code></a> argument to combine the
+provided values with a different operation. The default is <code>any</code>, which means
+that the filter condition will include an item if it matches any of the provided values.</p>
+<p>The <code>match</code> argument can be set to <code>all</code> if all of the values should match,
+or <code>one_of</code> if only one of the values should match.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span>
+<span class="normal"><a href="#__codelineno-26-2">2</a></span>
+<span class="normal"><a href="#__codelineno-26-3">3</a></span>
+<span class="normal"><a href="#__codelineno-26-4">4</a></span>
+<span class="normal"><a href="#__codelineno-26-5">5</a></span>
+<span class="normal"><a href="#__codelineno-26-6">6</a></span>
+<span class="normal"><a href="#__codelineno-26-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a>
+<a id="__codelineno-26-3" name="__codelineno-26-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="s2">"icontains"</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"all"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="distinct">Distinct<a class="headerlink" href="#distinct" title="Permanent link">🔗</a></h3>
+<p>If using a <code>Filter</code> would require a call to <code>queryset.distinct()</code> to remove duplicates
+(e.g. lookups spanning "to-many" relations), you can set the <code>distinct</code> argument to <code>True</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span>
+<span class="normal"><a href="#__codelineno-27-2">2</a></span>
+<span class="normal"><a href="#__codelineno-27-3">3</a></span>
+<span class="normal"><a href="#__codelineno-27-4">4</a></span>
+<span class="normal"><a href="#__codelineno-27-5">5</a></span>
+<span class="normal"><a href="#__codelineno-27-6">6</a></span>
+<span class="normal"><a href="#__codelineno-27-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a>
+<a id="__codelineno-27-3" name="__codelineno-27-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4"></a>
+<a id="__codelineno-27-5" name="__codelineno-27-5"></a>
+<a id="__codelineno-27-6" name="__codelineno-27-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">distinct</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="required">Required<a class="headerlink" href="#required" title="Permanent link">🔗</a></h3>
+<p>By default, all <code>Filters</code> are non-required (nullable in GraphQL terms).
+If you want to make a <code>Filter</code> required, you can do so by setting the <code>required</code> argument to <code>True</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span>
+<span class="normal"><a href="#__codelineno-28-2">2</a></span>
+<span class="normal"><a href="#__codelineno-28-3">3</a></span>
+<span class="normal"><a href="#__codelineno-28-4">4</a></span>
+<span class="normal"><a href="#__codelineno-28-5">5</a></span>
+<span class="normal"><a href="#__codelineno-28-6">6</a></span>
+<span class="normal"><a href="#__codelineno-28-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a>
+<a id="__codelineno-28-3" name="__codelineno-28-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4"></a>
+<a id="__codelineno-28-5" name="__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Making a <code>Filter</code> required means that if any filtering is done on an <code>Entrypoint</code> of related <code>Field</code>
+using a <code>QueryType</code> with the <code>FilterSet</code> this <code>Filter</code> belongs to, this <code>Filter</code> must be used in
+addition to any other <code>Filters</code> you might want to use. It must also be used in any logical
+blocks that users might want to make.</p>
+<h3 id="aliases">Aliases<a class="headerlink" href="#aliases" title="Permanent link">🔗</a></h3>
+<p>Sometimes a <code>Filter</code> may require additional expressions to be added as aliases
+to the queryset when the <code>Filter</code> is used. For this, you can define a function
+that returns a dictionary of expressions and decorate it with the <code>aliases</code> decorator.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-29-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-29-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-29-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-29-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-29-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-29-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-29-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-29-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-29-10">10</a></span>
+<span class="normal"><a href="#__codelineno-29-11">11</a></span>
+<span class="normal"><a href="#__codelineno-29-12">12</a></span>
+<span class="normal"><a href="#__codelineno-29-13">13</a></span>
+<span class="normal"><a href="#__codelineno-29-14">14</a></span>
+<span class="normal"><a href="#__codelineno-29-15">15</a></span>
+<span class="normal"><a href="#__codelineno-29-16">16</a></span>
+<span class="normal"><a href="#__codelineno-29-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">F</span><span class="p">,</span> <span class="n">OuterRef</span><span class="p">,</span> <span class="n">Q</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">DjangoExpression</span><span class="p">,</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.utils.model_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubqueryCount</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5"></a>
+<a id="__codelineno-29-6" name="__codelineno-29-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7"></a>
+<a id="__codelineno-29-8" name="__codelineno-29-8"></a>
+<a id="__codelineno-29-9" name="__codelineno-29-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10"></a>    <span class="n">has_more_copies</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">Q</span><span class="p">(</span><span class="n">copies__gt</span><span class="o">=</span><span class="n">F</span><span class="p">(</span><span class="s2">"non_copies"</span><span class="p">)))</span>
+<a id="__codelineno-29-11" name="__codelineno-29-11"></a>
+<a id="__codelineno-29-12" name="__codelineno-29-12"></a>    <span class="nd">@has_more_copies</span><span class="o">.</span><span class="n">aliases</span>
+<a id="__codelineno-29-13" name="__codelineno-29-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">has_more_copies_aliases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DjangoExpression</span><span class="p">]:</span>
+<a id="__codelineno-29-14" name="__codelineno-29-14"></a>        <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-29-15" name="__codelineno-29-15"></a>            <span class="s2">"copies"</span><span class="p">:</span> <span class="n">SubqueryCount</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">OuterRef</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))),</span>
+<a id="__codelineno-29-16" name="__codelineno-29-16"></a>            <span class="s2">"non_copies"</span><span class="p">:</span> <span class="n">SubqueryCount</span><span class="p">(</span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">exclude</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">OuterRef</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))),</span>
+<a id="__codelineno-29-17" name="__codelineno-29-17"></a>        <span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="empty-values">Empty values<a class="headerlink" href="#empty-values" title="Permanent link">🔗</a></h3>
+<p>By default, <code>Filters</code> will ignore some values which are considered <em>"empty"</em> in the context of filtering.
+These values are set globally by the <a href="../settings/#empty_values"><code>EMPTY_VALUES</code></a> setting.
+Usually this is what you want, as it allows you to set default values in your GraphQL variables.</p>
+<p>If you wish to change what's considered an empty value for an individual <code>Filter</code>,
+you can do so by setting the <code>empty_values</code> argument to a list of values.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1">1</a></span>
+<span class="normal"><a href="#__codelineno-30-2">2</a></span>
+<span class="normal"><a href="#__codelineno-30-3">3</a></span>
+<span class="normal"><a href="#__codelineno-30-4">4</a></span>
+<span class="normal"><a href="#__codelineno-30-5">5</a></span>
+<span class="normal"><a href="#__codelineno-30-6">6</a></span>
+<span class="normal"><a href="#__codelineno-30-7">7</a></span>
+<span class="normal"><a href="#__codelineno-30-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a>
+<a id="__codelineno-30-3" name="__codelineno-30-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a>    <span class="c1"># Allow filtering with the empty string or None</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8"></a>    <span class="n">title</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">empty_values</span><span class="o">=</span><span class="p">[])</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="field-name">Field name<a class="headerlink" href="#field-name" title="Permanent link">🔗</a></h3>
+<p>A <code>field_name</code> can be provided to explicitly set the Django Model field
+that the <code>Filter</code> corresponds to.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1">1</a></span>
+<span class="normal"><a href="#__codelineno-31-2">2</a></span>
+<span class="normal"><a href="#__codelineno-31-3">3</a></span>
+<span class="normal"><a href="#__codelineno-31-4">4</a></span>
+<span class="normal"><a href="#__codelineno-31-5">5</a></span>
+<span class="normal"><a href="#__codelineno-31-6">6</a></span>
+<span class="normal"><a href="#__codelineno-31-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4"></a>
+<a id="__codelineno-31-5" name="__codelineno-31-5"></a>
+<a id="__codelineno-31-6" name="__codelineno-31-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7"></a>    <span class="n">field_name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">field_name</span><span class="o">=</span><span class="s2">"name"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This can be useful when the Model field corresponding to the <code>Filter</code>
+has a different name and type in the GraphQL schema than in the Model.</p>
+<h3 id="schema-name_1">Schema name<a class="headerlink" href="#schema-name_1" title="Permanent link">🔗</a></h3>
+<p>By default, the name of the <code>InputObjectType</code> field generated from a <code>Filter</code> is the same
+as the name of the <code>Filter</code> on the <code>FilterSet</code> class (converted to <em>camelCase</em> if
+<a href="../settings/#camel_case_schema_fields"><code>CAMEL_CASE_SCHEMA_FIELDS</code></a> is enabled).
+If you want to change the name of the <code>InputObjectType</code> field separately,
+you can do so by setting the <code>schema_name</code> argument:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1">1</a></span>
+<span class="normal"><a href="#__codelineno-32-2">2</a></span>
+<span class="normal"><a href="#__codelineno-32-3">3</a></span>
+<span class="normal"><a href="#__codelineno-32-4">4</a></span>
+<span class="normal"><a href="#__codelineno-32-5">5</a></span>
+<span class="normal"><a href="#__codelineno-32-6">6</a></span>
+<span class="normal"><a href="#__codelineno-32-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a>
+<a id="__codelineno-32-3" name="__codelineno-32-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4"></a>
+<a id="__codelineno-32-5" name="__codelineno-32-5"></a>
+<a id="__codelineno-32-6" name="__codelineno-32-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">schema_name</span><span class="o">=</span><span class="s2">"title"</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This can be useful when the desired name of the <code>InputObjectType</code> field is a Python keyword
+and cannot be used as the <code>Input</code> attribute name.</p>
+<h3 id="description_1">Description<a class="headerlink" href="#description_1" title="Permanent link">🔗</a></h3>
+<p>By default, a <code>Filter</code> is able to determine its description based on its reference.
+For example, for a <a href="#model-field-references">Model field</a>, the description is taken from its <code>help_text</code>.
+If the reference has no description, or you wish to add a different one,
+this can be done in two ways:</p>
+<p>1) By setting the <code>description</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1">1</a></span>
+<span class="normal"><a href="#__codelineno-33-2">2</a></span>
+<span class="normal"><a href="#__codelineno-33-3">3</a></span>
+<span class="normal"><a href="#__codelineno-33-4">4</a></span>
+<span class="normal"><a href="#__codelineno-33-5">5</a></span>
+<span class="normal"><a href="#__codelineno-33-6">6</a></span>
+<span class="normal"><a href="#__codelineno-33-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a>
+<a id="__codelineno-33-3" name="__codelineno-33-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Get only tasks with the given name."</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>2) As class attribute docstrings, if <a href="../settings/#enable_class_attribute_docstrings"><code>ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS</code></a> is enabled.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1">1</a></span>
+<span class="normal"><a href="#__codelineno-34-2">2</a></span>
+<span class="normal"><a href="#__codelineno-34-3">3</a></span>
+<span class="normal"><a href="#__codelineno-34-4">4</a></span>
+<span class="normal"><a href="#__codelineno-34-5">5</a></span>
+<span class="normal"><a href="#__codelineno-34-6">6</a></span>
+<span class="normal"><a href="#__codelineno-34-7">7</a></span>
+<span class="normal"><a href="#__codelineno-34-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2"></a>
+<a id="__codelineno-34-3" name="__codelineno-34-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4"></a>
+<a id="__codelineno-34-5" name="__codelineno-34-5"></a>
+<a id="__codelineno-34-6" name="__codelineno-34-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8"></a><span class="w">    </span><span class="sd">"""Get only tasks with the given name."""</span>
+</code></pre></div></td></tr></table></div>
+<p>When using <a href="#function-references">function references</a>, instead of a class attribute docstring,
+you add a docstring to the function/method used as the reference instead.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-35-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-35-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-35-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-35-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-35-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-35-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-35-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-35-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-35-10">10</a></span>
+<span class="normal"><a href="#__codelineno-35-11">11</a></span>
+<span class="normal"><a href="#__codelineno-35-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2"></a>
+<a id="__codelineno-35-3" name="__codelineno-35-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4"></a>
+<a id="__codelineno-35-5" name="__codelineno-35-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6"></a>
+<a id="__codelineno-35-7" name="__codelineno-35-7"></a>
+<a id="__codelineno-35-8" name="__codelineno-35-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9"></a>    <span class="nd">@Filter</span>
+<a id="__codelineno-35-10" name="__codelineno-35-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Q</span><span class="p">:</span>
+<a id="__codelineno-35-11" name="__codelineno-35-11"></a><span class="w">        </span><span class="sd">"""Get only tasks with the given name."""</span>
+<a id="__codelineno-35-12" name="__codelineno-35-12"></a>        <span class="k">return</span> <span class="n">Q</span><span class="p">(</span><span class="n">name__iexact</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="deprecation-reason">Deprecation reason<a class="headerlink" href="#deprecation-reason" title="Permanent link">🔗</a></h3>
+<p>A <code>deprecation_reason</code> can be provided to mark the <code>Filter</code> as deprecated.
+This is for documentation purposes only, and does not affect the use of the <code>Filter</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span>
+<span class="normal"><a href="#__codelineno-36-2">2</a></span>
+<span class="normal"><a href="#__codelineno-36-3">3</a></span>
+<span class="normal"><a href="#__codelineno-36-4">4</a></span>
+<span class="normal"><a href="#__codelineno-36-5">5</a></span>
+<span class="normal"><a href="#__codelineno-36-6">6</a></span>
+<span class="normal"><a href="#__codelineno-36-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2"></a>
+<a id="__codelineno-36-3" name="__codelineno-36-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4"></a>
+<a id="__codelineno-36-5" name="__codelineno-36-5"></a>
+<a id="__codelineno-36-6" name="__codelineno-36-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">deprecation_reason</span><span class="o">=</span><span class="s2">"Use something else."</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">🔗</a></h3>
+<p>You can add permissions check to individual <code>Filters</code> by using <code>Filter</code> <a href="#function-references">functions</a>
+and adding the permission check inline.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-37-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-37-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-37-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-37-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-37-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-37-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-37-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-37-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-37-10">10</a></span>
+<span class="normal"><a href="#__codelineno-37-11">11</a></span>
+<span class="normal"><a href="#__codelineno-37-12">12</a></span>
+<span class="normal"><a href="#__codelineno-37-13">13</a></span>
+<span class="normal"><a href="#__codelineno-37-14">14</a></span>
+<span class="normal"><a href="#__codelineno-37-15">15</a></span>
+<span class="normal"><a href="#__codelineno-37-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5"></a>
+<a id="__codelineno-37-6" name="__codelineno-37-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7"></a>
+<a id="__codelineno-37-8" name="__codelineno-37-8"></a>
+<a id="__codelineno-37-9" name="__codelineno-37-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-37-10" name="__codelineno-37-10"></a>    <span class="nd">@Filter</span>
+<a id="__codelineno-37-11" name="__codelineno-37-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Q</span><span class="p">:</span>
+<a id="__codelineno-37-12" name="__codelineno-37-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-37-13" name="__codelineno-37-13"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Only authenticated users can filter by task names."</span>
+<a id="__codelineno-37-14" name="__codelineno-37-14"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-37-15" name="__codelineno-37-15"></a>
+<a id="__codelineno-37-16" name="__codelineno-37-16"></a>        <span class="k">return</span> <span class="n">Q</span><span class="p">(</span><span class="n">name__icontains</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>A special <code>EmptyFilterResult</code> exception can also be raised to indicate that
+an empty queryset should be returned instead of an error.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-38-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-38-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-38-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-38-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-38-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-38-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-38-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-38-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-38-10">10</a></span>
+<span class="normal"><a href="#__codelineno-38-11">11</a></span>
+<span class="normal"><a href="#__codelineno-38-12">12</a></span>
+<span class="normal"><a href="#__codelineno-38-13">13</a></span>
+<span class="normal"><a href="#__codelineno-38-14">14</a></span>
+<span class="normal"><a href="#__codelineno-38-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2"></a>
+<a id="__codelineno-38-3" name="__codelineno-38-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmptyFilterResult</span>
+<a id="__codelineno-38-5" name="__codelineno-38-5"></a>
+<a id="__codelineno-38-6" name="__codelineno-38-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-38-7" name="__codelineno-38-7"></a>
+<a id="__codelineno-38-8" name="__codelineno-38-8"></a>
+<a id="__codelineno-38-9" name="__codelineno-38-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-38-10" name="__codelineno-38-10"></a>    <span class="nd">@Filter</span>
+<a id="__codelineno-38-11" name="__codelineno-38-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Q</span><span class="p">:</span>
+<a id="__codelineno-38-12" name="__codelineno-38-12"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-38-13" name="__codelineno-38-13"></a>            <span class="k">raise</span> <span class="n">EmptyFilterResult</span>
+<a id="__codelineno-38-14" name="__codelineno-38-14"></a>
+<a id="__codelineno-38-15" name="__codelineno-38-15"></a>        <span class="k">return</span> <span class="n">Q</span><span class="p">(</span><span class="n">name__icontains</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="directives_1">Directives<a class="headerlink" href="#directives_1" title="Permanent link">🔗</a></h3>
+<p>You can add directives to the <code>Filter</code> by providing them using the <code>directives</code> argument.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-39-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-39-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-39-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-39-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-39-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-39-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-39-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-39-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-39-10">10</a></span>
+<span class="normal"><a href="#__codelineno-39-11">11</a></span>
+<span class="normal"><a href="#__codelineno-39-12">12</a></span>
+<span class="normal"><a href="#__codelineno-39-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2"></a>
+<a id="__codelineno-39-3" name="__codelineno-39-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5"></a>
+<a id="__codelineno-39-6" name="__codelineno-39-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7"></a>
+<a id="__codelineno-39-8" name="__codelineno-39-8"></a>
+<a id="__codelineno-39-9" name="__codelineno-39-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10"></a>
+<a id="__codelineno-39-11" name="__codelineno-39-11"></a>
+<a id="__codelineno-39-12" name="__codelineno-39-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-39-13" name="__codelineno-39-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">MyDirective</span><span class="p">()])</span>
+</code></pre></div></td></tr></table></div>
+<p>You can also add them using the <code>@</code> operator (which kind of looks like GraphQL syntax):</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-40-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-40-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-40-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-40-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-40-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-40-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-40-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-40-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-40-10">10</a></span>
+<span class="normal"><a href="#__codelineno-40-11">11</a></span>
+<span class="normal"><a href="#__codelineno-40-12">12</a></span>
+<span class="normal"><a href="#__codelineno-40-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2"></a>
+<a id="__codelineno-40-3" name="__codelineno-40-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5"></a>
+<a id="__codelineno-40-6" name="__codelineno-40-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-40-7" name="__codelineno-40-7"></a>
+<a id="__codelineno-40-8" name="__codelineno-40-8"></a>
+<a id="__codelineno-40-9" name="__codelineno-40-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDirective</span><span class="p">(</span><span class="n">Directive</span><span class="p">,</span> <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">INPUT_FIELD_DEFINITION</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-40-10" name="__codelineno-40-10"></a>
+<a id="__codelineno-40-11" name="__codelineno-40-11"></a>
+<a id="__codelineno-40-12" name="__codelineno-40-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-40-13" name="__codelineno-40-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span> <span class="o">@</span> <span class="n">MyDirective</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>See the <a href="../directives/">Directives</a> section for more details on directives.</p>
+<h3 id="visibility_1">Visibility<a class="headerlink" href="#visibility_1" title="Permanent link">🔗</a></h3>
+<blockquote>
+<p>This is an experimental feature that needs to be enabled using the
+<a href="../settings/#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a> setting.</p>
+</blockquote>
+<p>You can hide a <code>Filter</code> from certain users by decorating a method with the
+<code>&lt;filter_name&gt;.visible</code> decorator. Hiding a <code>Filter</code> means that it will not be included in introspection queries,
+and trying to use it in operations will result in an error that looks exactly like
+the <code>Filter</code> didn't exist in the first place.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-41-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-41-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-41-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-41-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-41-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-41-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-41-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-41-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-41-10">10</a></span>
+<span class="normal"><a href="#__codelineno-41-11">11</a></span>
+<span class="normal"><a href="#__codelineno-41-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DjangoRequestProtocol</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3"></a>
+<a id="__codelineno-41-4" name="__codelineno-41-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-41-5" name="__codelineno-41-5"></a>
+<a id="__codelineno-41-6" name="__codelineno-41-6"></a>
+<a id="__codelineno-41-7" name="__codelineno-41-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+<a id="__codelineno-41-9" name="__codelineno-41-9"></a>
+<a id="__codelineno-41-10" name="__codelineno-41-10"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">visible</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name_visible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">DjangoRequestProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-41-12" name="__codelineno-41-12"></a>        <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="graphql-extensions_1">GraphQL extensions<a class="headerlink" href="#graphql-extensions_1" title="Permanent link">🔗</a></h3>
+<p>You can provide custom extensions for the <code>Filter</code> by providing a
+<code>extensions</code> argument with a dictionary containing them. These can then be used
+however you wish to extend the functionality of the <code>Filter</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1">1</a></span>
+<span class="normal"><a href="#__codelineno-42-2">2</a></span>
+<span class="normal"><a href="#__codelineno-42-3">3</a></span>
+<span class="normal"><a href="#__codelineno-42-4">4</a></span>
+<span class="normal"><a href="#__codelineno-42-5">5</a></span>
+<span class="normal"><a href="#__codelineno-42-6">6</a></span>
+<span class="normal"><a href="#__codelineno-42-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2"></a>
+<a id="__codelineno-42-3" name="__codelineno-42-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4"></a>
+<a id="__codelineno-42-5" name="__codelineno-42-5"></a>
+<a id="__codelineno-42-6" name="__codelineno-42-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-42-7" name="__codelineno-42-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"foo"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<p><code>Filter</code> extensions are made available in the GraphQL <code>InputObjectType</code> field extensions
+after the schema is created. The <code>Filter</code> itself is found in the GraphQL input field extensions
+under a key defined by the <a href="../settings/#filter_extensions_key"><code>FILTER_EXTENSIONS_KEY</code></a>
+setting.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../mutations/" title="Mutations"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../ordering/" title="Ordering">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../mutations/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../ordering/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>
