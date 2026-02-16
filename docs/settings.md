@@ -52,6 +52,42 @@ Should set this to `True` if using [GraphiQL](#graphiql).
 
 ///
 
+/// details | `ALLOW_QUERIES_WITH_SSE`
+    attrs: {id: allow_queries_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_SSE`
+    attrs: {id: allow_mutations_with_sse}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_QUERIES_WITH_WEBSOCKETS`
+    attrs: {id: allow_queries_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over WebSockets.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_WEBSOCKETS`
+    attrs: {id: allow_mutations_with_websockets}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over WebSockets.
+
+///
+
 /// details | `ASYNC`
     attrs: {id: async}
 
@@ -730,6 +766,18 @@ so must be set before running migrations for the persisted documents app.
 Type: `str` | Default: `"undine_union_type"`
 
 The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
+
+///
+
+/// details | `USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`
+    attrs: {id: use_sse_distinct_connections_for_http_1}
+
+Type: `bool` | Default: `False`
+
+Whether Server-Sent Events should use distinct connections mode even with a HTTP/1.1 connection.
+Note that when using HTTP/1.1, the maximum number of open connections is limited to 6 per domain
+and browser. That means you will likely hit the limit in a real production environment
+with multiple requests and browser tabs.
 
 ///
 

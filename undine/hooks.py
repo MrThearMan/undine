@@ -4,13 +4,14 @@ import dataclasses
 import itertools
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Self
 
 from django.db import transaction  # noqa: ICN003
 
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
-from undine.utils.graphql.utils import get_operation, is_atomic_mutation
+from undine.utils.graphql.utils import get_operation_definition, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, GQLInfo
+    from undine.typing import DjangoRequestProtocol, GQLInfo, T
 
 __all__ = [
     "ExecutionLifecycleHookManager",
@@ -162,7 +163,7 @@ class AtomicMutationHook(LifecycleHook):
         self.error: BaseException | None = None
 
     def on_execution(self) -> Generator[None, None, None]:
-        operation_definition = get_operation(self.context.document, self.context.operation_name)
+        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)
         self.is_atomic_mutation = is_atomic_mutation(operation_definition)
 
         if not self.is_atomic_mutation:
@@ -188,7 +189,7 @@ class AtomicMutationHook(LifecycleHook):
             self.error = None
 
     async def on_execution_async(self) -> AsyncGenerator[None, None]:
-        operation_definition = get_operation(self.context.document, self.context.operation_name)
+        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)
         self.is_atomic_mutation = is_atomic_mutation(operation_definition)
 
         if not self.is_atomic_mutation:
@@ -307,3 +308,48 @@ class ExecutionLifecycleHookManager(BaseLifecycleHookManager):
         ):
             return None
         return hook.on_execution_async
+
+
+# Decorators
+
+
+def with_lifecycle_hooks_manager(
+    manager: type[BaseLifecycleHookManager],
+) -> Callable[[Callable[[LifecycleHookContext], T]], Callable[[LifecycleHookContext], T]]:
+    def decorator(func: Callable[[LifecycleHookContext], T]) -> Callable[[LifecycleHookContext], T]:
+        @wraps(func)
+        def wrapper(context: LifecycleHookContext) -> T:
+            with manager(hooks=context.lifecycle_hooks):
+                return func(context)
+
+        return wrapper
+
+    return decorator
+
+
+with_operation_lifecycle_hooks_manager = with_lifecycle_hooks_manager(OperationLifecycleHookManager)
+with_parse_lifecycle_hooks_manager = with_lifecycle_hooks_manager(ParseLifecycleHookManager)
+with_validation_lifecycle_hooks_manager = with_lifecycle_hooks_manager(ValidationLifecycleHookManager)
+with_execution_lifecycle_hooks_manager = with_lifecycle_hooks_manager(ExecutionLifecycleHookManager)
+
+
+def with_lifecycle_hooks_manager_async(
+    manager: type[BaseLifecycleHookManager],
+) -> Callable[[Callable[[LifecycleHookContext], Awaitable[T]]], Callable[[LifecycleHookContext], Awaitable[T]]]:
+    def decorator(
+        func: Callable[[LifecycleHookContext], Awaitable[T]],
+    ) -> Callable[[LifecycleHookContext], Awaitable[T]]:
+        @wraps(func)
+        async def wrapper(context: LifecycleHookContext) -> T:
+            async with manager(hooks=context.lifecycle_hooks):
+                return await func(context)
+
+        return wrapper
+
+    return decorator
+
+
+with_operation_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(OperationLifecycleHookManager)
+with_parse_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ParseLifecycleHookManager)
+with_validation_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ValidationLifecycleHookManager)
+with_execution_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ExecutionLifecycleHookManager)

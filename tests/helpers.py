@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import base64
+import copy
 import dataclasses
 import json
 import re
+from collections import UserDict
 from collections.abc import Generator
 from contextlib import contextmanager
 from io import BytesIO
@@ -13,6 +15,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.backends.base import SessionBase
+from django.contrib.sessions.backends.cache import SessionStore as CacheSessionStore
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files.uploadhandler import MemoryFileUploadHandler
@@ -289,3 +292,59 @@ def count_db_accesses(blocker: DjangoDbBlocker) -> Generator[DBAccessLog, None, 
         yield access_log
     finally:
         blocker.restore()
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class AccessLogAdd:
+    key: str
+    value: Any
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class AccessLogGet:
+    key: str
+    value: Any
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class AccessLogDelete:
+    key: str
+
+
+AccessLog = list[AccessLogAdd | AccessLogGet | AccessLogDelete]
+
+
+class LoggingSessionCache(UserDict):
+    def __init__(self, _dict: dict[Any, Any], _log: AccessLog, /, **kwargs: Any) -> None:
+        self.access_log = _log
+        super().__init__(_dict, **kwargs)
+
+    def __getitem__(self, key: str) -> Any:
+        value = super().__getitem__(key)
+        self.access_log.append(AccessLogGet(key=key, value=copy.deepcopy(value)))
+        return value
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.access_log.append(AccessLogAdd(key=key, value=copy.deepcopy(value)))
+        return super().__setitem__(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        self.access_log.append(AccessLogDelete(key=key))
+        return super().__delitem__(key)
+
+
+# NOTE: Must be named `SessionStore` so that "tests.helpers" can be used in the SESSION_ENGINE setting.
+class SessionStore(CacheSessionStore):
+    """SessionStore that logs all reads and writes to the session."""
+
+    log: AccessLog = []
+
+    def __init__(self, session_key: str | None = None) -> None:
+        super().__init__(session_key)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name != "_session_cache":
+            return super().__setattr__(name, value)
+
+        value = LoggingSessionCache(value, self.log)
+        return super().__setattr__(name, value)

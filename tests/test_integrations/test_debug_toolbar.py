@@ -78,16 +78,16 @@ def test_debug_toolbar__introspection_query(graphql, undine_settings):
 def test_debug_toolbar__html(graphql, undine_settings):
     undine_settings.SCHEMA = example_schema
 
-    query = "query { testing }"
-
-    response = graphql(query, headers={"Accept": "text/html"})
-
-    html_response = response.response
+    html_response = graphql.get(
+        path=f"/{undine_settings.GRAPHQL_PATH}",
+        content_type="application/json",
+        headers={"Accept": "text/html"},
+    )
 
     assert html_response.status_code == 200
     assert html_response.headers["Content-Type"] == "text/html; charset=utf-8"
 
     # Check that the GraphiQL patch is included in the HTML response.
     content = html_response.content.decode()
-    grahpiql_patch = render_to_string("undine/graphiql_debug_toolbar_patch.html")
-    assert grahpiql_patch in content
+    graphiql_patch = render_to_string("undine/graphiql_debug_toolbar_patch.html")
+    assert graphiql_patch in content

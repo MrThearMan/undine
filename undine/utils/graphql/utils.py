@@ -30,7 +30,6 @@ from graphql import (
 from undine.exceptions import (
     DirectiveLocationError,
     GraphQLErrorGroup,
-    GraphQLGetRequestNonQueryOperationError,
     GraphQLRequestMultipleOperationsNoOperationNameError,
     GraphQLRequestNoOperationError,
     GraphQLRequestOperationNotFoundError,
@@ -70,7 +69,8 @@ __all__ = [
     "get_arguments",
     "get_error_execution_result",
     "get_error_execution_result",
-    "get_operation",
+    "get_operation_definition",
+    "get_operation_type",
     "get_queried_field_name",
     "get_underlying_type",
     "graphql_error_path",
@@ -81,7 +81,6 @@ __all__ = [
     "is_node_interface",
     "is_page_info",
     "is_relation_id",
-    "is_subscription_operation",
     "should_skip_node",
 ]
 
@@ -138,7 +137,7 @@ def get_field_def(schema: GraphQLSchema, parent_type: GraphQLCompositeType, fiel
         return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)
 
 
-def get_operation(document: DocumentNode, operation_name: str | None) -> OperationDefinitionNode:
+def get_operation_definition(document: DocumentNode, operation_name: str | None) -> OperationDefinitionNode:
     operation_definitions: list[OperationDefinitionNode] = [
         definition_node
         for definition_node in document.definitions
@@ -159,6 +158,11 @@ def get_operation(document: DocumentNode, operation_name: str | None) -> Operati
             return definition
 
     raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
+
+
+def get_operation_type(document: DocumentNode, operation_name: str | None) -> OperationType:
+    operation_definition = get_operation_definition(document, operation_name)
+    return operation_definition.operation
 
 
 def get_error_execution_result(error: GraphQLError | GraphQLErrorGroup | list[GraphQLError]) -> ExecutionResult:
@@ -222,11 +226,6 @@ def is_typename_metafield(field_node: SelectionNode) -> TypeGuard[FieldNode]:
 
 def is_relation_id(field: ModelField, field_node: FieldNode) -> TypeGuard[Field]:
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
-
-
-def is_subscription_operation(document: DocumentNode, operation_name: str | None = None) -> bool:
-    operation_definition = get_operation(document, operation_name)
-    return operation_definition.operation == OperationType.SUBSCRIPTION
 
 
 def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -> bool:
@@ -306,13 +305,6 @@ def check_directives(directives: Iterable[Directive] | None, *, location: Direct
     for directive in directives:
         if location not in directive.__locations__:
             raise DirectiveLocationError(directive=directive, location=location)
-
-
-def validate_get_request_operation(document: DocumentNode, operation_name: str | None = None) -> None:
-    """Validates that the operation in the document can be executed in an HTTP GET request."""
-    operation_definition = get_operation(document, operation_name)
-    if operation_definition.operation != OperationType.QUERY:
-        raise GraphQLGetRequestNonQueryOperationError
 
 
 def graphql_errors_hook(errors: list[GraphQLError]) -> list[GraphQLError]:

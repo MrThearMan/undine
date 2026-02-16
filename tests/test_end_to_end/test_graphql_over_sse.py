@@ -15,8 +15,10 @@ pytestmark = [
 ]
 
 
-async def test_graphql_over_websocket__query(graphql, undine_settings) -> None:
-    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+async def test_graphql_over_sse__query(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.ALLOW_QUERIES_WITH_SSE = True
 
     class Query(RootType):
         @Entrypoint
@@ -27,11 +29,14 @@ async def test_graphql_over_websocket__query(graphql, undine_settings) -> None:
 
     query = "query { test }"
 
-    async for response in graphql.over_websocket(query):
+    async for response in graphql_async.over_sse(query):
         assert response.data == {"test": "Hello, World!"}
 
 
-async def test_graphql_over_websocket__query__not_allowed(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__query__not_allowed(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
     class Query(RootType):
         @Entrypoint
         def test(self) -> str:
@@ -41,20 +46,22 @@ async def test_graphql_over_websocket__query__not_allowed(graphql, undine_settin
 
     query = "query { test }"
 
-    async for response in graphql.over_websocket(query):
+    async for response in graphql_async.over_sse(query):
         assert response.errors == [
             {
-                "message": "Cannot use WebSockets for queries.",
+                "message": "Cannot use Server-Sent Events for queries.",
                 "extensions": {
-                    "error_code": "CANNOT_USE_WEBSOCKETS_FOR_QUERIES",
+                    "error_code": "CANNOT_USE_SSE_FOR_QUERIES",
                     "status_code": 405,
                 },
             }
         ]
 
 
-async def test_graphql_over_websocket__mutation(graphql, undine_settings) -> None:
-    undine_settings.ALLOW_MUTATIONS_WITH_WEBSOCKETS = True
+async def test_graphql_over_sse__mutations(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.ALLOW_MUTATIONS_WITH_SSE = True
 
     class Query(RootType):
         @Entrypoint
@@ -63,18 +70,21 @@ async def test_graphql_over_websocket__mutation(graphql, undine_settings) -> Non
 
     class Mutation(RootType):
         @Entrypoint
-        def do_something(self) -> str:
+        async def do_something(self) -> str:
             return "Hello, World!"
 
     undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
     query = "mutation { doSomething }"
 
-    async for response in graphql.over_websocket(query):
+    async for response in graphql_async.over_sse(query):
         assert response.data == {"doSomething": "Hello, World!"}
 
 
-async def test_graphql_over_websocket__mutation__not_allowed(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__mutations__not_allowed(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
     class Query(RootType):
         @Entrypoint
         def test(self) -> str:
@@ -82,27 +92,28 @@ async def test_graphql_over_websocket__mutation__not_allowed(graphql, undine_set
 
     class Mutation(RootType):
         @Entrypoint
-        def do_something(self) -> str:
+        async def do_something(self) -> str:
             return "Hello, World!"
 
     undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
     query = "mutation { doSomething }"
 
-    async for response in graphql.over_websocket(query):
+    async for response in graphql_async.over_sse(query):
         assert response.errors == [
             {
-                "message": "Cannot use WebSockets for mutations.",
+                "message": "Cannot use Server-Sent Events for mutations.",
                 "extensions": {
-                    "error_code": "CANNOT_USE_WEBSOCKETS_FOR_MUTATIONS",
+                    "error_code": "CANNOT_USE_SSE_FOR_MUTATIONS",
                     "status_code": 405,
                 },
             }
         ]
 
 
-async def test_graphql_over_websocket__subscription(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
@@ -120,18 +131,18 @@ async def test_graphql_over_websocket__subscription(graphql, undine_settings) ->
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(data={"countdown": 3}),
         FormattedExecutionResult(data={"countdown": 2}),
         FormattedExecutionResult(data={"countdown": 1}),
     ]
 
-    assert responses == expected
 
-
-async def test_graphql_over_websocket__subscription__error(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription__error(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
@@ -151,8 +162,9 @@ async def test_graphql_over_websocket__subscription__error(graphql, undine_setti
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(data={"countdown": 3}),
         FormattedExecutionResult(
             data=None,
@@ -166,11 +178,10 @@ async def test_graphql_over_websocket__subscription__error(graphql, undine_setti
         ),
     ]
 
-    assert responses == expected
 
-
-async def test_graphql_over_websocket__subscription__error__as_value(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription__error__as_value(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
@@ -191,8 +202,9 @@ async def test_graphql_over_websocket__subscription__error__as_value(graphql, un
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(data={"countdown": 3}),
         FormattedExecutionResult(
             data=None,
@@ -207,15 +219,14 @@ async def test_graphql_over_websocket__subscription__error__as_value(graphql, un
         FormattedExecutionResult(data={"countdown": 1}),
     ]
 
-    assert responses == expected
 
-
-async def test_graphql_over_websocket__subscription__error_group(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription__error_group(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
-        def test(self) -> str:
+        async def test(self) -> str:
             return "Hello, World!"
 
     class Subscription(RootType):
@@ -234,8 +245,9 @@ async def test_graphql_over_websocket__subscription__error_group(graphql, undine
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(data={"countdown": 3}),
         FormattedExecutionResult(
             data=None,
@@ -254,15 +266,14 @@ async def test_graphql_over_websocket__subscription__error_group(graphql, undine
         ),
     ]
 
-    assert responses == expected
 
-
-async def test_graphql_over_websocket__subscription__error_group__as_value(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription__error_group__as_value(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
-        def test(self) -> str:
+        async def test(self) -> str:
             return "Hello, World!"
 
     class Subscription(RootType):
@@ -282,8 +293,9 @@ async def test_graphql_over_websocket__subscription__error_group__as_value(graph
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(data={"countdown": 3}),
         FormattedExecutionResult(
             data=None,
@@ -303,15 +315,14 @@ async def test_graphql_over_websocket__subscription__error_group__as_value(graph
         FormattedExecutionResult(data={"countdown": 1}),
     ]
 
-    assert responses == expected
 
-
-async def test_graphql_over_websocket__subscription__error__permissions(graphql, undine_settings) -> None:
+async def test_graphql_over_sse__subscription__error__permissions(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
 
     class Query(RootType):
         @Entrypoint
-        def test(self) -> str:
+        async def test(self) -> str:
             return "Hello, World!"
 
     class Subscription(RootType):
@@ -328,8 +339,9 @@ async def test_graphql_over_websocket__subscription__error__permissions(graphql,
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql.over_websocket(query)]
-    expected = [
+    responses = [response.json async for response in graphql_async.over_sse(query)]
+
+    assert responses == [
         FormattedExecutionResult(
             data=None,
             errors=[
@@ -344,49 +356,3 @@ async def test_graphql_over_websocket__subscription__error__permissions(graphql,
             ],
         ),
     ]
-
-    assert responses == expected
-
-
-async def test_graphql_over_websocket__subscription__unsubscribe(graphql, undine_settings) -> None:
-    undine_settings.ASYNC = True
-
-    class Query(RootType):
-        @Entrypoint
-        def test(self) -> str:
-            return "Hello, World!"
-
-    counted: list[int] = []
-
-    class Subscription(RootType):
-        @Entrypoint
-        async def countdown(self) -> AsyncGenerator[int, None]:
-            nonlocal counted
-            for i in range(100, 0, -1):
-                await asyncio.sleep(0.001)
-                counted.append(i)
-                yield i
-
-    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
-
-    operation_id = "1"
-    body = {"query": "subscription { countdown }"}
-
-    async with graphql.websocket() as websocket:
-        await websocket.connection_init()
-
-        # Subscribe
-        result = await websocket.subscribe(body, operation_id=operation_id)
-        assert result["type"] == "next"
-        assert result["payload"] == FormattedExecutionResult(data={"countdown": 100})
-        assert operation_id in websocket.consumer.handler.operations
-
-        # Unsubscribe and wait it to take effect
-        await websocket.unsubscribe(operation_id=operation_id)
-        with pytest.raises(asyncio.CancelledError):
-            await websocket.consumer.handler.operations[operation_id].task
-        assert operation_id not in websocket.consumer.handler.operations
-
-    # It's not guaranteed at which point the unsubscribe will complete (usually withing 1-2 messages
-    # from the subscription), but it should be completed before the subscription is completed.
-    assert len(counted) < 100

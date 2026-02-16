@@ -40,10 +40,11 @@ from undine.exceptions import (
     WebSocketUnknownMessageTypeError,
     WebSocketUnsupportedSubProtocolError,
 )
-from undine.execution import execute_graphql_websocket
+from undine.execution import execute_graphql_with_subscription
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
 from undine.typing import CompleteMessage, ConnectionAckMessage, ErrorMessage, NextMessage, PongMessage
+from undine.utils.graphql.utils import graphql_errors_hook
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -377,7 +378,7 @@ class WebSocketOperation:
         self.handler.operations.pop(self.operation_id, None)
 
     async def run(self) -> None:
-        result = await execute_graphql_websocket(self.params, self.request)
+        result = await execute_graphql_with_subscription(self.params, self.request)
 
         if isinstance(result, AsyncIterator):
             await self.execute_subscription(result)
@@ -426,7 +427,7 @@ class WebSocketOperation:
         if self.is_completed:  # pragma: no cover
             return
 
-        error_payload = [err.formatted for err in errors]
+        error_payload = [err.formatted for err in graphql_errors_hook(errors)]
         error_message = ErrorMessage(type="error", id=self.operation_id, payload=error_payload)
         await self.handler.send(error_message)
 
@@ -456,7 +457,10 @@ class WebSocketOperation:
 
 @dataclasses.dataclass(kw_only=True)  # No slots due to '@cached_property'
 class WebSocketRequest:
-    """Imitate a Django HttpRequest object from a WebSocket connection."""
+    """
+    Imitate a Django HttpRequest object from a WebSocket connection.
+    Importantly, this makes the middleware properties set by AuthMiddlewareStack available.
+    """
 
     scope: WebSocketASGIScope
     message: ConnectionInitMessage | PingMessage | PongMessage | SubscribeMessage
@@ -538,10 +542,11 @@ class WebSocketRequest:
 
     @property
     def response_content_type(self) -> str:
-        return "application/json"
+        return getattr(self, "_response_content_type", "application/json")
 
     @response_content_type.setter
-    def response_content_type(self, value: str) -> None: ...
+    def response_content_type(self, value: str) -> None:
+        self._response_content_type = value
 
 
 # Default hooks

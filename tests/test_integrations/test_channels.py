@@ -11,14 +11,17 @@ pytestmark = [
 ]
 
 
-async def test_channels__connection_init(graphql) -> None:
+# WebSocket
+
+
+async def test_channels__websocket__connection_init(graphql) -> None:
     async with graphql.websocket() as websocket:
         result = await websocket.connection_init()
 
     assert result["type"] == "connection_ack"
 
 
-async def test_channels__ping(graphql) -> None:
+async def test_channels__websocket__ping(graphql) -> None:
     async with graphql.websocket() as websocket:
         await websocket.connection_init()
 
@@ -28,7 +31,7 @@ async def test_channels__ping(graphql) -> None:
     assert result["type"] == "pong"
 
 
-async def test_channels__pong(graphql) -> None:
+async def test_channels__websocket__pong(graphql) -> None:
     async with graphql.websocket() as websocket:
         await websocket.connection_init()
 
@@ -36,7 +39,9 @@ async def test_channels__pong(graphql) -> None:
         await websocket.send(ping)
 
 
-async def test_channels__subscribe(graphql, undine_settings) -> None:
+async def test_channels__websocket__subscribe(graphql, undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+
     class Query(RootType):
         @Entrypoint
         def test(self) -> str:
@@ -58,3 +63,6 @@ async def test_channels__subscribe(graphql, undine_settings) -> None:
         result = await websocket.receive()
         assert result["type"] == "complete"
         assert result["id"] == operation_id
+
+
+# TODO: SSE

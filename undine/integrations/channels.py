@@ -43,7 +43,7 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
         raise StopConsumer
 
 
-def get_websocket_enabled_app(asgi_application: ASGIHandler) -> ProtocolTypeRouter:  # pragma: no cover
+def get_websocket_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
     """
     Create the default routing configuration for supporting GraphQL over WebSocket.
 
@@ -63,6 +63,6 @@ def get_websocket_enabled_app(asgi_application: ASGIHandler) -> ProtocolTypeRout
     websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]
 
     return ProtocolTypeRouter({
-        "http": asgi_application,
+        "http": django_application,
         "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
     })

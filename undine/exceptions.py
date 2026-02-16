@@ -537,11 +537,67 @@ class GraphQLAsyncAtomicMutationNotSupportedError(GraphQLStatusError):
 
 
 class GraphQLAsyncNotSupportedError(GraphQLStatusError):
-    """Error raised when a GraphQL request is made asynchronously."""
+    """Error raised when a GraphQL request should be resolved asynchronously but server does not support it."""
 
     msg = "GraphQL execution failed to complete synchronously."
     status = HTTPStatus.INTERNAL_SERVER_ERROR
     code = UndineErrorCodes.ASYNC_NOT_SUPPORTED
+
+
+class GraphQLCannotUseHTTPForMutationsNonPostRequestError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed using HTTP but not sent over HTTP POST."""
+
+    msg = "Cannot use HTTP for mutations if not sent as a POST request."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST
+
+
+class GraphQLCannotUseHTTPForSubscriptionsError(GraphQLStatusError):
+    """Error raised when a subscription operation is executed using HTTP."""
+
+    msg = "Cannot use HTTP for subscriptions."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS
+
+
+class GraphQLCannotUseSSEForMutationsError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed over Server-Sent Events."""
+
+    msg = "Cannot use Server-Sent Events for mutations."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_SSE_FOR_MUTATIONS
+
+
+class GraphQLCannotUseSSEForQueriesError(GraphQLStatusError):
+    """Error raised when a query operation is executed over Server-Sent Events."""
+
+    msg = "Cannot use Server-Sent Events for queries."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_SSE_FOR_QUERIES
+
+
+class GraphQLCannotUseSSEForMutationsNonPostRequestError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed over Server-Sent Events not sent over HTTP POST."""
+
+    msg = "Cannot use Server-Sent Events for mutations if not sent as a POST request."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_SSE_FOR_MUTATIONS_NON_POST_REQUEST
+
+
+class GraphQLCannotUseWebSocketsForMutationsError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed over WebSockets."""
+
+    msg = "Cannot use WebSockets for mutations."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_WEBSOCKETS_FOR_MUTATIONS
+
+
+class GraphQLCannotUseWebSocketsForQueriesError(GraphQLStatusError):
+    """Error raised when a query operation is executed over WebSockets."""
+
+    msg = "Cannot use WebSockets for queries."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_WEBSOCKETS_FOR_QUERIES
 
 
 class GraphQLDataLoaderDidNotReturnSortedSequenceError(GraphQLStatusError):
@@ -552,7 +608,7 @@ class GraphQLDataLoaderDidNotReturnSortedSequenceError(GraphQLStatusError):
     code = UndineErrorCodes.DATA_LOADER_DID_NOT_RETURN_SORTED_SEQUENCE
 
 
-class GraphQLDataLoaderPrimingError(GraphQLStatusError):  # TODO: Test
+class GraphQLDataLoaderPrimingError(GraphQLStatusError):
     """Error raised when a trying to prime keys and values of different lengths."""
 
     msg = "Cannot prime DataLoader from {keys} keys to {values} values"
@@ -612,14 +668,6 @@ class GraphQLRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
     msg = "Must provide operation name if query contains multiple operations."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_OPERATION_NAME
-
-
-class GraphQLGetRequestNonQueryOperationError(GraphQLStatusError):
-    """Error raised when user tries to execute non-query operations through an HTTP GET request."""
-
-    msg = "Only query operations are allowed on GET requests."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
-    code = UndineErrorCodes.INVALID_OPERATION_FOR_METHOD
 
 
 class GraphQLRequestNoOperationError(GraphQLStatusError):
@@ -1048,14 +1096,6 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     msg = "'{content_type}' is not a supported content type."
     status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
     code = UndineErrorCodes.UNSUPPORTED_CONTENT_TYPE
-
-
-class GraphQLUseWebSocketsForSubscriptionsError(GraphQLStatusError):
-    """Error raised when a subscription request is made using HTTP."""
-
-    msg = "Subscriptions do not support HTTP. Please use WebSockets."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.USE_WEBSOCKETS_FOR_SUBSCRIPTIONS
 
 
 class GraphQLValidationError(GraphQLStatusError):

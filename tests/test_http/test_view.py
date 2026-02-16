@@ -160,7 +160,7 @@ def test_graphql_view__content_negotiation__application_xml(undine_settings) -> 
     assert isinstance(response, HttpResponse)
 
     assert response.status_code == 406
-    assert response["Accept"] == "application/graphql-response+json, application/json, text/html"
+    assert response["Accept"] == "application/graphql-response+json, application/json"
     assert response.content.decode() == "Server does not support any of the requested content types."
 
 
@@ -211,9 +211,8 @@ def test_graphql_view__content_negotiation__test_html(undine_settings) -> None:
     undine_settings.GRAPHIQL_ENABLED = True
 
     request = MockRequest(
-        method="POST",
+        method="GET",
         accepted_types=[MediaType("text/html")],
-        body=b'{"query": "query { hello }"}',
     )
 
     response = graphql_view_sync(request)
@@ -237,7 +236,7 @@ def test_graphql_view__content_negotiation__unsupported_type(undine_settings) ->
     assert isinstance(response, HttpUnsupportedContentTypeResponse)
 
     assert response.status_code == 406
-    assert response["Accept"] == "application/graphql-response+json, application/json, text/html"
+    assert response["Accept"] == "application/graphql-response+json, application/json"
     assert response.content.decode() == "Server does not support any of the requested content types."
 
 
