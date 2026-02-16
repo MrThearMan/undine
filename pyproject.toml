@@ -70,14 +70,14 @@ pytest = "9.0.2"
 pytest-django = "4.12.0"
 pytest-asyncio = "1.3.0"
 coverage = "7.13.4"
-hypothesis = "6.151.6"
+hypothesis = "6.151.8"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2026.2.9"
 urllib3 = "2.6.3"
 django-modeltranslation = "0.19.19"
 psycopg = { version = "3.3.2", extras = ["binary", "pool"] }
-granian = { version = "2.6.0", extras = ["pname", "uvloop", "reload"] }
+granian = { version = "2.7.1", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
@@ -85,7 +85,6 @@ pymdown-extensions = "10.21"
 pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 beautifulsoup4 = "4.14.3"
-click = "8.3.1"  # TODO: Remove when https://github.com/mkdocs/mkdocs/issues/4032 is fixed
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.5.1"
