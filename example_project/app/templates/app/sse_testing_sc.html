@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>GraphQL over Server-Sent Events testing (Single Connection)</title>
+</head>
+<body>
+
+<h1>GraphQL over Server-Sent Events testing (Single Connection)</h1>
+<a style="display:block" href="{% url 'sse_testing_dc' %}">Distinct Connections</a>
+<textarea id="log" cols="120" rows="50"></textarea>
+<br>
+<button id="reserve-connection">Reserve Connection</button>
+<button id="get-connection">Get Connection</button>
+<button id="send-subscribe">Subscribe</button>
+<button id="cancel-subscription">Cancel Subscription</button>
+<button id="close-event-source">Close Source</button>
+<button id="clear">Clear</button>
+{% csrf_token %}
+
+<script>
+  /** @type {EventSource} */
+  let eventSource;
+  /** @type {string} */
+  let token;
+
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  function createEventSource() {
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/graphql/";
+    currentURL.searchParams.set("token", token)
+    const url = currentURL.href;
+
+    console.log("Connecting to", url);
+    const source = new EventSource(url);
+    console.log("Connected to", url);
+
+    source.addEventListener("next", (e) => {
+      console.log("Received next message", e);
+      document.querySelector("#log").value += ("Received: " + e.data + "\n");
+    });
+
+    source.addEventListener("complete", (e) => {
+      console.log("Received completed message", e);
+      document.querySelector("#log").value += ("Completed\n");
+      source.close();
+    });
+
+    source.addEventListener("open", (e) => {
+      console.log("EventSource open", e);
+      document.querySelector("#log").value += ("Opened\n");
+    });
+
+    source.addEventListener("error", (e) => {
+      console.error("EventSource error", e);
+      document.querySelector("#log").value += ("Error\n");
+    });
+
+    return source;
+  }
+
+  window.addEventListener("beforeunload", (e) => {
+    console.log("Closing before unload", e);
+    if (eventSource !== undefined) {
+      eventSource.close();
+    }
+  });
+
+  document.querySelector("#reserve-connection").onclick = async (e) => {
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/graphql/";
+    const url = currentURL.href;
+
+    const result = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Accept": "text/plain",
+        "X-CSRFToken": csrftoken,
+      },
+      credentials: "include",
+    });
+
+    if (result.status !== 201) {
+      const error_data = JSON.stringify(await result.json());
+      console.error("Could not reserve connection:", error_data);
+      document.querySelector("#log").value += ("Could not reserve connection: " + error_data + "\n");
+      return;
+    }
+    token = await result.text();
+
+    console.log("Reserved with token:", token);
+    document.querySelector("#log").value += ("Reserved with token: " + token + "\n");
+  };
+
+  document.querySelector("#get-connection").onclick = async (e) => {
+    if (eventSource !== undefined && eventSource.readyState !== EventSource.CLOSED) {
+      const state = eventSource.readyState === EventSource.CONNECTING ? "still connecting" : "connection open";
+      console.log("Cannot create new source:", state);
+      document.querySelector("#log").value += ("Cannot create new source: " + state + "\n");
+      return;
+    }
+
+    eventSource = createEventSource();
+  };
+
+  document.querySelector("#send-subscribe").onclick = async (e) => {
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/graphql/";
+    const url = currentURL.href;
+
+    const result = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-GraphQL-Event-Stream-Token": token,
+        "X-CSRFToken": csrftoken,
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        query: "subscription { countdown }",
+        extensions: {
+          operationId: "1",
+        },
+      }),
+    });
+
+    if (result.status !== 202) {
+      const error_data = JSON.stringify(await result.json());
+      console.error("Could not subscribe:", error_data);
+      document.querySelector("#log").value += ("Could not subscribe: " + error_data + "\n");
+      return;
+    }
+
+    console.log("Subscribed");
+    document.querySelector("#log").value += ("Subscribed\n");
+  };
+
+  document.querySelector("#cancel-subscription").onclick = async (e) => {
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/graphql/";
+    currentURL.searchParams.set("operationId", "1")
+    const url = currentURL.href;
+
+    const result = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "Accept": "text/plain",
+        "X-GraphQL-Event-Stream-Token": token,
+        "X-CSRFToken": csrftoken,
+      },
+      credentials: "include",
+    });
+
+    if (result.status !== 200) {
+      const error_data = JSON.stringify(await result.json());
+      console.error("Could not cancel subscription:", error_data);
+      document.querySelector("#log").value += ("Could not cancel subscription: " + error_data + "\n");
+      return;
+    }
+
+    console.log("Canceled subscription");
+    document.querySelector("#log").value += ("Canceled subscription\n");
+  };
+
+  document.querySelector("#close-event-source").onclick = (e) => {
+    if (eventSource === undefined || eventSource.readyState === EventSource.CLOSED) {
+      console.log("Source already closed");
+      document.querySelector("#log").value += ("Source already closed\n");
+      return;
+    }
+    console.log("Closed manually");
+    document.querySelector("#log").value += ("Closed manually\n");
+    eventSource.close();
+  };
+
+  document.querySelector("#clear").onclick = (e) => {
+    document.querySelector("#log").value = "";
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>GraphQL over Server-Sent Events testing (Distinct Connections)</title>
+</head>
+<body>
+
+<h1>GraphQL over Server-Sent Events testing (Distinct Connections)</h1>
+<a style="display:block" href="{% url 'sse_testing_sc' %}">Single Connection</a>
+<textarea id="log" cols="120" rows="50"></textarea>
+<br>
+<button id="send-subscribe">Subscribe</button>
+<button id="close-event-source">Close Source</button>
+<button id="clear">Clear</button>
+
+<script>
+  function createEventSource() {
+    const currentURL = new URL(window.location.href)
+
+    currentURL.pathname = "/graphql/async/";
+    currentURL.searchParams.set("query", "subscription { countdown }");
+    const url = currentURL.href;
+
+    console.log("Connecting to", url);
+    const source = new EventSource(url);
+    console.log("Connected to", url);
+
+    source.addEventListener("next", (e) => {
+      console.log("Received next message", e);
+      document.querySelector("#log").value += ("Received: " + e.data + "\n");
+    });
+
+    source.addEventListener("complete", (e) => {
+      console.log("Received completed message", e);
+      document.querySelector("#log").value += ("Completed\n");
+      source.close();
+    });
+
+    source.addEventListener("open", (e) => {
+      console.log("EventSource open", e);
+      document.querySelector("#log").value += ("Opened\n");
+    });
+
+    source.addEventListener("error", (e) => {
+      console.error("EventSource error", e);
+      document.querySelector("#log").value += ("Error\n");
+    });
+
+    return source;
+  }
+
+  /** @type {EventSource} */
+  let eventSource;
+
+  window.addEventListener("beforeunload", (e) => {
+    console.log("Closing before unload", e);
+    if (eventSource !== undefined) {
+      eventSource.close();
+    }
+  });
+
+  document.querySelector("#send-subscribe").onclick = async (e) => {
+    if (eventSource === undefined || eventSource.readyState === EventSource.CLOSED) {
+      eventSource = createEventSource();
+    } else {
+      const state = eventSource.readyState === EventSource.CONNECTING ? "still connecting" : "connection open";
+      console.log("Cannot create new source:", state);
+      document.querySelector("#log").value += ("Cannot create new source: " + state + "\n");
+    }
+  };
+
+  document.querySelector("#close-event-source").onclick = (e) => {
+    if (eventSource === undefined || eventSource.readyState === EventSource.CLOSED) {
+      console.log("Source already closed");
+      document.querySelector("#log").value += ("Source already closed\n");
+      return;
+    }
+    console.log("Closed manually");
+    document.querySelector("#log").value += ("Closed manually\n");
+    eventSource.close();
+  };
+
+  document.querySelector("#clear").onclick = (e) => {
+    document.querySelector("#log").value = "";
+  };
+</script>
+
+</body>
+</html>
