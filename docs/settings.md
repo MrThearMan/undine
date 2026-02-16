@@ -48,7 +48,7 @@ Whether schema introspection queries are allowed or not.
 Disabled by default so that information on the schema structure cannot
 be gained through introspection (a form of security through obscurity).
 
-Should set this to `True` if using [GraphiQL](#graphiql).
+Should set this to `True` if using [GraphiQL](#graphiql_enabled).
 
 ///
 

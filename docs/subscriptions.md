@@ -9,11 +9,20 @@ your GraphQL Schema.
 ## Setup
 
 To use subscriptions, you'll need to turn on Undine's [async support](async.md),
-and use the [channels integration](integrations.md#channels). This will set you up
-with a web server capable of [GraphQL over WebSocket]{:target="blank"} protocol.
-You'll also need a client capable of using the protocol.
+as subscription resolvers are always async. Then, you have two options
+for a transport protocol: [WebSockets]{:target="blank"} or [Server-Sent Events]{:target="blank"}.
 
-[GraphQL over WebSocket]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
+[WebSockets]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
+[Server-Sent Events]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md
+
+To use WebSockets, you'll need to setup Undine's [`channels` integration](integrations.md#channels).
+
+To use Server-Sent Events, you should have a web server capable of HTTP/2
+([Single Connection mode] is not supported yet). However, you can use
+[`USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`](settings.md#use_sse_distinct_connections_for_http_1)
+to override this, if you know what you're doing.
+
+[Single Connection mode]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md#single-connection-mode
 
 Now, you can create a new [`RootType`](schema.md#roottypes) called `Subscription`
 and add [`Entrypoints`](schema.md#entrypoints) to it. Let's go over the different
@@ -133,8 +142,11 @@ and overall saves (`ModelSaveSubscription`). These subscriptions return data thr
 so queries to them are optimized just like any other query.
 
 > For delete subscriptions, note that the Model instance may have been deleted by the time
-> the subscription is executed, so you should not rely on the instance existing in the database
+> the subscription is executed. You should not rely on the instance existing in the database
 > or its relations being connected like you would with a normal query.
+>
+> However, a copy of the instance is made just before deletion so that you can query
+> its details, but not its relations since those have not been prefetched.
 
 For other signals, you can create custom subscriptions by subclassing `undine.subscriptions.SignalSubscription`
 and adding the appropriate converters in order to use it in your schema.
@@ -151,7 +163,7 @@ to the client.
 -8<- "subscriptions/subscription_permissions.py"
 ```
 
-You can also configure permission checks for establishing a websocket connection
+When using GraphQL over WebSocket, you can also configure permission checks for establishing a websocket connection
 using the [`WEBSOCKET_CONNECTION_INIT_HOOK`](settings.md#websocket_connection_init_hook)
 setting.
 

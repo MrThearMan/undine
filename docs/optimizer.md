@@ -350,7 +350,7 @@ This can happen for one of the following reasons:
 1. If `none` is `True`, return an empty `QuerySet` and exit early.
 2. If `select_related` is not empty, apply them using `QuerySet.select_related()`.
 3. If `prefetch_related` is not empty, apply them using `QuerySet.prefetch_related()`.
-4. If  the [`DISABLE_ONLY_FIELDS_OPTIMIZATION`](settings.md#disable-only-fields-optimization)
+4. If  the [`DISABLE_ONLY_FIELDS_OPTIMIZATION`](settings.md#disable_only_fields_optimization)
    setting is `False`, and `only_fields` is not empty, apply them using `QuerySet.only()`.
 5. If `aliases` is not empty, apply them using `QuerySet.alias()`.
 6. If `annotations` is not empty, apply them using `QuerySet.annotate()`.
