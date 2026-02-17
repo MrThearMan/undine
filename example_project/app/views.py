@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from django.http import HttpResponsePermanentRedirect
+from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from undine.settings import undine_settings
 
@@ -29,3 +31,13 @@ def sse_testing_dc(request: HttpRequest) -> HttpResponse:
 
 def sse_testing_sc(request: HttpRequest) -> HttpResponse:
     return render(request, "app/sse_testing_sc.html")
+
+
+@require_POST
+def force_login(request: HttpRequest) -> JsonResponse:
+    logout(request)
+    user = authenticate(request, username="admin", password="admin")  # noqa: S106
+    if user is None:
+        return JsonResponse({"error": "Could not authenticate admin user"}, status=400)
+    login(request, user)
+    return JsonResponse({"user": user.username})
