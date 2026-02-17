@@ -8,9 +8,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.project.setting
 django_application = get_asgi_application()
 
 # Needs be imported after 'django_application' is created!
-from undine.integrations.channels import get_websocket_enabled_app  # noqa: E402
+from undine.integrations.channels import get_websocket_and_sse_enabled_app  # noqa: E402
 
-application = get_websocket_enabled_app(django_application)
+application = get_websocket_and_sse_enabled_app(django_application)
 
 # Make sure ASYNC support is enabled
 from undine.settings import undine_settings  # noqa: E402

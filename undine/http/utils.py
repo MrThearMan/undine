@@ -136,6 +136,9 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
 
 def is_sse_request(request: DjangoRequestProtocol) -> bool:
     """Check if the given request is a Server-Sent Events request."""
+    if get_graphql_event_stream_token(request):
+        return True
+
     if not request.response_content_type:
         return False
 
@@ -164,6 +167,15 @@ def get_http_version(request: DjangoRequestProtocol) -> tuple[int, ...]:
         protocol = request.META.get("SERVER_PROTOCOL", "0").removeprefix("HTTP/")
 
     return tuple(int(part) for part in str(float(protocol)).split("."))
+
+
+def get_graphql_event_stream_token(request: DjangoRequestProtocol) -> str | None:
+    """Get the GraphQL over SSE event stream token from the given request."""
+    if undine_settings.SSE_TOKEN_HEADER_NAME in request.headers:
+        return request.headers[undine_settings.SSE_TOKEN_HEADER_NAME]
+    if undine_settings.SSE_TOKEN_QUERY_PARAM_NAME in request.GET:
+        return request.GET[undine_settings.SSE_TOKEN_QUERY_PARAM_NAME]
+    return None
 
 
 def graphql_result_response(
