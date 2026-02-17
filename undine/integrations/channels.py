@@ -194,9 +194,10 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
                 await self.operation
 
         if self.stream_group_name:
-            await self.cancel_all_operations(self.stream_group_name.rsplit(".", 1)[-1])
+            stream_token = self.stream_group_name.rsplit(".", 1)[-1]
+            await self.cancel_all_operations(stream_token)
             await self.channel_layer.group_discard(group=self.stream_group_name, channel=self.channel_name)
-            await self.handler.stop_event_stream(request=self.request)
+            await self.handler.stop_event_stream(request=self.request, stream_token=stream_token)
 
     # SSE interface
 
