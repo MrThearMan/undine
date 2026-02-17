@@ -58,8 +58,14 @@
     });
 
     source.addEventListener("error", (e) => {
-      console.error("EventSource error", e);
-      document.querySelector("#log").value += ("Error\n");
+      if (e.target.readyState === EventSource.CONNECTING) {
+        console.log("Connection lost, closing EventSource");
+        source.close();
+        document.querySelector("#log").value += ("Error: connection lost, closed\n");
+      } else {
+        console.error("EventSource error", e);
+        document.querySelector("#log").value += ("Error\n");
+      }
     });
 
     return source;
