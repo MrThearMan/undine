@@ -16,6 +16,7 @@
 <button id="cancel-subscription">Cancel Subscription</button>
 <button id="close-event-source">Close Source</button>
 <button id="clear">Clear</button>
+<button id="force-login">Force Login (admin)</button>
 {% csrf_token %}
 
 <script>
@@ -39,13 +40,14 @@
 
     source.addEventListener("next", (e) => {
       console.log("Received next message", e);
-      document.querySelector("#log").value += ("Received: " + e.data + "\n");
+      const payload = JSON.parse(e.data);
+      document.querySelector("#log").value += ("Next [" + payload.id + "]: " + JSON.stringify(payload.data) + "\n");
     });
 
     source.addEventListener("complete", (e) => {
       console.log("Received completed message", e);
-      document.querySelector("#log").value += ("Completed\n");
-      source.close();
+      const payload = JSON.parse(e.data);
+      document.querySelector("#log").value += ("Complete [" + payload.id + "]\n");
     });
 
     source.addEventListener("open", (e) => {
@@ -181,6 +183,23 @@
 
   document.querySelector("#clear").onclick = (e) => {
     document.querySelector("#log").value = "";
+  };
+
+  document.querySelector("#force-login").onclick = async (e) => {
+    const result = await fetch("{% url 'force_login' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+      },
+      credentials: "include",
+    });
+
+    const data = await result.json();
+    if (result.ok) {
+      document.querySelector("#log").value += ("Logged in as: " + data.user + "\n");
+    } else {
+      document.querySelector("#log").value += ("Login failed: " + JSON.stringify(data) + "\n");
+    }
   };
 </script>
 
