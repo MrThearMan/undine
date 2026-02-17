@@ -19,7 +19,7 @@ from tests.test_integrations.helpers import (
     sse_send_request,
 )
 from undine import Entrypoint, RootType, create_schema
-from undine.typing import PingMessage, PongMessage, SSEState
+from undine.typing import PingMessage, PongMessage, SSEState, SSEStreamState
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -145,6 +145,41 @@ async def test_channels__sse__reserve_stream__already_reserved() -> None:
 
     assert response["status"] == HTTPStatus.CONFLICT
     assert response["json"]["errors"][0]["message"] == "Stream already registered"
+
+
+async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings) -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+
+    # Simulate stale OPENED state left in the session (e.g. from a race condition on disconnect)
+    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    stale_state = SSEStreamState(state=SSEState.OPENED, stream_token="stale-token")
+    await session.aset(key=session_key, value=stale_state)
+    await session.aset(key=f"{session_key}|op-1", value=True)
+    await session.asave()
+
+    # Reserve should succeed, cleaning up the stale state
+    communicator = make_sse_communicator(
+        method="PUT",
+        headers=[(b"accept", b"text/plain")],
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+    response = await sse_get_response(communicator)
+
+    assert response["status"] == HTTPStatus.CREATED
+    assert uuid.UUID(response["body"])
+
+    # Verify stale operation key was cleaned up
+    await session.aload()
+    assert await session.aget(f"{session_key}|op-1") is None
+
+    # Verify new stream state
+    stream_state = await session.aget(session_key)
+    assert stream_state is not None
+    assert stream_state["state"] == SSEState.REGISTERED
+    assert stream_state["stream_token"] == response["body"]
 
 
 # SSE - Get Stream
