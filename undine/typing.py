@@ -82,6 +82,11 @@ if TYPE_CHECKING:
     from http.cookies import SimpleCookie
 
     from asgiref.typing import (
+        HTTPDisconnectEvent,
+        HTTPResponseBodyEvent,
+        HTTPResponseStartEvent,
+        HTTPResponseTrailersEvent,
+        HTTPServerPushEvent,
         WebSocketAcceptEvent,
         WebSocketCloseEvent,
         WebSocketResponseBodyEvent,
@@ -111,6 +116,7 @@ if TYPE_CHECKING:
     from graphql.pyutils import Path
 
     from undine import FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
+    from undine.dataclasses import GraphQLHttpParams
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -178,6 +184,12 @@ __all__ = [
     "RequestMethod",
     "ReverseField",
     "RootTypeParams",
+    "SSEOperationCancelEvent",
+    "SSEOperationDoneEvent",
+    "SSEOperationResultEvent",
+    "SSEProtocol",
+    "SSEState",
+    "SSEStreamState",
     "Selections",
     "Self",
     "ServerMessage",
@@ -1453,3 +1465,64 @@ class WebSocketProtocol(Protocol):
             | WebSocketCloseEvent
         ),
     ) -> None: ...
+
+
+# SSE Single Connection Mode
+
+
+class SSEProtocol(Protocol):
+    @property
+    def scope(self) -> HTTPASGIScope: ...
+
+    async def send(
+        self,
+        message: (
+            HTTPResponseStartEvent
+            | HTTPResponseBodyEvent
+            | HTTPResponseTrailersEvent
+            | HTTPServerPushEvent
+            | HTTPDisconnectEvent
+        ),
+    ) -> None: ...
+
+    async def start_stream(self, stream_token: str) -> None: ...
+
+    async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None: ...
+
+    async def cancel_operation(self, stream_token: str, operation_id: str) -> None: ...
+
+
+class SSEState(StrEnum):
+    """State of the GraphQL over SSE stream in single connection mode."""
+
+    REGISTERED = "registered"
+    """The stream has been registered for this session but not yet opened."""
+
+    OPENED = "opened"
+    """The stream is open and in use."""
+
+
+class SSEStreamState(TypedDict):
+    """State of the GraphQL over SSE stream in single connection mode."""
+
+    state: SSEState
+    stream_token: str
+
+
+class SSEOperationResultEvent(TypedDict):
+    """A new result for an operation."""
+
+    type: Literal["sse.operation.event"]
+    event: str
+
+
+class SSEOperationCancelEvent(TypedDict):
+    """A request to cancel an operation."""
+
+    type: Literal["sse.operation.cancel"]
+
+
+class SSEOperationDoneEvent(TypedDict):
+    """Signal that an operation has completed and its consumer should stop."""
+
+    type: Literal["sse.operation.done"]
