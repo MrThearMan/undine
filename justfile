@@ -66,6 +66,10 @@ schema:
 static:
     @poetry run python manage.py collectstatic --no-input
 
+# Set up local config files (mypy.ini, pyrightconfig.json, pytest.ini)
+setup-local-configs:
+    @poetry run python manage.py setup_local_configs
+
 # Sync dependencies
 sync:
     @poetry sync --all-extras

@@ -27,6 +27,7 @@ profile.svg
 .vscode
 pytest.ini
 mypy.ini
+pyrightconfig.json
 
 # venv
 /.venv/

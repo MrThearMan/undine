@@ -495,17 +495,6 @@ exclude_also = [
 DJANGO_SETTINGS_MODULE = "example_project.project.settings"
 addopts = "--disable-warnings"
 
-[tool.zuban]
-python_executable = ".venv/bin/python"
-
-[tool.mypy]
-plugins = [
-    "mypy_django_plugin.main",
-]
-
-[tool.django-stubs]
-django_settings_module = "example_project.project.settings"
-
 [build-system]
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
