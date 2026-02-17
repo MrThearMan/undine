@@ -19,6 +19,7 @@ async def test_graphql_over_sse__query(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
     undine_settings.ALLOW_QUERIES_WITH_SSE = True
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -36,6 +37,7 @@ async def test_graphql_over_sse__query(graphql_async, undine_settings) -> None:
 async def test_graphql_over_sse__query__not_allowed(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -62,6 +64,7 @@ async def test_graphql_over_sse__mutations(graphql_async, undine_settings) -> No
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
     undine_settings.ALLOW_MUTATIONS_WITH_SSE = True
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -84,6 +87,7 @@ async def test_graphql_over_sse__mutations(graphql_async, undine_settings) -> No
 async def test_graphql_over_sse__mutations__not_allowed(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -114,6 +118,7 @@ async def test_graphql_over_sse__mutations__not_allowed(graphql_async, undine_se
 async def test_graphql_over_sse__subscription(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -143,6 +148,7 @@ async def test_graphql_over_sse__subscription(graphql_async, undine_settings) ->
 async def test_graphql_over_sse__subscription__error(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -182,6 +188,7 @@ async def test_graphql_over_sse__subscription__error(graphql_async, undine_setti
 async def test_graphql_over_sse__subscription__error__as_value(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -223,6 +230,7 @@ async def test_graphql_over_sse__subscription__error__as_value(graphql_async, un
 async def test_graphql_over_sse__subscription__error_group(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -270,6 +278,7 @@ async def test_graphql_over_sse__subscription__error_group(graphql_async, undine
 async def test_graphql_over_sse__subscription__error_group__as_value(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
@@ -319,6 +328,7 @@ async def test_graphql_over_sse__subscription__error_group__as_value(graphql_asy
 async def test_graphql_over_sse__subscription__error__permissions(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
     class Query(RootType):
         @Entrypoint
