@@ -38,6 +38,10 @@ class ErrorMessageFormatter(Formatter):
         return super().format_field(value, format_spec)
 
 
+class ContinueConsumer(Exception):  # noqa: N818
+    """Raised in SSE integration to keep consumer alive for streaming responses."""
+
+
 # Undine Errors
 
 
