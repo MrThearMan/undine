@@ -60,7 +60,7 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):  # TODO: Implement
     """Single connection mode consumer for GraphQL over Server-Sent Events."""
 
 
-class GraphQLSSERouter:  # TODO: test
+class GraphQLSSERouter:
     """
     Router that sends GraphQL over Server-Sent Events requests
     to the single connection mode handler when required.
