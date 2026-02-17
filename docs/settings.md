@@ -725,6 +725,33 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 ///
 
+/// details | `SSE_STREAM_SESSION_KEY`
+    attrs: {id: sse_stream_session_key}
+
+Type: `str` | Default: `"graphql-over-sse-stream"`
+
+Key used to store the GraphQL over SSE stream state in the user's session.
+
+///
+
+/// details | `SSE_TOKEN_HEADER_NAME`
+    attrs: {id: sse_token_header_name}
+
+Type: `str` | Default: `"X-GraphQL-Event-Stream-Token"`
+
+The name of the HTTP header to use for the GraphQL over SSE event stream token.
+
+///
+
+/// details | `SSE_TOKEN_QUERY_PARAM_NAME`
+    attrs: {id: sse_token_query_param_name}
+
+Type: `str` | Default: `"token"`
+
+The name of the query string parameter to use for the GraphQL over SSE event stream token.
+
+///
+
 /// details | `TESTING_CLIENT_FULL_STACKTRACE`
     attrs: {id: testing_client_full_stacktrace}
 

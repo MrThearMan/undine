@@ -1018,6 +1018,65 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.SCALAR_TYPE_NOT_SUPPORTED
 
 
+class GraphQLSSEOperationIdMissingError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request is missing operationId query parameter."""
+
+    msg = "Operation ID is missing"
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.SSE_OPERATION_ID_MISSING
+
+
+class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):  # TODO: Test
+    """
+    Error raised when a SSE request is trying to execute an operation
+    with an ID that already has an operation in the stream.
+    """
+
+    msg = "Operation with ID already exists"
+    status = HTTPStatus.CONFLICT
+    code = UndineErrorCodes.SSE_OPERATION_ALREADY_EXISTS
+
+
+class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request is unauthenticated."""
+
+    msg = "GraphQL over SSE requires authentication in single connection mode"
+    status = HTTPStatus.UNAUTHORIZED
+    code = UndineErrorCodes.SSE_SINGLE_CONNECTION_NOT_AUTHENTICATED
+
+
+class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request is trying to open a stream when it has already been opened."""
+
+    msg = "Stream already open"
+    status = HTTPStatus.CONFLICT
+    code = UndineErrorCodes.SSE_STREAM_ALREADY_OPEN
+
+
+class GraphQLSSEStreamAlreadyRegisteredError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request is trying to create a stream when one already exists."""
+
+    msg = "Stream already registered"
+    status = HTTPStatus.CONFLICT
+    code = UndineErrorCodes.SSE_STREAM_ALREADY_REGISTERED
+
+
+class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request when a stream doesn't exist."""
+
+    msg = "Stream not found"
+    status = HTTPStatus.NOT_FOUND
+    code = UndineErrorCodes.SSE_STREAM_NOT_FOUND
+
+
+class GraphQLSSEStreamTokenMissingError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request when a stream token is missing."""
+
+    msg = "Stream token missing"
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.SSE_STREAM_TOKEN_MISSING
+
+
 class GraphQLSubscriptionNoEventStreamError(GraphQLStatusError):
     """Error raised when a subscription does not return an event stream."""
 

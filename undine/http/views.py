@@ -47,7 +47,7 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
 async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """An async view for GraphQL requests."""
     if request.response_content_type == "text/event-stream":
-        # TODO: Single connection mode not implemented
+        # Single connection mode is handled by Channels integration.
         if get_http_version(request) < (2, 0) and not undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1:
             return HttpEventSourcingNotAllowedResponse()
 

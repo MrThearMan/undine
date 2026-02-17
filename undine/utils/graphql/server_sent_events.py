@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from graphql import GraphQLError
 
-from undine.dataclasses import CompletedEventDC, NextEventDC
+from undine.dataclasses import CompletedEventDC, CompletedEventSC, NextEventDC, NextEventSC
 from undine.exceptions import GraphQLErrorGroup, GraphQLUnexpectedError
 from undine.execution import execute_graphql_with_subscription
 from undine.typing import DjangoRequestProtocol
@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "execute_graphql_sse_dc",
+    "execute_graphql_sse_sc",
     "result_to_sse_dc",
 ]
 
@@ -63,4 +64,36 @@ async def result_to_sse_dc(result: ExecutionResult) -> AsyncIterator[NextEventDC
     yield CompletedEventDC()
 
 
-# TODO: Single connections mode
+# Single connections mode
+
+
+async def execute_graphql_sse_sc(
+    operation_id: str,
+    params: GraphQLHttpParams,
+    request: DjangoRequestProtocol,
+) -> AsyncIterator[NextEventSC | CompletedEventSC]:
+    """Execute a GraphQL operation received through server-sent events in single connection mode."""
+    stream = await execute_graphql_with_subscription(params, request)
+
+    if not isinstance(stream, AsyncIterator):
+        yield NextEventSC(operation_id=operation_id, data=stream.formatted)
+        yield CompletedEventSC(operation_id=operation_id)
+        return
+
+    try:
+        async for data in stream:
+            yield NextEventSC(operation_id=operation_id, data=data.formatted)
+
+    except GraphQLError as error:
+        result = get_error_execution_result(error)
+        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+
+    except GraphQLErrorGroup as error:
+        result = get_error_execution_result(error)
+        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+
+    except Exception as error:  # noqa: BLE001
+        result = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+
+    yield CompletedEventSC(operation_id=operation_id)
