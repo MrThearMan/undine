@@ -101,7 +101,7 @@ async def test_channels__sse__reserve_stream(undine_settings) -> None:
     assert uuid.UUID(response["body"])
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     stream_state = await session.aget(session_key)
     assert stream_state is not None
     assert stream_state["state"] == SSEState.REGISTERED
@@ -152,7 +152,7 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
     session = await _create_session(user)
 
     # Simulate stale OPENED state left in the session (e.g. from a race condition on disconnect)
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     stale_state = SSEStreamState(state=SSEState.OPENED, stream_token="stale-token")
     await session.aset(key=session_key, value=stale_state)
     await session.aset(key=f"{session_key}|op-1", value=True)
@@ -212,7 +212,7 @@ async def test_channels__sse__get_stream(undine_settings) -> None:
     assert body_event.get("more_body") is True
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     stream_state = await session.aget(session_key)
     assert stream_state is not None
     assert stream_state["state"] == SSEState.OPENED
@@ -527,7 +527,7 @@ async def test_channels__sse__subscribe__operation_already_exists(undine_setting
     operation_id = "op-1"
 
     # Mark operation as already existing in session
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     operation_key = f"{session_key}|{operation_id}"
     await session.aset(key=operation_key, value=True)
     await session.asave()

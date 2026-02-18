@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from django.core.handlers.asgi import ASGIHandler
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, HTTPASGIScope, SSEOperationDoneEvent
+    from undine.typing import DjangoRequestProtocol, HTTPASGIScope
 
 __all__ = [
     "GraphQLSSESingleConnectionConsumer",
@@ -79,75 +79,72 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
 class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
     """Single connection mode consumer for GraphQL over Server-Sent Events."""
 
-    channel_layer: BaseChannelLayer
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.handler = GraphQLOverSSESingleConnectionHandler(sse=self)
         self.messages: list[HTTPRequestEvent] = []
 
-        # Request is always set in `http_request` before any other method is called.
+        # Request is always set in `http_request` before any other method is called
         self.request: DjangoRequestProtocol = None  # type: ignore[assignment]
 
-        # Set by the stream consumer.
+        # Set by the stream consumer
         self.stream_group_name: str = ""
 
-        # Set by operation consumers.
+        # Set by operation consumers
         self.operation: asyncio.Task | None = None
-        self._stop_receiving: bool = False
 
     async def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
-        """
-        Override to use a custom dispatch loop instead of await_many_dispatch.
-
-        The default await_many_dispatch keeps a pending channel_receive() task
-        that competes with any secondary channel_receive() for the same queue.
-        This custom loop gives us full control over the task lifecycle, allowing
-        us to monitor `self.operation` after the HTTP disconnect and dispatch
-        channel layer messages (e.g. cancel) without a competing reader.
-        """
-        self.scope = scope
-        self.channel_layer = get_channel_layer(self.channel_layer_alias)  # type: ignore[assignment]
-        if self.channel_layer is None:
+        """Override to use a custom dispatch loop instead of `channels.utils.await_many_dispatch`."""
+        channel_layer: BaseChannelLayer | None = get_channel_layer(self.channel_layer_alias)
+        if channel_layer is None:
             msg = f"No channel layer configured for {self.channel_layer_alias}"
             raise InvalidChannelLayerError(msg)
 
-        self.channel_name = await self.channel_layer.new_channel()
-        self.channel_receive = functools.partial(self.channel_layer.receive, self.channel_name)
-
+        self.scope = scope
         self.base_send = send
+        self.channel_layer = channel_layer
+        self.channel_name: str = await self.channel_layer.new_channel()
+        self.channel_receive: ASGIReceiveCallable = functools.partial(self.channel_layer.receive, self.channel_name)
 
         with suppress(StopConsumer):
             await self._run_dispatch_loop(receive)
 
     async def _run_dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
         """
-        Dispatch loop that can keep the consumer alive for a running operation.
-
-        After `http_disconnect` sets `_stop_receiving`, the loop stops
-        creating new ASGI receive tasks and instead monitors the operation
-        task alongside the channel layer for cancel messages.
+        Pass messages from the client or channel layer to the dispatch method.
+        If this is an operation consumer, also await the operation task.
+        While the operation is running, monitor the channel layer for cancel messages.
+        When the operation task is done, stop the consumer.
         """
-        receive_task: asyncio.Task | None = asyncio.ensure_future(receive())
+        receive_task = asyncio.ensure_future(receive())
         channel_task = asyncio.ensure_future(self.channel_receive())
+
+        wait_for: list[asyncio.Task] = []
 
         try:
             while True:
-                wait_for: list[asyncio.Task] = [t for t in (receive_task, channel_task) if t is not None]
-                if self._stop_receiving and self.operation is not None:
-                    wait_for.append(self.operation)
-
-                await asyncio.wait(wait_for, return_when=asyncio.FIRST_COMPLETED)
-
-                if receive_task is not None and receive_task.done():
+                if self.operation is None and receive_task.done():
                     await self.dispatch(receive_task.result())
-                    receive_task = None if self._stop_receiving else asyncio.ensure_future(receive())
+                    receive_task = asyncio.ensure_future(receive())
 
                 if channel_task.done():
                     await self.dispatch(channel_task.result())
                     channel_task = asyncio.ensure_future(self.channel_receive())
 
-                if self._stop_receiving and self.operation is not None and self.operation.done():
+                if not receive_task.done():
+                    wait_for.append(receive_task)
+
+                if not channel_task.done():
+                    wait_for.append(channel_task)
+
+                if self.operation is not None:
+                    wait_for.append(self.operation)
+
+                await asyncio.wait(wait_for, return_when=asyncio.FIRST_COMPLETED)
+
+                wait_for.clear()
+
+                if self.operation is not None and self.operation.done():
                     with suppress(BaseException):
                         await self.operation
                     await aclose_old_connections()
@@ -155,9 +152,9 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
 
         finally:
             for task in (receive_task, channel_task):
-                if task is not None and not task.done():
+                if not task.done():
                     task.cancel()
-                    with suppress(asyncio.CancelledError):
+                    with suppress(BaseException):
                         await task
 
     # HTTP interface
@@ -177,12 +174,6 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
             raise StopConsumer
 
     async def http_disconnect(self, message: HTTPDisconnectEvent) -> None:
-        if self.operation is not None:
-            # Signal the dispatch loop to stop creating receive tasks and
-            # to start monitoring the operation task for completion.
-            self._stop_receiving = True
-            return
-
         await self.disconnect()
         await aclose_old_connections()
         raise StopConsumer
@@ -204,6 +195,7 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
     async def start_stream(self, stream_token: str) -> None:
         self.stream_group_name = _get_stream_group_name(stream_token)
         await self.channel_layer.group_add(group=self.stream_group_name, channel=self.channel_name)
+        raise ContinueConsumer
 
     async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
         stream_group_name = _get_stream_group_name(stream_token)
@@ -239,6 +231,7 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
                 await self.handler.complete_operation(request=self.request, operation_id=operation_id)
 
         self.operation = asyncio.create_task(execute())
+        raise ContinueConsumer
 
     async def cancel_operation(self, stream_token: str, operation_id: str) -> None:
         operation_group_name = _get_operation_group_name(stream_token, operation_id)
@@ -262,11 +255,6 @@ class GraphQLSSESingleConnectionConsumer(AsyncConsumer):
         """Called in an operation consumer to cancel its operation."""
         if self.operation is not None and not self.operation.done():
             self.operation.cancel()
-
-    async def sse_operation_done(self, event: SSEOperationDoneEvent) -> None:
-        """Called when an operation's task has completed."""
-        await aclose_old_connections()
-        raise StopConsumer
 
 
 def _get_stream_group_name(stream_token: str) -> str:
@@ -359,8 +347,7 @@ def get_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no c
     >>>
     >>> application = get_sse_enabled_app(django_application)
     """
-    sse_urlpatterns = [re_path(undine_settings.GRAPHQL_PATH, GraphQLSSESingleConnectionConsumer.as_asgi())]
-    sse_application = AuthMiddlewareStack(URLRouter(sse_urlpatterns))
+    sse_application = AuthMiddlewareStack(GraphQLSSESingleConnectionConsumer.as_asgi())
 
     return GraphQLSSERouter(asgi_application=django_application, sse_application=sse_application)
 
