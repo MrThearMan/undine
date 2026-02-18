@@ -176,7 +176,7 @@ async def _reserve_stream(user: User, session: SessionStore) -> str:
     response = await sse_get_response(communicator)
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     stream_state = await session.aget(session_key)
     assert stream_state is not None
     assert stream_state["state"] == SSEState.REGISTERED
@@ -198,7 +198,7 @@ async def _open_stream(user: User, session: SessionStore, token: str) -> None:
     start = await communicator.receive_output(timeout=3)
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_KEY
+    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
     stream_state = await session.aget(session_key)
     assert stream_state is not None
     assert stream_state["state"] == SSEState.OPENED

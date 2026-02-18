@@ -206,8 +206,8 @@ class UndineDefaultSettings(NamedTuple):
     ALLOW_MUTATIONS_WITH_SSE: bool = False
     """Whether mutations can be executed over Server-Sent Events."""
 
-    SSE_STREAM_SESSION_KEY: str = "graphql-over-sse-stream"
-    """Key used to store the GraphQL over SSE stream state in the user's session."""
+    SSE_STREAM_SESSION_PREFIX: str = "graphql-over-sse-stream"
+    """Key prefix used to store the GraphQL over SSE stream state in the user's session."""
 
     SSE_TOKEN_HEADER_NAME: str = "X-GraphQL-Event-Stream-Token"  # noqa: S105
     """The name of the HTTP header to use for the GraphQL over SSE event stream token."""

@@ -185,11 +185,9 @@ __all__ = [
     "ReverseField",
     "RootTypeParams",
     "SSEOperationCancelEvent",
-    "SSEOperationDoneEvent",
     "SSEOperationResultEvent",
     "SSEProtocol",
     "SSEState",
-    "SSEStreamState",
     "Selections",
     "Self",
     "ServerMessage",
@@ -1502,13 +1500,6 @@ class SSEState(StrEnum):
     """The stream is open and in use."""
 
 
-class SSEStreamState(TypedDict):
-    """State of the GraphQL over SSE stream in single connection mode."""
-
-    state: SSEState
-    stream_token: str
-
-
 class SSEOperationResultEvent(TypedDict):
     """A new result for an operation."""
 
@@ -1520,9 +1511,3 @@ class SSEOperationCancelEvent(TypedDict):
     """A request to cancel an operation."""
 
     type: Literal["sse.operation.cancel"]
-
-
-class SSEOperationDoneEvent(TypedDict):
-    """Signal that an operation has completed and its consumer should stop."""
-
-    type: Literal["sse.operation.done"]

@@ -35,7 +35,7 @@ from undine.http.utils import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import SSEState, SSEStreamState
+from undine.typing import DjangoRequestProtocol, SSEState
 from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
@@ -195,7 +195,7 @@ class GraphQLOverSSESingleConnectionHandler:
                     return
 
                 request.response_content_type = "text/plain"
-                await self.subscribe(request)
+                await self.start_operation(request)
 
             case "DELETE":
                 request.response_content_type = "text/plain"
@@ -209,23 +209,22 @@ class GraphQLOverSSESingleConnectionHandler:
 
     async def reserve_event_stream(self, request: DjangoRequestProtocol) -> None:
         """Handle the 'PUT' request to reserve an event stream."""
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
+        stream_token_key = get_sse_stream_token_key()
+        stream_state_key = get_sse_stream_state_key()
 
-        stream_state: SSEStreamState | None = await request.session.aget(session_key)
-        if stream_state is not None:
-            if stream_state["state"] != SSEState.OPENED:
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+
+        if session_stream_token is not None:
+            session_stream_state: SSEState | None = await request.session.aget(stream_state_key)
+            if session_stream_state != SSEState.OPENED:
                 raise GraphQLSSEStreamAlreadyRegisteredError
-            # Stale OPENED state from a previous connection; clean up.
-            await request.session.apop(key=session_key, default=None)
-            operation_prefix = f"{session_key}|"
-            for key in list(request.session.keys()):
-                if key.startswith(operation_prefix):
-                    await request.session.apop(key=key, default=None)
+
+            await self.clean_up_session(request)
 
         stream_token = uuid.uuid4().hex
-        stream_state = SSEStreamState(state=SSEState.REGISTERED, stream_token=stream_token)
 
-        await request.session.aset(key=session_key, value=stream_state)
+        await request.session.aset(key=stream_token_key, value=stream_token)
+        await request.session.aset(key=stream_state_key, value=SSEState.REGISTERED.value)
         await request.session.asave()
 
         response = HttpResponse(content=stream_token, content_type="text/plain", status=HTTPStatus.CREATED)
@@ -237,16 +236,18 @@ class GraphQLOverSSESingleConnectionHandler:
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
+        stream_token_key = get_sse_stream_token_key()
+        stream_state_key = get_sse_stream_state_key()
 
-        stream_state: SSEStreamState | None = await request.session.aget(session_key)
-        if stream_state is None or stream_state["stream_token"] != stream_token:
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+        session_stream_state: SSEState | None = await request.session.aget(stream_state_key)
+
+        if stream_token != session_stream_token:
             raise GraphQLSSEStreamNotFoundError
-        if stream_state["state"] == SSEState.OPENED:
+        if session_stream_state == SSEState.OPENED:
             raise GraphQLSSEStreamAlreadyOpenError
 
-        stream_state["state"] = SSEState.OPENED
-        await request.session.aset(key=session_key, value=stream_state)
+        await request.session.aset(key=stream_state_key, value=SSEState.OPENED.value)
         await request.session.asave()
 
         headers: dict[str, str] = {
@@ -260,38 +261,35 @@ class GraphQLOverSSESingleConnectionHandler:
         await self.send_body(body="", more_body=True)
 
         await self.sse.start_stream(stream_token=stream_token)
-        raise ContinueConsumer
 
     async def stop_event_stream(self, request: DjangoRequestProtocol, stream_token: str) -> None:
         """Handle stopping the event stream on disconnect."""
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
-
+        # Reload session to ensure it is up to date.
         await request.session.aload()
-        stream_state: SSEStreamState | None = await request.session.aget(session_key)
-        if stream_state is not None and stream_state["stream_token"] == stream_token:
-            await request.session.apop(key=session_key, default=None)
-            operation_prefix = f"{session_key}|"
-            for key in list(request.session.keys()):
-                if key.startswith(operation_prefix):
-                    await request.session.apop(key=key, default=None)
+
+        stream_token_key = get_sse_stream_token_key()
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+
+        # If the current stream token matches the one being stopped, clean up.
+        if session_stream_token == stream_token:
+            await self.clean_up_session(request)
             await request.session.asave()
 
         await self.send_body(body="", more_body=False)
 
-    async def subscribe(self, request: DjangoRequestProtocol) -> None:
+    async def start_operation(self, request: DjangoRequestProtocol) -> None:
         """Handle the 'GET' or 'POST' request to add an operation to the event stream."""
         stream_token = get_graphql_event_stream_token(request)
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
+        stream_token_key = get_sse_stream_token_key()
+        stream_state_key = get_sse_stream_state_key()
 
-        session_state: SSEStreamState | None = await request.session.aget(session_key)
-        if (
-            session_state is None
-            or session_state["state"] != SSEState.OPENED
-            or session_state["stream_token"] != stream_token
-        ):
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+        session_stream_state: SSEState | None = await request.session.aget(stream_state_key)
+
+        if session_stream_token != stream_token or session_stream_state != SSEState.OPENED:
             raise GraphQLSSEStreamNotFoundError
 
         params = GraphQLRequestParamsParser.run(request)
@@ -300,29 +298,33 @@ class GraphQLOverSSESingleConnectionHandler:
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 
-        operation_key = f"{session_key}|{operation_id}"
+        stream_operation_key = get_sse_operation_key(operation_id=operation_id)
 
-        if await request.session.aget(key=operation_key) is not None:
+        if await request.session.aget(key=stream_operation_key) is not None:
             raise GraphQLSSEOperationAlreadyExistsError
 
-        await request.session.aset(key=operation_key, value=True)
+        await request.session.aset(key=stream_operation_key, value=True)
         await request.session.asave()
 
         response = HttpResponse(content="", content_type="text/plain", status=HTTPStatus.ACCEPTED)
         await self.send_http_response(response)
 
         await self.sse.run_operation(stream_token=stream_token, operation_id=operation_id, params=params)
-        raise ContinueConsumer
 
     async def complete_operation(self, request: DjangoRequestProtocol, operation_id: str) -> None:
         """Clean up session state for a completed operation."""
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
-        operation_key = f"{session_key}|{operation_id}"
+        # Reload session to ensure it is up to date.
         await request.session.aload()
-        stream_state: SSEStreamState | None = await request.session.aget(session_key)
-        if stream_state is None:
+
+        stream_token_key = get_sse_stream_token_key()
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+
+        # If stream has already been closed, don't override with stale data.
+        if session_stream_token is None:
             return
-        await request.session.apop(key=operation_key, default=None)
+
+        stream_operation_key = get_sse_operation_key(operation_id=operation_id)
+        await request.session.apop(key=stream_operation_key, default=None)
         await request.session.asave()
 
     async def cancel_subscription(self, request: DjangoRequestProtocol) -> None:
@@ -335,20 +337,33 @@ class GraphQLOverSSESingleConnectionHandler:
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 
-        session_key = undine_settings.SSE_STREAM_SESSION_KEY
+        stream_token_key = get_sse_stream_token_key()
+        stream_state_key = get_sse_stream_state_key()
 
-        session_state: SSEStreamState | None = await request.session.aget(session_key)
-        if (
-            session_state is None
-            or session_state["state"] != SSEState.OPENED
-            or session_state["stream_token"] != stream_token
-        ):
+        session_stream_token: str | None = await request.session.aget(stream_token_key)
+        session_stream_state: SSEState | None = await request.session.aget(stream_state_key)
+
+        if session_stream_token != stream_token or session_stream_state != SSEState.OPENED:
             raise GraphQLSSEStreamNotFoundError
 
         await self.sse.cancel_operation(stream_token=stream_token, operation_id=operation_id)
 
         response = HttpResponse(content="", content_type="text/plain", status=HTTPStatus.OK)
         await self.send_http_response(response)
+
+    # Session helpers
+
+    async def clean_up_session(self, request: DjangoRequestProtocol) -> None:
+        stream_token_key = get_sse_stream_token_key()
+        stream_state_key = get_sse_stream_state_key()
+
+        await request.session.apop(key=stream_token_key, default=None)
+        await request.session.apop(key=stream_state_key, default=None)
+
+        operation_prefix = get_sse_operation_key(operation_id="")
+        for key in list(request.session.keys()):
+            if key.startswith(operation_prefix):
+                await request.session.apop(key=key, default=None)
 
     # High-level interface
 
@@ -402,6 +417,18 @@ class GraphQLOverSSESingleConnectionHandler:
                 more_body=more_body,
             ),
         )
+
+
+def get_sse_stream_token_key() -> str:
+    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|token"
+
+
+def get_sse_stream_state_key() -> str:
+    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|state"
+
+
+def get_sse_operation_key(*, operation_id: str) -> str:
+    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|operation|{operation_id}"
 
 
 @dataclasses.dataclass(kw_only=True)  # No slots due to '@cached_property'
