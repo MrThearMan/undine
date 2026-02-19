@@ -770,9 +770,7 @@ async def test_channels__sse__cancel_subscription__stream_token_missing() -> Non
 # SSE Router
 
 
-async def test_channels__sse_router__non_graphql_path_routes_to_asgi(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+async def test_channels__sse_router__non_graphql_path_routes_to_asgi() -> None:
     router = get_graphql_sse_router()
     scope = make_http_scope(path="/other/")
 
@@ -782,35 +780,13 @@ async def test_channels__sse_router__non_graphql_path_routes_to_asgi(undine_sett
     router.sse_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__http2_routes_to_asgi(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__put_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(http_version="2.0")
-
-    await router(scope, None, None)
-
-    router.django_application.assert_awaited_once()
-    router.sse_application.assert_not_awaited()
-
-
-async def test_channels__sse_router__distinct_connections_setting_routes_to_asgi(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
-
-    router = get_graphql_sse_router()
-    scope = make_http_scope()
-
-    await router(scope, None, None)
-
-    router.django_application.assert_awaited_once()
-    router.sse_application.assert_not_awaited()
-
-
-async def test_channels__sse_router__put_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
-    router = get_graphql_sse_router()
-    scope = make_http_scope(method="PUT")
+    scope = make_http_scope(
+        method="PUT",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 
@@ -818,11 +794,13 @@ async def test_channels__sse_router__put_routes_to_sse(undine_settings) -> None:
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__delete_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__delete_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(method="DELETE")
+    scope = make_http_scope(
+        method="DELETE",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 
@@ -830,11 +808,14 @@ async def test_channels__sse_router__delete_routes_to_sse(undine_settings) -> No
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__get_with_token_query_param_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__get_with_token_query_param_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(method="GET", query_string=b"token=some-token")
+    scope = make_http_scope(
+        method="GET",
+        query_string=b"token=some-token",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 
@@ -842,13 +823,13 @@ async def test_channels__sse_router__get_with_token_query_param_routes_to_sse(un
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__get_with_token_header_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__get_with_token_header_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
     scope = make_http_scope(
         method="GET",
         headers=[(b"x-graphql-event-stream-token", b"some-token")],
+        http_version=http_version,  # type: ignore[arg-type]
     )
 
     await router(scope, None, None)
@@ -857,11 +838,14 @@ async def test_channels__sse_router__get_with_token_header_routes_to_sse(undine_
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__post_with_token_query_param_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__post_with_token_query_param_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(method="POST", query_string=b"token=some-token")
+    scope = make_http_scope(
+        method="POST",
+        query_string=b"token=some-token",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 
@@ -869,13 +853,13 @@ async def test_channels__sse_router__post_with_token_query_param_routes_to_sse(u
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__post_with_token_header_routes_to_sse(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__post_with_token_header_routes_to_sse(http_version) -> None:
     router = get_graphql_sse_router()
     scope = make_http_scope(
         method="POST",
         headers=[(b"x-graphql-event-stream-token", b"some-token")],
+        http_version=http_version,  # type: ignore[arg-type]
     )
 
     await router(scope, None, None)
@@ -884,11 +868,13 @@ async def test_channels__sse_router__post_with_token_header_routes_to_sse(undine
     router.django_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__get_without_token_routes_to_asgi(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__get_without_token_routes_to_asgi(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(method="GET")
+    scope = make_http_scope(
+        method="GET",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 
@@ -896,11 +882,13 @@ async def test_channels__sse_router__get_without_token_routes_to_asgi(undine_set
     router.sse_application.assert_not_awaited()
 
 
-async def test_channels__sse_router__post_without_token_routes_to_asgi(undine_settings) -> None:
-    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
-
+@pytest.mark.parametrize("http_version", ["1.1", "2.0"])
+async def test_channels__sse_router__post_without_token_routes_to_asgi(http_version) -> None:
     router = get_graphql_sse_router()
-    scope = make_http_scope(method="POST")
+    scope = make_http_scope(
+        method="POST",
+        http_version=http_version,  # type: ignore[arg-type]
+    )
 
     await router(scope, None, None)
 

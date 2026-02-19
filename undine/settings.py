@@ -219,7 +219,10 @@ class UndineDefaultSettings(NamedTuple):
     """Interval in seconds for SSE keep-alive pings. Set to 0 to disable."""
 
     USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
-    """Whether Server-Sent Events should use distinct connections mode without a HTTP/2 connection."""
+    """
+    Whether to allow SSE distinct connections mode over HTTP/1.1.
+    Without this, HTTP/1.1 clients can only use single connection mode.
+    """
 
     # Django-modeltranslation
 
