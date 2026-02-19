@@ -159,9 +159,9 @@ async def test_channels__sse__reserve_stream__already_reserved() -> None:
     session = await _create_session(user)
 
     # Reserve first
-    await _reserve_stream(user, session)
+    old_token = await _reserve_stream(user, session)
 
-    # Try to reserve again
+    # Re-reserving replaces the stale REGISTERED state with a new token
     communicator = make_sse_communicator(
         method="PUT",
         headers=[(b"accept", b"text/plain")],
@@ -171,8 +171,15 @@ async def test_channels__sse__reserve_stream__already_reserved() -> None:
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
 
-    assert response["status"] == HTTPStatus.CONFLICT
-    assert response["json"]["errors"][0]["message"] == "Stream already registered"
+    assert response["status"] == HTTPStatus.CREATED
+    new_token = response["body"]
+    assert uuid.UUID(new_token)
+    assert new_token != old_token
+
+    stream_token = await session.aget(get_sse_stream_token_key())
+    stream_state = await session.aget(get_sse_stream_state_key())
+    assert stream_state == SSEState.REGISTERED
+    assert stream_token == new_token
 
 
 async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings) -> None:

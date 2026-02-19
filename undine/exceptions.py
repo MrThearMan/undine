@@ -1057,14 +1057,6 @@ class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_STREAM_ALREADY_OPEN
 
 
-class GraphQLSSEStreamAlreadyRegisteredError(GraphQLStatusError):  # TODO: Test
-    """Error raised when a SSE request is trying to create a stream when one already exists."""
-
-    msg = "Stream already registered"
-    status = HTTPStatus.CONFLICT
-    code = UndineErrorCodes.SSE_STREAM_ALREADY_REGISTERED
-
-
 class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
     """Error raised when a SSE request when a stream doesn't exist."""
 
