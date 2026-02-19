@@ -1073,6 +1073,14 @@ class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_STREAM_NOT_FOUND
 
 
+class GraphQLSSEStreamNotOpenError(GraphQLStatusError):  # TODO: Test
+    """Error raised when a SSE request when a stream is not open."""
+
+    msg = "Stream not open"
+    status = HTTPStatus.CONFLICT
+    code = UndineErrorCodes.SSE_STREAM_NOT_OPEN
+
+
 class GraphQLSSEStreamTokenMissingError(GraphQLStatusError):  # TODO: Test
     """Error raised when a SSE request when a stream token is missing."""
 
