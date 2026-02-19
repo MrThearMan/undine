@@ -299,13 +299,13 @@ class CompletedEventDC:
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class NextEventDataSC:
     id: str
-    data: FormattedExecutionResult
+    payload: FormattedExecutionResult
 
     def __str__(self) -> str:
         return self.encode()
 
     def encode(self) -> str:
-        data = {"id": self.id, "data": self.data}
+        data = {"id": self.id, "payload": self.payload}
         return json.dumps(data, separators=(",", ":"))
 
 
@@ -315,13 +315,13 @@ class NextEventSC:
 
     event: Literal["next"] = dataclasses.field(init=False, default="next")
     operation_id: str
-    data: FormattedExecutionResult
+    payload: FormattedExecutionResult
 
     def __str__(self) -> str:
         return self.encode()
 
     def encode(self) -> str:
-        data = NextEventDataSC(id=self.operation_id, data=self.data).encode()
+        data = NextEventDataSC(id=self.operation_id, payload=self.payload).encode()
         return f"event: {self.event}\ndata: {data}\n\n"
 
 
