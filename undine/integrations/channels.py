@@ -198,7 +198,7 @@ class SSEConsumerSendingMixin:
         await self.send_single_response(
             body=json.dumps(result.formatted, separators=(",", ":")),
             status=status,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json; charset=utf-8"},
         )
 
     async def send_single_response(
@@ -494,7 +494,11 @@ class SSEStreamReservationConsumer(GraphQLSSESingleConnectionConsumer):
         self.set_session_stream_state(state=SSEState.REGISTERED)
         await self.save_session()
 
-        response = HttpResponse(content=stream_token, content_type="text/plain", status=HTTPStatus.CREATED)
+        response = HttpResponse(
+            content=stream_token,
+            content_type="text/plain; charset=utf-8",
+            status=HTTPStatus.CREATED,
+        )
         await self.send_http_response(response=response)
 
 
@@ -681,7 +685,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         self.set_session_operation(operation_id=operation_id)
         await self.save_session()
 
-        response = HttpResponse(content="", content_type="text/plain", status=HTTPStatus.ACCEPTED)
+        response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.ACCEPTED)
         await self.send_http_response(response=response)
 
         await self.register_operation(stream_token=stream_token, operation_id=operation_id)
@@ -756,7 +760,7 @@ class SSEOperationCancellationConsumer(GraphQLSSESingleConnectionConsumer):
 
         await self.signal_cancel_operation(stream_token=stream_token, operation_id=operation_id)
 
-        response = HttpResponse(content="", content_type="text/plain", status=HTTPStatus.OK)
+        response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.OK)
         await self.send_http_response(response=response)
 
 
