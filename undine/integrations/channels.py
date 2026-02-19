@@ -505,6 +505,24 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._stream_opened: bool = False
+        self._keep_alive_task: asyncio.Task[None] | None = None
+
+    async def dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
+        self._keep_alive_task = asyncio.create_task(self._keep_alive())
+        try:
+            await await_many_dispatch([receive, self.channel_receive], self.dispatch)
+        finally:
+            self._keep_alive_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._keep_alive_task
+
+    async def _keep_alive(self) -> None:
+        interval = undine_settings.SSE_KEEP_ALIVE_INTERVAL
+        if not interval:
+            return
+        while True:
+            await asyncio.sleep(interval)
+            await self.send_body(body=":\n\n", more_body=True)
 
     # Implementation
 
@@ -537,7 +555,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
         }
 
         await self.send_headers(status=HTTPStatus.OK, headers=headers)
-        await self.send_body(body="", more_body=True)
+        await self.send_body(body=":\n\n", more_body=True)
         self._stream_opened = True
 
         raise ContinueConsumer

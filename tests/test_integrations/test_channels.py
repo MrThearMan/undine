@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from http import HTTPStatus
@@ -206,9 +207,10 @@ async def test_channels__sse__get_stream(undine_settings) -> None:
     headers = {k.decode(): v.decode() for k, v in start.get("headers", [])}
     assert "text/event-stream" in headers.get("Content-Type", "")
 
-    # First body event (empty, keeps connection open)
+    # First body event (SSE comment keep-alive, keeps connection open)
     body_event = await communicator.receive_output(timeout=3)
     assert body_event["type"] == "http.response.body"
+    assert body_event["body"] == b":\n\n"
     assert body_event.get("more_body") is True
 
     # Verify session was updated
@@ -315,6 +317,61 @@ async def test_channels__sse__get_stream__stream_token_missing() -> None:
 
     assert response["status"] == HTTPStatus.BAD_REQUEST
     assert response["json"]["errors"][0]["message"] == "Stream token missing"
+
+
+# SSE - Keep-alive pings
+
+
+async def test_channels__sse__keep_alive_ping(undine_settings) -> None:
+    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0.01  # type: ignore[assignment]
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+
+    # Consume response start + initial SSE comment
+    await communicator.receive_output(timeout=3)
+    await communicator.receive_output(timeout=3)
+
+    # Wait for the first periodic keep-alive ping
+    ping = await communicator.receive_output(timeout=3)
+    assert ping["type"] == "http.response.body"
+    assert ping["body"] == b":\n\n"
+    assert ping.get("more_body") is True
+
+
+async def test_channels__sse__keep_alive_ping__disabled(undine_settings) -> None:
+    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+
+    # Consume response start + initial SSE comment
+    await communicator.receive_output(timeout=3)
+    await communicator.receive_output(timeout=3)
+
+    # No periodic ping should arrive
+    with pytest.raises(asyncio.TimeoutError):
+        await communicator.receive_output(timeout=0.01)
 
 
 # SSE - Subscribe
