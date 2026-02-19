@@ -85,6 +85,31 @@ async def test_channels__websocket__subscribe(graphql, undine_settings) -> None:
         assert result["id"] == operation_id
 
 
+# SSE - Authentication
+
+
+async def test_channels__sse__consumer_stopped_when_unauthenticated() -> None:
+    session = await _create_session()
+
+    communicator = make_sse_communicator(
+        method="PUT",
+        headers=[(b"accept", b"text/plain")],
+        user=AnonymousUser(),
+        session=session,
+    )
+    await sse_send_request(communicator)
+    response = await sse_get_response(communicator)
+
+    assert response["status"] == HTTPStatus.UNAUTHORIZED
+    assert response["json"]["errors"][0]["message"] == (
+        "GraphQL over SSE requires authentication in single connection mode"
+    )
+
+    # handle() was never called — session remains untouched
+    assert await session.aget(get_sse_stream_token_key()) is None
+    assert await session.aget(get_sse_stream_state_key()) is None
+
+
 # SSE - Reserve Stream
 
 
