@@ -435,6 +435,8 @@ class GraphQLSSESingleConnectionConsumer(
 
         if not self.request.user.is_authenticated:
             await self.send_graphql_error_response(error=GraphQLSSESingleConnectionNotAuthenticatedError())
+            await aclose_old_connections()
+            raise StopConsumer
 
         try:
             await self.handle()
@@ -851,7 +853,7 @@ class GraphQLSSEOperationRouter:
         await send(
             HTTPResponseBodyEvent(
                 type="http.response.body",
-                body=response.content.decode("utf-8"),
+                body=response.content,
                 more_body=False,
             ),
         )
