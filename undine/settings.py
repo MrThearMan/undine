@@ -215,6 +215,9 @@ class UndineDefaultSettings(NamedTuple):
     SSE_TOKEN_QUERY_PARAM_NAME: str = "token"  # noqa: S105
     """The name of the query string parameter to use for the GraphQL over SSE event stream token."""
 
+    SSE_KEEP_ALIVE_INTERVAL: int = 12
+    """Interval in seconds for SSE keep-alive pings. Set to 0 to disable."""
+
     USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
     """Whether Server-Sent Events should use distinct connections mode without a HTTP/2 connection."""
 

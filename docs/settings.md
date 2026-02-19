@@ -725,6 +725,17 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 ///
 
+/// details | `SSE_KEEP_ALIVE_INTERVAL`
+    attrs: {id: sse_keep_alive_interval}
+
+Type: `int` | Default: `12`
+
+Interval in seconds for SSE keep-alive pings sent as SSE comments (`:\n\n`) on the event stream.
+These pings prevent reverse proxies and load balancers from closing idle connections.
+Set to `0` to disable.
+
+///
+
 /// details | `SSE_STREAM_SESSION_KEY`
     attrs: {id: sse_stream_session_key}
 

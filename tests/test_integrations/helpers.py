@@ -211,7 +211,8 @@ async def _open_stream(user: User, session: SessionStore, token: str) -> None:
     assert start["type"] == "http.response.start"
     assert start["status"] == HTTPStatus.OK
 
-    # First body event (empty, keeps connection open)
+    # First body event (SSE comment keep-alive, keeps connection open)
     body_event = await communicator.receive_output(timeout=3)
     assert body_event["type"] == "http.response.body"
+    assert body_event["body"] == b":\n\n"
     assert body_event.get("more_body") is True
