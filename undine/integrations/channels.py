@@ -34,7 +34,6 @@ from undine.exceptions import (
     GraphQLSSEOperationIdMissingError,
     GraphQLSSESingleConnectionNotAuthenticatedError,
     GraphQLSSEStreamAlreadyOpenError,
-    GraphQLSSEStreamAlreadyRegisteredError,
     GraphQLSSEStreamNotFoundError,
     GraphQLSSEStreamNotOpenError,
     GraphQLSSEStreamTokenMissingError,
@@ -481,10 +480,7 @@ class SSEStreamReservationConsumer(GraphQLSSESingleConnectionConsumer):
         session_stream_token = self.get_session_stream_token()
         session_stream_state = self.get_session_stream_state()
 
-        if session_stream_token is not None:
-            if session_stream_state != SSEState.OPENED:
-                raise GraphQLSSEStreamAlreadyRegisteredError
-
+        if session_stream_token is not None and session_stream_state == SSEState.OPENED:
             await self.signal_close_stream(stream_token=session_stream_token)
             await self.delete_session_all_operations()
 
