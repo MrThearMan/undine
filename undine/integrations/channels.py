@@ -775,23 +775,23 @@ class GraphQLSSERouter:
         path = scope["path"].removeprefix("/").removesuffix("/")
         graphql_path = undine_settings.GRAPHQL_PATH.removeprefix("/").removesuffix("/")
 
-        # Only the GraphQL endpoint can have GraphQL over SSE requests.
         if path != graphql_path:
             return self.django_application(scope, receive, send)
 
-        # If distinct connections mode can be used, use it.
-        http_version = tuple(int(part) for part in str(float(scope["http_version"])).split("."))
-        if http_version >= (2, 0) or undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1:
-            return self.django_application(scope, receive, send)
-
-        # Otherwise, if this request is one of the GraphQL over SSE requests,
-        # single connection mode is required and needs to be routed to the SSE application.
-        request = ASGIRequest(scope=scope, body_file=io.BytesIO())
-        if request.method in {"PUT", "DELETE"} or (
-            request.method in {"GET", "POST"} and get_graphql_event_stream_token(request)
-        ):
+        # PUT and DELETE are exclusively single connection mode operations.
+        method = scope.get("method", "")
+        if method in {"PUT", "DELETE"}:
             return self.sse_application(scope, receive, send)
 
+        # GET/POST with a stream token are single connection mode operations.
+        if method in {"GET", "POST"}:
+            request = ASGIRequest(scope=scope, body_file=io.BytesIO())
+            if get_graphql_event_stream_token(request):
+                return self.sse_application(scope, receive, send)
+
+        # Everything else uses distinct connections mode via Django.
+        # HTTP/1.1 distinct connections are blocked in the view unless
+        # `USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1` is enabled.
         return self.django_application(scope, receive, send)
 
 
