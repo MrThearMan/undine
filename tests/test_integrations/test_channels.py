@@ -971,9 +971,10 @@ async def test_channels__sse_operation_router__event_stream(method: RequestMetho
 
 
 @pytest.mark.parametrize("method", ["GET", "POST"])
-async def test_channels__sse_operation_router__operation(method: RequestMethod) -> None:
+@pytest.mark.parametrize("accept", [b"application/json", b"application/*", b"*/*"])
+async def test_channels__sse_operation_router__operation(method: RequestMethod, accept: bytes) -> None:
     router = get_graphql_sse_operation_router()
-    scope = make_http_scope(method=method)
+    scope = make_http_scope(method=method, headers=[(b"accept", accept)])
 
     await router(scope, None, None)
 
@@ -982,6 +983,23 @@ async def test_channels__sse_operation_router__operation(method: RequestMethod) 
     router.event_stream_consumer.assert_not_awaited()
     router.operation_consumer.assert_awaited_once()
     router.operation_cancellation_consumer.assert_not_awaited()
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+async def test_channels__sse_operation_router__operation__cannot_accept_json(method: RequestMethod) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method=method, headers=[(b"accept", b"text/html")])
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_awaited_once()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+    response = router.send_http_response.await_args.kwargs["response"]
+    assert isinstance(response, HttpUnsupportedContentTypeResponse)
 
 
 async def test_channels__sse_operation_router__cancellation(undine_settings) -> None:

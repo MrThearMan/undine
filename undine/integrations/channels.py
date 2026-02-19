@@ -822,6 +822,10 @@ class GraphQLSSEOperationRouter:
                 if any(a.main_type == "text" and a.sub_type == "event-stream" for a in request.accepted_types):
                     return self.event_stream_consumer(scope, receive, send)
 
+                if not any(a.match("application/json") for a in request.accepted_types):
+                    response = HttpUnsupportedContentTypeResponse(supported_types=["application/json"])
+                    return self.send_http_response(send, response=response)
+
                 return self.operation_consumer(scope, receive, send)
 
             case "DELETE":
