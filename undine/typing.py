@@ -706,6 +706,7 @@ class UndineErrorCodes(StrEnum):
     SSE_STREAM_ALREADY_OPEN = auto()
     SSE_STREAM_ALREADY_REGISTERED = auto()
     SSE_STREAM_NOT_FOUND = auto()
+    SSE_STREAM_NOT_OPEN = auto()
     SSE_STREAM_TOKEN_MISSING = auto()
     SUBSCRIPTION_TIMEOUT = auto()
     TOO_MANY_FILTERS = auto()
@@ -1511,3 +1512,9 @@ class SSEOperationCancelEvent(TypedDict):
     """A request to cancel an operation."""
 
     type: Literal["sse.operation.cancel"]
+
+
+class SSEStreamCloseEvent(TypedDict):
+    """A request to close the stream."""
+
+    type: Literal["sse.stream.close"]

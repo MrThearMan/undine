@@ -12,14 +12,17 @@ from tests.test_integrations.helpers import (
     _create_user,
     _open_stream,
     _reserve_stream,
-    get_router,
-    make_scope,
+    get_graphql_sse_operation_router,
+    get_graphql_sse_router,
+    make_http_scope,
     make_sse_communicator,
     sse_get_response,
     sse_send_request,
 )
 from undine import Entrypoint, RootType, create_schema
-from undine.typing import PingMessage, PongMessage, SSEState, SSEStreamState
+from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
+from undine.integrations.channels import get_sse_operation_key, get_sse_stream_state_key, get_sse_stream_token_key
+from undine.typing import PingMessage, PongMessage, RequestMethod, SSEState
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -101,11 +104,10 @@ async def test_channels__sse__reserve_stream(undine_settings) -> None:
     assert uuid.UUID(response["body"])
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    stream_state = await session.aget(session_key)
-    assert stream_state is not None
-    assert stream_state["state"] == SSEState.REGISTERED
-    assert stream_state["stream_token"] == response["body"]
+    stream_token = await session.aget(get_sse_stream_token_key())
+    stream_state = await session.aget(get_sse_stream_state_key())
+    assert stream_state == SSEState.REGISTERED
+    assert stream_token == response["body"]
 
 
 async def test_channels__sse__reserve_stream__unauthenticated() -> None:
@@ -152,10 +154,8 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
     session = await _create_session(user)
 
     # Simulate stale OPENED state left in the session (e.g. from a race condition on disconnect)
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    stale_state = SSEStreamState(state=SSEState.OPENED, stream_token="stale-token")
-    await session.aset(key=session_key, value=stale_state)
-    await session.aset(key=f"{session_key}|op-1", value=True)
+    await session.aset(key=get_sse_stream_token_key(), value="stale-token")
+    await session.aset(key=get_sse_stream_state_key(), value=SSEState.OPENED)
     await session.asave()
 
     # Reserve should succeed, cleaning up the stale state
@@ -172,14 +172,14 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
     assert uuid.UUID(response["body"])
 
     # Verify stale operation key was cleaned up
-    await session.aload()
-    assert await session.aget(f"{session_key}|op-1") is None
+    stream_operation_key = get_sse_operation_key(operation_id="op-1")
+    assert await session.aget(stream_operation_key) is None
 
     # Verify new stream state
-    stream_state = await session.aget(session_key)
-    assert stream_state is not None
-    assert stream_state["state"] == SSEState.REGISTERED
-    assert stream_state["stream_token"] == response["body"]
+    stream_token = await session.aget(get_sse_stream_token_key())
+    stream_state = await session.aget(get_sse_stream_state_key())
+    assert stream_state == SSEState.REGISTERED
+    assert stream_token == response["body"]
 
 
 # SSE - Get Stream
@@ -212,10 +212,10 @@ async def test_channels__sse__get_stream(undine_settings) -> None:
     assert body_event.get("more_body") is True
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    stream_state = await session.aget(session_key)
-    assert stream_state is not None
-    assert stream_state["state"] == SSEState.OPENED
+    stream_token = await session.aget(get_sse_stream_token_key())
+    stream_state = await session.aget(get_sse_stream_state_key())
+    assert stream_state == SSEState.OPENED
+    assert stream_token == token
 
 
 async def test_channels__sse__get_stream__unauthenticated() -> None:
@@ -432,8 +432,8 @@ async def test_channels__sse__subscribe__stream_not_opened() -> None:
     await sse_send_request(communicator, body=body)
     response = await sse_get_response(communicator)
 
-    assert response["status"] == HTTPStatus.NOT_FOUND
-    assert response["json"]["errors"][0]["message"] == "Stream not found"
+    assert response["status"] == HTTPStatus.CONFLICT
+    assert response["json"]["errors"][0]["message"] == "Stream not open"
 
 
 async def test_channels__sse__subscribe__wrong_stream_token() -> None:
@@ -527,9 +527,8 @@ async def test_channels__sse__subscribe__operation_already_exists(undine_setting
     operation_id = "op-1"
 
     # Mark operation as already existing in session
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    operation_key = f"{session_key}|{operation_id}"
-    await session.aset(key=operation_key, value=True)
+    operation_key = get_sse_operation_key(operation_id=operation_id)
+    await session.aset(key=operation_key, value="ok")
     await session.asave()
 
     body = json.dumps({
@@ -668,8 +667,8 @@ async def test_channels__sse__cancel_subscription__stream_not_opened() -> None:
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
 
-    assert response["status"] == HTTPStatus.NOT_FOUND
-    assert response["json"]["errors"][0]["message"] == "Stream not found"
+    assert response["status"] == HTTPStatus.CONFLICT
+    assert response["json"]["errors"][0]["message"] == "Stream not open"
 
 
 async def test_channels__sse__cancel_subscription__wrong_stream_token() -> None:
@@ -717,80 +716,80 @@ async def test_channels__sse__cancel_subscription__stream_token_missing() -> Non
 async def test_channels__sse_router__non_graphql_path_routes_to_asgi(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(path="/other/")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(path="/other/")
 
     await router(scope, None, None)
 
-    router.asgi_application.assert_awaited_once()
+    router.django_application.assert_awaited_once()
     router.sse_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__http2_routes_to_asgi(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(http_version="2.0")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(http_version="2.0")
 
     await router(scope, None, None)
 
-    router.asgi_application.assert_awaited_once()
+    router.django_application.assert_awaited_once()
     router.sse_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__distinct_connections_setting_routes_to_asgi(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
 
-    router = get_router()
-    scope = make_scope()
+    router = get_graphql_sse_router()
+    scope = make_http_scope()
 
     await router(scope, None, None)
 
-    router.asgi_application.assert_awaited_once()
+    router.django_application.assert_awaited_once()
     router.sse_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__put_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="PUT")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="PUT")
 
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__delete_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="DELETE")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="DELETE")
 
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__get_with_token_query_param_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="GET", query_string=b"token=some-token")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="GET", query_string=b"token=some-token")
 
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__get_with_token_header_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(
+    router = get_graphql_sse_router()
+    scope = make_http_scope(
         method="GET",
         headers=[(b"x-graphql-event-stream-token", b"some-token")],
     )
@@ -798,26 +797,26 @@ async def test_channels__sse_router__get_with_token_header_routes_to_sse(undine_
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__post_with_token_query_param_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="POST", query_string=b"token=some-token")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="POST", query_string=b"token=some-token")
 
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__post_with_token_header_routes_to_sse(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(
+    router = get_graphql_sse_router()
+    scope = make_http_scope(
         method="POST",
         headers=[(b"x-graphql-event-stream-token", b"some-token")],
     )
@@ -825,28 +824,117 @@ async def test_channels__sse_router__post_with_token_header_routes_to_sse(undine
     await router(scope, None, None)
 
     router.sse_application.assert_awaited_once()
-    router.asgi_application.assert_not_awaited()
+    router.django_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__get_without_token_routes_to_asgi(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="GET")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="GET")
 
     await router(scope, None, None)
 
-    router.asgi_application.assert_awaited_once()
+    router.django_application.assert_awaited_once()
     router.sse_application.assert_not_awaited()
 
 
 async def test_channels__sse_router__post_without_token_routes_to_asgi(undine_settings) -> None:
     undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
 
-    router = get_router()
-    scope = make_scope(method="POST")
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="POST")
 
     await router(scope, None, None)
 
-    router.asgi_application.assert_awaited_once()
+    router.django_application.assert_awaited_once()
     router.sse_application.assert_not_awaited()
+
+
+# SSE Operation Router
+
+
+async def test_channels__sse_operation_router__non_accepted_method(undine_settings) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method="HEAD")
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_awaited_once()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+    response = router.send_http_response.await_args.kwargs["response"]
+    assert isinstance(response, HttpMethodNotAllowedResponse)
+
+
+async def test_channels__sse_operation_router__stream_reservation(undine_settings) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method="PUT", headers=[(b"accept", b"text/plain")])
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_not_awaited()
+    router.stream_reservation_consumer.assert_awaited_once()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+
+async def test_channels__sse_operation_router__stream_reservation__doesnt_accept_test_plain(undine_settings) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method="PUT", headers=[(b"accept", b"application/json")])
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_awaited_once()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+    response = router.send_http_response.await_args.kwargs["response"]
+    assert isinstance(response, HttpUnsupportedContentTypeResponse)
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+async def test_channels__sse_operation_router__event_stream(method: RequestMethod) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method=method, headers=[(b"accept", b"text/event-stream")])
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_not_awaited()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_awaited_once()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+
+@pytest.mark.parametrize("method", ["GET", "POST"])
+async def test_channels__sse_operation_router__operation(method: RequestMethod) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method=method)
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_not_awaited()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_awaited_once()
+    router.operation_cancellation_consumer.assert_not_awaited()
+
+
+async def test_channels__sse_operation_router__cancellation(undine_settings) -> None:
+    router = get_graphql_sse_operation_router()
+    scope = make_http_scope(method="DELETE")
+
+    await router(scope, None, None)
+
+    router.send_http_response.assert_not_awaited()
+    router.stream_reservation_consumer.assert_not_awaited()
+    router.event_stream_consumer.assert_not_awaited()
+    router.operation_consumer.assert_not_awaited()
+    router.operation_cancellation_consumer.assert_awaited_once()

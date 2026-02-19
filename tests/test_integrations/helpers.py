@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, NotRequired, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, Iterable, Literal, NotRequired, Protocol, TypedDict, Unpack
 from unittest.mock import AsyncMock
 
 from asgiref.testing import ApplicationCommunicator
@@ -12,90 +12,73 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
 from graphql import FormattedExecutionResult
 
-from undine.integrations.channels import GraphQLSSERouter, GraphQLSSESingleConnectionConsumer
+from undine.integrations.channels import (
+    GraphQLSSEOperationRouter,
+    GraphQLSSERouter,
+    get_sse_stream_state_key,
+    get_sse_stream_token_key,
+)
 from undine.settings import undine_settings
-from undine.typing import SSEState
+from undine.typing import RequestMethod, SSEState
 
 if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
 
 
-def make_scope(
-    *,
-    path: str | None = None,
-    method: str = "GET",
-    http_version: str = "1.1",
-    headers: list[tuple[bytes, bytes]] | None = None,
-    query_string: bytes = b"",
-) -> HTTPScope:
-    if path is None:
-        path = "/" + undine_settings.GRAPHQL_PATH.removeprefix("/").removesuffix("/") + "/"
-
-    return HTTPScope(
-        type="http",
-        asgi=ASGIVersions(version="3.0", spec_version="1.0"),
-        http_version=http_version,
-        method=method,
-        path=path,
-        raw_path=path.encode(),
-        root_path="",
-        scheme="http",
-        query_string=query_string,
-        headers=headers or [],
-        server=("localhost", 8000),
-        extensions=None,
-        client=None,
-    )
+class HTTPScopeArgs(TypedDict, total=False):
+    http_version: Literal["1.0", "1.1", "2.0", "3.0"]
+    method: RequestMethod
+    scheme: Literal["http", "https"]
+    path: str
+    query_string: bytes
+    headers: Iterable[tuple[bytes, bytes]]
+    user: User | None
+    session: SessionBase | None
 
 
-def make_sse_scope(
-    *,
-    method: str = "GET",
-    headers: list[tuple[bytes, bytes]] | None = None,
-    query_string: bytes = b"",
-    user: User | None = None,
-    session: SessionBase | None = None,
-) -> HTTPScope:
-    path = "/" + undine_settings.GRAPHQL_PATH.removeprefix("/").removesuffix("/") + "/"
+def make_http_scope(**kwargs: Unpack[HTTPScopeArgs]) -> HTTPScope:
+    if "path" not in kwargs:
+        kwargs["path"] = "/" + undine_settings.GRAPHQL_PATH.removeprefix("/").removesuffix("/") + "/"
+
     scope = HTTPScope(
         type="http",
         asgi=ASGIVersions(version="3.0", spec_version="1.0"),
-        http_version="1.1",
-        method=method,
-        path=path,
-        raw_path=path.encode(),
+        http_version=kwargs.get("http_version", "1.1"),
+        method=kwargs.get("method", "GET"),
+        path=kwargs["path"],
+        raw_path=kwargs["path"].encode(),
         root_path="",
-        scheme="http",
-        query_string=query_string,
-        headers=headers or [],
+        scheme=kwargs.get("scheme", "http"),
+        query_string=kwargs.get("query_string", b""),
+        headers=kwargs.get("headers", []),
         server=("localhost", 8000),
         extensions=None,
         client=None,
     )
-    if user is not None:
-        scope["user"] = user  # type: ignore[typeddict-unknown-key]
-    if session is not None:
-        scope["session"] = session  # type: ignore[typeddict-unknown-key]
+    if "user" in kwargs:
+        scope["user"] = kwargs["user"]  # type: ignore[typeddict-unknown-key]
+    if "session" in kwargs:
+        scope["session"] = kwargs["session"]  # type: ignore[typeddict-unknown-key]
     return scope
 
 
 def make_sse_communicator(
     *,
-    method: str = "GET",
+    method: RequestMethod = "GET",
     headers: list[tuple[bytes, bytes]] | None = None,
     query_string: bytes = b"",
     user: User | AnonymousUser | None = None,
     session: SessionBase | None = None,
 ) -> ApplicationCommunicator:
     """Create an ApplicationCommunicator for testing the SSE consumer."""
-    scope = make_sse_scope(
+    scope = make_http_scope(
         method=method,
-        headers=headers,
+        headers=headers or [],
         query_string=query_string,
         user=user,
         session=session,
     )
-    app = AuthMiddlewareStack(GraphQLSSESingleConnectionConsumer.as_asgi())
+    app = AuthMiddlewareStack(GraphQLSSEOperationRouter())
     return ApplicationCommunicator(app, scope)
 
 
@@ -134,24 +117,42 @@ async def sse_get_response(communicator: ApplicationCommunicator) -> SSEResponse
     return result
 
 
-class MockedRouter(Protocol):
-    asgi_application: AsyncMock
+class MockedGraphQLSSERouter(Protocol):
+    django_application: AsyncMock
     sse_application: AsyncMock
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None: ...
 
 
-def get_router() -> MockedRouter:
-    asgi_app = AsyncMock(spec=["__call__"])
-    sse_app = AsyncMock(spec=["__call__"])
-    return GraphQLSSERouter(asgi_application=asgi_app, sse_application=sse_app)  # type: ignore[return-value]
+def get_graphql_sse_router() -> MockedGraphQLSSERouter:
+    router = GraphQLSSERouter(django_application=AsyncMock(spec=["__call__"]))
+    router.sse_application = AsyncMock(spec=["__call__"])
+    return router  # type: ignore[return-value]
+
+
+class MockedGraphQLSSEOperationRouter(Protocol):
+    stream_reservation_consumer: AsyncMock
+    event_stream_consumer: AsyncMock
+    operation_consumer: AsyncMock
+    operation_cancellation_consumer: AsyncMock
+    send_http_response: AsyncMock
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None: ...
+
+
+def get_graphql_sse_operation_router() -> MockedGraphQLSSEOperationRouter:
+    router = GraphQLSSEOperationRouter()
+    router.stream_reservation_consumer = AsyncMock(spec=["__call__"])
+    router.event_stream_consumer = AsyncMock(spec=["__call__"])
+    router.operation_consumer = AsyncMock(spec=["__call__"])
+    router.operation_cancellation_consumer = AsyncMock(spec=["__call__"])
+    router.send_http_response = AsyncMock(spec=["__call__"])
+    return router  # type: ignore[return-value]
 
 
 async def _create_user() -> User:
-    user, _ = await User.objects.aget_or_create(
-        username="testuser",
-        defaults={"is_active": True, "email": "test@example.com"},
-    )
+    defaults = {"is_active": True, "email": "test@example.com"}
+    user, _ = await User.objects.aget_or_create(username="testuser", defaults=defaults)
     return user
 
 
@@ -176,10 +177,12 @@ async def _reserve_stream(user: User, session: SessionStore) -> str:
     response = await sse_get_response(communicator)
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    stream_state = await session.aget(session_key)
-    assert stream_state is not None
-    assert stream_state["state"] == SSEState.REGISTERED
+    stream_token_key = get_sse_stream_token_key()
+    stream_state_key = get_sse_stream_state_key()
+    stream_token = await session.aget(stream_token_key)
+    stream_state = await session.aget(stream_state_key)
+    assert stream_state == SSEState.REGISTERED
+    assert stream_token == response["body"]
 
     assert response["status"] == HTTPStatus.CREATED
     return response["body"]
@@ -198,10 +201,12 @@ async def _open_stream(user: User, session: SessionStore, token: str) -> None:
     start = await communicator.receive_output(timeout=3)
 
     # Verify session was updated
-    session_key = undine_settings.SSE_STREAM_SESSION_PREFIX
-    stream_state = await session.aget(session_key)
-    assert stream_state is not None
-    assert stream_state["state"] == SSEState.OPENED
+    stream_token_key = get_sse_stream_token_key()
+    stream_state_key = get_sse_stream_state_key()
+    stream_token = await session.aget(stream_token_key)
+    stream_state = await session.aget(stream_state_key)
+    assert stream_state == SSEState.OPENED
+    assert stream_token == token
 
     assert start["type"] == "http.response.start"
     assert start["status"] == HTTPStatus.OK
