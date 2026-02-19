@@ -87,25 +87,25 @@ async def execute_graphql_sse_sc(
     stream = await execute_graphql_with_subscription(params, request)
 
     if not isinstance(stream, AsyncIterator):
-        yield NextEventSC(operation_id=operation_id, data=stream.formatted)
+        yield NextEventSC(operation_id=operation_id, payload=stream.formatted)
         yield CompletedEventSC(operation_id=operation_id)
         return
 
     try:
         async for data in stream:
-            yield NextEventSC(operation_id=operation_id, data=data.formatted)
+            yield NextEventSC(operation_id=operation_id, payload=data.formatted)
 
     except GraphQLError as error:
         result = get_error_execution_result(error)
-        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
 
     except GraphQLErrorGroup as error:
         result = get_error_execution_result(error)
-        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
 
     except Exception as error:  # noqa: BLE001
         result = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
-        yield NextEventSC(operation_id=operation_id, data=result.formatted)
+        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
 
     yield CompletedEventSC(operation_id=operation_id)
 
