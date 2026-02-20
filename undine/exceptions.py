@@ -1066,9 +1066,9 @@ class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
 
 
 class GraphQLSSEStreamNotOpenError(GraphQLStatusError):  # TODO: Test
-    """Error raised when a SSE request when a stream is not open."""
+    """Error raised when a SSE request when a stream did not open before the operation timeout."""
 
-    msg = "Stream not open"
+    msg = "Operation timed out before stream was opened"
     status = HTTPStatus.CONFLICT
     code = UndineErrorCodes.SSE_STREAM_NOT_OPEN
 

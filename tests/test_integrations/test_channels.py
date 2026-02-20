@@ -215,6 +215,26 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
     assert stream_token == response["body"]
 
 
+async def test_channels__sse__reserve_stream__stale_registered_operation() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    # Simulate an operation optimistically saved while stream was REGISTERED
+    # (e.g. operation submitted before stream opened, then timed out after
+    # a new stream was reserved, so the rollback skipped this key).
+    operation_key = get_sse_operation_key(operation_id="op-1")
+    await session.aset(key=operation_key, value="ok")
+    await session.asave()
+
+    # Re-reserving from REGISTERED state should clean up stale operations
+    new_token = await _reserve_stream(user, session)
+    assert new_token != token
+
+    await session.aload()
+    assert await session.aget(operation_key) is None
+
+
 # SSE - Get Stream
 
 
@@ -498,14 +518,17 @@ async def test_channels__sse__subscribe__stream_not_registered() -> None:
     assert response["json"]["errors"][0]["message"] == "Stream not found"
 
 
-async def test_channels__sse__subscribe__stream_not_opened() -> None:
+async def test_channels__sse__subscribe__stream_did_not_open_in_time(undine_settings) -> None:
+    undine_settings.SSE_OPERATION_STREAM_OPEN_TIMEOUT = 0.1  # type: ignore[assignment]
+
     user = await _create_user()
     session = await _create_session(user)
     token = await _reserve_stream(user, session)
+    operation_id = "op-1"
 
     body = json.dumps({
         "query": "subscription { test }",
-        "extensions": {"operationId": "op-1"},
+        "extensions": {"operationId": operation_id},
     }).encode()
 
     communicator = make_sse_communicator(
@@ -521,8 +544,78 @@ async def test_channels__sse__subscribe__stream_not_opened() -> None:
     await sse_send_request(communicator, body=body)
     response = await sse_get_response(communicator)
 
+    # The operation waits for the stream to open before responding.
+    # If the stream never opens, the client gets a 409 instead of 202.
     assert response["status"] == HTTPStatus.CONFLICT
-    assert response["json"]["errors"][0]["message"] == "Stream not open"
+    assert response["json"]["errors"][0]["message"] == "Operation timed out before stream was opened"
+
+    # Operation should not be saved in the session since it was rejected.
+    operation_key = get_sse_operation_key(operation_id=operation_id)
+    await session.aload()
+    assert await session.aget(operation_key) is None
+
+
+async def test_channels__sse__subscribe__before_stream_opened(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_SSE = True
+
+    class Query(RootType):
+        @Entrypoint
+        def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    body = json.dumps({
+        "query": "query { test }",
+        "extensions": {"operationId": "op-1"},
+    }).encode()
+
+    op_communicator = make_sse_communicator(
+        method="POST",
+        headers=[
+            (b"accept", b"application/json"),
+            (b"content-type", b"application/json"),
+            (b"x-graphql-event-stream-token", token.encode()),
+        ],
+        user=user,
+        session=session,
+    )
+    # The POST waits for the stream to open before responding with 202,
+    # so send it first, then open the stream concurrently.
+    await sse_send_request(op_communicator, body=body)
+
+    await asyncio.sleep(0)
+
+    stream_communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(stream_communicator)
+
+    start = await stream_communicator.receive_output(timeout=3)
+    assert start["type"] == "http.response.start"
+    assert start["status"] == HTTPStatus.OK
+
+    # The operation is accepted only after the stream opens.
+    response = await sse_get_response(op_communicator)
+    assert response["status"] == HTTPStatus.ACCEPTED
+
+    body_event = await stream_communicator.receive_output(timeout=3)
+    assert body_event["type"] == "http.response.body"
+    assert body_event["body"] == b":\n\n"
+    assert body_event.get("more_body") is True
+
+    event = await stream_communicator.receive_output(timeout=5)
+    assert event["type"] == "http.response.body"
+    assert b"event: next" in event["body"]
+    assert b'"Hello, World!"' in event["body"]
 
 
 async def test_channels__sse__subscribe__wrong_stream_token() -> None:
@@ -756,8 +849,90 @@ async def test_channels__sse__cancel_subscription__stream_not_opened() -> None:
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
 
-    assert response["status"] == HTTPStatus.CONFLICT
-    assert response["json"]["errors"][0]["message"] == "Stream not open"
+    # The spec allows cancellation before the stream is actually opened.
+    # Targets the operation's own channel group, independent of stream state.
+    assert response["status"] == HTTPStatus.OK
+
+
+async def test_channels__sse__cancel_subscription__before_stream_opened(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_SSE = True
+
+    class Query(RootType):
+        @Entrypoint
+        def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+    operation_id = "op-1"
+
+    body = json.dumps({
+        "query": "query { test }",
+        "extensions": {"operationId": operation_id},
+    }).encode()
+
+    # Submit operation (queued, waiting for stream to open)
+    op_communicator = make_sse_communicator(
+        method="POST",
+        headers=[
+            (b"accept", b"application/json"),
+            (b"content-type", b"application/json"),
+            (b"x-graphql-event-stream-token", token.encode()),
+        ],
+        user=user,
+        session=session,
+    )
+    await sse_send_request(op_communicator, body=body)
+
+    # Let the operation consumer complete handle() — it needs multiple
+    # yields for session save and channel group joins.
+    await asyncio.sleep(0.05)
+
+    # Cancel the queued operation
+    cancel_communicator = make_sse_communicator(
+        method="DELETE",
+        headers=[(b"x-graphql-event-stream-token", token.encode())],
+        query_string=f"operationId={operation_id}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(cancel_communicator)
+    cancel_response = await sse_get_response(cancel_communicator)
+    assert cancel_response["status"] == HTTPStatus.OK
+
+    # Let the cancel signal propagate through the channel layer and
+    # the operation consumer's dispatch loop (needs multiple yields).
+    await asyncio.sleep(0.05)
+
+    # Open the stream
+    stream_communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(stream_communicator)
+
+    start = await stream_communicator.receive_output(timeout=3)
+    assert start["type"] == "http.response.start"
+    assert start["status"] == HTTPStatus.OK
+
+    body_event = await stream_communicator.receive_output(timeout=3)
+    assert body_event["type"] == "http.response.body"
+    assert body_event["body"] == b":\n\n"
+    assert body_event.get("more_body") is True
+
+    # No operation events should arrive on the stream
+    with pytest.raises(asyncio.TimeoutError):
+        await stream_communicator.receive_output(timeout=0.5)
+
+    # Operation should be cleaned from the session
+    await session.aload()
+    assert await session.aget(get_sse_operation_key(operation_id=operation_id)) is None
 
 
 async def test_channels__sse__cancel_subscription__wrong_stream_token() -> None:

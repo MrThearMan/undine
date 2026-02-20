@@ -736,6 +736,18 @@ Set to `0` to disable.
 
 ///
 
+/// details | `SSE_OPERATION_STREAM_OPEN_TIMEOUT`
+    attrs: {id: sse_operation_stream_open_timeout}
+
+Type: `int` | Default: `30`
+
+Timeout in seconds for an operation to wait for the event stream to open.
+When an operation is submitted before the SSE event stream is connected,
+the operation consumer waits for the stream to open before executing.
+If the stream does not open within this timeout, the operation is discarded.
+
+///
+
 /// details | `SSE_STREAM_SESSION_KEY`
     attrs: {id: sse_stream_session_key}
 

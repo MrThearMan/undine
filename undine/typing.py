@@ -1518,3 +1518,9 @@ class SSEStreamCloseEvent(TypedDict):
     """A request to close the stream."""
 
     type: Literal["sse.stream.close"]
+
+
+class SSEStreamOpenedEvent(TypedDict):
+    """A notification that the stream has been opened."""
+
+    type: Literal["sse.stream.opened"]
