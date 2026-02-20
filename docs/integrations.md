@@ -11,23 +11,36 @@ Undine includes.
 pip install undine[channels]
 ```
 
-Undine provides support for the [GraphQL over WebSocket]{:target="_blank"} protocol
+Undine provides support for [GraphQL over WebSocket]{:target="_blank"} and
+[GraphQL over SSE]{:target="_blank"} ([Single Connection mode](subscriptions.md#single-connection-mode))
 by integrating with the [channels]{:target="_blank"} library. Using the channels integration
 requires turning on Undine's [Async Support](async.md).
 
 [channels]: https://github.com/django/channels
 [GraphQL over WebSocket]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
+[GraphQL over SSE]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md
 
-Additionally, you need to configure Django in your project's `asgi.py` file
-so that websocket requests are sent to Undine's channels consumer.
+You'll need to configure Django in your project's `asgi.py` file
+so that requests are sent to Undine's channels consumers.
+There are three app wrappers available depending on which protocols you need.
+
+For WebSocket support only:
 
 ```python
 -8<- "integrations/channels.py"
 ```
 
-This will add a new route to the Django application that will handle
-the WebSocket requests. The path for this route is defined using the
-[`WEBSOCKET_PATH`](settings.md#websocket_path) setting.
+For SSE Single Connection mode only:
+
+```python
+-8<- "integrations/channels_sse.py"
+```
+
+For both WebSocket and SSE Single Connection mode:
+
+```python
+-8<- "integrations/channels_websocket_and_sse.py"
+```
 
 ## django-debug-toolbar
 

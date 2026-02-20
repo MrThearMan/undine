@@ -10,23 +10,79 @@ your GraphQL Schema.
 
 To use subscriptions, you'll need to turn on Undine's [async support](async.md),
 as subscription resolvers are always async. Then, you have two options
-for a transport protocol: [WebSockets]{:target="blank"} or [Server-Sent Events]{:target="blank"}.
+for a transport protocol: [WebSockets](#websockets) or [Server-Sent Events](#server-sent-events).
 
-[WebSockets]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
-[Server-Sent Events]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md
+### WebSockets
 
-To use WebSockets, you'll need to setup Undine's [`channels` integration](integrations.md#channels).
+WebSockets use a persistent TCP connection between the client and server.
+They have broad client library support in the GraphQL ecosystem, making them
+a good choice when your client tooling expects WebSocket-based subscriptions.
 
-To use Server-Sent Events, you should have a web server capable of HTTP/2
-([Single Connection mode] is not supported yet). However, you can use
-[`USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`](settings.md#use_sse_distinct_connections_for_http_1)
-to override this, if you know what you're doing.
+To use WebSockets, you'll need use Undine's [`channels` integration](integrations.md#channels).
+See the [GraphQL over WebSocket protocol]{:target="_blank"} for details on how the protocol works.
 
-[Single Connection mode]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md#single-connection-mode
+[GraphQL over WebSocket protocol]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
 
-Now, you can create a new [`RootType`](schema.md#roottypes) called `Subscription`
-and add [`Entrypoints`](schema.md#entrypoints) to it. Let's go over the different
-`Entrypoint` references that can be used to create subscriptions.
+### Server-Sent Events
+
+Server-Sent Events (SSE) use regular HTTP, which means they work through standard
+load balancers, proxies, and firewalls without special configuration. Since
+GraphQL subscriptions are inherently server-to-client, SSE is a natural fit
+and can be simpler to deploy than WebSockets.
+
+SSE can operate in two modes: [Distinct Connections mode](#distinct-connections-mode)
+and [Single Connection mode](#single-connection-mode).
+
+#### Distinct Connections mode
+
+In [Distinct Connections]{:target="_blank"} mode, each subscription opens its own SSE connection.
+This is the simpler mode and requires no extra setup beyond [async support](async.md).
+
+However, when using HTTP/1.1, browsers limit SSE connections to 6 per browser and domain,
+so you should use a web server capable of HTTP/2 in production.
+You can use [`USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1`](settings.md#use_sse_distinct_connections_for_http_1)
+to allow Distinct Connections mode over HTTP/1.1, if you know this isn't going to be an issue for your use case.
+
+[Distinct Connections]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md#distinct-connections-mode
+
+#### Single Connection mode
+
+In [Single Connection]{:target="_blank"} mode, all operations are multiplexed over a single SSE connection,
+which avoids the HTTP/1.1 connection limit. This mode requires Undine's
+[`channels` integration](integrations.md#channels).
+
+[Single Connection]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md#single-connection-mode
+
+Unlike the [reference implementation]{:target="_blank"}, which keeps state
+in-memory within a single process, Undine stores stream and operation state in
+[Django sessions]{:target="_blank"} to guarantee a single connection in multi-worker deployments.
+This changes the implementation slightly compared to the reference implementation:
+
+[reference implementation]: https://github.com/enisdenjo/graphql-sse/
+[Django sessions]: https://docs.djangoproject.com/en/stable/topics/http/sessions/
+
+1. Due to the possibility of session state becoming stale in case the client
+   loses its stream connection, Undine's implementation allows creating a new stream
+   even if one is already open. In this case, the existing stream is closed
+   and replaced with a new one. The reference implementation always returns
+   `409 Conflict` if a stream is already open.
+
+2. Using sessions also means that Undine's implementation requires authentication,
+   while the reference implementation does not enforce this.
+
+Single Connection mode uses [Django's cache framework]{:target="_blank"} and [channel layers]{:target="_blank"}
+for state coordination. This requires both the cache backend and channel layer to work in multi-worker deployments.
+The cache backend should also support atomic `cache.add`. For example, using [redis cache]{:target="_blank"}
+and [`channels-redis`][channels-redis]{:target="_blank"} satisfies both requirements:
+
+[Django's cache framework]: https://docs.djangoproject.com/en/stable/topics/cache
+[channel layers]: https://channels.readthedocs.io/en/stable/topics/channel_layers.html
+[redis cache]: https://docs.djangoproject.com/en/stable/topics/cache/#redis
+[channels-redis]: https://github.com/django/channels_redis
+
+```python
+-8<- "subscriptions/sse_redis_settings.py"
+```
 
 ## AsyncGenerators
 
