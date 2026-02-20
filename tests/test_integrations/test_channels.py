@@ -6,7 +6,9 @@ import uuid
 from http import HTTPStatus
 
 import pytest
+from django.conf import settings as django_settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import caches
 
 from tests.test_integrations.helpers import (
     _create_session,
@@ -22,13 +24,27 @@ from tests.test_integrations.helpers import (
 )
 from undine import Entrypoint, RootType, create_schema
 from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.integrations.channels import get_sse_operation_key, get_sse_stream_state_key, get_sse_stream_token_key
+from undine.integrations.channels import (
+    get_sse_operation_claim_key,
+    get_sse_operation_key,
+    get_sse_stream_claim_key,
+    get_sse_stream_state_key,
+    get_sse_stream_token_key,
+)
 from undine.typing import PingMessage, PongMessage, RequestMethod, SSEState
 
 pytestmark = [
     pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),
 ]
+
+
+@pytest.fixture(autouse=True)
+def _clear_sse_cache():
+    """Handle clearing the session cache between runs so that cache data is not shared between tests."""
+    yield
+    cache = caches[django_settings.SESSION_CACHE_ALIAS]
+    cache.clear()
 
 
 # WebSocket
@@ -314,6 +330,55 @@ async def test_channels__sse__get_stream__already_open() -> None:
     assert response["json"]["errors"][0]["message"] == "Stream already open"
 
 
+async def test_channels__sse__get_stream__concurrent_open_blocked_by_cache_claim() -> None:
+    """When another worker has already claimed the stream via cache, a second open attempt is rejected."""
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    # Simulate another worker having already claimed this stream in the cache.
+    cache = caches[django_settings.SESSION_CACHE_ALIAS]
+    cache_key = get_sse_stream_claim_key(token)
+    assert await cache.aadd(cache_key, "1", timeout=1800)
+
+    # Session still says REGISTERED, but cache claim blocks the open.
+    communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+    response = await sse_get_response(communicator)
+
+    assert response["status"] == HTTPStatus.CONFLICT
+    assert response["json"]["errors"][0]["message"] == "Stream already open"
+
+
+async def test_channels__sse__get_stream__cache_claim_released_after_session_save() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+
+    start = await communicator.receive_output(timeout=3)
+    assert start["status"] == HTTPStatus.OK
+
+    # Cache claim should already be released once the session contains the state.
+    cache = caches[django_settings.SESSION_CACHE_ALIAS]
+    cache_key = get_sse_stream_claim_key(token)
+    assert await cache.aget(cache_key) is None
+
+
 async def test_channels__sse__get_stream__stream_not_registered() -> None:
     user = await _create_user()
     session = await _create_session(user)
@@ -549,6 +614,9 @@ async def test_channels__sse__subscribe__stream_did_not_open_in_time(undine_sett
     assert response["status"] == HTTPStatus.CONFLICT
     assert response["json"]["errors"][0]["message"] == "Operation timed out before stream was opened"
 
+    # Let the operation cleanup (finally block) finish before checking session.
+    await asyncio.sleep(0.05)
+
     # Operation should not be saved in the session since it was rejected.
     operation_key = get_sse_operation_key(operation_id=operation_id)
     await session.aload()
@@ -733,6 +801,84 @@ async def test_channels__sse__subscribe__operation_already_exists(undine_setting
 
     assert response["status"] == HTTPStatus.CONFLICT
     assert response["json"]["errors"][0]["message"] == "Operation with ID already exists"
+
+
+async def test_channels__sse__subscribe__concurrent_operation_blocked_by_cache_claim() -> None:
+    """When another worker has already claimed an operation ID via cache, a duplicate is rejected."""
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+    await _open_stream(user, session, token)
+
+    operation_id = "op-dup"
+
+    # Simulate another worker having already claimed this operation in the cache.
+    cache = caches[django_settings.SESSION_CACHE_ALIAS]
+    cache_key = get_sse_operation_claim_key(token, operation_id)
+    assert await cache.aadd(cache_key, "1", timeout=1800)
+
+    body = json.dumps({
+        "query": "subscription { test }",
+        "extensions": {"operationId": operation_id},
+    }).encode()
+
+    communicator = make_sse_communicator(
+        method="POST",
+        headers=[
+            (b"accept", b"application/json"),
+            (b"content-type", b"application/json"),
+            (b"x-graphql-event-stream-token", token.encode()),
+        ],
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator, body=body)
+    response = await sse_get_response(communicator)
+
+    assert response["status"] == HTTPStatus.CONFLICT
+    assert response["json"]["errors"][0]["message"] == "Operation with ID already exists"
+
+
+async def test_channels__sse__subscribe__cache_claim_released_after_session_save(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_SSE = True
+
+    class Query(RootType):
+        @Entrypoint
+        def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+    await _open_stream(user, session, token)
+
+    operation_id = "op-release"
+
+    body = json.dumps({
+        "query": "query { test }",
+        "extensions": {"operationId": operation_id},
+    }).encode()
+
+    communicator = make_sse_communicator(
+        method="POST",
+        headers=[
+            (b"accept", b"application/json"),
+            (b"content-type", b"application/json"),
+            (b"x-graphql-event-stream-token", token.encode()),
+        ],
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator, body=body)
+    response = await sse_get_response(communicator)
+    assert response["status"] == HTTPStatus.ACCEPTED
+
+    # Cache claim should already be released once the session contains the operation.
+    cache = caches[django_settings.SESSION_CACHE_ALIAS]
+    cache_key = get_sse_operation_claim_key(token, operation_id)
+    assert await cache.aget(cache_key) is None
 
 
 # SSE - Cancel Subscription
