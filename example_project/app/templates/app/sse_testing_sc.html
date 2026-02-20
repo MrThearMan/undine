@@ -27,7 +27,10 @@
   /** @type {string} */
   let token;
 
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  function getCsrfToken() {
+    const match = document.cookie.match(new RegExp('(?:^|; )csrftoken=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
 
   function createEventSource() {
     const currentURL = new URL(window.location.href)
@@ -42,8 +45,8 @@
 
     source.addEventListener("next", (e) => {
       console.log("Received next message", e);
-      const payload = JSON.parse(e.data);
-      document.querySelector("#log").value += ("Next [" + payload.id + "]: " + JSON.stringify(payload.data) + "\n");
+      const data = JSON.parse(e.data);
+      document.querySelector("#log").value += ("Next [" + data.id + "]: " + JSON.stringify(data.payload) + "\n");
     });
 
     source.addEventListener("complete", (e) => {
@@ -88,7 +91,7 @@
       method: "PUT",
       headers: {
         "Accept": "text/plain",
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
     });
@@ -128,7 +131,7 @@
         "Accept": "application/json",
         "Content-Type": "application/json",
         "X-GraphQL-Event-Stream-Token": token,
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
       body: JSON.stringify({
@@ -162,7 +165,7 @@
       headers: {
         "Accept": "text/plain",
         "X-GraphQL-Event-Stream-Token": token,
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
     });
@@ -190,7 +193,7 @@
         "Accept": "application/json",
         "Content-Type": "application/json",
         "X-GraphQL-Event-Stream-Token": token,
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
       body: JSON.stringify({
@@ -224,7 +227,7 @@
       headers: {
         "Accept": "text/plain",
         "X-GraphQL-Event-Stream-Token": token,
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
     });
@@ -259,7 +262,7 @@
     const result = await fetch("{% url 'force_login' %}", {
       method: "POST",
       headers: {
-        "X-CSRFToken": csrftoken,
+        "X-CSRFToken": getCsrfToken(),
       },
       credentials: "include",
     });
