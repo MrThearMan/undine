@@ -3,11 +3,34 @@
 <head>
   <meta charset="utf-8"/>
   <title>GraphQL over Server-Sent Events testing (Single Connection)</title>
+  <style>
+    body {
+      background: hsl(219, 29%, 18%);
+      color: hsl(219, 29%, 78%);
+      font-family: system-ui, sans-serif;
+    }
+    h1 { color: hsl(219, 29%, 78%); }
+    a { color: hsl(338, 100%, 67%); display: block; }
+    textarea {
+      background: hsl(219, 29%, 14%);
+      color: hsl(219, 29%, 78%);
+      border: 1px solid hsla(219, 29%, 78%, 0.15);
+      font-family: monospace;
+    }
+    button {
+      background: hsla(219, 29%, 78%, 0.15);
+      color: hsl(219, 29%, 78%);
+      border: 1px solid hsla(219, 29%, 78%, 0.15);
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover { background: hsla(219, 29%, 78%, 0.25); }
+  </style>
 </head>
 <body>
 
 <h1>GraphQL over Server-Sent Events testing (Single Connection)</h1>
-<a style="display:block" href="{% url 'sse_testing_dc' %}">Distinct Connections</a>
 <textarea id="log" cols="120" rows="50"></textarea>
 <br>
 <button id="force-login">Force Login (admin)</button>
@@ -19,7 +42,7 @@
 <button id="cancel-subscription-2">Cancel Subscription [2]</button>
 <button id="close-event-source">Close Source</button>
 <button id="clear">Clear</button>
-{% csrf_token %}
+<a style="margin-top: 1rem" href="{% url 'sse_testing_dc' %}">Test Distinct Connections mode</a>
 
 <script>
   /** @type {EventSource} */
