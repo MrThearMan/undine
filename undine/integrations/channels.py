@@ -21,6 +21,8 @@ from channels.layers import get_channel_layer
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from channels.utils import await_many_dispatch
+from django.conf import settings as django_settings
+from django.core.cache import caches
 from django.core.handlers.asgi import ASGIRequest
 from django.http import HttpResponse
 from django.urls import re_path
@@ -333,6 +335,32 @@ class SSEConsumerSessionMixin:
                 self.delete_from_session(key=key)
 
 
+class SSEConsumerCacheMixin:
+    """Bundles cache helpers for consumers."""
+
+    CLAIM_TIMEOUT: int = 30
+
+    @cached_property
+    def _sse_cache(self) -> Any:
+        return caches[django_settings.SESSION_CACHE_ALIAS]
+
+    async def claim_stream(self, *, stream_token: str) -> bool:
+        cache_key = get_sse_stream_claim_key(stream_token)
+        return await self._sse_cache.aadd(cache_key, "1", timeout=self.CLAIM_TIMEOUT)
+
+    async def release_stream_claim(self, *, stream_token: str) -> None:
+        cache_key = get_sse_stream_claim_key(stream_token)
+        await self._sse_cache.adelete(cache_key)
+
+    async def claim_operation(self, *, stream_token: str, operation_id: str) -> bool:
+        cache_key = get_sse_operation_claim_key(stream_token, operation_id)
+        return await self._sse_cache.aadd(cache_key, "1", timeout=self.CLAIM_TIMEOUT)
+
+    async def release_operation_claim(self, *, stream_token: str, operation_id: str) -> None:
+        cache_key = get_sse_operation_claim_key(stream_token, operation_id)
+        await self._sse_cache.adelete(cache_key)
+
+
 class SSEConsumerChannelLayerMixin:
     """Bundles channel layer helpers for consumers."""
 
@@ -403,6 +431,7 @@ class GraphQLSSESingleConnectionConsumer(
     ABC,
     SSEConsumerChannelLayerMixin,
     SSEConsumerSessionMixin,
+    SSEConsumerCacheMixin,
     SSEConsumerSendingMixin,
     AsyncConsumer,
 ):
@@ -564,11 +593,18 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
         if session_stream_state == SSEState.OPENED:
             raise GraphQLSSEStreamAlreadyOpenError
 
+        stream_claimed = await self.claim_stream(stream_token=stream_token)
+        if not stream_claimed:
+            raise GraphQLSSEStreamAlreadyOpenError
+
         await self.register_stream(stream_token=stream_token)
         await self.signal_stream_opened(stream_token=stream_token)
 
         self.set_session_stream_state(state=SSEState.OPENED)
         await self.save_session()
+
+        # Now we can rely on the session state, so release the claim.
+        await self.release_stream_claim(stream_token=stream_token)
 
         headers: dict[str, str] = {
             "Connection": "keep-alive",
@@ -702,12 +738,19 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         if self.has_session_operation(operation_id=operation_id):
             raise GraphQLSSEOperationAlreadyExistsError
 
+        operation_claimed = await self.claim_operation(stream_token=stream_token, operation_id=operation_id)
+        if not operation_claimed:
+            raise GraphQLSSEOperationAlreadyExistsError
+
         # Save the operation to the session now so that duplicate requests
         # with the same operation ID are rejected immediately.
         # Rolled back in `execute_on_stream_open` if the stream open times out
         # or the operation is canceled.
         self.set_session_operation(operation_id=operation_id)
         await self.save_session()
+
+        # Now we can rely on the session state, so release the claim.
+        await self.release_operation_claim(stream_token=stream_token, operation_id=operation_id)
 
         # Register operation before creating the task so cancel signals
         # can reach the consumer while waiting for the stream to open.
@@ -935,3 +978,11 @@ def get_sse_stream_state_key() -> str:
 
 def get_sse_operation_key(*, operation_id: str) -> str:
     return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|operation|{operation_id}"
+
+
+def get_sse_stream_claim_key(stream_token: str) -> str:
+    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|stream-claim|{stream_token}"
+
+
+def get_sse_operation_claim_key(stream_token: str, operation_id: str) -> str:
+    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|operation-claim|{stream_token}|{operation_id}"
