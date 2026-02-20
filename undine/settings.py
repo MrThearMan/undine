@@ -218,6 +218,9 @@ class UndineDefaultSettings(NamedTuple):
     SSE_KEEP_ALIVE_INTERVAL: int = 12
     """Interval in seconds for SSE keep-alive pings. Set to 0 to disable."""
 
+    SSE_OPERATION_STREAM_OPEN_TIMEOUT: int = 30
+    """Timeout in seconds for an operation to wait for the event stream to open."""
+
     USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
     """
     Whether to allow SSE distinct connections mode over HTTP/1.1.

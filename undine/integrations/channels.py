@@ -46,7 +46,13 @@ from undine.http.utils import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import SSEOperationCancelEvent, SSEOperationResultEvent, SSEState, SSEStreamCloseEvent
+from undine.typing import (
+    SSEOperationCancelEvent,
+    SSEOperationResultEvent,
+    SSEState,
+    SSEStreamCloseEvent,
+    SSEStreamOpenedEvent,
+)
 from undine.utils.graphql.server_sent_events import SSERequest, execute_graphql_sse_sc
 from undine.utils.graphql.utils import get_error_execution_result
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler
@@ -335,6 +341,11 @@ class SSEConsumerChannelLayerMixin:
 
     # Sending
 
+    async def signal_stream_opened(self, *, stream_token: str) -> None:
+        stream_open_group_name = get_stream_open_group_name(stream_token)
+        event = SSEStreamOpenedEvent(type="sse.stream.opened")
+        await self.channel_layer.group_send(group=stream_open_group_name, message=event)
+
     async def signal_close_stream(self, *, stream_token: str) -> None:
         stream_group_name = get_stream_group_name(stream_token)
         event = SSEStreamCloseEvent(type="sse.stream.close")
@@ -361,6 +372,10 @@ class SSEConsumerChannelLayerMixin:
         stream_group_name = get_stream_group_name(stream_token)
         await self.channel_layer.group_add(group=stream_group_name, channel=self.channel_name)
 
+    async def register_stream_open_waiter(self, *, stream_token: str) -> None:
+        stream_open_group_name = get_stream_open_group_name(stream_token)
+        await self.channel_layer.group_add(group=stream_open_group_name, channel=self.channel_name)
+
     async def register_operation(self, *, stream_token: str, operation_id: str) -> None:
         operation_group_name = get_operation_group_name(stream_token, operation_id)
         all_operations_group_name = get_all_operations_group_name(stream_token)
@@ -372,6 +387,10 @@ class SSEConsumerChannelLayerMixin:
     async def unregister_stream(self, *, stream_token: str) -> None:
         stream_group_name = get_stream_group_name(stream_token)
         await self.channel_layer.group_discard(group=stream_group_name, channel=self.channel_name)
+
+    async def unregister_stream_open_waiter(self, *, stream_token: str) -> None:
+        stream_open_group_name = get_stream_open_group_name(stream_token)
+        await self.channel_layer.group_discard(group=stream_open_group_name, channel=self.channel_name)
 
     async def unregister_operation(self, *, stream_token: str, operation_id: str) -> None:
         operation_group_name = get_operation_group_name(stream_token, operation_id)
@@ -480,8 +499,9 @@ class SSEStreamReservationConsumer(GraphQLSSESingleConnectionConsumer):
         session_stream_token = self.get_session_stream_token()
         session_stream_state = self.get_session_stream_state()
 
-        if session_stream_token is not None and session_stream_state == SSEState.OPENED:
-            await self.signal_close_stream(stream_token=session_stream_token)
+        if session_stream_token is not None:
+            if session_stream_state == SSEState.OPENED:
+                await self.signal_close_stream(stream_token=session_stream_token)
             await self.delete_session_all_operations()
 
         stream_token = uuid.uuid4().hex
@@ -544,10 +564,11 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
         if session_stream_state == SSEState.OPENED:
             raise GraphQLSSEStreamAlreadyOpenError
 
+        await self.register_stream(stream_token=stream_token)
+        await self.signal_stream_opened(stream_token=stream_token)
+
         self.set_session_stream_state(state=SSEState.OPENED)
         await self.save_session()
-
-        await self.register_stream(stream_token=stream_token)
 
         headers: dict[str, str] = {
             "Connection": "keep-alive",
@@ -565,7 +586,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
     async def disconnect(self) -> None:
         stream_token = get_graphql_event_stream_token(self.request)
         if not stream_token:
-            raise GraphQLSSEStreamTokenMissingError
+            return
 
         await self.signal_cancel_all_operations(stream_token=stream_token)
         await self.unregister_stream(stream_token=stream_token)
@@ -604,6 +625,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.operation: asyncio.Task | None = None
+        self._stream_opened: asyncio.Event = asyncio.Event()
 
     async def dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
         """
@@ -658,16 +680,18 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
+        # Always join the stream-open group before checking state from the
+        # session. This avoids a race where the stream opens between reading
+        # state and joining the group (which would silently drop the notification).
+        await self.register_stream_open_waiter(stream_token=stream_token)
+
         await self.refresh_session()
 
-        session_stream_token = self.get_session_stream_token()
-        session_stream_state = self.get_session_stream_state()
-
-        if session_stream_token != stream_token:
+        if self.get_session_stream_token() != stream_token:
             raise GraphQLSSEStreamNotFoundError
 
-        if session_stream_state != SSEState.OPENED:
-            raise GraphQLSSEStreamNotOpenError
+        if self.get_session_stream_state() == SSEState.OPENED:
+            self._stream_opened.set()
 
         params = GraphQLRequestParamsParser.run(self.request)
 
@@ -678,18 +702,25 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         if self.has_session_operation(operation_id=operation_id):
             raise GraphQLSSEOperationAlreadyExistsError
 
+        # Save the operation to the session now so that duplicate requests
+        # with the same operation ID are rejected immediately.
+        # Rolled back in `execute_on_stream_open` if the stream open times out
+        # or the operation is canceled.
         self.set_session_operation(operation_id=operation_id)
         await self.save_session()
 
-        response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.ACCEPTED)
-        await self.send_http_response(response=response)
-
+        # Register operation before creating the task so cancel signals
+        # can reach the consumer while waiting for the stream to open.
         await self.register_operation(stream_token=stream_token, operation_id=operation_id)
 
-        self.operation = asyncio.create_task(self.execute(stream_token, operation_id, params))
+        self.operation = asyncio.create_task(self.execute_on_stream_open(stream_token, operation_id, params))
         raise ContinueConsumer
 
     async def disconnect(self) -> None:
+        stream_token = get_graphql_event_stream_token(self.request)
+        if stream_token:
+            await self.unregister_stream_open_waiter(stream_token=stream_token)
+
         if self.operation is not None and not self.operation.done():
             self.operation.cancel()
             with suppress(BaseException):
@@ -697,22 +728,36 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
 
     # Helpers
 
-    async def execute(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
-        completed: bool = False
+    async def execute_on_stream_open(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
+        """Wait for the stream to open, then execute the operation."""
         try:
-            async for event in execute_graphql_sse_sc(operation_id, params, self.request):
-                completed = completed or event.event == "complete"
-                await self.signal_operation_event(stream_token=stream_token, event=event.encode())
+            try:
+                timeout = undine_settings.SSE_OPERATION_STREAM_OPEN_TIMEOUT
+                await asyncio.wait_for(self._stream_opened.wait(), timeout=timeout)
 
-        except asyncio.CancelledError:
-            if not completed:
-                event = CompletedEventSC(operation_id=operation_id)
-                await self.signal_operation_event(stream_token=stream_token, event=event.encode())
+            except TimeoutError:
+                await self.send_graphql_error_response(error=GraphQLSSEStreamNotOpenError())
+                return
+
+            # Now we know the stream is open for sure, we can accept the operation.
+            response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.ACCEPTED)
+            await self.send_http_response(response=response)
+
+            completed: bool = False
+            try:
+                async for event in execute_graphql_sse_sc(operation_id, params, self.request):
+                    completed = completed or event.event == "complete"
+                    await self.signal_operation_event(stream_token=stream_token, event=event.encode())
+
+            except asyncio.CancelledError:
+                if not completed:
+                    event = CompletedEventSC(operation_id=operation_id)
+                    await self.signal_operation_event(stream_token=stream_token, event=event.encode())
 
         finally:
             await self.unregister_operation(stream_token=stream_token, operation_id=operation_id)
 
-            # Double check that this stream is still open.
+            # Double check that this stream is still the current stream.
             # If it is, we can delete the operation from the session safely.
             await self.refresh_session()
             session_stream_token = self.get_session_stream_token()
@@ -721,6 +766,10 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
                 await self.save_session()
 
     # Consumer group methods
+
+    async def sse_stream_opened(self, event: SSEStreamOpenedEvent) -> None:
+        """Called when the event stream has been opened."""
+        self._stream_opened.set()
 
     async def sse_operation_cancel(self, event: SSEOperationCancelEvent) -> None:
         """Called in an operation consumer to cancel its operation."""
@@ -746,13 +795,9 @@ class SSEOperationCancellationConsumer(GraphQLSSESingleConnectionConsumer):
         await self.refresh_session()
 
         session_stream_token = self.get_session_stream_token()
-        session_stream_state = self.get_session_stream_state()
 
         if session_stream_token != stream_token:
             raise GraphQLSSEStreamNotFoundError
-
-        if session_stream_state != SSEState.OPENED:
-            raise GraphQLSSEStreamNotOpenError
 
         await self.signal_cancel_operation(stream_token=stream_token, operation_id=operation_id)
 
@@ -864,6 +909,10 @@ class GraphQLSSEOperationRouter:
 
 def get_stream_group_name(stream_token: str) -> str:
     return f"graphql.sse.stream.{stream_token}"
+
+
+def get_stream_open_group_name(stream_token: str) -> str:
+    return f"graphql.sse.stream.open.{stream_token}"
 
 
 def get_all_operations_group_name(stream_token: str) -> str:
