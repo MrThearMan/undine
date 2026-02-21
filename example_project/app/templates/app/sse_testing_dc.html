@@ -68,8 +68,20 @@
       document.querySelector("#log").value += ("Opened " + label + "\n");
     });
 
-    source.addEventListener("error", (e) => {
+    source.addEventListener("error", async (e) => {
       console.error("EventSource error", e);
+      if (source.readyState === EventSource.CLOSED) {
+        try {
+          const resp = await fetch(url, { headers: { "Accept": "text/event-stream" } });
+          if (!resp.ok) {
+            const text = await resp.text();
+            document.querySelector("#log").value += (
+              "Error " + label + ": " + resp.status + " " + resp.statusText + " — " + text + "\n"
+            );
+            return;
+          }
+        } catch (_) {}
+      }
       document.querySelector("#log").value += ("Error " + label + "\n");
     });
 
