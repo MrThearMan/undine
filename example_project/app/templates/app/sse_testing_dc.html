@@ -33,13 +33,15 @@
 <h1>GraphQL over Server-Sent Events testing (Distinct Connections)</h1>
 <textarea id="log" cols="120" rows="50"></textarea>
 <br>
-<button id="send-subscribe">Subscribe</button>
-<button id="close-event-source">Close Source</button>
+<button id="send-subscribe-1">Subscribe [1]</button>
+<button id="close-event-source-1">Close Source [1]</button>
+<button id="send-subscribe-2">Subscribe [2]</button>
+<button id="close-event-source-2">Close Source [2]</button>
 <button id="clear">Clear</button>
 <a style="margin-top: 1rem" href="{% url 'sse_testing_sc' %}">Test Single Connection mode</a>
 
 <script>
-  function createEventSource() {
+  function createEventSource(label) {
     const currentURL = new URL(window.location.href)
 
     currentURL.pathname = "/graphql/async/";
@@ -52,57 +54,78 @@
 
     source.addEventListener("next", (e) => {
       console.log("Received next message", e);
-      document.querySelector("#log").value += ("Received: " + e.data + "\n");
+      document.querySelector("#log").value += ("Received " + label + ": " + e.data + "\n");
     });
 
     source.addEventListener("complete", (e) => {
       console.log("Received completed message", e);
-      document.querySelector("#log").value += ("Completed\n");
+      document.querySelector("#log").value += ("Completed " + label + "\n");
       source.close();
     });
 
     source.addEventListener("open", (e) => {
       console.log("EventSource open", e);
-      document.querySelector("#log").value += ("Opened\n");
+      document.querySelector("#log").value += ("Opened " + label + "\n");
     });
 
     source.addEventListener("error", (e) => {
       console.error("EventSource error", e);
-      document.querySelector("#log").value += ("Error\n");
+      document.querySelector("#log").value += ("Error " + label + "\n");
     });
 
     return source;
   }
 
   /** @type {EventSource} */
-  let eventSource;
+  let eventSource1;
+  /** @type {EventSource} */
+  let eventSource2;
 
   window.addEventListener("beforeunload", (e) => {
     console.log("Closing before unload", e);
-    if (eventSource !== undefined) {
-      eventSource.close();
+    if (eventSource1 !== undefined) {
+      eventSource1.close();
+    }
+    if (eventSource2 !== undefined) {
+      eventSource2.close();
     }
   });
 
-  document.querySelector("#send-subscribe").onclick = async (e) => {
-    if (eventSource === undefined || eventSource.readyState === EventSource.CLOSED) {
-      eventSource = createEventSource();
-    } else {
-      const state = eventSource.readyState === EventSource.CONNECTING ? "still connecting" : "connection open";
-      console.log("Cannot create new source:", state);
-      document.querySelector("#log").value += ("Cannot create new source: " + state + "\n");
+  function tryCreateSource(label, current) {
+    if (current === undefined || current.readyState === EventSource.CLOSED) {
+      return createEventSource(label);
     }
-  };
+    const state = current.readyState === EventSource.CONNECTING ? "still connecting" : "connection open";
+    console.log("Cannot create new source " + label + ":", state);
+    document.querySelector("#log").value += ("Cannot create new source " + label + ": " + state + "\n");
+    return current;
+  }
 
-  document.querySelector("#close-event-source").onclick = (e) => {
-    if (eventSource === undefined || eventSource.readyState === EventSource.CLOSED) {
-      console.log("Source already closed");
-      document.querySelector("#log").value += ("Source already closed\n");
+  function tryCloseSource(label, current) {
+    if (current === undefined || current.readyState === EventSource.CLOSED) {
+      console.log("Source " + label + " already closed");
+      document.querySelector("#log").value += ("Source " + label + " already closed\n");
       return;
     }
-    console.log("Closed manually");
-    document.querySelector("#log").value += ("Closed manually\n");
-    eventSource.close();
+    console.log("Closed " + label + " manually");
+    document.querySelector("#log").value += ("Closed " + label + " manually\n");
+    current.close();
+  }
+
+  document.querySelector("#send-subscribe-1").onclick = async (e) => {
+    eventSource1 = tryCreateSource("[1]", eventSource1);
+  };
+
+  document.querySelector("#close-event-source-1").onclick = (e) => {
+    tryCloseSource("[1]", eventSource1);
+  };
+
+  document.querySelector("#send-subscribe-2").onclick = async (e) => {
+    eventSource2 = tryCreateSource("[2]", eventSource2);
+  };
+
+  document.querySelector("#close-event-source-2").onclick = (e) => {
+    tryCloseSource("[2]", eventSource2);
   };
 
   document.querySelector("#clear").onclick = (e) => {
