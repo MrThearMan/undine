@@ -16,7 +16,7 @@ from undine.http.utils import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.utils.graphql.server_sent_events import execute_graphql_sse_dc, result_to_sse_dc
+from undine.utils.graphql.server_sent_events import execute_graphql_sse_dc, result_to_sse_dc, with_keep_alive_dc
 from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
         else:
             event_stream = execute_graphql_sse_dc(params=params, request=request)
 
-        stream: AsyncIterable[str] = (event.encode() async for event in event_stream)
+        stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
         return StreamingHttpResponse(stream, content_type=request.response_content_type)
 
     try:

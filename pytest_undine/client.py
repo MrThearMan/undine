@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
 from graphql import FormattedExecutionResult
 
-from undine.dataclasses import CompletedEventDC, NextEventDC
+from undine.dataclasses import CompletedEventDC, KeepAliveSignalDC, NextEventDC
 from undine.http.files import extract_files
 from undine.persisted_documents.utils import to_document_id
 from undine.settings import undine_settings
@@ -234,8 +234,8 @@ class SSEMixin:
                     msg = "Stream ended without complete event"
                     raise RuntimeError(msg) from error
 
-            event: NextEventDC | CompletedEventDC | None = None
-            for decode in [_decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
+            event: NextEventDC | CompletedEventDC | KeepAliveSignalDC | None = None
+            for decode in [_decode_sse_keep_alive_dc, _decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
                 with suppress(Exception):
                     event = decode(event_data)
                     break
@@ -243,6 +243,9 @@ class SSEMixin:
             if event is None:
                 msg = "Unknown event type"
                 raise RuntimeError(msg)
+
+            if isinstance(event, KeepAliveSignalDC):
+                continue
 
             if isinstance(event, CompletedEventDC):
                 break
@@ -633,6 +636,17 @@ def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -
         "map": json.dumps(path_map),
         **files_map,
     }
+
+
+def _decode_sse_keep_alive_dc(event_data: bytes | str) -> KeepAliveSignalDC:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    if event_data.strip() == ":":
+        return KeepAliveSignalDC()
+
+    msg = "Not a keep-alive signal"
+    raise ValueError(msg)
 
 
 def _decode_sse_next_event_dc(event_data: bytes | str) -> NextEventDC:
