@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import functools
 import hashlib
 import io
 import json
-import uuid
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from functools import cached_property
@@ -21,22 +21,16 @@ from channels.layers import get_channel_layer
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from channels.utils import await_many_dispatch
-from django.conf import settings as django_settings
-from django.core.cache import caches
 from django.core.handlers.asgi import ASGIRequest
 from django.http import HttpResponse
 from django.urls import re_path
 from graphql import GraphQLError
 
-from undine.dataclasses import CompletedEventSC
 from undine.exceptions import (
     ContinueConsumer,
     GraphQLErrorGroup,
-    GraphQLSSEOperationAlreadyExistsError,
     GraphQLSSEOperationIdMissingError,
     GraphQLSSESingleConnectionNotAuthenticatedError,
-    GraphQLSSEStreamAlreadyOpenError,
-    GraphQLSSEStreamNotFoundError,
     GraphQLSSEStreamNotOpenError,
     GraphQLSSEStreamTokenMissingError,
     GraphQLUnexpectedError,
@@ -48,14 +42,8 @@ from undine.http.utils import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import (
-    SSEOperationCancelEvent,
-    SSEOperationResultEvent,
-    SSEState,
-    SSEStreamCloseEvent,
-    SSEStreamOpenEvent,
-)
-from undine.utils.graphql.server_sent_events import SSERequest, execute_graphql_sse_sc
+from undine.typing import SSEOperationCancelEvent, SSEOperationResultEvent, SSEStreamCloseEvent, SSEStreamOpenEvent
+from undine.utils.graphql.server_sent_events import GraphQLOverSSESCHandler, SSEClaimStore, SSERequest, SSESessionStore
 from undine.utils.graphql.utils import get_error_execution_result
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler
 
@@ -181,248 +169,94 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
         raise StopConsumer
 
 
-# SSE (consumers)
+# SSE (signaler)
 
 
-class SSEConsumerSendingMixin:
-    """Bundles sending helpers for consumers."""
-
-    send: ASGISendCallable
-
-    async def send_http_response(self, *, response: HttpResponse) -> None:
-        await self.send_headers(status=HTTPStatus(response.status_code), headers=dict(response.headers))
-        await self.send_body(body=response.content.decode("utf-8"))
-
-    async def send_graphql_error_response(self, *, error: GraphQLError | GraphQLErrorGroup) -> None:
-        result = get_error_execution_result(error)
-        status = HTTPStatus.INTERNAL_SERVER_ERROR
-        if isinstance(error, GraphQLError) and error.extensions:
-            status = error.extensions.get("status_code", status)
-
-        await self.send_headers(status=status, headers={"Content-Type": "application/json; charset=utf-8"})
-        await self.send_body(body=json.dumps(result.formatted, separators=(",", ":")))
-
-    async def send_headers(self, *, status: HTTPStatus, headers: dict[str, Any] | None = None) -> None:
-        headers = {key.title(): value for key, value in (headers or {}).items()}
-        headers_array = [(bytes(key, "ascii"), bytes(value, "latin1")) for key, value in headers.items()]
-
-        await self.send(
-            HTTPResponseStartEvent(
-                type="http.response.start",
-                status=status,
-                headers=headers_array,
-                trailers=False,
-            ),
-        )
-
-    async def send_body(self, *, body: str, more_body: bool = False) -> None:
-        await self.send(
-            HTTPResponseBodyEvent(
-                type="http.response.body",
-                body=body.encode("utf-8"),
-                more_body=more_body,
-            ),
-        )
-
-
-class SSEConsumerSessionMixin:
-    """Bundles session helpers for consumers."""
-
-    request: DjangoRequestProtocol
-
-    # Low level interface
-
-    async def refresh_session(self) -> None:
-        """Force load of the session data form the session store and cache it."""
-        with suppress(AttributeError):
-            del self.request.session._session_cache  # noqa: SLF001
-        await self.request.session._aget_session()  # noqa: SLF001
-
-    async def save_session(self) -> None:
-        """Save the session data to the session store."""
-        await self.request.session.asave()
-
-    def _set_in_session(self, *, key: str, value: str) -> None:
-        """Set a value in the session data. Must call `refresh_session` before using."""
-        self.request.session[key] = value
-
-    def _get_from_session(self, *, key: str) -> str | None:
-        """Get a value from the session data. Must call `refresh_session` before using."""
-        return self.request.session.get(key)
-
-    def _delete_from_session(self, *, key: str) -> None:
-        """Delete a value from the session data. Must call `refresh_session` before using."""
-        self.request.session.pop(key, None)
-
-    def _is_in_session(self, *, key: str) -> bool:
-        """Check if a value is in the session data. Must call `refresh_session` before using."""
-        return key in self.request.session
-
-    # Stream token
-
-    def session_get_stream_token(self) -> str | None:
-        stream_token_key = get_sse_stream_token_key()
-        return self._get_from_session(key=stream_token_key)
-
-    def session_set_stream_token(self, *, stream_token: str) -> None:
-        stream_token_key = get_sse_stream_token_key()
-        self._set_in_session(key=stream_token_key, value=stream_token)
-
-    def session_delete_stream_token(self) -> None:
-        stream_token_key = get_sse_stream_token_key()
-        self._delete_from_session(key=stream_token_key)
-
-    def session_has_stream_token(self) -> bool:
-        stream_token_key = get_sse_stream_token_key()
-        return self._is_in_session(key=stream_token_key)
-
-    # Stream state
-
-    def session_get_stream_state(self) -> SSEState | None:
-        stream_state_key = get_sse_stream_state_key()
-        return self._get_from_session(key=stream_state_key)
-
-    def session_set_stream_state(self, *, state: SSEState) -> None:
-        stream_state_key = get_sse_stream_state_key()
-        self._set_in_session(key=stream_state_key, value=state.value)
-
-    def session_delete_stream_state(self) -> None:
-        stream_state_key = get_sse_stream_state_key()
-        self._delete_from_session(key=stream_state_key)
-
-    def session_has_stream_state(self) -> bool:
-        stream_state_key = get_sse_stream_state_key()
-        return self._is_in_session(key=stream_state_key)
-
-    # Operation
-
-    def session_get_operation(self, *, operation_id: str) -> str | None:
-        operation_key = get_sse_operation_key(operation_id=operation_id)
-        return self._get_from_session(key=operation_key)
-
-    def session_set_operation(self, *, operation_id: str) -> None:
-        operation_key = get_sse_operation_key(operation_id=operation_id)
-        self._set_in_session(key=operation_key, value=operation_id)
-
-    def session_delete_operation(self, *, operation_id: str) -> None:
-        operation_key = get_sse_operation_key(operation_id=operation_id)
-        self._delete_from_session(key=operation_key)
-
-    def session_has_operation(self, *, operation_id: str) -> bool:
-        operation_key = get_sse_operation_key(operation_id=operation_id)
-        return self._is_in_session(key=operation_key)
-
-    def session_delete_all_operations(self) -> None:
-        operation_prefix = get_sse_operation_key(operation_id="")
-        for key in list(self.request.session.keys()):
-            if key.startswith(operation_prefix):
-                self._delete_from_session(key=key)
-
-
-class SSEConsumerCacheMixin:
-    """Bundles cache helpers for consumers."""
-
-    CLAIM_TIMEOUT: int = 30
-
-    @cached_property
-    def _sse_cache(self) -> Any:
-        return caches[django_settings.SESSION_CACHE_ALIAS]
-
-    async def claim_stream(self, *, stream_token: str) -> bool:
-        cache_key = get_sse_stream_claim_key(stream_token)
-        return await self._sse_cache.aadd(cache_key, "1", timeout=self.CLAIM_TIMEOUT)
-
-    async def release_stream_claim(self, *, stream_token: str) -> None:
-        cache_key = get_sse_stream_claim_key(stream_token)
-        await self._sse_cache.adelete(cache_key)
-
-    async def claim_operation(self, *, stream_token: str, operation_id: str) -> bool:
-        cache_key = get_sse_operation_claim_key(stream_token, operation_id)
-        return await self._sse_cache.aadd(cache_key, "1", timeout=self.CLAIM_TIMEOUT)
-
-    async def release_operation_claim(self, *, stream_token: str, operation_id: str) -> None:
-        cache_key = get_sse_operation_claim_key(stream_token, operation_id)
-        await self._sse_cache.adelete(cache_key)
-
-
-class SSEConsumerChannelLayerMixin:
-    """Bundles channel layer helpers for consumers."""
+@dataclasses.dataclass(slots=True, kw_only=True)
+class ChannelLayerSSESignaler:
+    """Implements `SSESignaler` using Django Channels' channel layer."""
 
     channel_layer: BaseChannelLayer
     channel_name: str
 
+    def get_stream_group_name(self, stream_token: str) -> str:
+        return f"graphql.sse.stream.{stream_token}"
+
+    def get_stream_open_group_name(self, stream_token: str) -> str:
+        return f"graphql.sse.stream.open.{stream_token}"
+
+    def get_all_operations_group_name(self, stream_token: str) -> str:
+        return f"graphql.sse.ops.{stream_token}"
+
+    def get_operation_group_name(self, stream_token: str, operation_id: str) -> str:
+        op_hash = hashlib.md5(operation_id.encode(), usedforsecurity=False).hexdigest()
+        return f"graphql.sse.op.{stream_token}.{op_hash}"
+
     # Sending
 
-    async def signal_stream_open(self, *, stream_token: str) -> None:
-        stream_open_group_name = get_stream_open_group_name(stream_token)
-        event = SSEStreamOpenEvent(type="sse.stream.open")
-        await self.channel_layer.group_send(group=stream_open_group_name, message=event)
+    async def signal_stream_open(self, stream_token: str) -> None:
+        group = self.get_stream_open_group_name(stream_token)
+        message = SSEStreamOpenEvent(type="sse.stream.open")
+        await self.channel_layer.group_send(group=group, message=message)
 
-    async def signal_stream_close(self, *, stream_token: str) -> None:
-        stream_group_name = get_stream_group_name(stream_token)
-        event = SSEStreamCloseEvent(type="sse.stream.close")
-        await self.channel_layer.group_send(group=stream_group_name, message=event)
+    async def signal_stream_close(self, stream_token: str) -> None:
+        group = self.get_stream_group_name(stream_token)
+        message = SSEStreamCloseEvent(type="sse.stream.close")
+        await self.channel_layer.group_send(group=group, message=message)
 
-    async def signal_operation_event(self, *, stream_token: str, event: str) -> None:
-        stream_group_name = get_stream_group_name(stream_token)
+    async def signal_operation_event(self, stream_token: str, event: str) -> None:
+        group = self.get_stream_group_name(stream_token)
         message = SSEOperationResultEvent(type="sse.operation.event", event=event)
-        await self.channel_layer.group_send(group=stream_group_name, message=message)
+        await self.channel_layer.group_send(group=group, message=message)
 
-    async def signal_operation_cancel(self, *, stream_token: str, operation_id: str) -> None:
-        operation_group_name = get_operation_group_name(stream_token, operation_id)
-        event = SSEOperationCancelEvent(type="sse.operation.cancel")
-        await self.channel_layer.group_send(group=operation_group_name, message=event)
+    async def signal_operation_cancel(self, stream_token: str, operation_id: str) -> None:
+        group = self.get_operation_group_name(stream_token, operation_id)
+        message = SSEOperationCancelEvent(type="sse.operation.cancel")
+        await self.channel_layer.group_send(group=group, message=message)
 
-    async def signal_operation_cancel_all(self, *, stream_token: str) -> None:
-        all_operations_group_name = get_all_operations_group_name(stream_token)
-        event = SSEOperationCancelEvent(type="sse.operation.cancel")
-        await self.channel_layer.group_send(group=all_operations_group_name, message=event)
+    async def signal_operation_cancel_all(self, stream_token: str) -> None:
+        group = self.get_all_operations_group_name(stream_token)
+        message = SSEOperationCancelEvent(type="sse.operation.cancel")
+        await self.channel_layer.group_send(group=group, message=message)
 
     # Join groups
 
-    async def register_stream(self, *, stream_token: str) -> None:
-        stream_group_name = get_stream_group_name(stream_token)
-        await self.channel_layer.group_add(group=stream_group_name, channel=self.channel_name)
+    async def register_stream(self, stream_token: str) -> None:
+        group = self.get_stream_group_name(stream_token)
+        await self.channel_layer.group_add(group=group, channel=self.channel_name)
 
-    async def register_stream_open(self, *, stream_token: str) -> None:
-        stream_open_group_name = get_stream_open_group_name(stream_token)
-        await self.channel_layer.group_add(group=stream_open_group_name, channel=self.channel_name)
+    async def register_stream_open(self, stream_token: str) -> None:
+        group = self.get_stream_open_group_name(stream_token)
+        await self.channel_layer.group_add(group=group, channel=self.channel_name)
 
-    async def register_operation(self, *, stream_token: str, operation_id: str) -> None:
-        operation_group_name = get_operation_group_name(stream_token, operation_id)
-        all_operations_group_name = get_all_operations_group_name(stream_token)
-        await self.channel_layer.group_add(group=operation_group_name, channel=self.channel_name)
-        await self.channel_layer.group_add(group=all_operations_group_name, channel=self.channel_name)
+    async def register_operation(self, stream_token: str, operation_id: str) -> None:
+        operation_group = self.get_operation_group_name(stream_token, operation_id)
+        all_operations_group = self.get_all_operations_group_name(stream_token)
+        await self.channel_layer.group_add(group=operation_group, channel=self.channel_name)
+        await self.channel_layer.group_add(group=all_operations_group, channel=self.channel_name)
 
     # Leave groups
 
-    async def unregister_stream(self, *, stream_token: str) -> None:
-        stream_group_name = get_stream_group_name(stream_token)
-        await self.channel_layer.group_discard(group=stream_group_name, channel=self.channel_name)
+    async def unregister_stream(self, stream_token: str) -> None:
+        group = self.get_stream_group_name(stream_token)
+        await self.channel_layer.group_discard(group=group, channel=self.channel_name)
 
-    async def unregister_stream_open(self, *, stream_token: str) -> None:
-        stream_open_group_name = get_stream_open_group_name(stream_token)
-        await self.channel_layer.group_discard(group=stream_open_group_name, channel=self.channel_name)
+    async def unregister_stream_open(self, stream_token: str) -> None:
+        group = self.get_stream_open_group_name(stream_token)
+        await self.channel_layer.group_discard(group=group, channel=self.channel_name)
 
-    async def unregister_operation(self, *, stream_token: str, operation_id: str) -> None:
-        operation_group_name = get_operation_group_name(stream_token, operation_id)
-        all_operations_group_name = get_all_operations_group_name(stream_token)
-        await self.channel_layer.group_discard(group=operation_group_name, channel=self.channel_name)
-        await self.channel_layer.group_discard(group=all_operations_group_name, channel=self.channel_name)
+    async def unregister_operation(self, stream_token: str, operation_id: str) -> None:
+        operation_group = self.get_operation_group_name(stream_token, operation_id)
+        all_operations_group = self.get_all_operations_group_name(stream_token)
+        await self.channel_layer.group_discard(group=operation_group, channel=self.channel_name)
+        await self.channel_layer.group_discard(group=all_operations_group, channel=self.channel_name)
 
 
-class GraphQLSSESingleConnectionConsumer(
-    ABC,
-    SSEConsumerChannelLayerMixin,
-    SSEConsumerSessionMixin,
-    SSEConsumerCacheMixin,
-    SSEConsumerSendingMixin,
-    AsyncConsumer,
-):
-    """
-    A consumer handling the opened event stream for
-    GraphQL over Server-Sent Events in Single Connection mode.
-    """
+# SSE (consumers)
+
+
+class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
+    """Base consumer for GraphQL over Server-Sent Events in Single Connection mode."""
 
     scope: HTTPASGIScope
     base_send: ASGISendCallable
@@ -430,6 +264,7 @@ class GraphQLSSESingleConnectionConsumer(
     channel_layer_alias: str
     channel_name: str
     channel_receive: ASGIReceiveCallable
+    handler: GraphQLOverSSESCHandler
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -447,14 +282,17 @@ class GraphQLSSESingleConnectionConsumer(
         self.channel_name: str = await self.channel_layer.new_channel()
         self.channel_receive: ASGIReceiveCallable = functools.partial(self.channel_layer.receive, self.channel_name)
 
+        self.handler = GraphQLOverSSESCHandler(
+            signaler=ChannelLayerSSESignaler(channel_layer=self.channel_layer, channel_name=self.channel_name),
+            session=SSESessionStore(session=scope["session"]),
+            claims=SSEClaimStore(),
+        )
+
         with suppress(StopConsumer):
             await self.dispatch_loop(receive)
 
     async def dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
         await await_many_dispatch([receive, self.channel_receive], self.dispatch)
-
-    def create_new_stream_token(self) -> str:
-        return uuid.uuid4().hex
 
     @cached_property
     def request(self) -> DjangoRequestProtocol:
@@ -504,6 +342,43 @@ class GraphQLSSESingleConnectionConsumer(
     async def disconnect(self) -> None:
         """Additional logic to run before the consumer is disconnected. Raised exceptions are suppressed."""
 
+    # Sending helpers
+
+    async def send_http_response(self, *, response: HttpResponse) -> None:
+        await self.send_headers(status=HTTPStatus(response.status_code), headers=dict(response.headers))
+        await self.send_body(body=response.content.decode("utf-8"))
+
+    async def send_graphql_error_response(self, *, error: GraphQLError | GraphQLErrorGroup) -> None:
+        result = get_error_execution_result(error)
+        status = HTTPStatus.INTERNAL_SERVER_ERROR
+        if isinstance(error, GraphQLError) and error.extensions:
+            status = error.extensions.get("status_code", status)
+
+        await self.send_headers(status=status, headers={"Content-Type": "application/json; charset=utf-8"})
+        await self.send_body(body=json.dumps(result.formatted, separators=(",", ":")))
+
+    async def send_headers(self, *, status: HTTPStatus, headers: dict[str, Any] | None = None) -> None:
+        headers = {key.title(): value for key, value in (headers or {}).items()}
+        headers_array = [(bytes(key, "ascii"), bytes(value, "latin1")) for key, value in headers.items()]
+
+        await self.send(
+            HTTPResponseStartEvent(
+                type="http.response.start",
+                status=status,
+                headers=headers_array,
+                trailers=False,
+            ),
+        )
+
+    async def send_body(self, *, body: str, more_body: bool = False) -> None:
+        await self.send(
+            HTTPResponseBodyEvent(
+                type="http.response.body",
+                body=body.encode("utf-8"),
+                more_body=more_body,
+            ),
+        )
+
 
 class SSEStreamReservationConsumer(GraphQLSSESingleConnectionConsumer):
     """
@@ -512,21 +387,7 @@ class SSEStreamReservationConsumer(GraphQLSSESingleConnectionConsumer):
     """
 
     async def handle(self) -> None:
-        await self.refresh_session()
-
-        session_stream_token = self.session_get_stream_token()
-        session_stream_state = self.session_get_stream_state()
-
-        if session_stream_token is not None:
-            if session_stream_state == SSEState.OPENED:
-                await self.signal_stream_close(stream_token=session_stream_token)
-            self.session_delete_all_operations()
-
-        stream_token = self.create_new_stream_token()
-
-        self.session_set_stream_token(stream_token=stream_token)
-        self.session_set_stream_state(state=SSEState.REGISTERED)
-        await self.save_session()
+        stream_token = await self.handler.reserve_stream()
 
         response = HttpResponse(
             content=stream_token,
@@ -571,29 +432,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        await self.refresh_session()
-
-        session_stream_token = self.session_get_stream_token()
-        session_stream_state = self.session_get_stream_state()
-
-        if session_stream_token != stream_token:
-            raise GraphQLSSEStreamNotFoundError
-
-        if session_stream_state == SSEState.OPENED:
-            raise GraphQLSSEStreamAlreadyOpenError
-
-        stream_claimed = await self.claim_stream(stream_token=stream_token)
-        if not stream_claimed:
-            raise GraphQLSSEStreamAlreadyOpenError
-
-        await self.register_stream(stream_token=stream_token)
-        await self.signal_stream_open(stream_token=stream_token)
-
-        self.session_set_stream_state(state=SSEState.OPENED)
-        await self.save_session()
-
-        # Now we can rely on the session state, so release the claim.
-        await self.release_stream_claim(stream_token=stream_token)
+        await self.handler.open_event_stream(stream_token)
 
         headers: dict[str, str] = {
             "Connection": "keep-alive",
@@ -613,17 +452,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             return
 
-        await self.signal_operation_cancel_all(stream_token=stream_token)
-        await self.unregister_stream(stream_token=stream_token)
-
-        # Double check if this stream is still the current stream.
-        # If it is, we can delete the stream information from the session safely.
-        await self.refresh_session()
-        session_stream_token = self.session_get_stream_token()
-        if session_stream_token == stream_token:
-            self.session_delete_stream_token()
-            self.session_delete_stream_state()
-            await self.save_session()
+        await self.handler.disconnect_stream(stream_token)
 
         if self._stream_opened:
             await self.send_body(body="", more_body=False)
@@ -697,7 +526,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
             for task in (receive_task, channel_task):
                 if not task.done():
                     task.cancel()
-                    with suppress(BaseException):
+                    with suppress(asyncio.CancelledError):
                         await task
 
     # Implementation
@@ -707,45 +536,15 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        # Always join the stream-open group before checking state from the
-        # session. This avoids a race where the stream opens between reading
-        # state and joining the group (which would silently drop the notification).
-        await self.register_stream_open(stream_token=stream_token)
-
-        await self.refresh_session()
-
-        if self.session_get_stream_token() != stream_token:
-            raise GraphQLSSEStreamNotFoundError
-
-        if self.session_get_stream_state() == SSEState.OPENED:
-            self._stream_opened.set()
-
         params = GraphQLRequestParamsParser.run(self.request)
 
         operation_id = params.extensions.get("operationId")
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 
-        if self.session_has_operation(operation_id=operation_id):
-            raise GraphQLSSEOperationAlreadyExistsError
-
-        operation_claimed = await self.claim_operation(stream_token=stream_token, operation_id=operation_id)
-        if not operation_claimed:
-            raise GraphQLSSEOperationAlreadyExistsError
-
-        # Save the operation to the session now so that duplicate requests
-        # with the same operation ID are rejected immediately.
-        # Rolled back in `execute_on_stream_open` if the stream open times out
-        # or the operation is canceled.
-        self.session_set_operation(operation_id=operation_id)
-        await self.save_session()
-
-        # Now we can rely on the session state, so release the claim.
-        await self.release_operation_claim(stream_token=stream_token, operation_id=operation_id)
-
-        # Register operation before creating the task so cancel signals
-        # can reach the consumer while waiting for the stream to open.
-        await self.register_operation(stream_token=stream_token, operation_id=operation_id)
+        stream_opened = await self.handler.start_operation(stream_token, operation_id)
+        if stream_opened:
+            self._stream_opened.set()
 
         self.operation = asyncio.create_task(self.execute_on_stream_open(stream_token, operation_id, params))
         raise ContinueConsumer
@@ -753,11 +552,11 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
     async def disconnect(self) -> None:
         stream_token = get_graphql_event_stream_token(self.request)
         if stream_token:
-            await self.unregister_stream_open(stream_token=stream_token)
+            await self.handler.disconnect_operation(stream_token)
 
         if self.operation is not None and not self.operation.done():
             self.operation.cancel()
-            with suppress(BaseException):
+            with suppress(asyncio.CancelledError):
                 await self.operation
 
     # Helpers
@@ -773,31 +572,13 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
                 await self.send_graphql_error_response(error=GraphQLSSEStreamNotOpenError())
                 return
 
-            # Now we know the stream is open for sure, we can accept the operation.
             response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.ACCEPTED)
             await self.send_http_response(response=response)
 
-            completed: bool = False
-            try:
-                async for event in execute_graphql_sse_sc(operation_id, params, self.request):
-                    completed = completed or event.event == "complete"
-                    await self.signal_operation_event(stream_token=stream_token, event=event.encode())
-
-            except asyncio.CancelledError:
-                if not completed:
-                    event = CompletedEventSC(operation_id=operation_id)
-                    await self.signal_operation_event(stream_token=stream_token, event=event.encode())
+            await self.handler.execute_operation(stream_token, operation_id, params, self.request)
 
         finally:
-            await self.unregister_operation(stream_token=stream_token, operation_id=operation_id)
-
-            # Double check that this stream is still the current stream.
-            # If it is, we can delete the operation from the session safely.
-            await self.refresh_session()
-            session_stream_token = self.session_get_stream_token()
-            if session_stream_token == stream_token:
-                self.session_delete_operation(operation_id=operation_id)
-                await self.save_session()
+            await self.handler.finalize_operation(stream_token, operation_id)
 
     # Consumer group methods
 
@@ -826,14 +607,7 @@ class SSEOperationCancellationConsumer(GraphQLSSESingleConnectionConsumer):
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 
-        await self.refresh_session()
-
-        session_stream_token = self.session_get_stream_token()
-
-        if session_stream_token != stream_token:
-            raise GraphQLSSEStreamNotFoundError
-
-        await self.signal_operation_cancel(stream_token=stream_token, operation_id=operation_id)
+        await self.handler.cancel_operation(stream_token, operation_id)
 
         response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.OK)
         await self.send_http_response(response=response)
@@ -871,8 +645,6 @@ class GraphQLSSERouter:
                 return self.sse_application(scope, receive, send)
 
         # Everything else uses distinct connections mode via Django.
-        # HTTP/1.1 distinct connections are blocked in the view unless
-        # `USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1` is enabled.
         return self.django_application(scope, receive, send)
 
 
@@ -936,44 +708,3 @@ class GraphQLSSEOperationRouter:
                 more_body=False,
             ),
         )
-
-
-# SSE (utils)
-
-
-def get_stream_group_name(stream_token: str) -> str:
-    return f"graphql.sse.stream.{stream_token}"
-
-
-def get_stream_open_group_name(stream_token: str) -> str:
-    return f"graphql.sse.stream.open.{stream_token}"
-
-
-def get_all_operations_group_name(stream_token: str) -> str:
-    return f"graphql.sse.ops.{stream_token}"
-
-
-def get_operation_group_name(stream_token: str, operation_id: str) -> str:
-    # Hash the operation ID so that it wont break group name rules
-    op_hash = hashlib.md5(operation_id.encode(), usedforsecurity=False).hexdigest()
-    return f"graphql.sse.op.{stream_token}.{op_hash}"
-
-
-def get_sse_stream_token_key() -> str:
-    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|token"
-
-
-def get_sse_stream_state_key() -> str:
-    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|state"
-
-
-def get_sse_operation_key(*, operation_id: str) -> str:
-    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|operation|{operation_id}"
-
-
-def get_sse_stream_claim_key(stream_token: str) -> str:
-    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|stream-claim|{stream_token}"
-
-
-def get_sse_operation_claim_key(stream_token: str, operation_id: str) -> str:
-    return f"{undine_settings.SSE_STREAM_SESSION_PREFIX}|operation-claim|{stream_token}|{operation_id}"

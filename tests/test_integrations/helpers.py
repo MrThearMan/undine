@@ -12,14 +12,10 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
 from graphql import FormattedExecutionResult
 
-from undine.integrations.channels import (
-    GraphQLSSEOperationRouter,
-    GraphQLSSERouter,
-    get_sse_stream_state_key,
-    get_sse_stream_token_key,
-)
+from undine.integrations.channels import GraphQLSSEOperationRouter, GraphQLSSERouter
 from undine.settings import undine_settings
 from undine.typing import RequestMethod, SSEState
+from undine.utils.graphql.server_sent_events import get_sse_stream_state_key, get_sse_stream_token_key
 
 if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
