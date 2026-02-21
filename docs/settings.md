@@ -730,7 +730,7 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 Type: `int` | Default: `12`
 
-Interval in seconds for SSE keep-alive pings sent as SSE comments (`:\n\n`) on the event stream.
+Interval in seconds for SSE keep-alive pings sent on the event stream.
 These pings prevent reverse proxies and load balancers from closing idle connections.
 Set to `0` to disable.
 
@@ -741,19 +741,16 @@ Set to `0` to disable.
 
 Type: `int` | Default: `30`
 
-Timeout in seconds for an operation to wait for the event stream to open.
-When an operation is submitted before the SSE event stream is connected,
-the operation consumer waits for the stream to open before executing.
-If the stream does not open within this timeout, the operation is discarded.
+Timeout in seconds for an operation to wait for the event stream to open (Single Connection mode).
 
 ///
 
-/// details | `SSE_STREAM_SESSION_KEY`
-    attrs: {id: sse_stream_session_key}
+/// details | `SSE_STREAM_SESSION_PREFIX`
+    attrs: {id: sse_stream_session_prefix}
 
 Type: `str` | Default: `"graphql-over-sse-stream"`
 
-Key used to store the GraphQL over SSE stream state in the user's session.
+Key prefix used to store the GraphQL over SSE stream state in the user's session (Single Connection mode).
 
 ///
 
@@ -762,7 +759,7 @@ Key used to store the GraphQL over SSE stream state in the user's session.
 
 Type: `str` | Default: `"X-GraphQL-Event-Stream-Token"`
 
-The name of the HTTP header to use for the GraphQL over SSE event stream token.
+The name of the HTTP header to use for the GraphQL over SSE event stream token (Single Connection mode).
 
 ///
 
@@ -771,7 +768,7 @@ The name of the HTTP header to use for the GraphQL over SSE event stream token.
 
 Type: `str` | Default: `"token"`
 
-The name of the query string parameter to use for the GraphQL over SSE event stream token.
+The name of the query string parameter to use for the GraphQL over SSE event stream token (Single Connection mode).
 
 ///
 
@@ -782,6 +779,16 @@ Type: `bool` | Default: `False`
 
 Whether to include the full stacktrace in testing client instead of just the relevant frames
 when checking where SQL queries are made.
+
+///
+
+/// details | `TESTING_CLIENT_NO_ASYNC_TIMEOUT`
+    attrs: {id: testing_client_no_async_timeout}
+
+Type: `bool` | Default: `False`
+
+Whether to disable the websocket timeouts in testing client.
+Can be useful in debugging.
 
 ///
 

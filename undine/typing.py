@@ -1501,6 +1501,18 @@ class SSEState(StrEnum):
     """The stream is open and in use."""
 
 
+class SSEStreamOpenEvent(TypedDict):
+    """A notification that the stream has been opened."""
+
+    type: Literal["sse.stream.open"]
+
+
+class SSEStreamCloseEvent(TypedDict):
+    """A request to close the stream."""
+
+    type: Literal["sse.stream.close"]
+
+
 class SSEOperationResultEvent(TypedDict):
     """A new result for an operation."""
 
@@ -1512,15 +1524,3 @@ class SSEOperationCancelEvent(TypedDict):
     """A request to cancel an operation."""
 
     type: Literal["sse.operation.cancel"]
-
-
-class SSEStreamCloseEvent(TypedDict):
-    """A request to close the stream."""
-
-    type: Literal["sse.stream.close"]
-
-
-class SSEStreamOpenedEvent(TypedDict):
-    """A notification that the stream has been opened."""
-
-    type: Literal["sse.stream.opened"]

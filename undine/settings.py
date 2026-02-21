@@ -207,25 +207,25 @@ class UndineDefaultSettings(NamedTuple):
     """Whether mutations can be executed over Server-Sent Events."""
 
     SSE_STREAM_SESSION_PREFIX: str = "graphql-over-sse-stream"
-    """Key prefix used to store the GraphQL over SSE stream state in the user's session."""
+    """Key prefix used to store the GraphQL over SSE stream state in the user's session (Single Connection mode)."""
 
     SSE_TOKEN_HEADER_NAME: str = "X-GraphQL-Event-Stream-Token"  # noqa: S105
-    """The name of the HTTP header to use for the GraphQL over SSE event stream token."""
+    """The name of the HTTP header to use for the GraphQL over SSE event stream token (Single Connection mode)."""
 
     SSE_TOKEN_QUERY_PARAM_NAME: str = "token"  # noqa: S105
-    """The name of the query string parameter to use for the GraphQL over SSE event stream token."""
+    """
+    The name of the query string parameter to use for the
+    GraphQL over SSE event stream token (Single Connection mode).
+    """
 
     SSE_KEEP_ALIVE_INTERVAL: int = 12
     """Interval in seconds for SSE keep-alive pings. Set to 0 to disable."""
 
     SSE_OPERATION_STREAM_OPEN_TIMEOUT: int = 30
-    """Timeout in seconds for an operation to wait for the event stream to open."""
+    """Timeout in seconds for an SSE operation to wait for the event stream to open (Single Connection mode)."""
 
     USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
-    """
-    Whether to allow SSE distinct connections mode over HTTP/1.1.
-    Without this, HTTP/1.1 clients can only use single connection mode.
-    """
+    """Whether to allow SSE distinct connections mode over HTTP/1.1. Use only if you know what you're doing."""
 
     # Django-modeltranslation
 
