@@ -82,11 +82,6 @@ if TYPE_CHECKING:
     from http.cookies import SimpleCookie
 
     from asgiref.typing import (
-        HTTPDisconnectEvent,
-        HTTPResponseBodyEvent,
-        HTTPResponseStartEvent,
-        HTTPResponseTrailersEvent,
-        HTTPServerPushEvent,
         WebSocketAcceptEvent,
         WebSocketCloseEvent,
         WebSocketResponseBodyEvent,
@@ -116,7 +111,6 @@ if TYPE_CHECKING:
     from graphql.pyutils import Path
 
     from undine import FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
-    from undine.dataclasses import GraphQLHttpParams
     from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -186,7 +180,6 @@ __all__ = [
     "RootTypeParams",
     "SSEOperationCancelEvent",
     "SSEOperationResultEvent",
-    "SSEProtocol",
     "SSEState",
     "Selections",
     "Self",
@@ -1467,28 +1460,6 @@ class WebSocketProtocol(Protocol):
 
 
 # SSE Single Connection Mode
-
-
-class SSEProtocol(Protocol):
-    @property
-    def scope(self) -> HTTPASGIScope: ...
-
-    async def send(
-        self,
-        message: (
-            HTTPResponseStartEvent
-            | HTTPResponseBodyEvent
-            | HTTPResponseTrailersEvent
-            | HTTPServerPushEvent
-            | HTTPDisconnectEvent
-        ),
-    ) -> None: ...
-
-    async def start_stream(self, stream_token: str) -> None: ...
-
-    async def run_operation(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None: ...
-
-    async def cancel_operation(self, stream_token: str, operation_id: str) -> None: ...
 
 
 class SSEState(StrEnum):
