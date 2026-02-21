@@ -37,6 +37,7 @@ __all__ = [
     "CompletedEventSC",
     "FilterResults",
     "GraphQLHttpParams",
+    "KeepAliveSignalDC",
     "LazyGenericForeignKey",
     "LazyLambda",
     "LazyRelation",
@@ -294,6 +295,14 @@ class CompletedEventDC:
     def encode(self) -> str:
         # 'data: ' Only to comply with 'EventSource' Web API interface
         return f"event: {self.event}\ndata: \n\n"
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class KeepAliveSignalDC:
+    """Keep-alive signal (SSE comment) for distinct connections mode."""
+
+    def encode(self) -> str:
+        return ":\n\n"
 
 
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
