@@ -24,14 +24,14 @@ from tests.test_integrations.helpers import (
 )
 from undine import Entrypoint, RootType, create_schema
 from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.integrations.channels import (
+from undine.typing import PingMessage, PongMessage, RequestMethod, SSEState
+from undine.utils.graphql.server_sent_events import (
     get_sse_operation_claim_key,
     get_sse_operation_key,
     get_sse_stream_claim_key,
     get_sse_stream_state_key,
     get_sse_stream_token_key,
 )
-from undine.typing import PingMessage, PongMessage, RequestMethod, SSEState
 
 pytestmark = [
     pytest.mark.asyncio,
