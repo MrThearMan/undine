@@ -42,6 +42,26 @@ For both WebSocket and SSE Single Connection mode:
 -8<- "integrations/channels_websocket_and_sse.py"
 ```
 
+## GraphiQL
+
+Undine includes a built-in [GraphiQL]{:target="_blank"} interface for exploring and
+testing your GraphQL API. You can enable it using the
+[`GRAPHIQL_ENABLED`](settings.md#graphiql_enabled) setting. You should also set
+[`ALLOW_INTROSPECTION_QUERIES`](settings.md#allow_introspection_queries) to `True`
+so that GraphiQL can introspect the schema. GraphiQL is then accessible by navigating
+to the GraphQL endpoint in a browser.
+
+[GraphiQL]: https://github.com/graphql/graphiql
+
+GraphiQL includes the explorer and history plugins. The URL encodes the current
+document, variables, and headers, so it can be shared with others.
+
+By default, [subscriptions](subscriptions.md) use [WebSockets](subscriptions.md#websockets).
+To use [Server-Sent Events](subscriptions.md#server-sent-events) instead, use the
+[`GRAPHIQL_SSE_ENABLED`](settings.md#graphiql_sse_enabled) setting.
+[Single connection mode](subscriptions.md#single-connection-mode) can be enabled with the
+[`GRAPHIQL_SSE_SINGLE_CONNECTION`](settings.md#graphiql_sse_single_connection) setting.
+
 ## django-debug-toolbar
 
 ```
@@ -49,12 +69,11 @@ pip install undine[debug]
 ```
 
 Undine integrates with [django-debug-toolbar]{:target="_blank"}
-by modifying the toolbar HTML so that it integrates with [GraphiQL].
+by modifying the toolbar HTML so that it integrates with [GraphiQL](#graphiql).
 After [installing django-debug-toolbar], Undine should automatically
 patch it without any additional configuration.
 
 [django-debug-toolbar]: https://github.com/django-commons/django-debug-toolbar
-[GraphiQL]: https://github.com/graphql/graphiql
 [installing django-debug-toolbar]: https://django-debug-toolbar.readthedocs.io/en/stable/installation.html
 
 ## django-modeltranslation

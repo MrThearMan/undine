@@ -46,11 +46,9 @@ creating your own. To access it, add the following to your project's `urls.py` f
 -8<- "tutorial/urls.py"
 ```
 
-Next, configure Undine to enable [GraphiQL]{:target="_blank"},
+Next, configure Undine to enable [GraphiQL](integrations.md#graphiql),
 a tool for exploring GraphQL schemas in the browser. Undine is configured using
 the `UNDINE` setting in your Django project's `settings.py` file, so add the following to it:
-
-[GraphiQL]: https://github.com/graphql/graphiql
 
 ```python
 UNDINE = {

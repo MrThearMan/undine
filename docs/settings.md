@@ -48,7 +48,7 @@ Whether schema introspection queries are allowed or not.
 Disabled by default so that information on the schema structure cannot
 be gained through introspection (a form of security through obscurity).
 
-Should set this to `True` if using [GraphiQL](#graphiql_enabled).
+Should set this to `True` if using [GraphiQL](integrations.md#graphiql).
 
 ///
 
@@ -272,10 +272,8 @@ The key used to store a `FilterSet` in the `extensions` of its `GraphQLInputObje
 
 Type: `bool` | Default: `False`
 
-Whether to enable [GraphiQL]. Should also set [`ALLOW_INTROSPECTION_QUERIES`](#allow_introspection_queries)
+Whether to enable [GraphiQL](integrations.md#graphiql). Should also set [`ALLOW_INTROSPECTION_QUERIES`](#allow_introspection_queries)
 to `True`, so that GraphiQL can introspect the GraphQL schema.
-
-[GraphiQL]: https://github.com/graphql/graphiql
 
 ///
 
