@@ -1022,7 +1022,7 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.SCALAR_TYPE_NOT_SUPPORTED
 
 
-class GraphQLSSEOperationIdMissingError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEOperationIdMissingError(GraphQLStatusError):
     """Error raised when a SSE request is missing operationId query parameter."""
 
     msg = "Operation ID is missing"
@@ -1030,7 +1030,7 @@ class GraphQLSSEOperationIdMissingError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_OPERATION_ID_MISSING
 
 
-class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):
     """
     Error raised when a SSE request is trying to execute an operation
     with an ID that already has an operation in the stream.
@@ -1041,7 +1041,7 @@ class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_OPERATION_ALREADY_EXISTS
 
 
-class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):
     """Error raised when a SSE request is unauthenticated."""
 
     msg = "GraphQL over SSE requires authentication in single connection mode"
@@ -1049,7 +1049,7 @@ class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):  # TO
     code = UndineErrorCodes.SSE_SINGLE_CONNECTION_NOT_AUTHENTICATED
 
 
-class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):
     """Error raised when a SSE request is trying to open a stream when it has already been opened."""
 
     msg = "Stream already open"
@@ -1057,7 +1057,7 @@ class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_STREAM_ALREADY_OPEN
 
 
-class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEStreamNotFoundError(GraphQLStatusError):
     """Error raised when a SSE request when a stream doesn't exist."""
 
     msg = "Stream not found"
@@ -1065,7 +1065,7 @@ class GraphQLSSEStreamNotFoundError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_STREAM_NOT_FOUND
 
 
-class GraphQLSSEStreamNotOpenError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEStreamNotOpenError(GraphQLStatusError):
     """Error raised when a SSE request when a stream did not open before the operation timeout."""
 
     msg = "Operation timed out before stream was opened"
@@ -1073,7 +1073,7 @@ class GraphQLSSEStreamNotOpenError(GraphQLStatusError):  # TODO: Test
     code = UndineErrorCodes.SSE_STREAM_NOT_OPEN
 
 
-class GraphQLSSEStreamTokenMissingError(GraphQLStatusError):  # TODO: Test
+class GraphQLSSEStreamTokenMissingError(GraphQLStatusError):
     """Error raised when a SSE request when a stream token is missing."""
 
     msg = "Stream token missing"
