@@ -1,0 +1,25 @@
+---
+description: Use when the user explicitly asks to run tests using nox
+alwaysApply: false
+---
+
+Cursor's shell sets `FORCE_COLOR=0` and `NO_COLOR=1`, which makes nox
+fail with conflicting color flags. Always unset them first:
+
+```bash
+unset FORCE_COLOR NO_COLOR && poetry run nox
+```
+
+Use `nox -l` to list available sessions.
+Run a single session with `nox -s "<session_name>"`.
+
+Existing session venvs live under `.nox/`.
+You can use them directly if you need to run something in the
+virtualenv, but you should still run tests with the actual nox command.
+
+```bash
+.nox/<session-dir>/bin/python <command
+```
+
+Nox converts dots to hyphens and strips glob wildcards in directory
+names (e.g. `tests-3.12(foo='1.2.*')` → `.nox/tests-3-12-foo-1-2/`).
