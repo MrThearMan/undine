@@ -19,6 +19,10 @@ from tests.test_integrations.helpers import (
     get_graphql_sse_router,
     make_http_scope,
     make_sse_communicator,
+    session_aget,
+    session_aload,
+    session_asave,
+    session_aset,
     sse_get_response,
     sse_send_request,
 )
@@ -122,8 +126,8 @@ async def test_channels__sse__consumer_stopped_when_unauthenticated() -> None:
     )
 
     # handle() was never called — session remains untouched
-    assert await session.aget(get_sse_stream_token_key()) is None
-    assert await session.aget(get_sse_stream_state_key()) is None
+    assert await session_aget(session, get_sse_stream_token_key()) is None
+    assert await session_aget(session, get_sse_stream_state_key()) is None
 
 
 # SSE - Reserve Stream
@@ -145,9 +149,8 @@ async def test_channels__sse__reserve_stream(undine_settings) -> None:
     assert response["status"] == HTTPStatus.CREATED
     assert uuid.UUID(response["body"])
 
-    # Verify session was updated
-    stream_token = await session.aget(get_sse_stream_token_key())
-    stream_state = await session.aget(get_sse_stream_state_key())
+    stream_token = await session_aget(session, get_sse_stream_token_key())
+    stream_state = await session_aget(session, get_sse_stream_state_key())
     assert stream_state == SSEState.REGISTERED
     assert stream_token == response["body"]
 
@@ -192,8 +195,8 @@ async def test_channels__sse__reserve_stream__already_reserved() -> None:
     assert uuid.UUID(new_token)
     assert new_token != old_token
 
-    stream_token = await session.aget(get_sse_stream_token_key())
-    stream_state = await session.aget(get_sse_stream_state_key())
+    stream_token = await session_aget(session, get_sse_stream_token_key())
+    stream_state = await session_aget(session, get_sse_stream_state_key())
     assert stream_state == SSEState.REGISTERED
     assert stream_token == new_token
 
@@ -203,9 +206,9 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
     session = await _create_session(user)
 
     # Simulate stale OPENED state left in the session (e.g. from a race condition on disconnect)
-    await session.aset(key=get_sse_stream_token_key(), value="stale-token")
-    await session.aset(key=get_sse_stream_state_key(), value=SSEState.OPENED)
-    await session.asave()
+    await session_aset(session, get_sse_stream_token_key(), "stale-token")
+    await session_aset(session, get_sse_stream_state_key(), SSEState.OPENED)
+    await session_asave(session)
 
     # Reserve should succeed, cleaning up the stale state
     communicator = make_sse_communicator(
@@ -222,11 +225,11 @@ async def test_channels__sse__reserve_stream__stale_opened_state(undine_settings
 
     # Verify stale operation key was cleaned up
     stream_operation_key = get_sse_operation_key(operation_id="op-1")
-    assert await session.aget(stream_operation_key) is None
+    assert await session_aget(session, stream_operation_key) is None
 
     # Verify new stream state
-    stream_token = await session.aget(get_sse_stream_token_key())
-    stream_state = await session.aget(get_sse_stream_state_key())
+    stream_token = await session_aget(session, get_sse_stream_token_key())
+    stream_state = await session_aget(session, get_sse_stream_state_key())
     assert stream_state == SSEState.REGISTERED
     assert stream_token == response["body"]
 
@@ -240,15 +243,15 @@ async def test_channels__sse__reserve_stream__stale_registered_operation() -> No
     # (e.g. operation submitted before stream opened, then timed out after
     # a new stream was reserved, so the rollback skipped this key).
     operation_key = get_sse_operation_key(operation_id="op-1")
-    await session.aset(key=operation_key, value="ok")
-    await session.asave()
+    await session_aset(session, operation_key, "ok")
+    await session_asave(session)
 
     # Re-reserving from REGISTERED state should clean up stale operations
     new_token = await _reserve_stream(user, session)
     assert new_token != token
 
-    await session.aload()
-    assert await session.aget(operation_key) is None
+    await session_aload(session)
+    assert await session_aget(session, operation_key) is None
 
 
 # SSE - Get Stream
@@ -281,9 +284,8 @@ async def test_channels__sse__get_stream(undine_settings) -> None:
     assert body_event["body"] == b":\n\n"
     assert body_event.get("more_body") is True
 
-    # Verify session was updated
-    stream_token = await session.aget(get_sse_stream_token_key())
-    stream_state = await session.aget(get_sse_stream_state_key())
+    stream_token = await session_aget(session, get_sse_stream_token_key())
+    stream_state = await session_aget(session, get_sse_stream_state_key())
     assert stream_state == SSEState.OPENED
     assert stream_token == token
 
@@ -619,8 +621,8 @@ async def test_channels__sse__subscribe__stream_did_not_open_in_time(undine_sett
 
     # Operation should not be saved in the session since it was rejected.
     operation_key = get_sse_operation_key(operation_id=operation_id)
-    await session.aload()
-    assert await session.aget(operation_key) is None
+    await session_aload(session)
+    assert await session_aget(session, operation_key) is None
 
 
 async def test_channels__sse__subscribe__before_stream_opened(undine_settings) -> None:
@@ -778,8 +780,8 @@ async def test_channels__sse__subscribe__operation_already_exists(undine_setting
 
     # Mark operation as already existing in session
     operation_key = get_sse_operation_key(operation_id=operation_id)
-    await session.aset(key=operation_key, value="ok")
-    await session.asave()
+    await session_aset(session, operation_key, "ok")
+    await session_asave(session)
 
     body = json.dumps({
         "query": "subscription { test }",
@@ -1077,8 +1079,8 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
         await stream_communicator.receive_output(timeout=0.5)
 
     # Operation should be cleaned from the session
-    await session.aload()
-    assert await session.aget(get_sse_operation_key(operation_id=operation_id)) is None
+    await session_aload(session)
+    assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
 
 async def test_channels__sse__cancel_subscription__wrong_stream_token() -> None:

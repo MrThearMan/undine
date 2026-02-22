@@ -5,10 +5,10 @@ import dataclasses
 import io
 import uuid
 from collections.abc import AsyncIterator
-from contextlib import suppress
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+from asgiref.sync import sync_to_async
 from django.conf import settings as django_settings
 from django.core.cache import caches
 from django.core.handlers.asgi import ASGIRequest
@@ -114,12 +114,18 @@ class SSESessionStore:
 
     async def refresh(self) -> None:
         """Force load of the session data from the session store."""
-        with suppress(AttributeError):
-            del self.session._session_cache  # noqa: SLF001
-        await self.session._aget_session()  # noqa: SLF001
+        # Django 5.0 compat: SessionBase.aload was added in Django 5.1.
+        if hasattr(self.session, "aload"):
+            self.session._session_cache = await self.session.aload()  # noqa: SLF001
+        else:
+            self.session._session_cache = await sync_to_async(self.session.load)()  # noqa: SLF001
 
     async def save(self) -> None:
-        await self.session.asave()
+        # Django 5.0 compat: SessionBase.asave was added in Django 5.1.
+        if hasattr(self.session, "asave"):
+            await self.session.asave()
+        else:
+            await sync_to_async(self.session.save)()
 
     # Stream token
 

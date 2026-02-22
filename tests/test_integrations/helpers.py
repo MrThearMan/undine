@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Literal, NotRequired, Protocol, TypedDict, Unpack
 from unittest.mock import AsyncMock
 
+from asgiref.sync import sync_to_async
 from asgiref.testing import ApplicationCommunicator
 from asgiref.typing import ASGIVersions, HTTPRequestEvent, HTTPScope
 from channels.auth import AuthMiddlewareStack
@@ -19,6 +20,37 @@ from undine.utils.graphql.server_sent_events import get_sse_stream_state_key, ge
 
 if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
+
+
+async def session_aget(session: SessionBase, key: str) -> Any:
+    """Django 5.0 compat: SessionBase.aget was added in Django 5.1."""
+    if hasattr(session, "aget"):
+        return await session.aget(key)
+    return await sync_to_async(session.get)(key)
+
+
+async def session_aset(session: SessionBase, key: str, value: Any) -> None:
+    """Django 5.0 compat: SessionBase.aset was added in Django 5.1."""
+    if hasattr(session, "aset"):
+        await session.aset(key=key, value=value)
+    else:
+        await sync_to_async(session.__setitem__)(key, value)
+
+
+async def session_aload(session: SessionBase) -> None:
+    """Django 5.0 compat: SessionBase.aload was added in Django 5.1."""
+    if hasattr(session, "aload"):
+        await session.aload()
+    else:
+        await sync_to_async(session.load)()
+
+
+async def session_asave(session: SessionBase) -> None:
+    """Django 5.0 compat: SessionBase.asave was added in Django 5.1."""
+    if hasattr(session, "asave"):
+        await session.asave()
+    else:
+        await sync_to_async(session.save)()
 
 
 class HTTPScopeArgs(TypedDict, total=False):
@@ -157,7 +189,12 @@ async def _create_session(user: User | None = None) -> SessionStore:
     if user is not None:
         session["_auth_user_id"] = str(user.pk)
         session["_auth_user_backend"] = "django.contrib.auth.backends.ModelBackend"
-    await session.acreate()
+
+    if hasattr(session, "acreate"):
+        await session.acreate()
+    else:
+        await sync_to_async(session.create)()
+
     return session
 
 
@@ -172,11 +209,11 @@ async def _reserve_stream(user: User, session: SessionStore) -> str:
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
 
-    # Verify session was updated
     stream_token_key = get_sse_stream_token_key()
     stream_state_key = get_sse_stream_state_key()
-    stream_token = await session.aget(stream_token_key)
-    stream_state = await session.aget(stream_state_key)
+    stream_token = await session_aget(session, stream_token_key)
+    stream_state = await session_aget(session, stream_state_key)
+
     assert stream_state == SSEState.REGISTERED
     assert stream_token == response["body"]
 
@@ -196,11 +233,11 @@ async def _open_stream(user: User, session: SessionStore, token: str) -> None:
     await sse_send_request(communicator)
     start = await communicator.receive_output(timeout=3)
 
-    # Verify session was updated
     stream_token_key = get_sse_stream_token_key()
     stream_state_key = get_sse_stream_state_key()
-    stream_token = await session.aget(stream_token_key)
-    stream_state = await session.aget(stream_state_key)
+    stream_token = await session_aget(session, stream_token_key)
+    stream_state = await session_aget(session, stream_state_key)
+
     assert stream_state == SSEState.OPENED
     assert stream_token == token
 
