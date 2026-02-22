@@ -33,6 +33,7 @@ class ModuleVersion(StrEnum):
     GRAPHIQL_REACT = "0.37.3"
     GRAPHIQL_TOOLKIT = "0.11.3"
     GRAPHQL = "16.12.0"
+    GRAPHQL_SSE = "2.6.0"
 
 
 @dataclasses.dataclass(slots=True, frozen=True, kw_only=True)
@@ -114,6 +115,11 @@ class ModuleInfo:
         version=ModuleVersion.GRAPHQL,
         integrity="sha384-Oosnx71vGzeLRLBj0HblPGTSLgNCn3tEUKVdBubTBLQ9xAW9538VZvjesbp8unrb",
     )
+    GRAPHQL_SSE = ModuleInfoItem(
+        latest="https://esm.sh/graphql-sse@latest/",
+        version=ModuleVersion.GRAPHQL_SSE,
+        integrity="sha384-nEeDIuZvbQI4moJ8CGRos6s2sPL7jfwBZ4ZuaZm/sw/HNxGzVOfk6g89+8LBsUNT",
+    )
     GRAPHIQL_CSS = ModuleInfoItem(
         latest="https://esm.sh/graphiql@latest/dist/style.css/",
         version=ModuleVersion.GRAPHIQL,
@@ -153,6 +159,7 @@ def get_importmap() -> str:
             "@graphiql/react": ModuleInfo.GRAPHIQL_REACT.url,
             "@graphiql/toolkit": ModuleInfo.GRAPHIQL_TOOLKIT.url,
             "graphql": ModuleInfo.GRAPHQL.url,
+            "graphql-sse": ModuleInfo.GRAPHQL_SSE.url,
             "@emotion/is-prop-valid": "data:text/javascript,",
         },
         "integrity": {
@@ -164,6 +171,7 @@ def get_importmap() -> str:
             ModuleInfo.GRAPHIQL_REACT.url: ModuleInfo.GRAPHIQL_REACT.integrity,
             ModuleInfo.GRAPHIQL_TOOLKIT.url: ModuleInfo.GRAPHIQL_TOOLKIT.integrity,
             ModuleInfo.GRAPHQL.url: ModuleInfo.GRAPHQL.integrity,
+            ModuleInfo.GRAPHQL_SSE.url: ModuleInfo.GRAPHQL_SSE.integrity,
         },
     }
     return json.dumps(importmap, indent=2)

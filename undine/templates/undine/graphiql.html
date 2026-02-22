@@ -41,36 +41,12 @@
 
     import React from 'react';
     import ReactDOM from 'react-dom/client';
+    import { visit } from 'graphql';
     import { GraphiQL, HISTORY_PLUGIN } from 'graphiql';
     import { createGraphiQLFetcher, StorageAPI } from '@graphiql/toolkit';
     import { explorerPlugin } from '@graphiql/plugin-explorer';
+    import { createClient as createSSEClient } from 'graphql-sse';
     import 'graphiql/setup-workers/esm.sh';
-
-    const storage = new StorageAPI();
-
-    const currentURL = new URL(window.location.href)
-    const params = new URLSearchParams(currentURL.search);
-
-    if (!params.has("document")) {
-      const val = storage.get("query");
-      if (val) {
-        params.set("document", val);
-      }
-    }
-
-    if (!params.has("variables")) {
-      const val = storage.get("variables");
-      if (val) {
-        params.set("variables", val);
-      }
-    }
-
-    if (!params.has("headers")) {
-      const val = storage.get("headers");
-      if (val) {
-        params.set("headers", val);
-      }
-    }
 
     function updateHistory() {
       params.sort();
@@ -132,23 +108,48 @@
       }
     }
 
+    const storage = new StorageAPI();
+    const currentURL = new URL(window.location.href);
+    const params = new URLSearchParams(currentURL.search);
+
+    if (!params.has("document")) {
+      const val = storage.get("query");
+      if (val) {
+        params.set("document", val);
+      }
+    }
+
+    if (!params.has("variables")) {
+      const val = storage.get("variables");
+      if (val) {
+        params.set("variables", val);
+      }
+    }
+
+    if (!params.has("headers")) {
+      const val = storage.get("headers");
+      if (val) {
+        params.set("headers", val);
+      }
+    }
+
     updateHistory();
 
-    currentURL.pathname = "/{{ http_path }}"
-    const url = currentURL.href;
+    currentURL.pathname = "/{{ http_path }}";
+    const url = currentURL.origin + currentURL.pathname;
 
     currentURL.protocol = location.protocol.replace(/^http/, 'ws');
     currentURL.pathname = "/{{ ws_path }}";
-    const subscriptionUrl = currentURL.href;
+    const websocketUrl = currentURL.origin + currentURL.pathname;
 
-    const defaultHeaders = {}
+    const defaultHeaders = {};
     const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]").value;
     if (csrftoken) defaultHeaders['X-CSRFToken'] = csrftoken;
 
     function App() {
-      const initialGraphQLDocument = params.get("document")
-      const initialVariables = parseStringRecord(params.get("variables"))
-      const initialHeaders = parseStringRecord(params.get("headers"))
+      const initialGraphQLDocument = params.get("document");
+      const initialVariables = parseStringRecord(params.get("variables"));
+      const initialHeaders = parseStringRecord(params.get("headers"));
 
       const [graphQLDocument, setGraphQLDocument] = React.useState(initialGraphQLDocument);
       const [variables, setVariables] = React.useState(initialVariables ? formatStringRecord(initialVariables) : null);
@@ -205,8 +206,71 @@
         updateHistory();
       }
 
+      const httpFetcher = createGraphiQLFetcher({ url, subscriptionUrl: websocketUrl, headers: defaultHeaders });
+      const sseClient = createSSEClient({ url, headers: defaultHeaders, singleConnection: false });
+
+      // Based on this gist: https://gist.github.com/enisdenjo/d7bc1a013433502349d2763c3d2f2b79
+      const fetcher = (graphQLParams, fetcherOpts) => {
+        let isSubscription = false;
+
+        if (fetcherOpts?.documentAST) {
+          const operationName = graphQLParams.operationName || undefined;
+          visit(fetcherOpts.documentAST, {
+            OperationDefinition(node) {
+              if (operationName === node.name?.value && node.operation === "subscription") {
+                isSubscription = true;
+              }
+            },
+          });
+        }
+
+        if (!isSubscription) {
+          return httpFetcher(graphQLParams, fetcherOpts);
+        }
+
+        const pending = [];
+        let deferred = null;
+        let throwMe = null;
+        let done = false;
+
+        const dispose = sseClient.subscribe(graphQLParams, {
+          next: (data) => {
+            pending.push(data);
+            deferred?.resolve(false);
+          },
+          error: (err) => {
+            throwMe = err;
+            deferred?.reject(throwMe);
+          },
+          complete: () => {
+            done = true;
+            deferred?.resolve(true);
+          },
+        });
+
+        return {
+          [Symbol.asyncIterator]() {
+            return this;
+          },
+          async next() {
+            if (done) return { done: true, value: undefined };
+            if (throwMe) throw throwMe;
+            if (pending.length) return { value: pending.shift() };
+            return (
+              await new Promise((resolve, reject) => (deferred = { resolve, reject }))
+            )
+              ? { done: true, value: undefined }
+              : { value: pending.shift() };
+          },
+          async return() {
+            dispose();
+            return { done: true, value: undefined };
+          },
+        };
+      }
+
       return React.createElement(GraphiQL, {
-        fetcher: createGraphiQLFetcher({ url, subscriptionUrl, headers: defaultHeaders }),
+        fetcher: fetcher,
         plugins: [HISTORY_PLUGIN, explorerPlugin()],
         initialQuery: graphQLDocument,
         initialVariables: variables,
