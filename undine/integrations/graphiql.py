@@ -137,6 +137,8 @@ def get_graphiql_context() -> dict[str, Any]:
     return {
         "http_path": undine_settings.GRAPHQL_PATH,
         "ws_path": undine_settings.WEBSOCKET_PATH,
+        "sse_enabled": undine_settings.GRAPHIQL_SSE_ENABLED,
+        "sse_single_connection": undine_settings.GRAPHIQL_SSE_SINGLE_CONNECTION,
         "importmap": get_importmap(),
         "graphiql_css": ModuleInfo.GRAPHIQL_CSS.url,
         "explorer_css": ModuleInfo.EXPLORER_CSS.url,

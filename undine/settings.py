@@ -159,6 +159,12 @@ class UndineDefaultSettings(NamedTuple):
     GRAPHIQL_ENABLED: bool = False
     """Is GraphiQL enabled?"""
 
+    GRAPHIQL_SSE_ENABLED: bool = False
+    """Whether GraphiQL uses SSE for subscriptions instead of the built-in WebSocket client."""
+
+    GRAPHIQL_SSE_SINGLE_CONNECTION: bool = False
+    """Controls whether the SSE subscription client uses single connection mode."""
+
     # Persisted documents
 
     PERSISTED_DOCUMENTS_ONLY: bool = False

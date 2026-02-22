@@ -145,6 +145,8 @@ UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
     "AUTOGENERATION": True,
     "GRAPHIQL_ENABLED": True,
+    "GRAPHIQL_SSE_ENABLED": False,
+    "GRAPHIQL_SSE_SINGLE_CONNECTION": False,
     "FILE_UPLOAD_ENABLED": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,

@@ -279,6 +279,25 @@ to `True`, so that GraphiQL can introspect the GraphQL schema.
 
 ///
 
+/// details | `GRAPHIQL_SSE_ENABLED`
+    attrs: {id: graphiql_sse_enabled}
+
+Type: `bool` | Default: `False`
+
+Whether GraphiQL uses SSE for subscriptions instead of the built-in WebSocket client.
+
+///
+
+/// details | `GRAPHIQL_SSE_SINGLE_CONNECTION`
+    attrs: {id: graphiql_sse_single_connection}
+
+Type: `bool` | Default: `False`
+
+Controls whether the SSE subscription client uses single connection mode.
+Only relevant when [`GRAPHIQL_SSE_ENABLED`](#graphiql_sse_enabled) is enabled.
+
+///
+
 /// details | `GRAPHQL_PATH`
     attrs: {id: graphql_path}
 
