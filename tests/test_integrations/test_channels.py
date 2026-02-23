@@ -450,7 +450,7 @@ async def test_channels__sse__get_stream__stream_token_missing() -> None:
 
 
 async def test_channels__sse__keep_alive_ping(undine_settings) -> None:
-    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0.01  # type: ignore[assignment]
+    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0.1  # type: ignore[assignment]
 
     user = await _create_user()
     session = await _create_session(user)
@@ -778,7 +778,10 @@ async def test_channels__sse__cancel_subscription() -> None:
     await _open_stream(user, session, token)
 
     communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id="op-1",
+        user=user,
+        session=session,
+        token=token,
+        operation_id="op-1",
     )
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
@@ -831,7 +834,10 @@ async def test_channels__sse__cancel_subscription__operation_not_found() -> None
     await _open_stream(user, session, token)
 
     communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id="nonexistent",
+        user=user,
+        session=session,
+        token=token,
+        operation_id="nonexistent",
     )
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
@@ -846,7 +852,10 @@ async def test_channels__sse__cancel_subscription__stream_not_registered() -> No
     session = await _create_session(user)
 
     communicator = make_sse_cancel_communicator(
-        user=user, session=session, token="nonexistent-token", operation_id="op-1",
+        user=user,
+        session=session,
+        token="nonexistent-token",
+        operation_id="op-1",
     )
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
@@ -861,7 +870,10 @@ async def test_channels__sse__cancel_subscription__stream_not_opened() -> None:
     token = await _reserve_stream(user, session)
 
     communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id="op-1",
+        user=user,
+        session=session,
+        token=token,
+        operation_id="op-1",
     )
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
@@ -897,7 +909,10 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
 
     # Cancel the queued operation
     cancel_communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id=operation_id,
+        user=user,
+        session=session,
+        token=token,
+        operation_id=operation_id,
     )
     await sse_send_request(cancel_communicator)
     cancel_response = await sse_get_response(cancel_communicator)
@@ -942,7 +957,10 @@ async def test_channels__sse__cancel_subscription__wrong_stream_token() -> None:
     await _open_stream(user, session, token)
 
     communicator = make_sse_cancel_communicator(
-        user=user, session=session, token="wrong-token", operation_id="op-1",
+        user=user,
+        session=session,
+        token="wrong-token",
+        operation_id="op-1",
     )
     await sse_send_request(communicator)
     response = await sse_get_response(communicator)
@@ -994,7 +1012,10 @@ async def test_channels__sse__cancel_subscription__204_when_cancelled_before_acc
     await asyncio.sleep(0.05)
 
     cancel_communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id=operation_id,
+        user=user,
+        session=session,
+        token=token,
+        operation_id=operation_id,
     )
     await sse_send_request(cancel_communicator)
     cancel_response = await sse_get_response(cancel_communicator)
@@ -1235,7 +1256,10 @@ async def test_channels__sse__cancel_running_subscription(undine_settings) -> No
     assert first_event["data"]["id"] == operation_id
 
     cancel_communicator = make_sse_cancel_communicator(
-        user=user, session=session, token=token, operation_id=operation_id,
+        user=user,
+        session=session,
+        token=token,
+        operation_id=operation_id,
     )
     await sse_send_request(cancel_communicator)
     cancel_response = await sse_get_response(cancel_communicator)
