@@ -72,7 +72,7 @@ setup-local-configs:
 
 # Sync dependencies
 sync:
-    @poetry sync --all-extras
+    @poetry sync --all-extras --all-groups
 
 # Run a specific test by name
 test name:

@@ -45,7 +45,7 @@ def tests(session: nox.Session, django: str, graphql_core: str) -> None:
         "POETRY_VIRTUALENVS_PATH": str(Path(session.virtualenv.bin).parent),
     }
 
-    session.run_install("poetry", "install", "--all-extras", external=True, env=env)
+    session.run_install("poetry", "install", "--all-extras", "--all-groups", external=True, env=env)
     session.install(f"django=={django}")
     session.install(f"graphql-core=={graphql_core}")
 
