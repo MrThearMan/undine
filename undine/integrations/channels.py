@@ -538,7 +538,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
 
         params = GraphQLRequestParamsParser.run(self.request)
 
-        operation_id = params.extensions.get("operationId")
+        operation_id = str(params.extensions.get("operationId", ""))
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 
@@ -563,6 +563,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
 
     async def execute_on_stream_open(self, stream_token: str, operation_id: str, params: GraphQLHttpParams) -> None:
         """Wait for the stream to open, then execute the operation."""
+        accepted = False
         try:
             try:
                 timeout = undine_settings.SSE_OPERATION_STREAM_OPEN_TIMEOUT
@@ -574,8 +575,14 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
 
             response = HttpResponse(content="", content_type="text/plain; charset=utf-8", status=HTTPStatus.ACCEPTED)
             await self.send_http_response(response=response)
+            accepted = True
 
             await self.handler.execute_operation(stream_token, operation_id, params, self.request)
+
+        except asyncio.CancelledError:
+            if not accepted:
+                response = HttpResponse(content="", status=HTTPStatus.NO_CONTENT)
+                await self.send_http_response(response=response)
 
         finally:
             await self.handler.finalize_operation(stream_token, operation_id)
@@ -603,7 +610,7 @@ class SSEOperationCancellationConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        operation_id = self.request.GET.get("operationId")
+        operation_id = str(self.request.GET.get("operationId", ""))
         if not operation_id:
             raise GraphQLSSEOperationIdMissingError
 

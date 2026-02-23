@@ -4,6 +4,7 @@ import json
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Literal, NotRequired, Protocol, TypedDict, Unpack
 from unittest.mock import AsyncMock
+from urllib.parse import urlencode
 
 from asgiref.sync import sync_to_async
 from asgiref.testing import ApplicationCommunicator
@@ -120,17 +121,17 @@ async def sse_send_request(communicator: ApplicationCommunicator, body: bytes = 
 class SSEResponse(TypedDict):
     status: int
     headers: dict[str, str]
-    body: NotRequired[bytes]
+    body: NotRequired[str]
     json: NotRequired[FormattedExecutionResult]
 
 
 async def sse_get_response(communicator: ApplicationCommunicator) -> SSEResponse:
     """Get a complete HTTP response (start + body) from the communicator."""
     start = await communicator.receive_output(timeout=3)
-    assert start["type"] == "http.response.start"
+    assert start["type"] == "http.response.start", f"{start=}"
 
     body_event = await communicator.receive_output(timeout=3)
-    assert body_event["type"] == "http.response.body"
+    assert body_event["type"] == "http.response.body", f"{body_event=}"
 
     status = start["status"]
     headers = {k.decode(): v.decode() for k, v in start.get("headers", [])}
@@ -143,6 +144,27 @@ async def sse_get_response(communicator: ApplicationCommunicator) -> SSEResponse
         result["body"] = body.decode() if isinstance(body, bytes) else body
 
     return result
+
+
+class SSEEvent(TypedDict, total=False):
+    event: str
+    data: dict[str, Any]
+
+
+async def sse_read_stream_event(communicator: ApplicationCommunicator, *, timeout: float = 5) -> SSEEvent:
+    """Read one SSE event from the stream communicator and parse it."""
+    output = await communicator.receive_output(timeout=timeout)
+    assert output["type"] == "http.response.body", f"{output=}"
+    assert output.get("more_body") is True, f"{output=}"
+
+    raw = output["body"].decode()
+    parsed: SSEEvent = {}
+    for line in raw.strip().split("\n"):
+        if line.startswith("event: "):
+            parsed["event"] = line[len("event: ") :]
+        elif line.startswith("data: "):
+            parsed["data"] = json.loads(line[len("data: ") :])
+    return parsed
 
 
 class MockedGraphQLSSERouter(Protocol):
@@ -214,14 +236,14 @@ async def _reserve_stream(user: User, session: SessionStore) -> str:
     stream_token = await session_aget(session, stream_token_key)
     stream_state = await session_aget(session, stream_state_key)
 
-    assert stream_state == SSEState.REGISTERED
-    assert stream_token == response["body"]
+    assert stream_state == SSEState.REGISTERED, f"{stream_state=}"
+    assert stream_token == response["body"], f"{stream_token=}, {response['body']=}"
 
-    assert response["status"] == HTTPStatus.CREATED
+    assert response["status"] == HTTPStatus.CREATED, f"{response=}"
     return response["body"]
 
 
-async def _open_stream(user: User, session: SessionStore, token: str) -> None:
+async def _open_stream(user: User, session: SessionStore, token: str) -> ApplicationCommunicator:
     """Helper to open a stream (GET with token) and wait for SSE headers."""
     communicator = make_sse_communicator(
         method="GET",
@@ -233,19 +255,78 @@ async def _open_stream(user: User, session: SessionStore, token: str) -> None:
     await sse_send_request(communicator)
     start = await communicator.receive_output(timeout=3)
 
+    assert start["type"] == "http.response.start", f"{start=}"
+    assert start["status"] == HTTPStatus.OK, f"{start=}"
+
     stream_token_key = get_sse_stream_token_key()
     stream_state_key = get_sse_stream_state_key()
     stream_token = await session_aget(session, stream_token_key)
     stream_state = await session_aget(session, stream_state_key)
 
-    assert stream_state == SSEState.OPENED
-    assert stream_token == token
-
-    assert start["type"] == "http.response.start"
-    assert start["status"] == HTTPStatus.OK
+    assert stream_state == SSEState.OPENED, f"{stream_state=}"
+    assert stream_token == token, f"{stream_token=}, {token=}"
 
     # First body event (SSE comment keep-alive, keeps connection open)
     body_event = await communicator.receive_output(timeout=3)
-    assert body_event["type"] == "http.response.body"
-    assert body_event["body"] == b":\n\n"
-    assert body_event.get("more_body") is True
+    assert body_event["type"] == "http.response.body", f"{body_event=}"
+    assert body_event["body"] == b":\n\n", f"{body_event=}"
+    assert body_event.get("more_body") is True, f"{body_event=}"
+
+    return communicator
+
+
+def make_operation_body(*, query: str, operation_id: str) -> bytes:
+    """Encode a GraphQL operation as a JSON body for POST submission."""
+    return json.dumps({
+        "query": query,
+        "extensions": {"operationId": operation_id},
+    }).encode()
+
+
+def make_sse_operation_communicator(*, user: User, session: SessionStore, token: str) -> ApplicationCommunicator:
+    return make_sse_communicator(
+        method="POST",
+        headers=[
+            (b"accept", b"application/json"),
+            (b"content-type", b"application/json"),
+            (b"x-graphql-event-stream-token", token.encode()),
+        ],
+        user=user,
+        session=session,
+    )
+
+
+def make_sse_cancel_communicator(
+    *,
+    user: User,
+    session: SessionStore,
+    token: str,
+    operation_id: str,
+) -> ApplicationCommunicator:
+    query_string = urlencode({"operationId": operation_id}).encode()
+    return make_sse_communicator(
+        method="DELETE",
+        headers=[(b"x-graphql-event-stream-token", token.encode())],
+        query_string=query_string,
+        user=user,
+        session=session,
+    )
+
+
+def make_sse_get_operation_communicator(
+    *,
+    user: User,
+    session: SessionStore,
+    token: str,
+    query: str,
+    operation_id: str,
+) -> ApplicationCommunicator:
+    extensions = json.dumps({"operationId": operation_id}, separators=(",", ":"))
+    query_string = urlencode({"token": token, "query": query, "extensions": extensions}).encode()
+    return make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"application/json")],
+        query_string=query_string,
+        user=user,
+        session=session,
+    )

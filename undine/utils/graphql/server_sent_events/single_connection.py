@@ -5,6 +5,7 @@ import dataclasses
 import io
 import uuid
 from collections.abc import AsyncIterator
+from contextlib import suppress
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -288,10 +289,13 @@ class GraphQLOverSSESCHandler:
                 completed = completed or event.event == "complete"
                 await self.signaler.signal_operation_event(stream_token, event.encode())
 
-        except asyncio.CancelledError:
+        # Catch any exception so to make sure client receives a complete event.
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
             if not completed:
-                complete_event = CompletedEventSC(operation_id=operation_id)
-                await self.signaler.signal_operation_event(stream_token, complete_event.encode())
+                # Suppress errors in case it's the signaler that's dead.
+                with suppress(Exception):
+                    complete_event = CompletedEventSC(operation_id=operation_id)
+                    await self.signaler.signal_operation_event(stream_token, complete_event.encode())
 
     async def finalize_operation(self, stream_token: str, operation_id: str) -> None:
         await self.signaler.unregister_operation(stream_token, operation_id)
@@ -315,6 +319,7 @@ class GraphQLOverSSESCHandler:
 
         await self.session.refresh()
         if self.session.get_stream_token() == stream_token:
+            self.session.delete_all_operations()
             self.session.delete_stream_token()
             self.session.delete_stream_state()
             await self.session.save()
