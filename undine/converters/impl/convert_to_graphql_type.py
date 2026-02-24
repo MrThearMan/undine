@@ -884,6 +884,9 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
         name=f"{ref_type.__schema_name__}Edge",
         description="An object describing an item in the connection.",
         fields=FunctionEqualityWrapper(edge_fields, context=ref),
+        extensions={
+            undine_settings.CONNECTION_EXTENSIONS_KEY: ref,
+        },
     )
 
     return get_or_create_graphql_object_type(

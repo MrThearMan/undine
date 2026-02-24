@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from graphql import (
     ExecutionContext,
     ExecutionResult,
+    GraphQLEnumType,
     GraphQLError,
     MiddlewareManager,
     OperationType,
@@ -54,9 +55,11 @@ from undine.hooks import (
 )
 from undine.http.utils import is_sse_request, is_websocket_request
 from undine.settings import undine_settings
+from undine.utils.graphql.undine_extensions import get_undine_orderset
 from undine.utils.graphql.utils import (
     get_error_execution_result,
     get_operation_type,
+    get_underlying_type,
     graphql_errors_hook,
     located_validation_error,
 )
@@ -828,6 +831,19 @@ class UndineValidationContext(ValidationContext):
         value = self.variables.get(variable)
         if value is None:
             return None
+
+        # If the variable is for an `OrderSet`, we need to convert the value to the python enum value.
+        plain_type = get_underlying_type(type_)
+        if isinstance(plain_type, GraphQLEnumType) and get_undine_orderset(plain_type) is not None:
+            try:
+                if isinstance(value, str):
+                    value = plain_type.values[value].value
+                elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+                    value = [plain_type.values[item].value for item in value]
+                else:
+                    return None
+            except Exception:  # noqa: BLE001
+                return None
 
         try:
             return ast_from_value(value, type_)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from graphql import GraphQLError, Undefined, ValidationRule, ast_from_value
+from graphql import GraphQLError, ValidationRule, ast_from_value
 from graphql.language import ast
 
 from undine import InterfaceType, MutationType, QueryType, UnionType
@@ -17,10 +17,12 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_filterset,
     get_undine_input,
     get_undine_interface_field,
+    get_undine_interface_type,
     get_undine_mutation_type,
     get_undine_order,
     get_undine_orderset,
     get_undine_query_type,
+    get_undine_union_type,
 )
 from undine.utils.graphql.utils import get_underlying_type
 from undine.utils.reflection import is_subclass
@@ -152,10 +154,25 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             # Handled by `graphql.validation.rules.known_type_names.KnownTypeNamesRule`
             return None
 
-        # Check that fragment definitions and inline fragments can be used on this type.
         undine_query_type = get_undine_query_type(graphql_type)
         if undine_query_type is not None:
             if not undine_query_type.__is_visible__(self.context.request):
+                self.report_type_error(graphql_type, node)
+                return self.BREAK
+
+            return None
+
+        undine_interface_type = get_undine_interface_type(graphql_type)
+        if undine_interface_type is not None:
+            if not undine_interface_type.__is_visible__(self.context.request):
+                self.report_type_error(graphql_type, node)
+                return self.BREAK
+
+            return None
+
+        undine_union_type = get_undine_union_type(graphql_type)
+        if undine_union_type is not None:
+            if not undine_union_type.__is_visible__(self.context.request):
                 self.report_type_error(graphql_type, node)
                 return self.BREAK
 
@@ -232,14 +249,25 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         ref = undine_field.ref
 
-        if isinstance(ref, Connection) and ref.query_type is not None:
-            ref = ref.query_type
+        if isinstance(ref, Connection):
+            if ref.query_type is not None:
+                ref = ref.query_type
+            elif ref.union_type is not None:
+                ref = ref.union_type
+            elif ref.interface_type is not None:
+                ref = ref.interface_type
 
         if is_subclass(ref, QueryType):
             return self.handle_query_type(ref, parent_type, field_node)
 
         if is_subclass(ref, MutationType):
             return self.handle_mutation_type(ref, parent_type, field_node)
+
+        if is_subclass(ref, InterfaceType):
+            return self.handle_interface_type(ref, parent_type, field_node)
+
+        if is_subclass(ref, UnionType):
+            return self.handle_union_type(ref, parent_type, field_node)
 
         return None
 
@@ -353,11 +381,9 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         value_node: ast.EnumValueNode | ast.VariableNode
         for value_node in node.values:
             if isinstance(value_node, ast.VariableNode):
-                value = self.context.variables.get(value_node.name.value, Undefined)
-                if value is Undefined:
+                value_node = self.context.variable_as_ast(value_node.name.value, enum_type)  # type: ignore[assignment]  # noqa: PLW2901
+                if not isinstance(value_node, ast.EnumValueNode):
                     continue
-
-                value_node = ast.EnumValueNode(value=value)  # noqa: PLW2901
 
             enum_name = value_node.value
             enum_value = enum_type.values.get(enum_name)

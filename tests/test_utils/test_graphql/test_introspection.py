@@ -286,6 +286,43 @@ def test_introspection__visibility__query_type__connection(graphql, undine_setti
     # 'tasks' Connection Entrypoint is hidden, since its node type is the query type.
     assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
 
+    assert ("TaskTypeConnection" in types) is is_visible
+    assert ("TaskTypeEdge" in types) is is_visible
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+def test_introspection__visibility__query_type__connection__type_lookup(graphql, undine_settings, is_visible) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class Query(RootType):
+        tasks = Entrypoint(Connection(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            edge: __type(name: "TaskTypeEdge") { name }
+            connection: __type(name: "TaskTypeConnection") { name }
+        }
+    """
+
+    with enable_visibility_patch():
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+    if is_visible:
+        assert response.data["edge"]["name"] == "TaskTypeEdge"
+        assert response.data["connection"]["name"] == "TaskTypeConnection"
+    else:
+        assert response.data["edge"] is None
+        assert response.data["connection"] is None
+
 
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__calculation_argument(graphql, undine_settings, is_visible) -> None:
