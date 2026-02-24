@@ -1,5 +1,5 @@
 ---
-description: Use when the user explicitly asks to run tests using nox
+description: Use ONLY when the user EXPLICITLY asks to run tests using nox, never otherwise!
 alwaysApply: false
 ---
 

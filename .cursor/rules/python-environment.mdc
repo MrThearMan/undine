@@ -1,12 +1,12 @@
 ---
-description: Use when running Python commands, tests, linting, or setting up a virtualenv
-alwaysApply: false
+description: Use when running Python commands, tests, linting, or to set up a virtualenv
+alwaysApply: true
 ---
 
 Use Poetry for all Python execution. Never run `python` or `pytest` directly.
 
 ```bash
-poetry install --all-extras
-poetry run pytest tests/
+poetry install --all-extras --all-groups
+poetry run pytest ...
 poetry run python manage.py ...
 ```
