@@ -2,19 +2,23 @@
 help:
     @just -l
 
+# Start the development server in async mode
+async port="8000":
+    @poetry run python async.py
+
 # Check undine is installed correctly
 check:
     @poetry run python manage.py check undine
 
-# Start the development server
+# Run all tests with coverage
+coverage:
+    @poetry run coverage run -m pytest
+
+# Start the development server in sync mode
 dev port="8000":
     @poetry run python manage.py runserver localhost:{{port}}
 
-# Start the development server using uvicorn
-dev-async port="8000":
-    @poetry run uvicorn example_project.project.asgi:application --reload --host localhost --port {{port}}
-
-# Start the docs server
+# Start an mkdocs server
 docs port="8080":
     @poetry run mkdocs serve -a localhost:{{port}} -w docs -o --livereload
 
@@ -22,7 +26,7 @@ docs port="8080":
 docs-theme style="fruity":
     @poetry run pygmentize -f html -S {{style}} -a .highlight > docs/css/pygments.css
 
-# Generate testing data
+# Generate testing data for local development
 generate:
     @poetry run python manage.py create_test_data
 
@@ -30,15 +34,23 @@ generate:
 hook:
     @poetry run pre-commit install
 
+# Update all pre-commit hooks
+hook-update:
+    @poetry run pre-commit autoupdate
+
+# Install all dependencies & make sure they are up to date
+install:
+    @poetry sync --all-extras --all-groups
+
 # Update GraphiQL import map
 importmap:
     @poetry run python manage.py update_import_map
 
-# Run pre-commit hooks
+# Run pre-commit hooks on all files
 lint:
     @poetry run pre-commit run --all-files
 
-# Lock dependencies
+# Generate a new dependency lock file
 lock:
     @poetry lock
 
@@ -50,9 +62,17 @@ migrate:
 migrations:
     @poetry run python manage.py makemigrations
 
-# Run tests in all supported python versions using nox
+# Run tests in all supported python and core dependency versions using nox
 nox:
     @poetry run nox
+
+# List all available nox sessions
+nox-list:
+    @poetry run nox --list
+
+# Run a single nox session
+nox-one name:
+    @poetry run nox -s "{{name}}"
 
 # Run py-spy to profiler on a given process
 profile pid:
@@ -66,18 +86,14 @@ schema:
 static:
     @poetry run python manage.py collectstatic --no-input
 
-# Set up local config files (mypy.ini, pyrightconfig.json, pytest.ini)
+# Set up local config files
 setup-local-configs:
     @poetry run python manage.py setup_local_configs
 
-# Sync dependencies
-sync:
-    @poetry sync --all-extras --all-groups
+# Run all tests with coverage
+test dir=".":
+    @poetry run pytest "{{dir}}"
 
-# Run a specific test by name
-test name:
+# Run a specific test(s) by keyword (pytest "-k" option)
+test-one name:
     @poetry run pytest -k "{{name}}"
-
-# Run all tests
-tests:
-    @poetry run coverage run -m pytest
