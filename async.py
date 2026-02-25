@@ -6,10 +6,11 @@ from granian import Granian
 from granian.constants import Interfaces
 
 if __name__ == "__main__":
+    os.environ.setdefault("ASYNC", "true")
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.project.settings")
     Granian(
         target="example_project.project.asgi:application",
         port=8000,
         interface=Interfaces.ASGI,
-        log_level="error",
+        log_level="info",
     ).serve()
