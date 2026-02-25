@@ -28,6 +28,7 @@ profile.svg
 pytest.ini
 mypy.ini
 pyrightconfig.json
+CLAUDE.md
 
 # venv
 /.venv/

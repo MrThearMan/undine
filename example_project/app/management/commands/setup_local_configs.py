@@ -20,6 +20,7 @@ class Command(BaseCommand):
         self.setup_mypy_ini(root, python_exe)
         self.setup_pyrightconfig(root, venv)
         self.setup_pytest_ini(root)
+        self.setup_claude_md(root)
 
     def setup_mypy_ini(self, root: Path, python_exe: Path) -> None:
         path = root / "mypy.ini"
@@ -63,3 +64,20 @@ class Command(BaseCommand):
             + "\n"
         )
         self.stdout.write(f"Created {path}")
+
+    def setup_claude_md(self, root: Path) -> None:
+        claude_path = root / "CLAUDE.md"
+        if claude_path.exists():
+            self.stdout.write(f"{claude_path} already exists, skipping")
+            return
+
+        agents_path = root / "AGENTS.md"
+        claude_path.symlink_to(agents_path)
+
+    def setup_contributing_md(self, root: Path) -> None:
+        contributing_path = root / "CONTRIBUTING.md"
+        if contributing_path.exists():
+            contributing_path.unlink()
+
+        docs_contributing_path = root / "docs" / "contributing.md"
+        contributing_path.symlink_to(docs_contributing_path)
