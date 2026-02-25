@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Contributing - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Contributing";
+        var mkdocs_page_input_path = "contributing.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="How to contribute to Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Contributing</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#i-found-a-bug">I found a bug!</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#i-have-a-feature-request">I have a feature request!</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#i-have-a-question">I have a question!</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-pull-request">Creating a pull request</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#code-review-process">Code review process</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-new-release">Creating a new release</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-the-environment">Setting up the environment</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#guidelines-for-writing-code">Guidelines for writing code</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#all-code-should-be-tested-with-100-coverage">All code should be tested with 100% coverage</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#all-code-should-be-typed-when-possible">All code should be typed when possible</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#all-public-functions-methods-and-classes-should-include-a-docstring">All "public" functions, methods, and classes should include a docstring</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#all-code-should-be-linted-using-the-projects-lint-rules">All code should be linted using the projects lint rules</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#guidelines-for-writing-documentation">Guidelines for writing documentation</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Contributing</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">🔗</a></h1>
+<p>Thank you for your interest in contributing!</p>
+<p>To start, please read the library <a href="https://mrthearman.github.io/undine/">docs</a> thoroughly.
+If you don't find what you are looking for, proceed with the steps below.</p>
+<h2 id="i-found-a-bug">I found a bug!<a class="headerlink" href="#i-found-a-bug" title="Permanent link">🔗</a></h2>
+<p>Please file a <a href="https://github.com/MrThearMan/undine/issues/new?template=bug_report.yml">bug report</a>. If you are not using the latest version of the library,
+please upgrade and see if that fixes the issue. If not, please create a minimal example
+that demonstrates the bug and instructions on how to create that setup from a new virtual
+environment. Also include any error tracebacks (unabridged when possible). This will help
+a lot when diagnosing the bug. Do not use pictures to include the traceback.</p>
+<h2 id="i-have-a-feature-request">I have a feature request!<a class="headerlink" href="#i-have-a-feature-request" title="Permanent link">🔗</a></h2>
+<p>You can suggest new features to be implemented via a <a href="https://github.com/MrThearMan/undine/issues/new?template=feature_request.yml">feature request</a>.
+You can ask me to implement it or work on it yourself but all features should
+be discussed and agreed upon first before any coding is done.</p>
+<h2 id="i-have-a-question">I have a question!<a class="headerlink" href="#i-have-a-question" title="Permanent link">🔗</a></h2>
+<p>Please ask it in the <a href="https://github.com/MrThearMan/undine/discussions">discussions section</a> instead of creating an issue.
+If your question warrants an issue, I'll ask you to create it.
+Questions about clarifying documentation are appreciated!</p>
+<h2 id="creating-a-pull-request">Creating a pull request<a class="headerlink" href="#creating-a-pull-request" title="Permanent link">🔗</a></h2>
+<p>Once you have created a <a href="https://github.com/MrThearMan/undine/issues/new?template=feature_request.yml">feature request</a>, we have agreed on an implementation,
+and you wish to work on it, follow these steps to create a pull request.</p>
+<ol>
+<li><a href="https://github.com/MrThearMan/undine/fork">Fork the repository</a>.</li>
+<li>Clone your fork and create a new branch from the <code>main</code> branch.</li>
+<li><a href="#setting-up-the-environment">Set up the environment</a>.</li>
+<li>Make changes and write tests following <a href="#guidelines-for-writing-code">these guidelines</a>.</li>
+<li>Add documentation when applicable following <a href="#guidelines-for-writing-documentation">these guidelines</a>.</li>
+<li>Push the changes to your fork.</li>
+<li>Create a <a href="https://github.com/MrThearMan/undine/compare">pull request</a> targeting the main branch.</li>
+<li>Sit back while your pull request is <a href="#code-review-process">reviewed</a>.</li>
+</ol>
+<p>Note that a pull request should always be aimed at solving a single issue.
+If you want multiple issues solved, make separate pull requests for each.
+Corrections for spelling mistakes are the exception, since I make so many of those...</p>
+<p>Pull requests should be kept as small as possible while following the guidelines
+mentioned above. Smaller pull request are easier to review and test which helps
+them get merged.</p>
+<h2 id="code-review-process">Code review process<a class="headerlink" href="#code-review-process" title="Permanent link">🔗</a></h2>
+<p>Pull requests will be reviewed automatically and manually.</p>
+<p>In the automated phase, <a href="https://github.com/features/actions">GitHub Actions</a> will run testing pipelines for all supported
+operating systems and python versions, and <a href="https://pre-commit.ci/">pre-commit CI</a> will check linting rules.
+If you encounter any errors, try to fix them based on what the pipelines tell you.
+If coverage is lowered, add tests, noting the guidelines <a href="#guidelines-for-writing-code">here</a>.
+Don't be afraid to ask for advice if you're unsure what is wrong.</p>
+<blockquote>
+<p>Note for first-time contributors: Checks are not allowed to run automatically for
+first-time contributors, so you'll need me to approve them each time you push new code.</p>
+</blockquote>
+<p>In the manual phase, I will review the pull request by adding comments with suggestions
+for changes. If you agree with the suggestions, implement them and push the changes to
+you fork — the pull request will be updated automatically. You can either amend your previous
+commits or add more commits, either is fine. If you disagree with the suggestions, provide
+your reasons for disagreeing and we can discuss what to do.</p>
+<p>Once all automated checks have passed and I have accepted the pull request, your code will be
+merged to the <code>main</code> branch. Any related issues should be closed as completed.
+I'll usually make a <a href="#creating-a-new-release">new release</a> after each new feature,
+but if not, you can also ask for one.</p>
+<h2 id="creating-a-new-release">Creating a new release<a class="headerlink" href="#creating-a-new-release" title="Permanent link">🔗</a></h2>
+<ol>
+<li>Increment the version in <code>pyproject.toml</code>, loosely following <a href="https://semver.org/">semantic versioning</a> rules.</li>
+<li>Push the change to the <code>main</code> branch with the commit message <code>Bump version</code>.</li>
+<li><a href="https://github.com/MrThearMan/undine/releases/new">Draft a new release</a> on GitHub.</li>
+<li>Use <code>v{version}</code> (e.g. v1.2.3) for the tag name and <code>Release {version}</code> for the release title,
+     using the same version that's in <code>pyproject.toml</code>. Note that the release will be made
+     with the <code>pyproject.toml</code> version and not the tag name!</li>
+<li>Fill in the release description.</li>
+<li>Add any attachments when applicable.</li>
+<li>Publish the release. This will start the <code>release</code> pipeline in <a href="https://github.com/features/actions">GitHub Actions</a>.</li>
+<li>Check that the release pipeline was successful. If not, delete the tag from origin
+   with <code>git push --delete origin {tag_name}</code> and fix the issue before trying again.</li>
+</ol>
+<h2 id="setting-up-the-environment">Setting up the environment<a class="headerlink" href="#setting-up-the-environment" title="Permanent link">🔗</a></h2>
+<ol>
+<li>Install <a href="https://python-poetry.org/docs/#installation">Poetry</a>.</li>
+<li>Install <a href="https://github.com/casey/just">Just</a>.</li>
+<li>Run <code>just install</code> to create a virtual environment and install project dependencies.</li>
+<li>Run <code>just hook</code> to install the <a href="https://pre-commit.com/">pre-commit</a> hooks.</li>
+</ol>
+<p>Run <code>just help</code> to list all existing development commands and their descriptions.</p>
+<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">🔗</a></h2>
+<p>Tests can be run with <code>just test</code> and individual tests with <code>just test &lt;test_name&gt;</code>.
+This will run tests in you <a href="#setting-up-the-environment">local environment</a>.</p>
+<p>You can also test your code in multiple environments with <a href="https://github.com/wntrblm/nox">nox</a>. To do this, you must
+install python interpreters for all python version the library supports and then run
+<code>just nox</code>.</p>
+<p>Linting can be run on-demand with <code>just lint</code> or automatically before commits
+when installed with <code>just hook</code>.</p>
+<h2 id="guidelines-for-writing-code">Guidelines for writing code<a class="headerlink" href="#guidelines-for-writing-code" title="Permanent link">🔗</a></h2>
+<h3 id="all-code-should-be-tested-with-100-coverage">All code should be tested with 100% coverage<a class="headerlink" href="#all-code-should-be-tested-with-100-coverage" title="Permanent link">🔗</a></h3>
+<p>Do not write tests simply to archive 100% coverage. Instead, try to write tests for all the ways the
+feature could be used (use cases), including ways that should not work, and then test for coverage.
+If you find uncovered code, see if you can remove it, or maybe you simply missed a use case.
+You should always need more tests to cover all use cases than to achieve 100% coverage.</p>
+<p>Adding <code># pragma: no cover</code> to a line of code will ignore it from coverage results, but this
+should be used <em><strong>very</strong></em> sparingly, as this can lead to undocumented behavior if you are not careful.
+An example of a line that might be ignored like this is an exception
+that is raised at the end of a match statement, where its cases cover all possible inputs
+(basically a statement that should never be reached).</p>
+<h3 id="all-code-should-be-typed-when-possible">All code should be typed when possible<a class="headerlink" href="#all-code-should-be-typed-when-possible" title="Permanent link">🔗</a></h3>
+<p>Tests are an exception to this.</p>
+<p>Make sure the typing construct used is supported in all python versions
+the library supports. If not, you should reconsider if there is an older alternative,
+or if there is a backport that can be installed conditionally for the older versions.
+In these cases, the type should be added to the <code>undine/typing.py</code> file, so that the
+import logic between the backport and the standard library is contained in one place.</p>
+<p>Create all custom types in <code>undine/typing.py</code> and import them from there.
+This helps avoids circular imports and prevents creating duplicate types.</p>
+<p>Use of <code>TypedDict</code> is encouraged where dicts would be used.</p>
+<h3 id="all-public-functions-methods-and-classes-should-include-a-docstring">All "public" functions, methods, and classes should include a docstring<a class="headerlink" href="#all-public-functions-methods-and-classes-should-include-a-docstring" title="Permanent link">🔗</a></h3>
+<p>"Public" here means that the piece of code is intended to be used by the library users
+directly, and not inside the library itself.</p>
+<p>Docstrings should be written in <a href="https://peps.python.org/pep-0287/">reStructuredText format</a>.</p>
+<p>Code that is short and <em>clearly</em> self-documenting does not necessarily need a docstring.
+As an example, <code>def sum(i: int, j: int) -&gt; int: return i + j</code> does not need a docstring.
+This applies more broadly to arguments, e.g., when a function might need a docstring, the arguments
+might not need explicit documentation.</p>
+<p>Keep the docstring to the point. Each line of documentation has a maintenance cost.
+Documentation is not an excuse to write code that is hard to understand.
+Docstrings can include code examples, but longer one should be written to <a href="https://mrthearman.github.io/undine/">docs</a>.</p>
+<h3 id="all-code-should-be-linted-using-the-projects-lint-rules">All code should be linted using the projects lint rules<a class="headerlink" href="#all-code-should-be-linted-using-the-projects-lint-rules" title="Permanent link">🔗</a></h3>
+<p>Easiest way to do this is to install the <a href="https://pre-commit.com/">pre-commit</a> hooks with <code>just hook</code>. This will make
+sure the pre-commit hooks will run automatically when you make a commit. You can also run
+hooks manually with <code>just lint</code>.</p>
+<p>Comments that ignore linting rules (<code># type: ignore[...]</code>, <code># fmt: off</code>, <code># noqa: ...</code>)
+should be used <em><strong>very</strong></em> sparingly. They are often not necessary and can lead to
+undocumented behavior if you are not careful.</p>
+<h2 id="guidelines-for-writing-documentation">Guidelines for writing documentation<a class="headerlink" href="#guidelines-for-writing-documentation" title="Permanent link">🔗</a></h2>
+<ul>
+<li>All documentation is written in <code>docs/</code> using markdown, and built with <a href="https://www.mkdocs.org/">mkdocs</a></li>
+<li>Write in idiomatic english, using simple language</li>
+<li>Keep examples simple and self-contained</li>
+<li>Give the reader time to understand the basics before going over edge cases and configurations</li>
+<li>Use markdown features, like <a href="https://www.mkdocs.org/user-guide/writing-your-docs/#fenced-code-blocks">fenced code blocks</a>, <a href="https://www.markdownguide.org/basic-syntax#blockquotes-1">blockquotes</a>, <a href="https://www.markdownguide.org/basic-syntax#horizontal-rules">horizontal rules</a>,
+  or <a href="https://www.markdownguide.org/basic-syntax#links">links</a>, to emphasize and format text</li>
+<li>If diagrams are needed, use <a href="https://mermaid.js.org/">mermaid.js</a> inside <a href="https://www.mkdocs.org/user-guide/writing-your-docs/#fenced-code-blocks">fenced code blocks</a></li>
+<li>Break up lines around the 100 character mark</li>
+<li>Do not use emojis</li>
+<li>Double-check for spelling mistakes and grammar</li>
+</ul>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">🔗</a></h2>
+<p>By contributing, you agree that your contributions will be licensed under the <a href="http://choosealicense.com/licenses/mit/">MIT Licence</a>.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../faq/" title="FAQ"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../faq/" style="color: #fcfcfc">« Previous</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

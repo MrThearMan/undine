@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Scalars - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Scalars";
+        var mkdocs_page_input_path = "scalars.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on GraphQL scalars in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Scalars</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#built-in-scalars">Built-in Scalars</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#any">Any</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#base16">Base16</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#base32">Base32</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#base64">Base64</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#date">Date</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#datetime">DateTime</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#decimal">Decimal</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#duration">Duration</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#email">Email</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#file">File</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ip">IP</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ipv4">IPv4</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ipv6">IPv6</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#image">Image</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#json">JSON</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#null">Null</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#time">Time</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#url">URL</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#uuid">UUID</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#modifying-existing-scalars">Modifying existing scalars</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-scalars">Custom scalars</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Scalars</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="scalars">Scalars<a class="headerlink" href="#scalars" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover how GraphQL scalars work in Undine.
+Scalars are GraphQL types that represent concrete data types like
+strings, numbers, and booleans.</p>
+<h2 id="built-in-scalars">Built-in Scalars<a class="headerlink" href="#built-in-scalars" title="Permanent link">🔗</a></h2>
+<p>In addition to GraphQL's built-in scalars of
+<a href="https://spec.graphql.org/draft/#sec-Int" target="_blank"><code>Int</code></a>,
+<a href="https://spec.graphql.org/draft/#sec-Float" target="_blank"><code>Float</code></a>,
+<a href="https://spec.graphql.org/draft/#sec-String" target="_blank"><code>String</code></a>,
+<a href="https://spec.graphql.org/draft/#sec-Boolean" target="_blank"><code>Boolean</code></a>,
+and <a href="https://spec.graphql.org/draft/#sec-ID" target="_blank"><code>ID</code></a>,
+Undine provides its own scalars that are useful for representing common data types
+in Python.</p>
+<h3 id="any"><code>Any</code><a class="headerlink" href="#any" title="Permanent link">🔗</a></h3>
+<p>Represent any value accepted by GraphQL. Used for e.g. for <a href="../unions/"><code>UnionTypes</code></a>.</p>
+<h3 id="base16"><code>Base16</code><a class="headerlink" href="#base16" title="Permanent link">🔗</a></h3>
+<p>Represents a base16-encoded string as defined in
+<a href="https://datatracker.ietf.org/doc/html/rfc4648#section-8" target="_blank">RFC 4648</a>.</p>
+<h3 id="base32"><code>Base32</code><a class="headerlink" href="#base32" title="Permanent link">🔗</a></h3>
+<p>Represents a base32-encoded string as defined in
+<a href="https://datatracker.ietf.org/doc/html/rfc4648#section-8" target="_blank">RFC 4648</a>.</p>
+<h3 id="base64"><code>Base64</code><a class="headerlink" href="#base64" title="Permanent link">🔗</a></h3>
+<p>Represents a base64-encoded string as defined in
+<a href="https://datatracker.ietf.org/doc/html/rfc4648#section-8" target="_blank">RFC 4648</a>.</p>
+<h3 id="date"><code>Date</code><a class="headerlink" href="#date" title="Permanent link">🔗</a></h3>
+<p>Represents a date value as specified by ISO 8601.
+Maps to the Python <code>datetime.date</code> type.
+See <a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6" target="_blank">RFC 3339</a>.</p>
+<h3 id="datetime"><code>DateTime</code><a class="headerlink" href="#datetime" title="Permanent link">🔗</a></h3>
+<p>Represents a date and time value as specified by ISO 8601.
+Maps to the Python <code>datetime.datetime</code> type.
+See <a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6" target="_blank">RFC 3339</a>.</p>
+<h3 id="decimal"><code>Decimal</code><a class="headerlink" href="#decimal" title="Permanent link">🔗</a></h3>
+<p>Represents a number as a string for correctly rounded floating point arithmetic.
+Maps to the Python <code>decimal.Decimal</code> type.</p>
+<h3 id="duration"><code>Duration</code><a class="headerlink" href="#duration" title="Permanent link">🔗</a></h3>
+<p>Represents a duration of time in seconds.
+Maps to the Python <code>datetime.timedelta</code> type.</p>
+<h3 id="email"><code>Email</code><a class="headerlink" href="#email" title="Permanent link">🔗</a></h3>
+<p>Represents a valid email address.
+See <a href="https://datatracker.ietf.org/doc/html/rfc5322#section-3.4.1" target="_blank">RFC 5322</a>.</p>
+<h3 id="file"><code>File</code><a class="headerlink" href="#file" title="Permanent link">🔗</a></h3>
+<p>Represents any kind of file. See the <a href="../file-upload/">file upload</a> section.</p>
+<h3 id="ip"><code>IP</code><a class="headerlink" href="#ip" title="Permanent link">🔗</a></h3>
+<p>Represents a valid IPv4 or IPv6 address.
+See <a href="https://datatracker.ietf.org/doc/html/rfc8200" target="_blank">RFC 8200</a>.
+and <a href="https://datatracker.ietf.org/doc/html/rfc791" target="_blank">RFC 791</a>.</p>
+<h3 id="ipv4"><code>IPv4</code><a class="headerlink" href="#ipv4" title="Permanent link">🔗</a></h3>
+<p>Represents a valid IPv4 address.
+See <a href="https://datatracker.ietf.org/doc/html/rfc791" target="_blank">RFC 791</a>.</p>
+<h3 id="ipv6"><code>IPv6</code><a class="headerlink" href="#ipv6" title="Permanent link">🔗</a></h3>
+<p>Represents a valid IPv6 address.
+See <a href="https://datatracker.ietf.org/doc/html/rfc8200" target="_blank">RFC 8200</a>.</p>
+<h3 id="image"><code>Image</code><a class="headerlink" href="#image" title="Permanent link">🔗</a></h3>
+<p>Represents an image file. See the <a href="../file-upload/">file upload</a> section.</p>
+<h3 id="json"><code>JSON</code><a class="headerlink" href="#json" title="Permanent link">🔗</a></h3>
+<p>Represents a JSON serializable object.
+Maps to the Python <code>dict</code> type.
+See <a href="https://datatracker.ietf.org/doc/html/rfc8259" target="_blank">RFC 8259</a>.</p>
+<h3 id="null"><code>Null</code><a class="headerlink" href="#null" title="Permanent link">🔗</a></h3>
+<p>Represents represents an always null value.
+Maps to the Python <code>None</code> value.</p>
+<h3 id="time"><code>Time</code><a class="headerlink" href="#time" title="Permanent link">🔗</a></h3>
+<p>Represents a time value as specified by ISO 8601.
+Maps to the Python <code>datetime.time</code> type.
+See <a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6" target="_blank">RFC 3339</a>.</p>
+<h3 id="url"><code>URL</code><a class="headerlink" href="#url" title="Permanent link">🔗</a></h3>
+<p>Represents a valid URL.
+See <a href="https://datatracker.ietf.org/doc/html/rfc3986" target="_blank">RFC 3986</a>.</p>
+<h3 id="uuid"><code>UUID</code><a class="headerlink" href="#uuid" title="Permanent link">🔗</a></h3>
+<p>Represents a universally unique identifier string.
+Maps to Python's <code>uuid.UUID</code> type.
+See <a href="https://datatracker.ietf.org/doc/html/rfc9562" target="_blank">RFC 9562</a>.</p>
+<h2 id="modifying-existing-scalars">Modifying existing scalars<a class="headerlink" href="#modifying-existing-scalars" title="Permanent link">🔗</a></h2>
+<p>All scalars have two functions that define its operation:</p>
+<ol>
+<li><code>parse</code>, which is used to parse incoming data to python types</li>
+<li><code>serialize</code>, which is used to serialize python data to GraphQL accepted types</li>
+</ol>
+<p>For Undine's additional built-in scalars, these functions are <em>single dispatch generic functions</em>.
+This means that you can register different implementations for the functions which are used
+depending on the type of the input value. Think of them like a dynamic switch statement.
+This allows you to replace or extend the behavior of a scalar depending on your use case.</p>
+<p>For example, you might want to use the <a href="https://github.com/ariebovenberg/whenever" target="_blank">whenever</a> library instead
+or in addition to python's built-in <code>datetime</code>. To do this, you can register a new
+implementation for the <code>parse</code> function of the <code>DateTime</code> scalar.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#__codelineno-0-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">whenever</span><span class="w"> </span><span class="kn">import</span> <span class="n">Instant</span><span class="p">,</span> <span class="n">PlainDateTime</span><span class="p">,</span> <span class="n">ZonedDateTime</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.scalars.datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_scalar</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="nd">@datetime_scalar</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ZonedDateTime</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="c1"># Default "str" parse overridden to use 'whenever'</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">ZonedDateTime</span><span class="o">.</span><span class="n">parse_common_iso</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="nd">@datetime_scalar</span><span class="o">.</span><span class="n">serialize</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Instant</span> <span class="o">|</span> <span class="n">ZonedDateTime</span> <span class="o">|</span> <span class="n">PlainDateTime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>    <span class="c1"># Extend serialization with types from 'whenever'.</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>    <span class="c1"># Same implementation for all types in the union</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>    <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">format_common_iso</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="custom-scalars">Custom scalars<a class="headerlink" href="#custom-scalars" title="Permanent link">🔗</a></h2>
+<p>You can also define your own scalars to represent types that cannot be represented
+by any of Undine's built-in scalars. Let's create a new scalar named <code>Vector3</code>
+that represents a 3D vector using a tuple of three integers.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span>
+<span class="normal"><a href="#__codelineno-1-16">16</a></span>
+<span class="normal"><a href="#__codelineno-1-17">17</a></span>
+<span class="normal"><a href="#__codelineno-1-18">18</a></span>
+<span class="normal"><a href="#__codelineno-1-19">19</a></span>
+<span class="normal"><a href="#__codelineno-1-20">20</a></span>
+<span class="normal"><a href="#__codelineno-1-21">21</a></span>
+<span class="normal"><a href="#__codelineno-1-22">22</a></span>
+<span class="normal"><a href="#__codelineno-1-23">23</a></span>
+<span class="normal"><a href="#__codelineno-1-24">24</a></span>
+<span class="normal"><a href="#__codelineno-1-25">25</a></span>
+<span class="normal"><a href="#__codelineno-1-26">26</a></span>
+<span class="normal"><a href="#__codelineno-1-27">27</a></span>
+<span class="normal"><a href="#__codelineno-1-28">28</a></span>
+<span class="normal"><a href="#__codelineno-1-29">29</a></span>
+<span class="normal"><a href="#__codelineno-1-30">30</a></span>
+<span class="normal"><a href="#__codelineno-1-31">31</a></span>
+<span class="normal"><a href="#__codelineno-1-32">32</a></span>
+<span class="normal"><a href="#__codelineno-1-33">33</a></span>
+<span class="normal"><a href="#__codelineno-1-34">34</a></span>
+<span class="normal"><a href="#__codelineno-1-35">35</a></span>
+<span class="normal"><a href="#__codelineno-1-36">36</a></span>
+<span class="normal"><a href="#__codelineno-1-37">37</a></span>
+<span class="normal"><a href="#__codelineno-1-38">38</a></span>
+<span class="normal"><a href="#__codelineno-1-39">39</a></span>
+<span class="normal"><a href="#__codelineno-1-40">40</a></span>
+<span class="normal"><a href="#__codelineno-1-41">41</a></span>
+<span class="normal"><a href="#__codelineno-1-42">42</a></span>
+<span class="normal"><a href="#__codelineno-1-43">43</a></span>
+<span class="normal"><a href="#__codelineno-1-44">44</a></span>
+<span class="normal"><a href="#__codelineno-1-45">45</a></span>
+<span class="normal"><a href="#__codelineno-1-46">46</a></span>
+<span class="normal"><a href="#__codelineno-1-47">47</a></span>
+<span class="normal"><a href="#__codelineno-1-48">48</a></span>
+<span class="normal"><a href="#__codelineno-1-49">49</a></span>
+<span class="normal"><a href="#__codelineno-1-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.scalars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScalarType</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">Vector3</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="c1"># Create a new ScalarType for our custom scalar.</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="c1"># In `ScalarType[Vector3, str]`, the first type parameter is the type that</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="c1"># the scalar will parse to, and the second the type that it will serialize to.</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="n">vector3_scalar</span><span class="p">:</span> <span class="n">ScalarType</span><span class="p">[</span><span class="n">Vector3</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">ScalarType</span><span class="p">(</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"Vector3"</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">"Represents a 3D vector as a string in format 'X,Y,Z'."</span><span class="p">,</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="p">)</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="c1"># Create the GraphQLScalarType from graphql-core.</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="c1"># This is the actual scalar we can add to our schema.</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="n">GraphQLVector3</span> <span class="o">=</span> <span class="n">vector3_scalar</span><span class="o">.</span><span class="n">as_graphql_scalar</span><span class="p">()</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18"></a>
+<a id="__codelineno-1-19" name="__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="c1"># Register the parse and serialize functions for our scalar.</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21"></a><span class="nd">@vector3_scalar</span><span class="o">.</span><span class="n">parse</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vector3</span><span class="p">:</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24"></a>        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25"></a>        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">strip</span><span class="p">()),</span> <span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26"></a>
+<a id="__codelineno-1-27" name="__codelineno-1-27"></a>    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Invalid vector format: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29"></a>        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31"></a>
+<a id="__codelineno-1-32" name="__codelineno-1-32"></a><span class="nd">@vector3_scalar</span><span class="o">.</span><span class="n">serialize</span><span class="o">.</span><span class="n">register</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Vector must have 3 components, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36"></a>        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37"></a>
+<a id="__codelineno-1-38" name="__codelineno-1-38"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Vector component X is not an integer, got </span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40"></a>        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41"></a>
+<a id="__codelineno-1-42" name="__codelineno-1-42"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Vector component Y is not an integer, got </span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44"></a>        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45"></a>
+<a id="__codelineno-1-46" name="__codelineno-1-46"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47"></a>        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Vector component Z is not an integer, got </span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48"></a>        <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49"></a>
+<a id="__codelineno-1-50" name="__codelineno-1-50"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">,</span><span class="si">{</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div></td></tr></table></div>
+<p>If <code>Vector3</code> corresponds to a Django Model field, you could also let Undine know
+about it by registering it for its many built-in converters. This way a Model field
+can be converted automatically to your scalar for <a href="../queries/#fields"><code>Fields</code></a>,
+<a href="../mutations/#inputs"><code>Inputs</code></a>, <a href="../filtering/#filter"><code>Filters</code></a>, and <a href="../ordering/#order"><code>Orders</code></a>.
+More on this in the <a href="../hacking-undine/">"Hacking Undine"</a> section.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../unions/" title="Unions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../directives/" title="Directives">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../unions/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../directives/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

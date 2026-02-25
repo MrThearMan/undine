@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Validation Rules - Undine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+        <link href="../css/pygments.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Validation Rules";
+        var mkdocs_page_input_path = "validation-rules.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Undine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Validation Rules</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#additional-rules">Additional Rules</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#maxaliascountrule">MaxAliasCountRule</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#maxcomplexityrule">MaxComplexityRule</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#maxdirectivecountrule">MaxDirectiveCountRule</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#oneofinputobjecttyperule">OneOfInputObjectTypeRule</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#visibilityrule">VisibilityRule</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-validation-rules">Custom validation rules</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Undine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Validation Rules</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="validation-rules">Validation rules<a class="headerlink" href="#validation-rules" title="Permanent link">🔗</a></h1>
+<blockquote>
+<p>This is an advanced GraphQL core feature. For validating mutations, see
+the <a href="../mutations/#validation">Mutations</a> documentation.</p>
+</blockquote>
+<p>A GraphQL operation is executed in a series of steps. These steps are:</p>
+<ol>
+<li><strong>Parsing</strong> the GraphQL source document to a GraphQL AST.</li>
+<li><strong>Validation</strong> of the GraphQL AST against the GraphQL schema.</li>
+<li><strong>Execution</strong> of the GraphQL operation according to the GraphQL AST.</li>
+</ol>
+<p>By default, <a href="https://github.com/graphql-python/graphql-core" target="_blank">graphql-core</a> (which Undine uses under the hood) comes with a set of validation rules
+which make sure that a GraphQL operation is valid according to the GraphQL specification.
+Undine adds a few more validation rules of its own, and allows you to add your own as well.</p>
+<h2 id="additional-rules">Additional Rules<a class="headerlink" href="#additional-rules" title="Permanent link">🔗</a></h2>
+<h3 id="maxaliascountrule"><code>MaxAliasCountRule</code><a class="headerlink" href="#maxaliascountrule" title="Permanent link">🔗</a></h3>
+<p>This validation rule checks that the number of aliases in a GraphQL operation does not exceed the maximum allowed,
+as set by the <a href="../settings/#max_allowed_aliases"><code>MAX_ALLOWED_ALIASES</code></a> setting.
+This is used to prevent denial-of-service attacks and heap overflow from "alias overloading" which happens
+when a GraphQL operation is executed multiple times in a single request by aliasing it over and over again,
+leading to high execution time and thus high CPU and memory usage.</p>
+<h3 id="maxcomplexityrule"><code>MaxComplexityRule</code><a class="headerlink" href="#maxcomplexityrule" title="Permanent link">🔗</a></h3>
+<p>This validation rule checks that the complexity of a GraphQL operation does not exceed the maximum allowed,
+as set by the <a href="../settings/#max_query_complexity"><code>MAX_QUERY_COMPLEXITY</code></a> setting.
+This is used to prevent denial-of-service attacks that could arise from slow execution of
+a GraphQL operation due to the complexity of generated database queries or API calls.
+See the <a href="../queries/#complexity">complexity</a> documentation for more information.</p>
+<h3 id="maxdirectivecountrule"><code>MaxDirectiveCountRule</code><a class="headerlink" href="#maxdirectivecountrule" title="Permanent link">🔗</a></h3>
+<p>This validation rule checks that the number of directives in a GraphQL operation does not exceed the maximum allowed,
+as set by the <a href="../settings/#max_allowed_directives"><code>MAX_ALLOWED_DIRECTIVES</code></a> setting.
+This is used to prevent denial-of-service attacks, heap overflow or server overloading from "directive overloading"
+that could arise from having to parse, validate, and process too many directives.</p>
+<h3 id="oneofinputobjecttyperule"><code>OneOfInputObjectTypeRule</code><a class="headerlink" href="#oneofinputobjecttyperule" title="Permanent link">🔗</a></h3>
+<p>This validation rule checks that a one-of input object is used correctly.
+Only added when <code>graphql-core</code> version is below <a href="https://github.com/graphql-python/graphql-core/releases/tag/v3.2.7" target="_blank">v3.2.7</a>
+since <code>oneOf</code> input object support was added in that version.</p>
+<h3 id="visibilityrule"><code>VisibilityRule</code><a class="headerlink" href="#visibilityrule" title="Permanent link">🔗</a></h3>
+<p>When <a href="../settings/#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a> are enabled,
+this validation rule checks that users cannot use parts of the schema that are not visible to them,
+as defined by visibility checks. See how to enable visibility checks for the different objects in Undine:</p>
+<ul>
+<li><a href="../schema/#visibility"><code>Entrypoint</code> visibility</a></li>
+<li><a href="../queries/#visibility"><code>QueryType</code> visibility</a></li>
+<li><a href="../queries/#visibility_1"><code>Field</code> visibility</a></li>
+<li><a href="../mutations/#visibility"><code>MutationType</code> visibility</a></li>
+<li><a href="../mutations/#visibility_1"><code>Input</code> visibility</a></li>
+<li><a href="../filtering/#visibility"><code>FilterSet</code> visibility</a></li>
+<li><a href="../filtering/#visibility_1"><code>Filter</code> visibility</a></li>
+<li><a href="../ordering/#visibility"><code>OrderSet</code> visibility</a></li>
+<li><a href="../ordering/#visibility_1"><code>Order</code> visibility</a></li>
+<li><a href="../interfaces/#visibility"><code>InterfaceType</code> visibility</a></li>
+<li><a href="../interfaces/#visibility_1"><code>InterfaceField</code> visibility</a></li>
+<li><a href="../unions/#visibility"><code>UnionType</code> visibility</a></li>
+<li><a href="../directives/#visibility"><code>Directive</code> visibility</a></li>
+<li><a href="../directives/#visibility_1"><code>DirectiveArgument</code> visibility</a></li>
+<li><a href="../queries/#calculation-references"><code>CalculationArgument</code> visibility</a></li>
+</ul>
+<h2 id="custom-validation-rules">Custom validation rules<a class="headerlink" href="#custom-validation-rules" title="Permanent link">🔗</a></h2>
+<p>To add your own validation rules, you'll need to create a class that inherits from
+<code>graphql.validation.rules.ValidationRule</code>. This class implements the visitor pattern
+to traverse the GraphQL AST. Different <code>Nodes</code> in the AST can be visited by defining either
+<code>enter_&lt;node_type&gt;</code> or <code>leave_&lt;node_type&gt;</code> methods, depending on whether you want to
+visit the node before or after its children.</p>
+<p>These methods have the following signature (example for <code>NameNode</code>):</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#__codelineno-0-16">16</a></span>
+<span class="normal"><a href="#__codelineno-0-17">17</a></span>
+<span class="normal"><a href="#__codelineno-0-18">18</a></span>
+<span class="normal"><a href="#__codelineno-0-19">19</a></span>
+<span class="normal"><a href="#__codelineno-0-20">20</a></span>
+<span class="normal"><a href="#__codelineno-0-21">21</a></span>
+<span class="normal"><a href="#__codelineno-0-22">22</a></span>
+<span class="normal"><a href="#__codelineno-0-23">23</a></span>
+<span class="normal"><a href="#__codelineno-0-24">24</a></span>
+<span class="normal"><a href="#__codelineno-0-25">25</a></span>
+<span class="normal"><a href="#__codelineno-0-26">26</a></span>
+<span class="normal"><a href="#__codelineno-0-27">27</a></span>
+<span class="normal"><a href="#__codelineno-0-28">28</a></span>
+<span class="normal"><a href="#__codelineno-0-29">29</a></span>
+<span class="normal"><a href="#__codelineno-0-30">30</a></span>
+<span class="normal"><a href="#__codelineno-0-31">31</a></span>
+<span class="normal"><a href="#__codelineno-0-32">32</a></span>
+<span class="normal"><a href="#__codelineno-0-33">33</a></span>
+<span class="normal"><a href="#__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span>
+<span class="normal"><a href="#__codelineno-0-40">40</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#__codelineno-0-43">43</a></span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationRule</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">NameNode</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">VisitorAction</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyValidationRule</span><span class="p">(</span><span class="n">ValidationRule</span><span class="p">):</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">enter_name</span><span class="p">(</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>        <span class="n">node</span><span class="p">:</span> <span class="n">NameNode</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>        <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>        <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Node</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a>        <span class="n">path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">],</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a>        <span class="n">ancestors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Node</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Node</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VisitorAction</span><span class="p">:</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        Called when entering a given node, before visiting its children.</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="sd">        :param node: The current node being visiting.</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">        :param key: The index or key to this node from the parent node or array.</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        :param parent: the parent immediately above this node, which may be an array.</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        :param path: The key path to get to this node from the root node.</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">        :param ancestors: All nodes and arrays visited before reaching parent of this node.</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">                          These correspond to array indices in `path`.</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        :return: Action to be taken on the node:</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">                 - self.IDLE: no action</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">                 - self.SKIP: skip visiting this node</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">                 - self.BREAK: stop visiting altogether</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">                 - self.REMOVE: delete this node</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">                 - any other value: replace this node with the returned value</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>
+<a id="__codelineno-0-38" name="__codelineno-0-38"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">leave_name</span><span class="p">(</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">node</span><span class="p">:</span> <span class="n">NameNode</span><span class="p">,</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a>        <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Node</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="n">path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">],</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a>        <span class="n">ancestors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Node</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Node</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VisitorAction</span><span class="p">:</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">        Called when leaving a given node, after visiting its children.</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        :param node: The current node being visiting.</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">        :param key: The index or key to this node from the parent node or array.</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">        :param parent: the parent immediately above this node, which may be an array.</span>
+<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        :param path: The key path to get to this node from the root node.</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">        :param ancestors: All nodes and arrays visited before reaching parent of this node.</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">                          These correspond to array indices in `path`.</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        :return: Action to be taken on the node:</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">                 - self.IDLE: no action</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">                 - self.BREAK: stop visiting altogether</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">                 - self.REMOVE: delete this node</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">                 - any other value: replace this node with the returned value</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a>        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div></td></tr></table></div>
+<p>When you have created your custom validation rule, you can register it using the
+<a href="../settings/#additional_validation_rules"><code>ADDITIONAL_VALIDATION_RULES</code></a> setting.</p>
+<p>For clarity, here is a list of <code>Node</code> types that can be visited during
+the GraphQL document validation phase:</p>
+<details id="document_node">
+<summary><code>DocumentNode</code></summary>
+<p>Hooks <code>enter_document</code> and <code>leave_document</code> | Node: <code>graphql.language.ast.DocumentNode</code></p>
+<p>A <code>DocumentNode</code> is visited at the root of the GraphQL document AST.
+It can define multiple operations and fragments.</p>
+</details>
+<details id="operation_definition_node">
+<summary><code>OperationDefinitionNode</code></summary>
+<p>Hooks <code>enter_operation_definition</code> and <code>leave_operation_definition</code> | Node: <code>graphql.language.ast.OperationDefinitionNode</code></p>
+<p>An <code>OperationDefinitionNode</code> is visited for each operation in the GraphQL document.
+Note that a GraphQL document can contain multiple operations, although only one operation
+can be executed in a single request.</p>
+</details>
+<details id="variable_definition_node">
+<summary><code>VariableDefinitionNode</code></summary>
+<p>Hooks <code>enter_variable_definition</code> and <code>leave_variable_definition</code> | Node: <code>graphql.language.ast.VariableDefinitionNode</code></p>
+<p>A <code>VariableDefinitionNode</code> is visited for each variable definition in the GraphQL document.
+Variables are defined at the start of an operation using dollar signs (<code>$</code>).</p>
+</details>
+<details id="name_node">
+<summary><code>NameNode</code></summary>
+<p>Hooks <code>enter_name</code> and <code>enter_name</code> | Node: <code>graphql.language.ast.NameNode</code></p>
+<p>A <code>NameNode</code> is visited for each named entity in the GraphQL document.
+This includes field names, argument names, and type names, etc.</p>
+</details>
+<details id="selection_set_node">
+<summary><code>SelectionSetNode</code></summary>
+<p>Hooks <code>enter_selection_set</code> and <code>leave_selection_set</code> | Node: <code>graphql.language.ast.SelectionSetNode</code></p>
+<p>A <code>SelectionSetNode</code> is visited for each selection set in the GraphQL document.
+A selection set is a set of fields or fragments requested from a GraphQL type.</p>
+</details>
+<details id="field_node">
+<summary><code>FieldNode</code></summary>
+<p>Hooks <code>enter_field</code> and <code>leave_field</code> | Node: <code>graphql.language.ast.FieldNode</code></p>
+<p>A <code>FieldNode</code> is visited for each field in the GraphQL document.</p>
+</details>
+<details id="argument_node">
+<summary><code>ArgumentNode</code></summary>
+<p>Hooks <code>enter_argument</code> and <code>leave_argument</code> | Node: <code>graphql.language.ast.ArgumentNode</code></p>
+<p>An <code>ArgumentNode</code> is visited for each field argument in the GraphQL document.</p>
+</details>
+<details id="fragment_spread_node">
+<summary><code>FragmentSpreadNode</code></summary>
+<p>Hooks <code>enter_fragment_spread</code> and <code>leave_fragment_spread</code> | Node: <code>graphql.language.ast.FragmentSpreadNode</code></p>
+<p>A <code>FragmentSpreadNode</code> is visited for each fragment spread in the GraphQL document.</p>
+</details>
+<details id="inline_fragment_node">
+<summary><code>InlineFragmentNode</code></summary>
+<p>Hooks <code>enter_inline_fragment</code> and <code>leave_inline_fragment</code> | Node: <code>graphql.language.ast.InlineFragmentNode</code></p>
+<p>A <code>InlineFragmentNode</code> is visited for each inline fragment in the GraphQL document.</p>
+</details>
+<details id="fragment_definition_node">
+<summary><code>FragmentDefinitionNode</code></summary>
+<p>Hooks <code>enter_fragment_definition</code> and <code>leave_fragment_definition</code> | Node: <code>graphql.language.ast.FragmentDefinitionNode</code></p>
+<p>A <code>FragmentDefinitionNode</code> is visited for each fragment definition in the GraphQL document.</p>
+</details>
+<details id="named_type_node">
+<summary><code>NamedTypeNode</code></summary>
+<p>Hooks <code>enter_named_type</code> and <code>leave_named_type</code> | Node: <code>graphql.language.ast.NamedTypeNode</code></p>
+<p>A <code>NamedTypeNode</code> is visited for each named type referenced in the GraphQL document.
+Named types are referenced when using inline fragments or defining fragments.</p>
+<p>Example:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="n">node</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># NamedTypeNode &quot;User&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">      </span><span class="p">...</span><span class="n">Data</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="p">}</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="k">fragment</span><span class="w"> </span><span class="nf">Data</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">User</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># NamedTypeNode &quot;User&quot;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="w">  </span><span class="n">id</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="w">  </span><span class="n">name</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<details id="list_type_node">
+<summary><code>ListTypeNode</code></summary>
+<p>Hooks <code>enter_list_type</code> and <code>leave_list_type</code> | Node: <code>graphql.language.ast.ListTypeNode</code></p>
+<p>A <code>ListTypeNode</code> is visited for each list type in the GraphQL document.</p>
+</details>
+<details id="non_null_type_node">
+<summary><code>NonNullTypeNode</code></summary>
+<p>Hooks <code>enter_non_null_type</code> and <code>leave_non_null_type</code> | Node: <code>graphql.language.ast.NonNullTypeNode</code></p>
+<p>A <code>NonNullTypeNode</code> is visited for each non-null type in the GraphQL document.</p>
+</details>
+<details id="directive_node">
+<summary><code>DirectiveNode</code></summary>
+<p>Hooks <code>enter_directive</code> and <code>leave_directive</code> | Node: <code>graphql.language.ast.DirectiveNode</code></p>
+<p>A <code>DirectiveNode</code> is visited for each directive used in the GraphQL document.</p>
+</details>
+<details id="variable_node">
+<summary><code>VariableNode</code></summary>
+<p>Hooks <code>enter_variable</code> and <code>leave_variable</code> | Node: <code>graphql.language.ast.VariableNode</code></p>
+<p>A <code>VariableNode</code> is visited for each variable used in the GraphQL document.</p>
+</details>
+<details id="int_value_node">
+<summary><code>IntValueNode</code></summary>
+<p>Hooks <code>enter_int_value</code> and <code>leave_int_value</code> | Node: <code>graphql.language.ast.IntValueNode</code></p>
+<p>A <code>IntValueNode</code> is visited for each integer value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="float_value_node">
+<summary><code>FloatValueNode</code></summary>
+<p>Hooks <code>enter_float_value</code> and <code>leave_float_value</code> | Node: <code>graphql.language.ast.FloatValueNode</code></p>
+<p>A <code>FloatValueNode</code> is visited for each float value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="string_value_node">
+<summary><code>StringValueNode</code></summary>
+<p>Hooks <code>enter_string_value</code> and <code>leave_string_value</code> | Node: <code>graphql.language.ast.StringValueNode</code></p>
+<p>A <code>StringValueNode</code> is visited for each string value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="boolean_value_node">
+<summary><code>BooleanValueNode</code></summary>
+<p>Hooks <code>enter_boolean_value</code> and <code>leave_boolean_value</code> | Node: <code>graphql.language.ast.BooleanValueNode</code></p>
+<p>A <code>BooleanValueNode</code> is visited for each boolean value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="null_value_node">
+<summary><code>NullValueNode</code></summary>
+<p>Hooks <code>enter_null_value</code> and <code>leave_null_value</code> | Node: <code>graphql.language.ast.NullValueNode</code></p>
+<p>A <code>NullValueNode</code> is visited for each null value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="enum_value_node">
+<summary><code>EnumValueNode</code></summary>
+<p>Hooks <code>enter_enum_value</code> and <code>leave_enum_value</code> | Node: <code>graphql.language.ast.EnumValueNode</code></p>
+<p>A <code>EnumValueNode</code> is visited for each enum value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="list_value_node">
+<summary><code>ListValueNode</code></summary>
+<p>Hooks <code>enter_list_value</code> and <code>leave_list_value</code> | Node: <code>graphql.language.ast.ListValueNode</code></p>
+<p>A <code>ListValueNode</code> is visited for each list value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="object_value_node">
+<summary><code>ObjectValueNode</code></summary>
+<p>Hooks <code>enter_object_value</code> and <code>leave_object_value</code> | Node: <code>graphql.language.ast.ObjectValueNode</code></p>
+<p>A <code>ObjectValueNode</code> is visited for each object value in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<details id="object_field_node">
+<summary><code>ObjectFieldNode</code></summary>
+<p>Hooks <code>enter_object_field</code> and <code>leave_object_field</code> | Node: <code>graphql.language.ast.ObjectFieldNode</code></p>
+<p>A <code>ObjectFieldNode</code> is visited for each object field in the GraphQL document.
+Values can be used in arguments or variables.</p>
+</details>
+<blockquote>
+<p>There are other node types which can be visited if validation rules are run against
+the GraphQL schema, but these are not covered in this documentation.</p>
+</blockquote>
+<p>A <code>ValidationRule</code> instance has access to the <a href="https://github.com/graphql-python/graphql-core/blob/main/src/graphql/validation/validation_context.py" target="_blank"><code>ValidationContext</code></a>
+instance, through which you can access to useful contextual information relative to the visited node.
+For example, you can access the current GraphQL type for the node using <code>self.context.get_type()</code>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../lifecycle-hooks/" class="btn btn-neutral float-left" title="Lifecycle Hooks"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../integrations/" class="btn btn-neutral float-right" title="Integrations">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../lifecycle-hooks/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../integrations/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/docs.js"></script>
+      <script src="../service-worker.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

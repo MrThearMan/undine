@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Optimizer - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Optimizer";
+        var mkdocs_page_input_path = "optimizer.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on the query optimizer in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Optimizer</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#the-problems">The Problems</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-n1-problem">The N+1 Problem</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#over-fetching">Over-fetching</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#the-optimizer">The Optimizer</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#manual-optimizations">Manual Optimizations</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#optimization-data">Optimization data</a>
+<ul>
+<li class="toctree-l4"><a class="reference internal" href="#model">model</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#info">info</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#related_field">related_field</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#parent">parent</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#only_fields">only_fields</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#aliases">aliases</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#annotations">annotations</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#select_related">select_related</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#prefetch_related">prefetch_related</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#generic_prefetches">generic_prefetches</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#filters">filters</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#order_by">order_by</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#distinct">distinct</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#none">none</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#pagination">pagination</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#queryset_callback">queryset_callback</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#pre_filter_callback">pre_filter_callback</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#post_filter_callback">post_filter_callback</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#field_calculations">field_calculations</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#add_select_related">add_select_related()</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#add_prefetch_related">add_prefetch_related()</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#add_generic_prefetch_related">add_generic_prefetch_related()</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#optimization-results">Optimization results</a>
+<ul>
+<li class="toctree-l4"><a class="reference internal" href="#promotion-to-prefetch">Promotion to prefetch</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#order-of-optimizations">Order of optimizations</a>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Optimizer</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="optimizer">Optimizer<a class="headerlink" href="#optimizer" title="Permanent link">🔗</a></h1>
+<p>This section covers Undine's query optimizer, which is responsible for
+optimizing queries to your GraphQL schema in order to reduce the amount
+of database queries that are made when resolving a request.</p>
+<h2 id="the-problems">The Problems<a class="headerlink" href="#the-problems" title="Permanent link">🔗</a></h2>
+<p>Before we take a look at <em>how</em> the optimizer works, let's first
+understand <em>why</em> it exists by going over some common problems
+that arise when using GraphQL to fetch data from a relational database.</p>
+<h3 id="the-n1-problem">The N+1 Problem<a class="headerlink" href="#the-n1-problem" title="Permanent link">🔗</a></h3>
+<p>Let's say you have a collection of Models like this:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#__codelineno-0-16">16</a></span>
+<span class="normal"><a href="#__codelineno-0-17">17</a></span>
+<span class="normal"><a href="#__codelineno-0-18">18</a></span>
+<span class="normal"><a href="#__codelineno-0-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Project</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>    <span class="n">description</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">TextField</span><span class="p">()</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Project</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">CASCADE</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18"></a>
+<a id="__codelineno-0-19" name="__codelineno-0-19"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">CASCADE</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>And a schema like this:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span>
+<span class="normal"><a href="#__codelineno-1-13">13</a></span>
+<span class="normal"><a href="#__codelineno-1-14">14</a></span>
+<span class="normal"><a href="#__codelineno-1-15">15</a></span>
+<span class="normal"><a href="#__codelineno-1-16">16</a></span>
+<span class="normal"><a href="#__codelineno-1-17">17</a></span>
+<span class="normal"><a href="#__codelineno-1-18">18</a></span>
+<span class="normal"><a href="#__codelineno-1-19">19</a></span>
+<span class="normal"><a href="#__codelineno-1-20">20</a></span>
+<span class="normal"><a href="#__codelineno-1-21">21</a></span>
+<span class="normal"><a href="#__codelineno-1-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">type</span><span class="w"> </span><span class="err">ProjectType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="p">}</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="k">type</span><span class="w"> </span><span class="err">StepType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">  </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="w">  </span><span class="nl">done</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span><span class="err">!</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="p">}</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="w">  </span><span class="nl">pk</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="w">  </span><span class="nl">description</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="w">  </span><span class="nl">project</span><span class="p">:</span><span class="w"> </span><span class="n">ProjectType</span><span class="err">!</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="w">  </span><span class="nl">steps</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">StepType</span><span class="err">!]!</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="p">}</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="k">type</span><span class="w"> </span><span class="err">Query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21"></a><span class="w">  </span><span class="nl">tasks</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">TaskType</span><span class="err">!]!</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Now, let's say you query <code>tasks</code> like this:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span>
+<span class="normal"><a href="#__codelineno-2-12">12</a></span>
+<span class="normal"><a href="#__codelineno-2-13">13</a></span>
+<span class="normal"><a href="#__codelineno-2-14">14</a></span>
+<span class="normal"><a href="#__codelineno-2-15">15</a></span>
+<span class="normal"><a href="#__codelineno-2-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="n">tasks</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="n">description</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">      </span><span class="n">pk</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">    </span><span class="n">steps</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">      </span><span class="n">pk</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="w">      </span><span class="n">done</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>In GraphQL, each field in the query will be resolved separately, and most importantly,
+if a field returns a list of objects with subfields, the resolvers for those
+subfields will be called for each object in the list. Normally, a field's resolver
+knows nothing about the query it is in, and so it only fetches the data it needs.</p>
+<p>In this case, the top level resolver for <code>tasks</code> will fetch all <code>Task</code> objects,
+but won't make any joins to related Models its subfields might need. For example,
+when the subfield for the related <code>Project</code> resolves, that resolver will
+try to look up the <code>Project</code> from the root <code>Task</code> instance it received, but since the
+<code>Project</code> was not fetched along with the <code>Task</code>, it needs to make another query to the database.</p>
+<p>This means that for the whole query we first fetch all <code>Tasks</code>, and then all <code>Projects</code>
+and <code>Steps</code> for each <code>Task</code>. If we had 100 <code>Tasks</code>, each of which is linked to a <code>Project</code>,
+but also to 10 <code>Steps</code>. In total this would result in <strong><em>201</em></strong> queries to the database!</p>
+<p>It's important to notice that the amount of queries is proportional to the amount of <code>Tasks</code> in the database.
+You can imagine how this can get out of hand quickly, especially when you start nesting
+relations deeper and deeper. Each additional level of nesting will grow the number of queries
+exponentially! That's why it's called the <strong>N+1 problem</strong>: 1 query for the root object,
+and N queries for all subfields, where N is the amount of root objects.</p>
+<h3 id="over-fetching">Over-fetching<a class="headerlink" href="#over-fetching" title="Permanent link">🔗</a></h3>
+<p>Another issue with resolving Django Models using normal resolvers is that
+when a Model is fetched from the database, all of its non-relational fields
+are also fetched by default. This means that we'll fetch fields that are
+not needed in the query. This can be expensive if the Model has many fields
+or fields that contain a lot of data. This is called <strong>over-fetching</strong>,
+in contrast to the N+1 problem, which is a problem of <strong>under-fetching</strong>.</p>
+<h2 id="the-optimizer">The Optimizer<a class="headerlink" href="#the-optimizer" title="Permanent link">🔗</a></h2>
+<p>Undine includes an optimizer that fixes the above problems automatically
+by introspecting the incoming query and generating the appropriate
+<code>QuerySet</code> optimizations like <code>prefetch_related</code> and <code>select_related</code> calls.
+It plugs into the top-level resolvers in the schema, so in the above example,
+the resolver for the <code>tasks</code> <code>Entrypoint</code>, and makes the necessary optimizations
+to reduce the amount of database queries made. This way all subfields can resolve normally,
+knowing that the data they need is already fetched.</p>
+<p>For the most part, this is all you need to know about the optimizer. However,
+there are a few things you need to know to not break these optimizations.</p>
+<p>Be careful when overriding <code>Field</code> resolvers. If you define a custom resolver
+for Model field which uses Model data outside of the field itself,
+those fields may not have been fetched if they are not also part of the query.
+More generally, you need to be careful when using Models outside of the GraphQL context.
+A common place where this may happen is in permission checks, which often need to access
+Model data for object permissions, etc.</p>
+<p>To deal with this, Undine includes methods to specify additional optimizations manually,
+see the <a href="#manual-optimizations">Manual Optimizations</a> section below.</p>
+<h3 id="manual-optimizations">Manual Optimizations<a class="headerlink" href="#manual-optimizations" title="Permanent link">🔗</a></h3>
+<p>The <code>QueryType.__optimizations__</code> method is called by the optimizer when an <code>Entrypoint</code>
+or <code>Field</code> using the given <code>QueryType</code> is included in the query.
+See <a href="#optimization-data">optimization data</a> on how to add the optimizations.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span>
+<span class="normal"><a href="#__codelineno-3-12">12</a></span>
+<span class="normal"><a href="#__codelineno-3-13">13</a></span>
+<span class="normal"><a href="#__codelineno-3-14">14</a></span>
+<span class="normal"><a href="#__codelineno-3-15">15</a></span>
+<span class="normal"><a href="#__codelineno-3-16">16</a></span>
+<span class="normal"><a href="#__codelineno-3-17">17</a></span>
+<span class="normal"><a href="#__codelineno-3-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizationData</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Step</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__optimizations__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">OptimizationData</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13"></a>        <span class="n">data</span><span class="o">.</span><span class="n">only_fields</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14"></a>        <span class="n">data</span><span class="o">.</span><span class="n">add_select_related</span><span class="p">(</span><span class="s2">"project"</span><span class="p">,</span> <span class="n">query_type</span><span class="o">=</span><span class="n">ProjectType</span><span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15"></a>        <span class="n">data</span><span class="o">.</span><span class="n">add_prefetch_related</span><span class="p">(</span><span class="s2">"steps"</span><span class="p">,</span> <span class="n">query_type</span><span class="o">=</span><span class="n">StepType</span><span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16"></a>
+<a id="__codelineno-3-17" name="__codelineno-3-17"></a>
+<a id="__codelineno-3-18" name="__codelineno-3-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">StepType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Step</span><span class="p">]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<p>The <code>&lt;field_name&gt;.optimize</code> method is called by the optimizer when the given <code>Field</code>
+is included in the query. See <a href="#optimization-data">optimization data</a> on how to add the optimizations.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span>
+<span class="normal"><a href="#__codelineno-4-11">11</a></span>
+<span class="normal"><a href="#__codelineno-4-12">12</a></span>
+<span class="normal"><a href="#__codelineno-4-13">13</a></span>
+<span class="normal"><a href="#__codelineno-4-14">14</a></span>
+<span class="normal"><a href="#__codelineno-4-15">15</a></span>
+<span class="normal"><a href="#__codelineno-4-16">16</a></span>
+<span class="normal"><a href="#__codelineno-4-17">17</a></span>
+<span class="normal"><a href="#__codelineno-4-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimizationData</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Step</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span> <span class="o">...</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13"></a>    <span class="nd">@name</span><span class="o">.</span><span class="n">optimize</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">optimize_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">OptimizationData</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15"></a>        <span class="n">data</span><span class="o">.</span><span class="n">only_fields</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16"></a>
+<a id="__codelineno-4-17" name="__codelineno-4-17"></a>
+<a id="__codelineno-4-18" name="__codelineno-4-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">StepType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Step</span><span class="p">]):</span> <span class="o">...</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="optimization-data">Optimization data<a class="headerlink" href="#optimization-data" title="Permanent link">🔗</a></h3>
+<p>The <code>OptimizationData</code> object holds the optimizations that the optimizer gathers
+from the query. You can add new optimizations to the data to ensure that, e.g., required fields
+are fetched, even if they are otherwise not needed in the query. Let's go over the structure of
+the <code>OptimizationData</code> object.</p>
+<h4 id="model"><code>model</code><a class="headerlink" href="#model" title="Permanent link">🔗</a></h4>
+<p>This is the Model class which the optimizations in the data correspond to.
+Set by the optimizer and should not be modified.</p>
+<h4 id="info"><code>info</code><a class="headerlink" href="#info" title="Permanent link">🔗</a></h4>
+<p>The resolver info object for the request, as it applies for this <code>OptimizationData</code>.
+During field resolving, the <code>field_name</code>, <code>field_nodes</code>, <code>return_type</code> and <code>parent_type</code>
+of the resolver info object are different depending on the <code>ObjectType</code> being resolved,
+so each <code>OptimizationData</code> needs to know how the resolver info would look when its
+<code>ObjectType</code> is being resolved. Various methods in Undine get passed this <code>info</code> object
+so that users of the library can use it do their own introspections.</p>
+<h4 id="related_field"><code>related_field</code><a class="headerlink" href="#related_field" title="Permanent link">🔗</a></h4>
+<p>The related Model field being optimized. Can be <code>None</code> if the <code>OptimizationData</code> is for the root-level.</p>
+<h4 id="parent"><code>parent</code><a class="headerlink" href="#parent" title="Permanent link">🔗</a></h4>
+<p>If the <code>OptimizationData</code> is for a related Model, this links to the
+optimization data of the parent Model. Conversely, the <code>parent</code> <code>OptimizationData</code>
+has a link this <code>OptimizationData</code> using either <a href="#select_related"><code>select_related</code></a>,
+<a href="#prefetch_related"><code>prefetch_related</code></a> or <a href="#generic_prefetches"><code>generic_prefetches</code></a>.</p>
+<h4 id="only_fields"><code>only_fields</code><a class="headerlink" href="#only_fields" title="Permanent link">🔗</a></h4>
+<p>Contains fields that will be applied to <code>QuerySet.only()</code>. This prevents the
+<a href="#over-fetching">over-fetching</a> issue by only fetching the required fields for the query.
+If the <a href="../settings/#disable_only_fields_optimization"><code>DISABLE_ONLY_FIELDS_OPTIMIZATION</code></a>
+setting is <code>True</code>, these values will be ignored when the optimizations are applied.</p>
+<h4 id="aliases"><code>aliases</code><a class="headerlink" href="#aliases" title="Permanent link">🔗</a></h4>
+<p>Contains the Django ORM expressions that will be applied to <code>QuerySet.alias()</code>. Various
+methods in Undine can add to these aliases to enable more clearer use of
+for <a href="#annotations"><code>annotations</code></a>.</p>
+<h4 id="annotations"><code>annotations</code><a class="headerlink" href="#annotations" title="Permanent link">🔗</a></h4>
+<p>Contains the Django ORM expressions that will be applied to <code>QuerySet.annotate()</code>.
+<code>Fields</code> that resolve using an expression will store their expression here.</p>
+<h4 id="select_related"><code>select_related</code><a class="headerlink" href="#select_related" title="Permanent link">🔗</a></h4>
+<p>Contains <code>OptimizationData</code> for related fields that should be fetched together
+using <code>QuerySet.select_related()</code>. New related fields should be added using
+<a href="#add_select_related"><code>add_select_related</code></a> to ensure that the correct references
+are places in both <code>OptimizationData</code>.</p>
+<h4 id="prefetch_related"><code>prefetch_related</code><a class="headerlink" href="#prefetch_related" title="Permanent link">🔗</a></h4>
+<p>Contains <code>OptimizationData</code> for related fields that should be fetched together
+using <code>QuerySet.prefetch_related()</code>. New related fields should be added using
+<a href="#add_prefetch_related"><code>add_prefetch_related</code></a> to ensure that the correct references
+are places in both <code>OptimizationData</code>.</p>
+<p>Note that the key in the mapping can be either the name of the related field,
+or an alias that the data should be fetched with (using <code>Prefetch(..., to_attr=&lt;alias&gt;)</code>).</p>
+<h4 id="generic_prefetches"><code>generic_prefetches</code><a class="headerlink" href="#generic_prefetches" title="Permanent link">🔗</a></h4>
+<p>Contains <code>OptimizationData</code> for generic foreign keys that should be fetched together
+using <code>QuerySet.prefetch_related()</code>. New generic prefetches should be added using
+<a href="#add_generic_prefetch_related"><code>add_generic_prefetch_related</code></a> to ensure that the correct references
+are places in both <code>OptimizationData</code>.</p>
+<h4 id="filters"><code>filters</code><a class="headerlink" href="#filters" title="Permanent link">🔗</a></h4>
+<p>Contains <code>Q</code> expressions that will be applied to <code>QuerySet.filter()</code>.
+Normally, these are compiled from a <code>FilterSet</code>.</p>
+<h4 id="order_by"><code>order_by</code><a class="headerlink" href="#order_by" title="Permanent link">🔗</a></h4>
+<p>Contains <code>OrderBy</code> expressions that will be applied to <code>QuerySet.order_by()</code>.
+Normally, these are compiled from an <code>OrderSet</code>.</p>
+<h4 id="distinct"><code>distinct</code><a class="headerlink" href="#distinct" title="Permanent link">🔗</a></h4>
+<p>Whether <code>QuerySet.distinct()</code> should be applied. Normally, the optimizer is able
+to determine this based on the <code>FilterSet</code> <code>Filters</code> used in the query.</p>
+<h4 id="none"><code>none</code><a class="headerlink" href="#none" title="Permanent link">🔗</a></h4>
+<p>Whether <code>QuerySet.none()</code> should be applied. Note that using <code>QuerySet.none()</code>
+will result in an empty <code>QuerySet</code> regardless of other optimizations.
+Normally, this is only applied if a <code>FilterSet</code> <code>Filter</code> raises an
+<code>EmptyFilterResult</code> exception.</p>
+<h4 id="pagination"><code>pagination</code><a class="headerlink" href="#pagination" title="Permanent link">🔗</a></h4>
+<p>Contains the pagination information for the <code>QuerySet</code> in the form of a
+<code>PaginationHandler</code> object. Normally, this is set by the optimizer automatically
+based on if the field uses a <a href="../pagination/">pagination</a> or not.</p>
+<h4 id="queryset_callback"><code>queryset_callback</code><a class="headerlink" href="#queryset_callback" title="Permanent link">🔗</a></h4>
+<p>A callback function that initializes the <code>QuerySet</code> for the <code>OptimizationData</code>.
+By default, this is set to use the <code>Manager.get_queryset()</code> method of the
+<code>OptimizationData</code> <a href="#model"><code>Model</code></a> default manager, or the
+<code>QueryType.__get_queryset__</code> method for related fields to other <code>QueryTypes</code>.</p>
+<h4 id="pre_filter_callback"><code>pre_filter_callback</code><a class="headerlink" href="#pre_filter_callback" title="Permanent link">🔗</a></h4>
+<p>A callback function that will be called before <a href="#order_by"><code>order_by</code></a>, <a href="#distinct"><code>distinct</code></a>,
+<a href="#filters"><code>filters</code></a>, or <a href="#field_calculations"><code>field_calculations</code></a> are applied to the
+<code>QuerySet</code>. Normally, this is populated using the <code>QueryType.__filter_queryset__</code> method.</p>
+<h4 id="post_filter_callback"><code>post_filter_callback</code><a class="headerlink" href="#post_filter_callback" title="Permanent link">🔗</a></h4>
+<p>A callback function that will be called after <a href="#order_by"><code>order_by</code></a>, <a href="#distinct"><code>distinct</code></a>,
+<a href="#filters"><code>filters</code></a>, and <a href="#field_calculations"><code>field_calculations</code></a> are applied to the
+<code>QuerySet</code>. Normally, this is populated using the  <code>FilterSet.__filter_queryset__</code> method.</p>
+<h4 id="field_calculations"><code>field_calculations</code><a class="headerlink" href="#field_calculations" title="Permanent link">🔗</a></h4>
+<p>A list of <a href="../queries/#calculation-references"><code>Calculation</code></a> <em>instances</em> that should be run
+and annotated to the <code>QuerySet</code>. Normally, the optimizer will automatically add <code>Fields</code>
+using <code>Calculation</code> objects to this list.</p>
+<h4 id="add_select_related"><code>add_select_related()</code><a class="headerlink" href="#add_select_related" title="Permanent link">🔗</a></h4>
+<p>A method for adding a new <code>select_related</code> optimization. Must provide the
+<code>field_name</code> for the model relation, and optionally a <code>QueryType</code> that the relation
+should use.</p>
+<p>This method will make sure that the created <code>select_related</code> optimization
+has the correct references to its parent <code>OptimizationData</code>, which it needs so that
+it can be compiled correctly. Passing the <code>QueryType</code> will fill the <a href="#queryset_callback"><code>queryset_callback</code></a>,
+<a href="#pre_filter_callback"><code>pre_filter_callback</code></a>, and <a href="#post_filter_callback"><code>post_filter_callback</code></a>
+from the <code>QueryType</code> as well.</p>
+<h4 id="add_prefetch_related"><code>add_prefetch_related()</code><a class="headerlink" href="#add_prefetch_related" title="Permanent link">🔗</a></h4>
+<p>A method for adding a new <code>prefetch_related</code> optimization. Must provide the
+<code>field_name</code> for the model relation, and optionally a <code>QueryType</code> that the relation
+should use, as well as a <code>to_attr</code> for the prefetch alias.</p>
+<p>This method will make sure that the created <code>prefetch_related</code> optimization
+has the correct references to its parent <code>OptimizationData</code>, which it needs so that
+it can be compiled correctly. Passing the <code>QueryType</code> will fill the <a href="#queryset_callback"><code>queryset_callback</code></a>,
+<a href="#pre_filter_callback"><code>pre_filter_callback</code></a>, and <a href="#post_filter_callback"><code>post_filter_callback</code></a>
+from the <code>QueryType</code> as well.</p>
+<p>The string passed in <code>to_attr</code> will be used in <code>Prefetch(..., to_attr=&lt;to_attr&gt;)</code>,
+which will prefetch the related field to the given attribute name. Normally, the optimizer
+uses this to fetch many-related fields fetched with aliases or defined using custom schema names.</p>
+<h4 id="add_generic_prefetch_related"><code>add_generic_prefetch_related()</code><a class="headerlink" href="#add_generic_prefetch_related" title="Permanent link">🔗</a></h4>
+<p>A method for adding a new <code>generic_prefetch_related</code> optimization. Must provide the
+<code>field_name</code> for the model relation, the <code>related_model</code> that the generic prefetch
+should be done for, and optionally a <code>QueryType</code> that the relation should use,
+and <code>to_attr</code> for the prefetch alias.</p>
+<p>This method will make sure that the created <code>generic_prefetch_related</code> optimization
+has the correct references to its parent <code>OptimizationData</code>, which it needs so that
+it can be compiled correctly. Passing the <code>QueryType</code> will fill the <a href="#queryset_callback"><code>queryset_callback</code></a>,
+<a href="#pre_filter_callback"><code>pre_filter_callback</code></a>, and <a href="#post_filter_callback"><code>post_filter_callback</code></a>
+from the <code>QueryType</code> as well.</p>
+<p>The string passed in <code>to_attr</code> will be used in <code>GenericPrefetch(..., to_attr=&lt;to_attr&gt;)</code>,
+which will prefetch the related field to the given attribute name. Normally, the optimizer
+uses this to fetch generic relations fetched with aliases or defined using custom schema names.</p>
+<h3 id="optimization-results">Optimization results<a class="headerlink" href="#optimization-results" title="Permanent link">🔗</a></h3>
+<p>Once the whole query has been analyzed, the <code>OptimizationData</code> is processed to
+<code>OptimizationResults</code>, which can then be applied to the <code>QuerySet</code>. This processing
+simply copies over most of the data from the <code>OptimizationData</code>, but notably,
+it also converts any <code>select_related</code>, <code>prefetch_related</code>, or <code>generic_prefetch_related</code>
+optimizations to values that can be applied to a <code>QuerySet</code>.</p>
+<p>For <code>select_related</code>, this means either <a href="#promotion-to-prefetch">promotion to a prefetch</a>,
+or extending the related field's optimizations to the parent Model. For example,
+querying the <code>name</code> of a <code>Project</code> related to a <code>Task</code> will extend the lookup to the <code>Task</code> Model
+(i.e. <code>project__name</code>). This lookup is then added to the <code>Task</code> Model's <code>OptimizationResults.only_fields</code>.</p>
+<p>For <code>prefetch_related</code>, the prefetch <code>OptimizationResults</code> are processed
+and applied to the queryset taken from <code>OptimizationResults.queryset_callback</code>.
+The resulting <code>Prefetch()</code> object is added to the parent <code>OptimizationResults.prefetch_related</code>.</p>
+<p><code>generic_prefetch_related</code> is processed similarly to <code>prefetch_related</code>,
+expect a <code>GenericPrefetch()</code> object is created instead.</p>
+<h4 id="promotion-to-prefetch">Promotion to prefetch<a class="headerlink" href="#promotion-to-prefetch" title="Permanent link">🔗</a></h4>
+<p>In certain cases, a <code>select_related</code> optimization must be promoted to a <code>prefetch_related</code>.
+This can happen for one of the following reasons:</p>
+<ol>
+<li>Any <a href="#annotations"><code>annotations</code></a> (or <a href="#aliases"><code>aliases</code></a>) are requested from the relation.
+   A prefetch must be made so that the annotation remains available in the related object.</li>
+<li>Any <a href="#field_calculations"><code>field_calculations</code></a> are present. Calculation will become annotations,
+   so the reason is the same as above.</li>
+<li>A <code>pre_filter_callback</code> or <code>post_filter_callback</code> is needed. Since these callbacks might filter out
+   the related object, a prefetch must be done to ensure this. Note that this might result in
+   a null value for a field that would otherwise not be null!</li>
+</ol>
+<h3 id="order-of-optimizations">Order of optimizations<a class="headerlink" href="#order-of-optimizations" title="Permanent link">🔗</a></h3>
+<p><code>OptimizationResults</code> properties are applied to a <code>QuerySet</code> in the following order:</p>
+<ol>
+<li>If <code>none</code> is <code>True</code>, return an empty <code>QuerySet</code> and exit early.</li>
+<li>If <code>select_related</code> is not empty, apply them using <code>QuerySet.select_related()</code>.</li>
+<li>If <code>prefetch_related</code> is not empty, apply them using <code>QuerySet.prefetch_related()</code>.</li>
+<li>If  the <a href="../settings/#disable_only_fields_optimization"><code>DISABLE_ONLY_FIELDS_OPTIMIZATION</code></a>
+   setting is <code>False</code>, and <code>only_fields</code> is not empty, apply them using <code>QuerySet.only()</code>.</li>
+<li>If <code>aliases</code> is not empty, apply them using <code>QuerySet.alias()</code>.</li>
+<li>If <code>annotations</code> is not empty, apply them using <code>QuerySet.annotate()</code>.</li>
+<li>If <code>pre_filter_callback</code> exists, call it.</li>
+<li>If <code>order_by</code> is not empty, apply them using <code>QuerySet.order_by()</code>.</li>
+<li>If <code>distinct</code> is <code>True</code>, call <code>QuerySet.distinct()</code>.</li>
+<li>If <code>field_calculations</code> are not empty, run them and annotate their results to the <code>QuerySet</code>.</li>
+<li>If <code>filters</code> is not empty, apply them using <code>QuerySet.filter()</code></li>
+<li>If <code>post_filter_callback</code> exists, call it.</li>
+<li>If <code>pagination</code> data exists, run either <code>pagination.paginate_queryset()</code>
+    or <code>pagination.paginate_prefetch_queryset()</code> depending on whether a <code>related_field</code> exists or not.</li>
+<li>Return the optimized <code>QuerySet</code>.</li>
+</ol>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../hacking-undine/" title="Hacking Undine"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../async/" title="Async Support">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../hacking-undine/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../async/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

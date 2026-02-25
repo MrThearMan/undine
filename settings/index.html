@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Settings - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Settings";
+        var mkdocs_page_input_path = "settings.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on Undine various settings." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Settings</a>
+<ul class="current">
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Settings</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the settings that can be used to customize Undine.
+Settings should be set in a dictionary named <code>UNDINE</code> in your settings file, unless otherwise specified.
+The settings can also be found in the <a href="https://github.com/MrThearMan/undine/blob/main/undine/settings.py" target="_blank">settings file</a>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>    <span class="c1"># Settings go here</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details id="additional_validation_rules">
+<summary><code>ADDITIONAL_VALIDATION_RULES</code></summary>
+<p>Type: <code>list[type[ASTValidationRule]]</code> | Default: <code>[]</code></p>
+<p>Additional validation rules to use for validating GraphQL documents (i.e. "requests").
+Values should be given as the dotted paths to the validation rules used.</p>
+</details>
+<details id="allow_did_you_mean_suggestions">
+<summary><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to allow the <em>'did you mean'</em> suggestions on error messages.
+Disabled by default so that information on the schema structure cannot
+be gained from error messages when trying to find schema entrypoints through
+trial and error (a form of security through obscurity).</p>
+<p>This should be left disabled when using
+<a href="#experimental_visibility_checks"><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></a>.</p>
+</details>
+<details id="allow_introspection_queries">
+<summary><code>ALLOW_INTROSPECTION_QUERIES</code></summary>
+<p>Type <code>bool</code> | Default: <code>False</code></p>
+<p>Whether schema introspection queries are allowed or not.
+Disabled by default so that information on the schema structure cannot
+be gained through introspection (a form of security through obscurity).</p>
+<p>Should set this to <code>True</code> if using <a href="../integrations/#graphiql">GraphiQL</a>.</p>
+</details>
+<details id="allow_queries_with_sse">
+<summary><code>ALLOW_QUERIES_WITH_SSE</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether queries can be executed over Server-Sent Events.</p>
+</details>
+<details id="allow_mutations_with_sse">
+<summary><code>ALLOW_MUTATIONS_WITH_SSE</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether mutations can be executed over Server-Sent Events.</p>
+</details>
+<details id="allow_queries_with_websockets">
+<summary><code>ALLOW_QUERIES_WITH_WEBSOCKETS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether queries can be executed over WebSockets.</p>
+</details>
+<details id="allow_mutations_with_websockets">
+<summary><code>ALLOW_MUTATIONS_WITH_WEBSOCKETS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether mutations can be executed over WebSockets.</p>
+</details>
+<details id="async">
+<summary><code>ASYNC</code></summary>
+<p>Type <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to use async view for the GraphQL endpoint or not.
+See Undine's <a href="../async/">Async</a> documentation for more information.</p>
+</details>
+<details id="autogeneration">
+<summary><code>AUTOGENERATION</code></summary>
+<p>Type <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to automatically generate <code>Fields</code> for <code>QueryTypes</code>, <code>Inputs</code> for <code>MutationTypes</code>,
+<code>Filters</code> for <code>FilterSets</code>, and <code>Orders</code> for <code>OrderSets</code>. Can also be set on an individual
+<code>QueryType</code>, <code>MutationType</code>, <code>FilterSet</code>, and <code>OrderSet</code> classes.</p>
+</details>
+<details id="calculation_argument_extensions_key">
+<summary><code>CALCULATION_ARGUMENT_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_calculation_argument"</code></p>
+<p>The key used to store a <code>CalculationArgument</code> in the <code>extensions</code> of its <code>GraphQLArgument</code>.</p>
+</details>
+<details id="camel_case_schema_fields">
+<summary><code>CAMEL_CASE_SCHEMA_FIELDS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>True</code></p>
+<p>Should field names be converted from <em>'snake_case'</em> to <em>'camelCase'</em> for the GraphQL schema?
+Conversion is not applied if <code>schema_name</code> is set manually in on the <code>Entrypoint</code>, <code>Field</code>, <code>Input</code>, etc.</p>
+</details>
+<details id="connection_extensions_key">
+<summary><code>CONNECTION_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_connection"</code></p>
+<p>The key used to store a <code>Connection</code> in the <code>extensions</code> of its <code>GraphQLObjectType</code>.</p>
+</details>
+<details id="directive_argument_extensions_key">
+<summary><code>DIRECTIVE_ARGUMENT_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_directive_argument"</code></p>
+<p>The key used to store a <code>DirectiveArgument</code> in the <code>extensions</code> of its <code>GraphQLArgument</code>.</p>
+</details>
+<details id="directive_extensions_key">
+<summary><code>DIRECTIVE_EXTENSIONS_KEY</code></summary>
+<p>Type <code>str</code> | Default: <code>"undine_directive"</code></p>
+<p>The key used to store a <code>Directive</code> in the <code>extensions</code> of its <code>GraphQLDirective</code>.</p>
+</details>
+<details id="disable_only_fields_optimization">
+<summary><code>DISABLE_ONLY_FIELDS_OPTIMIZATION</code></summary>
+<p>Type <code>bool</code> | Default: <code>False</code></p>
+<p>Disable optimizing fetched fields with <code>queryset.only()</code>.</p>
+</details>
+<details id="docstring_parser">
+<summary><code>DOCSTRING_PARSER</code></summary>
+<p>Type <code>type[DocstringParserProtocol]</code> | Default: <code>"undine.parsers.parse_docstring.RSTDocstringParser"</code></p>
+<p>The docstring parser to use to parse function docstrings to schema descriptions.
+Should be given as the dotted path to the docstring parser class.</p>
+</details>
+<details id="empty_values">
+<summary><code>EMPTY_VALUES</code></summary>
+<p>Type <code>Container[Any]</code> | Default: <code>(None, "", [], {})</code></p>
+<p>By default, if a <code>Filter</code> receives any of these values, that filter will be ignored.
+Can be changed on per-<code>Filter</code> basis using the <a href="../filtering/#empty-values"><code>empty_values</code></a> argument.</p>
+</details>
+<details id="enable_class_attribute_docstrings">
+<summary><code>ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS</code></summary>
+<p>Type <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to parse class attribute docstrings or not.
+Disabled by default to improve performance of the schema creation.</p>
+</details>
+<details id="entrypoint_extensions_key">
+<summary><code>ENTRYPOINT_EXTENSIONS_KEY</code></summary>
+<p>Type <code>str</code> | Default: <code>"undine_entrypoint"</code></p>
+<p>The key used to store an <code>Entrypoint</code> in the <code>extensions</code> of its <code>GraphQLField</code>.</p>
+</details>
+<details id="execution_context_class">
+<summary><code>EXECUTION_CONTEXT_CLASS</code></summary>
+<p>Type <code>type[UndineExecutionContext]</code> | Default: <code>"undine.execution.UndineExecutionContext"</code></p>
+<p>GraphQL execution context class used by the schema.
+Should be given as the dotted path to the execution context class.</p>
+</details>
+<details id="experimental_visibility_checks">
+<summary><code>EXPERIMENTAL_VISIBILITY_CHECKS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to enable experimental visibility checks.</p>
+<p>When enabled, parts of the schema can be hidden from certain users according to
+specified visibility checks. When a field is not visible to a user, it will not be
+included in introspection queries and it cannot be used in operations.</p>
+<p>Note that visibility does not affect "did you mean" suggestions, so it's advised to disable
+these using the <a href="#allow_did_you_mean_suggestions"><code>ALLOW_DID_YOU_MEAN_SUGGESTIONS</code></a> setting
+when using this feature.</p>
+</details>
+<details id="field_extensions_key">
+<summary><code>FIELD_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_field"</code></p>
+<p>The key used to store a <code>Field</code> in the <code>extensions</code> of its <code>GraphQLField</code>.</p>
+</details>
+<details id="file_upload_enabled">
+<summary><code>FILE_UPLOAD_ENABLED</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether file uploads are enabled. Should enable CSRF protection on the GraphiQL endpoint if enabled.
+See <a href="../file-upload/">file uploads</a> for more information.</p>
+</details>
+<details id="filter_extensions_key">
+<summary><code>FILTER_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_filter"</code></p>
+<p>The key used to store a <code>Filter</code> in the <code>extensions</code> of its <code>GraphQLInputField</code>.</p>
+</details>
+<details id="filterset_extensions_key">
+<summary><code>FILTERSET_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_filterset"</code></p>
+<p>The key used to store a <code>FilterSet</code> in the <code>extensions</code> of its <code>GraphQLInputObjectType</code>.</p>
+</details>
+<details id="graphiql_enabled">
+<summary><code>GRAPHIQL_ENABLED</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to enable <a href="../integrations/#graphiql">GraphiQL</a>. Should also set <a href="#allow_introspection_queries"><code>ALLOW_INTROSPECTION_QUERIES</code></a>
+to <code>True</code>, so that GraphiQL can introspect the GraphQL schema.</p>
+</details>
+<details id="graphiql_sse_enabled">
+<summary><code>GRAPHIQL_SSE_ENABLED</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether GraphiQL uses SSE for subscriptions instead of the built-in WebSocket client.</p>
+</details>
+<details id="graphiql_sse_single_connection">
+<summary><code>GRAPHIQL_SSE_SINGLE_CONNECTION</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Controls whether the SSE subscription client uses single connection mode.
+Only relevant when <a href="#graphiql_sse_enabled"><code>GRAPHIQL_SSE_ENABLED</code></a> is enabled.</p>
+</details>
+<details id="graphql_path">
+<summary><code>GRAPHQL_PATH</code></summary>
+<p>Type: <code>str</code> | Default: <code>"graphql/"</code></p>
+<p>The URL path where the GraphQL endpoint is located
+if it's included using <code>path("", include("undine.http.urls"))</code>.</p>
+</details>
+<details id="graphql_view_name">
+<summary><code>GRAPHQL_VIEW_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"graphql"</code></p>
+<p>The name given to the GraphQL view in Django's URL resolvers
+if it's included using <code>path("", include("undine.http.urls"))</code>.</p>
+</details>
+<details id="include_error_traceback">
+<summary><code>INCLUDE_ERROR_TRACEBACK</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>When a GraphQL request returns an error response,
+and the error is based on a non-GraphQL exception,
+if this setting is enabled, the error traceback will be included in the response.
+Useful for debugging.</p>
+</details>
+<details id="input_extensions_key">
+<summary><code>INPUT_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_input"</code></p>
+<p>The key used to store an <code>Input</code> in the <code>extensions</code> of its <code>GraphQLInputField</code>.</p>
+</details>
+<details id="interface_field_extensions_key">
+<summary><code>INTERFACE_FIELD_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_interface_field"</code></p>
+<p>The key used to store an <code>InterfaceField</code> in the <code>extensions</code> of its <code>GraphQLField</code>.</p>
+</details>
+<details id="interface_type_extensions_key">
+<summary><code>INTERFACE_TYPE_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_interface"</code></p>
+<p>The key used to store a <code>InterfaceType</code> in the <code>extensions</code> of its <code>GraphQLInterfaceType</code>.</p>
+</details>
+<details id="lifecycle_hooks">
+<summary><code>LIFECYCLE_HOOKS</code></summary>
+<p>Type: <code>list[type[LifecycleHook]]</code> | Default: <code>[]</code></p>
+<p>Hooks to use during the GraphQL request.
+See <a href="../lifecycle-hooks/">Lifecycle Hooks</a> for more information.
+Values should be given as the dotted paths to the lifecycle hooks used.</p>
+</details>
+<details id="list_entrypoint_limit">
+<summary><code>LIST_ENTRYPOINT_LIMIT</code></summary>
+<p>Type <code>int | None</code> | Default: <code>None</code></p>
+<p>Maximum number of objects that can be returned from a list <code>Entrypoint</code> when not using pagination.
+If None, all items are fetched.</p>
+</details>
+<details id="max_allowed_aliases">
+<summary><code>MAX_ALLOWED_ALIASES</code></summary>
+<p>Type: <code>int</code> | Default: <code>15</code></p>
+<p>The maximum number of aliases allowed in a single operation.</p>
+</details>
+<details id="max_allowed_directives">
+<summary><code>MAX_ALLOWED_DIRECTIVES</code></summary>
+<p>Type: <code>int</code> | Default: <code>50</code></p>
+<p>The maximum number of directives allowed in a single operation.</p>
+</details>
+<details id="max_errors">
+<summary><code>MAX_ERRORS</code></summary>
+<p>Type: <code>int</code> | Default: <code>100</code></p>
+<p>The maximum number of validation errors allowed in a GraphQL request before it's rejected,
+even if validation is still not complete.</p>
+</details>
+<details id="max_filters_per_type">
+<summary><code>MAX_FILTERS_PER_TYPE</code></summary>
+<p>Type: <code>int</code> | Default: <code>20</code></p>
+<p>The maximum number of filters allowed to be used for filtering a single <code>QueryType</code>.</p>
+</details>
+<details id="max_orders_per_type">
+<summary><code>MAX_ORDERS_PER_TYPE</code></summary>
+<p>Type: <code>int</code> | Default: <code>10</code></p>
+<p>The maximum number of orderings allowed to be used for ordering a single <code>QueryType</code>.</p>
+</details>
+<details id="max_query_complexity">
+<summary><code>MAX_QUERY_COMPLEXITY</code></summary>
+<p>Type: <code>int</code> | Default: <code>10</code></p>
+<p>Maximum query complexity that is allowed to be queried in a single operation.
+See the <a href="../queries/#complexity">field complexity</a> documentation for more information.</p>
+</details>
+<details id="max_tokens">
+<summary><code>MAX_TOKENS</code></summary>
+<p>Type <code>int</code> | Default: <code>None</code></p>
+<p>Maximum number of <a href="https://github.com/graphql-python/graphql-core/blob/main/src/graphql/language/token_kind.py" target="_blank">GraphQL document tokens</a> the GraphQL parser will
+parse before it rejects a request. By default, this is set to <code>None</code> which means no limit.</p>
+</details>
+<details id="modeltranslation_include_translatable">
+<summary><code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to add translatable fields to the GraphQL schema when using <code>django-modeltranslation</code>.
+See <a href="../integrations/#django-modeltranslation">the integration description</a> for more information.</p>
+</details>
+<details id="modeltranslation_include_translations">
+<summary><code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code></summary>
+<p>Type: <code>bool</code> | Default: <code>True</code></p>
+<p>Whether to add translation fields to the GraphQL schema when using <code>django-modeltranslation</code>.
+See <a href="../integrations/#django-modeltranslation">the integration description</a> for more information.</p>
+</details>
+<details id="mutation_full_clean">
+<summary><code>MUTATION_FULL_CLEAN</code></summary>
+<p>Type: <code>bool</code> | Default: <code>True</code></p>
+<p>Whether to run <code>model.full_clean()</code> when creating or updating Model using <code>MutationTypes</code>.
+Turning this off can reduce the number of database queries during mutations,
+but may introduce issues that would be solved by running full Model validation.</p>
+</details>
+<details id="mutation_instance_limit">
+<summary><code>MUTATION_INSTANCE_LIMIT</code></summary>
+<p>Type: <code>int</code> | Default: <code>100</code></p>
+<p>The maximum number of objects that can be mutated in a single bulk mutation.</p>
+</details>
+<details id="mutation_input_data_key">
+<summary><code>MUTATION_INPUT_DATA_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"input"</code></p>
+<p>The key that the input argument based on a <code>MutationType</code> is added to
+when said <code>MutationType</code> is used in <code>Entrypoints</code>.</p>
+</details>
+<details id="mutation_type_extensions_key">
+<summary><code>MUTATION_TYPE_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_mutation_type"</code></p>
+<p>The key used to store a <code>MutationType</code> in the <code>extensions</code> of its <code>GraphQLInputObjectType</code>.</p>
+</details>
+<details id="no_error_location">
+<summary><code>NO_ERROR_LOCATION</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to remove error location information to GraphQL errors.</p>
+</details>
+<details id="offset_pagination_extensions_key">
+<summary><code>OFFSET_PAGINATION_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_offset_pagination"</code></p>
+<p>The key used to store an <code>OffsetPagination</code> in the <code>extensions</code> of its <code>GraphQLObjectType</code>.</p>
+</details>
+<details id="optimizer_class">
+<summary><code>OPTIMIZER_CLASS</code></summary>
+<p>Type: <code>type[QueryOptimizer]</code> | Default: <code>"undine.optimizer.optimizer.QueryOptimizer"</code></p>
+<p>The optimizer class to use for optimizing queries.
+Value should be given as the dotted path to the optimizer class.</p>
+</details>
+<details id="order_extensions_key">
+<summary><code>ORDER_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_order"</code></p>
+<p>The key used to store an <code>Order</code> in the <code>extensions</code> of its <code>GraphQLEnumValue</code>.</p>
+</details>
+<details id="orderset_extensions_key">
+<summary><code>ORDERSET_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_orderset"</code></p>
+<p>The key used to store a <code>OrderSet</code> in the <code>extensions</code> of its <code>GraphQLEnumType</code>.</p>
+</details>
+<details id="pagination_index_key">
+<summary><code>PAGINATION_INDEX_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_pagination_index"</code></p>
+<p>The key to which a nested pagination indexes are annotated to.</p>
+</details>
+<details id="pagination_page_size">
+<summary><code>PAGINATION_PAGE_SIZE</code></summary>
+<p>Type: <code>int</code> | Default: <code>100</code></p>
+<p>The maximum number of items to return from a page when paginating.</p>
+</details>
+<details id="pagination_start_index_key">
+<summary><code>PAGINATION_START_INDEX_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_pagination_start"</code></p>
+<p>The key to which a nested pagination start indexes are annotated to.</p>
+</details>
+<details id="pagination_stop_index_key">
+<summary><code>PAGINATION_STOP_INDEX_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_pagination_stop"</code></p>
+<p>The key to which a nested pagination stop indexes are annotated to.</p>
+</details>
+<details id="pagination_total_count_key">
+<summary><code>PAGINATION_TOTAL_COUNT_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_pagination_total_count"</code></p>
+<p>The key to which a nested pagination total counts are annotated to.</p>
+</details>
+<details id="persisted_documents_only">
+<summary><code>PERSISTED_DOCUMENTS_ONLY</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to only allow persisted documents to be executed in the GraphQL API.</p>
+</details>
+<details id="persisted_documents_path">
+<summary><code>PERSISTED_DOCUMENTS_PATH</code></summary>
+<p>Type: <code>str</code> | Default: <code>"persisted-documents/"</code></p>
+<p>The path where the persisted documents registration endpoint is located by default.</p>
+</details>
+<details id="persisted_documents_permission_callback">
+<summary><code>PERSISTED_DOCUMENTS_PERMISSION_CALLBACK</code></summary>
+<p>Type: <code>PersistedDocumentsPermissionsCallback</code> | Default: <code>undine.persisted_documents.utils.default_permission_callback</code></p>
+<p>The function to use for permission checks for registration of persisted documents.</p>
+</details>
+<details id="persisted_documents_view_name">
+<summary><code>PERSISTED_DOCUMENTS_VIEW_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"persisted_documents"</code></p>
+<p>The name of given to the persisted documents registration view in the URLconf.</p>
+</details>
+<details id="pg_text_search_prefix">
+<summary><code>PG_TEXT_SEARCH_PREFIX</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_ts_vector"</code></p>
+<p>A prefix to use for the filter aliases of postgres full text search <code>Filters</code>.</p>
+</details>
+<details id="prefetch_hack_cache_key">
+<summary><code>PREFETCH_HACK_CACHE_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"_undine_prefetch_hack_cache"</code></p>
+<p>The key to use for storing the prefetch hack cache in the queryset hints.</p>
+</details>
+<details id="query_type_extensions_key">
+<summary><code>QUERY_TYPE_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_query_type"</code></p>
+<p>The key used to store a <code>QueryType</code> in the <code>extensions</code> of its <code>GraphQLObjectType</code>.</p>
+</details>
+<details id="query_type_filter_input_key">
+<summary><code>QUERY_TYPE_FILTER_INPUT_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"filter"</code></p>
+<p>The name of the input argument that is created for a <code>FilterSet</code> when a <code>QueryType</code>
+using that <code>FilterSet</code> is used in a list <code>Entrypoint</code> or many-related <code>Field</code>.</p>
+</details>
+<details id="query_type_order_input_key">
+<summary><code>QUERY_TYPE_ORDER_INPUT_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"orderBy"</code></p>
+<p>The name of the input argument that is created for an <code>OrderSet</code> when a <code>QueryType</code>
+using that <code>OrderSet</code> is used in a list <code>Entrypoint</code> or many-related <code>Field</code>.</p>
+</details>
+<details id="resolver_root_param_name">
+<summary><code>RESOLVER_ROOT_PARAM_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"root"</code></p>
+<p>The name of the root/parent parameter in <code>Field</code>/<code>Entrypoint</code> resolvers.</p>
+</details>
+<details id="root_type_extensions_key">
+<summary><code>ROOT_TYPE_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_root_type"</code></p>
+<p>The key used to store a <code>RootType</code> in the <code>extensions</code> of its <code>GraphQLObjectType</code>.</p>
+</details>
+<details id="root_value">
+<summary><code>ROOT_VALUE</code></summary>
+<p>Type: <code>Any</code> | Default: <code>None</code></p>
+<p>The root value for the GraphQL execution. Can be accessed by <code>Entrypoint</code> resolvers
+from the <code>root</code> argument.</p>
+</details>
+<details id="scalar_extensions_key">
+<summary><code>SCALAR_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_scalar"</code></p>
+<p>The key used to store a Undine <code>ScalarType</code> in the <code>extensions</code> of its <code>GraphQLScalarType</code>.</p>
+</details>
+<details id="schema">
+<summary><code>SCHEMA</code></summary>
+<p>Type: <code>GraphQLSchema</code> | Default: <code>"undine.settings.example_schema"</code></p>
+<p>The file and variable where the GraphQL Schema for Undine is located.
+Value should be given as the dotted path, usually created using <code>undine.schema.create_schema</code>.</p>
+</details>
+<details id="schema_directives_extensions_key">
+<summary><code>SCHEMA_DIRECTIVES_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_schema_directives"</code></p>
+<p>The key used to store the schema definition directives in the <code>extensions</code> of its <code>GraphQLSchema</code>.</p>
+</details>
+<details id="sdl_printer">
+<summary><code>SDL_PRINTER</code></summary>
+<p>Type: <code>type[SDLPrinter]</code> | Default: <code>"undine.utils.graphql.sdl_printer.SDLPrinter"</code></p>
+<p>The SDL printer to use. Value should be given as the dotted path to the SDL printer class.</p>
+</details>
+<details id="sse_keep_alive_interval">
+<summary><code>SSE_KEEP_ALIVE_INTERVAL</code></summary>
+<p>Type: <code>int</code> | Default: <code>12</code></p>
+<p>Interval in seconds for SSE keep-alive pings sent on the event stream.
+These pings prevent reverse proxies and load balancers from closing idle connections.
+Set to <code>0</code> to disable.</p>
+</details>
+<details id="sse_operation_stream_open_timeout">
+<summary><code>SSE_OPERATION_STREAM_OPEN_TIMEOUT</code></summary>
+<p>Type: <code>int</code> | Default: <code>30</code></p>
+<p>Timeout in seconds for an operation to wait for the event stream to open (Single Connection mode).</p>
+</details>
+<details id="sse_stream_session_prefix">
+<summary><code>SSE_STREAM_SESSION_PREFIX</code></summary>
+<p>Type: <code>str</code> | Default: <code>"graphql-over-sse-stream"</code></p>
+<p>Key prefix used to store the GraphQL over SSE stream state in the user's session (Single Connection mode).</p>
+</details>
+<details id="sse_token_header_name">
+<summary><code>SSE_TOKEN_HEADER_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"X-GraphQL-Event-Stream-Token"</code></p>
+<p>The name of the HTTP header to use for the GraphQL over SSE event stream token (Single Connection mode).</p>
+</details>
+<details id="sse_token_query_param_name">
+<summary><code>SSE_TOKEN_QUERY_PARAM_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"token"</code></p>
+<p>The name of the query string parameter to use for the GraphQL over SSE event stream token (Single Connection mode).</p>
+</details>
+<details id="testing_client_full_stacktrace">
+<summary><code>TESTING_CLIENT_FULL_STACKTRACE</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to include the full stacktrace in testing client instead of just the relevant frames
+when checking where SQL queries are made.</p>
+</details>
+<details id="testing_client_no_async_timeout">
+<summary><code>TESTING_CLIENT_NO_ASYNC_TIMEOUT</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether to disable the websocket timeouts in testing client.
+Can be useful in debugging.</p>
+</details>
+<details id="total_count_param_name">
+<summary><code>TOTAL_COUNT_PARAM_NAME</code></summary>
+<p>Type: <code>str</code> | Default: <code>"totalCount"</code></p>
+<p>The name of the parameter in a connection <code>ObjectType</code> for holding the count for the
+total number of items that can be queried from the connection.</p>
+</details>
+<details id="undine_persisted_documents_model">
+<summary><code>UNDINE_PERSISTED_DOCUMENTS_MODEL</code></summary>
+<p>Type: <code>type[Model]</code> | Default: <code>"undine.persisted_documents.models.PersistedDocument"</code></p>
+<p><strong>NOTE</strong>: This setting should be set in the top level of the settings file, not in the <code>UNDINE</code> dictionary!</p>
+<p>The model to use for the <code>PersistedDocument</code> model.
+Works similarly to <a href="https://docs.djangoproject.com/en/stable/topics/auth/customizing/#substituting-a-custom-user-model" target="_blank"><code>AUTH_USER_MODEL</code></a>,
+so must be set before running migrations for the persisted documents app.</p>
+</details>
+<details id="union_type_extensions_key">
+<summary><code>UNION_TYPE_EXTENSIONS_KEY</code></summary>
+<p>Type: <code>str</code> | Default: <code>"undine_union_type"</code></p>
+<p>The key used to store a Undine <code>UnionType</code> in the <code>extensions</code> of its <code>GraphQLUnion</code>.</p>
+</details>
+<details id="use_sse_distinct_connections_for_http_1">
+<summary><code>USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1</code></summary>
+<p>Type: <code>bool</code> | Default: <code>False</code></p>
+<p>Whether Server-Sent Events should use distinct connections mode even with a HTTP/1.1 connection.
+Note that when using HTTP/1.1, the maximum number of open connections is limited to 6 per domain
+and browser. That means you will likely hit the limit in a real production environment
+with multiple requests and browser tabs.</p>
+</details>
+<details id="websocket_connection_init_hook">
+<summary><code>WEBSOCKET_CONNECTION_INIT_HOOK</code></summary>
+<p>Type: <code>WebSocketConnectionInitHook</code> | Default: <code>"undine.utils.graphql.websocket.connection_init_hook"</code></p>
+<p>The function to use for custom <code>ConnectionInit</code> logic.
+Value should be given as the dotted path to the function.</p>
+</details>
+<details id="websocket_connection_init_timeout_seconds">
+<summary><code>WEBSOCKET_CONNECTION_INIT_TIMEOUT_SECONDS</code></summary>
+<p>Type: <code>int</code> | Default: <code>3</code></p>
+<p>The number of seconds to wait for the <code>ConnectionInit</code> message after opening a WebSocket before closing it.</p>
+</details>
+<details id="websocket_path">
+<summary><code>WEBSOCKET_PATH</code></summary>
+<p>Type: <code>str</code> | Default: <code>"graphql/"</code></p>
+<p>The path where the GraphQL over WebSocket endpoint is located
+if using <code>undine.integrations.channels.get_websocket_enabled_app</code>.</p>
+</details>
+<details id="websocket_ping_hook">
+<summary><code>WEBSOCKET_PING_HOOK</code></summary>
+<p>Type: <code>WebSocketConnectionPingHook</code> | Default: <code>"undine.utils.graphql.websocket.ping_hook"</code></p>
+<p>The function for specifying custom <code>Ping</code> message logic.
+Value should be given as the dotted path to the function.</p>
+</details>
+<details id="websocket_pong_hook">
+<summary><code>WEBSOCKET_PONG_HOOK</code></summary>
+<p>Type: <code>WebSocketConnectionPongHook</code> | Default: <code>"undine.utils.graphql.websocket.pong_hook"</code></p>
+<p>The function to for specifying custom <code>Pong</code> message logic.
+Value should be given as the dotted path to the function.</p>
+</details>
+<hr/>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../integrations/" title="Integrations"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../faq/" title="FAQ">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../integrations/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../faq/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>
