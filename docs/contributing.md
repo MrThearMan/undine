@@ -111,7 +111,7 @@ but if not, you can also ask for one.
 
 1. Install [Poetry].
 2. Install [Just].
-3. Run `poetry install` to create a virtual environment and install project dependencies.
+3. Run `just install` to create a virtual environment and install project dependencies.
 4. Run `just hook` to install the [pre-commit] hooks.
 
 [Poetry]: https://python-poetry.org/docs/#installation
@@ -122,7 +122,7 @@ Run `just help` to list all existing development commands and their descriptions
 
 ## Testing
 
-Tests can be run with `just tests` and individual tests with `just test <test_name>`.
+Tests can be run with `just test` and individual tests with `just test <test_name>`.
 This will run tests in you [local environment](#setting-up-the-environment).
 
 You can also test your code in multiple environments with [nox]. To do this, you must
