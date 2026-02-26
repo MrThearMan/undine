@@ -1,40 +1,37 @@
 # Caches
-.nox
-.grimp_cache
-.ruff_cache
-.mypy_cache
-*.pytest_cache
-*.hypothesis
-*__pycache__
+/.nox
+/.grimp_cache
+/.ruff_cache
+/.mypy_cache
+/.pytest_cache
+/.hypothesis
+/**/__pycache__
 
 # Build dirs
-dist
-build
+/dist
+/build
+/site
 
 # Generated files
-/undine/static/undine/vendor/*
-coverage.xml
-profile.svg
-.coverage
+/coverage.xml
+/profile.svg
+/.coverage
 /example_project/project/testdb
-/example_project/static/
-/example_project/media/
-/site
-/dist
+/example_project/static
+/example_project/media
 
 # Local configs
-.idea
-.vscode
-pytest.ini
-mypy.ini
-pyrightconfig.json
-CLAUDE.md
+/.idea
+/.vscode
+/pytest.ini
+/mypy.ini
+/pyrightconfig.json
+/CLAUDE.md
 
 # venv
-/.venv/
-.venv
+/.venv
 
 # Node
-/node_modules/
-package.json
-package-lock.json
+/node_modules
+/package.json
+/package-lock.json

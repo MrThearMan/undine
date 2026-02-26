@@ -90,6 +90,10 @@ static:
 setup-local-configs:
     @poetry run python manage.py setup_local_configs
 
+# Print directory structure
+structure dir=".":
+    @poetry run python manage.py generate_project_structure "{{dir}}"
+
 # Run all tests with coverage
 test dir=".":
     @poetry run pytest "{{dir}}"
