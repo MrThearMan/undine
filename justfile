@@ -12,7 +12,19 @@ check:
 
 # Run all tests with coverage
 coverage:
-    @poetry run coverage run -m pytest
+    @poetry run coverage run -m
+
+# Print the required versions of main dependencies
+deps:
+    @poetry run python manage.py get_core_dependencies
+
+# Print top level dependencies
+deps-top:
+    @poetry show --top-level --only=main --no-truncate
+
+# Print all dependencies as a tree
+deps-tree:
+    @poetry show --tree --no-truncate
 
 # Start the development server in sync mode
 dev port="8000":
