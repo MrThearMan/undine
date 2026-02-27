@@ -29,6 +29,9 @@ from undine.exceptions import (
     GraphQLAsyncNotSupportedError,
     GraphQLCannotUseHTTPForMutationsNonPostRequestError,
     GraphQLCannotUseHTTPForSubscriptionsError,
+    GraphQLCannotUseMultipartMixedForMutationsError,
+    GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError,
+    GraphQLCannotUseMultipartMixedForQueriesError,
     GraphQLCannotUseSSEForMutationsError,
     GraphQLCannotUseSSEForMutationsNonPostRequestError,
     GraphQLCannotUseSSEForQueriesError,
@@ -53,7 +56,7 @@ from undine.hooks import (
     with_validation_lifecycle_hooks_manager,
     with_validation_lifecycle_hooks_manager_async,
 )
-from undine.http.utils import is_sse_request, is_websocket_request
+from undine.http.utils import is_multipart_mixed_request, is_sse_request, is_websocket_request
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_orderset
 from undine.utils.graphql.utils import (
@@ -319,6 +322,8 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
         _validate_websockets(context)
     elif is_sse_request(context.request):
         _validate_sse(context)
+    elif is_multipart_mixed_request(context.request):
+        _validate_multipart_mixed(context)
     else:
         _validate_http(context)
 
@@ -517,6 +522,23 @@ def _validate_http(context: LifecycleHookContext) -> None:
     if operation_type == OperationType.SUBSCRIPTION:
         context.result = get_error_execution_result(GraphQLCannotUseHTTPForSubscriptionsError())
         return
+
+
+def _validate_multipart_mixed(context: LifecycleHookContext) -> None:
+    operation_type = get_operation_type(context.document, context.operation_name)
+
+    if operation_type == OperationType.QUERY and not undine_settings.ALLOW_QUERIES_WITH_MULTIPART_MIXED:
+        context.result = get_error_execution_result(GraphQLCannotUseMultipartMixedForQueriesError())
+        return
+
+    if operation_type == OperationType.MUTATION:
+        if not undine_settings.ALLOW_MUTATIONS_WITH_MULTIPART_MIXED:
+            context.result = get_error_execution_result(GraphQLCannotUseMultipartMixedForMutationsError())
+            return
+
+        if context.request.method != "POST":
+            context.result = get_error_execution_result(GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError())
+            return
 
 
 def _validate_sse(context: LifecycleHookContext) -> None:

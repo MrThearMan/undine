@@ -564,6 +564,30 @@ class GraphQLCannotUseHTTPForSubscriptionsError(GraphQLStatusError):
     code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS
 
 
+class GraphQLCannotUseMultipartMixedForQueriesError(GraphQLStatusError):
+    """Error raised when a query operation is executed over multipart/mixed HTTP."""
+
+    msg = "Cannot use multipart/mixed for queries."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES
+
+
+class GraphQLCannotUseMultipartMixedForMutationsError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed over multipart/mixed HTTP."""
+
+    msg = "Cannot use multipart/mixed for mutations."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS
+
+
+class GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError(GraphQLStatusError):
+    """Error raised when a mutation operation is executed over multipart/mixed HTTP not sent over HTTP POST."""
+
+    msg = "Cannot use multipart/mixed for mutations if not sent as a POST request."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS_NON_POST_REQUEST
+
+
 class GraphQLCannotUseSSEForMutationsError(GraphQLStatusError):
     """Error raised when a mutation operation is executed over Server-Sent Events."""
 
