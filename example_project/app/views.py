@@ -33,6 +33,10 @@ def sse_testing_sc(request: HttpRequest) -> HttpResponse:
     return render(request, "app/sse_testing_sc.html")
 
 
+def multipart_mixed_testing(request: HttpRequest) -> HttpResponse:
+    return render(request, "app/multipart_mixed_testing.html")
+
+
 @require_POST
 def force_login(request: HttpRequest) -> JsonResponse:
     logout(request)
