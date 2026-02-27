@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Multipart/mixed HTTP testing</title>
+  <style>
+    body {
+      background: hsl(219, 29%, 18%);
+      color: hsl(219, 29%, 78%);
+      font-family: system-ui, sans-serif;
+    }
+    h1 { color: hsl(219, 29%, 78%); }
+    a { color: hsl(338, 100%, 67%); display: block; }
+    textarea {
+      background: hsl(219, 29%, 14%);
+      color: hsl(219, 29%, 78%);
+      border: 1px solid hsla(219, 29%, 78%, 0.15);
+      font-family: monospace;
+    }
+    button {
+      background: hsla(219, 29%, 78%, 0.15);
+      color: hsl(219, 29%, 78%);
+      border: 1px solid hsla(219, 29%, 78%, 0.15);
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover { background: hsla(219, 29%, 78%, 0.25); }
+  </style>
+</head>
+<body>
+
+<h1>Multipart/mixed HTTP testing</h1>
+<textarea id="log" cols="120" rows="50"></textarea>
+<br>
+<button id="send-subscribe-1">Subscribe [1]</button>
+<button id="send-subscribe-2">Subscribe [2]</button>
+<button id="clear">Clear</button>
+
+<script>
+  function getCsrfToken() {
+    const match = document.cookie.match(new RegExp('(?:^|; )csrftoken=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  async function subscribe(label) {
+    const response = await fetch("/graphql/async/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": 'multipart/mixed;subscriptionSpec="1.0",application/json',
+        "X-CSRFToken": getCsrfToken(),
+      },
+      body: JSON.stringify({
+        query: "subscription { countdown }",
+      }),
+      credentials: "include",
+    })
+
+    if (response.status !== 200) {
+      const error_data = JSON.stringify(await response.json());
+      console.error("Could not subscribe " + label + ":", error_data);
+      document.querySelector("#log").value += ("Could not subscribe " + label + ": " + error_data + "\n");
+      return;
+    }
+
+    console.log("Subscribed " + label);
+    document.querySelector("#log").value += ("Subscribed " + label + "\n");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const buffer = decoder.decode(value, { stream: true });
+      const parts = buffer.split("--graphql");
+
+      for (const part of parts) {
+        const [_headers, body] = part.trim().split('\r\n\r\n');
+        if (body === undefined) continue;
+
+        console.log("Received body", body.trim());
+        document.querySelector("#log").value += ("Received " + label + ": " + body.trim() + "\n");
+      }
+    }
+  }
+
+  document.querySelector("#send-subscribe-1").onclick = async (e) => {
+    await subscribe("[1]");
+  }
+
+  document.querySelector("#send-subscribe-2").onclick = async (e) => {
+    await subscribe("[2]");
+  }
+
+  document.querySelector("#clear").onclick = (e) => {
+    document.querySelector("#log").value = "";
+  };
+
+</script>
+
+</body>
+</html>
