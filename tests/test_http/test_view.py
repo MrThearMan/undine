@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 import urllib.parse
-from inspect import isawaitable
+from inspect import iscoroutine
 from typing import Any
 
 import pytest
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.http.request import MediaType, QueryDict
 from django.urls import reverse
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -307,7 +307,7 @@ def test_graphql_view__async_resolver__async_endpoint(undine_settings) -> None:
     )
     coro = graphql_view_async(request)  # type: ignore[arg-type]
 
-    assert isawaitable(coro)
+    assert iscoroutine(coro)
 
     response = asyncio.run(coro)
 
@@ -317,3 +317,51 @@ def test_graphql_view__async_resolver__async_endpoint(undine_settings) -> None:
     data = json.loads(response.content.decode())
 
     assert data == {"data": {"hello": "Hello, World!"}}
+
+
+def test_graphql_view__content_negotiation__event_stream(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    undine_settings.GRAPHIQL_ENABLED = True
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("text/event-stream")],
+        body=b'{"query": "query { hello }"}',
+    )
+
+    coro = graphql_view_async(request)  # type: ignore[arg-type]
+
+    assert iscoroutine(coro)
+
+    response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/event-stream; charset=utf-8"
+    assert response["Connection"] == "keep-alive"
+    assert response["Cache-Control"] == "no-cache"
+    assert response["Content-Encoding"] == "none"
+
+
+def test_graphql_view__content_negotiation__multipart_mixed(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    undine_settings.GRAPHIQL_ENABLED = True
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType('multipart/mixed;subscriptionSpec="1.0"'), MediaType("application/json")],
+        body=b'{"query": "query { hello }"}',
+    )
+
+    coro = graphql_view_async(request)  # type: ignore[arg-type]
+
+    assert iscoroutine(coro)
+
+    response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
