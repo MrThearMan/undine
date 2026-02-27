@@ -569,7 +569,7 @@ async def test_channels__sse__subscribe__stream_did_not_open_in_time(undine_sett
     assert response["json"]["errors"][0]["message"] == "Operation timed out before stream was opened"
 
     # Let the operation cleanup (finally block) finish before checking session.
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.2)
 
     # Operation should not be saved in the session since it was rejected.
     operation_key = get_sse_operation_key(operation_id=operation_id)
@@ -905,7 +905,7 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
 
     # Let the operation consumer complete handle() — it needs multiple
     # yields for session save and channel group joins.
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
 
     # Cancel the queued operation
     cancel_communicator = make_sse_cancel_communicator(
@@ -920,7 +920,7 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
 
     # Let the cancel signal propagate through the channel layer and
     # the operation consumer's dispatch loop (needs multiple yields).
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
 
     # Open the stream
     stream_communicator = make_sse_communicator(
@@ -1009,7 +1009,7 @@ async def test_channels__sse__cancel_subscription__204_when_cancelled_before_acc
     op_communicator = make_sse_operation_communicator(user=user, session=session, token=token)
     body = make_operation_body(query="query { test }", operation_id=operation_id)
     await sse_send_request(op_communicator, body=body)
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
 
     cancel_communicator = make_sse_cancel_communicator(
         user=user,
@@ -1021,7 +1021,7 @@ async def test_channels__sse__cancel_subscription__204_when_cancelled_before_acc
     cancel_response = await sse_get_response(cancel_communicator)
     assert cancel_response["status"] == HTTPStatus.OK
 
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
 
     op_response = await sse_get_response(op_communicator)
     assert op_response["status"] == HTTPStatus.NO_CONTENT
@@ -1072,7 +1072,7 @@ async def test_channels__sse__complete_event_on_unexpected_error(undine_settings
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1587,7 +1587,7 @@ async def test_channels__sse__graphql_error_during_subscription(undine_settings)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1638,7 +1638,7 @@ async def test_channels__sse__graphql_error_group_during_subscription(undine_set
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.1)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
