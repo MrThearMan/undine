@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, Literal
 
 from graphql import Undefined
 
-from undine.typing import T, TModel
+from undine.typing import FormattedMultipartMixedHttpResult, T, TModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q, QuerySet
-    from graphql import FieldNode, FormattedExecutionResult, InlineFragmentNode
+    from graphql import ExecutionResult, FieldNode, FormattedExecutionResult, GraphQLError, InlineFragmentNode
 
     from undine import QueryType
     from undine.pagination import PaginationHandler
@@ -43,6 +43,9 @@ __all__ = [
     "LazyRelation",
     "LookupRef",
     "MaybeManyOrNonNull",
+    "MultipartMixedHttpComplete",
+    "MultipartMixedHttpHeartbeat",
+    "MultipartMixedHttpResponse",
     "NextEventDC",
     "NextEventDataSC",
     "NextEventSC",
@@ -359,3 +362,41 @@ class CompletedEventSC:
     def encode(self) -> str:
         data = CompletedEventDataSC(id=self.operation_id).encode()
         return f"event: {self.event}\ndata: {data}\n\n"
+
+
+# Multipart/mixed HTTP
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class MultipartMixedHttpResponse:
+    """Multipart/mixed HTTP response."""
+
+    payload: ExecutionResult | None
+    errors: list[GraphQLError] | None = None
+
+    @property
+    def formatted(self) -> FormattedMultipartMixedHttpResult:
+        data = FormattedMultipartMixedHttpResult(payload=self.payload.formatted)
+        if self.errors is not None:
+            data["errors"] = [error.formatted for error in self.errors]
+        return data
+
+    def encode(self) -> str:
+        formatted = json.dumps(self.formatted, separators=(",", ":"))
+        return f"\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{formatted}"
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class MultipartMixedHttpComplete:
+    """Multipart/mixed HTTP complete response."""
+
+    def encode(self) -> str:
+        return "\r\n--graphql--\r\n"
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class MultipartMixedHttpHeartbeat:
+    """Multipart/mixed HTTP heartbeat response."""
+
+    def encode(self) -> str:
+        return "\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{}"

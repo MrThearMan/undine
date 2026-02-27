@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "HttpEventSourcingNotAllowedResponse",
+    "HttpIncorrectMultipartContentTypeResponse",
     "HttpMethodNotAllowedResponse",
     "HttpUnsupportedContentTypeResponse",
     "decode_body",
@@ -56,6 +57,13 @@ class HttpUnsupportedContentTypeResponse(HttpResponse):
         msg = "Server does not support any of the requested content types."
         super().__init__(content=msg, status=HTTPStatus.NOT_ACCEPTABLE, content_type="text/plain; charset=utf-8")
         self["Accept"] = ", ".join(supported_types)
+
+
+class HttpIncorrectMultipartContentTypeResponse(HttpResponse):
+    def __init__(self) -> None:
+        msg = "Incorrect Accept header for multipart/mixed content type."
+        super().__init__(content=msg, status=HTTPStatus.NOT_ACCEPTABLE, content_type="text/plain; charset=utf-8")
+        self["Accept"] = 'multipart/mixed;subscriptionSpec="1.0", application/json'
 
 
 class HttpEventSourcingNotAllowedResponse(HttpResponse):
@@ -132,6 +140,15 @@ def load_json_dict(string: str, *, decode_error_msg: str, type_error_msg: str) -
     if not isinstance(data, dict):
         raise GraphQLRequestDecodingError(type_error_msg)
     return data
+
+
+def is_multipart_mixed_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a multipart/mixed request."""
+    if not request.response_content_type:
+        return False
+
+    content_type = MediaType(request.response_content_type)
+    return content_type.match("multipart/mixed")
 
 
 def is_sse_request(request: DjangoRequestProtocol) -> bool:
@@ -247,6 +264,7 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
             "application/graphql-response+json",
             "application/json",
             "text/event-stream",
+            "multipart/mixed",
         ]
         if request.method == "GET" and undine_settings.GRAPHIQL_ENABLED:
             supported_types.append("text/html")
@@ -260,6 +278,18 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
             if request.method != "GET":
                 return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
             return render_graphiql(request)  # type: ignore[arg-type]
+
+        if media_type == "multipart/mixed":
+            if len(request.accepted_types) != 2:  # noqa: PLR2004
+                return HttpIncorrectMultipartContentTypeResponse()
+
+            multipart_type = request.accepted_types[0]
+            if not multipart_type.match('multipart/mixed;subscriptionSpec="1.0"'):
+                return HttpIncorrectMultipartContentTypeResponse()
+
+            json_type = request.accepted_types[1]
+            if not json_type.match("application/json"):
+                return HttpIncorrectMultipartContentTypeResponse()
 
         request.response_content_type = media_type
         return await func(request)

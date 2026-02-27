@@ -57,12 +57,14 @@ from django.db.models.query_utils import RegisterLookupMixin
 from graphql import (
     ExecutionResult,
     FieldNode,
+    FormattedExecutionResult,
     FragmentSpreadNode,
     GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFormattedError,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
@@ -142,6 +144,7 @@ __all__ = [
     "FilterAliasesFunc",
     "FilterParams",
     "FilterSetParams",
+    "FormattedMultipartMixedHttpResult",
     "ForwardField",
     "GQLInfo",
     "GraphQLFilterResolver",
@@ -639,6 +642,9 @@ class UndineErrorCodes(StrEnum):
     ASYNC_NOT_SUPPORTED = auto()
     CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST = auto()
     CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS = auto()
+    CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS = auto()
+    CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS_NON_POST_REQUEST = auto()
+    CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES = auto()
     CANNOT_USE_SSE_FOR_MUTATIONS = auto()
     CANNOT_USE_SSE_FOR_MUTATIONS_NON_POST_REQUEST = auto()
     CANNOT_USE_SSE_FOR_QUERIES = auto()
@@ -697,7 +703,6 @@ class UndineErrorCodes(StrEnum):
     SSE_SINGLE_CONNECTION_NOT_AUTHENTICATED = auto()
     SSE_SINGLE_CONNECTION_NOT_SUPPORTED = auto()
     SSE_STREAM_ALREADY_OPEN = auto()
-
     SSE_STREAM_NOT_FOUND = auto()
     SSE_STREAM_NOT_OPEN = auto()
     SSE_STREAM_TOKEN_MISSING = auto()
@@ -1511,3 +1516,13 @@ class SSESignaler(Protocol):
     async def unregister_stream(self, stream_token: str) -> None: ...
     async def unregister_stream_open(self, stream_token: str) -> None: ...
     async def unregister_operation(self, stream_token: str, operation_id: str) -> None: ...
+
+
+# Multipart/mixed HTTP
+
+
+class FormattedMultipartMixedHttpResult(TypedDict):
+    """Formatted execution result"""
+
+    payload: FormattedExecutionResult | None
+    errors: NotRequired[list[GraphQLFormattedError]]

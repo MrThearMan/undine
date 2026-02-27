@@ -233,6 +233,17 @@ class UndineDefaultSettings(NamedTuple):
     USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1: bool = False
     """Whether to allow SSE distinct connections mode over HTTP/1.1. Use only if you know what you're doing."""
 
+    # multipart/mixed HTTP
+
+    ALLOW_QUERIES_WITH_MULTIPART_MIXED: bool = False
+    """Whether queries can be executed over multipart/mixed HTTP requests."""
+
+    ALLOW_MUTATIONS_WITH_MULTIPART_MIXED: bool = False
+    """Whether mutations can be executed over multipart/mixed HTTP requests."""
+
+    MULTIPART_MIXED_HEARTBEAT_INTERVAL: int = 12
+    """Interval in seconds for multipart/mixed HTTP heartbeats. Set to 0 to disable."""
+
     # Django-modeltranslation
 
     MODELTRANSLATION_INCLUDE_TRANSLATABLE: bool = False

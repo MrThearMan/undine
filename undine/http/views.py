@@ -16,6 +16,11 @@ from undine.http.utils import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
+from undine.utils.graphql.multipart_mixed import (
+    execute_graphql_multipart_mixed,
+    result_to_multipart_mixed_response,
+    with_multipart_mixed_heartbeat,
+)
 from undine.utils.graphql.server_sent_events import execute_graphql_sse_dc, result_to_sse_dc, with_keep_alive_dc
 from undine.utils.graphql.utils import get_error_execution_result
 
@@ -47,20 +52,10 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
 async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """An async view for GraphQL requests."""
     if request.response_content_type == "text/event-stream":
-        # Single connection mode is handled by Channels integration.
-        if get_http_version(request) < (2, 0) and not undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1:
-            return HttpEventSourcingNotAllowedResponse()
+        return await _handle_event_stream(request)
 
-        try:
-            params = GraphQLRequestParamsParser.run(request)
-        except (GraphQLError, GraphQLErrorGroup) as error:
-            result = get_error_execution_result(error)
-            event_stream = result_to_sse_dc(result)
-        else:
-            event_stream = execute_graphql_sse_dc(params=params, request=request)
-
-        stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
-        return StreamingHttpResponse(stream, content_type=request.response_content_type)
+    if request.response_content_type == "multipart/mixed":
+        return await _handle_multipart_mixed(request)
 
     try:
         params = GraphQLRequestParamsParser.run(request)
@@ -70,3 +65,37 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
         result = await execute_graphql_http_async(params, request)
 
     return graphql_result_response(result, content_type=request.response_content_type)
+
+
+async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
+    # Single connection mode is handled by Channels integration.
+    if get_http_version(request) < (2, 0) and not undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1:
+        return HttpEventSourcingNotAllowedResponse()
+
+    try:
+        params = GraphQLRequestParamsParser.run(request)
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        event_stream = result_to_sse_dc(result)
+    else:
+        event_stream = execute_graphql_sse_dc(params=params, request=request)
+
+    stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
+
+    content_type = "text/event-stream; charset=utf-8"
+    return StreamingHttpResponse(stream, content_type=content_type)
+
+
+async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
+    try:
+        params = GraphQLRequestParamsParser.run(request)
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        event_stream = result_to_multipart_mixed_response(result)
+    else:
+        event_stream = execute_graphql_multipart_mixed(params, request)
+
+    stream: AsyncIterable[str] = (event.encode() async for event in with_multipart_mixed_heartbeat(event_stream))
+
+    content_type = 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
+    return StreamingHttpResponse(stream, content_type=content_type)
