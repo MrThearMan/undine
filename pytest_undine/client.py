@@ -9,9 +9,16 @@ import pytest
 from asgiref.typing import ASGIVersions
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
-from graphql import FormattedExecutionResult
+from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError
 
-from undine.dataclasses import CompletedEventDC, KeepAliveSignalDC, NextEventDC
+from undine.dataclasses import (
+    CompletedEventDC,
+    KeepAliveSignalDC,
+    MultipartMixedHttpComplete,
+    MultipartMixedHttpHeartbeat,
+    MultipartMixedHttpResponse,
+    NextEventDC,
+)
 from undine.http.files import extract_files
 from undine.persisted_documents.utils import to_document_id
 from undine.settings import undine_settings
@@ -178,8 +185,6 @@ class WebSocketMixin:
 class SSEMixin:
     """Mixin to support GraphQL over SSE requests."""
 
-    cookies: SimpleCookie
-
     async def over_sse(
         self,
         document: str,
@@ -241,7 +246,7 @@ class SSEMixin:
                     break
 
             if event is None:
-                msg = "Unknown event type"
+                msg = f"Unknown event type: {event_data}"
                 raise RuntimeError(msg)
 
             if isinstance(event, KeepAliveSignalDC):
@@ -251,6 +256,85 @@ class SSEMixin:
                 break
 
             yield GraphQLClientSSEResponse(event.data, results)
+
+
+class MultipartMixedHTTPMixin:
+    """Mixin to support multipart/mixed HTTP protocol for GraphQL requests."""
+
+    async def multipart_mixed(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+        count_queries: bool = False,
+    ) -> AsyncGenerator[GraphQLClientMultipartMixedHTTPResponse, None]:
+        """
+        Send a multipart/mixed HTTP request and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+        headers = headers or {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        headers["Accept"] = 'multipart/mixed;subscriptionSpec="1.0", application/json'
+
+        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
+            path=f"/{undine_settings.GRAPHQL_PATH}",
+            data=body,
+            content_type="application/json",
+            headers=headers,
+        )
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+
+        while True:
+            with capture_database_queries(enabled=count_queries) as results:
+                try:
+                    event_data = await anext(responses)
+                except StopAsyncIteration:
+                    break
+
+            event: MultipartMixedHttpResponse | MultipartMixedHttpComplete | MultipartMixedHttpHeartbeat | None = None
+            for decode in [
+                _decode_multipart_mixed_complete,
+                _decode_multipart_mixed_heartbeat,
+                _decode_multipart_mixed,
+            ]:
+                with suppress(Exception):
+                    event = decode(event_data)
+                    break
+
+            if event is None:
+                msg = f"Unknown event type: {event_data}"
+                raise RuntimeError(msg)
+
+            if isinstance(event, MultipartMixedHttpHeartbeat):
+                continue
+
+            if isinstance(event, MultipartMixedHttpComplete):
+                break
+
+            yield GraphQLClientMultipartMixedHTTPResponse(event, results)
 
 
 class GraphQLClient(WebSocketMixin, Client):
@@ -330,7 +414,7 @@ class GraphQLClient(WebSocketMixin, Client):
         return user
 
 
-class AsyncGraphQLClient(SSEMixin, WebSocketMixin, AsyncClient):
+class AsyncGraphQLClient(MultipartMixedHTTPMixin, SSEMixin, WebSocketMixin, AsyncClient):
     """An async GraphQL client for testing."""
 
     async def __call__(
@@ -624,6 +708,19 @@ class GraphQLClientSSEResponse(BaseGraphQLClientResponse):
         return self.result
 
 
+class GraphQLClientMultipartMixedHTTPResponse(BaseGraphQLClientResponse):
+    """A multipart/mixed HTTP response from the GraphQLClient."""
+
+    def __init__(self, result: MultipartMixedHttpResponse, database_queries: DBQueryData) -> None:
+        self.result = result
+        super().__init__(database_queries=database_queries)
+
+    @property
+    def json(self) -> FormattedExecutionResult:
+        """Return the JSON content of the response."""
+        return self.result.payload.formatted
+
+
 def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
     path_map: dict[str, list[str]] = {}
     files_map: dict[str, File] = {}
@@ -727,3 +824,70 @@ def _decode_sse_complete_event_dc(event_data: bytes | str) -> CompletedEventDC:
         raise ValueError(msg)
 
     return CompletedEventDC()
+
+
+def _decode_multipart_mixed(event_data: bytes | str) -> MultipartMixedHttpResponse:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    event_parts = event_data.split("\r\n")
+
+    if len(event_parts) != 5:  # noqa: PLR2004
+        msg = "Invalid multipart/mixed event"
+        raise ValueError(msg)
+
+    if event_parts[:-1] != ["", "--graphql", "Content-Type: application/json", ""]:
+        msg = "Invalid multipart/mixed event"
+        raise ValueError(msg)
+
+    data = json.loads(event_parts[-1])
+    if "payload" not in data:
+        msg = "Missing 'payload' key"
+        raise ValueError(msg)
+
+    formatted_result: FormattedExecutionResult = data["payload"]
+    payload_errors = _decode_formatted_errors(formatted_result["errors"]) if "errors" in formatted_result else None
+    payload = ExecutionResult(
+        data=formatted_result.get("data"),
+        errors=payload_errors,
+        extensions=formatted_result.get("extensions"),
+    )
+
+    if "errors" in data:
+        errors = _decode_formatted_errors(data["errors"])
+        return MultipartMixedHttpResponse(payload=payload, errors=errors)
+
+    return MultipartMixedHttpResponse(payload=payload)
+
+
+def _decode_multipart_mixed_complete(event_data: bytes | str) -> MultipartMixedHttpComplete:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    if event_data == "\r\n--graphql--\r\n":
+        return MultipartMixedHttpComplete()
+
+    msg = "Not a complete event"
+    raise ValueError(msg)
+
+
+def _decode_multipart_mixed_heartbeat(event_data: bytes | str) -> MultipartMixedHttpHeartbeat:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    if event_data == "\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{}":
+        return MultipartMixedHttpHeartbeat()
+
+    msg = "Not a heartbeat event"
+    raise ValueError(msg)
+
+
+def _decode_formatted_errors(errors: list[GraphQLFormattedError]) -> list[GraphQLError]:
+    return [
+        GraphQLError(
+            message=error["message"],
+            path=error.get("path"),
+            extensions=error.get("extensions"),
+        )
+        for error in errors
+    ]
