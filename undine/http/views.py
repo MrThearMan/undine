@@ -82,8 +82,14 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
 
     stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
 
+    headers: dict[str, str] = {
+        "Connection": "keep-alive",
+        "Cache-Control": "no-cache",
+        "Content-Encoding": "none",
+    }
+
     content_type = "text/event-stream; charset=utf-8"
-    return StreamingHttpResponse(stream, content_type=content_type)
+    return StreamingHttpResponse(stream, content_type=content_type, headers=headers)
 
 
 async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
