@@ -52,12 +52,30 @@ Should set this to `True` if using [GraphiQL](integrations.md#graphiql).
 
 ///
 
+/// details | `ALLOW_QUERIES_WITH_MULTIPART_MIXED`
+    attrs: {id: allow_queries_with_multipart_mixed}
+
+Type: `bool` | Default: `False`
+
+Whether queries can be executed over multipart/mixed HTTP requests.
+
+///
+
 /// details | `ALLOW_QUERIES_WITH_SSE`
     attrs: {id: allow_queries_with_sse}
 
 Type: `bool` | Default: `False`
 
 Whether queries can be executed over Server-Sent Events.
+
+///
+
+/// details | `ALLOW_MUTATIONS_WITH_MULTIPART_MIXED`
+    attrs: {id: allow_mutations_with_multipart_mixed}
+
+Type: `bool` | Default: `False`
+
+Whether mutations can be executed over multipart/mixed HTTP requests.
 
 ///
 
@@ -461,6 +479,15 @@ Type: `bool` | Default: `True`
 
 Whether to add translation fields to the GraphQL schema when using `django-modeltranslation`.
 See [the integration description](integrations.md#django-modeltranslation) for more information.
+
+///
+
+/// details | `MULTIPART_MIXED_HEARTBEAT_INTERVAL`
+    attrs: {id: multipart_mixed_heartbeat_interval}
+
+Type: `int` | Default: `12`
+
+Interval in seconds for multipart/mixed HTTP heartbeats. Set to 0 to disable.
 
 ///
 
