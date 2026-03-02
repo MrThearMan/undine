@@ -74,9 +74,9 @@ freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2026.2.9"
 urllib3 = "2.6.3"
-django-modeltranslation = "0.19.19"
+django-modeltranslation = "0.20.2"
 psycopg = { version = "3.3.3", extras = ["binary", "pool"] }
-granian = { version = "2.7.1", extras = ["pname", "uvloop", "reload"] }
+granian = { version = "2.7.2", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
