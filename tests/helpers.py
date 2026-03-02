@@ -4,6 +4,7 @@ import base64
 import copy
 import dataclasses
 import json
+import os
 import re
 from collections import UserDict
 from collections.abc import Generator
@@ -53,6 +54,9 @@ __all__ = [
     "parametrize_helper",
 ]
 
+
+# Longer for CI due to slower test runner.
+TEST_WAIT_TIME = 1 if os.getenv("CI") else 0.1
 
 TNamedTuple = TypeVar("TNamedTuple", bound=NamedTuple)
 

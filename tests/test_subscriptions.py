@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 from graphql import FormattedExecutionResult, GraphQLFormattedError
 
 from example_project.app.models import Task, TaskTypeChoices
+from tests.helpers import TEST_WAIT_TIME
 from undine import Entrypoint, GQLInfo, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
 from undine.subscriptions import (
@@ -16,7 +17,6 @@ from undine.subscriptions import (
     ModelUpdateSubscription,
 )
 
-TIMEOUT = 0.1  # TODO: Don't hardcode timeout
 
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
@@ -40,11 +40,11 @@ async def test_signal_subscription__save(graphql, undine_settings) -> None:
 
         # Must await the subscription so that the subscriber is created.
         with suppress(TimeoutError):
-            await websocket.subscribe(payload=payload, timeout=TIMEOUT)
+            await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME)
 
         task = await sync_to_async(Task.objects.create)(name="Task", type=TaskTypeChoices.STORY)
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
 
         assert result["type"] == "next"
         assert result["payload"] == FormattedExecutionResult(
@@ -54,7 +54,7 @@ async def test_signal_subscription__save(graphql, undine_settings) -> None:
         task.name = "Updated task"
         await sync_to_async(task.save)()
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
         assert result["type"] == "next"
         assert result["payload"] == FormattedExecutionResult(
             data={"savedTasks": {"pk": task.pk, "name": "Updated task"}},
@@ -83,11 +83,11 @@ async def test_signal_subscription__create(graphql, undine_settings) -> None:
 
         # Must await the subscription so that the subscriber is created.
         with suppress(TimeoutError):
-            await websocket.subscribe(payload=payload, timeout=TIMEOUT)
+            await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME)
 
         task = await sync_to_async(Task.objects.create)(name="Task", type=TaskTypeChoices.STORY)
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
 
         assert result["type"] == "next"
         assert result["payload"] == FormattedExecutionResult(
@@ -99,7 +99,7 @@ async def test_signal_subscription__create(graphql, undine_settings) -> None:
 
         # Updates are not sent through the subscription.
         with pytest.raises(TimeoutError):
-            await websocket.receive(timeout=TIMEOUT)
+            await websocket.receive(timeout=TEST_WAIT_TIME)
 
 
 @pytest.mark.asyncio
@@ -124,18 +124,18 @@ async def test_signal_subscription__update(graphql, undine_settings) -> None:
 
         # Must await the subscription so that the subscriber is created.
         with suppress(TimeoutError):
-            await websocket.subscribe(payload=payload, timeout=TIMEOUT)
+            await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME)
 
         task = await sync_to_async(Task.objects.create)(name="Task", type=TaskTypeChoices.STORY)
 
         # Creates are not sent through the subscription.
         with pytest.raises(TimeoutError):
-            await websocket.receive(timeout=TIMEOUT)
+            await websocket.receive(timeout=TEST_WAIT_TIME)
 
         task.name = "Updated task"
         await sync_to_async(task.save)()
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
 
         assert result["type"] == "next"
         assert result["payload"] == FormattedExecutionResult(
@@ -165,14 +165,14 @@ async def test_signal_subscription__delete(graphql, undine_settings) -> None:
 
         # Must await the subscription so that the subscriber is created.
         with suppress(TimeoutError):
-            await websocket.subscribe(payload=payload, timeout=TIMEOUT)
+            await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME)
 
         task = await sync_to_async(Task.objects.create)(name="Task", type=TaskTypeChoices.STORY)
 
         pk = task.pk
         await task.adelete()
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
 
         assert result["type"] == "next"
         assert result["payload"] == FormattedExecutionResult(
@@ -206,11 +206,11 @@ async def test_signal_subscription__permissions(graphql, undine_settings) -> Non
 
         # Must await the subscription so that the subscriber is created.
         with suppress(TimeoutError):
-            await websocket.subscribe(payload=payload, timeout=TIMEOUT)
+            await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME)
 
         await sync_to_async(Task.objects.create)(name="Task", type=TaskTypeChoices.STORY)
 
-        result = await websocket.receive(timeout=TIMEOUT)
+        result = await websocket.receive(timeout=TEST_WAIT_TIME)
 
         assert result["type"] == "error"
         assert result["payload"] == [

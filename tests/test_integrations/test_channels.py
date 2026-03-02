@@ -12,6 +12,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.cache import caches
 from graphql import GraphQLError
 
+from tests.helpers import TEST_WAIT_TIME
 from tests.test_integrations.helpers import (
     _create_session,
     _create_user,
@@ -569,7 +570,7 @@ async def test_channels__sse__subscribe__stream_did_not_open_in_time(undine_sett
     assert response["json"]["errors"][0]["message"] == "Operation timed out before stream was opened"
 
     # Let the operation cleanup (finally block) finish before checking session.
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     # Operation should not be saved in the session since it was rejected.
     operation_key = get_sse_operation_key(operation_id=operation_id)
@@ -596,8 +597,6 @@ async def test_channels__sse__subscribe__before_stream_opened(undine_settings) -
     # The POST waits for the stream to open before responding with 202,
     # so send it first, then open the stream concurrently.
     await sse_send_request(op_communicator, body=body)
-
-    await asyncio.sleep(0)
 
     stream_communicator = make_sse_communicator(
         method="GET",
@@ -905,7 +904,7 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
 
     # Let the operation consumer complete handle() — it needs multiple
     # yields for session save and channel group joins.
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     # Cancel the queued operation
     cancel_communicator = make_sse_cancel_communicator(
@@ -920,7 +919,7 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
 
     # Let the cancel signal propagate through the channel layer and
     # the operation consumer's dispatch loop (needs multiple yields).
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     # Open the stream
     stream_communicator = make_sse_communicator(
@@ -1009,7 +1008,7 @@ async def test_channels__sse__cancel_subscription__204_when_cancelled_before_acc
     op_communicator = make_sse_operation_communicator(user=user, session=session, token=token)
     body = make_operation_body(query="query { test }", operation_id=operation_id)
     await sse_send_request(op_communicator, body=body)
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     cancel_communicator = make_sse_cancel_communicator(
         user=user,
@@ -1021,7 +1020,7 @@ async def test_channels__sse__cancel_subscription__204_when_cancelled_before_acc
     cancel_response = await sse_get_response(cancel_communicator)
     assert cancel_response["status"] == HTTPStatus.OK
 
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     op_response = await sse_get_response(op_communicator)
     assert op_response["status"] == HTTPStatus.NO_CONTENT
@@ -1072,7 +1071,7 @@ async def test_channels__sse__complete_event_on_unexpected_error(undine_settings
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1269,7 +1268,7 @@ async def test_channels__sse__cancel_running_subscription(undine_settings) -> No
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1305,7 +1304,7 @@ async def test_channels__sse__disconnect_cancels_operations(undine_settings) -> 
     assert first_event["event"] == "next"
 
     await stream_communicator.send_input({"type": "http.disconnect"})
-    await asyncio.sleep(0.3)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     await session_aload(session)
     assert await session_aget(session, get_sse_stream_state_key()) is None
@@ -1345,7 +1344,7 @@ async def test_channels__sse__re_reserve_while_ops_running(undine_settings) -> N
     new_token = await _reserve_stream(user, session)
     assert new_token != token
 
-    await asyncio.sleep(0.3)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     await session_aload(session)
     operation_key = get_sse_operation_key(operation_id=operation_id)
@@ -1400,7 +1399,7 @@ async def test_channels__sse__re_reserve_while_multiple_ops_running(undine_setti
     new_token = await _reserve_stream(user, session)
     assert new_token != token
 
-    await asyncio.sleep(0.3)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id_1)) is None
@@ -1587,7 +1586,7 @@ async def test_channels__sse__graphql_error_during_subscription(undine_settings)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1638,7 +1637,7 @@ async def test_channels__sse__graphql_error_group_during_subscription(undine_set
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(TEST_WAIT_TIME)
     await session_aload(session)
     assert await session_aget(session, get_sse_operation_key(operation_id=operation_id)) is None
 
@@ -1824,7 +1823,7 @@ async def test_channels__sse__multiple_subscriptions_cancelled_on_disconnect(und
     assert first_event_2["data"]["id"] == operation_id_2
 
     await stream_communicator.send_input({"type": "http.disconnect"})
-    await asyncio.sleep(0.3)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     await session_aload(session)
     assert await session_aget(session, get_sse_stream_state_key()) is None
@@ -1911,7 +1910,7 @@ async def test_channels__sse__disconnect_cleans_operation_keys(undine_settings) 
     assert await session_aget(session, operation_key) is not None
 
     await stream_communicator.send_input({"type": "http.disconnect"})
-    await asyncio.sleep(0.3)
+    await asyncio.sleep(TEST_WAIT_TIME)
 
     await session_aload(session)
     assert await session_aget(session, operation_key) is None

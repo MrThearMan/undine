@@ -9,7 +9,7 @@ from pytest_django import DjangoDbBlocker
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
-from tests.helpers import count_db_accesses
+from tests.helpers import TEST_WAIT_TIME, count_db_accesses
 from undine import DataLoader, Entrypoint, GQLInfo, QueryType, RootType, create_schema
 from undine.dataloaders import DataLoaderFuture
 from undine.exceptions import GraphQLDataLoaderPrimingError, GraphQLModelNotFoundError
@@ -458,7 +458,7 @@ async def test_dataloader__cancelled__task_group(django_db_blocker: DjangoDbBloc
                 task_2 = group.create_task(load_task(ts.pk))
 
         # Wait for all tasks to complete
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(TEST_WAIT_TIME)
 
     # Task 1 was no cancelled, but resulted in an exception.
     assert task_1.done() is True
@@ -498,7 +498,7 @@ async def test_dataloader__cancelled__gather(django_db_blocker: DjangoDbBlocker)
             await gather(task_1, task_2)
 
         # Wait for all tasks to complete
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(TEST_WAIT_TIME)
 
     # Task 1 was no cancelled, but resulted in an exception.
     assert task_1.done() is True

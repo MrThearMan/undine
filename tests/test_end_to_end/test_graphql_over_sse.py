@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import AsyncGenerator
 
 import pytest
@@ -129,7 +128,6 @@ async def test_graphql_over_sse__subscription(graphql_async, undine_settings) ->
         @Entrypoint
         async def countdown(self) -> AsyncGenerator[int, None]:
             for i in range(3, 0, -1):
-                await asyncio.sleep(0)
                 yield i
 
     undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
