@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Tutorial - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Tutorial";
+        var mkdocs_page_input_path = "tutorial.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Tutorial for Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Tutorial</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#part-1-setup">Part 1: Setup</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-2-creating-the-schema">Part 2: Creating the Schema</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-3-adding-queries">Part 3: Adding Queries</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-4-adding-mutations">Part 4: Adding Mutations</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-5-adding-permissions">Part 5: Adding Permissions</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-6-adding-validation">Part 6: Adding Validation</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-7-adding-filtering">Part 7: Adding Filtering</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#part-8-adding-ordering">Part 8: Adding Ordering</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Tutorial</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="tutorial">Tutorial<a class="headerlink" href="#tutorial" title="Permanent link">🔗</a></h1>
+<blockquote>
+<p>Before starting the tutorial, read the <a href="../getting-started/">Getting Started</a> section.</p>
+</blockquote>
+<p>This tutorial will guide you through creating a simple GraphQL API using Undine.
+You'll learn the fundamental aspects of creating a GraphQL schema:
+queries, mutations, filtering, ordering, permissions, and validation.
+This should give you familiarity with how Undine works so that
+you can explore the rest of the documentation for more details.</p>
+<p>The example application will be a project management system, where users can create
+tasks with multiple steps and add them to projects. <em>Very exciting!</em>
+The Django project will have a single app called <code>service</code> where you'll create
+your models and schema. See the full directory structure below:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>system/
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>├─ config/
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>│  ├─ __init__.py
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>│  ├─ settings.py
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>│  ├─ urls.py
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>│  ├─ wsgi.py
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a>├─ service/
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>│  ├─ migrations/
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>│  │  ├─ __init__.py
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>│  ├─ __init__.py
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>│  ├─ apps.py
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a>│  ├─ models.py
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>├─ manage.py
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>A starting template is available in <a href="https://github.com/MrThearMan/undine/tree/main/docs/snippets/tutorial/template">docs/snippets/tutorial/template</a>.</p>
+</blockquote>
+<h2 id="part-1-setup">Part 1: Setup<a class="headerlink" href="#part-1-setup" title="Permanent link">🔗</a></h2>
+<p>First, install Undine using the <a href="../getting-started/#installation">installation instructions</a>.</p>
+<p>Undine comes with an example schema that you can try out before
+creating your own. To access it, add the following to your project's <code>urls.py</code> file:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span>
+<span class="normal"><a href="#__codelineno-1-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.urls</span><span class="w"> </span><span class="kn">import</span> <span class="n">include</span><span class="p">,</span> <span class="n">path</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>    <span class="n">path</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">include</span><span class="p">(</span><span class="s2">"undine.http.urls"</span><span class="p">)),</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+<p>Next, configure Undine to enable <a href="../integrations/#graphiql">GraphiQL</a>,
+a tool for exploring GraphQL schemas in the browser. Undine is configured using
+the <code>UNDINE</code> setting in your Django project's <code>settings.py</code> file, so add the following to it:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>    <span class="s2">"GRAPHIQL_ENABLED"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>    <span class="s2">"ALLOW_INTROSPECTION_QUERIES"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Now start the Django server and navigate to <code>/graphql/</code> to see the GraphiQL UI.
+Make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="n">testing</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="nt">"testing"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Hello World"</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<hr/>
+<h2 id="part-2-creating-the-schema">Part 2: Creating the Schema<a class="headerlink" href="#part-2-creating-the-schema" title="Permanent link">🔗</a></h2>
+<p>Next, let's replace the example schema with your own. Create a file called
+<code>schema.py</code> in your <code>service</code> app directory and add the following to it:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>    <span class="nd">@Entrypoint</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">testing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>        <span class="k">return</span> <span class="s2">"Hello World"</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>This creates the same schema as Undine's example schema. To make it your own,
+simply modify the return value of the <code>testing</code> method with your own custom message.</p>
+<p>In Undine, <a href="../schema/#entrypoints"><code>Entrypoints</code></a> are used in the class bodies of
+<a href="../schema/#roottypes"><code>RootTypes</code></a> to define the operations that can be executed
+from your GraphQL schema.</p>
+<p>Now you need to tell Undine to use your custom schema instead of the example one.
+Add the <code>SCHEMA</code> setting to Undine's configuration and set it to point
+to the <code>schema</code> variable you created in your <code>schema.py</code> file.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a>    <span class="s2">"GRAPHIQL_ENABLED"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>    <span class="s2">"ALLOW_INTROSPECTION_QUERIES"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="hll">    <span class="s2">"SCHEMA"</span><span class="p">:</span> <span class="s2">"service.schema.schema"</span><span class="p">,</span>
+</span><a id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>How do I determine the value for <code>SCHEMA</code>?</summary>
+<p>The value for <code>SCHEMA</code> is a "dotted import path" — a string that can be imported with Django's
+<a href="https://docs.djangoproject.com/en/stable/ref/utils/#django.utils.module_loading.import_string" target="_blank"><code>import_string</code></a> utility. In other words,
+<code>"service.schema.schema"</code> points to a file <code>service/schema.py</code> with a variable <code>schema</code>.</p>
+</details>
+<p>Restart the Django server and make the same request as before.
+You should see your own message instead of the example one.</p>
+<hr/>
+<h2 id="part-3-adding-queries">Part 3: Adding Queries<a class="headerlink" href="#part-3-adding-queries" title="Permanent link">🔗</a></h2>
+<p>Now that you have your own schema, let's start exposing Django Models through it.
+In your <code>models.py</code> file, add the following Model:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span>
+<span class="normal"><a href="#__codelineno-7-5">5</a></span>
+<span class="normal"><a href="#__codelineno-7-6">6</a></span>
+<span class="normal"><a href="#__codelineno-7-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Create and run migrations for this Model.</p>
+<p>To add the <code>Task</code> Model to the schema, let's add two <code>Entrypoints</code>:
+one for fetching a single <code>Task</code>, and another for fetching all <code>Tasks</code>. Replace the
+current <code>schema.py</code> file with the following:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span>
+<span class="normal"><a href="#__codelineno-8-11">11</a></span>
+<span class="normal"><a href="#__codelineno-8-12">12</a></span>
+<span class="normal"><a href="#__codelineno-8-13">13</a></span>
+<span class="normal"><a href="#__codelineno-8-14">14</a></span>
+<span class="normal"><a href="#__codelineno-8-15">15</a></span>
+<span class="normal"><a href="#__codelineno-8-16">16</a></span>
+<span class="normal"><a href="#__codelineno-8-17">17</a></span>
+<span class="normal"><a href="#__codelineno-8-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12"></a>
+<a id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16"></a>
+<a id="__codelineno-8-17" name="__codelineno-8-17"></a>
+<a id="__codelineno-8-18" name="__codelineno-8-18"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>A <a href="../queries/#querytypes"><code>QueryType</code></a> is a class that represents a GraphQL <code>ObjectType</code> for
+a Django Model in the GraphQL schema. By adding <a href="../queries/#fields"><code>Fields</code></a> to its class body,
+you can expose the Model's fields in the GraphQL schema.</p>
+<p>To create <code>Entrypoints</code> for this <code>QueryType</code>, you simply use the <code>QueryType</code> as an
+argument to the <code>Entrypoint</code> class instead of decorating a method like you did before.
+This creates an <code>Entrypoint</code> for fetching a single <code>Task</code> by its primary key.
+For fetching all <code>Tasks</code>, pass <code>many=True</code> to indicate a list endpoint.</p>
+<p>Now it's time to try out your new schema. But wait, first you need some data to query!
+In your terminal, run <code>python manage.py shell</code> to start Django's shell and
+create a few rows for the <code>Task</code> Model.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">service.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 1"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 2"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 3"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Now reboot the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">5</a></span>
+<span class="normal"><a href="#__codelineno-10-6">6</a></span>
+<span class="normal"><a href="#__codelineno-10-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="w">  </span><span class="n">tasks</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="w">    </span><span class="n">done</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-11-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-11-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-11-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-11-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-11-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-11-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-11-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-11-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-11-10">10</a></span>
+<span class="normal"><a href="#__codelineno-11-11">11</a></span>
+<span class="normal"><a href="#__codelineno-11-12">12</a></span>
+<span class="normal"><a href="#__codelineno-11-13">13</a></span>
+<span class="normal"><a href="#__codelineno-11-14">14</a></span>
+<span class="normal"><a href="#__codelineno-11-15">15</a></span>
+<span class="normal"><a href="#__codelineno-11-16">16</a></span>
+<span class="normal"><a href="#__codelineno-11-17">17</a></span>
+<span class="normal"><a href="#__codelineno-11-18">18</a></span>
+<span class="normal"><a href="#__codelineno-11-19">19</a></span>
+<span class="normal"><a href="#__codelineno-11-20">20</a></span>
+<span class="normal"><a href="#__codelineno-11-21">21</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">    </span><span class="nt">"tasks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 1"</span><span class="p">,</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 2"</span><span class="p">,</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 3"</span><span class="p">,</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19"></a><span class="w">    </span><span class="p">]</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<p>Next, let's add a couple more Models to your project.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span>
+<span class="normal"><a href="#__codelineno-12-11">11</a></span>
+<span class="normal"><a href="#__codelineno-12-12">12</a></span>
+<span class="normal"><a href="#__codelineno-12-13">13</a></span>
+<span class="normal"><a href="#__codelineno-12-14">14</a></span>
+<span class="normal"><a href="#__codelineno-12-15">15</a></span>
+<span class="normal"><a href="#__codelineno-12-16">16</a></span>
+<span class="normal"><a href="#__codelineno-12-17">17</a></span>
+<span class="normal"><a href="#__codelineno-12-18">18</a></span>
+<span class="normal"><a href="#__codelineno-12-19">19</a></span>
+<span class="normal"><a href="#__codelineno-12-20">20</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">Project</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+</span><a id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+</span><a id="__codelineno-12-6" name="__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">DateTimeField</span><span class="p">(</span><span class="n">auto_now_add</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12"></a>
+<a id="__codelineno-12-13" name="__codelineno-12-13"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Project</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">SET_NULL</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s2">"tasks"</span><span class="p">)</span>
+</span><a id="__codelineno-12-14" name="__codelineno-12-14"></a>
+<a id="__codelineno-12-15" name="__codelineno-12-15"></a>
+<a id="__codelineno-12-16" name="__codelineno-12-16"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">Step</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+</span><a id="__codelineno-12-17" name="__codelineno-12-17"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+</span><a id="__codelineno-12-18" name="__codelineno-12-18"></a><span class="hll">    <span class="n">done</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><a id="__codelineno-12-19" name="__codelineno-12-19"></a><span class="hll">
+</span><a id="__codelineno-12-20" name="__codelineno-12-20"></a><span class="hll">    <span class="n">task</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span> <span class="n">on_delete</span><span class="o">=</span><span class="n">models</span><span class="o">.</span><span class="n">CASCADE</span><span class="p">,</span> <span class="n">related_name</span><span class="o">=</span><span class="s2">"steps"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Create and run migrations for these Models, then create some data for them:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-13-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-13-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-13-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-13-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-13-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-13-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-13-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-13-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-13-10">10</a></span>
+<span class="normal"><a href="#__codelineno-13-11">11</a></span>
+<span class="normal"><a href="#__codelineno-13-12">12</a></span>
+<span class="normal"><a href="#__codelineno-13-13">13</a></span>
+<span class="normal"><a href="#__codelineno-13-14">14</a></span>
+<span class="normal"><a href="#__codelineno-13-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">service.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Step</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">project_1</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Project 1"</span><span class="p">)</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">project_2</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Project 2"</span><span class="p">)</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_1</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 1"</span><span class="p">)</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_2</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 2"</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_3</span> <span class="o">=</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Task 3"</span><span class="p">)</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_1</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">project_1</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_1</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_2</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">project_2</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">task_2</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">step_1</span> <span class="o">=</span> <span class="n">Step</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Step 1"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="n">false</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task_1</span><span class="p">)</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">step_2</span> <span class="o">=</span> <span class="n">Step</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Step 2"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="n">true</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task_1</span><span class="p">)</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">step_3</span> <span class="o">=</span> <span class="n">Step</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Step 3"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="n">false</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task_2</span><span class="p">)</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">step_4</span> <span class="o">=</span> <span class="n">Step</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Step 4"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="n">true</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task_3</span><span class="p">)</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">step_5</span> <span class="o">=</span> <span class="n">Step</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Step 5"</span><span class="p">,</span> <span class="n">done</span><span class="o">=</span><span class="n">true</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task_3</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Then, add these Models to your schema by creating a <code>QueryType</code> for each of them.
+Your can also link the <code>QueryTypes</code> to each other by adding <code>Fields</code> for the Model related fields.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span>
+<span class="normal"><a href="#__codelineno-14-11">11</a></span>
+<span class="normal"><a href="#__codelineno-14-12">12</a></span>
+<span class="normal"><a href="#__codelineno-14-13">13</a></span>
+<span class="normal"><a href="#__codelineno-14-14">14</a></span>
+<span class="normal"><a href="#__codelineno-14-15">15</a></span>
+<span class="normal"><a href="#__codelineno-14-16">16</a></span>
+<span class="normal"><a href="#__codelineno-14-17">17</a></span>
+<span class="normal"><a href="#__codelineno-14-18">18</a></span>
+<span class="normal"><a href="#__codelineno-14-19">19</a></span>
+<span class="normal"><a href="#__codelineno-14-20">20</a></span>
+<span class="normal"><a href="#__codelineno-14-21">21</a></span>
+<span class="normal"><a href="#__codelineno-14-22">22</a></span>
+<span class="normal"><a href="#__codelineno-14-23">23</a></span>
+<span class="normal"><a href="#__codelineno-14-24">24</a></span>
+<span class="normal"><a href="#__codelineno-14-25">25</a></span>
+<span class="normal"><a href="#__codelineno-14-26">26</a></span>
+<span class="normal"><a href="#__codelineno-14-27">27</a></span>
+<span class="normal"><a href="#__codelineno-14-28">28</a></span>
+<span class="normal"><a href="#__codelineno-14-29">29</a></span>
+<span class="normal"><a href="#__codelineno-14-30">30</a></span>
+<span class="normal"><a href="#__codelineno-14-31">31</a></span>
+<span class="normal"><a href="#__codelineno-14-32">32</a></span>
+<span class="normal"><a href="#__codelineno-14-33">33</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Step</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span>
+</span><a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="hll">    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-9" name="__codelineno-14-9"></a><span class="hll">    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-10" name="__codelineno-14-10"></a>
+<a id="__codelineno-14-11" name="__codelineno-14-11"></a>
+<a id="__codelineno-14-12" name="__codelineno-14-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-18" name="__codelineno-14-18"></a><span class="hll">    <span class="n">steps</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-19" name="__codelineno-14-19"></a>
+<a id="__codelineno-14-20" name="__codelineno-14-20"></a>
+<a id="__codelineno-14-21" name="__codelineno-14-21"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">StepType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Step</span><span class="p">]):</span>
+</span><a id="__codelineno-14-22" name="__codelineno-14-22"></a><span class="hll">    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-23" name="__codelineno-14-23"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-24" name="__codelineno-14-24"></a><span class="hll">    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-25" name="__codelineno-14-25"></a><span class="hll">    <span class="n">task</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-14-26" name="__codelineno-14-26"></a>
+<a id="__codelineno-14-27" name="__codelineno-14-27"></a>
+<a id="__codelineno-14-28" name="__codelineno-14-28"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-14-30" name="__codelineno-14-30"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31"></a>
+<a id="__codelineno-14-32" name="__codelineno-14-32"></a>
+<a id="__codelineno-14-33" name="__codelineno-14-33"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Reboot the Django server once more and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-15-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-15-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-15-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-15-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-15-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-15-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-15-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-15-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-15-10">10</a></span>
+<span class="normal"><a href="#__codelineno-15-11">11</a></span>
+<span class="normal"><a href="#__codelineno-15-12">12</a></span>
+<span class="normal"><a href="#__codelineno-15-13">13</a></span>
+<span class="normal"><a href="#__codelineno-15-14">14</a></span>
+<span class="normal"><a href="#__codelineno-15-15">15</a></span>
+<span class="normal"><a href="#__codelineno-15-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="w">  </span><span class="n">tasks</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5"></a><span class="w">    </span><span class="n">done</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7"></a><span class="w">      </span><span class="n">pk</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10"></a><span class="w">    </span><span class="n">steps</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11"></a><span class="w">      </span><span class="n">pk</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13"></a><span class="w">      </span><span class="n">done</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-16-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-16-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-16-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-16-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-16-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-16-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-16-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-16-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-16-10">10</a></span>
+<span class="normal"><a href="#__codelineno-16-11">11</a></span>
+<span class="normal"><a href="#__codelineno-16-12">12</a></span>
+<span class="normal"><a href="#__codelineno-16-13">13</a></span>
+<span class="normal"><a href="#__codelineno-16-14">14</a></span>
+<span class="normal"><a href="#__codelineno-16-15">15</a></span>
+<span class="normal"><a href="#__codelineno-16-16">16</a></span>
+<span class="normal"><a href="#__codelineno-16-17">17</a></span>
+<span class="normal"><a href="#__codelineno-16-18">18</a></span>
+<span class="normal"><a href="#__codelineno-16-19">19</a></span>
+<span class="normal"><a href="#__codelineno-16-20">20</a></span>
+<span class="normal"><a href="#__codelineno-16-21">21</a></span>
+<span class="normal"><a href="#__codelineno-16-22">22</a></span>
+<span class="normal"><a href="#__codelineno-16-23">23</a></span>
+<span class="normal"><a href="#__codelineno-16-24">24</a></span>
+<span class="normal"><a href="#__codelineno-16-25">25</a></span>
+<span class="normal"><a href="#__codelineno-16-26">26</a></span>
+<span class="normal"><a href="#__codelineno-16-27">27</a></span>
+<span class="normal"><a href="#__codelineno-16-28">28</a></span>
+<span class="normal"><a href="#__codelineno-16-29">29</a></span>
+<span class="normal"><a href="#__codelineno-16-30">30</a></span>
+<span class="normal"><a href="#__codelineno-16-31">31</a></span>
+<span class="normal"><a href="#__codelineno-16-32">32</a></span>
+<span class="normal"><a href="#__codelineno-16-33">33</a></span>
+<span class="normal"><a href="#__codelineno-16-34">34</a></span>
+<span class="normal"><a href="#__codelineno-16-35">35</a></span>
+<span class="normal"><a href="#__codelineno-16-36">36</a></span>
+<span class="normal"><a href="#__codelineno-16-37">37</a></span>
+<span class="normal"><a href="#__codelineno-16-38">38</a></span>
+<span class="normal"><a href="#__codelineno-16-39">39</a></span>
+<span class="normal"><a href="#__codelineno-16-40">40</a></span>
+<span class="normal"><a href="#__codelineno-16-41">41</a></span>
+<span class="normal"><a href="#__codelineno-16-42">42</a></span>
+<span class="normal"><a href="#__codelineno-16-43">43</a></span>
+<span class="normal"><a href="#__codelineno-16-44">44</a></span>
+<span class="normal"><a href="#__codelineno-16-45">45</a></span>
+<span class="normal"><a href="#__codelineno-16-46">46</a></span>
+<span class="normal"><a href="#__codelineno-16-47">47</a></span>
+<span class="normal"><a href="#__codelineno-16-48">48</a></span>
+<span class="normal"><a href="#__codelineno-16-49">49</a></span>
+<span class="normal"><a href="#__codelineno-16-50">50</a></span>
+<span class="normal"><a href="#__codelineno-16-51">51</a></span>
+<span class="normal"><a href="#__codelineno-16-52">52</a></span>
+<span class="normal"><a href="#__codelineno-16-53">53</a></span>
+<span class="normal"><a href="#__codelineno-16-54">54</a></span>
+<span class="normal"><a href="#__codelineno-16-55">55</a></span>
+<span class="normal"><a href="#__codelineno-16-56">56</a></span>
+<span class="normal"><a href="#__codelineno-16-57">57</a></span>
+<span class="normal"><a href="#__codelineno-16-58">58</a></span>
+<span class="normal"><a href="#__codelineno-16-59">59</a></span>
+<span class="normal"><a href="#__codelineno-16-60">60</a></span>
+<span class="normal"><a href="#__codelineno-16-61">61</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="w">    </span><span class="nt">"tasks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 1"</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8"></a><span class="w">        </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9"></a><span class="w">          </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Project 1"</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12"></a><span class="w">        </span><span class="nt">"steps"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13"></a><span class="w">          </span><span class="p">{</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14"></a><span class="w">            </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15"></a><span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Step 1"</span><span class="p">,</span>
+<a id="__codelineno-16-16" name="__codelineno-16-16"></a><span class="w">            </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-16-17" name="__codelineno-16-17"></a><span class="w">          </span><span class="p">},</span>
+<a id="__codelineno-16-18" name="__codelineno-16-18"></a><span class="w">          </span><span class="p">{</span>
+<a id="__codelineno-16-19" name="__codelineno-16-19"></a><span class="w">            </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-16-20" name="__codelineno-16-20"></a><span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Step 2"</span><span class="p">,</span>
+<a id="__codelineno-16-21" name="__codelineno-16-21"></a><span class="w">            </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-16-22" name="__codelineno-16-22"></a><span class="w">          </span><span class="p">}</span>
+<a id="__codelineno-16-23" name="__codelineno-16-23"></a><span class="w">        </span><span class="p">]</span>
+<a id="__codelineno-16-24" name="__codelineno-16-24"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-16-25" name="__codelineno-16-25"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-16-26" name="__codelineno-16-26"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-16-27" name="__codelineno-16-27"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 2"</span><span class="p">,</span>
+<a id="__codelineno-16-28" name="__codelineno-16-28"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-16-29" name="__codelineno-16-29"></a><span class="w">        </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-16-30" name="__codelineno-16-30"></a><span class="w">          </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-16-31" name="__codelineno-16-31"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Project 2"</span>
+<a id="__codelineno-16-32" name="__codelineno-16-32"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-16-33" name="__codelineno-16-33"></a><span class="w">        </span><span class="nt">"steps"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-16-34" name="__codelineno-16-34"></a><span class="w">          </span><span class="p">{</span>
+<a id="__codelineno-16-35" name="__codelineno-16-35"></a><span class="w">            </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-16-36" name="__codelineno-16-36"></a><span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Step 3"</span><span class="p">,</span>
+<a id="__codelineno-16-37" name="__codelineno-16-37"></a><span class="w">            </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-16-38" name="__codelineno-16-38"></a><span class="w">          </span><span class="p">}</span>
+<a id="__codelineno-16-39" name="__codelineno-16-39"></a><span class="w">        </span><span class="p">]</span>
+<a id="__codelineno-16-40" name="__codelineno-16-40"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-16-41" name="__codelineno-16-41"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-16-42" name="__codelineno-16-42"></a><span class="w">        </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<a id="__codelineno-16-43" name="__codelineno-16-43"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task 3"</span><span class="p">,</span>
+<a id="__codelineno-16-44" name="__codelineno-16-44"></a><span class="w">        </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-16-45" name="__codelineno-16-45"></a><span class="w">        </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-16-46" name="__codelineno-16-46"></a><span class="w">        </span><span class="nt">"steps"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-16-47" name="__codelineno-16-47"></a><span class="w">          </span><span class="p">{</span>
+<a id="__codelineno-16-48" name="__codelineno-16-48"></a><span class="w">            </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-16-49" name="__codelineno-16-49"></a><span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Step 4"</span><span class="p">,</span>
+<a id="__codelineno-16-50" name="__codelineno-16-50"></a><span class="w">            </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-16-51" name="__codelineno-16-51"></a><span class="w">          </span><span class="p">},</span>
+<a id="__codelineno-16-52" name="__codelineno-16-52"></a><span class="w">          </span><span class="p">{</span>
+<a id="__codelineno-16-53" name="__codelineno-16-53"></a><span class="w">            </span><span class="nt">"pk"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-16-54" name="__codelineno-16-54"></a><span class="w">            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Step 5"</span><span class="p">,</span>
+<a id="__codelineno-16-55" name="__codelineno-16-55"></a><span class="w">            </span><span class="nt">"done"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-16-56" name="__codelineno-16-56"></a><span class="w">          </span><span class="p">}</span>
+<a id="__codelineno-16-57" name="__codelineno-16-57"></a><span class="w">        </span><span class="p">]</span>
+<a id="__codelineno-16-58" name="__codelineno-16-58"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-16-59" name="__codelineno-16-59"></a><span class="w">    </span><span class="p">]</span>
+<a id="__codelineno-16-60" name="__codelineno-16-60"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-16-61" name="__codelineno-16-61"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<p>Now that you're are using relations, Undine will <em>automatically</em> optimize the database queries
+for those relations.</p>
+<hr/>
+<h2 id="part-4-adding-mutations">Part 4: Adding Mutations<a class="headerlink" href="#part-4-adding-mutations" title="Permanent link">🔗</a></h2>
+<p>Next, let's add a mutation to your schema for creating <code>Tasks</code>.
+Add the following to the <code>schema.py</code> file:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-17-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-17-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-17-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-17-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-17-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-17-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-17-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-17-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-17-10">10</a></span>
+<span class="normal"><a href="#__codelineno-17-11">11</a></span>
+<span class="normal"><a href="#__codelineno-17-12">12</a></span>
+<span class="normal"><a href="#__codelineno-17-13">13</a></span>
+<span class="normal"><a href="#__codelineno-17-14">14</a></span>
+<span class="normal"><a href="#__codelineno-17-15">15</a></span>
+<span class="normal"><a href="#__codelineno-17-16">16</a></span>
+<span class="normal"><a href="#__codelineno-17-17">17</a></span>
+<span class="normal"><a href="#__codelineno-17-18">18</a></span>
+<span class="normal"><a href="#__codelineno-17-19">19</a></span>
+<span class="normal"><a href="#__codelineno-17-20">20</a></span>
+<span class="normal"><a href="#__codelineno-17-21">21</a></span>
+<span class="normal"><a href="#__codelineno-17-22">22</a></span>
+<span class="normal"><a href="#__codelineno-17-23">23</a></span>
+<span class="normal"><a href="#__codelineno-17-24">24</a></span>
+<span class="normal"><a href="#__codelineno-17-25">25</a></span>
+<span class="normal"><a href="#__codelineno-17-26">26</a></span>
+<span class="normal"><a href="#__codelineno-17-27">27</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+</span><a id="__codelineno-17-2" name="__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a>
+<a id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11"></a>
+<a id="__codelineno-17-12" name="__codelineno-17-12"></a>
+<a id="__codelineno-17-13" name="__codelineno-17-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16"></a>
+<a id="__codelineno-17-17" name="__codelineno-17-17"></a>
+<a id="__codelineno-17-18" name="__codelineno-17-18"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+</span><a id="__codelineno-17-19" name="__codelineno-17-19"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+</span><a id="__codelineno-17-20" name="__codelineno-17-20"></a><span class="hll">    <span class="n">done</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+</span><a id="__codelineno-17-21" name="__codelineno-17-21"></a><span class="hll">
+</span><a id="__codelineno-17-22" name="__codelineno-17-22"></a><span class="hll">
+</span><a id="__codelineno-17-23" name="__codelineno-17-23"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+</span><a id="__codelineno-17-24" name="__codelineno-17-24"></a><span class="hll">    <span class="n">create_task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">)</span>
+</span><a id="__codelineno-17-25" name="__codelineno-17-25"></a><span class="hll">
+</span><a id="__codelineno-17-26" name="__codelineno-17-26"></a><span class="hll">
+</span><a id="__codelineno-17-27" name="__codelineno-17-27"></a><span class="hll"><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span> <span class="n">mutation</span><span class="o">=</span><span class="n">Mutation</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Undine will know that the <a href="../mutations/#mutationtypes"><code>MutationType</code></a> <code>TaskCreateMutation</code>
+is a create mutation because the class has the word <em>"create"</em> in its name. Similarly,
+having <em>"update"</em> in the name will make an update mutation, and <em>"delete"</em> will make a delete mutation.
+Create, update and delete mutations are executed differently
+(see the <a href="../mutations/">Mutations</a> section for more details).</p>
+<p>You could also use the <code>kind</code> argument in the <code>MutationType</code> class definition to be more explicit.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span>
+<span class="normal"><a href="#__codelineno-18-2">2</a></span>
+<span class="normal"><a href="#__codelineno-18-3">3</a></span>
+<span class="normal"><a href="#__codelineno-18-4">4</a></span>
+<span class="normal"><a href="#__codelineno-18-5">5</a></span>
+<span class="normal"><a href="#__codelineno-18-6">6</a></span>
+<span class="normal"><a href="#__codelineno-18-7">7</a></span>
+<span class="normal"><a href="#__codelineno-18-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"create"</span><span class="p">):</span>
+</span><a id="__codelineno-18-7" name="__codelineno-18-7"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>The <code>TaskCreateMutation</code> <code>MutationType</code> will use the <code>TaskType</code> <code>QueryType</code> as the output type
+since they share the same Model. In fact, all <code>MutationTypes</code> require a <code>QueryType</code> for the same Model
+to be created, even if it's not otherwise usable from the GraphQL schema.</p>
+<p>Let's try out the new mutation. Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span>
+<span class="normal"><a href="#__codelineno-19-2">2</a></span>
+<span class="normal"><a href="#__codelineno-19-3">3</a></span>
+<span class="normal"><a href="#__codelineno-19-4">4</a></span>
+<span class="normal"><a href="#__codelineno-19-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New task"</span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
+<span class="normal"><a href="#__codelineno-20-2">2</a></span>
+<span class="normal"><a href="#__codelineno-20-3">3</a></span>
+<span class="normal"><a href="#__codelineno-20-4">4</a></span>
+<span class="normal"><a href="#__codelineno-20-5">5</a></span>
+<span class="normal"><a href="#__codelineno-20-6">6</a></span>
+<span class="normal"><a href="#__codelineno-20-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="p">{</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="w">    </span><span class="nt">"createTask"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a><span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"New task"</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<p>You can also mutate related objects by using other <code>MutationTypes</code> as <code>Inputs</code>.
+Modify the <code>TaskCreateMutation</code> by adding a <code>Project</code> Input.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-21-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-21-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-21-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-21-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-21-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-21-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-21-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-21-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-21-10">10</a></span>
+<span class="normal"><a href="#__codelineno-21-11">11</a></span>
+<span class="normal"><a href="#__codelineno-21-12">12</a></span>
+<span class="normal"><a href="#__codelineno-21-13">13</a></span>
+<span class="normal"><a href="#__codelineno-21-14">14</a></span>
+<span class="normal"><a href="#__codelineno-21-15">15</a></span>
+<span class="normal"><a href="#__codelineno-21-16">16</a></span>
+<span class="normal"><a href="#__codelineno-21-17">17</a></span>
+<span class="normal"><a href="#__codelineno-21-18">18</a></span>
+<span class="normal"><a href="#__codelineno-21-19">19</a></span>
+<span class="normal"><a href="#__codelineno-21-20">20</a></span>
+<span class="normal"><a href="#__codelineno-21-21">21</a></span>
+<span class="normal"><a href="#__codelineno-21-22">22</a></span>
+<span class="normal"><a href="#__codelineno-21-23">23</a></span>
+<span class="normal"><a href="#__codelineno-21-24">24</a></span>
+<span class="normal"><a href="#__codelineno-21-25">25</a></span>
+<span class="normal"><a href="#__codelineno-21-26">26</a></span>
+<span class="normal"><a href="#__codelineno-21-27">27</a></span>
+<span class="normal"><a href="#__codelineno-21-28">28</a></span>
+<span class="normal"><a href="#__codelineno-21-29">29</a></span>
+<span class="normal"><a href="#__codelineno-21-30">30</a></span>
+<span class="normal"><a href="#__codelineno-21-31">31</a></span>
+<span class="normal"><a href="#__codelineno-21-32">32</a></span>
+<span class="normal"><a href="#__codelineno-21-33">33</a></span>
+<span class="normal"><a href="#__codelineno-21-34">34</a></span>
+<span class="normal"><a href="#__codelineno-21-35">35</a></span>
+<span class="normal"><a href="#__codelineno-21-36">36</a></span>
+<span class="normal"><a href="#__codelineno-21-37">37</a></span>
+<span class="normal"><a href="#__codelineno-21-38">38</a></span>
+<span class="normal"><a href="#__codelineno-21-39">39</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4"></a>
+<a id="__codelineno-21-5" name="__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9"></a>
+<a id="__codelineno-21-10" name="__codelineno-21-10"></a>
+<a id="__codelineno-21-11" name="__codelineno-21-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17"></a>
+<a id="__codelineno-21-18" name="__codelineno-21-18"></a>
+<a id="__codelineno-21-19" name="__codelineno-21-19"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-21-20" name="__codelineno-21-20"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-21-21" name="__codelineno-21-21"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-21-22" name="__codelineno-21-22"></a>
+<a id="__codelineno-21-23" name="__codelineno-21-23"></a>
+<a id="__codelineno-21-24" name="__codelineno-21-24"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskProjectInput</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Project</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"related"</span><span class="p">):</span>
+</span><a id="__codelineno-21-25" name="__codelineno-21-25"></a><span class="hll">    <span class="n">pk</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+</span><a id="__codelineno-21-26" name="__codelineno-21-26"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+</span><a id="__codelineno-21-27" name="__codelineno-21-27"></a>
+<a id="__codelineno-21-28" name="__codelineno-21-28"></a>
+<a id="__codelineno-21-29" name="__codelineno-21-29"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-21-30" name="__codelineno-21-30"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-21-31" name="__codelineno-21-31"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-21-32" name="__codelineno-21-32"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">TaskProjectInput</span><span class="p">)</span>
+</span><a id="__codelineno-21-33" name="__codelineno-21-33"></a>
+<a id="__codelineno-21-34" name="__codelineno-21-34"></a>
+<a id="__codelineno-21-35" name="__codelineno-21-35"></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-21-36" name="__codelineno-21-36"></a>    <span class="n">create_task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">)</span>
+<a id="__codelineno-21-37" name="__codelineno-21-37"></a>
+<a id="__codelineno-21-38" name="__codelineno-21-38"></a>
+<a id="__codelineno-21-39" name="__codelineno-21-39"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span> <span class="n">mutation</span><span class="o">=</span><span class="n">Mutation</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Here <code>TaskProjectInput</code> is a special <em>"related"</em> <code>kind</code> of <code>MutationType</code>.
+These <code>MutationTypes</code> allow you to freely modify the related objects during the mutation.
+For example, using the above configuration, you could create a <code>Task</code> and a <code>Project</code> in a single mutation.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-22-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-22-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-22-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-22-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-22-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-22-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-22-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-22-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-22-10">10</a></span>
+<span class="normal"><a href="#__codelineno-22-11">11</a></span>
+<span class="normal"><a href="#__codelineno-22-12">12</a></span>
+<span class="normal"><a href="#__codelineno-22-13">13</a></span>
+<span class="normal"><a href="#__codelineno-22-14">14</a></span>
+<span class="normal"><a href="#__codelineno-22-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="w">    </span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="w">      </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New task"</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a><span class="hll"><span class="w">      </span><span class="n">project</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><a id="__codelineno-22-6" name="__codelineno-22-6"></a><span class="hll"><span class="w">        </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New project"</span>
+</span><a id="__codelineno-22-7" name="__codelineno-22-7"></a><span class="hll"><span class="w">      </span><span class="p">}</span>
+</span><a id="__codelineno-22-8" name="__codelineno-22-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-22-15" name="__codelineno-22-15"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Or you could link an existing <code>Project</code> to a new <code>Task</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-23-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-23-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-23-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-23-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-23-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-23-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-23-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-23-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-23-10">10</a></span>
+<span class="normal"><a href="#__codelineno-23-11">11</a></span>
+<span class="normal"><a href="#__codelineno-23-12">12</a></span>
+<span class="normal"><a href="#__codelineno-23-13">13</a></span>
+<span class="normal"><a href="#__codelineno-23-14">14</a></span>
+<span class="normal"><a href="#__codelineno-23-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="w">    </span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a><span class="w">      </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New task"</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a><span class="hll"><span class="w">      </span><span class="n">project</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><a id="__codelineno-23-6" name="__codelineno-23-6"></a><span class="hll"><span class="w">        </span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+</span><a id="__codelineno-23-7" name="__codelineno-23-7"></a><span class="hll"><span class="w">      </span><span class="p">}</span>
+</span><a id="__codelineno-23-8" name="__codelineno-23-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-12" name="__codelineno-23-12"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-23-13" name="__codelineno-23-13"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-23-14" name="__codelineno-23-14"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-23-15" name="__codelineno-23-15"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Or link an existing <code>Project</code> while renaming it.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-24-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-24-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-24-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-24-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-24-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-24-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-24-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-24-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-24-10">10</a></span>
+<span class="normal"><a href="#__codelineno-24-11">11</a></span>
+<span class="normal"><a href="#__codelineno-24-12">12</a></span>
+<span class="normal"><a href="#__codelineno-24-13">13</a></span>
+<span class="normal"><a href="#__codelineno-24-14">14</a></span>
+<span class="normal"><a href="#__codelineno-24-15">15</a></span>
+<span class="normal"><a href="#__codelineno-24-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a><span class="w">    </span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="w">      </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New task"</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a><span class="hll"><span class="w">      </span><span class="n">project</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><a id="__codelineno-24-6" name="__codelineno-24-6"></a><span class="hll"><span class="w">        </span><span class="n">pk</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+</span><a id="__codelineno-24-7" name="__codelineno-24-7"></a><span class="hll"><span class="w">        </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Renamed project"</span>
+</span><a id="__codelineno-24-8" name="__codelineno-24-8"></a><span class="hll"><span class="w">      </span><span class="p">}</span>
+</span><a id="__codelineno-24-9" name="__codelineno-24-9"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-24-14" name="__codelineno-24-14"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-24-15" name="__codelineno-24-15"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-24-16" name="__codelineno-24-16"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Undine also supports bulk mutations by using the <code>many</code> argument on the <code>Entrypoint</code>.
+Let's add a bulk mutation for creating <code>Tasks</code> using the <code>TaskCreateMutation</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-25-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-25-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-25-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-25-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-25-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-25-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-25-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-25-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-25-10">10</a></span>
+<span class="normal"><a href="#__codelineno-25-11">11</a></span>
+<span class="normal"><a href="#__codelineno-25-12">12</a></span>
+<span class="normal"><a href="#__codelineno-25-13">13</a></span>
+<span class="normal"><a href="#__codelineno-25-14">14</a></span>
+<span class="normal"><a href="#__codelineno-25-15">15</a></span>
+<span class="normal"><a href="#__codelineno-25-16">16</a></span>
+<span class="normal"><a href="#__codelineno-25-17">17</a></span>
+<span class="normal"><a href="#__codelineno-25-18">18</a></span>
+<span class="normal"><a href="#__codelineno-25-19">19</a></span>
+<span class="normal"><a href="#__codelineno-25-20">20</a></span>
+<span class="normal"><a href="#__codelineno-25-21">21</a></span>
+<span class="normal"><a href="#__codelineno-25-22">22</a></span>
+<span class="normal"><a href="#__codelineno-25-23">23</a></span>
+<span class="normal"><a href="#__codelineno-25-24">24</a></span>
+<span class="normal"><a href="#__codelineno-25-25">25</a></span>
+<span class="normal"><a href="#__codelineno-25-26">26</a></span>
+<span class="normal"><a href="#__codelineno-25-27">27</a></span>
+<span class="normal"><a href="#__codelineno-25-28">28</a></span>
+<span class="normal"><a href="#__codelineno-25-29">29</a></span>
+<span class="normal"><a href="#__codelineno-25-30">30</a></span>
+<span class="normal"><a href="#__codelineno-25-31">31</a></span>
+<span class="normal"><a href="#__codelineno-25-32">32</a></span>
+<span class="normal"><a href="#__codelineno-25-33">33</a></span>
+<span class="normal"><a href="#__codelineno-25-34">34</a></span>
+<span class="normal"><a href="#__codelineno-25-35">35</a></span>
+<span class="normal"><a href="#__codelineno-25-36">36</a></span>
+<span class="normal"><a href="#__codelineno-25-37">37</a></span>
+<span class="normal"><a href="#__codelineno-25-38">38</a></span>
+<span class="normal"><a href="#__codelineno-25-39">39</a></span>
+<span class="normal"><a href="#__codelineno-25-40">40</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span><span class="p">,</span> <span class="n">create_schema</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">Task</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5"></a>
+<a id="__codelineno-25-6" name="__codelineno-25-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProjectType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Project</span><span class="p">]):</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9"></a>
+<a id="__codelineno-25-10" name="__codelineno-25-10"></a>
+<a id="__codelineno-25-11" name="__codelineno-25-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-13" name="__codelineno-25-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-14" name="__codelineno-25-14"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-15" name="__codelineno-25-15"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-16" name="__codelineno-25-16"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-25-17" name="__codelineno-25-17"></a>
+<a id="__codelineno-25-18" name="__codelineno-25-18"></a>
+<a id="__codelineno-25-19" name="__codelineno-25-19"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-25-20" name="__codelineno-25-20"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-25-21" name="__codelineno-25-21"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-25-22" name="__codelineno-25-22"></a>
+<a id="__codelineno-25-23" name="__codelineno-25-23"></a>
+<a id="__codelineno-25-24" name="__codelineno-25-24"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskProjectInput</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Project</span><span class="p">],</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"related"</span><span class="p">):</span>
+<a id="__codelineno-25-25" name="__codelineno-25-25"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-25-26" name="__codelineno-25-26"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-25-27" name="__codelineno-25-27"></a>
+<a id="__codelineno-25-28" name="__codelineno-25-28"></a>
+<a id="__codelineno-25-29" name="__codelineno-25-29"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-25-30" name="__codelineno-25-30"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-25-31" name="__codelineno-25-31"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-25-32" name="__codelineno-25-32"></a>    <span class="n">project</span> <span class="o">=</span> <span class="n">Input</span><span class="p">(</span><span class="n">TaskProjectInput</span><span class="p">)</span>
+<a id="__codelineno-25-33" name="__codelineno-25-33"></a>
+<a id="__codelineno-25-34" name="__codelineno-25-34"></a>
+<a id="__codelineno-25-35" name="__codelineno-25-35"></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-25-36" name="__codelineno-25-36"></a>    <span class="n">create_task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">)</span>
+<a id="__codelineno-25-37" name="__codelineno-25-37"></a><span class="hll">    <span class="n">bulk_create_tasks</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><a id="__codelineno-25-38" name="__codelineno-25-38"></a>
+<a id="__codelineno-25-39" name="__codelineno-25-39"></a>
+<a id="__codelineno-25-40" name="__codelineno-25-40"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span> <span class="n">mutation</span><span class="o">=</span><span class="n">Mutation</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Bulk mutations work just like regular mutations.
+Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-26-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-26-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-26-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-26-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-26-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-26-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-26-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-26-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-26-10">10</a></span>
+<span class="normal"><a href="#__codelineno-26-11">11</a></span>
+<span class="normal"><a href="#__codelineno-26-12">12</a></span>
+<span class="normal"><a href="#__codelineno-26-13">13</a></span>
+<span class="normal"><a href="#__codelineno-26-14">14</a></span>
+<span class="normal"><a href="#__codelineno-26-15">15</a></span>
+<span class="normal"><a href="#__codelineno-26-16">16</a></span>
+<span class="normal"><a href="#__codelineno-26-17">17</a></span>
+<span class="normal"><a href="#__codelineno-26-18">18</a></span>
+<span class="normal"><a href="#__codelineno-26-19">19</a></span>
+<span class="normal"><a href="#__codelineno-26-20">20</a></span>
+<span class="normal"><a href="#__codelineno-26-21">21</a></span>
+<span class="normal"><a href="#__codelineno-26-22">22</a></span>
+<span class="normal"><a href="#__codelineno-26-23">23</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a><span class="w">  </span><span class="n">bulkCreateTasks</span><span class="p">(</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3"></a><span class="w">    </span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a><span class="w">        </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New Task"</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a><span class="w">        </span><span class="n">project</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7"></a><span class="w">          </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New Project"</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11"></a><span class="w">        </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Other Task"</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12"></a><span class="w">        </span><span class="n">project</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-13" name="__codelineno-26-13"></a><span class="w">          </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Other Project"</span>
+<a id="__codelineno-26-14" name="__codelineno-26-14"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-26-15" name="__codelineno-26-15"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-26-16" name="__codelineno-26-16"></a><span class="w">    </span><span class="p">]</span>
+<a id="__codelineno-26-17" name="__codelineno-26-17"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-18" name="__codelineno-26-18"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-26-19" name="__codelineno-26-19"></a><span class="w">    </span><span class="n">project</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-20" name="__codelineno-26-20"></a><span class="w">      </span><span class="n">name</span>
+<a id="__codelineno-26-21" name="__codelineno-26-21"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-26-22" name="__codelineno-26-22"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-26-23" name="__codelineno-26-23"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-27-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-27-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-27-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-27-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-27-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-27-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-27-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-27-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-27-10">10</a></span>
+<span class="normal"><a href="#__codelineno-27-11">11</a></span>
+<span class="normal"><a href="#__codelineno-27-12">12</a></span>
+<span class="normal"><a href="#__codelineno-27-13">13</a></span>
+<span class="normal"><a href="#__codelineno-27-14">14</a></span>
+<span class="normal"><a href="#__codelineno-27-15">15</a></span>
+<span class="normal"><a href="#__codelineno-27-16">16</a></span>
+<span class="normal"><a href="#__codelineno-27-17">17</a></span>
+<span class="normal"><a href="#__codelineno-27-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3"></a><span class="w">    </span><span class="nt">"bulkCreateTasks"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"New Task"</span><span class="p">,</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6"></a><span class="w">        </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"New Project"</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10"></a><span class="w">      </span><span class="p">{</span>
+<a id="__codelineno-27-11" name="__codelineno-27-11"></a><span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Other Task"</span><span class="p">,</span>
+<a id="__codelineno-27-12" name="__codelineno-27-12"></a><span class="w">        </span><span class="nt">"project"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-13" name="__codelineno-27-13"></a><span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Other Project"</span>
+<a id="__codelineno-27-14" name="__codelineno-27-14"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-27-15" name="__codelineno-27-15"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-27-16" name="__codelineno-27-16"></a><span class="w">    </span><span class="p">]</span>
+<a id="__codelineno-27-17" name="__codelineno-27-17"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-27-18" name="__codelineno-27-18"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<hr/>
+<h2 id="part-5-adding-permissions">Part 5: Adding Permissions<a class="headerlink" href="#part-5-adding-permissions" title="Permanent link">🔗</a></h2>
+<p>In Undine, you can add permission checks to <code>QueryTypes</code> or <code>MutationTypes</code>
+as well as individual <code>Fields</code> or <code>Inputs</code>. First, let's add a permission check for querying <code>Tasks</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-28-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-28-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-28-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-28-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-28-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-28-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-28-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-28-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-28-10">10</a></span>
+<span class="normal"><a href="#__codelineno-28-11">11</a></span>
+<span class="normal"><a href="#__codelineno-28-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6"></a>
+<a id="__codelineno-28-7" name="__codelineno-28-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8"></a><span class="hll">    <span class="nd">@classmethod</span>
+</span><a id="__codelineno-28-9" name="__codelineno-28-9"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-28-10" name="__codelineno-28-10"></a><span class="hll">        <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_anonymous</span><span class="p">:</span>
+</span><a id="__codelineno-28-11" name="__codelineno-28-11"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Need to be logged in to access Tasks."</span>
+</span><a id="__codelineno-28-12" name="__codelineno-28-12"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now all users need to be logged in to access <code>Tasks</code> through <code>TaskType</code>.
+Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span>
+<span class="normal"><a href="#__codelineno-29-2">2</a></span>
+<span class="normal"><a href="#__codelineno-29-3">3</a></span>
+<span class="normal"><a href="#__codelineno-29-4">4</a></span>
+<span class="normal"><a href="#__codelineno-29-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a><span class="w">  </span><span class="n">tasks</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-30-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-30-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-30-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-30-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-30-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-30-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-30-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-30-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-30-10">10</a></span>
+<span class="normal"><a href="#__codelineno-30-11">11</a></span>
+<span class="normal"><a href="#__codelineno-30-12">12</a></span>
+<span class="normal"><a href="#__codelineno-30-13">13</a></span>
+<span class="normal"><a href="#__codelineno-30-14">14</a></span>
+<span class="normal"><a href="#__codelineno-30-15">15</a></span>
+<span class="normal"><a href="#__codelineno-30-16">16</a></span>
+<span class="normal"><a href="#__codelineno-30-17">17</a></span>
+<span class="normal"><a href="#__codelineno-30-18">18</a></span>
+<span class="normal"><a href="#__codelineno-30-19">19</a></span>
+<span class="normal"><a href="#__codelineno-30-20">20</a></span>
+<span class="normal"><a href="#__codelineno-30-21">21</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="p">{</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a><span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Need to be logged in to access Tasks."</span><span class="p">,</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a><span class="w">      </span><span class="nt">"locations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8"></a><span class="w">          </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9"></a><span class="w">          </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12"></a><span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13"></a><span class="w">        </span><span class="s2">"tasks"</span>
+<a id="__codelineno-30-14" name="__codelineno-30-14"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15"></a><span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16"></a><span class="w">        </span><span class="nt">"status_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">403</span><span class="p">,</span>
+<a id="__codelineno-30-17" name="__codelineno-30-17"></a><span class="w">        </span><span class="nt">"error_code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PERMISSION_DENIED"</span>
+<a id="__codelineno-30-18" name="__codelineno-30-18"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-30-19" name="__codelineno-30-19"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-30-20" name="__codelineno-30-20"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-30-21" name="__codelineno-30-21"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<p>The permission check will be called for each <code>Task</code> instance returned by the <code>QueryType</code>.</p>
+<p>For <code>Field</code> permissions, decorate a method with <code>@&lt;field_name&gt;.permissions</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-31-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-31-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-31-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-31-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-31-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-31-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-31-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-31-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-31-10">10</a></span>
+<span class="normal"><a href="#__codelineno-31-11">11</a></span>
+<span class="normal"><a href="#__codelineno-31-12">12</a></span>
+<span class="normal"><a href="#__codelineno-31-13">13</a></span>
+<span class="normal"><a href="#__codelineno-31-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a>
+<a id="__codelineno-31-4" name="__codelineno-31-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5"></a>
+<a id="__codelineno-31-6" name="__codelineno-31-6"></a>
+<a id="__codelineno-31-7" name="__codelineno-31-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9"></a>
+<a id="__codelineno-31-10" name="__codelineno-31-10"></a><span class="hll">    <span class="nd">@name</span><span class="o">.</span><span class="n">permissions</span>
+</span><a id="__codelineno-31-11" name="__codelineno-31-11"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">name_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-31-12" name="__codelineno-31-12"></a><span class="hll">        <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_anonymous</span><span class="p">:</span>
+</span><a id="__codelineno-31-13" name="__codelineno-31-13"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Need to be logged in to access the name of the Task."</span>
+</span><a id="__codelineno-31-14" name="__codelineno-31-14"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now users need to be logged in to be able to query <code>Task</code> names.</p>
+<p>Mutation permissions using <code>MutationTypes</code> work similarly to query permissions using <code>QueryTypes</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-32-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-32-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-32-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-32-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-32-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-32-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-32-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-32-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-32-10">10</a></span>
+<span class="normal"><a href="#__codelineno-32-11">11</a></span>
+<span class="normal"><a href="#__codelineno-32-12">12</a></span>
+<span class="normal"><a href="#__codelineno-32-13">13</a></span>
+<span class="normal"><a href="#__codelineno-32-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a>
+<a id="__codelineno-32-3" name="__codelineno-32-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5"></a>
+<a id="__codelineno-32-6" name="__codelineno-32-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7"></a>
+<a id="__codelineno-32-8" name="__codelineno-32-8"></a>
+<a id="__codelineno-32-9" name="__codelineno-32-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10"></a><span class="hll">    <span class="nd">@classmethod</span>
+</span><a id="__codelineno-32-11" name="__codelineno-32-11"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-32-12" name="__codelineno-32-12"></a><span class="hll">        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_staff</span><span class="p">:</span>
+</span><a id="__codelineno-32-13" name="__codelineno-32-13"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Must be a staff user to be able add tasks."</span>
+</span><a id="__codelineno-32-14" name="__codelineno-32-14"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now users need to be staff members to be able to create new <code>Tasks</code> using <code>TaskCreateMutation</code>.</p>
+<p>You can also restrict the usage of specific <code>Inputs</code> by decorating a method with <code>@&lt;input_name&gt;.permissions</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-33-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-33-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-33-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-33-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-33-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-33-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-33-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-33-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-33-10">10</a></span>
+<span class="normal"><a href="#__codelineno-33-11">11</a></span>
+<span class="normal"><a href="#__codelineno-33-12">12</a></span>
+<span class="normal"><a href="#__codelineno-33-13">13</a></span>
+<span class="normal"><a href="#__codelineno-33-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3"></a>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a>
+<a id="__codelineno-33-7" name="__codelineno-33-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9"></a>
+<a id="__codelineno-33-10" name="__codelineno-33-10"></a><span class="hll">    <span class="nd">@done</span><span class="o">.</span><span class="n">permissions</span>
+</span><a id="__codelineno-33-11" name="__codelineno-33-11"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">done_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-33-12" name="__codelineno-33-12"></a><span class="hll">        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_superuser</span><span class="p">:</span>
+</span><a id="__codelineno-33-13" name="__codelineno-33-13"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Must be a superuser to be able add done tasks."</span>
+</span><a id="__codelineno-33-14" name="__codelineno-33-14"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now only superusers can add <code>Tasks</code> that are already done,
+since in this case the default value of <code>Task.done</code> is <code>False</code>,
+and <code>Input</code> permissions are only checked for non-default values.</p>
+<hr/>
+<h2 id="part-6-adding-validation">Part 6: Adding Validation<a class="headerlink" href="#part-6-adding-validation" title="Permanent link">🔗</a></h2>
+<p>Mutations using <code>MutationTypes</code> can also be validated on both the <code>MutationType</code>
+and individual <code>Input</code> level.</p>
+<p>To add validation for a <code>MutationType</code>, add the <code>__validate__</code> classmethod to it.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-34-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-34-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-34-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-34-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-34-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-34-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-34-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-34-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-34-10">10</a></span>
+<span class="normal"><a href="#__codelineno-34-11">11</a></span>
+<span class="normal"><a href="#__codelineno-34-12">12</a></span>
+<span class="normal"><a href="#__codelineno-34-13">13</a></span>
+<span class="normal"><a href="#__codelineno-34-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2"></a>
+<a id="__codelineno-34-3" name="__codelineno-34-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLValidationError</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5"></a>
+<a id="__codelineno-34-6" name="__codelineno-34-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7"></a>
+<a id="__codelineno-34-8" name="__codelineno-34-8"></a>
+<a id="__codelineno-34-9" name="__codelineno-34-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10"></a><span class="hll">    <span class="nd">@classmethod</span>
+</span><a id="__codelineno-34-11" name="__codelineno-34-11"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">__validate__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-34-12" name="__codelineno-34-12"></a><span class="hll">        <span class="k">if</span> <span class="n">input_data</span><span class="p">[</span><span class="s2">"done"</span><span class="p">]:</span>
+</span><a id="__codelineno-34-13" name="__codelineno-34-13"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Cannot create a done task."</span>
+</span><a id="__codelineno-34-14" name="__codelineno-34-14"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now users cannot create <code>Tasks</code> that are already marked as done.
+Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1">1</a></span>
+<span class="normal"><a href="#__codelineno-35-2">2</a></span>
+<span class="normal"><a href="#__codelineno-35-3">3</a></span>
+<span class="normal"><a href="#__codelineno-35-4">4</a></span>
+<span class="normal"><a href="#__codelineno-35-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2"></a><span class="w">  </span><span class="n">createTask</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"New task"</span><span class="p">,</span><span class="w"> </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<details>
+<summary>You should see this response:</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-36-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-36-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-36-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-36-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-36-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-36-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-36-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-36-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-36-10">10</a></span>
+<span class="normal"><a href="#__codelineno-36-11">11</a></span>
+<span class="normal"><a href="#__codelineno-36-12">12</a></span>
+<span class="normal"><a href="#__codelineno-36-13">13</a></span>
+<span class="normal"><a href="#__codelineno-36-14">14</a></span>
+<span class="normal"><a href="#__codelineno-36-15">15</a></span>
+<span class="normal"><a href="#__codelineno-36-16">16</a></span>
+<span class="normal"><a href="#__codelineno-36-17">17</a></span>
+<span class="normal"><a href="#__codelineno-36-18">18</a></span>
+<span class="normal"><a href="#__codelineno-36-19">19</a></span>
+<span class="normal"><a href="#__codelineno-36-20">20</a></span>
+<span class="normal"><a href="#__codelineno-36-21">21</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="p">{</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2"></a><span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5"></a><span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Cannot create a done task."</span><span class="p">,</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6"></a><span class="w">      </span><span class="nt">"locations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7"></a><span class="w">        </span><span class="p">{</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8"></a><span class="w">          </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9"></a><span class="w">          </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<a id="__codelineno-36-10" name="__codelineno-36-10"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-36-11" name="__codelineno-36-11"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-36-12" name="__codelineno-36-12"></a><span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-36-13" name="__codelineno-36-13"></a><span class="w">        </span><span class="s2">"createTask"</span>
+<a id="__codelineno-36-14" name="__codelineno-36-14"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-36-15" name="__codelineno-36-15"></a><span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-36-16" name="__codelineno-36-16"></a><span class="w">        </span><span class="nt">"status_code"</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span><span class="p">,</span>
+<a id="__codelineno-36-17" name="__codelineno-36-17"></a><span class="w">        </span><span class="nt">"error_code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VALIDATION_ERROR"</span>
+<a id="__codelineno-36-18" name="__codelineno-36-18"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-36-19" name="__codelineno-36-19"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-36-20" name="__codelineno-36-20"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-36-21" name="__codelineno-36-21"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</details>
+<p>To add validation for an <code>Input</code>, decorate a method with <code>@&lt;input_name&gt;.validate</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-37-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-37-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-37-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-37-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-37-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-37-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-37-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-37-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-37-10">10</a></span>
+<span class="normal"><a href="#__codelineno-37-11">11</a></span>
+<span class="normal"><a href="#__codelineno-37-12">12</a></span>
+<span class="normal"><a href="#__codelineno-37-13">13</a></span>
+<span class="normal"><a href="#__codelineno-37-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">Input</span><span class="p">,</span> <span class="n">MutationType</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLValidationError</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3"></a>
+<a id="__codelineno-37-4" name="__codelineno-37-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5"></a>
+<a id="__codelineno-37-6" name="__codelineno-37-6"></a>
+<a id="__codelineno-37-7" name="__codelineno-37-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-37-8" name="__codelineno-37-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Input</span><span class="p">()</span>
+<a id="__codelineno-37-9" name="__codelineno-37-9"></a>
+<a id="__codelineno-37-10" name="__codelineno-37-10"></a><span class="hll">    <span class="nd">@name</span><span class="o">.</span><span class="n">validate</span>
+</span><a id="__codelineno-37-11" name="__codelineno-37-11"></a><span class="hll">    <span class="k">def</span><span class="w"> </span><span class="nf">validate_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><a id="__codelineno-37-12" name="__codelineno-37-12"></a><span class="hll">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+</span><a id="__codelineno-37-13" name="__codelineno-37-13"></a><span class="hll">            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Name must be at least 3 characters."</span>
+</span><a id="__codelineno-37-14" name="__codelineno-37-14"></a><span class="hll">            <span class="k">raise</span> <span class="n">GraphQLValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Now users cannot create <code>Tasks</code> with names that are less than 3 characters long.</p>
+<hr/>
+<h2 id="part-7-adding-filtering">Part 7: Adding Filtering<a class="headerlink" href="#part-7-adding-filtering" title="Permanent link">🔗</a></h2>
+<p>Results from <code>QueryTypes</code> can be filtered using <a href="../filtering/#filter"><code>Filters</code></a>
+defined in a <a href="../filtering/#filterset"><code>FilterSet</code></a>. Create a <code>FilterSet</code> for the <code>Task</code> Model
+and add it to your <code>TaskType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-38-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-38-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-38-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-38-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-38-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-38-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-38-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-38-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-38-10">10</a></span>
+<span class="normal"><a href="#__codelineno-38-11">11</a></span>
+<span class="normal"><a href="#__codelineno-38-12">12</a></span>
+<span class="normal"><a href="#__codelineno-38-13">13</a></span>
+<span class="normal"><a href="#__codelineno-38-14">14</a></span>
+<span class="normal"><a href="#__codelineno-38-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">FilterSet</span><span class="p">,</span> <span class="n">QueryType</span>
+</span><a id="__codelineno-38-2" name="__codelineno-38-2"></a>
+<a id="__codelineno-38-3" name="__codelineno-38-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4"></a>
+<a id="__codelineno-38-5" name="__codelineno-38-5"></a>
+<a id="__codelineno-38-6" name="__codelineno-38-6"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskFilterSet</span><span class="p">(</span><span class="n">FilterSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+</span><a id="__codelineno-38-7" name="__codelineno-38-7"></a><span class="hll">    <span class="n">name_contains</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">(</span><span class="n">lookup</span><span class="o">=</span><span class="s2">"icontains"</span><span class="p">)</span>
+</span><a id="__codelineno-38-8" name="__codelineno-38-8"></a><span class="hll">    <span class="n">done</span> <span class="o">=</span> <span class="n">Filter</span><span class="p">()</span>
+</span><a id="__codelineno-38-9" name="__codelineno-38-9"></a>
+<a id="__codelineno-38-10" name="__codelineno-38-10"></a>
+<a id="__codelineno-38-11" name="__codelineno-38-11"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">filterset</span><span class="o">=</span><span class="n">TaskFilterSet</span><span class="p">):</span>
+</span><a id="__codelineno-38-12" name="__codelineno-38-12"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-38-13" name="__codelineno-38-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-38-14" name="__codelineno-38-14"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-38-15" name="__codelineno-38-15"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>Now all <code>Entrypoints</code> created from this <code>QueryType</code> will have a <code>filter</code> argument that contains
+the filtering options defined by the <code>FilterSet</code>.</p>
+<p>Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-39-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-39-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-39-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-39-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-39-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-39-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-39-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-39-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-39-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4"></a><span class="w">      </span><span class="n">nameContains</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-39-6" name="__codelineno-39-6"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-39-8" name="__codelineno-39-8"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-39-9" name="__codelineno-39-9"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Check the response. You should only see <code>Tasks</code> with names that contain the letter "a".</p>
+<p>Different <code>Filters</code> can also be combined to narrow down the results.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-40-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-40-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-40-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-40-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-40-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-40-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-40-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-40-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-40-10">10</a></span>
+<span class="normal"><a href="#__codelineno-40-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4"></a><span class="w">      </span><span class="n">nameContains</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5"></a><span class="hll"><span class="w">      </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">false</span>
+</span><a id="__codelineno-40-6" name="__codelineno-40-6"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-40-7" name="__codelineno-40-7"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-40-8" name="__codelineno-40-8"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-40-9" name="__codelineno-40-9"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-40-10" name="__codelineno-40-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-40-11" name="__codelineno-40-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>With this query, you should only see <code>Tasks</code> that contain the letter "a" <em>and</em> are not done.</p>
+<p>If you wanted to see <em>either</em> tasks containing the letter a <em>or</em> tasks that are not done,
+you could put the filters inside an <code>OR</code> block:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-41-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-41-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-41-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-41-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-41-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-41-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-41-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-41-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-41-10">10</a></span>
+<span class="normal"><a href="#__codelineno-41-11">11</a></span>
+<span class="normal"><a href="#__codelineno-41-12">12</a></span>
+<span class="normal"><a href="#__codelineno-41-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3"></a><span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4"></a><span class="hll"><span class="w">      </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><a id="__codelineno-41-5" name="__codelineno-41-5"></a><span class="hll"><span class="w">        </span><span class="n">nameContains</span><span class="p">:</span><span class="w"> </span><span class="s">"a"</span>
+</span><a id="__codelineno-41-6" name="__codelineno-41-6"></a><span class="hll"><span class="w">        </span><span class="n">done</span><span class="p">:</span><span class="w"> </span><span class="nb">false</span>
+</span><a id="__codelineno-41-7" name="__codelineno-41-7"></a><span class="hll"><span class="w">      </span><span class="p">}</span>
+</span><a id="__codelineno-41-8" name="__codelineno-41-8"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-41-9" name="__codelineno-41-9"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-41-10" name="__codelineno-41-10"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-41-12" name="__codelineno-41-12"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-41-13" name="__codelineno-41-13"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Similar logical blocks exist for <code>AND</code>, <code>NOT</code> and <code>XOR</code>, and they can be nested as deeply as needed.</p>
+<hr/>
+<h2 id="part-8-adding-ordering">Part 8: Adding Ordering<a class="headerlink" href="#part-8-adding-ordering" title="Permanent link">🔗</a></h2>
+<p>Results from <code>QueryTypes</code> can be ordered using <a href="../ordering/#order"><code>Orders</code></a>
+defined in an <a href="../ordering/#orderset"><code>OrderSet</code></a>. Create an <code>OrderSet</code> for the <code>Task</code> Model
+and add it to your <code>TaskType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-42-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-42-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-42-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-42-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-42-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-42-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-42-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-42-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-42-10">10</a></span>
+<span class="normal"><a href="#__codelineno-42-11">11</a></span>
+<span class="normal"><a href="#__codelineno-42-12">12</a></span>
+<span class="normal"><a href="#__codelineno-42-13">13</a></span>
+<span class="normal"><a href="#__codelineno-42-14">14</a></span>
+<span class="normal"><a href="#__codelineno-42-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">Order</span><span class="p">,</span> <span class="n">OrderSet</span><span class="p">,</span> <span class="n">QueryType</span>
+</span><a id="__codelineno-42-2" name="__codelineno-42-2"></a>
+<a id="__codelineno-42-3" name="__codelineno-42-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4"></a>
+<a id="__codelineno-42-5" name="__codelineno-42-5"></a>
+<a id="__codelineno-42-6" name="__codelineno-42-6"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskOrderSet</span><span class="p">(</span><span class="n">OrderSet</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+</span><a id="__codelineno-42-7" name="__codelineno-42-7"></a><span class="hll">    <span class="n">pk</span> <span class="o">=</span> <span class="n">Order</span><span class="p">()</span>
+</span><a id="__codelineno-42-8" name="__codelineno-42-8"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Order</span><span class="p">()</span>
+</span><a id="__codelineno-42-9" name="__codelineno-42-9"></a>
+<a id="__codelineno-42-10" name="__codelineno-42-10"></a>
+<a id="__codelineno-42-11" name="__codelineno-42-11"></a><span class="hll"><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">orderset</span><span class="o">=</span><span class="n">TaskOrderSet</span><span class="p">):</span>
+</span><a id="__codelineno-42-12" name="__codelineno-42-12"></a>    <span class="n">pk</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-42-13" name="__codelineno-42-13"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-42-14" name="__codelineno-42-14"></a>    <span class="n">done</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-42-15" name="__codelineno-42-15"></a>    <span class="n">created_at</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>Now all <code>Entrypoints</code> created from this <code>QueryType</code> will have an <code>orderBy</code> argument that contains
+the ordering options defined by the <code>OrderSet</code>.</p>
+<p>Adding an ordering enables you to order by that fields in both ascending and descending directions.
+Boot up the Django server and make the following request:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-43-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-43-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-43-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-43-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-43-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-43-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-43-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-43-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-43-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-43-10">10</a></span>
+<span class="normal"><a href="#__codelineno-43-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1"></a><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2"></a><span class="w">  </span><span class="n">tasks</span><span class="p">(</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3"></a><span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-43-4" name="__codelineno-43-4"></a><span class="w">      </span><span class="no">nameAsc</span>
+<a id="__codelineno-43-5" name="__codelineno-43-5"></a><span class="w">      </span><span class="no">pkDesc</span>
+<a id="__codelineno-43-6" name="__codelineno-43-6"></a><span class="w">    </span><span class="p">]</span>
+<a id="__codelineno-43-7" name="__codelineno-43-7"></a><span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-43-8" name="__codelineno-43-8"></a><span class="w">    </span><span class="n">pk</span>
+<a id="__codelineno-43-9" name="__codelineno-43-9"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-43-10" name="__codelineno-43-10"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-43-11" name="__codelineno-43-11"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>With this ordering, you should see the <code>Tasks</code> ordered primarily by name in ascending order,
+and secondarily by primary key in descending order.</p>
+<hr/>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">🔗</a></h2>
+<p>In this tutorial, you've learned the basics of creating a GraphQL schema using Undine.
+It's likely your GraphQL schema has requirements outside of what has been covered here,
+so it's recommended to read the <a href="../queries/">Queries</a>, <a href="../mutations/">Mutations</a>,
+<a href="../filtering/">Filtering</a>, and <a href="../ordering/">Ordering</a> sections next.
+The <a href="../pagination/">Pagination</a> section is also helpful to learn how to
+paginate your <code>QueryTypes</code> using Relay Connections.</p>
+<p>For more in-depth information on how Undine optimizes queries to your
+GraphQL Schema, as well as how to provide custom optimizations for more complex use cases,
+see the <a href="../optimizer/">Optimizer</a> section.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../getting-started/" title="Getting Started"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../schema/" title="Schema">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../getting-started/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../schema/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

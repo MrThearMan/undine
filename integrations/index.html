@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Integrations - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Integrations";
+        var mkdocs_page_input_path = "integrations.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Integrations Undine has with other libraries." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Integrations</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#channels">channels</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#graphiql">GraphiQL</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#django-debug-toolbar">django-debug-toolbar</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#django-modeltranslation">django-modeltranslation</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pytest">pytest</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Integrations</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="integrations">Integrations<a class="headerlink" href="#integrations" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the integrations to other libraries that
+Undine includes.</p>
+<h2 id="channels">channels<a class="headerlink" href="#channels" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>pip install undine[channels]
+</code></pre></div></td></tr></table></div>
+<p>Undine provides support for <a href="https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md" target="_blank">GraphQL over WebSocket</a> and
+<a href="https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md" target="_blank">GraphQL over SSE</a> (<a href="../subscriptions/#single-connection-mode">Single Connection mode</a>)
+by integrating with the <a href="https://github.com/django/channels" target="_blank">channels</a> library. Using the channels integration
+requires turning on Undine's <a href="../async/">Async Support</a>.</p>
+<p>You'll need to configure Django in your project's <code>asgi.py</code> file
+so that requests are sent to Undine's channels consumers.
+There are three app wrappers available depending on which protocols you need.</p>
+<p>For WebSocket support only:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_websocket_enabled_app</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_websocket_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For SSE Single Connection mode only:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_sse_enabled_app</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_sse_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For both WebSocket and SSE Single Connection mode:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_websocket_and_sse_enabled_app</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_websocket_and_sse_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="graphiql">GraphiQL<a class="headerlink" href="#graphiql" title="Permanent link">🔗</a></h2>
+<p>Undine includes a built-in <a href="https://github.com/graphql/graphiql" target="_blank">GraphiQL</a> interface for exploring and
+testing your GraphQL API. You can enable it using the
+<a href="../settings/#graphiql_enabled"><code>GRAPHIQL_ENABLED</code></a> setting. You should also set
+<a href="../settings/#allow_introspection_queries"><code>ALLOW_INTROSPECTION_QUERIES</code></a> to <code>True</code>
+so that GraphiQL can introspect the schema. GraphiQL is then accessible by navigating
+to the GraphQL endpoint in a browser.</p>
+<p>GraphiQL includes the explorer and history plugins. The URL encodes the current
+document, variables, and headers, so it can be shared with others.</p>
+<p>By default, <a href="../subscriptions/">subscriptions</a> use <a href="../subscriptions/#websockets">WebSockets</a>.
+To use <a href="../subscriptions/#server-sent-events">Server-Sent Events</a> instead, use the
+<a href="../settings/#graphiql_sse_enabled"><code>GRAPHIQL_SSE_ENABLED</code></a> setting.
+<a href="../subscriptions/#single-connection-mode">Single connection mode</a> can be enabled with the
+<a href="../settings/#graphiql_sse_single_connection"><code>GRAPHIQL_SSE_SINGLE_CONNECTION</code></a> setting.</p>
+<h2 id="django-debug-toolbar">django-debug-toolbar<a class="headerlink" href="#django-debug-toolbar" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a>pip install undine[debug]
+</code></pre></div></td></tr></table></div>
+<p>Undine integrates with <a href="https://github.com/django-commons/django-debug-toolbar" target="_blank">django-debug-toolbar</a>
+by modifying the toolbar HTML so that it integrates with <a href="#graphiql">GraphiQL</a>.
+After <a href="https://django-debug-toolbar.readthedocs.io/en/stable/installation.html">installing django-debug-toolbar</a>, Undine should automatically
+patch it without any additional configuration.</p>
+<h2 id="django-modeltranslation">django-modeltranslation<a class="headerlink" href="#django-modeltranslation" title="Permanent link">🔗</a></h2>
+<p>Undine integrates with <a href="https://github.com/deschler/django-modeltranslation" target="_blank">django-modeltranslation</a>
+by allowing you to modify how autogenerated <code>Fields</code>, <code>Inputs</code>, <code>Filters</code>
+and <code>Orders</code> are created. Specifically, this happens using two settings:
+<a href="../settings/#modeltranslation_include_translatable"><code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code></a>
+and <a href="../settings/#modeltranslation_include_translations"><code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code></a>.</p>
+<p>Let's say you the following Model (with <code>MODELTRANSLATION_LANGUAGES = ("en", "fi")</code>)</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span>
+<span class="normal"><a href="#__codelineno-5-5">5</a></span>
+<span class="normal"><a href="#__codelineno-5-6">6</a></span>
+<span class="normal"><a href="#__codelineno-5-7">7</a></span>
+<span class="normal"><a href="#__codelineno-5-8">8</a></span>
+<span class="normal"><a href="#__codelineno-5-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>    <span class="c1"># Created by modeltranslation</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>    <span class="n">name_en</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="n">name_fi</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div></td></tr></table></div>
+<p>...and the following translation options</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span>
+<span class="normal"><a href="#__codelineno-6-6">6</a></span>
+<span class="normal"><a href="#__codelineno-6-7">7</a></span>
+<span class="normal"><a href="#__codelineno-6-8">8</a></span>
+<span class="normal"><a href="#__codelineno-6-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">modeltranslation.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">register</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">modeltranslation.translator</span><span class="w"> </span><span class="kn">import</span> <span class="n">TranslationOptions</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="nd">@register</span><span class="p">(</span><span class="n">Task</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskTranslationOptions</span><span class="p">(</span><span class="n">TranslationOptions</span><span class="p">):</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+<p>Based on the Model's translation options, <code>django-modeltranslation</code> adds additional fields
+for each language defined by the <code>MODELTRANSLATION_LANGUAGES</code> setting. Let's call the added fields
+the <em>"translatable"</em> fields, and the fields they are based on the <em>"translation"</em> fields.</p>
+<p>Using the <code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code> and <code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code>
+settings, you can control which of these fields undine will add to your schema
+when using autogeneration. By default, only the <em>translation</em> fields are added.
+You can of course always add the translatable fields manually.</p>
+<blockquote>
+<p>Note that due to the way that <code>django-modeltranslation</code> works,
+the translation fields are always nullable, even for the default language.</p>
+</blockquote>
+<h2 id="pytest">pytest<a class="headerlink" href="#pytest" title="Permanent link">🔗</a></h2>
+<p>Undine comes with a pytest plugin that includes a testing client and few fixtures
+to help you write tests for your GraphQL APIs.</p>
+<p>The <code>GraphQLClient</code> class is wrapper around <a href="https://docs.djangoproject.com/en/stable/topics/testing/tools/#the-test-client" target="_blank">Django's test client</a> that
+makes testing your GraphQL API easier. It can be added to a test using
+the <code>graphql</code> fixture. Here is a simple example:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span>
+<span class="normal"><a href="#__codelineno-7-5">5</a></span>
+<span class="normal"><a href="#__codelineno-7-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>GraphQL requests can be made by calling the client as shown above.
+This makes a request to the GraphQL endpoint set by the
+<a href="../settings/#graphql_path"><code>GRAPHQL_PATH</code></a> setting.</p>
+<p>GraphQL variables can be passed using the <code>variables</code> argument. If these variables
+include any files, the client will automatically create a GraphQL multipart request
+instead of a normal GraphQL request.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
+<span class="normal"><a href="#__codelineno-8-2">2</a></span>
+<span class="normal"><a href="#__codelineno-8-3">3</a></span>
+<span class="normal"><a href="#__codelineno-8-4">4</a></span>
+<span class="normal"><a href="#__codelineno-8-5">5</a></span>
+<span class="normal"><a href="#__codelineno-8-6">6</a></span>
+<span class="normal"><a href="#__codelineno-8-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>    <span class="n">mutation</span> <span class="o">=</span> <span class="s2">"mutation($input: TestInput!) { test(input: $input) }"</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a>    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"World"</span><span class="p">}</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">mutation</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="n">data</span><span class="p">})</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The client returns a custom response object <code>GraphQLClientResponse</code>,
+which has a number of useful properties for introspecting the response.
+The response object also has details on the database queries that were executed
+during the request, which can be useful for debugging the performance of your
+GraphQL API.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-9-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-9-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-9-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-9-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-9-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-9-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-9-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-9-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-9-10">10</a></span>
+<span class="normal"><a href="#__codelineno-9-11">11</a></span>
+<span class="normal"><a href="#__codelineno-9-12">12</a></span>
+<span class="normal"><a href="#__codelineno-9-13">13</a></span>
+<span class="normal"><a href="#__codelineno-9-14">14</a></span>
+<span class="normal"><a href="#__codelineno-9-15">15</a></span>
+<span class="normal"><a href="#__codelineno-9-16">16</a></span>
+<span class="normal"><a href="#__codelineno-9-17">17</a></span>
+<span class="normal"><a href="#__codelineno-9-18">18</a></span>
+<span class="normal"><a href="#__codelineno-9-19">19</a></span>
+<span class="normal"><a href="#__codelineno-9-20">20</a></span>
+<span class="normal"><a href="#__codelineno-9-21">21</a></span>
+<span class="normal"><a href="#__codelineno-9-22">22</a></span>
+<span class="normal"><a href="#__codelineno-9-23">23</a></span>
+<span class="normal"><a href="#__codelineno-9-24">24</a></span>
+<span class="normal"><a href="#__codelineno-9-25">25</a></span>
+<span class="normal"><a href="#__codelineno-9-26">26</a></span>
+<span class="normal"><a href="#__codelineno-9-27">27</a></span>
+<span class="normal"><a href="#__codelineno-9-28">28</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test { edges { node { id } } } }"</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">count_queries</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6"></a>    <span class="c1"># The whole response</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span> <span class="o">==</span> <span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8"></a>        <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}},</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9"></a>        <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Error message"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">]}],</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10"></a>    <span class="p">}</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12"></a>    <span class="c1"># Error properties</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">has_errors</span> <span class="ow">is</span> <span class="kc">True</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">errors</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Error message"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">]}]</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"Error message"</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17"></a>    <span class="c1"># Data properties</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}}</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20"></a>
+<a id="__codelineno-9-21" name="__codelineno-9-21"></a>    <span class="c1"># Connection specific properties</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">edges</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24"></a>
+<a id="__codelineno-9-25" name="__codelineno-9-25"></a>    <span class="c1"># Check queries (requires `count_queries=True`)</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">query_count</span> <span class="o">==</span> <span class="mi">1</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">queries</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"SELECT 1;"</span><span class="p">]</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28"></a>    <span class="n">response</span><span class="o">.</span><span class="n">assert_query_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>An async version of the client is also available, which can be accessed from
+the <code>graphql_async</code> fixture.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-10-10">10</a></span>
+<span class="normal"><a href="#__codelineno-10-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>  <span class="c1"># Requires the `pytest-asyncio` plugin</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">django_db</span><span class="p">(</span><span class="n">transaction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># For sessions</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql_async</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_async</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The plugin also includes a <code>undine_settings</code> fixture that allows modifying
+Undine's settings during testing more easily.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">undine_settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a>    <span class="n">undine_settings</span><span class="o">.</span><span class="n">NO_ERROR_LOCATION</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div></td></tr></table></div>
+<p>If the <a href="#channels">channels</a> integration is installed, the test client can
+also send GraphQL over WebSocket requests using the <code>over_websocket</code> method.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
+<span class="normal"><a href="#__codelineno-12-2">2</a></span>
+<span class="normal"><a href="#__codelineno-12-3">3</a></span>
+<span class="normal"><a href="#__codelineno-12-4">4</a></span>
+<span class="normal"><a href="#__codelineno-12-5">5</a></span>
+<span class="normal"><a href="#__codelineno-12-6">6</a></span>
+<span class="normal"><a href="#__codelineno-12-7">7</a></span>
+<span class="normal"><a href="#__codelineno-12-8">8</a></span>
+<span class="normal"><a href="#__codelineno-12-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>  <span class="c1"># Requires the `pytest-asyncio` plugin</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">django_db</span><span class="p">(</span><span class="n">transaction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># For sessions</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_graphql</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">graphql</span><span class="o">.</span><span class="n">over_websocket</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>        <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../validation-rules/" title="Validation Rules"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../settings/" title="Settings">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../validation-rules/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../settings/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

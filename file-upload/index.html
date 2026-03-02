@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>File Upload - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "File Upload";
+        var mkdocs_page_input_path = "file-upload.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="File upload support in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">File Upload</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#uploading-files">Uploading files</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">File Upload</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="file-upload">File Upload<a class="headerlink" href="#file-upload" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the everything necessary for adding support for file uploads
+to your GraphQL schema using the <a href="https://github.com/jaydenseric/graphql-multipart-request-spec" target="_blank">GraphQL multipart request specification</a>.</p>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">🔗</a></h2>
+<p>Undine supports file uploads, but they disabled by default due to security reasons.
+Specifically, since file uploads are sent using a <code>multipart/form-data</code> request, they may be sent without
+a <a href="https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request" target="_blank">CORS preflight request</a> if the browser determines the requests meets the criteria for
+a <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#simple_requests" target="_blank">"simple request"</a>.</p>
+<p>Therefore, you should make sure CSRF protection is enabled on the GraphQL endpoint
+if you want to use file uploads. This can be done by making sure that</p>
+<ol>
+<li>The GraphQL view is decorated with <code>@csrf_protect</code>, <em>OR</em></li>
+<li><code>CsrfViewMiddleware</code> exists in your <code>MIDDLEWARE</code> setting (and the GraphQL view is not decorated with <code>@csrf_exempt</code>)</li>
+</ol>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
+<span class="normal"><a href="#__codelineno-0-2">2</a></span>
+<span class="normal"><a href="#__codelineno-0-3">3</a></span>
+<span class="normal"><a href="#__codelineno-0-4">4</a></span>
+<span class="normal"><a href="#__codelineno-0-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">MIDDLEWARE</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a>    <span class="c1"># ...</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3"></a>    <span class="s2">"django.middleware.csrf.CsrfViewMiddleware"</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a>    <span class="c1"># ...</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+<p>Then you can enable file uploads by adding the following to your settings:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>    <span class="s2">"FILE_UPLOAD_ENABLED"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="uploading-files">Uploading files<a class="headerlink" href="#uploading-files" title="Permanent link">🔗</a></h2>
+<p>Undine has two <a href="../scalars/">Scalars</a> for uploading files: <a href="../scalars/#file"><code>File</code></a> and <a href="../scalars/#image"><code>Image</code></a>.
+They correspond to Django's <code>FileField</code> and <code>ImageField</code> respectively.
+The <code>File</code> scalar if for general files while the <code>Image</code> scalar validates that the file is an image file.</p>
+<blockquote>
+<p>Like Django's <code>ImageField</code>, using the <code>Image</code> scalar requires the <code>Pillow</code> library to be installed.
+You can install it together with Undine using <code>pip install undine[image]</code>.</p>
+</blockquote>
+<p>Now, let's suppose you have the following Model.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span>
+<span class="normal"><a href="#__codelineno-2-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>    <span class="n">image</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ImageField</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>If you add a create mutation to the GraphQL schema like this</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span>
+<span class="normal"><a href="#__codelineno-3-12">12</a></span>
+<span class="normal"><a href="#__codelineno-3-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">MutationType</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskCreateMutation</span><span class="p">(</span><span class="n">MutationType</span><span class="p">[</span><span class="n">Task</span><span class="p">],</span> <span class="n">auto</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutation</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13"></a>    <span class="n">create_task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskCreateMutation</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>...the <code>TaskCreateMutation</code> mutation <code>InputObjectType</code> will look like this:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="k">input</span><span class="w"> </span><span class="err">TaskCreateMutation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">  </span><span class="nl">image</span><span class="p">:</span><span class="w"> </span><span class="n">Image</span><span class="err">!</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Now the client can send a request that conforms to the <a href="https://github.com/jaydenseric/graphql-multipart-request-spec" target="_blank">GraphQL multipart request specification</a>,
+and Undine's GraphQL view will parse the request and slot the files into the correct locations in the input data.</p>
+<details>
+<summary>Example request</summary>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span>
+<span class="normal"><a href="#__codelineno-5-12">12</a></span>
+<span class="normal"><a href="#__codelineno-5-13">13</a></span>
+<span class="normal"><a href="#__codelineno-5-14">14</a></span>
+<span class="normal"><a href="#__codelineno-5-15">15</a></span>
+<span class="normal"><a href="#__codelineno-5-16">16</a></span>
+<span class="normal"><a href="#__codelineno-5-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a>POST /graphql/ HTTP/1.1
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>Content-Type: multipart/form-data; boundary=--BoUnDaRyStRiNg
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a>Content-Length: 490
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>--BoUnDaRyStRiNg
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>Content-Disposition: form-data; name="operations"
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>{"query": "mutation($input: TaskCreateMutation!) { createTask(input: $input) { pk } }", "variables": {"input": {"name": "Task", "image": null}}}
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>--BoUnDaRyStRiNg
+<a id="__codelineno-5-10" name="__codelineno-5-10"></a>Content-Disposition: form-data; name="map"
+<a id="__codelineno-5-11" name="__codelineno-5-11"></a>
+<a id="__codelineno-5-12" name="__codelineno-5-12"></a>{"0": ["variables.input.image"]}
+<a id="__codelineno-5-13" name="__codelineno-5-13"></a>--BoUnDaRyStRiNg
+<a id="__codelineno-5-14" name="__codelineno-5-14"></a>Content-Disposition: form-data; name="0"; filename="image.png"
+<a id="__codelineno-5-15" name="__codelineno-5-15"></a>
+<a id="__codelineno-5-16" name="__codelineno-5-16"></a>\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x01c```\x00\x00\x00\x04\x00\x01\xe4\x94\x84\x06\x00\x00\x00\x00IEND\xaeB`\x82
+<a id="__codelineno-5-17" name="__codelineno-5-17"></a>--BoUnDaRyStRiNg--
+</code></pre></div></td></tr></table></div>
+</details>
+<p>See the <a href="https://github.com/jaydenseric/graphql-multipart-request-spec?tab=readme-ov-file#implementations" target="_blank">Implementations</a> section in the GraphQL multipart request specification
+for client side libraries that support file uploads.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../global-object-ids/" title="Global Object IDs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../persisted-documents/" title="Persisted Documents">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../global-object-ids/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../persisted-documents/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>
