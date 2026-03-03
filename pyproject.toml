@@ -57,7 +57,7 @@ metaDescriptions = "docs.plugins.meta_description:MetaDescriptionPlugin"
 
 [tool.poetry.dependencies]
 django = ">=5.0"
-graphql-core = ">=3.2.6"
+graphql-core = ">=3.2.7"
 django-settings-holder = ">=0.3.0"
 sqlparse = ">=0.5.3"
 pillow = { version = ">=11.2.1", optional = true }

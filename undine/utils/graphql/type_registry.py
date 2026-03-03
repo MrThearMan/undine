@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import partial
 from inspect import cleandoc
 from typing import TYPE_CHECKING, Any
 
@@ -123,30 +122,14 @@ def get_or_create_graphql_input_object_type(
     Checks that the existing element is indeed a 'GraphQLInputObjectType', and raises an error
     if it is not the same.
     """
-    from undine.utils.graphql.validation_rules.one_of_input_object import (  # noqa: PLC0415
-        core_implements_one_of_directive,
-        get_one_of_input_object_type_extension,
-        validate_one_of_input_object_variable_value,
+    input_object_type = GraphQLInputObjectType(
+        name=name,
+        fields=fields,
+        description=description,
+        extensions=extensions,
+        out_type=out_type,
+        is_one_of=is_one_of,
     )
-
-    if core_implements_one_of_directive():
-        input_object_type = GraphQLInputObjectType(
-            name=name,
-            fields=fields,
-            description=description,
-            extensions=extensions,
-            out_type=out_type,
-            is_one_of=is_one_of,
-        )
-
-    else:
-        input_object_type = GraphQLInputObjectType(
-            name=name,
-            fields=fields,
-            description=description,
-            extensions=(extensions or {}) | get_one_of_input_object_type_extension(),
-            out_type=partial(validate_one_of_input_object_variable_value, typename=name),
-        )
 
     if name in GRAPHQL_REGISTRY:
         existing = GRAPHQL_REGISTRY[name]
@@ -157,7 +140,7 @@ def get_or_create_graphql_input_object_type(
             or existing.description != input_object_type.description
             or existing.extensions != input_object_type.extensions
             or existing.out_type != input_object_type.out_type
-            or getattr(existing, "is_one_of", False) != getattr(existing, "is_one_of", False)
+            or existing.is_one_of != input_object_type.is_one_of
         ):
             raise GraphQLDuplicateTypeError(
                 name=name,

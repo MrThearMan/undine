@@ -40,7 +40,6 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_schema_directives,
     get_undine_union_type,
 )
-from undine.utils.graphql.validation_rules.one_of_input_object import is_one_of_input_object
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -282,7 +281,7 @@ class SDLPrinter:  # noqa: PLR0904
     def print_input_object_type(cls, input_object_type: GraphQLInputObjectType) -> str:
         input_object_type_str = f"input {input_object_type.name}"
 
-        if is_one_of_input_object(input_object_type):
+        if input_object_type.is_one_of:
             input_object_type_str += " @oneOf"
 
         undine_mutation_type = get_undine_mutation_type(input_object_type)
