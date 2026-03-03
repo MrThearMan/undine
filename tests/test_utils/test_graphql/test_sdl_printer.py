@@ -497,11 +497,11 @@ def test_sdl_printer__query_type__list__filterset_and_orderset() -> None:
         }
 
         input TaskFilterSet {
-          name: String
-          NOT: TaskFilterSet
           AND: TaskFilterSet
+          NOT: TaskFilterSet
           OR: TaskFilterSet
           XOR: TaskFilterSet
+          name: String
         }
 
         type Query {
