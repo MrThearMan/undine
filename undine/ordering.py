@@ -4,13 +4,14 @@ import functools
 import itertools
 import operator
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from django.db.models import OrderBy
 from graphql import DirectiveLocation, GraphQLEnumValue, Undefined
 
 from undine.converters import convert_to_description, convert_to_graphql_type, convert_to_order_ref
 from undine.dataclasses import OrderResults
+from undine.directives import DirectiveList
 from undine.exceptions import (
     GraphQLInvalidOrderDataError,
     MismatchingModelError,
@@ -24,7 +25,6 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModels
 from undine.utils.graphql.type_registry import get_or_create_graphql_enum
-from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
 from undine.utils.reflection import get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
@@ -36,7 +36,6 @@ if TYPE_CHECKING:
     from graphql import GraphQLEnumType, GraphQLInputType
 
     from undine import QueryType, UnionType
-    from undine.directives import Directive
     from undine.typing import (
         DjangoExpression,
         DjangoRequestProtocol,
@@ -62,7 +61,7 @@ class OrderSetMeta(type):
     __models__: tuple[type[Model], ...]
     __order_map__: dict[str, Order]
     __schema_name__: str
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -98,15 +97,19 @@ class OrderSetMeta(type):
         orderset.__models__ = models
         orderset.__order_map__ = get_members(orderset, Order)
         orderset.__schema_name__ = kwargs.get("schema_name", _name)
-        orderset.__directives__ = kwargs.get("directives", [])
-        orderset.__extensions__ = kwargs.get("extensions", {})
         orderset.__attribute_docstrings__ = parse_class_attribute_docstrings(orderset)
 
-        check_directives(orderset.__directives__, location=DirectiveLocation.ENUM)
+        directives = kwargs.get("directives", [])
+        orderset.__directives__ = DirectiveList(directives, location=DirectiveLocation.ENUM)
+
+        orderset.__extensions__ = kwargs.get("extensions", {})
         orderset.__extensions__[undine_settings.ORDERSET_EXTENSIONS_KEY] = orderset
 
         for name, order in orderset.__order_map__.items():
             order.__connect__(orderset, name)  # type: ignore[arg-type]
+
+        for directive in orderset.__directives__:
+            directive.__connected__(orderset)
 
         return orderset
 
@@ -196,12 +199,6 @@ class OrderSetMeta(type):
 
         return enum_values
 
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this orderset."""
-        check_directives([directive], location=DirectiveLocation.ENUM)
-        cls.__directives__.append(directive)
-        return cls
-
     def __add_to_query_type__(cls, query_type: type[QueryType]) -> None:
         models = cls.__models__
         if len(models) != 1:
@@ -265,7 +262,7 @@ class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
     __models__: ClassVar[tuple[type[Model], ...]]
     __order_map__: ClassVar[dict[str, Order]]
     __schema_name__: ClassVar[str]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -310,10 +307,11 @@ class Order:
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.ENUM_VALUE)
+        directives = kwargs.get("directives", [])
+        self.directives = DirectiveList(directives, location=DirectiveLocation.ENUM_VALUE)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.ORDER_EXTENSIONS_KEY] = self
 
         self.aliases_func: OrderAliasesFunc | None = None
@@ -335,6 +333,9 @@ class Order:
             self.description = self.orderset.__attribute_docstrings__.get(name)
             if self.description is None:
                 self.description = convert_to_description(self.ref)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref!r})>"
@@ -391,12 +392,6 @@ class Order:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this order."""
-        check_directives([directive], location=DirectiveLocation.ENUM_VALUE)
-        self.directives.append(directive)
-        return self
 
 
 def get_orders_for_model(model: type[Model], *, exclude: Iterable[str] = ()) -> dict[str, Order]:

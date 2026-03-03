@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -15,12 +15,12 @@ from undine.converters import (
     is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
+from undine.directives import ComplexityDirective, DirectiveList
 from undine.exceptions import MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModel
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
-from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_default_manager, get_model_fields_for_graphql, get_related_name
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.registy import Registry
@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
     from undine import FilterSet, GQLInfo, InterfaceType, OrderSet
-    from undine.directives import Directive
     from undine.optimizer.optimizer import OptimizationData
     from undine.typing import (
         DjangoRequestProtocol,
@@ -60,7 +59,7 @@ class QueryTypeMeta(type):
     __field_map__: dict[str, Field]
     __schema_name__: str
     __interfaces__: Collection[type[InterfaceType]]
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -103,12 +102,14 @@ class QueryTypeMeta(type):
 
         query_type.__field_map__ = get_members(query_type, Field)
         query_type.__schema_name__ = kwargs.get("schema_name", _name)
-        query_type.__interfaces__ = []
-        query_type.__directives__ = kwargs.get("directives", [])
-        query_type.__extensions__ = kwargs.get("extensions", {})
         query_type.__attribute_docstrings__ = parse_class_attribute_docstrings(query_type)
 
-        check_directives(query_type.__directives__, location=DirectiveLocation.OBJECT)
+        query_type.__interfaces__ = []
+
+        directives = kwargs.get("directives", [])
+        query_type.__directives__ = DirectiveList(directives, location=DirectiveLocation.OBJECT)
+
+        query_type.__extensions__ = kwargs.get("extensions", {})
         query_type.__extensions__[undine_settings.QUERY_TYPE_EXTENSIONS_KEY] = query_type
 
         register = kwargs.get("register", True)
@@ -120,6 +121,9 @@ class QueryTypeMeta(type):
 
         for interface in interfaces:
             interface.__inherit__(query_type)  # type: ignore[arg-type]
+
+        for directive in query_type.__directives__:
+            directive.__connected__(query_type)
 
         return query_type
 
@@ -154,12 +158,6 @@ class QueryTypeMeta(type):
         """
         # Purposely not using `isinstance` here since models can inherit from other models.
         return type(value) is cls.__model__
-
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this query."""
-        check_directives([directive], location=DirectiveLocation.OBJECT)
-        cls.__directives__.append(directive)
-        return cls
 
 
 class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
@@ -213,7 +211,7 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
     __field_map__: ClassVar[dict[str, Field]]
     __schema_name__: ClassVar[str]
     __interfaces__: ClassVar[Collection[type[InterfaceType]]]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -266,7 +264,7 @@ class Field:
         :param nullable: Whether the referenced type can be null.
         :param description: Description for the `Field`.
         :param deprecation_reason: If the `Field` is deprecated, describes the reason for deprecation.
-        :param complexity: The complexity of resolving this field.
+        :param complexity: The complexity of resolving this `Field`.
         :param field_name: Name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name of the `Field` in the GraphQL schema. Can be used to alias the `Field`
                             for the schema, or when the desired name is a Python keyword (e.g. `if` or `from`).
@@ -282,10 +280,14 @@ class Field:
         self.complexity: int = kwargs.get("complexity", Undefined)  # type: ignore[assignment]
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.FIELD_DEFINITION)
+        directives = kwargs.get("directives", [])
+        if self.complexity:
+            directives.append(ComplexityDirective(value=self.complexity))
+
+        self.directives = DirectiveList(directives, location=DirectiveLocation.FIELD_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.FIELD_EXTENSIONS_KEY] = self
 
         self.resolver_func: GraphQLFieldResolver | None = None
@@ -311,10 +313,15 @@ class Field:
             self.nullable = is_field_nullable(self.ref, caller=self)
         if self.complexity is Undefined:
             self.complexity = convert_to_field_complexity(self.ref, caller=self)
+            if self.complexity:
+                self.directives.append(ComplexityDirective(value=self.complexity))
         if self.description is Undefined:
             self.description = self.query_type.__attribute_docstrings__.get(name)
             if self.description is None:
                 self.description = convert_to_description(self.ref)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __call__(self, ref: GraphQLFieldResolver, /) -> Field:
         """Called when using as decorator with parenthesis: @Field(...)"""
@@ -414,12 +421,6 @@ class Field:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this field."""
-        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
-        self.directives.append(directive)
-        return self
 
 
 def get_fields_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Field]:

@@ -233,9 +233,6 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_field = get_undine_field(field)
         if undine_field is not None:
-            if undine_field.complexity != 0:
-                field_str += f" @complexity(value: {undine_field.complexity})"
-
             for directive in undine_field.directives:
                 field_str += cls.print_directive_usage(directive)
 

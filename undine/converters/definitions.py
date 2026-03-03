@@ -94,7 +94,6 @@ Arguments:
 `ref: Any`: The reference to parse description from.
 """
 
-
 convert_to_entrypoint_ref: FunctionDispatcher[Any] = FunctionDispatcher()
 """
 Convert the given value to a reference that Entrypoint can deal with.
@@ -105,7 +104,6 @@ Arguments:
 
 `caller: Entrypoint`: Entrypoint instance that is calling this function.
 """
-
 
 convert_to_entrypoint_resolver: FunctionDispatcher[GraphQLFieldResolver] = FunctionDispatcher()
 """
@@ -231,7 +229,6 @@ Arguments:
 
 `caller: Order`: The Order instance that is calling this function.
 """
-
 
 extend_expression: FunctionDispatcher[DjangoExpression] = FunctionDispatcher()
 """

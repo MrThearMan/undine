@@ -8,13 +8,12 @@ from django.core.exceptions import ValidationError
 from graphql import DirectiveLocation, GraphQLScalarType
 from graphql.pyutils import inspect
 
-from undine.directives import Directive
+from undine.directives import Directive, DirectiveList
 from undine.exceptions import GraphQLScalarConversionError, GraphQLScalarTypeNotSupportedError
 from undine.settings import undine_settings
 from undine.typing import DispatchProtocol, T
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql.type_registry import get_or_create_graphql_scalar
-from undine.utils.graphql.utils import check_directives
 from undine.utils.text import dotpath
 
 __all__ = [
@@ -54,10 +53,9 @@ class ScalarType(Generic[TParse, TSerialize]):
         self.name = name
         self.description = description
         self.specified_by_url = specified_by_url
-        self.directives = directives or []
-        self.extensions = extensions or {}
+        self.directives = DirectiveList(directives, location=DirectiveLocation.SCALAR)
 
-        check_directives(self.directives, location=DirectiveLocation.SCALAR)
+        self.extensions = extensions or {}
         self.extensions[undine_settings.SCALAR_EXTENSIONS_KEY] = self
 
         error_wrapper = handle_scalar_errors(name)
@@ -84,12 +82,6 @@ class ScalarType(Generic[TParse, TSerialize]):
             specified_by_url=self.specified_by_url,
             extensions=self.extensions,
         )
-
-    def __add_directive__(self, directive: Directive, /) -> ScalarType:
-        """Add a directive to this scalar."""
-        check_directives([directive], location=DirectiveLocation.SCALAR)
-        self.directives.append(directive)
-        return self
 
 
 def handle_scalar_errors(typename: str) -> Callable[[DispatchProtocol[T]], DispatchProtocol[T]]:

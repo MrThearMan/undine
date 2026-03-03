@@ -32,7 +32,7 @@ from undine import (
     QueryType,
     UnionType,
 )
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import ComplexityDirective, Directive, DirectiveArgument
 from undine.relay import Connection, Node
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 
@@ -130,7 +130,7 @@ class ExampleCalculation(Calculation[int]):
 class TaskType(QueryType[Task]):
     """Task Node description."""
 
-    name = Field()
+    name = Field() @ ComplexityDirective(value=1)
 
     name_upper = Field(Upper("name"), complexity=1)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Hashable
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
@@ -19,6 +19,7 @@ from undine.converters import (
     is_many,
 )
 from undine.dataclasses import MaybeManyOrNonNull
+from undine.directives import DirectiveList
 from undine.exceptions import MissingModelGenericError, MutationTypeKindCannotBeDeterminedError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
@@ -28,7 +29,6 @@ from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
-from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
 from undine.utils.mutation_tree import mutate
 from undine.utils.reflection import (
@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType, GraphQLObjectType
 
     from undine import QueryType
-    from undine.directives import Directive
     from undine.typing import (
         ConvertionFunc,
         DefaultValueType,
@@ -75,7 +74,7 @@ class MutationTypeMeta(type):
     __kind__: MutationKind
     __related_action__: RelatedAction
     __schema_name__: str
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -138,11 +137,12 @@ class MutationTypeMeta(type):
         mutation_type.__kind__ = mutation_kind
         mutation_type.__related_action__ = RelatedAction(kwargs.get("related_action", RelatedAction.null))
         mutation_type.__schema_name__ = kwargs.get("schema_name", _name)
-        mutation_type.__directives__ = kwargs.get("directives", [])
-        mutation_type.__extensions__ = kwargs.get("extensions", {})
         mutation_type.__attribute_docstrings__ = parse_class_attribute_docstrings(mutation_type)
 
-        check_directives(mutation_type.__directives__, location=DirectiveLocation.INPUT_OBJECT)
+        directives = kwargs.get("directives", [])
+        mutation_type.__directives__ = DirectiveList(directives, location=DirectiveLocation.INPUT_OBJECT)
+
+        mutation_type.__extensions__ = kwargs.get("extensions", {})
         mutation_type.__extensions__[undine_settings.MUTATION_TYPE_EXTENSIONS_KEY] = mutation_type
 
         for name, input_ in mutation_type.__input_map__.items():
@@ -156,6 +156,9 @@ class MutationTypeMeta(type):
         mutation_type.__related_inputs__ = get_input_subset(lambda i: is_subclass(i.ref, MutationType))
         mutation_type.__function_inputs__ = get_input_subset(lambda i: isinstance(i.ref, FunctionType))
         mutation_type.__model_inputs__ = get_input_subset(lambda i: is_subclass(i.ref, Model))
+
+        for directive in mutation_type.__directives__:
+            directive.__connected__(mutation_type)
 
         return mutation_type
 
@@ -211,12 +214,6 @@ class MutationTypeMeta(type):
                 input_data[key] = inpt.convertion_func(inpt, value)
         return input_data
 
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this mutation."""
-        check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
-        cls.__directives__.append(directive)
-        return cls
-
 
 class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     """
@@ -258,7 +255,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __kind__: ClassVar[MutationKind]
     __related_action__: ClassVar[RelatedAction]
     __schema_name__: ClassVar[str]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -347,10 +344,11 @@ class Input:
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+        directives = kwargs.get("directives", [])
+        self.directives = DirectiveList(directives, location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.INPUT_EXTENSIONS_KEY] = self
 
         self.validator_func: ValidatorFunc | None = None
@@ -388,6 +386,9 @@ class Input:
 
         if not isinstance(self.default_value, Hashable):
             handle_non_hashable_default_values(self)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __call__(self, ref: GraphQLFieldResolver, /) -> Input:
         """Called when using as decorator with parenthesis: @Input(...)"""
@@ -479,12 +480,6 @@ class Input:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this input."""
-        check_directives([directive], location=DirectiveLocation.INPUT_FIELD_DEFINITION)
-        self.directives.append(directive)
-        return self
 
 
 def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) -> dict[str, Input]:

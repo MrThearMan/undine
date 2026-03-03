@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
 
 from django.db.models import ForeignKey
 from graphql import (
-    DocumentNode,
     ExecutionResult,
     FieldNode,
+    FragmentDefinitionNode,
     GraphQLEnumType,
     GraphQLError,
     GraphQLIncludeDirective,
@@ -29,6 +29,7 @@ from graphql import (
 
 from undine.exceptions import (
     DirectiveLocationError,
+    DirectiveRepeatedError,
     GraphQLErrorGroup,
     GraphQLRequestMultipleOperationsNoOperationNameError,
     GraphQLRequestNoOperationError,
@@ -68,7 +69,7 @@ __all__ = [
     "check_directives",
     "get_arguments",
     "get_error_execution_result",
-    "get_error_execution_result",
+    "get_fragment_definitions",
     "get_operation_definition",
     "get_operation_type",
     "get_queried_field_name",
@@ -158,6 +159,14 @@ def get_operation_definition(document: DocumentNode, operation_name: str | None)
             return definition
 
     raise GraphQLRequestOperationNotFoundError(operation_name=operation_name)
+
+
+def get_fragment_definitions(document: DocumentNode) -> dict[str, FragmentDefinitionNode]:
+    return {
+        definition.name.value: definition
+        for definition in document.definitions
+        if isinstance(definition, FragmentDefinitionNode)
+    }
 
 
 def get_operation_type(document: DocumentNode, operation_name: str | None) -> OperationType:
@@ -298,13 +307,20 @@ def graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Genera
 
 
 def check_directives(directives: Iterable[Directive] | None, *, location: DirectiveLocation) -> None:
-    """Check that given directives are allowed in the given location."""
+    """Check that given directives are allowed in the given location and are not repeated if not allowed to."""
     if directives is None:
         return
+
+    seen_directives: set[type[Directive]] = set()
 
     for directive in directives:
         if location not in directive.__locations__:
             raise DirectiveLocationError(directive=directive, location=location)
+
+        if not directive.__is_repeatable__ and type(directive) in seen_directives:
+            raise DirectiveRepeatedError(directive=directive)
+
+        seen_directives.add(type(directive))
 
 
 def graphql_errors_hook(errors: list[GraphQLError]) -> list[GraphQLError]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -13,17 +13,16 @@ from undine.converters import (
     convert_to_graphql_type,
 )
 from undine.dataclasses import MaybeManyOrNonNull
+from undine.directives import ComplexityDirective, DirectiveList
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
-from undine.utils.graphql.utils import check_directives
 from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
-    from undine.directives import Directive
     from undine.typing import EntrypointParams, EntrypointPermFunc, RootTypeParams, VisibilityFunc
 
 __all__ = [
@@ -38,7 +37,7 @@ class RootTypeMeta(type):
     # Set in '__new__'
     __entrypoint_map__: dict[str, Entrypoint]
     __schema_name__: str
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -57,15 +56,19 @@ class RootTypeMeta(type):
         # Members should use `__dunder__` names to avoid name collisions with possible `Entrypoint` names.
         root_type.__entrypoint_map__ = get_members(root_type, Entrypoint)
         root_type.__schema_name__ = kwargs.get("schema_name", _name)
-        root_type.__directives__ = kwargs.get("directives", [])
-        root_type.__extensions__ = kwargs.get("extensions", {})
         root_type.__attribute_docstrings__ = parse_class_attribute_docstrings(root_type)
 
-        check_directives(root_type.__directives__, location=DirectiveLocation.OBJECT)
+        directives = kwargs.get("directives", [])
+        root_type.__directives__ = DirectiveList(directives, location=DirectiveLocation.OBJECT)
+
+        root_type.__extensions__ = kwargs.get("extensions", {})
         root_type.__extensions__[undine_settings.ROOT_TYPE_EXTENSIONS_KEY] = root_type
 
         for name, entrypoint in root_type.__entrypoint_map__.items():
             entrypoint.__connect__(root_type, name)  # type: ignore[arg-type]
+
+        for directive in root_type.__directives__:
+            directive.__connected__(root_type)
 
         return root_type
 
@@ -86,12 +89,6 @@ class RootTypeMeta(type):
             entrypoint.schema_name: entrypoint.as_graphql_field()  # ...
             for entrypoint in cls.__entrypoint_map__.values()
         }
-
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this `RootType`."""
-        check_directives([directive], location=DirectiveLocation.OBJECT)
-        cls.__directives__.append(directive)
-        return cls
 
 
 class RootType(metaclass=RootTypeMeta):
@@ -121,7 +118,7 @@ class RootType(metaclass=RootTypeMeta):
     # Set in metaclass
     __entrypoint_map__: ClassVar[dict[str, Entrypoint]]
     __schema_name__: ClassVar[str]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -147,7 +144,7 @@ class Entrypoint:
         :param limit: For list Entrypoints, limits the number of objects that are fetched.
         :param description: Description for the `Entrypoint`.
         :param deprecation_reason: If the `Entrypoint` is deprecated, describes the reason for deprecation.
-        :param complexity: The complexity of resolving this field (not the entire Entrypoint).
+        :param complexity: The complexity of resolving this `Entrypoint` (not the entire query!).
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `Entrypoint`.
         :param extensions: GraphQL extensions for the `Entrypoint`.
@@ -161,10 +158,14 @@ class Entrypoint:
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.complexity: int = kwargs.get("complexity", 0)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.FIELD_DEFINITION)
+        directives = kwargs.get("directives", [])
+        if self.complexity:
+            directives.append(ComplexityDirective(value=self.complexity))
+
+        self.directives = DirectiveList(directives, location=DirectiveLocation.FIELD_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.ENTRYPOINT_EXTENSIONS_KEY] = self
 
         self.resolver_func: GraphQLFieldResolver | None = None
@@ -183,6 +184,9 @@ class Entrypoint:
             self.description = self.root_type.__attribute_docstrings__.get(name)
             if self.description is None:
                 self.description = convert_to_description(self.ref)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __call__(self, ref: GraphQLFieldResolver, /) -> Entrypoint:
         """Called when using as decorator with parenthesis: @Entrypoint()"""
@@ -273,9 +277,3 @@ class Entrypoint:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this entrypoint."""
-        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
-        self.directives.append(directive)
-        return self
