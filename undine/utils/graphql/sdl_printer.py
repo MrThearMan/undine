@@ -179,7 +179,7 @@ class SDLPrinter:  # noqa: PLR0904
                 object_type_str += cls.print_directive_usage(directive)
 
         if object_type.fields:
-            fields = starmap(cls.print_field, object_type.fields.items())
+            fields = starmap(cls.print_field, sorted(object_type.fields.items()))
             object_type_str += cls.print_block(fields)
 
         description = cls.print_docstring(object_type.description)
@@ -201,7 +201,7 @@ class SDLPrinter:  # noqa: PLR0904
                 interface_type_str += cls.print_directive_usage(directive)
 
         if interface_type.fields:
-            fields = starmap(cls.print_field, interface_type.fields.items())
+            fields = starmap(cls.print_field, sorted(interface_type.fields.items()))
             interface_type_str += cls.print_block(fields)
 
         description = cls.print_docstring(interface_type.description)
@@ -216,7 +216,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         args_str: str = ""
         if field.args:
-            args: Iterable[str] = starmap(cls.print_field_argument, field.args.items())
+            args: Iterable[str] = starmap(cls.print_field_argument, sorted(field.args.items()))
             if not indent:
                 args = (textwrap.indent(textwrap.dedent(arg), prefix="  ") for arg in args)
 
@@ -295,7 +295,7 @@ class SDLPrinter:  # noqa: PLR0904
                 input_object_type_str += cls.print_directive_usage(directive)
 
         if input_object_type.fields:
-            input_fields = starmap(cls.print_input_field, input_object_type.fields.items())
+            input_fields = starmap(cls.print_input_field, sorted(input_object_type.fields.items()))
             input_object_type_str += cls.print_block(input_fields)
 
         description = cls.print_docstring(input_object_type.description)
@@ -345,7 +345,7 @@ class SDLPrinter:  # noqa: PLR0904
                 enum_str += cls.print_directive_usage(directive)
 
         if enum_type.values:
-            enum_values = starmap(cls.print_enum_value, enum_type.values.items())
+            enum_values = starmap(cls.print_enum_value, sorted(enum_type.values.items()))
             enum_str += cls.print_block(enum_values)
 
         description = cls.print_docstring(enum_type.description)
@@ -421,7 +421,7 @@ class SDLPrinter:  # noqa: PLR0904
         directive_str = f"directive @{directive.name}"
 
         if directive.args:
-            args = starmap(cls.print_directive_argument, directive.args.items())
+            args = starmap(cls.print_directive_argument, sorted(directive.args.items()))
             directive_str += "(\n" + "\n".join(args) + "\n)"
 
         if directive.is_repeatable:

@@ -73,11 +73,11 @@ def test_filterset__str() -> None:
     assert str(MyFilterSet) == cleandoc(
         """
         input MyFilterSet {
-          name: String
-          NOT: MyFilterSet
           AND: MyFilterSet
+          NOT: MyFilterSet
           OR: MyFilterSet
           XOR: MyFilterSet
+          name: String
         }
         """
     )
@@ -293,11 +293,11 @@ def test_filterset__directives() -> None:
     assert str(MyFilterSet) == cleandoc(
         """
         input MyFilterSet @value(value: "foo") {
-          name: String
-          NOT: MyFilterSet
           AND: MyFilterSet
+          NOT: MyFilterSet
           OR: MyFilterSet
           XOR: MyFilterSet
+          name: String
         }
         """
     )
@@ -327,11 +327,11 @@ def test_filterset__directives__decorator() -> None:
     assert str(MyFilterSet) == cleandoc(
         """
         input MyFilterSet @value(value: "foo") {
-          name: String
-          NOT: MyFilterSet
           AND: MyFilterSet
+          NOT: MyFilterSet
           OR: MyFilterSet
           XOR: MyFilterSet
+          name: String
         }
         """
     )
