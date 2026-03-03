@@ -136,6 +136,9 @@ class QueryTypeMeta(type):
         QueryTypeMeta.__model__ = model
         return cls  # type: ignore[return-value]
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__field_map__
+
     def __output_type__(cls) -> GraphQLObjectType:
         """Creates a GraphQL `ObjectType` for this `QueryType`."""
         return get_or_create_graphql_object_type(

@@ -75,6 +75,9 @@ class RootTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_object_type(cls.__output_type__())
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__entrypoint_map__
+
     def __output_type__(cls) -> GraphQLObjectType:
         """Creates the GraphQL `ObjectType` for this `RootType`."""
         return get_or_create_graphql_object_type(

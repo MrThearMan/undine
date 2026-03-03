@@ -89,6 +89,9 @@ class InterfaceTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_interface_type(cls.__interface__())
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__field_map__
+
     def __call__(cls, implementation: type[TInterfaceQueryType]) -> type[TInterfaceQueryType]:
         """
         Allow iheriting this InterfaceType to a QueryType or another InterfaceType using a decorator syntax.
