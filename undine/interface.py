@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
+from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type, is_many
+from undine.dataclasses import TypeRef
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QueryType
 from undine.settings import undine_settings
@@ -56,16 +59,12 @@ class InterfaceTypeMeta(type):
         interfaces = kwargs.get("interfaces", [])
         interfaces = get_with_inherited_interfaces(interfaces)
 
-        for interface in interfaces:
-            for field_name, interface_field in interface.__field_map__.items():
-                _attrs.setdefault(field_name, interface_field)
-
         interface_type = super().__new__(cls, _name, _bases, _attrs)
 
         # Members should use `__dunder__` names to avoid name collisions with possible `InterfaceField` names.
         interface_type.__field_map__ = get_members(interface_type, InterfaceField)
         interface_type.__schema_name__ = kwargs.get("schema_name", _name)
-        interface_type.__interfaces__ = interfaces
+        interface_type.__interfaces__ = []
         interface_type.__implementations__ = []
         interface_type.__directives__ = kwargs.get("directives", [])
         interface_type.__extensions__ = kwargs.get("extensions", {})
@@ -74,11 +73,11 @@ class InterfaceTypeMeta(type):
         check_directives(interface_type.__directives__, location=DirectiveLocation.INTERFACE)
         interface_type.__extensions__[undine_settings.INTERFACE_TYPE_EXTENSIONS_KEY] = interface_type
 
-        for interface in interfaces:
-            interface.__register_as_implementation__(interface_type)  # type: ignore[arg-type]
-
         for name, interface_field in interface_type.__field_map__.items():
             interface_field.__connect__(interface_type, name)  # type: ignore[arg-type]
+
+        for interface in interfaces:
+            interface.__inherit__(interface_type)  # type: ignore[arg-type]
 
         return interface_type
 
@@ -94,21 +93,38 @@ class InterfaceTypeMeta(type):
         >>> @Named
         >>> class TaskType(QueryType[Task]): ...
         """
+        cls.__inherit__(implementation)
+        return implementation
+
+    def __inherit__(cls, implementation: type[TInterfaceQueryType]) -> None:
+        """Make the given `QueryType` or `InterfaceType` inherit from this `InterfaceType`."""
         if is_subclass(implementation, QueryType):
             for field_name, interface_field in cls.__field_map__.items():
+                existing = implementation.__field_map__.get(field_name)
+                if existing is not None:
+                    interface_field.check_inheritance(existing)
+                    continue
+
                 field = interface_field.as_undine_field()
                 setattr(implementation, field_name, field)
                 implementation.__field_map__[field_name] = field
                 field.__connect__(implementation, field_name)
+                interface_field.check_inheritance(field)
 
         elif is_subclass(implementation, InterfaceType):
             for field_name, interface_field in cls.__field_map__.items():
-                setattr(implementation, field_name, interface_field)
-                implementation.__field_map__[field_name] = interface_field
+                existing = implementation.__field_map__.get(field_name)
+                if existing is not None:
+                    interface_field.check_inheritance(existing)
+                    continue
+
+                copy_field = copy.deepcopy(interface_field)
+                setattr(implementation, field_name, copy_field)
+                implementation.__field_map__[field_name] = copy_field
+                copy_field.__connect__(implementation, field_name)
 
         implementation.__interfaces__.append(cls)  # type: ignore[assignment]
         cls.__register_as_implementation__(implementation)
-        return implementation
 
     def __register_as_implementation__(cls, implementation: type[InterfaceType | QueryType]) -> None:
         cls.__implementations__.append(implementation)
@@ -157,8 +173,8 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
      `extensions: dict[str, Any] = {}`
         GraphQL extensions for the created `GraphQLInterfaceType`.
 
-    >>> class Node(InterfaceType)
-    >>>     id = InterfaceField(GraphQLNonNull(GraphQLID), field_name="pk")
+    >>> class Named(InterfaceType)
+    >>>     name = InterfaceField(GraphQLNonNull(GraphQLString))
     """
 
     # Set in metaclass
@@ -232,10 +248,17 @@ class InterfaceField:
         field = self.as_graphql_field()
         return undine_settings.SDL_PRINTER.print_field(self.schema_name, field, indent=False)
 
+    def get_field_type(self) -> GraphQLOutputType:
+        return convert_to_graphql_type(TypeRef(value=self.ref))
+
+    def get_field_arguments(self) -> GraphQLArgumentMap | None:
+        many = is_many(self.ref, name=self.field_name)
+        return convert_to_graphql_argument_map(self.ref, many=many)
+
     def as_graphql_field(self) -> GraphQLField:
         return GraphQLField(
-            type_=self.output_type,
-            args=self.args,
+            type_=self.get_field_type(),
+            args=self.get_field_arguments(),
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             extensions=self.extensions,

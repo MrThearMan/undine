@@ -472,7 +472,7 @@ class SDLPrinter:  # noqa: PLR0904
         args: list[str] = []
         for parameter, value in directive.__parameters__.items():
             arg = directive.__arguments__[parameter]
-            value_ast = ast_from_value(value, arg.input_type)
+            value_ast = ast_from_value(value, arg.get_argument_type())
             if value_ast is None:
                 continue
 

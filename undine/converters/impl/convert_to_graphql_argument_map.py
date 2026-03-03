@@ -267,14 +267,14 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLArgumentMap:
 
 @convert_to_graphql_argument_map.register
 def _(ref: InterfaceField, **kwargs: Any) -> GraphQLArgumentMap:
-    return ref.args
+    return ref.get_field_arguments()
 
 
 @convert_to_graphql_argument_map.register
 def _(ref: type[Node], **kwargs: Any) -> GraphQLArgumentMap:
     return {
         ref.id.schema_name: GraphQLArgument(
-            ref.id.output_type,  # type: ignore[arg-type]
+            ref.id.get_field_type(),
             description=ref.id.description,
             out_name=ref.id.name,
         ),
