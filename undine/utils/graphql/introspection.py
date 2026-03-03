@@ -45,7 +45,6 @@ from .undine_extensions import (
     get_undine_union_type,
 )
 from .utils import get_underlying_type
-from .validation_rules.one_of_input_object import is_one_of_input_object
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -505,7 +504,7 @@ def resolve_type_of_type(gql_type: GraphQLType, info: GQLInfo) -> GraphQLType | 
 
 def resolve_type_is_one_of(gql_type: GraphQLType, info: GQLInfo) -> bool | None:
     if isinstance(gql_type, GraphQLInputObjectType):
-        return is_one_of_input_object(gql_type)
+        return gql_type.is_one_of
     return None
 
 
