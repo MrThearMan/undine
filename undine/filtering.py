@@ -137,6 +137,9 @@ class FilterSetMeta(type):
         FilterSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
         return cls  # type: ignore[return-value]
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__filter_map__
+
     def __call__(cls, ref: T) -> T:
         """
         Allow adding this FilterSet to a QueryType using a decorator syntax

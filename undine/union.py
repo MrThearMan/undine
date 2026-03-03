@@ -97,6 +97,9 @@ class UnionTypeMeta(type):
         UnionTypeMeta.__query_types__ = query_types
         return cls  # type: ignore[return-value]
 
+    def __contains__(cls, item: type[QueryType]) -> bool:
+        return item in cls.__query_types_by_model__.values()
+
     def __resolve_type__(cls, value: Any, info: GQLInfo, abstract_type: GraphQLAbstractType) -> str:
         if not isinstance(value, Model):
             raise GraphQLUnionResolveTypeInvalidValueError(name=cls.__schema_name__, value=value)

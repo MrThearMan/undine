@@ -171,6 +171,9 @@ class MutationTypeMeta(type):
         MutationTypeMeta.__model__ = model
         return cls  # type: ignore[return-value]
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__input_map__
+
     def __input_type__(cls) -> GraphQLInputObjectType:
         """Create the `GraphQLInputObjectType` for this `MutationType`."""
         return get_or_create_graphql_input_object_type(

@@ -99,6 +99,9 @@ class DirectiveMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_directive(cls.__directive__())
 
+    def __contains__(cls, item: str) -> bool:
+        return item in cls.__arguments__
+
     def __directive__(cls) -> GraphQLDirective:
         """Creates the `GraphQLDirective` for this `Directive`."""
         return get_or_create_graphql_directive(
