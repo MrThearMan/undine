@@ -87,9 +87,6 @@ class QueryTypeMeta(type):
             _attrs |= get_fields_for_model(model, exclude=exclude)
 
         interfaces = kwargs.get("interfaces", [])
-        for interface in interfaces:
-            for field_name, interface_field in interface.__field_map__.items():
-                _attrs.setdefault(field_name, interface_field.as_undine_field())
 
         query_type = super().__new__(cls, _name, _bases, _attrs)
 
@@ -106,7 +103,7 @@ class QueryTypeMeta(type):
 
         query_type.__field_map__ = get_members(query_type, Field)
         query_type.__schema_name__ = kwargs.get("schema_name", _name)
-        query_type.__interfaces__ = interfaces
+        query_type.__interfaces__ = []
         query_type.__directives__ = kwargs.get("directives", [])
         query_type.__extensions__ = kwargs.get("extensions", {})
         query_type.__attribute_docstrings__ = parse_class_attribute_docstrings(query_type)
@@ -114,15 +111,15 @@ class QueryTypeMeta(type):
         check_directives(query_type.__directives__, location=DirectiveLocation.OBJECT)
         query_type.__extensions__[undine_settings.QUERY_TYPE_EXTENSIONS_KEY] = query_type
 
-        for interface in interfaces:
-            interface.__register_as_implementation__(query_type)  # type: ignore[arg-type]
-
         register = kwargs.get("register", True)
         if register:
             QUERY_TYPE_REGISTRY[model] = query_type  # type: ignore[assignment]
 
         for name, field in query_type.__field_map__.items():
             field.__connect__(query_type, name)  # type: ignore[arg-type]
+
+        for interface in interfaces:
+            interface.__inherit__(query_type)  # type: ignore[arg-type]
 
         return query_type
 

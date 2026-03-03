@@ -3,7 +3,7 @@ from __future__ import annotations
 from inspect import cleandoc
 
 import pytest
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLField, GraphQLNonNull, GraphQLString, Undefined
+from graphql import DirectiveLocation, GraphQLField, GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Task
 from undine import Field, InterfaceType, QueryType
@@ -146,8 +146,7 @@ def test_interface_type__interface_field() -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
-    assert Named.name.output_type == GraphQLNonNull(GraphQLString)
-    assert Named.name.args == {}
+    assert Named.name.ref == GraphQLNonNull(GraphQLString)
     assert Named.name.description is None
     assert Named.name.deprecation_reason is None
     assert Named.name.schema_name == "name"
@@ -167,21 +166,6 @@ def test_interface_type__interface_field__repr() -> None:
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
     assert repr(Named.name) == "<undine.interface.InterfaceField(ref=<GraphQLNonNull <GraphQLScalarType 'String'>>)>"
-
-
-def test_interface_type__interface_field__args() -> None:
-    class Named(InterfaceType):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), args={"foo": GraphQLArgument(GraphQLString)})
-
-    assert Named.name.args == {"foo": GraphQLArgument(GraphQLString)}
-
-    assert str(Named.name) == cleandoc(
-        """
-        name(
-          foo: String
-        ): String!
-        """
-    )
 
 
 def test_interface_type__interface_field__description() -> None:
@@ -276,16 +260,6 @@ def test_interface_type__interface_field__as_graphql_field() -> None:
     assert field.description is None
     assert field.deprecation_reason is None
     assert field.extensions == {"undine_interface_field": Named.name}
-
-
-def test_interface_type__interface_field__as_graphql_field__args() -> None:
-    class Named(InterfaceType):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), args={"foo": GraphQLArgument(GraphQLString)})
-
-    field = Named.name.as_graphql_field()
-
-    assert isinstance(field, GraphQLField)
-    assert field.args == {"foo": GraphQLArgument(GraphQLString)}
 
 
 def test_interface_type__interface_field__as_undine_field() -> None:

@@ -375,7 +375,35 @@ def test_convert_to_field_ref__interface_field__type_mismatch() -> None:
     with pytest.raises(InterfaceFieldTypeMismatchError):
 
         @Named
+        class TaskType(QueryType[Task], auto=False): ...
+
+
+def test_convert_to_field_ref__interface_field__type_mismatch__as_keyword() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLString)
+
+    with pytest.raises(InterfaceFieldTypeMismatchError):
+
+        class TaskType(QueryType[Task], auto=False, interfaces=[Named]): ...
+
+
+def test_convert_to_field_ref__interface_field__type_mismatch__already_defined() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLString)
+
+    with pytest.raises(InterfaceFieldTypeMismatchError):
+
+        @Named
         class TaskType(QueryType[Task]): ...
+
+
+def test_convert_to_field_ref__interface_field__type_mismatch__already_defined__as_keyword() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLString)
+
+    with pytest.raises(InterfaceFieldTypeMismatchError):
+
+        class TaskType(QueryType[Task], interfaces=[Named]): ...
 
 
 def test_convert_to_field_ref__interface_field__node() -> None:

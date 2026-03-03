@@ -108,6 +108,7 @@ from undine.exceptions import (
     GraphQLValidationAbortedError,
     GraphQLValidationError,
     InterfaceFieldDoesNotExistError,
+    InterfaceFieldNodeIDError,
     InterfaceFieldTypeMismatchError,
     InvalidDocstringParserError,
     InvalidEntrypointMutationTypeError,
@@ -264,6 +265,13 @@ class UndineErrorParams(NamedTuple):
             message=(
                 "Field 'foo' from interface 'tests.test_exceptions.MyClass' does not exist "
                 "on Model 'example_project.app.models.Task'."
+            ),
+        ),
+        "InterfaceFieldNodeIDError": UndineErrorParams(
+            cls=InterfaceFieldNodeIDError,
+            args={"interface": MyClass},
+            message=(
+                "Interface 'tests.test_exceptions.MyClass' has a 'id' should use or inherit `undine.relay.NodeIDField`."
             ),
         ),
         "InterfaceFieldTypeMismatchError": UndineErrorParams(

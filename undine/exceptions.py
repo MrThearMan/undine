@@ -147,6 +147,15 @@ class InterfaceFieldDoesNotExistError(UndineError):
     msg = "Field '{field}' from interface '{interface:dotpath}' does not exist on Model '{model:dotpath}'."
 
 
+class InterfaceFieldNodeIDError(UndineError):
+    """
+    Error raised when an InterfaceType is trying to inherit Node, but it has a "id" field
+    that is not a `NodeIDField`.
+    """
+
+    msg = "Interface '{interface:dotpath}' has a 'id' should use or inherit `undine.relay.NodeIDField`."
+
+
 class InterfaceFieldTypeMismatchError(UndineError):
     """
     Error raised when a QueryType is trying to inherit a field from an InterfaceType,

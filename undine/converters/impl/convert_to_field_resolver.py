@@ -144,9 +144,8 @@ def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
 
 @convert_to_field_resolver.register
 def _(ref: InterfaceField, **kwargs: Any) -> GraphQLFieldResolver:
-    # Attempt to find a resolver for the GraphQL scalar (e.g. ID).
     with suppress(FunctionDispatcherError):
-        return convert_to_field_resolver(ref.output_type, **kwargs)
+        return convert_to_field_resolver(ref.ref, **kwargs)
 
     caller: Field = kwargs["caller"]
     field = get_model_field(model=caller.query_type.__model__, lookup=caller.field_name)
