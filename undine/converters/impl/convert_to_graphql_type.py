@@ -186,49 +186,80 @@ def _(_: type[uuid.UUID], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType
 
 
 @convert_to_graphql_type.register
-def _(ref: type[Enum | StrEnum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(ref: type[Enum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    values: dict[str, GraphQLEnumValue] = {}
+    member: Enum
+    for member in ref.__members__.values():
+        key = str(member.name)
+        value = str(member.value)
+        values[key] = GraphQLEnumValue(value=member, description=value if value != key else None)
+
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={
-            str(value.value): GraphQLEnumValue(value=value, description=str(value.value))
-            for name, value in ref.__members__.items()
-        },
+        values=values,
+        description=convert_to_description(ref),
+    )
+
+
+@convert_to_graphql_type.register
+def _(ref: type[StrEnum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    values: dict[str, GraphQLEnumValue] = {}
+    member: StrEnum
+    for member in ref.__members__.values():
+        key = str(member.value)
+        values[key] = GraphQLEnumValue(value=member, description=key if key != member else None)
+
+    return get_or_create_graphql_enum(
+        name=ref.__name__,
+        values=values,
         description=convert_to_description(ref),
     )
 
 
 @convert_to_graphql_type.register
 def _(ref: type[IntEnum], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    values: dict[str, GraphQLEnumValue] = {}
+    member: IntEnum
+    for member in ref.__members__.values():
+        key = str(member.name)
+        value = str(member.value)
+        values[key] = GraphQLEnumValue(value=member, description=f"Value: {value}")
+
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={
-            str(value.name): GraphQLEnumValue(value=value, description=str(value.name))
-            for name, value in ref.__members__.items()
-        },
+        values=values,
         description=convert_to_description(ref),
     )
 
 
 @convert_to_graphql_type.register
 def _(ref: type[TextChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    values: dict[str, GraphQLEnumValue] = {}
+    member: TextChoices
+    for member in ref.__members__.values():
+        key = str(member.value)
+        description = force_str(member.label)
+        values[key] = GraphQLEnumValue(value=member, description=description if description != member else None)
+
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={
-            str(value.value): GraphQLEnumValue(value=value, description=force_str(value.label))
-            for key, value in ref.__members__.items()
-        },
+        values=values,
         description=convert_to_description(ref),
     )
 
 
 @convert_to_graphql_type.register
 def _(ref: type[IntegerChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    values: dict[str, GraphQLEnumValue] = {}
+    member: IntegerChoices
+    for member in ref.__members__.values():
+        key = str(member.name)
+        description = force_str(member.label)
+        values[key] = GraphQLEnumValue(value=member, description=description if description != member else None)
+
     return get_or_create_graphql_enum(
         name=ref.__name__,
-        values={
-            str(value.name): GraphQLEnumValue(value=value, description=force_str(value.label))
-            for key, value in ref.__members__.items()
-        },
+        values=values,
         description=convert_to_description(ref),
     )
 
@@ -758,11 +789,6 @@ def _(
     return ref
 
 
-@convert_to_graphql_type.register
-def _(ref: GraphQLInterfaceType, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    return ref
-
-
 # --- Custom types -------------------------------------------------------------------------------------------------
 
 
@@ -814,7 +840,7 @@ def _(ref: LazyLambda, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: TypeRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     value = convert_to_graphql_type(ref.value, **kwargs)
     nullable = parse_is_nullable(ref.value, is_input=kwargs.get("is_input", False), total=ref.total)
-    if not nullable:
+    if not nullable and not isinstance(value, GraphQLNonNull):
         value = GraphQLNonNull(value)
     return value
 
@@ -928,7 +954,7 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLInputType | GraphQLOutp
 
 @convert_to_graphql_type.register
 def _(ref: InterfaceField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    return ref.output_type
+    return ref.ref
 
 
 @convert_to_graphql_type.register

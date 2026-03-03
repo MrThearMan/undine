@@ -247,8 +247,8 @@ def test_convert_to_graphql_type__enum() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "MyEnum"
     assert result.values == {
-        "foo": GraphQLEnumValue(value=MyEnum.FOO, description="foo"),
-        "bar": GraphQLEnumValue(value=MyEnum.BAR, description="bar"),
+        "FOO": GraphQLEnumValue(value=MyEnum.FOO, description="foo"),
+        "BAR": GraphQLEnumValue(value=MyEnum.BAR, description="bar"),
     }
     assert result.description == "Description."
 
@@ -266,8 +266,8 @@ def test_convert_to_graphql_type__str_enum() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "MyStrEnum"
     assert result.values == {
-        "foo": GraphQLEnumValue(value=MyStrEnum.FOO, description="foo"),
-        "bar": GraphQLEnumValue(value=MyStrEnum.BAR, description="bar"),
+        "foo": GraphQLEnumValue(value=MyStrEnum.FOO),
+        "bar": GraphQLEnumValue(value=MyStrEnum.BAR),
     }
     assert result.description == "Description."
 
@@ -285,8 +285,8 @@ def test_convert_to_graphql_type__int_enum() -> None:
     assert isinstance(result, GraphQLEnumType)
     assert result.name == "MyIntEnum"
     assert result.values == {
-        "FOO": GraphQLEnumValue(value=MyIntEnum.FOO, description="FOO"),
-        "BAR": GraphQLEnumValue(value=MyIntEnum.BAR, description="BAR"),
+        "FOO": GraphQLEnumValue(value=MyIntEnum.FOO, description="Value: 1"),
+        "BAR": GraphQLEnumValue(value=MyIntEnum.BAR, description="Value: 2"),
     }
     assert result.description == "Description."
 
