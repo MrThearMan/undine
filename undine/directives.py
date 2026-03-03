@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from types import MappingProxyType
+from collections import UserList
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
-from graphql import DirectiveLocation, GraphQLArgument, Undefined
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLNonNull, Undefined
 
+from undine.converters import convert_to_graphql_type
+from undine.dataclasses import TypeRef
 from undine.exceptions import (
     MissingDirectiveArgumentError,
     MissingDirectiveLocationsError,
@@ -13,12 +15,14 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.utils.graphql.type_registry import get_or_create_graphql_directive
+from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, get_or_create_graphql_directive
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_members, get_wrapped_func, has_callable_attribute
+from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from graphql import GraphQLDirective, GraphQLInputType
 
     from undine import CalculationArgument, Entrypoint, Field, Filter, Order
@@ -39,8 +43,11 @@ if TYPE_CHECKING:
     from undine.union import UnionTypeMeta
 
 __all__ = [
+    "AtomicDirective",
+    "ComplexityDirective",
     "Directive",
     "DirectiveArgument",
+    "DirectiveList",
 ]
 
 
@@ -84,9 +91,8 @@ class DirectiveMeta(type):
         for name, argument in directive.__arguments__.items():
             argument.__connect__(directive, name)  # type: ignore[arg-type]
 
-        # Create the GraphQL directive to register it.
-        # This way it shows up in the GraphQL schema automatically.
-        directive.__directive__()
+        # Set the directive to the directive registry so that it shows up in the GraphQL schema automatically.
+        DIRECTIVE_REGISTRY[directive.__schema_name__] = directive  # type: ignore[assignment]
 
         return directive
 
@@ -153,7 +159,7 @@ class Directive(metaclass=DirectiveMeta):
         if kwargs:
             raise UnexpectedDirectiveArgumentError(directive=type(self), kwargs=kwargs)
 
-        self.__parameters__: MappingProxyType[str, Any] = MappingProxyType(parameters)
+        self.__parameters__ = parameters
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
@@ -187,7 +193,7 @@ class Directive(metaclass=DirectiveMeta):
         >>> @MyDirective()
         >>> class TaskType(QueryType[Task]): ...
         """
-        self.__add_directive__(other)
+        self.__connect__(other)
         return other
 
     def __rmatmul__(self, other: T) -> T:
@@ -199,16 +205,17 @@ class Directive(metaclass=DirectiveMeta):
         >>> class TaskType(QueryType[Task]):
         >>>     name = Field() @ MyDirective()
         """
-        self.__add_directive__(other)
+        self.__connect__(other)
         return other
 
-    def __add_directive__(self, other: T) -> T:
-        if has_callable_attribute(other, "add_directive"):
+    def __connect__(self, other: T) -> None:
+        if isinstance(getattr(other, "directives", None), DirectiveList):
             other: CalculationArgument | Entrypoint | Field | Filter | Order
-            other.add_directive(self)
-            return other
+            other.directives.append(self)
+            self.__connected__(other)
+            return
 
-        if has_callable_attribute(other, "__add_directive__"):
+        if isinstance(getattr(other, "__directives__", None), DirectiveList):
             other: (
                 FilterSetMeta
                 | InterfaceTypeMeta
@@ -218,10 +225,14 @@ class Directive(metaclass=DirectiveMeta):
                 | RootTypeMeta
                 | UnionTypeMeta
             )
-            other.__add_directive__(self)
-            return other
+            other.__directives__.append(self)
+            self.__connected__(other)
+            return
 
         raise NotCompatibleWithError(obj=self, other=other)
+
+    def __connected__(self, other: T) -> None:
+        """A hook that is called to connect this directive to an object."""
 
 
 class DirectiveArgument:
@@ -233,11 +244,11 @@ class DirectiveArgument:
     ...     name = DirectiveArgument(GraphQLNonNull(GraphQLInt))
     """
 
-    def __init__(self, input_type: GraphQLInputType, **kwargs: Unpack[DirectiveArgumentParams]) -> None:
+    def __init__(self, ref: Any, **kwargs: Unpack[DirectiveArgumentParams]) -> None:
         """
         Create a new `DirectiveArgument`.
 
-        :param input_type: The input type to use for the `DirectiveArgument`.
+        :param ref: Reference to use for the `DirectiveArgument`.
         :param description: Description for the `DirectiveArgument`.
         :param default_value: Default value for the `DirectiveArgument`.
         :param deprecation_reason: If the `DirectiveArgument` is deprecated, describes the reason for deprecation.
@@ -245,16 +256,17 @@ class DirectiveArgument:
         :param directives: GraphQL directives for the `DirectiveArgument`.
         :param extensions: GraphQL extensions for the `DirectiveArgument`.
         """
-        self.input_type = input_type
+        self.ref: Any = ref
 
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.default_value: DefaultValueType = kwargs.get("default_value", Undefined)
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
+        directives = kwargs.get("directives", [])
+        self.directives = DirectiveList(directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.DIRECTIVE_ARGUMENT_EXTENSIONS_KEY] = self
 
         self.visible_func: VisibilityFunc | None = None
@@ -268,16 +280,33 @@ class DirectiveArgument:
         if self.description is Undefined:
             self.description = self.directive.__attribute_docstrings__.get(name)
 
+        for directive_ in self.directives:
+            directive_.__connected__(self)
+
     def __repr__(self) -> str:
-        return f"<{dotpath(self.__class__)}(input_type={self.input_type!r})>"
+        return f"<{dotpath(self.__class__)}(ref={self.ref!r})>"
 
     def __str__(self) -> str:
         arg = self.as_graphql_argument()
         return undine_settings.SDL_PRINTER.print_directive_argument(self.schema_name, arg, indent=False)
 
+    def __get__(self, instance: Directive | None, cls: type[Directive]) -> Any:
+        if instance is None:
+            return self
+        return instance.__parameters__[self.name]
+
+    def __set__(self, instance: Directive | None, value: Any) -> None:
+        if instance is None:
+            msg = f"Can't set attribute {self.name} on {type(self).__name__}"
+            raise AttributeError(msg)
+        instance.__parameters__[self.name] = value
+
+    def get_argument_type(self) -> GraphQLInputType:
+        return convert_to_graphql_type(TypeRef(value=self.ref), is_input=True)
+
     def as_graphql_argument(self) -> GraphQLArgument:
         return GraphQLArgument(
-            type_=self.input_type,
+            type_=self.get_argument_type(),
             default_value=self.default_value,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
@@ -301,8 +330,113 @@ class DirectiveArgument:
         self.visible_func = get_wrapped_func(func)
         return func
 
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this input."""
-        check_directives([directive], location=DirectiveLocation.ARGUMENT_DEFINITION)
-        self.directives.append(directive)
+
+class DirectiveList(UserList[Directive]):
+    """A list of directives for a certain location. Checks directives each time they are added."""
+
+    # List API
+
+    def __init__(self, directives: Iterable[Directive], *, location: DirectiveLocation) -> None:
+        self.location = location
+        self.__check_directives(directives)
+        super().__init__(directives)
+
+    def __setitem__(self, index: int, value: Directive) -> None:
+        data = self.data[:]
+        data[index] = value
+        self.__check_directives(data)
+        self.data = data
+
+    def __add__(self, other: Iterable[Directive]) -> DirectiveList:
+        data = self.data + self.__get_other_data(other)
+        self.__check_directives(data)
+        return self.__class__(data, location=self.location)
+
+    __radd__ = __add__
+
+    def __iadd__(self, other: Iterable[Directive]) -> Self:
+        data = self.data + self.__get_other_data(other)
+        self.__check_directives(data)
+        self.data = data
         return self
+
+    def __mul__(self, other: int) -> DirectiveList:
+        data = self.data * other
+        self.__check_directives(data)
+        return self.__class__(data, location=self.location)
+
+    __rmul__ = __mul__
+
+    def __imul__(self, other: int) -> Self:
+        data = self.data * other
+        self.__check_directives(data)
+        self.data = data
+        return self
+
+    def append(self, value: Directive) -> None:
+        data = [*self.data, value]
+        self.__check_directives(data)
+        self.data = data
+
+    def insert(self, index: int, value: Directive) -> None:
+        data = self.data[:]
+        data.insert(index, value)
+        self.__check_directives(data)
+        self.data = data
+
+    def extend(self, other: Iterable[Directive]) -> None:
+        data = self.data + self.__get_other_data(other)
+        self.__check_directives(data)
+        self.data = data
+
+    # Custom methods
+
+    def __check_directives(self, directives: Iterable[Directive]) -> None:
+        check_directives(directives, location=self.location)
+
+    def __get_other_data(self, other: Iterable[Directive]) -> list[Any]:
+        if isinstance(other, UserList):
+            return other.data
+        if isinstance(other, type(self.data)):
+            return other
+        return list(other)
+
+
+# Built-in directives
+
+
+class AtomicDirective(
+    Directive,
+    locations=[DirectiveLocation.MUTATION],
+    schema_name="atomic",
+):
+    """Used to indicate that all mutations in the operation should be executed atomically."""
+
+
+class ComplexityDirective(
+    Directive,
+    locations=[DirectiveLocation.FIELD_DEFINITION],
+    schema_name="complexity",
+):
+    """
+    Used to indicate the complexity of resolving a field, counted towards
+    the maximum query complexity of resolving a root type field.
+    """
+
+    value = DirectiveArgument(GraphQLNonNull(GraphQLInt), description="The complexity of resolving the field.")
+
+    def __init__(self, *, value: int) -> None:
+        """
+        Create a new `ComplexityDirective`.
+
+        :param value: The complexity of resolving the field.
+        """
+        if value < 0:
+            msg = "`value` must be a positive integer."
+            raise ValueError(msg)
+        super().__init__(value=value)
+
+    def __connected__(self, other: T) -> None:
+        if hasattr(other, "complexity"):
+            other: Field | Entrypoint
+            other.complexity = self.value

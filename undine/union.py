@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation
 
+from undine.directives import DirectiveList
 from undine.exceptions import (
     GraphQLUnionResolveTypeInvalidValueError,
     GraphQLUnionResolveTypeModelNotFoundError,
@@ -14,7 +15,6 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TQueryTypes
 from undine.utils.graphql.type_registry import get_or_create_graphql_union
-from undine.utils.graphql.utils import check_directives
 from undine.utils.text import get_docstring
 
 if TYPE_CHECKING:
@@ -23,7 +23,6 @@ if TYPE_CHECKING:
     from graphql import GraphQLAbstractType, GraphQLUnionType
 
     from undine import FilterSet, GQLInfo, OrderSet, QueryType
-    from undine.directives import Directive
     from undine.typing import DjangoRequestProtocol, UnionTypeParams
 
 __all__ = [
@@ -39,7 +38,7 @@ class UnionTypeMeta(type):
     __schema_name__: str
     __filterset__: type[FilterSet] | None
     __orderset__: type[OrderSet] | None
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -76,12 +75,16 @@ class UnionTypeMeta(type):
             union_type.__orderset__.__add_to_union_type__(union_type)  # type: ignore[arg-type]
 
         union_type.__schema_name__ = kwargs.get("schema_name", _name)
-        union_type.__directives__ = kwargs.get("directives", [])
-        union_type.__extensions__ = kwargs.get("extensions", {})
         union_type.__attribute_docstrings__ = parse_class_attribute_docstrings(union_type)
 
-        check_directives(union_type.__directives__, location=DirectiveLocation.UNION)
+        directives = kwargs.get("directives", [])
+        union_type.__directives__ = DirectiveList(directives, location=DirectiveLocation.UNION)
+
+        union_type.__extensions__ = kwargs.get("extensions", {})
         union_type.__extensions__[undine_settings.UNION_TYPE_EXTENSIONS_KEY] = union_type
+
+        for directive in union_type.__directives__:
+            directive.__connected__(union_type)
 
         return union_type
 
@@ -114,12 +117,6 @@ class UnionTypeMeta(type):
             extensions=cls.__extensions__,
         )
 
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this union."""
-        check_directives([directive], location=DirectiveLocation.UNION)
-        cls.__directives__.append(directive)
-        return cls
-
 
 class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     """
@@ -149,7 +146,7 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     __schema_name__: ClassVar[str]
     __filterset__: ClassVar[type[FilterSet] | None]
     __orderset__: ClassVar[type[OrderSet] | None]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 

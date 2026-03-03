@@ -104,6 +104,12 @@ class DirectiveLocationError(UndineError):
     msg = "Directive {directive!r} is not allowed in {location.name!r}"
 
 
+class DirectiveRepeatedError(UndineError):
+    """Error raised if Directive is passed multiple times to one location when it is not repeatable."""
+
+    msg = "Directive {directive!r} is not repeatable"
+
+
 class EmptyFilterResult(UndineError):  # noqa: N818
     """Error that should be raised when using a filter should result in an empty queryset."""
 

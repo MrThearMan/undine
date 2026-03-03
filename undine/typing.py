@@ -104,7 +104,6 @@ if TYPE_CHECKING:
         DirectiveLocation,
         FormattedExecutionResult,
         FragmentDefinitionNode,
-        GraphQLArgumentMap,
         GraphQLFormattedError,
         GraphQLOutputType,
         GraphQLSchema,
@@ -885,9 +884,9 @@ class InterfaceTypeParams(TypedDict, total=False):
 class InterfaceFieldParams(TypedDict, total=False):
     """Arguments for an Undine `InterfaceField`."""
 
-    args: GraphQLArgumentMap
     description: str | None
     deprecation_reason: str | None
+    complexity: int
     field_name: str
     schema_name: str
     directives: list[Directive]
@@ -897,9 +896,9 @@ class InterfaceFieldParams(TypedDict, total=False):
 class UnionTypeParams(TypedDict, total=False):
     """Arguments for an Undine `UnionType`."""
 
-    schema_name: str
     filterset: type[FilterSet]
     orderset: type[OrderSet]
+    schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]
 

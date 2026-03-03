@@ -1,18 +1,13 @@
 from __future__ import annotations
 
-from inspect import cleandoc
 from typing import TYPE_CHECKING, Any
 
 from graphql import (
-    DirectiveLocation,
-    GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLInputObjectType,
-    GraphQLInt,
     GraphQLInterfaceType,
-    GraphQLNonNull,
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLUnionType,
@@ -27,7 +22,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection
 
     from graphql import (
+        DirectiveLocation,
         GraphQLAbstractType,
+        GraphQLArgument,
         GraphQLField,
         GraphQLInputField,
         GraphQLScalarSerializer,
@@ -37,6 +34,7 @@ if TYPE_CHECKING:
     from graphql.type.definition import GraphQLEnumValueMap, GraphQLInputFieldOutType
 
     from undine import GQLInfo
+    from undine.directives import Directive
     from undine.typing import UniquelyNamedGraphQLElement
     from undine.utils.reflection import FunctionEqualityWrapper
 
@@ -59,6 +57,11 @@ GRAPHQL_REGISTRY: Registry[str, UniquelyNamedGraphQLElement] = Registry()
 """
 Caches created GraphQL elements by their names so that they can be reused during schema creation
 since a GraphQL Schema cannot contain multiple elements with the same name.
+"""
+
+DIRECTIVE_REGISTRY: Registry[str, type[Directive]] = Registry()
+"""
+Directives that should be registered into the GraphQL schema when it is created.
 """
 
 
@@ -372,57 +375,13 @@ def get_or_create_graphql_directive(
     return directive
 
 
-GraphQLComplexityDirective = GraphQLDirective(
-    name="complexity",
-    locations=[DirectiveLocation.FIELD_DEFINITION],
-    args={
-        "value": GraphQLArgument(
-            GraphQLNonNull(GraphQLInt),
-            out_name="value",
-        ),
-    },
-    description=cleandoc(
-        """
-        Indicate the complexity of resolving a field, counted towards
-        the maximum query complexity of resolving a root type field.
-        """
-    ),
-)
-"""Used to indicate the complexity of resolving a given field. See `Field.complexity`."""
-
-
-GraphQLOneOfDirective = GraphQLDirective(
-    name="oneOf",
-    locations=[DirectiveLocation.INPUT_OBJECT],
-    description="Indicates exactly one field must be supplied and this field must not be `null`.",
-)
-"""Used to indicate an Input Object is a OneOf Input Object."""
-
-
-GraphQLAtomicDirective = GraphQLDirective(
-    name="atomic",
-    locations=[DirectiveLocation.MUTATION],
-    description="Indicates that all mutations in the operation should be executed atomically.",
-)
-"""Used to indicate that all mutations in the operation should be executed atomically."""
-
-
 def register_builtins() -> None:
-    from undine.utils.graphql.validation_rules import core_implements_one_of_directive  # noqa: PLC0415
-
     for name, scalar in specified_scalar_types.items():
         GRAPHQL_REGISTRY[name] = scalar
 
     for directive in specified_directives:
         GRAPHQL_REGISTRY[directive.name] = directive
 
-    GRAPHQL_REGISTRY[GraphQLComplexityDirective.name] = GraphQLComplexityDirective
-    GRAPHQL_REGISTRY[GraphQLAtomicDirective.name] = GraphQLAtomicDirective
-
-    # graphql-core < 3.3.0
-    if not core_implements_one_of_directive():
-        GRAPHQL_REGISTRY[GraphQLOneOfDirective.name] = GraphQLOneOfDirective
-
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:
-    return tuple(value for value in GRAPHQL_REGISTRY.values() if isinstance(value, GraphQLDirective))
+    return specified_directives + tuple(value.__directive__() for value in DIRECTIVE_REGISTRY.values())

@@ -7,8 +7,9 @@ import pytest
 from pytest_undine.fixtures import graphql, graphql_async, undine_settings
 from tests.factories._base import UndineFaker
 from tests.helpers import SessionStore
+from undine.directives import AtomicDirective, ComplexityDirective
 from undine.query import QUERY_TYPE_REGISTRY
-from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY, register_builtins
+from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
 
 if TYPE_CHECKING:
     from tests.helpers import AccessLog
@@ -24,6 +25,10 @@ __all__ = [
 def _clear_registries() -> None:
     QUERY_TYPE_REGISTRY.clear()
     GRAPHQL_REGISTRY.clear()
+    DIRECTIVE_REGISTRY.clear()
+
+    DIRECTIVE_REGISTRY[AtomicDirective.__schema_name__] = AtomicDirective
+    DIRECTIVE_REGISTRY[ComplexityDirective.__schema_name__] = ComplexityDirective
 
     register_builtins()
 

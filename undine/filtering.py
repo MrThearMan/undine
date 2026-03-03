@@ -5,9 +5,8 @@ import itertools
 import operator
 import operator as op
 from collections import defaultdict
-from collections.abc import Iterable
 from functools import reduce
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from django.db.models import Model, Q
 from django.db.models.constants import LOOKUP_SEP
@@ -21,6 +20,7 @@ from undine.converters import (
     convert_to_graphql_type,
 )
 from undine.dataclasses import FilterResults, LookupRef, MaybeManyOrNonNull
+from undine.directives import DirectiveList
 from undine.exceptions import (
     EmptyFilterResult,
     MismatchingModelError,
@@ -34,7 +34,6 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import ManyMatch, TModels
 from undine.utils.graphql.type_registry import get_or_create_graphql_input_object_type
-from undine.utils.graphql.utils import check_directives
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql, is_to_many, lookup_to_display_name
 from undine.utils.reflection import (
     FunctionEqualityWrapper,
@@ -52,7 +51,6 @@ if TYPE_CHECKING:
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
 
     from undine import QueryType, UnionType
-    from undine.directives import Directive
     from undine.typing import (
         DjangoExpression,
         DjangoRequestProtocol,
@@ -78,7 +76,7 @@ class FilterSetMeta(type):
     __models__: tuple[type[Model], ...]
     __filter_map__: dict[str, Filter]
     __schema_name__: str
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -114,15 +112,19 @@ class FilterSetMeta(type):
         filterset.__models__ = models
         filterset.__filter_map__ = get_members(filterset, Filter)
         filterset.__schema_name__ = kwargs.get("schema_name", _name)
-        filterset.__directives__ = kwargs.get("directives", [])
-        filterset.__extensions__ = kwargs.get("extensions", {})
-        filterset.__extensions__[undine_settings.FILTERSET_EXTENSIONS_KEY] = filterset
         filterset.__attribute_docstrings__ = parse_class_attribute_docstrings(filterset)
 
-        check_directives(filterset.__directives__, location=DirectiveLocation.INPUT_OBJECT)
+        directives = kwargs.get("directives", [])
+        filterset.__directives__ = DirectiveList(directives, location=DirectiveLocation.INPUT_OBJECT)
+
+        filterset.__extensions__ = kwargs.get("extensions", {})
+        filterset.__extensions__[undine_settings.FILTERSET_EXTENSIONS_KEY] = filterset
 
         for name, filter_ in filterset.__filter_map__.items():
             filter_.__connect__(filterset, name)  # type: ignore[arg-type]
+
+        for directive in filterset.__directives__:
+            directive.__connected__(filterset)
 
         return filterset
 
@@ -247,12 +249,6 @@ class FilterSetMeta(type):
         """Defer creating fields until all QueryTypes have been registered."""
         return {frt.schema_name: frt.as_graphql_input_field() for frt in cls.__filter_map__.values()}
 
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this `FilterSet`."""
-        check_directives([directive], location=DirectiveLocation.INPUT_OBJECT)
-        cls.__directives__.append(directive)
-        return cls
-
     def __add_to_query_type__(cls, query_type: type[QueryType]) -> None:
         models = cls.__models__
         if len(models) != 1:
@@ -316,7 +312,7 @@ class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
     __models__: ClassVar[tuple[type[Model], ...]]
     __filter_map__: ClassVar[dict[str, Filter]]
     __schema_name__: ClassVar[str]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -377,10 +373,11 @@ class Filter:
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+        directives = kwargs.get("directives", [])
+        self.directives = DirectiveList(directives, location=DirectiveLocation.INPUT_FIELD_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.FILTER_EXTENSIONS_KEY] = self
 
         self.aliases_func: FilterAliasesFunc | None = None
@@ -404,6 +401,9 @@ class Filter:
                 self.description = convert_to_description(self.ref)
 
         self.resolver = convert_to_filter_resolver(self.ref, caller=self)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __call__(self, ref: GraphQLFieldResolver, /) -> Filter:
         """Called when using as decorator with parenthesis: @Filter()"""
@@ -466,12 +466,6 @@ class Filter:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this filter."""
-        check_directives([directive], location=DirectiveLocation.INPUT_FIELD_DEFINITION)
-        self.directives.append(directive)
-        return self
 
 
 def get_filters_for_model(model: type[Model], *, exclude: Iterable[str] = ()) -> dict[str, Filter]:

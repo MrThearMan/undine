@@ -26,12 +26,11 @@ from undine import (
     UnionType,
     create_schema,
 )
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import AtomicDirective, ComplexityDirective, Directive, DirectiveArgument
 from undine.interface import InterfaceField
 from undine.relay import Node
 from undine.scalars import ScalarType
 from undine.utils.graphql.sdl_printer import SDLPrinter
-from undine.utils.graphql.type_registry import GraphQLAtomicDirective, GraphQLComplexityDirective, GraphQLOneOfDirective
 
 
 def gql_dedent(text: str) -> str:
@@ -40,9 +39,8 @@ def gql_dedent(text: str) -> str:
 
 def directive_filter(directive: GraphQLDirective) -> bool:
     return SDLPrinter.default_directive_filter(directive) and directive.name not in {
-        GraphQLAtomicDirective.name,
-        GraphQLComplexityDirective.name,
-        GraphQLOneOfDirective.name,
+        AtomicDirective.__schema_name__,
+        ComplexityDirective.__schema_name__,
     }
 
 

@@ -5,9 +5,12 @@ from inspect import cleandoc
 import pytest
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLNonNull, Undefined
 
-from undine.directives import Directive, DirectiveArgument
-from undine.exceptions import DirectiveLocationError
-from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY
+from example_project.app.models import Task
+from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType
+from undine.directives import AtomicDirective, ComplexityDirective, Directive, DirectiveArgument, DirectiveList
+from undine.exceptions import DirectiveLocationError, DirectiveRepeatedError
+from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY
+from undine.utils.reflection import is_subclass
 
 
 def test_directive__attributes(undine_settings) -> None:
@@ -31,6 +34,11 @@ def test_directive__attributes(undine_settings) -> None:
     assert ValueDirective.__schema_name__ == "value"
     assert ValueDirective.__extensions__ == {"undine_directive": ValueDirective, "foo:": "bar"}
     assert ValueDirective.__attribute_docstrings__ == {"value": "Argument description."}
+
+    assert "value" in DIRECTIVE_REGISTRY
+    assert is_subclass(DIRECTIVE_REGISTRY["value"], Directive)
+
+    ValueDirective.__directive__()
 
     assert "value" in GRAPHQL_REGISTRY
     assert isinstance(GRAPHQL_REGISTRY["value"], GraphQLDirective)
@@ -71,12 +79,15 @@ def test_directive__as_graphql_directive() -> None:
     assert directive.extensions == {"undine_directive": ValueDirective}
 
 
+# DirectiveArgument
+
+
 def test_directive__argument__repr() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
 
     assert repr(ValueDirective.value) == (
-        "<undine.directives.DirectiveArgument(input_type=<GraphQLNonNull <GraphQLScalarType 'Int'>>)>"
+        "<undine.directives.DirectiveArgument(ref=<GraphQLNonNull <GraphQLScalarType 'Int'>>)>"
     )
 
 
@@ -91,7 +102,7 @@ def test_directive__argument__attributes() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
 
-    assert ValueDirective.value.input_type == GraphQLNonNull(GraphQLInt)
+    assert ValueDirective.value.get_argument_type() == GraphQLNonNull(GraphQLInt)
     assert ValueDirective.value.description is None
     assert ValueDirective.value.default_value is Undefined
     assert ValueDirective.value.deprecation_reason is None
@@ -180,3 +191,284 @@ def test_directive__argument__as_graphql_argument() -> None:
     assert argument.description is None
     assert argument.out_name == "value"
     assert argument.extensions == {"undine_directive_argument": ValueDirective.value}
+
+
+# DirectiveList
+
+
+def test_directive_list__init():
+    class VersionDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(int)
+
+    directive = VersionDirective(value=1)
+
+    directive_list = DirectiveList([directive], location=DirectiveLocation.FIELD_DEFINITION)
+
+    assert directive_list.data == [directive]
+    assert directive_list.location == DirectiveLocation.FIELD_DEFINITION
+
+
+def test_directive_list__setitem():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a, directive_b], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list[1] = directive_a
+
+    assert directive_list.data == [directive_a, directive_b]
+
+    directive_list[0] = directive_b
+    assert directive_list.data == [directive_b, directive_b]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list[0] = directive_c
+
+
+def test_directive_list__add():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a, directive_b], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list = directive_list + [directive_a]  # noqa: PLR6104,RUF005
+
+    assert directive_list.data == [directive_a, directive_b]
+
+    directive_list = directive_list + [directive_b]  # noqa: PLR6104,RUF005
+    assert directive_list.data == [directive_a, directive_b, directive_b]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list = directive_list + [directive_c]  # noqa: PLR6104,RUF005
+
+
+def test_directive_list__iadd():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a, directive_b], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list += [directive_a]
+
+    assert directive_list.data == [directive_a, directive_b]
+
+    directive_list += [directive_b]
+    assert directive_list.data == [directive_a, directive_b, directive_b]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list += [directive_c]
+
+
+def test_directive_list__mul():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list = directive_list * 2  # noqa: PLR6104,RUF100
+
+    assert directive_list.data == [directive_a]
+
+    directive_list.data = [directive_b]
+    directive_list = directive_list * 2  # noqa: PLR6104,RUF100
+    assert directive_list.data == [directive_b, directive_b]
+
+    directive_list.data = [directive_c]
+    with pytest.raises(DirectiveLocationError):
+        directive_list = directive_list * 2  # noqa: PLR6104,RUF100
+
+
+def test_directive_list__imul():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list *= 2
+
+    assert directive_list.data == [directive_a]
+
+    directive_list.data = [directive_b]
+    directive_list *= 2
+    assert directive_list.data == [directive_b, directive_b]
+
+    directive_list.data = [directive_c]
+    with pytest.raises(DirectiveLocationError):
+        directive_list *= 2
+
+
+def test_directive_list__append():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_1 = ADirective()
+    directive_2 = BDirective()
+    directive_3 = CDirective()
+
+    directive_list = DirectiveList([directive_1, directive_2], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list.append(directive_1)
+
+    assert directive_list.data == [directive_1, directive_2]
+
+    directive_list.append(directive_2)
+    assert directive_list.data == [directive_1, directive_2, directive_2]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list.append(directive_3)
+
+
+def test_directive_list__insert():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_1 = ADirective()
+    directive_2 = BDirective()
+    directive_3 = CDirective()
+
+    directive_list = DirectiveList([directive_1, directive_2], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list.insert(1, directive_1)
+
+    assert directive_list.data == [directive_1, directive_2]
+
+    directive_list.insert(1, directive_2)
+    assert directive_list.data == [directive_1, directive_2, directive_2]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list.insert(1, directive_3)
+
+
+def test_directive_list__extend():
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    class CDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
+
+    directive_a = ADirective()
+    directive_b = BDirective()
+    directive_c = CDirective()
+
+    directive_list = DirectiveList([directive_a, directive_b], location=DirectiveLocation.FIELD_DEFINITION)
+
+    with pytest.raises(DirectiveRepeatedError):
+        directive_list.extend([directive_a])
+
+    assert directive_list.data == [directive_a, directive_b]
+
+    directive_list.extend([directive_b])
+    assert directive_list.data == [directive_a, directive_b, directive_b]
+
+    with pytest.raises(DirectiveLocationError):
+        directive_list.extend([directive_c])
+
+
+# Custom directives
+
+
+def test_atomic_directive__str() -> None:
+    assert str(AtomicDirective) == cleandoc(
+        '''
+        """
+        Used to indicate that all mutations in the operation should be executed atomically.
+        """
+        directive @atomic on MUTATION
+        '''
+    )
+
+
+def test_complexity_directive__str() -> None:
+    assert str(ComplexityDirective) == cleandoc(
+        '''
+        """
+        Used to indicate the complexity of resolving a field, counted towards
+        the maximum query complexity of resolving a root type field.
+        """
+        directive @complexity(
+          """The complexity of resolving the field."""
+          value: Int!
+        ) on FIELD_DEFINITION
+        '''
+    )
+
+
+def test_complexity_directive__add_to_entrypoint() -> None:
+    directive = ComplexityDirective(value=1)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True) @ directive
+
+    assert Query.tasks.complexity == 1
+    assert Query.tasks.directives == [directive]
+
+
+def test_complexity_directive__add_to_field() -> None:
+    directive = ComplexityDirective(value=1)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field() @ directive
+
+    assert TaskType.name.complexity == 1
+    assert TaskType.name.directives == [directive]
+
+
+def test_complexity_directive__add_to_interface_field() -> None:
+    directive = ComplexityDirective(value=1)
+
+    class Named(InterfaceType, auto=False):
+        name = InterfaceField(str) @ directive
+
+    assert Named.name.complexity == 1
+    assert Named.name.directives == [directive]

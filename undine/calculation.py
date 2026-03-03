@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from graphql import DirectiveLocation, GraphQLArgument, Undefined
 
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import TypeRef
+from undine.directives import DirectiveList
 from undine.exceptions import (
     GraphQLMissingCalculationArgumentError,
     GraphQLUnexpectedCalculationArgumentError,
@@ -16,14 +17,12 @@ from undine.exceptions import (
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import T_co
-from undine.utils.graphql.utils import check_directives
 from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLInputType
 
-    from undine.directives import Directive
     from undine.typing import (
         CalculationArgumentParams,
         DefaultValueType,
@@ -119,10 +118,11 @@ class CalculationArgument:
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])  # type: ignore[assignment]
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})  # type: ignore[assignment]
 
-        check_directives(self.directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
+        directives = kwargs.get("directives", [])
+        self.directives = DirectiveList(directives, location=DirectiveLocation.ARGUMENT_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.CALCULATION_ARGUMENT_EXTENSIONS_KEY] = self
 
         self.visible_func: VisibilityFunc | None = None
@@ -134,6 +134,9 @@ class CalculationArgument:
 
         if self.description is Undefined:
             self.description = self.calculation.__attribute_docstrings__.get(name)
+
+        for directive in self.directives:
+            directive.__connected__(self)
 
     def __repr__(self) -> str:
         return f"<{dotpath(self.__class__)}(ref={self.ref!r})>"
@@ -176,9 +179,3 @@ class CalculationArgument:
             return self.visible  # type: ignore[return-value]
         self.visible_func = get_wrapped_func(func)
         return func
-
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this calculation argument."""
-        check_directives([directive], location=DirectiveLocation.ARGUMENT_DEFINITION)
-        self.directives.append(directive)
-        return self

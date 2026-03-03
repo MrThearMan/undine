@@ -1,24 +1,24 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
 from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type, is_many
 from undine.dataclasses import TypeRef
+from undine.directives import ComplexityDirective, DirectiveList
+from undine.exceptions import InterfaceFieldTypeMismatchError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QueryType
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_interface_type
-from undine.utils.graphql.utils import check_directives
 from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLInterfaceType, GraphQLOutputType
 
-    from undine.directives import Directive
     from undine.query import Field
     from undine.typing import (
         DjangoRequestProtocol,
@@ -42,7 +42,7 @@ class InterfaceTypeMeta(type):
     __schema_name__: str
     __interfaces__: list[type[InterfaceType]]
     __implementations__: list[type[InterfaceType | QueryType]]
-    __directives__: list[Directive]
+    __directives__: DirectiveList
     __extensions__: dict[str, Any]
     __attribute_docstrings__: dict[str, str]
 
@@ -64,13 +64,15 @@ class InterfaceTypeMeta(type):
         # Members should use `__dunder__` names to avoid name collisions with possible `InterfaceField` names.
         interface_type.__field_map__ = get_members(interface_type, InterfaceField)
         interface_type.__schema_name__ = kwargs.get("schema_name", _name)
-        interface_type.__interfaces__ = []
-        interface_type.__implementations__ = []
-        interface_type.__directives__ = kwargs.get("directives", [])
-        interface_type.__extensions__ = kwargs.get("extensions", {})
         interface_type.__attribute_docstrings__ = parse_class_attribute_docstrings(interface_type)
 
-        check_directives(interface_type.__directives__, location=DirectiveLocation.INTERFACE)
+        interface_type.__interfaces__ = []
+        interface_type.__implementations__ = []
+
+        directives = kwargs.get("directives", [])
+        interface_type.__directives__ = DirectiveList(directives, location=DirectiveLocation.INTERFACE)
+
+        interface_type.__extensions__ = kwargs.get("extensions", {})
         interface_type.__extensions__[undine_settings.INTERFACE_TYPE_EXTENSIONS_KEY] = interface_type
 
         for name, interface_field in interface_type.__field_map__.items():
@@ -78,6 +80,9 @@ class InterfaceTypeMeta(type):
 
         for interface in interfaces:
             interface.__inherit__(interface_type)  # type: ignore[arg-type]
+
+        for directive in interface_type.__directives__:
+            directive.__connected__(interface_type)
 
         return interface_type
 
@@ -147,12 +152,6 @@ class InterfaceTypeMeta(type):
         """Defer creating fields until all QueryTypes have been registered."""
         return {field.schema_name: field.as_graphql_field() for field in cls.__field_map__.values()}
 
-    def __add_directive__(cls, directive: Directive, /) -> Self:
-        """Add a directive to this interface."""
-        check_directives([directive], location=DirectiveLocation.INTERFACE)
-        cls.__directives__.append(directive)
-        return cls
-
 
 class InterfaceType(metaclass=InterfaceTypeMeta):
     """
@@ -182,7 +181,7 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
     __schema_name__: ClassVar[str]
     __interfaces__: ClassVar[list[type[InterfaceType]]]
     __implementations__: ClassVar[list[type[InterfaceType | QueryType]]]
-    __directives__: ClassVar[list[Directive]]
+    __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
@@ -204,29 +203,34 @@ class InterfaceField:
     ...     name = InterfaceField(GraphQLNonNull(GraphQLString))
     """
 
-    def __init__(self, output_type: GraphQLOutputType, **kwargs: Unpack[InterfaceFieldParams]) -> None:
+    def __init__(self, ref: Any, **kwargs: Unpack[InterfaceFieldParams]) -> None:
         """
         Create a new `InterfaceField`.
 
-        :param output_type: The output type to use for the `InterfaceField`.
-        :param args: GraphQL arguments for the `InterfaceField`.
+        :param ref: The reference to use for the `InterfaceField`.
         :param description: Description for the `InterfaceField`.
         :param deprecation_reason: If the `InterfaceField` is deprecated, describes the reason for deprecation.
+        :param complexity: The complexity of resolving this `InterfaceField`.
         :param field_name: The name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `InterfaceField`.
         :param extensions: GraphQL extensions for the `InterfaceField`.
         """
-        self.output_type = output_type
-        self.args: GraphQLArgumentMap = kwargs.get("args", {})
+        self.ref = ref
+
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
+        self.complexity: int = kwargs.get("complexity", Undefined)  # type: ignore[assignment]
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
-        self.directives: list[Directive] = kwargs.get("directives", [])
-        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
 
-        check_directives(self.directives, location=DirectiveLocation.FIELD_DEFINITION)
+        directives = kwargs.get("directives", [])
+        if self.complexity:
+            directives.append(ComplexityDirective(value=self.complexity))
+
+        self.directives = DirectiveList(directives, location=DirectiveLocation.FIELD_DEFINITION)
+
+        self.extensions: dict[str, Any] = kwargs.get("extensions", {})
         self.extensions[undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY] = self
 
         self.visible_func: VisibilityFunc | None = None
@@ -241,8 +245,11 @@ class InterfaceField:
         if self.description is Undefined:
             self.description = interface_type.__attribute_docstrings__.get(name)
 
+        for directive in self.directives:
+            directive.__connected__(self)
+
     def __repr__(self) -> str:
-        return f"<{dotpath(self.__class__)}(ref={self.output_type!r})>"
+        return f"<{dotpath(self.__class__)}(ref={self.ref!r})>"
 
     def __str__(self) -> str:
         field = self.as_graphql_field()
@@ -271,9 +278,9 @@ class InterfaceField:
         return Field(
             self,
             deprecation_reason=self.deprecation_reason,
+            complexity=self.complexity,
             field_name=self.field_name,
             schema_name=self.schema_name,
-            directives=self.directives,
             extensions={undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY: self},
         )
 
@@ -294,11 +301,18 @@ class InterfaceField:
         self.visible_func = get_wrapped_func(func)
         return func
 
-    def add_directive(self, directive: Directive, /) -> Self:
-        """Add a directive to this interface field."""
-        check_directives([directive], location=DirectiveLocation.FIELD_DEFINITION)
-        self.directives.append(directive)
-        return self
+    def check_inheritance(self, field: Field | InterfaceField) -> None:
+        """Check that given type and arguments satisfy the requirements of this `InterfaceField`."""
+        field_type = field.get_field_type()
+        if self.get_field_type() == field_type and self.get_field_arguments() == field.get_field_arguments():
+            return
+
+        raise InterfaceFieldTypeMismatchError(
+            field=self.schema_name,
+            interface=self.interface_type,
+            output_type=self.ref,
+            field_type=field_type,
+        )
 
 
 def get_with_inherited_interfaces(interfaces: list[type[InterfaceType]]) -> list[type[InterfaceType]]:

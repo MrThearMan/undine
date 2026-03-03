@@ -1,19 +1,26 @@
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING, Unpack
 
 from graphql import GraphQLBoolean, GraphQLField, GraphQLID, GraphQLNonNull, GraphQLString
 from graphql.type.scalars import serialize_id
 
 from undine import InterfaceField, InterfaceType, QueryType, UnionType
+from undine.exceptions import InterfaceFieldNodeIDError
 from undine.pagination import PaginationHandler
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.reflection import is_subclass
 
+if TYPE_CHECKING:
+    from undine import Field
+    from undine.typing import InterfaceFieldParams
+
 __all__ = [
     "Connection",
     "Node",
+    "NodeIDField",
     "PageInfoType",
     "cursor_to_offset",
     "decode_base64",
@@ -24,10 +31,28 @@ __all__ = [
 ]
 
 
+class NodeIDField(InterfaceField):
+    """Field for the `Node` interface that converts primary key into string ID."""
+
+    def __init__(self, **kwargs: Unpack[InterfaceFieldParams]) -> None:
+        ref = GraphQLNonNull(GraphQLID)
+        kwargs.setdefault("description", "The Global ID of an object.")
+        kwargs.setdefault("field_name", "pk")
+        super().__init__(ref, **kwargs)
+
+    def check_inheritance(self, existing: Field | InterfaceField) -> None:
+        # Node ID is special, since it converts any type of primary key into string,
+        # so we can assume that it will work even given any model pk type.
+        #
+        # Guard against interface inheritance losing this check override.
+        if isinstance(existing, InterfaceField) and not isinstance(existing, NodeIDField):
+            raise InterfaceFieldNodeIDError(interface=existing.interface_type)
+
+
 class Node(InterfaceType):
     """An interface for objects with Global IDs."""
 
-    id = InterfaceField(GraphQLNonNull(GraphQLID), description="The Global ID of an object.", field_name="pk")
+    id = NodeIDField()
 
 
 class Connection:

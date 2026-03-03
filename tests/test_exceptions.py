@@ -13,6 +13,7 @@ from undine import Entrypoint
 from undine.exceptions import (
     BulkMutateNeedsImplementationError,
     DirectiveLocationError,
+    DirectiveRepeatedError,
     EmptyFilterResult,
     ErrorMessageFormatter,
     ExpressionMultipleOutputFieldError,
@@ -226,6 +227,11 @@ class UndineErrorParams(NamedTuple):
             cls=DirectiveLocationError,
             args={"directive": "foo", "location": DirectiveLocation.OBJECT},
             message="Directive 'foo' is not allowed in 'OBJECT'",
+        ),
+        "DirectiveRepeatedError": UndineErrorParams(
+            cls=DirectiveRepeatedError,
+            args={"directive": "foo"},
+            message="Directive 'foo' is not repeatable",
         ),
         "EmptyFilterResult": UndineErrorParams(
             cls=EmptyFilterResult,
