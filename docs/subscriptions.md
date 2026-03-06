@@ -9,8 +9,9 @@ your GraphQL Schema.
 ## Setup
 
 To use subscriptions, you'll need to turn on Undine's [async support](async.md),
-as subscription resolvers are always async. Then, you have two options
-for a transport protocol: [WebSockets](#websockets) or [Server-Sent Events](#server-sent-events).
+as subscription resolvers are always async. Then, you have three options
+for a transport protocol: [WebSockets](#websockets), [Server-Sent Events](#server-sent-events),
+or [Multipart HTTP](#multipart-http)
 
 ### WebSockets
 
@@ -83,6 +84,16 @@ and [`channels-redis`][channels-redis]{:target="_blank"} satisfies both requirem
 ```python
 -8<- "subscriptions/sse_redis_settings.py"
 ```
+
+### Multipart HTTP
+
+This transport [protocol]{:target="_blank"} is used by the Apollo GraphOS Router. It sends subscriptions using
+`multipart/mixed` HTTP responses. Conceptually, it's similar to [Server-Sent Events](#server-sent-events)
+in [Distinct Connections](#distinct-connections-mode) mode, just with different semantics.
+It also does not require additional setup, but does suffer from the same limitations with HTTP/1.1.
+Use if your client tooling expects it.
+
+[protocol]: https://www.apollographql.com/docs/graphos/routing/operations/subscriptions/multipart-protocol
 
 ## AsyncGenerators
 
