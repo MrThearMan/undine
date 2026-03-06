@@ -117,6 +117,17 @@ A description for a `UnionType` can be provided as a docstring.
 -8<- "unions/union_type_description.py"
 ```
 
+### Caching
+
+You can set custom caching rules for `UnionTypes` using the `cache_for_seconds`
+and `cache_per_user` arguments.
+
+```python
+-8<- "unions/union_type_cache.py"
+```
+
+See the [Entrypoint caching](schema.md#caching) section for more details.
+
 ### Directives
 
 You can add directives to the `UnionType` by providing them using the `directives` argument.

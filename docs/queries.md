@@ -173,6 +173,17 @@ You can provide a description for the `QueryType` by adding a docstring to the c
 -8<- "queries/query_type_description.py"
 ```
 
+### Caching
+
+You can set custom caching rules for `QueryTypes` using the `cache_for_seconds`
+and `cache_per_user` arguments.
+
+```python
+-8<- "queries/query_type_cache.py"
+```
+
+See the [Entrypoint caching](schema.md#caching) section for more details.
+
 ### Interfaces
 
 You can add interfaces to the `QueryType` by providing them using the `interfaces` argument.
@@ -467,6 +478,17 @@ If you want to configure this manually, you can do so by adding the `complexity`
 ```python
 -8<- "queries/field_complexity.py"
 ```
+
+### Caching
+
+You can set custom caching rules for `Fields` using the `cache_for_seconds`
+and `cache_per_user` arguments.
+
+```python
+-8<- "queries/field_cache.py"
+```
+
+See the [Entrypoint caching](schema.md#caching) section for more details.
 
 ### Field name
 

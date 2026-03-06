@@ -382,6 +382,82 @@ complexity on the `Entrypoint` itself. This can be useful for declaring complexi
 `Entrypoints` not based on `QueryTypes`. Note that when the `Entrypoint` _is_ based on a `QueryType`,
 this complexity _adds_ to any complexity calculated from the `QueryType's` `Fields`.
 
+### Caching
+
+Responses from `Entrypoints` connected to the `Query` `RootType` can be cached by specifying
+the `cache_for_seconds` argument to the `Entrypoint` constructor.
+
+```python
+-8<- "schema/entrypoint_cache.py"
+```
+
+This will cache the response for the specified number of seconds in the cache specified
+by the [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
+Only responses without any errors will be cached.
+
+You can also cache the response on per-user basis by using the `cache_per_user` argument.
+Note that in this case anonymous users will still share the same cache result.
+
+```python
+-8<- "schema/entrypoint_cache_per_use.py"
+```
+
+By default, `Entrypoints` are not cached unless explicitly allowed to be cached.
+You can use the the [`ENTRYPOINT_CACHE_DEFAULT_SECONDS`](settings.md#entrypoint_cache_default_seconds)
+setting to change the default cache time for all `Entrypoints`.
+This is mainly useful for testing purposes.
+
+Custom caching rules can also be set for individual [`Fields`](queries.md#caching_1),
+[`QueryTypes`](queries.md#caching), [`InterfaceTypes`](interfaces.md#caching),
+[`InterfaceFields`](interfaces.md#caching_1) and [`UnionTypes`](unions.md#caching).
+If no caching rules have been set for these objects, they opt into being cached
+using the `Entrypoint's` caching rules. Otherwise, the caching is done using
+the most restrictive caching rules found from objects included in the query.
+
+If a `Field` defines a stricter caching rule than an `Entrypoint`,
+those caching rules will be used instead.
+
+```python
+-8<- "schema/entrypoint_cache_field.py"
+```
+
+If queried like this:
+
+```graphql
+query {
+  task(id: 1) {
+    name
+  }
+}
+```
+
+Since the `name` `Field` is included in the query, and has a cache time of 10 seconds,
+while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
+Additionally, since the `name` `Field` is caching is declared to be per-user, the whole operation is cached
+for each user separately.
+
+If a `Field's` reference defines a caching rule, but the `Field` itself does not,
+that reference's rule will be used. Note that this only applies for `Fields`, not for `Entrypoints`!
+
+```python
+-8<- "schema/entrypoint_cache_query_type.py"
+```
+
+If queried like this:
+
+```graphql
+query {
+  task(id: 1) {
+    project {
+      name
+    }
+  }
+}
+```
+
+Since the `project` `Field` is included in the query, and it uses `ProjectType`, which is cached for 10 seconds,
+while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
+
 ### Directives
 
 You can add directives to the `Entrypoint` by providing them using the `directives` argument.
