@@ -113,6 +113,17 @@ You can provide a description for the `InterfaceType` by adding a docstring to t
 -8<- "interfaces/interface_type_description.py"
 ```
 
+### Caching
+
+You can set custom caching rules for `InterfaceTypes` using the `cache_for_seconds`
+and `cache_per_user` arguments.
+
+```python
+-8<- "interfaces/interface_type_cache.py"
+```
+
+See the [Entrypoint caching](schema.md#caching) section for more details.
+
 ### Directives
 
 You can add directives to the `InterfaceType` by providing them using the `directives` argument.
@@ -233,6 +244,17 @@ This is for documentation purposes only, and does not affect the use of the `Int
 ```python hl_lines="13"
 -8<- "interfaces/interface_field_deprecation_reason.py"
 ```
+
+### Caching
+
+You can set custom caching rules for `InterfaceFields` using the `cache_for_seconds`
+and `cache_per_user` arguments.
+
+```python
+-8<- "interfaces/interface_field_cache.py"
+```
+
+See the [Entrypoint caching](schema.md#caching) section for more details.
 
 ### Directives
 
