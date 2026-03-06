@@ -11,6 +11,7 @@ class UserFactory(GenericDjangoModelFactory[User]):
     class Meta:
         model = User
 
+    username = UndineFaker("user_name", unique=True)
     first_name = UndineFaker("first_name")
     last_name = UndineFaker("last_name")
     email = UndineFaker("email")
