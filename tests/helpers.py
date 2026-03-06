@@ -25,7 +25,16 @@ from django.http.multipartparser import MultiPartParser
 from django.http.request import MediaType
 from django.test.client import BOUNDARY
 from django.utils.datastructures import MultiValueDict
-from graphql import FieldNode, GraphQLObjectType, GraphQLScalarType, NameNode, OperationDefinitionNode, Undefined
+from graphql import (
+    FieldNode,
+    GraphQLObjectType,
+    GraphQLScalarType,
+    NameNode,
+    OperationDefinitionNode,
+    OperationType,
+    SelectionSetNode,
+    Undefined,
+)
 from graphql.pyutils import Path
 from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
@@ -239,7 +248,11 @@ def mock_gql_info(  # noqa: PLR0913
         schema=example_schema if schema is None else schema,
         fragments={} if fragments is None else fragments,
         root_value=undine_settings.ROOT_VALUE if root_value is None else root_value,
-        operation=OperationDefinitionNode() if operation is None else operation,
+        operation=(
+            OperationDefinitionNode(operation=OperationType.QUERY, selection_set=SelectionSetNode())
+            if operation is None
+            else operation
+        ),
         variable_values={} if variable_values is None else variable_values,
         context=MockRequest() if context is None else context,
         is_awaitable=(lambda _: False) if is_awaitable is None else is_awaitable,
