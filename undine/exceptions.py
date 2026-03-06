@@ -42,6 +42,10 @@ class ContinueConsumer(Exception):  # noqa: N818
     """Raised in SSE integration to keep consumer alive for streaming responses."""
 
 
+class NoRequestCaching(Exception):  # noqa: N818
+    """Raised in RequestCacheCalculator to escape early if no caching is needed."""
+
+
 # Undine Errors
 
 

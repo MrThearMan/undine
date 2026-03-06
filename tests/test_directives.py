@@ -5,9 +5,16 @@ from inspect import cleandoc
 import pytest
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLNonNull, Undefined
 
-from example_project.app.models import Task
-from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType
-from undine.directives import AtomicDirective, ComplexityDirective, Directive, DirectiveArgument, DirectiveList
+from example_project.app.models import Project, Task
+from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, UnionType
+from undine.directives import (
+    AtomicDirective,
+    CacheDirective,
+    ComplexityDirective,
+    Directive,
+    DirectiveArgument,
+    DirectiveList,
+)
 from undine.exceptions import DirectiveLocationError, DirectiveRepeatedError
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY
 from undine.utils.reflection import is_subclass
@@ -472,3 +479,96 @@ def test_complexity_directive__add_to_interface_field() -> None:
 
     assert Named.name.complexity == 1
     assert Named.name.directives == [directive]
+
+
+def test_cache_directive__str() -> None:
+    assert str(CacheDirective) == cleandoc(
+        '''
+        """
+        Used to define caching behavior either for a single field, or for all fields that return a particular type.
+        """
+        directive @cache(
+          """How many seconds this field of fields of this type can be cached for."""
+          for: Int
+          """Whether the value is cached per user or not. Defaults to false."""
+          perUser: Boolean
+        ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+        '''
+    )
+
+
+def test_cache_directive__add_to_entrypoint() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True) @ directive
+
+    assert Query.tasks.cache_for_seconds == 1
+    assert Query.tasks.cache_per_user is False
+    assert Query.tasks.directives == [directive]
+
+
+def test_cache_directive__add_to_field() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field() @ directive
+
+    assert TaskType.name.cache_for_seconds == 1
+    assert TaskType.name.cache_per_user is False
+    assert TaskType.name.directives == [directive]
+
+
+def test_cache_directive__add_to_interface_field() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    class Named(InterfaceType, auto=False):
+        name = InterfaceField(str) @ directive
+
+    assert Named.name.cache_for_seconds == 1
+    assert Named.name.cache_per_user is False
+    assert Named.name.directives == [directive]
+
+
+def test_cache_directive__add_to_query_type() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    @directive
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    assert TaskType.__cache_for_seconds__ == 1
+    assert TaskType.__cache_per_user__ is False
+    assert TaskType.__directives__ == [directive]
+
+
+def test_cache_directive__add_to_interface_type() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    @directive
+    class Named(InterfaceType, auto=False):
+        name = InterfaceField(str)
+
+    assert Named.__cache_for_seconds__ == 1
+    assert Named.__cache_per_user__ is False
+    assert Named.__directives__ == [directive]
+
+
+def test_cache_directive__add_to_union_type() -> None:
+    directive = CacheDirective(for_seconds=1)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    @directive
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert Commentable.__cache_for_seconds__ == 1
+    assert Commentable.__cache_per_user__ is False
+    assert Commentable.__directives__ == [directive]

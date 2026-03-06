@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, NamedTuple
 
+from django.core.cache import DEFAULT_CACHE_ALIAS
 from django.test.signals import setting_changed
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from settings_holder import SettingsHolder, reload_settings
@@ -262,6 +263,17 @@ class UndineDefaultSettings(NamedTuple):
 
     PREFETCH_HACK_CACHE_KEY: str = "_undine_prefetch_hack_cache"
     """The key to use for storing the prefetch hack cache in the queryset hints."""
+
+    # Caching
+
+    ENTRYPOINT_CACHE_DEFAULT_SECONDS: int = 0
+    """The default caching time an `Entrypoint` for the @cache directive."""
+
+    REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
+    """The cache alias to use for caching requests."""
+
+    REQUEST_CACHE_PREFIX: str = "undine-cache"
+    """The prefix to use for the cache keys of requests."""
 
     # Argument & parameter names
 
