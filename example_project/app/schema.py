@@ -9,7 +9,7 @@ from example_project.app.models import Task
 from example_project.app.mutations import CommentCreateMutationType, TaskCreateMutationType, TaskDeleteMutationType
 from example_project.app.types import Commentable, CommentType, Named, ReportType, TaskType
 from undine import Entrypoint, GQLInfo, RootType, create_schema
-from undine.directives import Directive, DirectiveArgument
+from undine.directives import CacheDirective, Directive, DirectiveArgument
 from undine.optimizer.optimizer import optimize_sync
 from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
@@ -25,6 +25,9 @@ class Query(RootType):
     tasks = Entrypoint(TaskType, many=True)
     reports = Entrypoint(ReportType, many=True)
     comments = Entrypoint(CommentType, many=True)
+
+    cached_task = Entrypoint(TaskType, cache_for_seconds=10)
+    cached_tasks = Entrypoint(TaskType, many=True) @ CacheDirective(for_seconds=10)
 
     node = Entrypoint(Node)
     paged_tasks = Entrypoint(Connection(TaskType))

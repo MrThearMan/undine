@@ -13,7 +13,7 @@ from undine.converters import (
     convert_to_graphql_type,
 )
 from undine.dataclasses import MaybeManyOrNonNull
-from undine.directives import ComplexityDirective, DirectiveList
+from undine.directives import CacheDirective, ComplexityDirective, DirectiveList
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
@@ -148,6 +148,8 @@ class Entrypoint:
         :param description: Description for the `Entrypoint`.
         :param deprecation_reason: If the `Entrypoint` is deprecated, describes the reason for deprecation.
         :param complexity: The complexity of resolving this `Entrypoint` (not the entire query!).
+        :param cache_for_seconds: How many seconds this `Entrypoint` can be cached for.
+        :param cache_per_user: Whether the `Entrypoint` is cached per user or not.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `Entrypoint`.
         :param extensions: GraphQL extensions for the `Entrypoint`.
@@ -160,11 +162,15 @@ class Entrypoint:
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.complexity: int = kwargs.get("complexity", 0)  # type: ignore[assignment]
+        self.cache_for_seconds: int | None = kwargs.get("cache_for_seconds")
+        self.cache_per_user: bool = kwargs.get("cache_per_user", False)
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
 
         directives = kwargs.get("directives", [])
         if self.complexity:
             directives.append(ComplexityDirective(value=self.complexity))
+        if self.cache_for_seconds is not None:
+            directives.append(CacheDirective(for_seconds=self.cache_for_seconds, per_user=self.cache_per_user))
 
         self.directives = DirectiveList(directives, location=DirectiveLocation.FIELD_DEFINITION)
 

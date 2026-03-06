@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 __all__ = [
     "AbstractSelections",
     "BulkCreateKwargs",
+    "CacheControlResults",
     "CompletedEventDC",
     "CompletedEventDataSC",
     "CompletedEventSC",
@@ -265,6 +266,14 @@ class AbstractSelections:
 
     field_nodes: list[FieldNode] = dataclasses.field(default_factory=list)
     inline_fragments: list[InlineFragmentNode] = dataclasses.field(default_factory=list)
+
+
+@dataclasses.dataclass(slots=True)
+class CacheControlResults:
+    """Results from request cache calculation."""
+
+    cache_time: int
+    cache_per_user: bool
 
 
 # SSE Subscriptions

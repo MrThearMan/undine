@@ -212,6 +212,15 @@ Disabled by default to improve performance of the schema creation.
 
 ///
 
+/// details | `ENTRYPOINT_CACHE_DEFAULT_SECONDS`
+    attrs: {id: entrypoint_cache_default_seconds}
+
+Type `int` | Default: `0`
+
+The default caching time an `Entrypoint` for the `@cache` directive.
+
+///
+
 /// details | `ENTRYPOINT_EXTENSIONS_KEY`
     attrs: {id: entrypoint_extensions_key}
 
@@ -701,6 +710,24 @@ Type: `str` | Default: `"orderBy"`
 
 The name of the input argument that is created for an `OrderSet` when a `QueryType`
 using that `OrderSet` is used in a list `Entrypoint` or many-related `Field`.
+
+///
+
+/// details | `REQUEST_CACHE_ALIAS`
+    attrs: {id: request_cache_alias}
+
+Type: `str` | Default: `"DEFAULT_CACHE_ALIAS"`
+
+The cache alias to use for caching requests using the `@cache` directive.
+
+///
+
+/// details | `REQUEST_CACHE_PREFIX`
+    attrs: {id: request_cache_prefix}
+
+Type: `str` | Default: `"undine-cache"`
+
+The prefix to use for the cache keys when caching requests using the `@cache` directive.
 
 ///
 

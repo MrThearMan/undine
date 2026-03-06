@@ -2,22 +2,29 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
+import json
+import re
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Self
 
+from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
+from django.utils.connection import ConnectionProxy
+from graphql import ExecutionResult, OperationType
 
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
-from undine.utils.graphql.utils import get_operation_definition, is_atomic_mutation
+from undine.utils.graphql.caching import RequestCacheCalculator
+from undine.utils.graphql.utils import get_fragment_definitions, get_operation_definition, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
 
-    from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
+    from django.core.cache import BaseCache
+    from graphql import DocumentNode, GraphQLFieldResolver
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol, GQLInfo, T
@@ -61,7 +68,10 @@ class LifecycleHookContext:
     """Lifecycle hooks for this operation."""
 
     def __post_init__(self) -> None:
-        hooks = itertools.chain(undine_settings.LIFECYCLE_HOOKS, [AtomicMutationHook])
+        hooks = itertools.chain(
+            undine_settings.LIFECYCLE_HOOKS,
+            [RequestCacheHook, AtomicMutationHook],
+        )
         self.lifecycle_hooks = [hook(context=self) for hook in hooks]
 
     @classmethod
@@ -209,6 +219,51 @@ class AtomicMutationHook(LifecycleHook):
             if self.is_atomic_mutation and len(info.path.as_list()) == 1:
                 self.error = error
             raise
+
+
+class RequestCacheHook(LifecycleHook):
+    """Hook for caching requests based on schema `@cache` directives."""
+
+    @property
+    def cache(self) -> BaseCache:
+        return ConnectionProxy(caches, undine_settings.REQUEST_CACHE_ALIAS)  # type: ignore[return-value]
+
+    def on_execution(self) -> Generator[None, None, None]:
+        operation = get_operation_definition(self.context.document, self.context.operation_name)
+        if operation.operation != OperationType.QUERY:
+            yield
+            return
+
+        fragments = get_fragment_definitions(self.context.document)
+        cache_results = RequestCacheCalculator(operation, fragments).run()
+
+        if not cache_results.cache_time:
+            yield
+            return
+
+        key = self.get_cache_key(cache_per_user=cache_results.cache_per_user)
+
+        value: str | None = self.cache.get(key)
+        was_cached = value is not None
+        if was_cached:
+            result: dict[str, Any] = json.loads(value)
+            self.context.result = ExecutionResult(data=result["data"], extensions=result.get("extensions"))
+
+        yield
+
+        if was_cached or self.context.result.errors:
+            return
+
+        data = json.dumps(self.context.result.formatted, separators=(",", ":"))
+        self.cache.set(key, data, cache_results.cache_time)
+
+    def get_cache_key(self, *, cache_per_user: bool) -> str:
+        source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
+        variables = json.dumps(self.context.variables, separators=(",", ":"))
+        key = f"{undine_settings.REQUEST_CACHE_PREFIX}|{source}|{variables}"
+        if not cache_per_user:
+            return key
+        return f"{key}|{self.context.request.user.pk}"
 
 
 # Hook managers

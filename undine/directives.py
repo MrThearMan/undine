@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import UserList
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLNonNull, Undefined
+from graphql import DirectiveLocation, GraphQLArgument, GraphQLBoolean, GraphQLInt, GraphQLNonNull, Undefined
 
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import TypeRef
@@ -26,12 +26,12 @@ if TYPE_CHECKING:
     from graphql import GraphQLDirective, GraphQLInputType
 
     from undine import CalculationArgument, Entrypoint, Field, Filter, Order
-    from undine.entrypoint import RootTypeMeta
+    from undine.entrypoint import RootType, RootTypeMeta
     from undine.filtering import FilterSetMeta
-    from undine.interface import InterfaceTypeMeta
+    from undine.interface import InterfaceField, InterfaceType, InterfaceTypeMeta
     from undine.mutation import MutationTypeMeta
     from undine.ordering import OrderSetMeta
-    from undine.query import QueryTypeMeta
+    from undine.query import QueryType, QueryTypeMeta
     from undine.typing import (
         DefaultValueType,
         DirectiveArgumentParams,
@@ -40,10 +40,11 @@ if TYPE_CHECKING:
         T,
         VisibilityFunc,
     )
-    from undine.union import UnionTypeMeta
+    from undine.union import UnionType, UnionTypeMeta
 
 __all__ = [
     "AtomicDirective",
+    "CacheDirective",
     "ComplexityDirective",
     "Directive",
     "DirectiveArgument",
@@ -443,3 +444,64 @@ class ComplexityDirective(
         if hasattr(other, "complexity"):
             other: Field | Entrypoint
             other.complexity = self.value
+
+
+class CacheDirective(
+    Directive,
+    locations=[
+        DirectiveLocation.FIELD_DEFINITION,
+        DirectiveLocation.OBJECT,
+        DirectiveLocation.INTERFACE,
+        DirectiveLocation.UNION,
+    ],
+    schema_name="cache",
+):
+    """Used to define caching behavior either for a single field, or for all fields that return a particular type."""
+
+    for_seconds = DirectiveArgument(
+        GraphQLInt,
+        description="How many seconds this field of fields of this type can be cached for.",
+        schema_name="for",
+    )
+
+    per_user = DirectiveArgument(
+        GraphQLBoolean,
+        description="Whether the value is cached per user or not. Defaults to false.",
+    )
+
+    def __init__(self, *, for_seconds: int = Undefined, per_user: bool = False) -> None:
+        """
+        Create a new `CacheDirective`.
+
+        :param for_seconds: How many seconds this field of fields of this type can be cached for.
+                            I undefined, a default value is used.
+                            For an `Entrypoint`, the value is set by `ENTRYPOINT_CACHE_DEFAULT_SECONDS`.
+                            For a `Field`, the value is inherited from the parent.
+        :param per_user: Whether the value is cached per user or not.
+        """
+        if isinstance(for_seconds, int) and for_seconds < 0:
+            msg = "`for_seconds` must be a positive integer."
+            raise ValueError(msg)
+
+        super().__init__(for_seconds=for_seconds, per_user=per_user)
+
+    def __connected__(self, other: T) -> None:
+        from undine import Entrypoint  # noqa: PLC0415
+
+        if self.for_seconds is Undefined:
+            if isinstance(other, Entrypoint):
+                self.for_seconds = undine_settings.ENTRYPOINT_CACHE_DEFAULT_SECONDS
+            else:
+                self.for_seconds = None  # Inherit from parent
+
+        if hasattr(other, "cache_for_seconds"):
+            other: Entrypoint | Field | InterfaceField
+            other.cache_for_seconds = self.for_seconds
+            other.cache_per_user = self.per_user
+            return
+
+        if hasattr(other, "__cache_for_seconds__"):
+            other: RootType | QueryType | InterfaceType | UnionType
+            other.__cache_for_seconds__ = self.for_seconds
+            other.__cache_per_user__ = self.per_user
+            return

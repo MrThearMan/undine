@@ -7,7 +7,7 @@ from graphql import DirectiveLocation, GraphQLField, Undefined
 
 from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type, is_many
 from undine.dataclasses import TypeRef
-from undine.directives import ComplexityDirective, DirectiveList
+from undine.directives import CacheDirective, ComplexityDirective, DirectiveList
 from undine.exceptions import InterfaceFieldTypeMismatchError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QueryType
@@ -40,6 +40,8 @@ class InterfaceTypeMeta(type):
     # Set in '__new__'
     __field_map__: dict[str, InterfaceField]
     __schema_name__: str
+    __cache_for_seconds__: int | None
+    __cache_per_user__: bool
     __interfaces__: list[type[InterfaceType]]
     __implementations__: list[type[InterfaceType | QueryType]]
     __directives__: DirectiveList
@@ -65,6 +67,8 @@ class InterfaceTypeMeta(type):
         interface_type.__field_map__ = get_members(interface_type, InterfaceField)
         interface_type.__schema_name__ = kwargs.get("schema_name", _name)
         interface_type.__attribute_docstrings__ = parse_class_attribute_docstrings(interface_type)
+        interface_type.__cache_for_seconds__ = kwargs.get("cache_for_seconds")
+        interface_type.__cache_per_user__ = kwargs.get("cache_per_user", False)
 
         interface_type.__interfaces__ = []
         interface_type.__implementations__ = []
@@ -166,6 +170,12 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
      `interfaces: list[type[InterfaceType]] = []`
         Interfaces this `InterfaceType` should implement.
 
+     `cache_for_seconds: int | None = None`
+        How many seconds this `InterfaceType` can be cached for.
+
+     `cache_per_user: bool = False`
+        Whether the `InterfaceType` is cached per user or not.
+
      `schema_name: str = <class name>`
         Override name for the `GraphQLInterfaceType` for this `InterfaceType` in the GraphQL schema.
 
@@ -182,6 +192,8 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
     # Set in metaclass
     __field_map__: ClassVar[dict[str, InterfaceField]]
     __schema_name__: ClassVar[str]
+    __cache_for_seconds__: ClassVar[int | None]
+    __cache_per_user__: ClassVar[bool]
     __interfaces__: ClassVar[list[type[InterfaceType]]]
     __implementations__: ClassVar[list[type[InterfaceType | QueryType]]]
     __directives__: ClassVar[DirectiveList]
@@ -214,6 +226,8 @@ class InterfaceField:
         :param description: Description for the `InterfaceField`.
         :param deprecation_reason: If the `InterfaceField` is deprecated, describes the reason for deprecation.
         :param complexity: The complexity of resolving this `InterfaceField`.
+        :param cache_for_seconds: How many seconds this `InterfaceField` can be cached for.
+        :param cache_per_user: Whether the `InterfaceField` is cached per user or not.
         :param field_name: The name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
         :param directives: GraphQL directives for the `InterfaceField`.
@@ -224,12 +238,16 @@ class InterfaceField:
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
         self.complexity: int = kwargs.get("complexity", Undefined)  # type: ignore[assignment]
+        self.cache_for_seconds: int | None = kwargs.get("cache_for_seconds")
+        self.cache_per_user: bool = kwargs.get("cache_per_user", False)
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
 
         directives = kwargs.get("directives", [])
         if self.complexity:
             directives.append(ComplexityDirective(value=self.complexity))
+        if self.cache_for_seconds is not None:
+            directives.append(CacheDirective(for_seconds=self.cache_for_seconds, per_user=self.cache_per_user))
 
         self.directives = DirectiveList(directives, location=DirectiveLocation.FIELD_DEFINITION)
 
@@ -282,6 +300,8 @@ class InterfaceField:
             self,
             deprecation_reason=self.deprecation_reason,
             complexity=self.complexity,
+            cache_for_seconds=self.cache_for_seconds,
+            cache_per_user=self.cache_per_user,
             field_name=self.field_name,
             schema_name=self.schema_name,
             extensions={undine_settings.INTERFACE_FIELD_EXTENSIONS_KEY: self},
