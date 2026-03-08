@@ -396,16 +396,18 @@ by the [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
 Only responses without any errors will be cached.
 
 You can also cache the response on per-user basis by using the `cache_per_user` argument.
-Note that in this case anonymous users will still share the same cache result.
 
 ```python
 -8<- "schema/entrypoint_cache_per_use.py"
 ```
 
-By default, `Entrypoints` are not cached unless explicitly allowed to be cached.
-You can use the the [`ENTRYPOINT_CACHE_DEFAULT_SECONDS`](settings.md#entrypoint_cache_default_seconds)
-setting to change the default cache time for all `Entrypoints`.
-This is mainly useful for testing purposes.
+Note that responses for authenticated and anonymous users will be cached separately,
+since its quite common that your schema will return slightly different results
+for unauthenticated users.
+
+By default, `Entrypoints` are not cached unless you explicitly set the `cache_time` argument.
+If you want all `Entrypoints` to be cached by default, you can use the
+[`ENTRYPOINT_DEFAULT_CACHE_TIME`](settings.md#entrypoint_default_cache_time) setting.
 
 Custom caching rules can also be set for individual [`Fields`](queries.md#caching_1),
 [`QueryTypes`](queries.md#caching), [`InterfaceTypes`](interfaces.md#caching),
@@ -457,6 +459,21 @@ query {
 
 Since the `project` `Field` is included in the query, and it uses `ProjectType`, which is cached for 10 seconds,
 while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
+
+You can use the [`REQUEST_CACHE_EXTRA_CONTEXT`](settings.md#request_cache_extra_context)
+setting to add extra data to the cache key, for example, to cache different languages separately.
+
+```python
+-8<- "schema/entrypoint_cache_extra_context.py"
+```
+
+You can also use the [`REQUEST_CACHE_READ_PREDICATE`](settings.md#request_cache_read_predicate)
+and [`REQUEST_CACHE_WRITE_PREDICATE`](settings.md#request_cache_write_predicate) settings
+to control whether the cache should be read from or written to given the request.
+
+```python
+-8<- "schema/entrypoint_cache_should_read_write.py"
+```
 
 ### Directives
 
