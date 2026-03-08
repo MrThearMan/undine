@@ -246,26 +246,31 @@ class RequestCacheHook(LifecycleHook):
 
         key = self.get_cache_key(cache_per_user=cache_results.cache_per_user)
 
-        accessed_at = int(time.time())
-        data: ResultCacheData | None = self.cache.get(key)
+        if undine_settings.REQUEST_CACHE_READ_PREDICATE(self.context):
+            accessed_at = int(time.time())
+            data: ResultCacheData | None = self.cache.get(key)
 
-        was_cached = data is not None
-        if was_cached:
-            self.context.result = data["result"]
+            if data is not None:
+                self.context.result = data["result"]
 
-            self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
-            self.context.request.response_headers["Age"] = str(accessed_at - data["created_at"])
+                self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+                self.context.request.response_headers["Age"] = str(accessed_at - data["created_at"])
+
+                yield
+                return
 
         yield
 
-        if was_cached or self.context.result.errors:
+        # Never cache errors since they can result from something transient (e.g. a connection error)
+        if self.context.result.errors:
             return
 
-        data = ResultCacheData(result=self.context.result, created_at=int(time.time()))
-        self.cache.set(key, data, cache_results.cache_time)
+        if undine_settings.REQUEST_CACHE_WRITE_PREDICATE(self.context):
+            data = ResultCacheData(result=self.context.result, created_at=int(time.time()))
+            self.cache.set(key, data, cache_results.cache_time)
 
-        self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
-        self.context.request.response_headers["Age"] = "0"
+            self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+            self.context.request.response_headers["Age"] = "0"
 
     def get_cache_key(self, *, cache_per_user: bool) -> str:
         source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
@@ -427,7 +432,17 @@ with_validation_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_asy
 with_execution_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ExecutionLifecycleHookManager)
 
 
-# Helpers
+# Hook defaults
+
+
+def should_read_from_cache(context: LifecycleHookContext) -> bool:
+    """Check if the result should be read from cache."""
+    return True
+
+
+def should_write_to_cache(context: LifecycleHookContext) -> bool:
+    """Check if the result should be written to cache."""
+    return True
 
 
 def default_extra_context(context: LifecycleHookContext) -> dict[str, Any]:

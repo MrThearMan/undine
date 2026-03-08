@@ -725,9 +725,30 @@ The cache alias to use for caching requests using the `@cache` directive.
 /// details | `REQUEST_CACHE_EXTRA_CONTEXT`
     attrs: {id: request_cache_extra_context}
 
-Type: `Callable[[LifecycleHookContext], Any]` | Default: `"undine.hooks.default_extra_context"`
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.hooks.default_extra_context"`
 
-Function to use for extra context to add to the cache key.  
+Function to use for extra context to add to the cache key.
+Value should be given as the dotted paths to the function.
+
+///
+
+/// details | `REQUEST_CACHE_READ_PREDICATE`
+    attrs: {id: request_cache_read_predicate}
+
+Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.hooks.should_read_from_cache"`
+
+Function to use for checking if the result should be read from cache.
+Value should be given as the dotted paths to the function.
+
+///
+
+/// details | `REQUEST_CACHE_WRITE_PREDICATE`
+    attrs: {id: request_cache_write_predicate}
+
+Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.hooks.should_write_to_cache"`
+
+Function to use for checking if the result should be written to cache.
+Value should be given as the dotted paths to the function.
 
 ///
 

@@ -275,6 +275,12 @@ class UndineDefaultSettings(NamedTuple):
     REQUEST_CACHE_EXTRA_CONTEXT: Callable[[LifecycleHookContext], dict[str, Any]] = "undine.hooks.default_extra_context"  # type: ignore[assignment]
     """Function to use for extra context to add to the cache key."""
 
+    REQUEST_CACHE_READ_PREDICATE: Callable[[LifecycleHookContext], bool] = "undine.hooks.should_read_from_cache"  # type: ignore[assignment]
+    """Function to use for checking if the result should be read from cache."""
+
+    REQUEST_CACHE_WRITE_PREDICATE: Callable[[LifecycleHookContext], bool] = "undine.hooks.should_write_to_cache"  # type: ignore[assignment]
+    """Function to use for checking if the result should be written to cache."""
+
     REQUEST_CACHE_PREFIX: str = "undine-cache"
     """The prefix to use for the cache keys of requests."""
 
@@ -382,6 +388,8 @@ IMPORT_STRINGS: set[str | bytes] = {
     "OPTIMIZER_CLASS",
     "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
     "REQUEST_CACHE_EXTRA_CONTEXT",
+    "REQUEST_CACHE_READ_PREDICATE",
+    "REQUEST_CACHE_WRITE_PREDICATE",
     "SCHEMA",
     "SDL_PRINTER",
     "WEBSOCKET_CONNECTION_INIT_HOOK",
