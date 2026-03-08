@@ -25,6 +25,7 @@ from undine import (
     settings,
 )
 from undine.dataclasses import CacheControlResults
+from undine.typing import CacheKeyData
 from undine.utils.graphql.caching import RequestCacheCalculator
 
 
@@ -37,12 +38,16 @@ def _clear_sse_cache(undine_settings):
 
 
 def get_cache_key(*, source: str, variables: dict[str, Any], user_id: int | None = Undefined) -> str:
-    source = re.sub(r"\s+", "", source, flags=re.UNICODE)
-    variables = json.dumps(variables, separators=(",", ":"))
-    key = f"{source}|{variables}"
+    key_data = CacheKeyData(
+        source=re.sub(r"\s+", "", source, flags=re.UNICODE),
+        operation_name=None,
+        variables=json.dumps(variables, separators=(",", ":"), sort_keys=True),
+    )
     if user_id is not Undefined:
-        key = f"{key}|{user_id}"
-    return f"{settings.undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
+        key_data["user_pk"] = user_id
+
+    key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
+    return f"{settings.undine_settings.REQUEST_CACHE_PREFIX}:{key}"
 
 
 @contextmanager

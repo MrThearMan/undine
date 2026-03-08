@@ -118,6 +118,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Annotatable",
+    "CacheKeyData",
     "CalculationArgumentParams",
     "ClientMessage",
     "CombinableExpression",
@@ -1184,6 +1185,16 @@ class PostgresFTSLangSpecificFields(TypedDict, total=False):
     tamil: list[str] | tuple[str, ...] | set[str]
     turkish: list[str] | tuple[str, ...] | set[str]
     yiddish: list[str] | tuple[str, ...] | set[str]
+
+
+class CacheKeyData(TypedDict):
+    """Data for generating the cache key for a GraphQL operation."""
+
+    source: str
+    operation_name: str | None
+    variables: str
+    user_pk: NotRequired[int | None]
+    extra: NotRequired[str]
 
 
 class ResultCacheData(TypedDict):

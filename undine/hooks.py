@@ -18,7 +18,7 @@ from graphql import OperationType
 
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
-from undine.typing import ResultCacheData
+from undine.typing import CacheKeyData, ResultCacheData
 from undine.utils.graphql.caching import RequestCacheCalculator
 from undine.utils.graphql.utils import get_fragment_definitions, get_operation_definition, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
@@ -273,19 +273,21 @@ class RequestCacheHook(LifecycleHook):
             self.context.request.response_headers["Age"] = "0"
 
     def get_cache_key(self, *, cache_per_user: bool) -> str:
-        source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
-        variables = json.dumps(self.context.variables, separators=(",", ":"))
-        key = f"{source}|{variables}"
+        key_data = CacheKeyData(
+            source=re.sub(r"\s+", "", self.context.source, flags=re.UNICODE),
+            operation_name=self.context.operation_name,
+            variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
+        )
 
         if cache_per_user:
-            key = f"{key}|{self.context.request.user.pk}"
+            key_data["user_pk"] = self.context.request.user.pk
 
         extra_context = undine_settings.REQUEST_CACHE_EXTRA_CONTEXT(self.context)
         if extra_context:
-            extra_context = json.dumps(extra_context, separators=(",", ":"))
-            key = f"{key}|{extra_context}"
+            key_data["extra"] = json.dumps(extra_context, separators=(",", ":"), sort_keys=True)
 
-        return f"{undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
+        key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
+        return f"{undine_settings.REQUEST_CACHE_PREFIX}:{key}"
 
 
 # Hook managers
