@@ -277,6 +277,7 @@ class RequestCacheHook(LifecycleHook):
             source=re.sub(r"\s+", "", self.context.source, flags=re.UNICODE),
             operation_name=self.context.operation_name,
             variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
+            is_authenticated=self.context.request.user.is_authenticated,
         )
 
         if cache_per_user:

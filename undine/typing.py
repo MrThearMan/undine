@@ -1193,6 +1193,7 @@ class CacheKeyData(TypedDict):
     source: str
     operation_name: str | None
     variables: str
+    is_authenticated: bool
     user_pk: NotRequired[int | None]
     extra: NotRequired[str]
 

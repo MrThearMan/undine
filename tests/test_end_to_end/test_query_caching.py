@@ -37,11 +37,19 @@ def _clear_sse_cache(undine_settings):
     cache.clear()
 
 
-def get_cache_key(*, source: str, variables: dict[str, Any], user_id: int | None = Undefined) -> str:
+def get_cache_key(
+    *,
+    source: str,
+    variables: dict[str, Any],
+    operation_name: str | None = None,
+    is_authenticated: bool = False,
+    user_id: int | None = Undefined,
+) -> str:
     key_data = CacheKeyData(
         source=re.sub(r"\s+", "", source, flags=re.UNICODE),
-        operation_name=None,
+        operation_name=operation_name,
         variables=json.dumps(variables, separators=(",", ":"), sort_keys=True),
+        is_authenticated=is_authenticated,
     )
     if user_id is not Undefined:
         key_data["user_pk"] = user_id
@@ -136,10 +144,10 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user(graphql, undine_set
 
     cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
 
-    key_user = get_cache_key(source=query, variables=variables, user_id=user_1.pk)
+    key_user = get_cache_key(source=query, variables=variables, user_id=user_1.pk, is_authenticated=True)
     assert cache.get(key_user) is not None
 
-    key_user = get_cache_key(source=query, variables=variables, user_id=user_2.pk)
+    key_user = get_cache_key(source=query, variables=variables, user_id=user_2.pk, is_authenticated=True)
     assert cache.get(key_user) is None
 
     assert results.cache_time == 10
