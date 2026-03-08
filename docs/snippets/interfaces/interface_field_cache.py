@@ -4,4 +4,4 @@ from undine import InterfaceField, InterfaceType
 
 
 class Named(InterfaceType):
-    name = InterfaceField(GraphQLNonNull(GraphQLString), cache_for_seconds=10, cache_per_user=True)
+    name = InterfaceField(GraphQLNonNull(GraphQLString), cache_time=10, cache_per_user=True)

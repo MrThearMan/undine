@@ -12,7 +12,17 @@ from graphql import GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Project, Task
 from tests.factories import ProjectFactory, TaskFactory, UserFactory
-from undine import Entrypoint, Field, InterfaceField, InterfaceType, MutationType, QueryType, RootType, create_schema
+from undine import (
+    Entrypoint,
+    Field,
+    InterfaceField,
+    InterfaceType,
+    MutationType,
+    QueryType,
+    RootType,
+    create_schema,
+    settings,
+)
 from undine.dataclasses import CacheControlResults
 from undine.utils.graphql.caching import RequestCacheCalculator
 
@@ -56,7 +66,7 @@ def test_end_to_end__caching__entrypoint_cacheable(graphql, undine_settings) -> 
         name = Field()
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10)
+        task = Entrypoint(TaskType, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -92,7 +102,7 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user(graphql, undine_set
         name = Field()
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10, cache_per_user=True)
+        task = Entrypoint(TaskType, cache_time=10, cache_per_user=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -136,7 +146,7 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user__anonymous(graphql,
         name = Field()
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10, cache_per_user=True)
+        task = Entrypoint(TaskType, cache_time=10, cache_per_user=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -168,7 +178,7 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user__anonymous(graphql,
 @pytest.mark.django_db
 def test_end_to_end__caching__entrypoint_not_cacheable__field_ignored(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
-        name = Field(cache_for_seconds=10)
+        name = Field(cache_time=10)
 
     class Query(RootType):
         task = Entrypoint(TaskType)
@@ -204,7 +214,7 @@ def test_end_to_end__caching__entrypoint_not_cacheable__field_ignored(graphql, u
 
 @pytest.mark.django_db
 def test_end_to_end__caching__entrypoint_not_cacheable__type_ignored(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False, cache_for_seconds=10):
+    class TaskType(QueryType[Task], auto=False, cache_time=10):
         name = Field()
 
     class Query(RootType):
@@ -237,10 +247,10 @@ def test_end_to_end__caching__entrypoint_not_cacheable__type_ignored(graphql, un
 @pytest.mark.django_db
 def test_end_to_end__caching__field_cacheable(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
-        name = Field(cache_for_seconds=5)
+        name = Field(cache_time=5)
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10)
+        task = Entrypoint(TaskType, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -274,10 +284,10 @@ def test_end_to_end__caching__field_cacheable(graphql, undine_settings) -> None:
 @pytest.mark.django_db
 def test_end_to_end__caching__field_not_cacheable(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
-        name = Field(cache_for_seconds=0)
+        name = Field(cache_time=0)
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10)
+        task = Entrypoint(TaskType, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -310,7 +320,7 @@ def test_end_to_end__caching__field_not_cacheable(graphql, undine_settings) -> N
 
 @pytest.mark.django_db
 def test_end_to_end__caching__field_type_not_cacheable(graphql, undine_settings) -> None:
-    class ProjectType(QueryType[Project], auto=False, cache_for_seconds=0):
+    class ProjectType(QueryType[Project], auto=False, cache_time=0):
         name = Field()
 
     class TaskType(QueryType[Task], auto=False):
@@ -318,7 +328,7 @@ def test_end_to_end__caching__field_type_not_cacheable(graphql, undine_settings)
         project = Field(ProjectType)
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10)
+        task = Entrypoint(TaskType, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -356,17 +366,17 @@ def test_end_to_end__caching__field_type_not_cacheable(graphql, undine_settings)
 @pytest.mark.django_db
 def test_end_to_end__caching__interface_field_cacheable(graphql, undine_settings) -> None:
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_for_seconds=5)
+        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_time=5)
 
     @Named
     class TaskType(QueryType[Task], auto=False): ...
 
     class Query(RootType):
-        task = Entrypoint(TaskType, cache_for_seconds=10)
+        task = Entrypoint(TaskType, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    assert TaskType.name.cache_for_seconds == 5
+    assert TaskType.name.cache_time == 5
     assert TaskType.name.cache_per_user is False
 
     task = TaskFactory.create(name="Test task")
@@ -399,7 +409,7 @@ def test_end_to_end__caching__interface_field_cacheable(graphql, undine_settings
 @pytest.mark.django_db
 def test_end_to_end__caching__interface_field_cacheable__entrypoint(graphql, undine_settings) -> None:
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_for_seconds=5)
+        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_time=5)
 
     @Named
     class TaskType(QueryType[Task], auto=False):
@@ -411,7 +421,7 @@ def test_end_to_end__caching__interface_field_cacheable__entrypoint(graphql, und
     class Query(RootType):
         task = Entrypoint(TaskType)
         project = Entrypoint(ProjectType)
-        named = Entrypoint(Named, cache_for_seconds=10)
+        named = Entrypoint(Named, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -447,7 +457,7 @@ def test_end_to_end__caching__interface_field_cacheable__entrypoint(graphql, und
 @pytest.mark.django_db
 def test_end_to_end__caching__interface_field_not_cacheable__entrypoint(graphql, undine_settings) -> None:
     class Named(InterfaceType, auto=False):
-        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_for_seconds=0)
+        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_time=0)
 
     @Named
     class TaskType(QueryType[Task], auto=False):
@@ -459,7 +469,7 @@ def test_end_to_end__caching__interface_field_not_cacheable__entrypoint(graphql,
     class Query(RootType):
         task = Entrypoint(TaskType)
         project = Entrypoint(ProjectType)
-        named = Entrypoint(Named, cache_for_seconds=10)
+        named = Entrypoint(Named, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -503,7 +513,7 @@ def test_end_to_end__caching__mutations_not_cacheable(graphql, undine_settings) 
         task = Entrypoint(TaskType)
 
     class Mutation(RootType):
-        create_task = Entrypoint(TaskCreateMutation, cache_for_seconds=10)
+        create_task = Entrypoint(TaskCreateMutation, cache_time=10)
 
     undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 

@@ -3,5 +3,5 @@ from undine import Field, QueryType
 from .models import Task
 
 
-class TaskType(QueryType[Task], cache_for_seconds=10, cache_per_user=True):
+class TaskType(QueryType[Task], cache_time=10, cache_per_user=True):
     name = Field()

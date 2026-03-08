@@ -838,7 +838,7 @@ class EntrypointParams(TypedDict, total=False):
     description: str | None
     deprecation_reason: str | None
     complexity: int
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     schema_name: str
     directives: list[Directive]
@@ -854,7 +854,7 @@ class QueryTypeParams(TypedDict, total=False):
     auto: bool
     exclude: list[str]
     interfaces: list[type[InterfaceType]]
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     register: bool
     schema_name: str
@@ -870,7 +870,7 @@ class FieldParams(TypedDict, total=False):
     description: str | None
     deprecation_reason: str | None
     complexity: int
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     field_name: str
     schema_name: str
@@ -882,7 +882,7 @@ class InterfaceTypeParams(TypedDict, total=False):
     """Arguments for an Undine `InterfaceType`."""
 
     interfaces: list[type[InterfaceType]]
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     schema_name: str
     directives: list[Directive]
@@ -895,7 +895,7 @@ class InterfaceFieldParams(TypedDict, total=False):
     description: str | None
     deprecation_reason: str | None
     complexity: int
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     field_name: str
     schema_name: str
@@ -908,7 +908,7 @@ class UnionTypeParams(TypedDict, total=False):
 
     filterset: type[FilterSet]
     orderset: type[OrderSet]
-    cache_for_seconds: int
+    cache_time: int
     cache_per_user: bool
     schema_name: str
     directives: list[Directive]

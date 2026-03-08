@@ -38,7 +38,7 @@ class UnionTypeMeta(type):
     __schema_name__: str
     __filterset__: type[FilterSet] | None
     __orderset__: type[OrderSet] | None
-    __cache_for_seconds__: int | None
+    __cache_time__: int | None
     __cache_per_user__: bool
     __directives__: DirectiveList
     __extensions__: dict[str, Any]
@@ -78,7 +78,7 @@ class UnionTypeMeta(type):
 
         union_type.__schema_name__ = kwargs.get("schema_name", _name)
         union_type.__attribute_docstrings__ = parse_class_attribute_docstrings(union_type)
-        union_type.__cache_for_seconds__ = kwargs.get("cache_for_seconds")
+        union_type.__cache_time__ = kwargs.get("cache_time")
         union_type.__cache_per_user__ = kwargs.get("cache_per_user", False)
 
         directives = kwargs.get("directives", [])
@@ -136,7 +136,7 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     `schema_name: str = <class name>`
         Override name for `UnionType` in the GraphQL schema.
 
-    `cache_for_seconds: int | None = None`
+    `cache_time: int | None = None`
         How many seconds this `UnionType` can be cached for.
 
     `cache_per_user: bool = False`
@@ -159,7 +159,7 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
     __schema_name__: ClassVar[str]
     __filterset__: ClassVar[type[FilterSet] | None]
     __orderset__: ClassVar[type[OrderSet] | None]
-    __cache_for_seconds__: ClassVar[int | None]
+    __cache_time__: ClassVar[int | None]
     __cache_per_user__: ClassVar[bool]
     __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]

@@ -113,7 +113,7 @@ def test_introspection(graphql, undine_settings):
 
     assert sorted(directives) == [
         "atomic",
-        "cache",
+        "cacheRules",
         "complexity",
         "deprecated",
         "include",

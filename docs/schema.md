@@ -385,7 +385,7 @@ this complexity _adds_ to any complexity calculated from the `QueryType's` `Fiel
 ### Caching
 
 Responses from `Entrypoints` connected to the `Query` `RootType` can be cached by specifying
-the `cache_for_seconds` argument to the `Entrypoint` constructor.
+the `cache_time` argument to the `Entrypoint` constructor.
 
 ```python
 -8<- "schema/entrypoint_cache.py"

@@ -115,7 +115,7 @@ You can provide a description for the `InterfaceType` by adding a docstring to t
 
 ### Caching
 
-You can set custom caching rules for `InterfaceTypes` using the `cache_for_seconds`
+You can set custom caching rules for `InterfaceTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
@@ -247,7 +247,7 @@ This is for documentation purposes only, and does not affect the use of the `Int
 
 ### Caching
 
-You can set custom caching rules for `InterfaceFields` using the `cache_for_seconds`
+You can set custom caching rules for `InterfaceFields` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python

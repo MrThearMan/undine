@@ -26,7 +26,7 @@ from undine import (
     UnionType,
     create_schema,
 )
-from undine.directives import AtomicDirective, CacheDirective, ComplexityDirective, Directive, DirectiveArgument
+from undine.directives import AtomicDirective, CacheRulesDirective, ComplexityDirective, Directive, DirectiveArgument
 from undine.interface import InterfaceField
 from undine.relay import Node
 from undine.scalars import ScalarType
@@ -40,7 +40,7 @@ def gql_dedent(text: str) -> str:
 def directive_filter(directive: GraphQLDirective) -> bool:
     return SDLPrinter.default_directive_filter(directive) and directive.name not in {
         AtomicDirective.__schema_name__,
-        CacheDirective.__schema_name__,
+        CacheRulesDirective.__schema_name__,
         ComplexityDirective.__schema_name__,
     }
 

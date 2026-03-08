@@ -212,7 +212,7 @@ Disabled by default to improve performance of the schema creation.
 
 ///
 
-/// details | `ENTRYPOINT_CACHE_DEFAULT_SECONDS`
+/// details | `ENTRYPOINT_DEFAULT_CACHE_TIME`
     attrs: {id: entrypoint_cache_default_seconds}
 
 Type `int` | Default: `0`

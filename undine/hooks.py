@@ -222,7 +222,7 @@ class AtomicMutationHook(LifecycleHook):
 
 
 class RequestCacheHook(LifecycleHook):
-    """Hook for caching requests based on schema `@cache` directives."""
+    """Hook for caching requests based on schema `@cacheRules` directives."""
 
     @property
     def cache(self) -> BaseCache:
@@ -237,7 +237,7 @@ class RequestCacheHook(LifecycleHook):
         fragments = get_fragment_definitions(self.context.document)
         cache_results = RequestCacheCalculator(operation, fragments).run()
 
-        if not cache_results.cache_time:
+        if cache_results.cache_time <= 0:
             yield
             return
 

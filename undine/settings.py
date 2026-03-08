@@ -266,8 +266,8 @@ class UndineDefaultSettings(NamedTuple):
 
     # Caching
 
-    ENTRYPOINT_CACHE_DEFAULT_SECONDS: int = 0
-    """The default caching time an `Entrypoint` for the @cache directive."""
+    ENTRYPOINT_DEFAULT_CACHE_TIME: int = 0
+    """The default caching time an `Entrypoint` for the @cacheRules directive."""
 
     REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
     """The cache alias to use for caching requests."""

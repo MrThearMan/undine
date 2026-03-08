@@ -119,7 +119,7 @@ A description for a `UnionType` can be provided as a docstring.
 
 ### Caching
 
-You can set custom caching rules for `UnionTypes` using the `cache_for_seconds`
+You can set custom caching rules for `UnionTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python

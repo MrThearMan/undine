@@ -175,7 +175,7 @@ You can provide a description for the `QueryType` by adding a docstring to the c
 
 ### Caching
 
-You can set custom caching rules for `QueryTypes` using the `cache_for_seconds`
+You can set custom caching rules for `QueryTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
@@ -481,7 +481,7 @@ If you want to configure this manually, you can do so by adding the `complexity`
 
 ### Caching
 
-You can set custom caching rules for `Fields` using the `cache_for_seconds`
+You can set custom caching rules for `Fields` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python

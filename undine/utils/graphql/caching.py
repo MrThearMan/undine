@@ -86,8 +86,8 @@ class RequestCacheCalculator:
     def parse_cache_time(self, field: GraphQLField) -> None:
         undine_entrypoint = get_undine_entrypoint(field)
         if undine_entrypoint is not None:
-            if undine_entrypoint.cache_for_seconds is not None:
-                self.cache_time = undine_entrypoint.cache_for_seconds
+            if undine_entrypoint.cache_time is not None:
+                self.cache_time = undine_entrypoint.cache_time
                 self.cache_per_user |= undine_entrypoint.cache_per_user
 
             # Escape if cache time is not set for the Entrypoint or it's zero
@@ -97,8 +97,8 @@ class RequestCacheCalculator:
 
         undine_field = get_undine_field(field)
         if undine_field is not None:
-            if undine_field.cache_for_seconds is not None:
-                self.cache_time = min(self.cache_time, undine_field.cache_for_seconds)
+            if undine_field.cache_time is not None:
+                self.cache_time = min(self.cache_time, undine_field.cache_time)
                 self.cache_per_user |= undine_field.cache_per_user
             else:
                 field_type: GraphQLCompositeType = get_underlying_type(field.type)  # type: ignore[assignment]
@@ -111,8 +111,8 @@ class RequestCacheCalculator:
 
         undine_interface_field = get_undine_interface_field(field)
         if undine_interface_field is not None:
-            if undine_interface_field.cache_for_seconds is not None:
-                self.cache_time = min(self.cache_time, undine_interface_field.cache_for_seconds)
+            if undine_interface_field.cache_time is not None:
+                self.cache_time = min(self.cache_time, undine_interface_field.cache_time)
                 self.cache_per_user |= undine_interface_field.cache_per_user
             else:
                 field_type: GraphQLCompositeType = get_underlying_type(field.type)  # type: ignore[assignment]
@@ -128,23 +128,23 @@ class RequestCacheCalculator:
             case GraphQLObjectType():
                 query_type = get_undine_query_type(field_type)
                 if query_type is not None:
-                    if query_type.__cache_for_seconds__ is not None:
-                        self.cache_time = min(self.cache_time, query_type.__cache_for_seconds__)
+                    if query_type.__cache_time__ is not None:
+                        self.cache_time = min(self.cache_time, query_type.__cache_time__)
                         self.cache_per_user |= query_type.__cache_per_user__
                     return
 
             case GraphQLInterfaceType():
                 interface_type = get_undine_interface_type(field_type)
                 if interface_type is not None:
-                    if interface_type.__cache_for_seconds__ is not None:
-                        self.cache_time = min(self.cache_time, interface_type.__cache_for_seconds__)
+                    if interface_type.__cache_time__ is not None:
+                        self.cache_time = min(self.cache_time, interface_type.__cache_time__)
                         self.cache_per_user |= interface_type.__cache_per_user__
                     return
 
             case GraphQLUnionType():
                 union_type = get_undine_union_type(field_type)
                 if union_type is not None:
-                    if union_type.__cache_for_seconds__ is not None:
-                        self.cache_time = min(self.cache_time, union_type.__cache_for_seconds__)
+                    if union_type.__cache_time__ is not None:
+                        self.cache_time = min(self.cache_time, union_type.__cache_time__)
                         self.cache_per_user |= union_type.__cache_per_user__
                     return

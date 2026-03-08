@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AtomicDirective",
-    "CacheDirective",
+    "CacheRulesDirective",
     "ComplexityDirective",
     "Directive",
     "DirectiveArgument",
@@ -212,7 +212,7 @@ class Directive(metaclass=DirectiveMeta):
         self.__connect__(other)
         return other
 
-    def __connect__(self, other: T) -> None:
+    def __connect__(self, other: Any) -> None:
         if isinstance(getattr(other, "directives", None), DirectiveList):
             other: CalculationArgument | Entrypoint | Field | Filter | Order
             other.directives.append(self)
@@ -235,7 +235,7 @@ class Directive(metaclass=DirectiveMeta):
 
         raise NotCompatibleWithError(obj=self, other=other)
 
-    def __connected__(self, other: T) -> None:
+    def __connected__(self, other: Any) -> None:
         """A hook that is called to connect this directive to an object."""
 
 
@@ -440,13 +440,13 @@ class ComplexityDirective(
             raise ValueError(msg)
         super().__init__(value=value)
 
-    def __connected__(self, other: T) -> None:
+    def __connected__(self, other: Any) -> None:
         if hasattr(other, "complexity"):
             other: Field | Entrypoint
             other.complexity = self.value
 
 
-class CacheDirective(
+class CacheRulesDirective(
     Directive,
     locations=[
         DirectiveLocation.FIELD_DEFINITION,
@@ -454,54 +454,54 @@ class CacheDirective(
         DirectiveLocation.INTERFACE,
         DirectiveLocation.UNION,
     ],
-    schema_name="cache",
+    schema_name="cacheRules",
 ):
     """Used to define caching behavior either for a single field, or for all fields that return a particular type."""
 
-    for_seconds = DirectiveArgument(
-        GraphQLInt,
+    cache_time = DirectiveArgument(
+        GraphQLNonNull(GraphQLInt),
         description="How many seconds this field of fields of this type can be cached for.",
-        schema_name="for",
     )
 
-    per_user = DirectiveArgument(
-        GraphQLBoolean,
-        description="Whether the value is cached per user or not. Defaults to false.",
+    cache_per_user = DirectiveArgument(
+        GraphQLNonNull(GraphQLBoolean),
+        default_value=False,
+        description="Whether the value is cached per user or not.",
     )
 
-    def __init__(self, *, for_seconds: int = Undefined, per_user: bool = False) -> None:
+    def __init__(self, *, cache_time: int = Undefined, cache_per_user: bool = False) -> None:
         """
         Create a new `CacheDirective`.
 
-        :param for_seconds: How many seconds this field of fields of this type can be cached for.
-                            I undefined, a default value is used.
-                            For an `Entrypoint`, the value is set by `ENTRYPOINT_CACHE_DEFAULT_SECONDS`.
-                            For a `Field`, the value is inherited from the parent.
-        :param per_user: Whether the value is cached per user or not.
+        :param cache_time: How many seconds this field of fields of this type can be cached for.
+                           I undefined, a default value is used.
+                           For an `Entrypoint`, the value is set by `ENTRYPOINT_DEFAULT_CACHE_TIME`.
+                           For a `Field`, the value is inherited from the parent.
+        :param cache_per_user: Whether the value is cached per user or not.
         """
-        if isinstance(for_seconds, int) and for_seconds < 0:
-            msg = "`for_seconds` must be a positive integer."
+        if isinstance(cache_time, int) and cache_time < 0:
+            msg = "`cache_time` must be a positive integer."
             raise ValueError(msg)
 
-        super().__init__(for_seconds=for_seconds, per_user=per_user)
+        super().__init__(cache_time=cache_time, cache_per_user=cache_per_user)
 
-    def __connected__(self, other: T) -> None:
+    def __connected__(self, other: Any) -> None:
         from undine import Entrypoint  # noqa: PLC0415
 
-        if self.for_seconds is Undefined:
+        if self.cache_time is Undefined:
             if isinstance(other, Entrypoint):
-                self.for_seconds = undine_settings.ENTRYPOINT_CACHE_DEFAULT_SECONDS
+                self.cache_time = undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME
             else:
-                self.for_seconds = None  # Inherit from parent
+                self.cache_time = None  # Inherit from parent
 
-        if hasattr(other, "cache_for_seconds"):
+        if hasattr(other, "cache_time"):
             other: Entrypoint | Field | InterfaceField
-            other.cache_for_seconds = self.for_seconds
-            other.cache_per_user = self.per_user
+            other.cache_time = self.cache_time
+            other.cache_per_user = self.cache_per_user
             return
 
-        if hasattr(other, "__cache_for_seconds__"):
+        if hasattr(other, "__cache_time__"):
             other: RootType | QueryType | InterfaceType | UnionType
-            other.__cache_for_seconds__ = self.for_seconds
-            other.__cache_per_user__ = self.per_user
+            other.__cache_time__ = self.cache_time
+            other.__cache_per_user__ = self.cache_per_user
             return
