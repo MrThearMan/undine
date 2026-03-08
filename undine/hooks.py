@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Self
 from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
 from django.utils.connection import ConnectionProxy
-from graphql import OperationType
+from graphql import ExecutionResult, OperationType
 
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
@@ -25,10 +25,11 @@ from undine.utils.reflection import delegate_to_subgenerator
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
 
+    from django.contrib.auth.models import AnonymousUser, User
     from django.core.cache import BaseCache
     from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
 
-    from undine.dataclasses import GraphQLHttpParams
+    from undine.dataclasses import CacheControlResults, GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol, GQLInfo, T
 
 __all__ = [
@@ -243,18 +244,15 @@ class RequestCacheHook(LifecycleHook):
             yield
             return
 
-        key = self.get_cache_key(cache_per_user=cache_results.cache_per_user)
+        user = self.context.request.user
+        key = self.get_cache_key(user, cache_per_user=cache_results.cache_per_user)
 
         if undine_settings.REQUEST_CACHE_READ_PREDICATE(self.context):
-            accessed_at = int(time.time())
             data: ResultCacheData | None = self.cache.get(key)
 
             if data is not None:
                 self.context.result = data["result"]
-
-                self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
-                self.context.request.response_headers["Age"] = str(accessed_at - data["created_at"])
-
+                self.set_cache_read_headers(cache_results, data)
                 yield
                 return
 
@@ -267,20 +265,64 @@ class RequestCacheHook(LifecycleHook):
         if undine_settings.REQUEST_CACHE_WRITE_PREDICATE(self.context):
             data = ResultCacheData(result=self.context.result, created_at=int(time.time()))
             self.cache.set(key, data, cache_results.cache_time)
+            self.set_cache_write_headers(cache_results)
 
-            self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
-            self.context.request.response_headers["Age"] = "0"
+    async def on_execution_async(self) -> AsyncGenerator[None, None]:
+        # We need a separate async version for caching and fetching the request user.
+        # Unfortunately, there is a lot of repetition here.
+        operation = get_operation_definition(self.context.document, self.context.operation_name)
+        if operation.operation != OperationType.QUERY:
+            yield
+            return
 
-    def get_cache_key(self, *, cache_per_user: bool) -> str:
+        fragments = get_fragment_definitions(self.context.document)
+        cache_results = RequestCacheCalculator(operation, fragments).run()
+
+        if cache_results.cache_time <= 0:
+            yield
+            return
+
+        user = await self.context.request.auser()
+        key = self.get_cache_key(user, cache_per_user=cache_results.cache_per_user)
+
+        if undine_settings.REQUEST_CACHE_READ_PREDICATE(self.context):
+            data: ResultCacheData | None = await self.cache.aget(key)
+
+            if data is not None:
+                self.context.result = data["result"]
+                self.set_cache_read_headers(cache_results, data)
+                yield
+                return
+
+        yield
+
+        # Never cache errors since they can result from something transient (e.g. a connection error)
+        if self.context.result.errors:
+            return
+
+        if undine_settings.REQUEST_CACHE_WRITE_PREDICATE(self.context):
+            data = ResultCacheData(result=self.context.result, created_at=int(time.time()))
+            await self.cache.aset(key, data, cache_results.cache_time)
+            self.set_cache_write_headers(cache_results)
+
+    def set_cache_read_headers(self, cache_results: CacheControlResults, data: ResultCacheData) -> None:
+        self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+        self.context.request.response_headers["Age"] = str(int(time.time()) - data["created_at"])
+
+    def set_cache_write_headers(self, cache_results: CacheControlResults) -> None:
+        self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+        self.context.request.response_headers["Age"] = "0"
+
+    def get_cache_key(self, user: User | AnonymousUser, *, cache_per_user: bool) -> str:
         key_data = CacheKeyData(
             source=self.context.source,
             operation_name=self.context.operation_name,
             variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
-            is_authenticated=self.context.request.user.is_authenticated,
+            is_authenticated=user.is_authenticated,
         )
 
         if cache_per_user:
-            key_data["user_pk"] = self.context.request.user.pk
+            key_data["user_pk"] = user.pk
 
         extra_context = undine_settings.REQUEST_CACHE_EXTRA_CONTEXT(self.context)
         if extra_context:
