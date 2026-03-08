@@ -10,12 +10,12 @@ from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLStrin
 from settings_holder import SettingsHolder, reload_settings
 
 if TYPE_CHECKING:
-    from collections.abc import Container
+    from collections.abc import Callable, Container
 
     from graphql import ASTValidationRule
 
     from undine.execution import UndineExecutionContext
-    from undine.hooks import LifecycleHook
+    from undine.hooks import LifecycleHook, LifecycleHookContext
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import (
         DocstringParserProtocol,
@@ -272,6 +272,9 @@ class UndineDefaultSettings(NamedTuple):
     REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
     """The cache alias to use for caching requests."""
 
+    REQUEST_CACHE_EXTRA_CONTEXT: Callable[[LifecycleHookContext], Any] = "undine.hooks.default_extra_context"  # type: ignore[assignment]
+    """Function to use for extra context to add to the cache key."""
+
     REQUEST_CACHE_PREFIX: str = "undine-cache"
     """The prefix to use for the cache keys of requests."""
 
@@ -378,6 +381,7 @@ IMPORT_STRINGS: set[str | bytes] = {
     "LIFECYCLE_HOOKS.0",
     "OPTIMIZER_CLASS",
     "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
+    "REQUEST_CACHE_EXTRA_CONTEXT",
     "SCHEMA",
     "SDL_PRINTER",
     "WEBSOCKET_CONNECTION_INIT_HOOK",

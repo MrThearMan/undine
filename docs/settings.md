@@ -722,6 +722,15 @@ The cache alias to use for caching requests using the `@cache` directive.
 
 ///
 
+/// details | `REQUEST_CACHE_EXTRA_CONTEXT`
+    attrs: {id: request_cache_extra_context}
+
+Type: `Callable[[LifecycleHookContext], Any]` | Default: `"undine.hooks.default_extra_context"`
+
+Function to use for extra context to add to the cache key.  
+
+///
+
 /// details | `REQUEST_CACHE_PREFIX`
     attrs: {id: request_cache_prefix}
 

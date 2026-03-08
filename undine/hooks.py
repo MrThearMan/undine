@@ -262,8 +262,14 @@ class RequestCacheHook(LifecycleHook):
         source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
         variables = json.dumps(self.context.variables, separators=(",", ":"))
         key = f"{source}|{variables}"
+
         if cache_per_user:
             key = f"{key}|{self.context.request.user.pk}"
+
+        extra_context = undine_settings.REQUEST_CACHE_EXTRA_CONTEXT(self.context)
+        extra_context = json.dumps(extra_context, separators=(",", ":"))
+        key = f"{key}|{extra_context}"
+
         return f"{undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
 
 
@@ -409,3 +415,11 @@ with_operation_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_asyn
 with_parse_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ParseLifecycleHookManager)
 with_validation_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ValidationLifecycleHookManager)
 with_execution_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_async(ExecutionLifecycleHookManager)
+
+
+# Helpers
+
+
+def default_extra_context(context: LifecycleHookContext) -> Any:
+    """Default extra context for the cache key."""
+    return ""
