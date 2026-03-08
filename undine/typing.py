@@ -178,6 +178,7 @@ __all__ = [
     "QueryTypeParams",
     "RelatedField",
     "RequestMethod",
+    "ResultCacheData",
     "ReverseField",
     "RootTypeParams",
     "SSEOperationCancelEvent",
@@ -1183,6 +1184,13 @@ class PostgresFTSLangSpecificFields(TypedDict, total=False):
     tamil: list[str] | tuple[str, ...] | set[str]
     turkish: list[str] | tuple[str, ...] | set[str]
     yiddish: list[str] | tuple[str, ...] | set[str]
+
+
+class ResultCacheData(TypedDict):
+    """Cache data for caching the result of a GraphQL operation."""
+
+    result: ExecutionResult
+    created_at: int
 
 
 FTSLang: TypeAlias = Literal[

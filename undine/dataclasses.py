@@ -275,6 +275,15 @@ class CacheControlResults:
     cache_time: int
     cache_per_user: bool
 
+    def to_cache_control_header(self) -> str:
+        """Convert the cache results to a Cache-Control header value."""
+        cache_control: list[str] = []
+        if self.cache_time:
+            cache_control.append(f"max-age={self.cache_time}")
+        if self.cache_per_user:
+            cache_control.append("private")
+        return ", ".join(cache_control)
+
 
 # SSE Subscriptions
 

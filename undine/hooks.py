@@ -5,6 +5,7 @@ import hashlib
 import itertools
 import json
 import re
+import time
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from functools import wraps
@@ -13,10 +14,11 @@ from typing import TYPE_CHECKING, Any, Self
 from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
 from django.utils.connection import ConnectionProxy
-from graphql import ExecutionResult, OperationType
+from graphql import OperationType
 
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.settings import undine_settings
+from undine.typing import ResultCacheData
 from undine.utils.graphql.caching import RequestCacheCalculator
 from undine.utils.graphql.utils import get_fragment_definitions, get_operation_definition, is_atomic_mutation
 from undine.utils.reflection import delegate_to_subgenerator
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
 
     from django.core.cache import BaseCache
-    from graphql import DocumentNode, GraphQLFieldResolver
+    from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol, GQLInfo, T
@@ -244,19 +246,26 @@ class RequestCacheHook(LifecycleHook):
 
         key = self.get_cache_key(cache_per_user=cache_results.cache_per_user)
 
-        value: str | None = self.cache.get(key)
-        was_cached = value is not None
+        accessed_at = int(time.time())
+        data: ResultCacheData | None = self.cache.get(key)
+
+        was_cached = data is not None
         if was_cached:
-            result: dict[str, Any] = json.loads(value)
-            self.context.result = ExecutionResult(data=result["data"], extensions=result.get("extensions"))
+            self.context.result = data["result"]
+
+            self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+            self.context.request.response_headers["Age"] = str(accessed_at - data["created_at"])
 
         yield
 
         if was_cached or self.context.result.errors:
             return
 
-        data = json.dumps(self.context.result.formatted, separators=(",", ":"))
+        data = ResultCacheData(result=self.context.result, created_at=int(time.time()))
         self.cache.set(key, data, cache_results.cache_time)
+
+        self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
+        self.context.request.response_headers["Age"] = "0"
 
     def get_cache_key(self, *, cache_per_user: bool) -> str:
         source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
