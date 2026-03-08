@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
-import re
 from contextlib import contextmanager
 from typing import Any, Generator
 from unittest.mock import patch
 
+import freezegun
 import pytest
 from django.core.cache import caches
+from django.core.cache.backends.locmem import LocMemCache
 from graphql import GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Project, Task
@@ -25,7 +27,9 @@ from undine import (
     settings,
 )
 from undine.dataclasses import CacheControlResults
-from undine.typing import CacheKeyData
+from undine.exceptions import GraphQLPermissionError
+from undine.hooks import LifecycleHookContext
+from undine.typing import CacheKeyData, GQLInfo
 from undine.utils.graphql.caching import RequestCacheCalculator
 
 
@@ -44,15 +48,19 @@ def get_cache_key(
     operation_name: str | None = None,
     is_authenticated: bool = False,
     user_id: int | None = Undefined,
+    extra_context: dict[str, Any] | None = None,
 ) -> str:
     key_data = CacheKeyData(
-        source=re.sub(r"\s+", "", source, flags=re.UNICODE),
+        source=source,
         operation_name=operation_name,
         variables=json.dumps(variables, separators=(",", ":"), sort_keys=True),
         is_authenticated=is_authenticated,
     )
     if user_id is not Undefined:
         key_data["user_pk"] = user_id
+
+    if extra_context:
+        key_data["extra"] = json.dumps(extra_context, separators=(",", ":"), sort_keys=True)
 
     key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
     return f"{settings.undine_settings.REQUEST_CACHE_PREFIX}:{key}"
@@ -74,8 +82,84 @@ def catch_cache_results() -> Generator[CacheControlResults, None, None]:
         yield return_value
 
 
+@dataclasses.dataclass
+class CacheIOResults:
+    reads: int = dataclasses.field(default=0)
+    writes: int = dataclasses.field(default=0)
+
+
+@contextmanager
+def record_cache_reads_and_writes() -> Generator[CacheIOResults, None, None]:
+    original_get = LocMemCache.get
+    original_set = LocMemCache.set
+
+    def mock_get(*args, **kwargs):
+        value = original_get(*args, **kwargs)
+        if value is not None:
+            results.reads += 1
+        return value
+
+    def mock_set(*args, **kwargs):
+        results.writes += 1
+        return original_set(*args, **kwargs)
+
+    results = CacheIOResults()
+
+    with (
+        patch.object(LocMemCache, "get", new=mock_get),
+        patch.object(LocMemCache, "set", new=mock_set),
+    ):
+        yield results
+
+
 @pytest.mark.django_db
 def test_end_to_end__caching__entrypoint_cacheable(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    user = UserFactory.create()
+    graphql.force_login(user=user)
+
+    with catch_cache_results() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == {"name": "Test task"}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables, is_authenticated=True)
+    assert cache.get(key) is not None
+
+    # Unauthenticated users have different cache
+    key = get_cache_key(source=query, variables=variables)
+    assert cache.get(key) is None
+
+    assert results.cache_time == 10
+    assert results.cache_per_user is False
+
+    assert response.response.headers["Cache-Control"] == "max-age=10"
+    assert response.response.headers["Age"] == "0"
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__anonymous(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -106,8 +190,15 @@ def test_end_to_end__caching__entrypoint_cacheable(graphql, undine_settings) -> 
     key = get_cache_key(source=query, variables=variables)
     assert cache.get(key) is not None
 
+    # Authenticated users have different cache
+    key = get_cache_key(source=query, variables=variables, is_authenticated=True)
+    assert cache.get(key) is None
+
     assert results.cache_time == 10
     assert results.cache_per_user is False
+
+    assert response.response.headers["Cache-Control"] == "max-age=10"
+    assert response.response.headers["Age"] == "0"
 
 
 @pytest.mark.django_db
@@ -147,11 +238,19 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user(graphql, undine_set
     key_user = get_cache_key(source=query, variables=variables, user_id=user_1.pk, is_authenticated=True)
     assert cache.get(key_user) is not None
 
+    # Not cached for user 2
     key_user = get_cache_key(source=query, variables=variables, user_id=user_2.pk, is_authenticated=True)
+    assert cache.get(key_user) is None
+
+    # Not cached for anonymous user.
+    key_user = get_cache_key(source=query, variables=variables, user_id=None, is_authenticated=True)
     assert cache.get(key_user) is None
 
     assert results.cache_time == 10
     assert results.cache_per_user is True
+
+    assert response.response.headers["Cache-Control"] == "max-age=10, private"
+    assert response.response.headers["Age"] == "0"
 
 
 @pytest.mark.django_db
@@ -182,11 +281,242 @@ def test_end_to_end__caching__entrypoint_cacheable__per_user__anonymous(graphql,
 
     cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
 
+    # Not cached as public response
     key_all = get_cache_key(source=query, variables=variables)
     assert cache.get(key_all) is None
 
     key_user = get_cache_key(source=query, variables=variables, user_id=None)
     assert cache.get(key_user) is not None
+
+    assert response.response.headers["Cache-Control"] == "max-age=10, private"
+    assert response.response.headers["Age"] == "0"
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__cache_write_and_read(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+    key = get_cache_key(source=query, variables=variables)
+
+    with freezegun.freeze_time("2023-01-01T10:00:00Z") as freezer:
+        with record_cache_reads_and_writes() as results:
+            response = graphql(query, variables=variables)
+
+        assert response.has_errors is False, response.errors
+        assert cache.get(key) is not None
+
+        assert results.reads == 0
+        assert results.writes == 1
+
+        assert response.response.headers["Cache-Control"] == "max-age=10"
+        assert response.response.headers["Age"] == "0"
+
+        freezer.move_to("2023-01-01T10:00:05Z")
+
+        with record_cache_reads_and_writes() as results:
+            response = graphql(query, variables=variables)
+
+        assert response.has_errors is False, response.errors
+        assert cache.get(key) is not None
+
+        assert results.reads == 1
+        assert results.writes == 0
+
+        assert response.response.headers["Cache-Control"] == "max-age=10"
+        assert response.response.headers["Age"] == "5"
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__extra_context(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    # Example: Use extra context to cache separately for different languages
+    def extra_context(context: LifecycleHookContext) -> dict[str, Any]:
+        return {"lang": context.request.headers.get("Accept-Language", "en")}
+
+    undine_settings.REQUEST_CACHE_EXTRA_CONTEXT = extra_context
+
+    headers = {"Accept-Language": "fi"}
+
+    response = graphql(query, variables=variables, headers=headers)
+    assert response.has_errors is False, response.errors
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables, extra_context={"lang": "fi"})
+    assert cache.get(key) is not None
+
+    # Other languages have different cache
+    key = get_cache_key(source=query, variables=variables, extra_context={"lang": "en"})
+    assert cache.get(key) is None
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__should_read_from_cache(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    # Example: Only read from cache for requests for a specific language
+    def should_read_from_cache(context: LifecycleHookContext) -> bool:
+        return context.request.headers.get("Accept-Language") == "fi"
+
+    undine_settings.REQUEST_CACHE_READ_PREDICATE = should_read_from_cache
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+    key = get_cache_key(source=query, variables=variables)
+
+    with record_cache_reads_and_writes() as results:
+        response = graphql(query, variables=variables, headers={"Accept-Language": "en"})
+
+    assert response.has_errors is False, response.errors
+    assert cache.get(key) is not None
+
+    # Nothing to read yet
+    assert results.reads == 0
+    assert results.writes == 1
+
+    with record_cache_reads_and_writes() as results:
+        response = graphql(query, variables=variables, headers={"Accept-Language": "en"})
+
+    assert response.has_errors is False, response.errors
+
+    # We don't read due to the predicate
+    assert results.reads == 0
+    assert results.writes == 1
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__should_write_to_cache(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    # Example: Only write to cache for requests for a specific language
+    def should_write_to_cache(context: LifecycleHookContext) -> bool:
+        return context.request.headers.get("Accept-Language") == "fi"
+
+    undine_settings.REQUEST_CACHE_WRITE_PREDICATE = should_write_to_cache
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+    key = get_cache_key(source=query, variables=variables)
+
+    with record_cache_reads_and_writes() as results:
+        response = graphql(query, variables=variables, headers={"Accept-Language": "en"})
+
+    assert response.has_errors is False, response.errors
+    assert cache.get(key) is None
+
+    assert results.reads == 0
+    assert results.writes == 0
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_cacheable__dont_cache_errors(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+        @task.permissions
+        def task_permissions(self: TaskType, info: GQLInfo, value: str) -> None:
+            raise GraphQLPermissionError
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    with record_cache_reads_and_writes() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is True
+    assert response.errors[0]["message"] == "Permission denied."
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables)
+    assert cache.get(key) is None
+
+    assert results.reads == 0
+    assert results.writes == 0
+
+    assert "Cache-Control" not in response.response.headers
+    assert "Age" not in response.response.headers
 
 
 @pytest.mark.django_db

@@ -4,7 +4,6 @@ import dataclasses
 import hashlib
 import itertools
 import json
-import re
 import time
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
@@ -274,7 +273,7 @@ class RequestCacheHook(LifecycleHook):
 
     def get_cache_key(self, *, cache_per_user: bool) -> str:
         key_data = CacheKeyData(
-            source=re.sub(r"\s+", "", self.context.source, flags=re.UNICODE),
+            source=self.context.source,
             operation_name=self.context.operation_name,
             variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
             is_authenticated=self.context.request.user.is_authenticated,
