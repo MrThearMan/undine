@@ -42,8 +42,6 @@ def get_cache_key(*, source: str, variables: dict[str, Any], user_id: int | None
     key = f"{source}|{variables}"
     if user_id is not Undefined:
         key = f"{key}|{user_id}"
-    extra_context = json.dumps("")
-    key = f"{key}|{extra_context}"
     return f"{settings.undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
 
 

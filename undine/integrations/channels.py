@@ -354,8 +354,13 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
         if isinstance(error, GraphQLError) and error.extensions:
             status = error.extensions.get("status_code", status)
 
-        await self.send_headers(status=status, headers={"Content-Type": "application/json; charset=utf-8"})
-        await self.send_body(body=json.dumps(result.formatted, separators=(",", ":")))
+        body = json.dumps(result.formatted, separators=(",", ":"))
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+        }
+
+        await self.send_headers(status=status, headers=headers)
+        await self.send_body(body=body)
 
     async def send_headers(self, *, status: HTTPStatus, headers: dict[str, Any] | None = None) -> None:
         headers = {key.title(): value for key, value in (headers or {}).items()}
@@ -436,8 +441,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
 
         headers: dict[str, str] = {
             "Connection": "keep-alive",
-            "Cache-Control": "no-cache",
-            "Content-Encoding": "none",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
             "Content-Type": "text/event-stream; charset=utf-8",
         }
 

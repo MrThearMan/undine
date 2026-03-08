@@ -267,8 +267,9 @@ class RequestCacheHook(LifecycleHook):
             key = f"{key}|{self.context.request.user.pk}"
 
         extra_context = undine_settings.REQUEST_CACHE_EXTRA_CONTEXT(self.context)
-        extra_context = json.dumps(extra_context, separators=(",", ":"))
-        key = f"{key}|{extra_context}"
+        if extra_context:
+            extra_context = json.dumps(extra_context, separators=(",", ":"))
+            key = f"{key}|{extra_context}"
 
         return f"{undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
 
@@ -420,6 +421,6 @@ with_execution_lifecycle_hooks_manager_async = with_lifecycle_hooks_manager_asyn
 # Helpers
 
 
-def default_extra_context(context: LifecycleHookContext) -> Any:
+def default_extra_context(context: LifecycleHookContext) -> dict[str, Any]:
     """Default extra context for the cache key."""
-    return ""
+    return {}

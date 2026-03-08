@@ -382,14 +382,6 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
     def accepted_types(self) -> list[MediaType]:
         """A list of 'MediaType' objects representing the accepted content types of the request."""
 
-    @property
-    def response_content_type(self) -> str:
-        """Response content type as determined from 'accepted_types' in relation to the endpoint's supported types."""
-
-    @response_content_type.setter
-    def response_content_type(self, value: str) -> None:
-        """Set by decorators in 'undine.http.utils'."""
-
     def is_secure(self) -> bool:
         """A boolean representing whether the request is over HTTPS."""
 
@@ -410,6 +402,24 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
 
     def build_absolute_uri(self, location: str | None = None) -> str:
         """Build an absolute URI from the location and the variables available in this request."""
+
+    # Custom
+
+    @property
+    def response_content_type(self) -> str:
+        """Response content type as determined from 'accepted_types' in relation to the endpoint's supported types."""
+
+    @response_content_type.setter
+    def response_content_type(self, value: str) -> None:
+        """Set by decorators in 'undine.http.utils'."""
+
+    @property
+    def response_headers(self) -> ResponseHeaders:
+        """Response headers as requested during the execution of a request."""
+
+    @response_headers.setter
+    def response_headers(self, value: ResponseHeaders) -> None:
+        """Set by decorators in 'undine.http.utils'."""
 
 
 class DjangoResponseProtocol(Protocol):

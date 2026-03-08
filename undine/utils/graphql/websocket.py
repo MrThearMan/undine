@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from asgiref.typing import WebSocketAcceptEvent, WebSocketCloseEvent, WebSocketSendEvent
 from django.core.handlers.asgi import ASGIRequest
+from django.http.response import ResponseHeaders
 from graphql import GraphQLError
 
 from undine.exceptions import (
@@ -540,13 +541,29 @@ class WebSocketRequest:
     def accepted_types(self) -> list[MediaType]:
         return self._request.accepted_types
 
+    # Custom
+
     @property
     def response_content_type(self) -> str:
-        return getattr(self, "_response_content_type", "application/json")
+        if hasattr(self, "_response_content_type"):
+            return self._response_content_type
+        self._response_content_type = "application/json"
+        return self._response_content_type
 
     @response_content_type.setter
     def response_content_type(self, value: str) -> None:
         self._response_content_type = value
+
+    @property
+    def response_headers(self) -> ResponseHeaders:
+        if hasattr(self, "_response_headers"):
+            return self._response_headers
+        self._response_headers = ResponseHeaders({})
+        return self._response_headers
+
+    @response_headers.setter
+    def response_headers(self, value: ResponseHeaders) -> None:
+        self._response_headers = value
 
 
 # Default hooks

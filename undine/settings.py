@@ -272,7 +272,7 @@ class UndineDefaultSettings(NamedTuple):
     REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
     """The cache alias to use for caching requests."""
 
-    REQUEST_CACHE_EXTRA_CONTEXT: Callable[[LifecycleHookContext], Any] = "undine.hooks.default_extra_context"  # type: ignore[assignment]
+    REQUEST_CACHE_EXTRA_CONTEXT: Callable[[LifecycleHookContext], dict[str, Any]] = "undine.hooks.default_extra_context"  # type: ignore[assignment]
     """Function to use for extra context to add to the cache key."""
 
     REQUEST_CACHE_PREFIX: str = "undine-cache"

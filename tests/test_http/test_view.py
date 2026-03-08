@@ -341,8 +341,7 @@ def test_graphql_view__content_negotiation__event_stream(undine_settings) -> Non
     assert response.status_code == 200
     assert response["Content-Type"] == "text/event-stream; charset=utf-8"
     assert response["Connection"] == "keep-alive"
-    assert response["Cache-Control"] == "no-cache"
-    assert response["Content-Encoding"] == "none"
+    assert response["Cache-Control"] == "no-cache, no-store, must-revalidate"
 
 
 def test_graphql_view__content_negotiation__multipart_mixed(undine_settings) -> None:

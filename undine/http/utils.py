@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 
 from django.http import HttpRequest, HttpResponse
 from django.http.request import MediaType
+from django.http.response import ResponseHeaders
 
 from undine.exceptions import (
     GraphQLMissingContentTypeError,
@@ -200,10 +201,13 @@ def graphql_result_response(
     *,
     status: int = HTTPStatus.OK,
     content_type: str = "application/json",
+    headers: ResponseHeaders | None = None,
 ) -> DjangoResponseProtocol:
     """Serialize the given execution result to an HTTP response."""
     content = json.dumps(result.formatted, separators=(",", ":"))
-    return HttpResponse(content=content, status=status, content_type=content_type)  # type: ignore[return-value]
+    headers = headers or ResponseHeaders({})
+    headers["Content-Type"] = content_type
+    return HttpResponse(content=content, status=status, headers=headers)
 
 
 SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
@@ -243,6 +247,7 @@ def require_graphql_request_sync(func: SyncViewIn) -> SyncViewOut:
             return render_graphiql(request)  # type: ignore[arg-type]
 
         request.response_content_type = media_type
+        request.response_headers = ResponseHeaders({})
         return func(request)  # type: ignore[return-value]
 
     return wrapper  # type: ignore[return-value]
@@ -292,6 +297,7 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
                 return HttpIncorrectMultipartContentTypeResponse()
 
         request.response_content_type = media_type
+        request.response_headers = ResponseHeaders({})
         return await func(request)
 
     return wrapper  # type: ignore[return-value]

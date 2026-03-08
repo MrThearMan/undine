@@ -45,7 +45,11 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     else:
         result = execute_graphql_http_sync(params, request)
 
-    return graphql_result_response(result, content_type=request.response_content_type)
+    return graphql_result_response(
+        result,
+        content_type=request.response_content_type,
+        headers=request.response_headers,
+    )
 
 
 @require_graphql_request_async
@@ -64,7 +68,11 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
     else:
         result = await execute_graphql_http_async(params, request)
 
-    return graphql_result_response(result, content_type=request.response_content_type)
+    return graphql_result_response(
+        result,
+        content_type=request.response_content_type,
+        headers=request.response_headers,
+    )
 
 
 async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
@@ -82,14 +90,13 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
 
     stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
 
-    headers: dict[str, str] = {
-        "Connection": "keep-alive",
-        "Cache-Control": "no-cache",
-        "Content-Encoding": "none",
-    }
+    headers = request.response_headers.copy()
+    headers["Connection"] = "keep-alive"
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    headers["Content-Type"] = "text/event-stream; charset=utf-8"
+    headers.pop("Content-Length", None)
 
-    content_type = "text/event-stream; charset=utf-8"
-    return StreamingHttpResponse(stream, content_type=content_type, headers=headers)
+    return StreamingHttpResponse(stream, headers=headers)
 
 
 async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
@@ -103,5 +110,10 @@ async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoRespo
 
     stream: AsyncIterable[str] = (event.encode() async for event in with_multipart_mixed_heartbeat(event_stream))
 
-    content_type = 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
-    return StreamingHttpResponse(stream, content_type=content_type)
+    headers = request.response_headers.copy()
+    headers["Connection"] = "keep-alive"
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    headers["Content-Type"] = 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
+    headers.pop("Content-Length", None)
+
+    return StreamingHttpResponse(stream, headers=headers)

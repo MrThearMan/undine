@@ -1853,8 +1853,7 @@ async def test_channels__sse__get_stream__response_headers(undine_settings) -> N
     headers = {k.decode(): v.decode() for k, v in start.get("headers", [])}
     assert headers["Content-Type"] == "text/event-stream; charset=utf-8"
     assert headers["Connection"] == "keep-alive"
-    assert headers["Cache-Control"] == "no-cache"
-    assert headers["Content-Encoding"] == "none"
+    assert headers["Cache-Control"] == "no-cache, no-store, must-revalidate"
 
 
 async def test_channels__sse__cancel_subscription__token_via_query_param() -> None:
