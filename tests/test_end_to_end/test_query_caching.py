@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from contextlib import contextmanager
@@ -38,10 +39,10 @@ def _clear_sse_cache(undine_settings):
 def get_cache_key(*, source: str, variables: dict[str, Any], user_id: int | None = Undefined) -> str:
     source = re.sub(r"\s+", "", source, flags=re.UNICODE)
     variables = json.dumps(variables, separators=(",", ":"))
-    key = f"undine-cache|{source}|{variables}"
+    key = f"{source}|{variables}"
     if user_id is not Undefined:
         key = f"{key}|{user_id}"
-    return key
+    return f"{settings.undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
 
 
 @contextmanager

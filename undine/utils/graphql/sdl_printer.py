@@ -468,12 +468,15 @@ class SDLPrinter:  # noqa: PLR0904
 
         args: list[str] = []
         for parameter, value in directive.__parameters__.items():
-            arg = directive.__arguments__[parameter]
-            value_ast = ast_from_value(value, arg.get_argument_type())
+            directive_argument = directive.__arguments__[parameter]
+            if value == directive_argument.default_value:
+                continue
+
+            value_ast = ast_from_value(value, directive_argument.get_argument_type())
             if value_ast is None:
                 continue
 
-            arg_str = f"{arg.schema_name}: {print_ast(value_ast)}"
+            arg_str = f"{directive_argument.schema_name}: {print_ast(value_ast)}"
             args.append(arg_str)
 
         if not args:

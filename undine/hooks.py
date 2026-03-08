@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import itertools
 import json
 import re
@@ -260,10 +261,10 @@ class RequestCacheHook(LifecycleHook):
     def get_cache_key(self, *, cache_per_user: bool) -> str:
         source = re.sub(r"\s+", "", self.context.source, flags=re.UNICODE)
         variables = json.dumps(self.context.variables, separators=(",", ":"))
-        key = f"{undine_settings.REQUEST_CACHE_PREFIX}|{source}|{variables}"
-        if not cache_per_user:
-            return key
-        return f"{key}|{self.context.request.user.pk}"
+        key = f"{source}|{variables}"
+        if cache_per_user:
+            key = f"{key}|{self.context.request.user.pk}"
+        return f"{undine_settings.REQUEST_CACHE_PREFIX}:" + hashlib.sha256(key.encode()).hexdigest()
 
 
 # Hook managers
