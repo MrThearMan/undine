@@ -52,8 +52,9 @@ def get_cache_key(
 ) -> str:
     key_data = CacheKeyData(
         source=source,
-        operation_name=operation_name,
         variables=json.dumps(variables, separators=(",", ":"), sort_keys=True),
+        operation_name=operation_name,
+        extensions="{}",
         is_authenticated=is_authenticated,
     )
     if user_id is not Undefined:

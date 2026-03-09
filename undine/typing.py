@@ -1191,8 +1191,9 @@ class CacheKeyData(TypedDict):
     """Data for generating the cache key for a GraphQL operation."""
 
     source: str
-    operation_name: str | None
     variables: str
+    operation_name: str | None
+    extensions: str
     is_authenticated: bool
     user_pk: NotRequired[int | None]
     extra: NotRequired[str]

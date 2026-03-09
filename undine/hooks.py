@@ -316,8 +316,9 @@ class RequestCacheHook(LifecycleHook):
     def get_cache_key(self, user: User | AnonymousUser, *, cache_per_user: bool) -> str:
         key_data = CacheKeyData(
             source=self.context.source,
-            operation_name=self.context.operation_name,
             variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
+            operation_name=self.context.operation_name,
+            extensions=json.dumps(self.context.extensions, separators=(",", ":"), sort_keys=True),
             is_authenticated=user.is_authenticated,
         )
 
