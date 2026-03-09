@@ -524,7 +524,7 @@ def _(ref: TextChoicesField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputT
         name=ref.choices_enum.__name__,
         values={
             str(value.value): GraphQLEnumValue(value=value, description=str(value.label))
-            for key, value in ref.choices_enum.__members__.items()
+            for value in ref.choices_enum.__members__.values()
         },
         description=convert_to_description(ref) or convert_to_description(ref.choices_enum),
     )
