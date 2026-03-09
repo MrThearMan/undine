@@ -393,7 +393,6 @@ the `cache_time` argument to the `Entrypoint` constructor.
 
 This will cache the response for the specified number of seconds in the cache specified
 by the [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
-Only responses without any errors will be cached.
 
 You can also cache the response on per-user basis by using the `cache_per_user` argument.
 
@@ -401,9 +400,10 @@ You can also cache the response on per-user basis by using the `cache_per_user` 
 -8<- "schema/entrypoint_cache_per_use.py"
 ```
 
-Note that responses for authenticated and anonymous users will be cached separately,
-since its quite common that your schema will return slightly different results
-for unauthenticated users.
+Note that only responses without any errors will be cached, since errors can result
+from transient issues such as a database connection being down. Also, responses for authenticated
+and anonymous users are be cached separately, since its quite common that a schema
+will return slightly different results for unauthenticated users.
 
 By default, `Entrypoints` are not cached unless you explicitly set the `cache_time` argument.
 If you want all `Entrypoints` to be cached by default, you can use the
@@ -416,8 +416,8 @@ If no caching rules have been set for these objects, they opt into being cached
 using the `Entrypoint's` caching rules. Otherwise, the caching is done using
 the most restrictive caching rules found from objects included in the query.
 
-If a `Field` defines a stricter caching rule than an `Entrypoint`,
-those caching rules will be used instead.
+For example, if a `Field` defines a stricter caching rule than an `Entrypoint`,
+the `Field's` caching rules will be used instead.
 
 ```python
 -8<- "schema/entrypoint_cache_field.py"
@@ -460,8 +460,11 @@ query {
 Since the `project` `Field` is included in the query, and it uses `ProjectType`, which is cached for 10 seconds,
 while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
 
-You can use the [`REQUEST_CACHE_EXTRA_CONTEXT`](settings.md#request_cache_extra_context)
-setting to add extra data to the cache key, for example, to cache different languages separately.
+By default, queries are cached based on the GraphQL source document, included variables, the operation name,
+GraphQL operation extensions and the users authentication status. Additionally, per-user caching
+will include the user's primary key. If your requests can vary based on additional factors,
+like accepted language, you can use the [`REQUEST_CACHE_EXTRA_CONTEXT`](settings.md#request_cache_extra_context)
+setting to add that extra data to the cache key.
 
 ```python
 -8<- "schema/entrypoint_cache_extra_context.py"
@@ -469,7 +472,7 @@ setting to add extra data to the cache key, for example, to cache different lang
 
 You can also use the [`REQUEST_CACHE_READ_PREDICATE`](settings.md#request_cache_read_predicate)
 and [`REQUEST_CACHE_WRITE_PREDICATE`](settings.md#request_cache_write_predicate) settings
-to control whether the cache should be read from or written to given the request.
+to control whether the cache should be read from or written to based on a given request.
 
 ```python
 -8<- "schema/entrypoint_cache_should_read_write.py"

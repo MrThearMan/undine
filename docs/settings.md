@@ -213,7 +213,7 @@ Disabled by default to improve performance of the schema creation.
 ///
 
 /// details | `ENTRYPOINT_DEFAULT_CACHE_TIME`
-    attrs: {id: entrypoint_cache_default_seconds}
+    attrs: {id: entrypoint_default_cache_time}
 
 Type `int` | Default: `0`
 
@@ -716,7 +716,7 @@ using that `OrderSet` is used in a list `Entrypoint` or many-related `Field`.
 /// details | `REQUEST_CACHE_ALIAS`
     attrs: {id: request_cache_alias}
 
-Type: `str` | Default: `"DEFAULT_CACHE_ALIAS"`
+Type: `str` | Default: `"default"`
 
 The cache alias to use for caching requests using the `@cache` directive.
 
