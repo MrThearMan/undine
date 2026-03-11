@@ -153,9 +153,9 @@
       const initialVariables = parseStringRecord(params.get("variables"));
       const initialHeaders = parseStringRecord(params.get("headers"));
 
-      const [graphQLDocument, setGraphQLDocument] = React.useState(initialGraphQLDocument);
-      const [variables, setVariables] = React.useState(initialVariables ? formatStringRecord(initialVariables) : null);
-      const [headers, setHeaders] = React.useState(initialHeaders ? formatStringRecord(initialHeaders) : null);
+      const graphQLDocument = initialGraphQLDocument
+      const variables = initialVariables ? formatStringRecord(initialVariables) : null
+      const headers = initialHeaders ? formatStringRecord(initialHeaders) : null
 
       /**
        * @param {string} newGraphQLDocument
@@ -163,7 +163,6 @@
       function onEditQuery(newGraphQLDocument) {
         const value = newGraphQLDocument.trim();
 
-        setGraphQLDocument(value);
         updateParam("document", value, [""]);
         updateHistory();
       }
@@ -173,7 +172,6 @@
        * */
       function onEditVariables(newVariables) {
         if (newVariables.trim() === "") {
-          setVariables(null);
           updateParam("variables", "", [""]);
           updateHistory();
         }
@@ -183,7 +181,6 @@
           return;
         }
 
-        setVariables(formatStringRecord(value));
         updateParam("variables", formatStringRecord(value, true), ["{}"]);
         updateHistory();
       }
@@ -193,7 +190,6 @@
        * */
       function onEditHeaders(newHeaders) {
         if (newHeaders.trim() === "") {
-          setHeaders(null);
           updateParam("headers", "", [""]);
           updateHistory();
         }
@@ -203,7 +199,6 @@
           return;
         }
 
-        setHeaders(formatStringRecord(value));
         updateParam("headers", formatStringRecord(value, true), ["{}"]);
         updateHistory();
       }
