@@ -71,7 +71,14 @@ class RequestCacheCalculator:
                         self.calculate_cache_time(field_type, sel)
 
             case InlineFragmentNode():
-                fragment_type: GraphQLObjectType = undine_settings.SCHEMA.get_type(selection.type_condition.name.value)  # type: ignore[assignment]
+                type_condition = selection.type_condition
+                if type_condition is None:
+                    for sel in selection.selection_set.selections:
+                        self.calculate_cache_time(parent_type, sel)
+                    return
+
+                fragment_name = type_condition.name.value
+                fragment_type: GraphQLObjectType = undine_settings.SCHEMA.get_type(fragment_name)  # type: ignore[assignment]
                 for sel in selection.selection_set.selections:
                     self.calculate_cache_time(fragment_type, sel)
 

@@ -101,7 +101,13 @@ class MaxComplexityRule(ValidationRule):
             self.handle_selection(parent_type, selection)
 
     def handle_inline_fragment(self, parent_type: GraphQLAbstractType, inline_fragment: InlineFragmentNode) -> None:
-        fragment_type_name = inline_fragment.type_condition.name.value
+        type_condition = inline_fragment.type_condition
+        if type_condition is None:
+            for selection in inline_fragment.selection_set.selections:
+                self.handle_selection(parent_type, selection)
+            return
+
+        fragment_type_name = type_condition.name.value
         fragment_type: GraphQLObjectType = self.context.schema.get_type(fragment_type_name)  # type: ignore[assignment]
 
         for selection in inline_fragment.selection_set.selections:

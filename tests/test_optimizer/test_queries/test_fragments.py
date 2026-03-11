@@ -6,7 +6,43 @@ from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
 from undine import Entrypoint, Field, QueryType, RootType, create_schema
 
-# FragmentSpread
+
+@pytest.mark.django_db
+def test_optimizer__inline_fragment(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        type = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo", type=TaskTypeChoices.STORY)
+    TaskFactory.create(name="bar", type=TaskTypeChoices.BUG_FIX)
+
+    query = """
+        query {
+          tasks {
+            name
+            ... {
+              type
+            }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "tasks": [
+            {"name": "foo", "type": "STORY"},
+            {"name": "bar", "type": "BUG_FIX"},
+        ],
+    }
+
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db

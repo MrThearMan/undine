@@ -88,7 +88,13 @@ class GraphQLASTWalker:  # noqa: PLR0904
             if should_skip_node(inline_fragment, self.info.variable_values):
                 continue
 
-            fragment_name = inline_fragment.type_condition.name.value
+            type_condition = inline_fragment.type_condition
+            if type_condition is None:
+                fragment_selections = itertools.chain(inline_fragment.selection_set.selections, results.field_nodes)
+                self.handle_selections(parent_type, fragment_selections)
+                continue
+
+            fragment_name = type_condition.name.value
             types_with_fragments.add(fragment_name)
 
             fragment_type: GraphQLObjectType = self.info.schema.get_type(fragment_name)  # type: ignore[assignment]
@@ -152,6 +158,9 @@ class GraphQLASTWalker:  # noqa: PLR0904
                 fragment_definition = self.get_fragment_def(selection)
                 fragment_selections: ObjectSelections = fragment_definition.selection_set.selections  # type: ignore[assignment]
                 self.handle_object_type(parent_type, fragment_selections)
+
+            elif isinstance(selection, InlineFragmentNode):
+                self.handle_selections(parent_type, selection.selection_set.selections)
 
             else:  # pragma: no cover
                 msg = f"Unhandled object selection node: '{selection}'"

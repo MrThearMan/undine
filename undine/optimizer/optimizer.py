@@ -362,7 +362,12 @@ class QueryOptimizer(GraphQLASTWalker):
 
                 continue
 
-            fragment_name = selection.type_condition.name.value
+            type_condition = selection.type_condition
+            if type_condition is None:
+                self.handle_selections(parent_type, selection.selection_set.selections)
+                continue
+
+            fragment_name = type_condition.name.value
             fragment_type: GraphQLObjectType = self.info.schema.get_type(fragment_name)  # type: ignore[assignment]
             fragment_model = self.get_model(fragment_type)
 
