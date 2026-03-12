@@ -306,7 +306,7 @@ class DirectiveArgument:
         instance.__parameters__[self.name] = value
 
     def get_argument_type(self) -> GraphQLInputType:
-        return convert_to_graphql_type(TypeRef(value=self.ref), is_input=True)
+        return convert_to_graphql_type(TypeRef(value=self.ref), model=None, is_input=True)
 
     def as_graphql_argument(self) -> GraphQLArgument:
         return GraphQLArgument(

@@ -277,7 +277,7 @@ class InterfaceField:
         return undine_settings.SDL_PRINTER.print_field(self.schema_name, field, indent=False)
 
     def get_field_type(self) -> GraphQLOutputType:
-        return convert_to_graphql_type(TypeRef(value=self.ref))
+        return convert_to_graphql_type(TypeRef(value=self.ref), model=None)
 
     def get_field_arguments(self) -> GraphQLArgumentMap | None:
         many = is_many(self.ref, name=self.field_name)

@@ -203,7 +203,7 @@ Arguments:
 
 `ref: Any`: The reference to convert.
 
-`model: type[Model]`: The Django Model associated with the reference.
+`model: type[Model] | None`: The Django Model associated with the reference, if applicable.
 
 `is_input: bool = False`: (Optional) Whether the converted type should be an input or output type.
 """

@@ -222,7 +222,7 @@ class Entrypoint:
 
     def get_field_type(self) -> GraphQLOutputType:
         value = MaybeManyOrNonNull(self.ref, many=self.many, nullable=self.nullable)
-        return convert_to_graphql_type(value)  # type: ignore[return-value]
+        return convert_to_graphql_type(value, model=None)  # type: ignore[return-value]
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
         if self.resolver_func is not None:

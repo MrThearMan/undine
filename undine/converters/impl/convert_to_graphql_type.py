@@ -443,11 +443,21 @@ def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) 
         msg = f"Cannot convert {ref!r} to GraphQL type without generic type arguments."
         raise FunctionDispatcherError(msg)
 
+    # When these references are used in Entrypoints, they are for a Subscription Entrypoint.
+    # In this case, the output is the yielded type, not the iterable itself.
+    # When used in Fields, the reference is a list that loads incrementally, usually using @stream.
+    # Not great, perhaps there is a better way to determine whether to use a list or not.
+    def maybe_list(gql_type: GraphQLInputType | GraphQLOutputType) -> GraphQLInputType | GraphQLOutputType:
+        if kwargs.get("model"):
+            return GraphQLNonNull(GraphQLList(gql_type))
+        return gql_type
+
     return_type = ref.__args__[0]  # type: ignore[attr-defined]
 
     origin = get_origin(return_type)
     if origin not in {types.UnionType, Union}:
-        return convert_to_graphql_type(TypeRef(return_type), **kwargs)
+        graphql_type = convert_to_graphql_type(TypeRef(return_type), **kwargs)
+        return maybe_list(graphql_type)
 
     args = get_flattened_generic_params(return_type)
     nullable = types.NoneType in args
@@ -456,13 +466,13 @@ def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) 
     args = tuple(arg for arg in args if arg is not types.NoneType and not issubclass(arg, BaseException))
 
     if len(args) != 1:
-        return GraphQLAny
+        return maybe_list(GraphQLAny)
 
     graphql_type = convert_to_graphql_type(TypeRef(args[0]), **kwargs)
     if nullable and isinstance(graphql_type, GraphQLNonNull):
         graphql_type = graphql_type.of_type
 
-    return graphql_type
+    return maybe_list(graphql_type)
 
 
 @convert_to_graphql_type.register
