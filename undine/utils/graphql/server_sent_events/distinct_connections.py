@@ -4,17 +4,15 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
-from graphql import GraphQLError
+from graphql import ExecutionResult, GraphQLError
 
 from undine.dataclasses import CompletedEventDC, KeepAliveSignalDC, NextEventDC
-from undine.exceptions import GraphQLErrorGroup, GraphQLUnexpectedError
+from undine.exceptions import GraphQLErrorGroup, GraphQLUnexpectedError, GraphQLUnexpectedMultiplePayloadsError
 from undine.execution import execute_graphql_with_subscription
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
-    from graphql import ExecutionResult
-
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol
 
@@ -30,35 +28,41 @@ async def execute_graphql_sse_dc(
     request: DjangoRequestProtocol,
 ) -> AsyncIterator[NextEventDC | CompletedEventDC]:
     """Execute a GraphQL operation received through server-sent events in distinct connections mode."""
-    stream = await execute_graphql_with_subscription(params, request)
+    result = await execute_graphql_with_subscription(params, request)
 
-    if not isinstance(stream, AsyncIterator):
-        yield NextEventDC(data=stream.formatted)
+    if isinstance(result, ExecutionResult):
+        yield NextEventDC(data=result)
+        yield CompletedEventDC()
+        return
+
+    if not isinstance(result, AsyncIterator):
+        payload = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
+        yield NextEventDC(data=payload)
         yield CompletedEventDC()
         return
 
     try:
-        async for data in stream:
-            yield NextEventDC(data=data.formatted)
+        async for data in result:
+            yield NextEventDC(data=data)
 
     except GraphQLError as error:
-        result = get_error_execution_result(error)
-        yield NextEventDC(data=result.formatted)
+        payload = get_error_execution_result(error)
+        yield NextEventDC(data=payload)
 
     except GraphQLErrorGroup as error:
-        result = get_error_execution_result(error)
-        yield NextEventDC(data=result.formatted)
+        payload = get_error_execution_result(error)
+        yield NextEventDC(data=payload)
 
     except Exception as error:  # noqa: BLE001
-        result = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
-        yield NextEventDC(data=result.formatted)
+        payload = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        yield NextEventDC(data=payload)
 
     yield CompletedEventDC()
 
 
 async def result_to_sse_dc(result: ExecutionResult) -> AsyncIterator[NextEventDC | CompletedEventDC]:  # noqa: RUF029
     """Get iterator for a single result received through server-sent events in distinct connections mode."""
-    yield NextEventDC(data=result.formatted)
+    yield NextEventDC(data=result)
     yield CompletedEventDC()
 
 

@@ -36,7 +36,7 @@ from tests.test_integrations.helpers import (
 )
 from undine import Entrypoint, RootType, create_schema
 from undine.exceptions import GraphQLErrorGroup
-from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
+from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 from undine.typing import GQLInfo, PingMessage, PongMessage, RequestMethod, SSEState
 from undine.utils.graphql.server_sent_events import (
     get_sse_operation_claim_key,

@@ -13,8 +13,9 @@ from asgiref.sync import sync_to_async
 from django.conf import settings as django_settings
 from django.core.cache import caches
 from django.core.handlers.asgi import ASGIRequest
+from django.http.request import MediaType
 from django.http.response import ResponseHeaders
-from graphql import GraphQLError
+from graphql import ExecutionResult, GraphQLError
 
 from undine.dataclasses import CompletedEventSC, NextEventSC
 from undine.exceptions import (
@@ -23,6 +24,7 @@ from undine.exceptions import (
     GraphQLSSEStreamAlreadyOpenError,
     GraphQLSSEStreamNotFoundError,
     GraphQLUnexpectedError,
+    GraphQLUnexpectedMultiplePayloadsError,
 )
 from undine.execution import execute_graphql_with_subscription
 from undine.settings import undine_settings
@@ -35,7 +37,6 @@ if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
     from django.core.files.uploadedfile import UploadedFile
     from django.http import HttpHeaders, QueryDict
-    from django.http.request import MediaType
     from django.utils.datastructures import MultiValueDict
 
     from undine.dataclasses import GraphQLHttpParams
@@ -62,28 +63,34 @@ async def execute_graphql_sse_sc(
     request: DjangoRequestProtocol,
 ) -> AsyncIterator[NextEventSC | CompletedEventSC]:
     """Execute a GraphQL operation received through server-sent events in single connection mode."""
-    stream = await execute_graphql_with_subscription(params, request)
+    result = await execute_graphql_with_subscription(params, request)
 
-    if not isinstance(stream, AsyncIterator):
-        yield NextEventSC(operation_id=operation_id, payload=stream.formatted)
+    if isinstance(result, ExecutionResult):
+        yield NextEventSC(operation_id=operation_id, payload=result)
+        yield CompletedEventSC(operation_id=operation_id)
+        return
+
+    if not isinstance(result, AsyncIterator):
+        payload = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
+        yield NextEventSC(operation_id=operation_id, payload=payload)
         yield CompletedEventSC(operation_id=operation_id)
         return
 
     try:
-        async for data in stream:
-            yield NextEventSC(operation_id=operation_id, payload=data.formatted)
+        async for data in result:
+            yield NextEventSC(operation_id=operation_id, payload=data)
 
     except GraphQLError as error:
-        result = get_error_execution_result(error)
-        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
+        payload = get_error_execution_result(error)
+        yield NextEventSC(operation_id=operation_id, payload=payload)
 
     except GraphQLErrorGroup as error:
-        result = get_error_execution_result(error)
-        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
+        payload = get_error_execution_result(error)
+        yield NextEventSC(operation_id=operation_id, payload=payload)
 
     except Exception as error:  # noqa: BLE001
-        result = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
-        yield NextEventSC(operation_id=operation_id, payload=result.formatted)
+        payload = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        yield NextEventSC(operation_id=operation_id, payload=payload)
 
     yield CompletedEventSC(operation_id=operation_id)
 
@@ -414,14 +421,14 @@ class SSERequest:
     # Custom
 
     @property
-    def response_content_type(self) -> str:
+    def response_content_type(self) -> MediaType:
         if hasattr(self, "_response_content_type"):
             return self._response_content_type
-        self._response_content_type = "application/json"
+        self._response_content_type = MediaType("application/json")
         return self._response_content_type
 
     @response_content_type.setter
-    def response_content_type(self, value: str) -> None:
+    def response_content_type(self, value: MediaType) -> None:
         self._response_content_type = value
 
     @property

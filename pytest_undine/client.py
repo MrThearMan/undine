@@ -9,10 +9,13 @@ import pytest
 from asgiref.typing import ASGIVersions
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
-from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError
+from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError, version_info
 
 from undine.dataclasses import (
     CompletedEventDC,
+    IncrementalDeliveryComplete,
+    IncrementalDeliveryHeartbeat,
+    IncrementalDeliveryResponse,
     KeepAliveSignalDC,
     MultipartMixedHttpComplete,
     MultipartMixedHttpHeartbeat,
@@ -33,7 +36,13 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files import File
     from django.http import StreamingHttpResponse
-    from graphql import GraphQLFormattedError
+    from graphql import (
+        FormattedInitialIncrementalExecutionResult,
+        FormattedSubsequentIncrementalExecutionResult,
+        GraphQLFormattedError,
+        IncrementalResult,
+    )
+    from graphql.execution import CompletedResult, PendingResult
 
     from undine.typing import DjangoTestClientResponseProtocol
 
@@ -182,161 +191,6 @@ class WebSocketMixin:
         )  # type: ignore[typeddict-item]
 
 
-class SSEMixin:
-    """Mixin to support GraphQL over SSE requests."""
-
-    async def over_sse(
-        self,
-        document: str,
-        *,
-        variables: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        operation_name: str | None = None,
-        use_persisted_document: bool = False,
-        count_queries: bool = False,
-    ) -> AsyncGenerator[GraphQLClientSSEResponse, None]:
-        """
-        Send a GraphQL over SSE request in distinct connection mode and yield the execution results.
-
-        :param document: GraphQL document string to send in the request.
-        :param variables: GraphQL variables for the document.
-        :param headers: Headers for the request.
-        :param operation_name: If given document includes multiple operations,
-                               this is required to select the operation to execute.
-        :param use_persisted_document: Instead of sending the whole document,
-                                       convert it to a persisted document ID and send that.
-        :param count_queries: If True, count the number of queries executed during the request.
-        """
-        variables = variables or {}
-        body: dict[str, Any] = {}
-        headers = headers or {}
-
-        if use_persisted_document:
-            body["documentId"] = to_document_id(document)
-        else:
-            body["query"] = document
-
-        if variables:
-            body["variables"] = variables
-        if operation_name is not None:
-            body["operationName"] = operation_name
-
-        headers["Accept"] = "text/event-stream"
-
-        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
-            path=f"/{undine_settings.GRAPHQL_PATH}",
-            data=body,
-            content_type="application/json",
-            headers=headers,
-        )
-        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
-
-        while True:
-            with capture_database_queries(enabled=count_queries) as results:
-                try:
-                    event_data = await anext(responses)
-                except StopAsyncIteration as error:
-                    msg = "Stream ended without complete event"
-                    raise RuntimeError(msg) from error
-
-            event: NextEventDC | CompletedEventDC | KeepAliveSignalDC | None = None
-            for decode in [_decode_sse_keep_alive_dc, _decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
-                with suppress(Exception):
-                    event = decode(event_data)
-                    break
-
-            if event is None:
-                msg = f"Unknown event type: {event_data}"
-                raise RuntimeError(msg)
-
-            if isinstance(event, KeepAliveSignalDC):
-                continue
-
-            if isinstance(event, CompletedEventDC):
-                break
-
-            yield GraphQLClientSSEResponse(event.data, results)
-
-
-class MultipartMixedHTTPMixin:
-    """Mixin to support multipart/mixed HTTP protocol for GraphQL requests."""
-
-    async def multipart_mixed(
-        self,
-        document: str,
-        *,
-        variables: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        operation_name: str | None = None,
-        use_persisted_document: bool = False,
-        count_queries: bool = False,
-    ) -> AsyncGenerator[GraphQLClientMultipartMixedHTTPResponse, None]:
-        """
-        Send a multipart/mixed HTTP request and yield the execution results.
-
-        :param document: GraphQL document string to send in the request.
-        :param variables: GraphQL variables for the document.
-        :param headers: Headers for the request.
-        :param operation_name: If given document includes multiple operations,
-                               this is required to select the operation to execute.
-        :param use_persisted_document: Instead of sending the whole document,
-                                       convert it to a persisted document ID and send that.
-        :param count_queries: If True, count the number of queries executed during the request.
-        """
-        variables = variables or {}
-        body: dict[str, Any] = {}
-        headers = headers or {}
-
-        if use_persisted_document:
-            body["documentId"] = to_document_id(document)
-        else:
-            body["query"] = document
-
-        if variables:
-            body["variables"] = variables
-        if operation_name is not None:
-            body["operationName"] = operation_name
-
-        headers["Accept"] = 'multipart/mixed;subscriptionSpec="1.0", application/json'
-
-        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
-            path=f"/{undine_settings.GRAPHQL_PATH}",
-            data=body,
-            content_type="application/json",
-            headers=headers,
-        )
-        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
-
-        while True:
-            with capture_database_queries(enabled=count_queries) as results:
-                try:
-                    event_data = await anext(responses)
-                except StopAsyncIteration:
-                    break
-
-            event: MultipartMixedHttpResponse | MultipartMixedHttpComplete | MultipartMixedHttpHeartbeat | None = None
-            for decode in [
-                _decode_multipart_mixed_complete,
-                _decode_multipart_mixed_heartbeat,
-                _decode_multipart_mixed,
-            ]:
-                with suppress(Exception):
-                    event = decode(event_data)
-                    break
-
-            if event is None:
-                msg = f"Unknown event type: {event_data}"
-                raise RuntimeError(msg)
-
-            if isinstance(event, MultipartMixedHttpHeartbeat):
-                continue
-
-            if isinstance(event, MultipartMixedHttpComplete):
-                break
-
-            yield GraphQLClientMultipartMixedHTTPResponse(event, results)
-
-
 class GraphQLClient(WebSocketMixin, Client):
     """A GraphQL client for testing."""
 
@@ -414,7 +268,7 @@ class GraphQLClient(WebSocketMixin, Client):
         return user
 
 
-class AsyncGraphQLClient(MultipartMixedHTTPMixin, SSEMixin, WebSocketMixin, AsyncClient):
+class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
     """An async GraphQL client for testing."""
 
     async def __call__(
@@ -489,6 +343,243 @@ class AsyncGraphQLClient(MultipartMixedHTTPMixin, SSEMixin, WebSocketMixin, Asyn
         user, _ = await get_user_model().objects.aget_or_create(username=username, defaults=defaults)
         await self.aforce_login(user)
         return user
+
+    # SSE
+
+    async def over_sse(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+        count_queries: bool = False,
+    ) -> AsyncGenerator[GraphQLClientSSEResponse, None]:
+        """
+        Send a GraphQL over SSE request in distinct connection mode and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+        headers = headers or {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        headers["Accept"] = "text/event-stream"
+
+        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
+            path=f"/{undine_settings.GRAPHQL_PATH}",
+            data=body,
+            content_type="application/json",
+            headers=headers,
+        )
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+
+        while True:
+            with capture_database_queries(enabled=count_queries) as results:
+                try:
+                    event_data = await anext(responses)
+                except StopAsyncIteration as error:
+                    msg = "Stream ended without complete event"
+                    raise RuntimeError(msg) from error
+
+            event: NextEventDC | CompletedEventDC | KeepAliveSignalDC | None = None
+            for decode in [_decode_sse_keep_alive_dc, _decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
+                with suppress(Exception):
+                    event = decode(event_data)
+                    break
+
+            if event is None:
+                msg = f"Unknown event type: {event_data}"
+                raise RuntimeError(msg)
+
+            if isinstance(event, KeepAliveSignalDC):
+                continue
+
+            if isinstance(event, CompletedEventDC):
+                break
+
+            yield GraphQLClientSSEResponse(event.data, results)
+
+    # Multipart/mixed HTTP subscriptions
+
+    async def multipart_mixed_subscription(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+        count_queries: bool = False,
+    ) -> AsyncGenerator[GraphQLClientMultipartMixedHTTPSubscriptionResponse, None]:
+        """
+        Send a multipart/mixed HTTP request and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
+        """
+        variables = variables or {}
+        body: dict[str, Any] = {}
+        headers = headers or {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        headers["Accept"] = "multipart/mixed; subscriptionSpec=1.0"
+
+        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
+            path=f"/{undine_settings.GRAPHQL_PATH}",
+            data=body,
+            content_type="application/json",
+            headers=headers,
+        )
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+
+        while True:
+            with capture_database_queries(enabled=count_queries) as results:
+                try:
+                    event_data = await anext(responses)
+                except StopAsyncIteration:
+                    break
+
+            event: MultipartMixedHttpResponse | MultipartMixedHttpComplete | MultipartMixedHttpHeartbeat | None = None
+            for decode in [
+                _decode_multipart_mixed_complete,
+                _decode_multipart_mixed_heartbeat,
+                _decode_multipart_mixed,
+            ]:
+                with suppress(Exception):
+                    event = decode(event_data)
+                    break
+
+            if event is None:
+                msg = f"Unknown event type: {event_data}"
+                raise RuntimeError(msg)
+
+            if isinstance(event, MultipartMixedHttpHeartbeat):
+                continue
+
+            if isinstance(event, MultipartMixedHttpComplete):
+                break
+
+            yield GraphQLClientMultipartMixedHTTPSubscriptionResponse(event, results)
+
+    # Incremental delivery over HTTP
+
+    async def incremental_delivery(
+        self,
+        document: str,
+        *,
+        variables: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        operation_name: str | None = None,
+        use_persisted_document: bool = False,
+        count_queries: bool = False,
+    ) -> AsyncGenerator[GraphQLClientIncrementalDeliveryResponse, None]:
+        """
+        Send an incremental delivery request and yield the execution results.
+
+        :param document: GraphQL document string to send in the request.
+        :param variables: GraphQL variables for the document.
+        :param headers: Headers for the request.
+        :param operation_name: If given document includes multiple operations,
+                               this is required to select the operation to execute.
+        :param use_persisted_document: Instead of sending the whole document,
+                                       convert it to a persisted document ID and send that.
+        :param count_queries: If True, count the number of queries executed during the request.
+        """
+        if version_info < (3, 3, 0):
+            msg = "The `incremental_delivery` method requires graphql-core >= 3.3.0"
+            raise RuntimeError(msg)
+
+        variables = variables or {}
+        body: dict[str, Any] = {}
+        headers = headers or {}
+
+        if use_persisted_document:
+            body["documentId"] = to_document_id(document)
+        else:
+            body["query"] = document
+
+        if variables:
+            body["variables"] = variables
+        if operation_name is not None:
+            body["operationName"] = operation_name
+
+        headers["Accept"] = "multipart/mixed"
+
+        response: StreamingHttpResponse = await self.post(  # type: ignore[assignment]
+            path=f"/{undine_settings.GRAPHQL_PATH}",
+            data=body,
+            content_type="application/json",
+            headers=headers,
+        )
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+
+        while True:
+            with capture_database_queries(enabled=count_queries) as results:
+                try:
+                    event_data = await anext(responses)
+                except StopAsyncIteration:
+                    break
+
+            event: IncrementalDeliveryResponse | IncrementalDeliveryComplete | IncrementalDeliveryHeartbeat | None = (
+                None
+            )
+            for decode in [
+                _decode_incremental_delivery_complete,
+                _decode_incremental_delivery_heartbeat,
+                _decode_incremental_delivery,
+            ]:
+                with suppress(Exception):
+                    event = decode(event_data)
+                    break
+
+            if event is None:
+                msg = f"Unknown event type: {event_data}"
+                raise RuntimeError(msg)
+
+            if isinstance(event, IncrementalDeliveryHeartbeat):
+                continue
+
+            if isinstance(event, IncrementalDeliveryComplete):
+                break
+
+            yield GraphQLClientIncrementalDeliveryResponse(event, results)
+
+
+# Responses
 
 
 class BaseGraphQLClientResponse(ABC):
@@ -708,7 +799,7 @@ class GraphQLClientSSEResponse(BaseGraphQLClientResponse):
         return self.result
 
 
-class GraphQLClientMultipartMixedHTTPResponse(BaseGraphQLClientResponse):
+class GraphQLClientMultipartMixedHTTPSubscriptionResponse(BaseGraphQLClientResponse):
     """A multipart/mixed HTTP response from the GraphQLClient."""
 
     def __init__(self, result: MultipartMixedHttpResponse, database_queries: DBQueryData) -> None:
@@ -719,6 +810,22 @@ class GraphQLClientMultipartMixedHTTPResponse(BaseGraphQLClientResponse):
     def json(self) -> FormattedExecutionResult:
         """Return the JSON content of the response."""
         return self.result.payload.formatted
+
+
+class GraphQLClientIncrementalDeliveryResponse(BaseGraphQLClientResponse):
+    """A incremental delivery response from the GraphQLClient."""
+
+    def __init__(self, result: IncrementalDeliveryResponse, database_queries: DBQueryData) -> None:
+        self.result = result
+        super().__init__(database_queries=database_queries)
+
+    @property
+    def json(self) -> FormattedInitialIncrementalExecutionResult | FormattedSubsequentIncrementalExecutionResult:
+        """Return the JSON content of the response."""
+        return self.result.result.formatted
+
+
+# Helpers
 
 
 def _create_multipart_data(body: dict[str, Any], files: dict[File, list[str]]) -> dict[str, Any]:
@@ -880,6 +987,157 @@ def _decode_multipart_mixed_heartbeat(event_data: bytes | str) -> MultipartMixed
 
     msg = "Not a heartbeat event"
     raise ValueError(msg)
+
+
+def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDeliveryResponse:
+    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # noqa: PLC0415
+
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    event_parts = event_data.split("\r\n")
+
+    if len(event_parts) != 5:  # noqa: PLR2004
+        msg = "Invalid incremental delivery event"
+        raise ValueError(msg)
+
+    if event_parts[:-1] != ["", "--graphql", "Content-Type: application/json", ""]:
+        msg = "Invalid incremental delivery event"
+        raise ValueError(msg)
+
+    data = json.loads(event_parts[-1])
+
+    if "hasNext" not in data:
+        msg = "Missing 'hasNext' key"
+        raise ValueError(msg)
+
+    pending: list[PendingResult] | None = None
+    if "pending" in data:
+        pending = _decode_pending_results(data["pending"])
+
+    if "data" in data:
+        errors: list[GraphQLError] | None = None
+        if "errors" in data:
+            errors = _decode_formatted_errors(data["errors"])
+
+        initial_result = InitialIncrementalExecutionResult(
+            data=data["data"],
+            errors=errors,
+            pending=pending,
+            has_next=data["hasNext"],
+            extensions=data.get("extensions"),
+        )
+        return IncrementalDeliveryResponse(result=initial_result)
+
+    incremental: list[IncrementalResult] | None = None
+    if "incremental" in data:
+        incremental = _decode_incremental_results(data["incremental"])
+
+    completed: list[CompletedResult] | None = None
+    if "completed" in data:
+        completed = _decode_completed_results(data["completed"])
+
+    subsequent_result = SubsequentIncrementalExecutionResult(
+        pending=pending,
+        incremental=incremental,
+        completed=completed,
+        has_next=data["hasNext"],
+        extensions=data.get("extensions"),
+    )
+    return IncrementalDeliveryResponse(result=subsequent_result)
+
+
+def _decode_incremental_delivery_heartbeat(event_data: bytes | str) -> IncrementalDeliveryHeartbeat:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    if event_data == '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}':
+        return IncrementalDeliveryHeartbeat()
+
+    msg = "Not an incremental delivery heartbeat event"
+    raise ValueError(msg)
+
+
+def _decode_incremental_delivery_complete(event_data: bytes | str) -> IncrementalDeliveryComplete:
+    if isinstance(event_data, bytes):
+        event_data = event_data.decode()
+
+    if event_data == "\r\n--graphql--\r\n":
+        return IncrementalDeliveryComplete()
+
+    msg = "Not an incremental delivery complete event"
+    raise ValueError(msg)
+
+
+def _decode_pending_results(event_data: list[dict[str, Any]]) -> list[PendingResult]:
+    from graphql.execution import PendingResult  # noqa: PLC0415
+
+    return [
+        PendingResult(
+            id=pending["id"],
+            path=pending["path"],
+            label=pending.get("label"),
+        )
+        for pending in event_data
+    ]
+
+
+def _decode_completed_results(event_data: list[dict[str, Any]]) -> list[CompletedResult]:
+    from graphql.execution import CompletedResult  # noqa: PLC0415
+
+    completed: list[CompletedResult] = []
+    for data in event_data:
+        errors: list[GraphQLError] | None = None
+        if "errors" in data:
+            errors = _decode_formatted_errors(data["errors"])
+
+        completed.append(CompletedResult(id=data["id"], errors=errors))
+
+    return completed
+
+
+def _decode_incremental_results(event_data: list[dict[str, Any]]) -> list[IncrementalResult]:
+    from graphql import IncrementalDeferResult, IncrementalStreamResult  # noqa: PLC0415
+
+    results: list[IncrementalResult] = []
+
+    for data in event_data:
+        if "data" in data:
+            errors: list[GraphQLError] | None = None
+            if "errors" in data:
+                errors = _decode_formatted_errors(data["errors"])
+
+            results.append(
+                IncrementalDeferResult(
+                    errors=errors,
+                    data=data["data"],
+                    id=data["id"],
+                    sub_path=data.get("subPath"),
+                    extensions=data.get("extensions"),
+                )
+            )
+            continue
+
+        if "items" in data:
+            errors: list[GraphQLError] | None = None
+            if "errors" in data:
+                errors = _decode_formatted_errors(data["errors"])
+
+            results.append(
+                IncrementalStreamResult(
+                    errors=errors,
+                    items=data["items"],
+                    id=data["id"],
+                    sub_path=data.get("subPath"),
+                    extensions=data.get("extensions"),
+                )
+            )
+            continue
+
+        msg = f"Unknown incremental result: {data}"
+        raise ValueError(msg)
+
+    return results
 
 
 def _decode_formatted_errors(errors: list[GraphQLFormattedError]) -> list[GraphQLError]:

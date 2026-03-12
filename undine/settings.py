@@ -245,6 +245,14 @@ class UndineDefaultSettings(NamedTuple):
     MULTIPART_MIXED_HEARTBEAT_INTERVAL: int = 12
     """Interval in seconds for multipart/mixed HTTP heartbeats. Set to 0 to disable."""
 
+    # Incremental delivery over HTTP
+
+    EXPERIMENTAL_INCREMENTAL_DELIVERY: bool = False
+    """Whether to enable experimental support for incremental delivery over HTTP."""
+
+    INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL: int = 12
+    """Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable."""
+
     # Django-modeltranslation
 
     MODELTRANSLATION_INCLUDE_TRANSLATABLE: bool = False

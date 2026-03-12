@@ -4,7 +4,7 @@ import enum
 import operator as op
 import types
 from collections import defaultdict
-from collections.abc import AsyncGenerator, AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import suppress
 from enum import Enum, StrEnum, auto
 from functools import cache
@@ -54,17 +54,16 @@ from django.db.models import (
     Subquery,
 )
 from django.db.models.query_utils import RegisterLookupMixin
+from django.http import HttpRequest, HttpResponse
 from graphql import (
     ExecutionResult,
     FieldNode,
-    FormattedExecutionResult,
     FragmentSpreadNode,
     GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
-    GraphQLFormattedError,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
@@ -76,8 +75,104 @@ from graphql import (
     GraphQLUnionType,
     SelectionNode,
     UndefinedType,
+    version_info,
 )
 from graphql.pyutils import AwaitableOrValue
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
+    from graphql import GraphQLError
+
+if version_info >= (3, 3, 0):
+    from graphql import ExperimentalIncrementalExecutionResults
+else:
+
+    class _FormattedCompletedResult(TypedDict):
+        id: str
+        errors: NotRequired[list[GraphQLFormattedError]]
+
+    class _FormattedPendingResult(TypedDict):
+        id: str
+        path: list[str | int]
+        label: NotRequired[str]
+
+    class _FormattedIncrementalDeferResult(TypedDict):
+        id: str
+        data: dict[str, Any]
+        errors: NotRequired[list[GraphQLFormattedError]]
+        subPath: NotRequired[list[str | int]]
+        extensions: NotRequired[dict[str, Any]]
+
+    class _FormattedIncrementalStreamResult(TypedDict):
+        id: str
+        items: list[Any]
+        errors: NotRequired[list[GraphQLFormattedError]]
+        subPath: NotRequired[list[str | int]]
+        extensions: NotRequired[dict[str, Any]]
+
+    class _FormattedInitialIncrementalExecutionResult(TypedDict):
+        data: NotRequired[dict[str, Any] | None]
+        errors: NotRequired[list[GraphQLFormattedError]]
+        pending: list[_FormattedPendingResult]
+        hasNext: bool
+        incremental: list[_FormattedIncrementalDeferResult | _FormattedIncrementalStreamResult]
+        extensions: NotRequired[dict[str, Any]]
+
+    class _FormattedSubsequentIncrementalExecutionResult(TypedDict):
+        pending: NotRequired[list[_FormattedPendingResult]]
+        incremental: NotRequired[list[_FormattedIncrementalDeferResult | _FormattedIncrementalStreamResult]]
+        completed: NotRequired[list[_FormattedCompletedResult]]
+        hasNext: bool
+        extensions: NotRequired[dict[str, Any]]
+
+    class _PendingResult(Protocol):
+        id: str
+        path: list[str | int]
+        label: str | None
+        formatted: _FormattedPendingResult
+
+    class _CompletedResult(Protocol):
+        id: str
+        errors: list[GraphQLError] | None
+        formatted: _FormattedCompletedResult
+
+    class _InitialIncrementalExecutionResult(Protocol):
+        data: dict[str, Any] | None
+        errors: list[GraphQLError] | None
+        pending: list[_PendingResult]
+        has_next: bool
+        extensions: dict[str, Any] | None
+        formatted: _FormattedInitialIncrementalExecutionResult
+
+    class _IncrementalDeferResult(Protocol):
+        errors: list[GraphQLError] | None
+        data: dict[str, Any]
+        id: str
+        sub_path: list[str | int] | None
+        extensions: dict[str, Any] | None
+        formatted: _FormattedIncrementalDeferResult
+
+    class _IncrementalStreamResult(Protocol):
+        errors: list[GraphQLError] | None
+        items: list[Any]
+        id: str
+        sub_path: list[str | int] | None
+        extensions: dict[str, Any] | None
+        formatted: _FormattedIncrementalStreamResult
+
+    class _SubsequentIncrementalExecutionResult(Protocol):
+        pending: list[_PendingResult] | None
+        incremental: list[_IncrementalDeferResult | _IncrementalStreamResult] | None
+        completed: list[_CompletedResult] | None
+        has_next: bool
+        extensions: dict[str, Any] | None
+        formatted: _FormattedSubsequentIncrementalExecutionResult
+
+    class ExperimentalIncrementalExecutionResults(Protocol):
+        initial_result: _InitialIncrementalExecutionResult
+        subsequent_results: AsyncGenerator[_SubsequentIncrementalExecutionResult, None]
+
 
 if TYPE_CHECKING:
     from collections.abc import Container
@@ -138,7 +233,6 @@ __all__ = [
     "EntrypointParams",
     "EntrypointPermFunc",
     "ErrorMessage",
-    "ExecutionResultGen",
     "FieldParams",
     "FieldPermFunc",
     "FilterAliasesFunc",
@@ -148,6 +242,8 @@ __all__ = [
     "ForwardField",
     "GQLInfo",
     "GraphQLFilterResolver",
+    "GraphQLResult",
+    "GraphQLStream",
     "InputParams",
     "InputPermFunc",
     "InterfaceFieldParams",
@@ -189,7 +285,6 @@ __all__ = [
     "Self",
     "ServerMessage",
     "SubscribeMessage",
-    "SubscriptionResult",
     "SupportsLookup",
     "TInterfaceType",
     "TModels",
@@ -224,8 +319,8 @@ LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
 TypeHint: TypeAlias = type | types.UnionType | types.GenericAlias
 JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
 DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
-SubscriptionResult: TypeAlias = AsyncIterator[ExecutionResult] | ExecutionResult
-ExecutionResultGen: TypeAlias = AsyncGenerator[ExecutionResult, None]
+GraphQLResult: TypeAlias = ExecutionResult | ExperimentalIncrementalExecutionResults
+GraphQLStream: TypeAlias = AsyncIterator[ExecutionResult]
 SortedSequence: TypeAlias = list[T] | tuple[T, ...]
 
 # Bound TypeVars
@@ -408,11 +503,11 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
     # Custom
 
     @property
-    def response_content_type(self) -> str:
+    def response_content_type(self) -> MediaType:
         """Response content type as determined from 'accepted_types' in relation to the endpoint's supported types."""
 
     @response_content_type.setter
-    def response_content_type(self, value: str) -> None:
+    def response_content_type(self, value: MediaType) -> None:
         """Set by decorators in 'undine.http.utils'."""
 
     @property
@@ -652,7 +747,6 @@ class UndineErrorCodes(StrEnum):
     ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED = auto()
     ASYNC_NOT_SUPPORTED = auto()
     CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST = auto()
-    CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS = auto()
     CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS = auto()
     CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS_NON_POST_REQUEST = auto()
     CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES = auto()
@@ -670,6 +764,7 @@ class UndineErrorCodes(StrEnum):
     FIELD_NOT_NULLABLE = auto()
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()
+    INCREMENTAL_DELIVERY_NOT_SUPPORTED = auto()
     INVALID_INPUT_DATA = auto()
     INVALID_ORDER_DATA = auto()
     INVALID_PAGINATION_ARGUMENTS = auto()
@@ -723,10 +818,12 @@ class UndineErrorCodes(StrEnum):
     TYPED_DICT_ANNOTATED_INCORRECT_METADATA = auto()
     UNEXPECTED_CALCULATION_ARGUMENT = auto()
     UNEXPECTED_ERROR = auto()
+    UNEXPECTED_MULTIPLE_PAYLOADS = auto()
     UNEXPECTED_SUBSCRIPTION_ARGUMENT = auto()
     UNION_RESOLVE_TYPE_INVALID_VALUE = auto()
     UNION_RESOLVE_TYPE_MODEL_NOT_FOUND = auto()
     UNSUPPORTED_CONTENT_TYPE = auto()
+    UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS = auto()
     VALIDATION_ABORTED = auto()
     VALIDATION_ERROR = auto()
 
@@ -1568,3 +1665,9 @@ class FormattedMultipartMixedHttpResult(TypedDict):
 
     payload: FormattedExecutionResult | None
     errors: NotRequired[list[GraphQLFormattedError]]
+
+
+SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
+AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
+SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
+AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]

@@ -28,7 +28,7 @@ async def test_graphql_multipart_mixed__query(graphql_async, undine_settings) ->
 
     query = "query { test }"
 
-    async for response in graphql_async.multipart_mixed(query):
+    async for response in graphql_async.multipart_mixed_subscription(query):
         assert response.data == {"test": "Hello, World!"}
 
 
@@ -46,7 +46,7 @@ async def test_graphql_multipart_mixed__query__not_allowed(graphql_async, undine
 
     query = "query { test }"
 
-    async for response in graphql_async.multipart_mixed(query):
+    async for response in graphql_async.multipart_mixed_subscription(query):
         assert response.errors == [
             {
                 "message": "Cannot use multipart/mixed for queries.",
@@ -77,7 +77,7 @@ async def test_graphql_multipart_mixed__mutations(graphql_async, undine_settings
 
     query = "mutation { doSomething }"
 
-    async for response in graphql_async.multipart_mixed(query):
+    async for response in graphql_async.multipart_mixed_subscription(query):
         assert response.data == {"doSomething": "Hello, World!"}
 
 
@@ -100,7 +100,7 @@ async def test_graphql_multipart_mixed__mutations__not_allowed(graphql_async, un
 
     query = "mutation { doSomething }"
 
-    async for response in graphql_async.multipart_mixed(query):
+    async for response in graphql_async.multipart_mixed_subscription(query):
         assert response.errors == [
             {
                 "message": "Cannot use multipart/mixed for mutations.",
@@ -131,7 +131,7 @@ async def test_graphql_multipart_mixed__subscription(graphql_async, undine_setti
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {"data": {"countdown": 3}},
@@ -162,7 +162,7 @@ async def test_graphql_multipart_mixed__subscription__error(graphql_async, undin
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {"data": {"countdown": 3}},
@@ -202,7 +202,7 @@ async def test_graphql_multipart_mixed__subscription__error__as_value(graphql_as
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {"data": {"countdown": 3}},
@@ -245,7 +245,7 @@ async def test_graphql_multipart_mixed__subscription__error_group(graphql_async,
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {"data": {"countdown": 3}},
@@ -293,7 +293,7 @@ async def test_graphql_multipart_mixed__subscription__error_group__as_value(grap
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {"data": {"countdown": 3}},
@@ -339,7 +339,7 @@ async def test_graphql_multipart_mixed__subscription__error__permissions(graphql
 
     query = "subscription { countdown }"
 
-    responses = [response.json async for response in graphql_async.multipart_mixed(query)]
+    responses = [response.json async for response in graphql_async.multipart_mixed_subscription(query)]
 
     assert responses == [
         {

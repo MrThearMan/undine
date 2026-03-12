@@ -5,7 +5,14 @@ from typing import Any
 
 import pytest
 from django.db.models import Value
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, TypeMetaFieldDef, get_introspection_query
+from graphql import (
+    DirectiveLocation,
+    GraphQLNonNull,
+    GraphQLString,
+    TypeMetaFieldDef,
+    get_introspection_query,
+    version_info,
+)
 
 from example_project.app.models import Project, Task
 from pytest_undine.client import GraphQLClientHTTPResponse
@@ -115,11 +122,13 @@ def test_introspection(graphql, undine_settings):
         "atomic",
         "cacheRules",
         "complexity",
+        *(("defer", ) if version_info >= (3, 3, 0) else []),
         "deprecated",
         "include",
         "oneOf",
         "skip",
         "specifiedBy",
+        *(("stream", ) if version_info >= (3, 3, 0) else []),
     ]
 
     types = get_types(response)

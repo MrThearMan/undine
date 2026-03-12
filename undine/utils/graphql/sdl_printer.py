@@ -510,7 +510,7 @@ class SDLPrinter:  # noqa: PLR0904
 
     @classmethod
     def default_directive_filter(cls, directive: GraphQLDirective) -> bool:
-        return not is_specified_directive(directive)
+        return not is_specified_directive(directive) and directive.name not in {"defer", "stream"}
 
     @classmethod
     def default_type_filter(cls, named_type: GraphQLNamedType) -> bool:

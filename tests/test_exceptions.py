@@ -29,7 +29,6 @@ from undine.exceptions import (
     GraphQLAsyncAtomicMutationNotSupportedError,
     GraphQLAsyncNotSupportedError,
     GraphQLCannotUseHTTPForMutationsNonPostRequestError,
-    GraphQLCannotUseHTTPForSubscriptionsError,
     GraphQLCannotUseMultipartMixedForMutationsError,
     GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError,
     GraphQLCannotUseMultipartMixedForQueriesError,
@@ -47,6 +46,7 @@ from undine.exceptions import (
     GraphQLFieldNotNullableError,
     GraphQLFileNotFoundError,
     GraphQLFilePlacingError,
+    GraphQLIncrementalDeliveryNotSupportedError,
     GraphQLInvalidInputDataError,
     GraphQLInvalidOrderDataError,
     GraphQLMissingCalculationArgumentError,
@@ -103,9 +103,11 @@ from undine.exceptions import (
     GraphQLTypedDictAnnotatedIncorrectMetadataError,
     GraphQLUnexpectedCalculationArgumentError,
     GraphQLUnexpectedError,
+    GraphQLUnexpectedMultiplePayloadsError,
     GraphQLUnionResolveTypeInvalidValueError,
     GraphQLUnionResolveTypeModelNotFoundError,
     GraphQLUnsupportedContentTypeError,
+    GraphQLUnsupportedProtocolForSubscriptionsError,
     GraphQLValidationAbortedError,
     GraphQLValidationError,
     InterfaceFieldDoesNotExistError,
@@ -535,11 +537,17 @@ class GQLErrorParams(NamedTuple):
             message="Cannot use HTTP for mutations if not sent as a POST request.",
             extensions={"error_code": "CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST", "status_code": 405},
         ),
-        "GraphQLCannotUseHTTPForSubscriptionsError": GQLErrorParams(
-            cls=GraphQLCannotUseHTTPForSubscriptionsError,
+        "GraphQLIncrementalDeliveryNotSupportedError": GQLErrorParams(
+            cls=GraphQLIncrementalDeliveryNotSupportedError,
             args={},
-            message="Cannot use HTTP for subscriptions.",
-            extensions={"error_code": "CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS", "status_code": 405},
+            message="Incremental delivery over HTTP is not supported.",
+            extensions={"error_code": "INCREMENTAL_DELIVERY_NOT_SUPPORTED", "status_code": 400},
+        ),
+        "GraphQLUnsupportedProtocolForSubscriptionsError": GQLErrorParams(
+            cls=GraphQLUnsupportedProtocolForSubscriptionsError,
+            args={},
+            message="Subscriptions are not supported using this protocol.",
+            extensions={"error_code": "UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS", "status_code": 405},
         ),
         "GraphQLCannotUseMultipartMixedForQueriesError": GQLErrorParams(
             cls=GraphQLCannotUseMultipartMixedForQueriesError,
@@ -984,6 +992,15 @@ class GQLErrorParams(NamedTuple):
                 "must be an instance of 'tests.test_exceptions.MyClass'."
             ),
             extensions={"error_code": "TYPED_DICT_ANNOTATED_INCORRECT_METADATA", "status_code": 500},
+        ),
+        "GraphQLUnexpectedMultiplePayloadsError": GQLErrorParams(
+            cls=GraphQLUnexpectedMultiplePayloadsError,
+            args={},
+            message=(
+                "Executing this GraphQL operation would unexpectedly produce multiple payloads "
+                "(due to @defer or @stream directive)"
+            ),
+            extensions={"error_code": "UNEXPECTED_MULTIPLE_PAYLOADS", "status_code": 500},
         ),
         "GraphQLUnionResolveTypeInvalidValueError": GQLErrorParams(
             cls=GraphQLUnionResolveTypeInvalidValueError,

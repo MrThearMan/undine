@@ -15,7 +15,14 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q, QuerySet
-    from graphql import ExecutionResult, FieldNode, FormattedExecutionResult, GraphQLError, InlineFragmentNode
+    from graphql import (
+        ExecutionResult,
+        FieldNode,
+        GraphQLError,
+        InitialIncrementalExecutionResult,
+        InlineFragmentNode,
+        SubsequentIncrementalExecutionResult,
+    )
 
     from undine import QueryType
     from undine.pagination import PaginationHandler
@@ -38,6 +45,9 @@ __all__ = [
     "CompletedEventSC",
     "FilterResults",
     "GraphQLHttpParams",
+    "IncrementalDeliveryComplete",
+    "IncrementalDeliveryHeartbeat",
+    "IncrementalDeliveryResponse",
     "KeepAliveSignalDC",
     "LazyGenericForeignKey",
     "LazyLambda",
@@ -293,13 +303,13 @@ class NextEventDC:
     """'Next' event sent in 'distinct connections' mode."""
 
     event: Literal["next"] = dataclasses.field(init=False, default="next")
-    data: FormattedExecutionResult
+    data: ExecutionResult
 
     def __str__(self) -> str:
         return self.encode()
 
     def encode(self) -> str:
-        data = json.dumps(self.data, separators=(",", ":"))
+        data = json.dumps(self.data.formatted, separators=(",", ":"))
         return f"event: {self.event}\ndata: {data}\n\n"
 
 
@@ -329,13 +339,13 @@ class KeepAliveSignalDC:
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class NextEventDataSC:
     id: str
-    payload: FormattedExecutionResult
+    payload: ExecutionResult
 
     def __str__(self) -> str:
         return self.encode()
 
     def encode(self) -> str:
-        data = {"id": self.id, "payload": self.payload}
+        data = {"id": self.id, "payload": self.payload.formatted}
         return json.dumps(data, separators=(",", ":"))
 
 
@@ -345,7 +355,7 @@ class NextEventSC:
 
     event: Literal["next"] = dataclasses.field(init=False, default="next")
     operation_id: str
-    payload: FormattedExecutionResult
+    payload: ExecutionResult
 
     def __str__(self) -> str:
         return self.encode()
@@ -418,3 +428,33 @@ class MultipartMixedHttpHeartbeat:
 
     def encode(self) -> str:
         return "\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{}"
+
+
+# Incremental delivery over HTTP
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class IncrementalDeliveryResponse:
+    """Incremental delivery over HTTP response."""
+
+    result: InitialIncrementalExecutionResult | SubsequentIncrementalExecutionResult
+
+    def encode(self) -> str:
+        formatted = json.dumps(self.result.formatted, separators=(",", ":"))
+        return f"\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{formatted}"
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class IncrementalDeliveryComplete:
+    """Incremental delivery over HTTP complete response."""
+
+    def encode(self) -> str:
+        return "\r\n--graphql--\r\n"
+
+
+@dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
+class IncrementalDeliveryHeartbeat:
+    """Incremental delivery over HTTP heartbeat response."""
+
+    def encode(self) -> str:
+        return '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}'

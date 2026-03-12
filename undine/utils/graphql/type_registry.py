@@ -13,9 +13,11 @@ from graphql import (
     GraphQLUnionType,
     specified_directives,
     specified_scalar_types,
+    version_info,
 )
 
 from undine.exceptions import GraphQLDuplicateTypeError
+from undine.settings import undine_settings
 from undine.utils.registy import Registry
 
 if TYPE_CHECKING:
@@ -384,4 +386,14 @@ def register_builtins() -> None:
 
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:
-    return specified_directives + tuple(value.__directive__() for value in DIRECTIVE_REGISTRY.values())
+    additional_directives: tuple[type[GraphQLDirective], ...] = ()
+    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY and version_info >= (3, 3, 0):
+        from graphql import GraphQLDeferDirective, GraphQLStreamDirective  # noqa: PLC0415
+
+        additional_directives = (GraphQLDeferDirective, GraphQLStreamDirective)
+
+    return (
+        specified_directives
+        + additional_directives
+        + tuple(value.__directive__() for value in DIRECTIVE_REGISTRY.values())
+    )

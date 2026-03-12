@@ -23,14 +23,15 @@ from undine.utils.graphql.utils import get_fragment_definitions, get_operation_d
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
+    from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
     from django.contrib.auth.models import AnonymousUser, User
     from django.core.cache import BaseCache
-    from graphql import DocumentNode, ExecutionResult, GraphQLFieldResolver
+    from graphql import DocumentNode, GraphQLFieldResolver
+    from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import CacheControlResults, GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, GQLInfo, T
+    from undine.typing import DjangoRequestProtocol, GQLInfo, GraphQLResult, GraphQLStream, T
 
 __all__ = [
     "ExecutionLifecycleHookManager",
@@ -64,7 +65,7 @@ class LifecycleHookContext:
     request: DjangoRequestProtocol
     """Django request during which the GraphQL request is being executed."""
 
-    result: ExecutionResult | Awaitable[ExecutionResult | AsyncIterator[ExecutionResult]] | None
+    result: AwaitableOrValue[GraphQLResult | GraphQLStream] | None
     """Execution result of the GraphQL operation. Adding a result here will cause an early exit."""
 
     lifecycle_hooks: list[LifecycleHook] = dataclasses.field(init=False)
@@ -258,6 +259,9 @@ class RequestCacheHook(LifecycleHook):
 
         yield
 
+        if not isinstance(self.context.result, ExecutionResult):
+            return
+
         # Never cache errors since they can result from something transient (e.g. a connection error)
         if self.context.result.errors:
             return
@@ -295,6 +299,9 @@ class RequestCacheHook(LifecycleHook):
                 return
 
         yield
+
+        if not isinstance(self.context.result, ExecutionResult):
+            return
 
         # Never cache errors since they can result from something transient (e.g. a connection error)
         if self.context.result.errors:

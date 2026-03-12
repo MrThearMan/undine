@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterable
 from typing import TypedDict
 
 from django.db.models import Count, F, Q, Value
@@ -33,6 +35,7 @@ from undine import (
     UnionType,
 )
 from undine.directives import ComplexityDirective, Directive, DirectiveArgument
+from undine.optimizer import OptimizationData
 from undine.relay import Connection, Node
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 
@@ -147,6 +150,27 @@ class TaskType(QueryType[Task]):
         return CustomerDetails(name="John", age=number)
 
     example = Field(ExampleCalculation)
+
+    @Field
+    async def slow(self: Task, info: GQLInfo) -> int:
+        sleep_time = self.points % 10
+        await asyncio.sleep(sleep_time)
+        return sleep_time
+
+    @slow.optimize
+    def slow_optimized(self, data: OptimizationData, info: GQLInfo) -> None:
+        return data.only_fields.add("points")
+
+    @Field
+    async def echo(self: Task, info: GQLInfo) -> AsyncIterable[str]:
+        iterations = self.points % 10
+        for _ in range(iterations):
+            await asyncio.sleep(1)
+            yield "echo"
+
+    @echo.optimize
+    def echo_optimized(self, data: OptimizationData, info: GQLInfo) -> None:
+        return data.only_fields.add("points")
 
 
 class CommentableFilterSet(FilterSet[Task, Project, Report], auto=True): ...

@@ -4,17 +4,15 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
-from graphql import GraphQLError
+from graphql import ExecutionResult, GraphQLError
 
 from undine.dataclasses import MultipartMixedHttpComplete, MultipartMixedHttpHeartbeat, MultipartMixedHttpResponse
-from undine.exceptions import GraphQLErrorGroup, GraphQLUnexpectedError
+from undine.exceptions import GraphQLErrorGroup, GraphQLUnexpectedError, GraphQLUnexpectedMultiplePayloadsError
 from undine.execution import execute_graphql_with_subscription
 from undine.settings import undine_settings
 from undine.utils.graphql.utils import get_error_execution_result
 
 if TYPE_CHECKING:
-    from graphql import ExecutionResult
-
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import DjangoRequestProtocol
 
@@ -30,25 +28,34 @@ async def execute_graphql_multipart_mixed(
     request: DjangoRequestProtocol,
 ) -> AsyncIterator[MultipartMixedHttpResponse | MultipartMixedHttpComplete]:
     """Execute a GraphQL operation received through a multipart/mixed HTTP request."""
-    stream = await execute_graphql_with_subscription(params, request)
+    result = await execute_graphql_with_subscription(params, request)
 
-    if not isinstance(stream, AsyncIterator):
-        yield MultipartMixedHttpResponse(payload=stream)
+    if isinstance(result, ExecutionResult):
+        yield MultipartMixedHttpResponse(payload=result)
+        yield MultipartMixedHttpComplete()
+        return
+
+    if not isinstance(result, AsyncIterator):
+        payload = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
+        yield MultipartMixedHttpResponse(payload=payload)
         yield MultipartMixedHttpComplete()
         return
 
     try:
-        async for data in stream:
+        async for data in result:
             yield MultipartMixedHttpResponse(payload=data)
 
     except GraphQLError as error:
-        yield MultipartMixedHttpResponse(payload=get_error_execution_result(error))
+        payload = get_error_execution_result(error)
+        yield MultipartMixedHttpResponse(payload=payload)
 
     except GraphQLErrorGroup as error:
-        yield MultipartMixedHttpResponse(payload=get_error_execution_result(error))
+        payload = get_error_execution_result(error)
+        yield MultipartMixedHttpResponse(payload=payload)
 
     except Exception as error:  # noqa: BLE001
-        yield MultipartMixedHttpResponse(payload=get_error_execution_result(GraphQLUnexpectedError(message=str(error))))
+        payload = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        yield MultipartMixedHttpResponse(payload=payload)
 
     yield MultipartMixedHttpComplete()
 

@@ -240,6 +240,15 @@ Should be given as the dotted path to the execution context class.
 
 ///
 
+/// details | `EXPERIMENTAL_INCREMENTAL_DELIVERY`
+    attrs: {id: experimental_incremental_delivery}
+
+Type: `bool` | Default: `False`
+
+Whether to enable experimental support for incremental delivery over HTTP.
+
+///
+
 /// details | `EXPERIMENTAL_VISIBILITY_CHECKS`
     attrs: {id: experimental_visibility_checks}
 
@@ -352,6 +361,15 @@ When a GraphQL request returns an error response,
 and the error is based on a non-GraphQL exception,
 if this setting is enabled, the error traceback will be included in the response.
 Useful for debugging.
+
+///
+
+/// details | `INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL`
+    attrs: {id: incremental_delivery_heartbeat_interval}
+
+Type: `int` | Default: `12`
+
+Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable.
 
 ///
 

@@ -13,7 +13,7 @@ from django.urls import reverse
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 from tests.helpers import MockRequest, create_multipart_form_data_request
-from undine.http.utils import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
+from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
 from undine.http.views import graphql_view_async, graphql_view_sync
 from undine.typing import GQLInfo, RequestMethod
 
@@ -312,7 +312,7 @@ def test_graphql_view__async_resolver__async_endpoint(undine_settings) -> None:
     response = asyncio.run(coro)
 
     assert response.status_code == 200
-    assert response["Content-Type"] == "application/graphql-response+json"
+    assert response["Content-Type"] == "application/json"
 
     data = json.loads(response.content.decode())
 
@@ -339,7 +339,7 @@ def test_graphql_view__content_negotiation__event_stream(undine_settings) -> Non
     assert isinstance(response, StreamingHttpResponse)
 
     assert response.status_code == 200
-    assert response["Content-Type"] == "text/event-stream; charset=utf-8"
+    assert response["Content-Type"] == "text/event-stream"
     assert response["Connection"] == "keep-alive"
     assert response["Cache-Control"] == "no-cache, no-store, must-revalidate"
 
@@ -350,7 +350,7 @@ def test_graphql_view__content_negotiation__multipart_mixed(undine_settings) -> 
 
     request = MockRequest(
         method="POST",
-        accepted_types=[MediaType('multipart/mixed;subscriptionSpec="1.0"'), MediaType("application/json")],
+        accepted_types=[MediaType("multipart/mixed; subscriptionSpec=1.0")],
         body=b'{"query": "query { hello }"}',
     )
 
@@ -363,4 +363,4 @@ def test_graphql_view__content_negotiation__multipart_mixed(undine_settings) -> 
     assert isinstance(response, StreamingHttpResponse)
 
     assert response.status_code == 200
-    assert response["Content-Type"] == 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
+    assert response["Content-Type"] == "multipart/mixed; boundary=graphql; subscriptionspec=1.0"

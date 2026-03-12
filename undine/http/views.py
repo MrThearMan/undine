@@ -7,13 +7,13 @@ from graphql import GraphQLError
 
 from undine.exceptions import GraphQLErrorGroup
 from undine.execution import execute_graphql_http_async, execute_graphql_http_sync
-from undine.http.utils import (
-    HttpEventSourcingNotAllowedResponse,
-    get_http_version,
-    graphql_result_response,
+from undine.http.content_negotiation import (
+    media_type_match,
     require_graphql_request_async,
     require_graphql_request_sync,
 )
+from undine.http.responses import HttpEventSourcingNotAllowedResponse, graphql_result_response
+from undine.http.utils import get_http_version
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
 from undine.utils.graphql.multipart_mixed import (
@@ -55,11 +55,14 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
 @require_graphql_request_async
 async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """An async view for GraphQL requests."""
-    if request.response_content_type == "text/event-stream":
+    if media_type_match(request.response_content_type, "text/event-stream"):
         return await _handle_event_stream(request)
 
-    if request.response_content_type == "multipart/mixed":
+    if media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql; subscriptionSpec=1.0"):
         return await _handle_multipart_mixed(request)
+
+    if media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql"):
+        return await _handle_incremental(request)
 
     try:
         params = GraphQLRequestParamsParser.run(request)
@@ -93,7 +96,7 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
     headers = request.response_headers.copy()
     headers["Connection"] = "keep-alive"
     headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    headers["Content-Type"] = "text/event-stream; charset=utf-8"
+    headers["Content-Type"] = str(request.response_content_type)
     headers.pop("Content-Length", None)
 
     return StreamingHttpResponse(stream, headers=headers)
@@ -113,7 +116,33 @@ async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoRespo
     headers = request.response_headers.copy()
     headers["Connection"] = "keep-alive"
     headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    headers["Content-Type"] = 'multipart/mixed;boundary=graphql;subscriptionSpec="1.0", application/json'
+    headers["Content-Type"] = str(request.response_content_type)
+    headers.pop("Content-Length", None)
+
+    return StreamingHttpResponse(stream, headers=headers)
+
+
+async def _handle_incremental(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
+    from undine.utils.graphql.incremental import (  # noqa: PLC0415
+        execute_graphql_incremental,
+        result_to_incremental_response,
+        with_incremental_stream_heartbeat,
+    )
+
+    try:
+        params = GraphQLRequestParamsParser.run(request)
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        event_stream = result_to_incremental_response(result)
+    else:
+        event_stream = execute_graphql_incremental(params, request)
+
+    stream: AsyncIterable[str] = (event.encode() async for event in with_incremental_stream_heartbeat(event_stream))
+
+    headers = request.response_headers.copy()
+    headers["Connection"] = "keep-alive"
+    headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    headers["Content-Type"] = str(request.response_content_type)
     headers.pop("Content-Length", None)
 
     return StreamingHttpResponse(stream, headers=headers)

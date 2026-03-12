@@ -12,12 +12,14 @@ from typing import TYPE_CHECKING, Any
 
 from asgiref.typing import WebSocketAcceptEvent, WebSocketCloseEvent, WebSocketSendEvent
 from django.core.handlers.asgi import ASGIRequest
+from django.http.request import MediaType
 from django.http.response import ResponseHeaders
-from graphql import GraphQLError
+from graphql import ExecutionResult, GraphQLError
 
 from undine.exceptions import (
     GraphQLErrorGroup,
     GraphQLUnexpectedError,
+    GraphQLUnexpectedMultiplePayloadsError,
     WebSocketConnectionInitAlreadyInProgressError,
     WebSocketConnectionInitForbiddenError,
     WebSocketConnectionInitTimeoutError,
@@ -54,9 +56,7 @@ if TYPE_CHECKING:
     from django.contrib.sessions.backends.base import SessionBase
     from django.core.files.uploadedfile import UploadedFile
     from django.http import HttpHeaders, QueryDict
-    from django.http.request import MediaType
     from django.utils.datastructures import MultiValueDict
-    from graphql import ExecutionResult
 
     from undine.dataclasses import GraphQLHttpParams
     from undine.typing import (
@@ -381,11 +381,16 @@ class WebSocketOperation:
     async def run(self) -> None:
         result = await execute_graphql_with_subscription(self.params, self.request)
 
-        if isinstance(result, AsyncIterator):
-            await self.execute_subscription(result)
+        if isinstance(result, ExecutionResult):
+            await self.execute_singe_result_operation(result)
             return
 
-        await self.execute_singe_result_operation(result)
+        if not isinstance(result, AsyncIterator):
+            error = GraphQLUnexpectedMultiplePayloadsError()
+            await self.send_errors(errors=[error])
+            return
+
+        await self.execute_subscription(result)
 
     async def execute_singe_result_operation(self, result: ExecutionResult) -> None:
         if result.errors:
@@ -544,14 +549,14 @@ class WebSocketRequest:
     # Custom
 
     @property
-    def response_content_type(self) -> str:
+    def response_content_type(self) -> MediaType:
         if hasattr(self, "_response_content_type"):
             return self._response_content_type
-        self._response_content_type = "application/json"
+        self._response_content_type = MediaType("application/json")
         return self._response_content_type
 
     @response_content_type.setter
-    def response_content_type(self, value: str) -> None:
+    def response_content_type(self, value: MediaType) -> None:
         self._response_content_type = value
 
     @property

@@ -28,7 +28,6 @@ from graphql import (
 from undine.exceptions import (
     GraphQLAsyncNotSupportedError,
     GraphQLCannotUseHTTPForMutationsNonPostRequestError,
-    GraphQLCannotUseHTTPForSubscriptionsError,
     GraphQLCannotUseMultipartMixedForMutationsError,
     GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError,
     GraphQLCannotUseMultipartMixedForQueriesError,
@@ -38,9 +37,12 @@ from undine.exceptions import (
     GraphQLCannotUseWebSocketsForMutationsError,
     GraphQLCannotUseWebSocketsForQueriesError,
     GraphQLErrorGroup,
+    GraphQLIncrementalDeliveryNotSupportedError,
     GraphQLNoExecutionResultError,
     GraphQLSubscriptionNoEventStreamError,
     GraphQLUnexpectedError,
+    GraphQLUnexpectedMultiplePayloadsError,
+    GraphQLUnsupportedProtocolForSubscriptionsError,
     GraphQLValidationAbortedError,
 )
 from undine.hooks import (
@@ -56,7 +58,8 @@ from undine.hooks import (
     with_validation_lifecycle_hooks_manager,
     with_validation_lifecycle_hooks_manager_async,
 )
-from undine.http.utils import is_multipart_mixed_request, is_sse_request, is_websocket_request
+from undine.http.content_negotiation import media_type_match
+from undine.http.utils import get_graphql_event_stream_token
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_orderset
 from undine.utils.graphql.utils import (
@@ -69,10 +72,9 @@ from undine.utils.graphql.utils import (
 from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
-try:
-    # graphql-core >= 3.3.0
+if version_info >= (3, 3, 0):
     from graphql.execution.execute import execute_subscription
-except ImportError:
+else:
     from graphql.execution.subscribe import execute_subscription
 
 
@@ -80,13 +82,12 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from graphql import DocumentNode, GraphQLInputType, GraphQLOutputType, GraphQLSchema, Node, ValueNode
-    from graphql.execution.build_field_plan import FieldGroup
+    from graphql.execution.collect_fields import FieldGroup
     from graphql.execution.execute import IncrementalContext
     from graphql.pyutils import AwaitableOrValue, Path
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, ExecutionResultGen, P, SubscriptionResult
-
+    from undine.typing import DjangoRequestProtocol, GraphQLResult, GraphQLStream, P
 
 __all__ = [
     "execute_graphql_http_async",
@@ -147,6 +148,13 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
+    if version_info >= (3, 3, 0):
+        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
+
+        if isinstance(context.result, ExperimentalIncrementalExecutionResults):
+            context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
+            return context.result
+
     return context.result
 
 
@@ -191,7 +199,7 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
 def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
     try:
         exec_context = _get_execution_context(
-            document=context.document,  # type: ignore[arg-type]
+            document=context.document,
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -211,10 +219,9 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
 
     if version_info >= (3, 3, 0):
         from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
-        from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
 
         if isinstance(result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
+            context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
             return context.result
 
     context.result = result
@@ -225,12 +232,12 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
 
 
 def raised_exceptions_as_execution_results_async(
-    func: Callable[P, Awaitable[ExecutionResult]],
-) -> Callable[P, Awaitable[ExecutionResult]]:
+    func: Callable[P, Awaitable[GraphQLResult]],
+) -> Callable[P, Awaitable[GraphQLResult]]:
     """Wraps raised exceptions as GraphQL ExecutionResults if they happen in `execute_graphql_async`."""
 
     @wraps(func)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> ExecutionResult:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> GraphQLResult:
         try:
             return await func(*args, **kwargs)
 
@@ -247,7 +254,7 @@ def raised_exceptions_as_execution_results_async(
 
 
 @raised_exceptions_as_execution_results_async
-async def execute_graphql_http_async(params: GraphQLHttpParams, request: DjangoRequestProtocol) -> ExecutionResult:
+async def execute_graphql_http_async(params: GraphQLHttpParams, request: DjangoRequestProtocol) -> GraphQLResult:
     """
     Executes a GraphQL operation received from an HTTP request asynchronously.
     Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
@@ -260,7 +267,7 @@ async def execute_graphql_http_async(params: GraphQLHttpParams, request: DjangoR
 
 
 @with_operation_lifecycle_hooks_manager_async
-async def _run_operation_async(context: LifecycleHookContext) -> ExecutionResult:
+async def _run_operation_async(context: LifecycleHookContext) -> GraphQLResult:
     if context.result is None:
         await _parse_source_async(context)
         if context.result is None:
@@ -269,21 +276,13 @@ async def _run_operation_async(context: LifecycleHookContext) -> ExecutionResult
                 return await _execute_async(context)
 
     if isinstance(context.result, AsyncIterator):
-        context.result = get_error_execution_result(GraphQLCannotUseHTTPForSubscriptionsError())
+        context.result = get_error_execution_result(GraphQLUnsupportedProtocolForSubscriptionsError())
         return context.result
 
     if isawaitable(context.result):
-        context.result = await context.result  # type: ignore[assignment]
+        context.result = await context.result
 
-    if version_info >= (3, 3, 0):
-        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
-        from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-
-        if isinstance(context.result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
-            return context.result
-
-    return context.result  # type: ignore[return-value]
+    return context.result
 
 
 @with_parse_lifecycle_hooks_manager_async
@@ -318,21 +317,23 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
         context.result = get_error_execution_result(validation_errors)
         return
 
-    if is_websocket_request(context.request):
+    if _is_websocket_request(context.request):
         _validate_websockets(context)
-    elif is_sse_request(context.request):
+    elif _is_sse_request(context.request):
         _validate_sse(context)
-    elif is_multipart_mixed_request(context.request):
+    elif _is_multipart_mixed_request(context.request):
         _validate_multipart_mixed(context)
+    elif _is_incremental_request(context.request):
+        _validate_incremental(context)
     else:
         _validate_http(context)
 
 
 @with_execution_lifecycle_hooks_manager_async
-async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
+async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
     try:
         exec_context = _get_execution_context(
-            document=context.document,  # type: ignore[arg-type]
+            document=context.document,
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -349,16 +350,10 @@ async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLNoExecutionResultError())
         return context.result
 
-    context.result = await result if exec_context.is_awaitable(result) else result
+    if exec_context.is_awaitable(result):
+        result = await result
 
-    if version_info >= (3, 3, 0):
-        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
-        from graphql.execution.execute import UNEXPECTED_MULTIPLE_PAYLOADS  # noqa: PLC0415
-
-        if isinstance(context.result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS))
-            return context.result
-
+    context.result = result
     return context.result
 
 
@@ -366,10 +361,10 @@ async def _execute_async(context: LifecycleHookContext) -> ExecutionResult:
 
 
 def raised_exceptions_as_execution_results_with_subscriptions(
-    func: Callable[P, Awaitable[SubscriptionResult]],
-) -> Callable[P, Awaitable[SubscriptionResult]]:
+    func: Callable[P, Awaitable[GraphQLResult | GraphQLStream]],
+) -> Callable[P, Awaitable[GraphQLResult | GraphQLStream]]:
     @wraps(func)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> SubscriptionResult:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> GraphQLResult | GraphQLStream:
         try:
             return await func(*args, **kwargs)
 
@@ -389,7 +384,7 @@ def raised_exceptions_as_execution_results_with_subscriptions(
 async def execute_graphql_with_subscription(
     params: GraphQLHttpParams,
     request: DjangoRequestProtocol,
-) -> SubscriptionResult:
+) -> GraphQLResult | GraphQLStream:
     """
     Executes a GraphQL operation with subscriptions support asynchronously.
     Assumes that the schema has been validated (e.g. created using `undine.schema.create_schema`).
@@ -402,7 +397,7 @@ async def execute_graphql_with_subscription(
 
 
 @with_operation_lifecycle_hooks_manager_async
-async def _run_operation_with_subscription(context: LifecycleHookContext) -> SubscriptionResult:
+async def _run_operation_with_subscription(context: LifecycleHookContext) -> GraphQLResult | GraphQLStream:
     if context.result is None:
         await _parse_source_async(context)
         if context.result is None:
@@ -414,12 +409,12 @@ async def _run_operation_with_subscription(context: LifecycleHookContext) -> Sub
                 return await _execute_async(context)
 
     if isawaitable(context.result):
-        context.result = await context.result  # type: ignore[assignment]
+        context.result = await context.result
 
-    return context.result  # type: ignore[return-value]
+    return context.result
 
 
-async def _subscribe(context: LifecycleHookContext) -> SubscriptionResult:
+async def _subscribe(context: LifecycleHookContext) -> ExecutionResult | GraphQLStream:
     """Executes a subscription operation. See: `graphql.execution.subscribe.subscribe`."""
     result_or_stream = await _create_source_event_stream(context=context)
     if isinstance(result_or_stream, ExecutionResult):
@@ -435,7 +430,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     """
     try:
         exec_context = _get_execution_context(
-            document=context.document,  # type: ignore[arg-type]
+            document=context.document,
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -462,7 +457,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     return event_stream
 
 
-async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookContext) -> ExecutionResultGen:
+async def _map_source_to_response(source: AsyncIterable[Any], context: LifecycleHookContext) -> GraphQLStream:
     """
     For each payload yielded from a subscription,
     map it over the normal GraphQL `execute` function, with `payload` as the `root_value`.
@@ -503,7 +498,8 @@ async def _map_source_to_response(source: AsyncIterable, context: LifecycleHookC
                     operation_name=context.operation_name,
                     middleware=_get_middleware_manager(context.lifecycle_hooks),
                 )
-                result = _execute(exec_context)
+                # Result cannot be incremental for a subscription
+                result: AwaitableOrValue[ExecutionResult] = _execute(exec_context)
 
                 context.result = await result if exec_context.is_awaitable(result) else result
                 yield context.result
@@ -520,7 +516,7 @@ def _validate_http(context: LifecycleHookContext) -> None:
         return
 
     if operation_type == OperationType.SUBSCRIPTION:
-        context.result = get_error_execution_result(GraphQLCannotUseHTTPForSubscriptionsError())
+        context.result = get_error_execution_result(GraphQLUnsupportedProtocolForSubscriptionsError())
         return
 
 
@@ -539,6 +535,22 @@ def _validate_multipart_mixed(context: LifecycleHookContext) -> None:
         if context.request.method != "POST":
             context.result = get_error_execution_result(GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError())
             return
+
+
+def _validate_incremental(context: LifecycleHookContext) -> None:
+    if not undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY:
+        context.result = get_error_execution_result(GraphQLIncrementalDeliveryNotSupportedError())
+        return
+
+    operation_type = get_operation_type(context.document, context.operation_name)
+
+    if operation_type == OperationType.MUTATION and context.request.method != "POST":
+        context.result = get_error_execution_result(GraphQLCannotUseHTTPForMutationsNonPostRequestError())
+        return
+
+    if operation_type == OperationType.SUBSCRIPTION:
+        context.result = get_error_execution_result(GraphQLUnsupportedProtocolForSubscriptionsError())
+        return
 
 
 def _validate_sse(context: LifecycleHookContext) -> None:
@@ -568,6 +580,38 @@ def _validate_websockets(context: LifecycleHookContext) -> None:
     if operation_type == OperationType.MUTATION and not undine_settings.ALLOW_MUTATIONS_WITH_WEBSOCKETS:
         context.result = get_error_execution_result(GraphQLCannotUseWebSocketsForMutationsError())
         return
+
+
+def _is_multipart_mixed_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a multipart/mixed request."""
+    if not hasattr(request, "response_content_type"):
+        return False
+
+    return media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql; subscriptionSpec=1.0")
+
+
+def _is_incremental_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is an incremental request."""
+    if not hasattr(request, "response_content_type"):
+        return False
+
+    return media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql")
+
+
+def _is_sse_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a Server-Sent Events request."""
+    if get_graphql_event_stream_token(request):
+        return True
+
+    if not hasattr(request, "response_content_type"):
+        return False
+
+    return media_type_match(request.response_content_type, "text/event-stream")
+
+
+def _is_websocket_request(request: DjangoRequestProtocol) -> bool:
+    """Check if the given request is a WebSocket request."""
+    return request.method == "WEBSOCKET"
 
 
 def _get_execution_context(
@@ -633,7 +677,7 @@ def _validate(
     return errors
 
 
-def _execute(context: UndineExecutionContext) -> ExecutionResult:
+def _execute(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:
     if version_info < (3, 3, 0):
         return _execute_old(context)
     return _execute_new(context)
@@ -676,8 +720,8 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
     return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)
 
 
-def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:
-    """Execution for graphql-core >= 3.3.0a10."""
+def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:
+    """Execution for graphql-core >= 3.3.0a12."""
     from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
 
     try:
@@ -695,7 +739,7 @@ def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
 
     if context.is_awaitable(data):
 
-        async def await_result() -> ExecutionResult:
+        async def await_result() -> GraphQLResult:
             try:
                 awaited_data = await data
 

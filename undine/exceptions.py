@@ -575,14 +575,6 @@ class GraphQLCannotUseHTTPForMutationsNonPostRequestError(GraphQLStatusError):
     code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST
 
 
-class GraphQLCannotUseHTTPForSubscriptionsError(GraphQLStatusError):
-    """Error raised when a subscription operation is executed using HTTP."""
-
-    msg = "Cannot use HTTP for subscriptions."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
-    code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_SUBSCRIPTIONS
-
-
 class GraphQLCannotUseMultipartMixedForQueriesError(GraphQLStatusError):
     """Error raised when a query operation is executed over multipart/mixed HTTP."""
 
@@ -706,31 +698,12 @@ class GraphQLFileNotFoundError(GraphQLStatusError):
     code = UndineErrorCodes.FILE_NOT_FOUND
 
 
-class GraphQLRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
-    """
-    Error raised when user tries to execute multiple operations
-    through an HTTP GET request without an operation name.
-    """
+class GraphQLIncrementalDeliveryNotSupportedError(GraphQLStatusError):
+    """Error raised when a incremental delivery is not supported by the server."""
 
-    msg = "Must provide operation name if query contains multiple operations."
+    msg = "Incremental delivery over HTTP is not supported."
     status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_OPERATION_NAME
-
-
-class GraphQLRequestNoOperationError(GraphQLStatusError):
-    """Error raised when no operation definition can be found in the request."""
-
-    msg = "Must provide an operation."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.NO_OPERATION
-
-
-class GraphQLRequestOperationNotFoundError(GraphQLStatusError):
-    """Error raised when operation matching given operation name cannot be found in the request."""
-
-    msg = "Unknown operation named '{operation_name}'."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.OPERATION_NOT_FOUND
+    code = UndineErrorCodes.INCREMENTAL_DELIVERY_NOT_SUPPORTED
 
 
 class GraphQLInvalidInputDataError(GraphQLStatusError):
@@ -1017,6 +990,33 @@ class GraphQLRelationNotNullableError(GraphQLStatusError):
     code = UndineErrorCodes.RELATION_NOT_NULLABLE
 
 
+class GraphQLRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
+    """
+    Error raised when user tries to execute multiple operations
+    through an HTTP GET request without an operation name.
+    """
+
+    msg = "Must provide operation name if query contains multiple operations."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_OPERATION_NAME
+
+
+class GraphQLRequestNoOperationError(GraphQLStatusError):
+    """Error raised when no operation definition can be found in the request."""
+
+    msg = "Must provide an operation."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.NO_OPERATION
+
+
+class GraphQLRequestOperationNotFoundError(GraphQLStatusError):
+    """Error raised when operation matching given operation name cannot be found in the request."""
+
+    msg = "Unknown operation named '{operation_name}'."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.OPERATION_NOT_FOUND
+
+
 class GraphQLFieldNotNullableError(GraphQLStatusError):
     """Error raised when field result is null, but the field is not nullable."""
 
@@ -1164,6 +1164,17 @@ class GraphQLTypedDictAnnotatedIncorrectMetadataError(GraphQLStatusError):
     code = UndineErrorCodes.TYPED_DICT_ANNOTATED_INCORRECT_METADATA
 
 
+class GraphQLUnexpectedMultiplePayloadsError(GraphQLStatusError):
+    """Error raised when a GraphQL request returns multiple payloads when it shouldn't."""
+
+    msg = (
+        "Executing this GraphQL operation would unexpectedly produce multiple payloads "
+        "(due to @defer or @stream directive)"
+    )
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.UNEXPECTED_MULTIPLE_PAYLOADS
+
+
 class GraphQLUnionResolveTypeInvalidValueError(GraphQLStatusError):
     """Error raised when a union resolver fails to resolve a type for an invalid value."""
 
@@ -1202,6 +1213,14 @@ class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     msg = "'{content_type}' is not a supported content type."
     status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
     code = UndineErrorCodes.UNSUPPORTED_CONTENT_TYPE
+
+
+class GraphQLUnsupportedProtocolForSubscriptionsError(GraphQLStatusError):
+    """Error raised when a subscription operation is executed using a protocol that does not support it."""
+
+    msg = "Subscriptions are not supported using this protocol."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS
 
 
 class GraphQLValidationError(GraphQLStatusError):
