@@ -61,7 +61,7 @@ def _extract_files_recursively(
 ) -> None:
     if isinstance(value, File):
         key = path[-1]
-        data[key] = None
+        data[key] = None  # type: ignore[index]
         files[value].append(".".join(str(part) for part in path))
 
     elif isinstance(value, dict):

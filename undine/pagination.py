@@ -254,7 +254,7 @@ class PaginationHandler:
         See. https://relay.dev/graphql/connections.htm#sec-Pagination-algorithm
         """
         if self.requires_total_count:
-            self.total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
+            self.total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)  # type: ignore[assignment]
 
         if self.after is not None:
             self.start = self.after
@@ -269,7 +269,7 @@ class PaginationHandler:
             if self.stop is None:
                 if self.total_count is None:
                     self.total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)  # type: ignore[assignment]
-                self.start = Greatest(self.total_count - Value(self.last), Value(self.start))  # type: ignore[assignment]
+                self.start = Greatest(self.total_count - Value(self.last), Value(self.start))  # type: ignore[assignment,operator]
             else:
                 self.start = max(self.stop - self.last, self.start)
 

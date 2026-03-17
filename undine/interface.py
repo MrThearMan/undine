@@ -17,6 +17,8 @@ from undine.utils.reflection import FunctionEqualityWrapper, get_members, get_wr
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from graphql import GraphQLArgumentMap, GraphQLInterfaceType, GraphQLOutputType
 
     from undine.query import Field
@@ -135,8 +137,8 @@ class InterfaceTypeMeta(type):
                 implementation.__field_map__[field_name] = copy_field
                 copy_field.__connect__(implementation, field_name)
 
-        implementation.__interfaces__.append(cls)  # type: ignore[assignment]
-        cls.__register_as_implementation__(implementation)
+        implementation.__interfaces__.append(cls)  # type: ignore[assignment,attr-defined]
+        cls.__register_as_implementation__(implementation)  # type: ignore[arg-type]
 
     def __register_as_implementation__(cls, implementation: type[InterfaceType | QueryType]) -> None:
         cls.__implementations__.append(implementation)
@@ -144,7 +146,7 @@ class InterfaceTypeMeta(type):
             interface.__register_as_implementation__(implementation)
 
     def __concrete_implementations__(cls) -> list[type[QueryType]]:
-        return [impl for impl in cls.__implementations__ if not issubclass(impl, InterfaceType)]  # type: ignore[return-value]
+        return [impl for impl in cls.__implementations__ if not issubclass(impl, InterfaceType)]  # type: ignore[return-value,misc]
 
     def __interface__(cls) -> GraphQLInterfaceType:
         return get_or_create_graphql_interface_type(
@@ -199,6 +201,8 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
     __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    __init__: Callable[[Any], None]
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
@@ -277,7 +281,7 @@ class InterfaceField:
         return undine_settings.SDL_PRINTER.print_field(self.schema_name, field, indent=False)
 
     def get_field_type(self) -> GraphQLOutputType:
-        return convert_to_graphql_type(TypeRef(value=self.ref), model=None)
+        return convert_to_graphql_type(TypeRef(value=self.ref), model=None)  # type: ignore[return-value]
 
     def get_field_arguments(self) -> GraphQLArgumentMap | None:
         many = is_many(self.ref, name=self.field_name)
@@ -300,7 +304,7 @@ class InterfaceField:
             self,
             deprecation_reason=self.deprecation_reason,
             complexity=self.complexity,
-            cache_time=self.cache_time,
+            cache_time=self.cache_time,  # type: ignore[arg-type]
             cache_per_user=self.cache_per_user,
             field_name=self.field_name,
             schema_name=self.schema_name,

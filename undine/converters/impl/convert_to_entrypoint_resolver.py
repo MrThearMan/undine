@@ -121,7 +121,7 @@ def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
     if ref.interface_type is not None:
         return InterfaceTypeResolver(interface=ref.interface_type, entrypoint=caller)
 
-    return QueryTypeManyResolver(query_type=ref.query_type, entrypoint=caller)
+    return QueryTypeManyResolver(query_type=ref.query_type, entrypoint=caller)  # type: ignore[arg-type]
 
 
 @convert_to_entrypoint_resolver.register

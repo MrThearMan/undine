@@ -30,7 +30,7 @@ from undine.utils.reflection import get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     from django.db.models import Model
     from graphql import GraphQLEnumType, GraphQLInputType
@@ -116,7 +116,7 @@ class OrderSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_enum_type(cls.__enum_type__())
 
-    def __getitem__(cls, models: type[type[TModel]] | tuple[type[TModel], ...]) -> type[OrderSet[*TModels]]:
+    def __getitem__(cls, models: type[TModel] | tuple[type[TModel], ...]) -> type[OrderSet[*TModels]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'OrderSet'!
         OrderSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
@@ -268,6 +268,8 @@ class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
     __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    __init__: Callable[[Any], None]
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
@@ -442,7 +444,7 @@ def get_orders_for_models(models: tuple[type[Model], ...], exclude: Iterable[str
     graphql_types_by_model: dict[str, dict[type[Model], GraphQLInputType]] = defaultdict(dict)
     for model in fields_by_model:
         for field_name in common_fields:
-            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)
+            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)  # type: ignore[assignment]
 
     usable_fields: set[str] = set()
     for field_name, model_map in graphql_types_by_model.items():

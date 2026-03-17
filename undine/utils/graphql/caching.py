@@ -52,7 +52,7 @@ class RequestCacheCalculator:
         self.visited_fragments: set[str] = set()
 
     def run(self) -> CacheControlResults:
-        root_type: GraphQLObjectType = undine_settings.SCHEMA.get_root_type(self.operation.operation)
+        root_type: GraphQLObjectType = undine_settings.SCHEMA.get_root_type(self.operation.operation)  # type: ignore[assignment]
 
         with suppress(NoRequestCaching):
             for selection in self.operation.selection_set.selections:
@@ -63,7 +63,7 @@ class RequestCacheCalculator:
     def calculate_cache_time(self, parent_type: GraphQLCompositeType, selection: SelectionNode) -> None:
         match selection:
             case FieldNode():
-                field = get_field_def(undine_settings.SCHEMA, parent_type, selection)
+                field = get_field_def(undine_settings.SCHEMA, parent_type, selection)  # type: ignore[arg-type]
                 field_type: GraphQLCompositeType = get_underlying_type(field.type)  # type: ignore[assignment]
                 self.parse_cache_time(field)
                 if selection.selection_set is not None:
@@ -105,7 +105,7 @@ class RequestCacheCalculator:
         undine_field = get_undine_field(field)
         if undine_field is not None:
             if undine_field.cache_time is not None:
-                self.cache_time = min(self.cache_time, undine_field.cache_time)
+                self.cache_time = min(self.cache_time, undine_field.cache_time)  # type: ignore[type-var]
                 self.cache_per_user |= undine_field.cache_per_user
             else:
                 field_type: GraphQLCompositeType = get_underlying_type(field.type)  # type: ignore[assignment]
@@ -119,10 +119,10 @@ class RequestCacheCalculator:
         undine_interface_field = get_undine_interface_field(field)
         if undine_interface_field is not None:
             if undine_interface_field.cache_time is not None:
-                self.cache_time = min(self.cache_time, undine_interface_field.cache_time)
+                self.cache_time = min(self.cache_time, undine_interface_field.cache_time)  # type: ignore[type-var]
                 self.cache_per_user |= undine_interface_field.cache_per_user
             else:
-                field_type: GraphQLCompositeType = get_underlying_type(field.type)  # type: ignore[assignment]
+                field_type = get_underlying_type(field.type)  # type: ignore[assignment]
                 self.parse_cache_time_from_type(field_type)
 
             # Escape is cache time is zero
@@ -136,7 +136,7 @@ class RequestCacheCalculator:
                 query_type = get_undine_query_type(field_type)
                 if query_type is not None:
                     if query_type.__cache_time__ is not None:
-                        self.cache_time = min(self.cache_time, query_type.__cache_time__)
+                        self.cache_time = min(self.cache_time, query_type.__cache_time__)  # type: ignore[type-var]
                         self.cache_per_user |= query_type.__cache_per_user__
                     return
 
@@ -144,7 +144,7 @@ class RequestCacheCalculator:
                 interface_type = get_undine_interface_type(field_type)
                 if interface_type is not None:
                     if interface_type.__cache_time__ is not None:
-                        self.cache_time = min(self.cache_time, interface_type.__cache_time__)
+                        self.cache_time = min(self.cache_time, interface_type.__cache_time__)  # type: ignore[type-var]
                         self.cache_per_user |= interface_type.__cache_per_user__
                     return
 
@@ -152,6 +152,6 @@ class RequestCacheCalculator:
                 union_type = get_undine_union_type(field_type)
                 if union_type is not None:
                     if union_type.__cache_time__ is not None:
-                        self.cache_time = min(self.cache_time, union_type.__cache_time__)
+                        self.cache_time = min(self.cache_time, union_type.__cache_time__)  # type: ignore[type-var]
                         self.cache_per_user |= union_type.__cache_per_user__
                     return

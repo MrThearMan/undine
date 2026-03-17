@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from functools import cached_property
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from asgiref.typing import HTTPResponseBodyEvent, HTTPResponseStartEvent
 from channels.auth import AuthMiddlewareStack
@@ -90,11 +90,11 @@ def get_websocket_enabled_app(django_application: ASGIHandler) -> Any:  # pragma
     >>>
     >>> application = get_websocket_enabled_app(django_application)
     """
-    websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]
+    websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]  # type: ignore[arg-type]
 
     return ProtocolTypeRouter({
         "http": django_application,
-        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
+        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),  # type: ignore[arg-type]
     })
 
 
@@ -116,7 +116,7 @@ def get_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no c
     >>>
     >>> application = get_sse_enabled_app(django_application)
     """
-    return GraphQLSSERouter(django_application=django_application)
+    return GraphQLSSERouter(django_application=django_application)  # type: ignore[arg-type]
 
 
 def get_websocket_and_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
@@ -136,11 +136,11 @@ def get_websocket_and_sse_enabled_app(django_application: ASGIHandler) -> Any:  
     >>>
     >>> application = get_websocket_and_sse_enabled_app(django_application)
     """
-    websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]
+    websocket_urlpatterns = [re_path(undine_settings.WEBSOCKET_PATH, GraphQLWebSocketConsumer.as_asgi())]  # type: ignore[arg-type]
 
     return ProtocolTypeRouter({
         "http": get_sse_enabled_app(django_application),
-        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
+        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),  # type: ignore[arg-type]
     })
 
 
@@ -152,7 +152,7 @@ class GraphQLWebSocketConsumer(AsyncConsumer):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.handler = GraphQLOverWebSocketHandler(websocket=self)
+        self.handler = GraphQLOverWebSocketHandler(websocket=self)  # type: ignore[arg-type]
 
     async def websocket_connect(self, message: WebSocketConnectEvent) -> None:
         await self.handler.connect()
@@ -194,27 +194,27 @@ class ChannelLayerSSESignaler:
     async def signal_stream_open(self, stream_token: str) -> None:
         group = self.get_stream_open_group_name(stream_token)
         message = SSEStreamOpenEvent(type="sse.stream.open")
-        await self.channel_layer.group_send(group=group, message=message)
+        await self.channel_layer.group_send(group=group, message=message)  # type: ignore[arg-type]
 
     async def signal_stream_close(self, stream_token: str) -> None:
         group = self.get_stream_group_name(stream_token)
         message = SSEStreamCloseEvent(type="sse.stream.close")
-        await self.channel_layer.group_send(group=group, message=message)
+        await self.channel_layer.group_send(group=group, message=message)  # type: ignore[arg-type]
 
     async def signal_operation_event(self, stream_token: str, event: str) -> None:
         group = self.get_stream_group_name(stream_token)
         message = SSEOperationResultEvent(type="sse.operation.event", event=event)
-        await self.channel_layer.group_send(group=group, message=message)
+        await self.channel_layer.group_send(group=group, message=message)  # type: ignore[arg-type]
 
     async def signal_operation_cancel(self, stream_token: str, operation_id: str) -> None:
         group = self.get_operation_group_name(stream_token, operation_id)
         message = SSEOperationCancelEvent(type="sse.operation.cancel")
-        await self.channel_layer.group_send(group=group, message=message)
+        await self.channel_layer.group_send(group=group, message=message)  # type: ignore[arg-type]
 
     async def signal_operation_cancel_all(self, stream_token: str) -> None:
         group = self.get_all_operations_group_name(stream_token)
         message = SSEOperationCancelEvent(type="sse.operation.cancel")
-        await self.channel_layer.group_send(group=group, message=message)
+        await self.channel_layer.group_send(group=group, message=message)  # type: ignore[arg-type]
 
     # Join groups
 
@@ -255,10 +255,10 @@ class ChannelLayerSSESignaler:
 class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
     """Base consumer for GraphQL over Server-Sent Events in Single Connection mode."""
 
-    scope: HTTPASGIScope
+    scope: HTTPASGIScope  # type: ignore[assignment]
     base_send: ASGISendCallable
     channel_layer: BaseChannelLayer
-    channel_layer_alias: str
+    channel_layer_alias: ClassVar[str]
     channel_name: str
     channel_receive: ASGIReceiveCallable
     handler: GraphQLOverSSESCHandler
@@ -267,7 +267,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
         super().__init__(*args, **kwargs)
         self.messages: list[HTTPRequestEvent] = []
 
-    async def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+    async def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:  # type: ignore[override]
         channel_layer: BaseChannelLayer | None = get_channel_layer(self.channel_layer_alias)
         if channel_layer is None:
             msg = f"No channel layer configured for alias '{self.channel_layer_alias}'"
@@ -277,7 +277,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
         self.base_send = send
         self.channel_layer = channel_layer
         self.channel_name: str = await self.channel_layer.new_channel()
-        self.channel_receive: ASGIReceiveCallable = functools.partial(self.channel_layer.receive, self.channel_name)
+        self.channel_receive: ASGIReceiveCallable = functools.partial(self.channel_layer.receive, self.channel_name)  # type: ignore[assignment]
 
         self.handler = GraphQLOverSSESCHandler(
             signaler=ChannelLayerSSESignaler(channel_layer=self.channel_layer, channel_name=self.channel_name),
@@ -289,7 +289,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
             await self.dispatch_loop(receive)
 
     async def dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
-        await await_many_dispatch([receive, self.channel_receive], self.dispatch)
+        await await_many_dispatch([receive, self.channel_receive], self.dispatch)  # type: ignore[list-item]
 
     @cached_property
     def request(self) -> DjangoRequestProtocol:
@@ -364,7 +364,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
         headers_array = [(bytes(key, "ascii"), bytes(value, "latin1")) for key, value in headers.items()]
 
         await self.send(
-            HTTPResponseStartEvent(
+            HTTPResponseStartEvent(  # type: ignore[arg-type]
                 type="http.response.start",
                 status=status,
                 headers=headers_array,
@@ -374,7 +374,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
 
     async def send_body(self, *, body: str, more_body: bool = False) -> None:
         await self.send(
-            HTTPResponseBodyEvent(
+            HTTPResponseBodyEvent(  # type: ignore[arg-type]
                 type="http.response.body",
                 body=body.encode("utf-8"),
                 more_body=more_body,
@@ -413,7 +413,7 @@ class SSEEventStreamConsumer(GraphQLSSESingleConnectionConsumer):
     async def dispatch_loop(self, receive: ASGIReceiveCallable) -> None:
         self._keep_alive_task = asyncio.create_task(self._keep_alive())
         try:
-            await await_many_dispatch([receive, self.channel_receive], self.dispatch)
+            await await_many_dispatch([receive, self.channel_receive], self.dispatch)  # type: ignore[list-item]
         finally:
             self._keep_alive_task.cancel()
             with suppress(asyncio.CancelledError):
@@ -497,11 +497,11 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         try:
             while True:
                 if self.operation is None and receive_task.done():
-                    await self.dispatch(receive_task.result())
+                    await self.dispatch(receive_task.result())  # type: ignore[arg-type]
                     receive_task = asyncio.ensure_future(receive())
 
                 if channel_task.done():
-                    await self.dispatch(channel_task.result())
+                    await self.dispatch(channel_task.result())  # type: ignore[arg-type]
                     channel_task = asyncio.ensure_future(self.channel_receive())
 
                 if not receive_task.done():
@@ -632,7 +632,7 @@ class GraphQLSSERouter:
 
     def __init__(self, django_application: ASGI3Application) -> None:
         self.django_application: ASGI3Application = django_application
-        self.sse_application: ASGI3Application = AuthMiddlewareStack(GraphQLSSEOperationRouter())
+        self.sse_application: ASGI3Application = AuthMiddlewareStack(GraphQLSSEOperationRouter())  # type: ignore[arg-type,assignment]
 
     def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> Awaitable[None]:
         path = scope["path"].removeprefix("/").removesuffix("/")
@@ -649,7 +649,7 @@ class GraphQLSSERouter:
         # GET/POST with a stream token are single connection mode operations.
         if method in {"GET", "POST"}:
             request = ASGIRequest(scope=scope, body_file=io.BytesIO())
-            if get_graphql_event_stream_token(request):
+            if get_graphql_event_stream_token(request):  # type: ignore[arg-type]
                 return self.sse_application(scope, receive, send)
 
         # Everything else uses distinct connections mode via Django.
@@ -670,6 +670,7 @@ class GraphQLSSEOperationRouter:
 
     def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> Awaitable[None]:
         request = ASGIRequest(scope=scope, body_file=io.BytesIO())
+        response: HttpResponse
 
         match request.method:
             case "PUT":

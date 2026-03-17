@@ -64,7 +64,7 @@ def _(ref: LazyRelation, **kwargs: Any) -> GraphQLFieldResolver:
     try:
         value = ref.get_type()
     except RegistryMissingTypeError:
-        value = ref.field
+        value = ref.field  # type: ignore[assignment]
 
     return convert_to_field_resolver(value, **kwargs)
 
@@ -105,7 +105,7 @@ def _(ref: GraphQLWrappingType, **kwargs: Any) -> GraphQLFieldResolver:
 
 
 @convert_to_field_resolver.register
-def _(_: GraphQLID, **kwargs: Any) -> GraphQLFieldResolver:
+def _(_: GraphQLID, **kwargs: Any) -> GraphQLFieldResolver:  # type: ignore[valid-type]
     caller: Field = kwargs["caller"]
     return GlobalIDResolver(typename=caller.query_type.__schema_name__)
 
@@ -139,7 +139,7 @@ def _(ref: Connection, **kwargs: Any) -> GraphQLFieldResolver:
 @convert_to_field_resolver.register
 def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
     caller: Field = kwargs["caller"]
-    return NestedQueryTypeManyResolver(query_type=ref.query_type, field=caller)
+    return NestedQueryTypeManyResolver(query_type=ref.query_type, field=caller)  # type: ignore[arg-type]
 
 
 @convert_to_field_resolver.register

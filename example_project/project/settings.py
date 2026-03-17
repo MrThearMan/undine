@@ -11,7 +11,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 ROOT_URLCONF = "example_project.project.urls"
 WSGI_APPLICATION = "example_project.project.wsgi.application"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[str] = []
 INTERNAL_IPS = ["127.0.0.1"]
 
 INSTALLED_APPS = [

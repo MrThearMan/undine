@@ -177,7 +177,7 @@ class AtomicMutationHook(LifecycleHook):
         self.error: BaseException | None = None
 
     def on_execution(self) -> Generator[None, None, None]:
-        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)
+        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
         self.is_atomic_mutation = is_atomic_mutation(operation_definition)
 
         if not self.is_atomic_mutation:
@@ -203,7 +203,7 @@ class AtomicMutationHook(LifecycleHook):
             self.error = None
 
     async def on_execution_async(self) -> AsyncGenerator[None, None]:
-        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)
+        operation_definition = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
         self.is_atomic_mutation = is_atomic_mutation(operation_definition)
 
         if not self.is_atomic_mutation:
@@ -213,7 +213,7 @@ class AtomicMutationHook(LifecycleHook):
         # `transaction.atomic` is not supported in async contexts.
         raise GraphQLAsyncAtomicMutationNotSupportedError
 
-    def resolve(self, func: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
+    def resolve(self, func: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:  # type: ignore[override]
         try:
             return func(root, info, **kwargs)
 
@@ -233,12 +233,12 @@ class RequestCacheHook(LifecycleHook):
         return ConnectionProxy(caches, undine_settings.REQUEST_CACHE_ALIAS)  # type: ignore[return-value]
 
     def on_execution(self) -> Generator[None, None, None]:
-        operation = get_operation_definition(self.context.document, self.context.operation_name)
+        operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
         if operation.operation != OperationType.QUERY:
             yield
             return
 
-        fragments = get_fragment_definitions(self.context.document)
+        fragments = get_fragment_definitions(self.context.document)  # type: ignore[arg-type]
         cache_results = RequestCacheCalculator(operation, fragments).run()
 
         if cache_results.cache_time <= 0:
@@ -274,12 +274,12 @@ class RequestCacheHook(LifecycleHook):
     async def on_execution_async(self) -> AsyncGenerator[None, None]:
         # We need a separate async version for caching and fetching the request user.
         # Unfortunately, there is a lot of repetition here.
-        operation = get_operation_definition(self.context.document, self.context.operation_name)
+        operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
         if operation.operation != OperationType.QUERY:
             yield
             return
 
-        fragments = get_fragment_definitions(self.context.document)
+        fragments = get_fragment_definitions(self.context.document)  # type: ignore[arg-type]
         cache_results = RequestCacheCalculator(operation, fragments).run()
 
         if cache_results.cache_time <= 0:
@@ -374,12 +374,12 @@ class BaseLifecycleHookManager(ExitStack, AsyncExitStack, ABC):
 class OperationLifecycleHookManager(BaseLifecycleHookManager):
     """Manager for lifecycle hooks for the whole operation."""
 
-    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:  # type: ignore[override]
         if hook.__class__.on_operation == LifecycleHook.on_operation:
             return None
         return hook.on_operation
 
-    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:  # type: ignore[override]
         if (
             hook.__class__.on_operation == LifecycleHook.on_operation
             and hook.__class__.on_operation_async == LifecycleHook.on_operation_async
@@ -391,12 +391,12 @@ class OperationLifecycleHookManager(BaseLifecycleHookManager):
 class ParseLifecycleHookManager(BaseLifecycleHookManager):
     """Manager for lifecycle hooks in the parse step."""
 
-    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:  # type: ignore[override]
         if hook.__class__.on_parse == LifecycleHook.on_parse:
             return None
         return hook.on_parse
 
-    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:  # type: ignore[override]
         if (
             hook.__class__.on_parse == LifecycleHook.on_parse
             and hook.__class__.on_parse_async == LifecycleHook.on_parse_async
@@ -408,12 +408,12 @@ class ParseLifecycleHookManager(BaseLifecycleHookManager):
 class ValidationLifecycleHookManager(BaseLifecycleHookManager):
     """Manager for lifecycle hooks in the validation step."""
 
-    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:  # type: ignore[override]
         if hook.__class__.on_validation == LifecycleHook.on_validation:
             return None
         return hook.on_validation
 
-    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:  # type: ignore[override]
         if (
             hook.__class__.on_validation == LifecycleHook.on_validation
             and hook.__class__.on_validation_async == LifecycleHook.on_validation_async
@@ -425,12 +425,12 @@ class ValidationLifecycleHookManager(BaseLifecycleHookManager):
 class ExecutionLifecycleHookManager(BaseLifecycleHookManager):
     """Manager for lifecycle hooks in the execution step."""
 
-    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:
+    def enter_sync(self, hook: LifecycleHook) -> Callable[[], Generator[None, None, None]] | None:  # type: ignore[override]
         if hook.__class__.on_execution == LifecycleHook.on_execution:
             return None
         return hook.on_execution
 
-    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:
+    def enter_async(self, hook: LifecycleHook) -> Callable[[], AsyncGenerator[None, None]] | None:  # type: ignore[override]
         if (
             hook.__class__.on_execution == LifecycleHook.on_execution
             and hook.__class__.on_execution_async == LifecycleHook.on_execution_async

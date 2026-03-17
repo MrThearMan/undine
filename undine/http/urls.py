@@ -11,7 +11,7 @@ app_name = "undine"
 urlpatterns = [
     path(
         undine_settings.GRAPHQL_PATH,
-        graphql_view_async if undine_settings.ASYNC else graphql_view_sync,
+        graphql_view_async if undine_settings.ASYNC else graphql_view_sync,  # type: ignore[arg-type]
         name=undine_settings.GRAPHQL_VIEW_NAME,
     ),
 ]

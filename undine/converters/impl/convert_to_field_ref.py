@@ -206,12 +206,12 @@ def _(ref: type[QueryType], **kwargs: Any) -> Any:
 
 @convert_to_field_ref.register
 def _(ref: GenericRelation, **kwargs: Any) -> Any:
-    return LazyRelation(field=ref)
+    return LazyRelation(field=ref)  # type: ignore[arg-type]
 
 
 @convert_to_field_ref.register
 def _(ref: GenericRel, **kwargs: Any) -> Any:
-    return LazyRelation(field=ref.field)
+    return LazyRelation(field=ref.field)  # type: ignore[arg-type]
 
 
 @convert_to_field_ref.register

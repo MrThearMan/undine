@@ -314,7 +314,7 @@ class MutationNode:
                 setattr(instance, rel_info.field_name, rel)
                 self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
-            case rel_info.related_model_pk_type():
+            case rel_info.related_model_pk_type():  # type: ignore[misc]
                 rel = get_instance_or_raise(model=node.model, pk=data)
 
                 node.instances.append(rel)
@@ -322,7 +322,7 @@ class MutationNode:
                 setattr(instance, rel_info.field_name, rel)
                 self.field_names.add(rel_info.field_name)  # type: ignore[arg-type]
 
-            case rel_info.related_model():
+            case rel_info.related_model():  # type: ignore[misc]
                 node.instances.append(data)
 
                 setattr(instance, rel_info.field_name, data)
@@ -354,7 +354,7 @@ class MutationNode:
                 setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
                 node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
-            case rel_info.related_model_pk_type():
+            case rel_info.related_model_pk_type():  # type: ignore[misc]
                 rel = get_instance_or_raise(model=node.model, pk=data)
 
                 node.instances.append(rel)
@@ -362,7 +362,7 @@ class MutationNode:
                 setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
                 node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
-            case rel_info.related_model():
+            case rel_info.related_model():  # type: ignore[misc]
                 node.instances.append(data)
 
                 setattr(data, rel_info.related_name, instance)  # type: ignore[arg-type]
@@ -410,14 +410,14 @@ class MutationNode:
 
                 node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
-            case [rel_info.related_model_pk_type(), *_]:
+            case [rel_info.related_model_pk_type(), *_]:  # type: ignore[misc]
                 for rel in get_instances_or_raise(model=node.model, pks=data):
                     node.instances.append(rel)
                     setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
 
                 node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
-            case [rel_info.related_model(), *_]:
+            case [rel_info.related_model(), *_]:  # type: ignore[misc]
                 for rel in data:
                     node.instances.append(rel)
                     setattr(rel, rel_info.related_name, instance)  # type: ignore[arg-type]
@@ -454,11 +454,11 @@ class MutationNode:
             case [dict(), *_]:
                 node.handle_many(data=data)
 
-            case [rel_info.related_model_pk_type(), *_]:
+            case [rel_info.related_model_pk_type(), *_]:  # type: ignore[misc]
                 for rel in get_instances_or_raise(model=node.model, pks=data):
                     node.instances.append(rel)
 
-            case [rel_info.related_model(), *_]:
+            case [rel_info.related_model(), *_]:  # type: ignore[misc]
                 for rel in data:
                     node.instances.append(rel)
 

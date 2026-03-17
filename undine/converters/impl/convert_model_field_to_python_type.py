@@ -117,7 +117,7 @@ def _(_: JSONField, **kwargs: Any) -> type:
 @convert_model_field_to_python_type.register
 def _(ref: ToManyField, **kwargs: Any) -> type:
     generic_type = convert_model_field_to_python_type(ref.target_field, **kwargs)
-    return list.__class_getitem__(generic_type)
+    return list.__class_getitem__(generic_type)  # type: ignore[return-value]
 
 
 @convert_model_field_to_python_type.register
@@ -148,7 +148,7 @@ def _(ref: ManyToManyDescriptor, **kwargs: Any) -> type:
 @convert_model_field_to_python_type.register
 def _(ref: GenericRelation, **kwargs: Any) -> type:
     generic_type = convert_model_field_to_python_type(ref.target_field, **kwargs)
-    return list.__class_getitem__(generic_type)
+    return list.__class_getitem__(generic_type)  # type: ignore[return-value]
 
 
 @convert_model_field_to_python_type.register
@@ -172,7 +172,7 @@ with suppress(ImportError):
     @convert_model_field_to_python_type.register
     def _(ref: ArrayField, **kwargs: Any) -> type:
         item_type = convert_model_field_to_python_type(ref.base_field, **kwargs)
-        return list.__class_getitem__(item_type)
+        return list.__class_getitem__(item_type)  # type: ignore[return-value]
 
 
 with suppress(ImportError):

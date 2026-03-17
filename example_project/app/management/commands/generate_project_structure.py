@@ -63,6 +63,9 @@ def get_ignored_files() -> set[str]:
     if result.exit_code != 0:
         raise CommandError(result.err)
 
+    if result.out is None:
+        return set()
+
     ignored = [item.removeprefix("!!").strip() for item in result.out.splitlines() if item.startswith("!!")]
     return set(ignored)
 

@@ -33,7 +33,7 @@ def _(ref: str, **kwargs: Any) -> Any:
     fields_by_model: dict[type[Model], GraphQLInputType] = {}
     for model in caller.orderset.__models__:
         field = get_model_field(model=model, lookup=caller.field_name)
-        fields_by_model[model] = convert_to_graphql_type(field, model=model, is_input=True)
+        fields_by_model[model] = convert_to_graphql_type(field, model=model, is_input=True)  # type: ignore[assignment]
 
     for (model_1, field_1), (model_2, field_2) in itertools.combinations(fields_by_model.items(), 2):
         if field_1 != field_2:

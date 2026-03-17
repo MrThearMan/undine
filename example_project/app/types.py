@@ -153,7 +153,7 @@ class TaskType(QueryType[Task]):
 
     @Field
     async def slow(self: Task, info: GQLInfo) -> int:
-        sleep_time = self.points % 10
+        sleep_time = (self.points or 0) % 10
         await asyncio.sleep(sleep_time)
         return sleep_time
 
@@ -163,7 +163,7 @@ class TaskType(QueryType[Task]):
 
     @Field
     async def echo(self: Task, info: GQLInfo) -> AsyncIterable[str]:
-        iterations = self.points % 10
+        iterations = (self.points or 0) % 10
         for _ in range(iterations):
             await asyncio.sleep(1)
             yield "echo"

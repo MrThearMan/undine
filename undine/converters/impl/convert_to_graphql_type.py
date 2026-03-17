@@ -305,17 +305,17 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             evaluated_type = eval_type(value, globals_=module_globals)
 
             if is_annotated(evaluated_type):
-                inpt = evaluated_type.__metadata__[0]
+                inpt = evaluated_type.__metadata__[0]  # type: ignore[attr-defined]
                 if isinstance(inpt, str):
                     inpt = Input(description=inpt)
 
                 if not isinstance(inpt, Input):
                     raise GraphQLTypedDictAnnotatedIncorrectMetadataError(typed_dict=ref, field=key, expected=Input)
 
-                inpt.ref = evaluated_type.__args__[0]
+                inpt.ref = evaluated_type.__args__[0]  # type: ignore[attr-defined]
 
                 input_fields[to_schema_name(key)] = GraphQLInputField(
-                    convert_to_graphql_type(TypeRef(inpt.ref, total=total), **kwargs),
+                    convert_to_graphql_type(TypeRef(inpt.ref, total=total), **kwargs),  # type: ignore[arg-type]
                     default_value=inpt.default_value,
                     description=inpt.description if inpt.description is not Undefined else None,
                     deprecation_reason=inpt.deprecation_reason,
@@ -325,7 +325,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
                 continue
 
             input_fields[to_schema_name(key)] = GraphQLInputField(
-                convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs),
+                convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs),  # type: ignore[arg-type]
                 out_name=key,
             )
 
@@ -341,7 +341,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
         resolver = TypedDictFieldResolver(key=key)
 
         if is_annotated(evaluated_type):
-            field = evaluated_type.__metadata__[0]
+            field = evaluated_type.__metadata__[0]  # type: ignore[attr-defined]
 
             if isinstance(field, str):
                 field = Field(description=field)
@@ -349,10 +349,10 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             if not isinstance(field, Field):
                 raise GraphQLTypedDictAnnotatedIncorrectMetadataError(typed_dict=ref, field=key, expected=Field)
 
-            field.ref = evaluated_type.__args__[0]
+            field.ref = evaluated_type.__args__[0]  # type: ignore[attr-defined]
 
             output_fields[to_schema_name(key)] = GraphQLField(
-                convert_to_graphql_type(TypeRef(field.ref, total=total), **kwargs),
+                convert_to_graphql_type(TypeRef(field.ref, total=total), **kwargs),  # type: ignore[arg-type]
                 resolve=resolver,
                 description=field.description if field.description is not Undefined else None,
                 deprecation_reason=field.deprecation_reason,
@@ -361,7 +361,7 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             continue
 
         output_fields[to_schema_name(key)] = GraphQLField(
-            convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs),
+            convert_to_graphql_type(TypeRef(evaluated_type, total=total), **kwargs),  # type: ignore[arg-type]
             resolve=resolver,
         )
 
@@ -699,7 +699,7 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLInputType | GraphQLOutput
 
 @convert_to_graphql_type.register
 def _(ref: GenericRelation, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    object_id_field = ref.related_model._meta.get_field(ref.object_id_field_name)
+    object_id_field = ref.related_model._meta.get_field(ref.object_id_field_name)  # type: ignore[union-attr]
     type_ = convert_to_graphql_type(object_id_field, **kwargs)
     return GraphQLList(type_)
 
@@ -822,12 +822,9 @@ def _(ref: type[UnionType], **kwargs: Any) -> GraphQLInputType | GraphQLOutputTy
 
 @convert_to_graphql_type.register
 def _(ref: LazyRelation, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-    try:
-        value = ref.get_type()
-    except RegistryMissingTypeError:
-        value = ref.field
-
-    return convert_to_graphql_type(value, **kwargs)
+    with suppress(RegistryMissingTypeError):
+        return convert_to_graphql_type(ref.get_type(), **kwargs)
+    return convert_to_graphql_type(ref.field, **kwargs)
 
 
 @convert_to_graphql_type.register
@@ -897,12 +894,13 @@ def _(ref: LookupRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 @convert_to_graphql_type.register
 def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    ref_type: type[UnionType | InterfaceType | QueryType]
     if ref.union_type is not None:
         ref_type = ref.union_type
     elif ref.interface_type is not None:
         ref_type = ref.interface_type
     else:
-        ref_type = ref.query_type
+        ref_type = ref.query_type  # type: ignore[assignment]
 
     def edge_fields() -> dict[str, GraphQLField]:
         return {

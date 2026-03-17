@@ -214,13 +214,13 @@ class Directive(metaclass=DirectiveMeta):
 
     def __connect__(self, other: Any) -> None:
         if isinstance(getattr(other, "directives", None), DirectiveList):
-            other: CalculationArgument | Entrypoint | Field | Filter | Order
+            other: CalculationArgument | Entrypoint | Field | Filter | Order  # type: ignore[no-redef]
             other.directives.append(self)
             self.__connected__(other)
             return
 
         if isinstance(getattr(other, "__directives__", None), DirectiveList):
-            other: (
+            other: (  # type: ignore[no-redef]
                 FilterSetMeta
                 | InterfaceTypeMeta
                 | MutationTypeMeta
@@ -306,7 +306,7 @@ class DirectiveArgument:
         instance.__parameters__[self.name] = value
 
     def get_argument_type(self) -> GraphQLInputType:
-        return convert_to_graphql_type(TypeRef(value=self.ref), model=None, is_input=True)
+        return convert_to_graphql_type(TypeRef(value=self.ref), model=None, is_input=True)  # type: ignore[return-value]
 
     def as_graphql_argument(self) -> GraphQLArgument:
         return GraphQLArgument(
@@ -345,7 +345,7 @@ class DirectiveList(UserList[Directive]):
         self.__check_directives(directives)
         super().__init__(directives)
 
-    def __setitem__(self, index: int, value: Directive) -> None:
+    def __setitem__(self, index: int, value: Directive) -> None:  # type: ignore[override]
         data = self.data[:]
         data[index] = value
         self.__check_directives(data)
@@ -442,7 +442,7 @@ class ComplexityDirective(
 
     def __connected__(self, other: Any) -> None:
         if hasattr(other, "complexity"):
-            other: Field | Entrypoint
+            other: Field | Entrypoint  # type: ignore[no-redef]
             other.complexity = self.value
 
 
@@ -469,7 +469,7 @@ class CacheRulesDirective(
         description="Whether the value is cached per user or not.",
     )
 
-    def __init__(self, *, cache_time: int = Undefined, cache_per_user: bool = False) -> None:
+    def __init__(self, *, cache_time: int = Undefined, cache_per_user: bool = False) -> None:  # type: ignore[assignment]
         """
         Create a new `CacheDirective`.
 
@@ -495,13 +495,13 @@ class CacheRulesDirective(
                 self.cache_time = None  # Inherit from parent
 
         if hasattr(other, "cache_time"):
-            other: Entrypoint | Field | InterfaceField
+            other: Entrypoint | Field | InterfaceField  # type: ignore[no-redef]
             other.cache_time = self.cache_time
             other.cache_per_user = self.cache_per_user
             return
 
         if hasattr(other, "__cache_time__"):
-            other: RootType | QueryType | InterfaceType | UnionType
+            other: RootType | QueryType | InterfaceType | UnionType  # type: ignore[no-redef]
             other.__cache_time__ = self.cache_time
             other.__cache_per_user__ = self.cache_per_user
             return

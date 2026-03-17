@@ -551,7 +551,7 @@ class WebSocketRequest:
     @property
     def response_content_type(self) -> MediaType:
         if hasattr(self, "_response_content_type"):
-            return self._response_content_type
+            return self._response_content_type  # type: ignore[has-type]
         self._response_content_type = MediaType("application/json")
         return self._response_content_type
 
@@ -562,7 +562,7 @@ class WebSocketRequest:
     @property
     def response_headers(self) -> ResponseHeaders:
         if hasattr(self, "_response_headers"):
-            return self._response_headers
+            return self._response_headers  # type: ignore[has-type]
         self._response_headers = ResponseHeaders({})
         return self._response_headers
 

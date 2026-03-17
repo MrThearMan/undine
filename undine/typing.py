@@ -21,6 +21,7 @@ from typing import (
     Self,
     TypeAlias,
     TypedDict,
+    TypeGuard,
     TypeVar,
     TypeVarTuple,
     Union,
@@ -85,7 +86,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLError
 
 if version_info >= (3, 3, 0):
-    from graphql import ExperimentalIncrementalExecutionResults
+    from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
 else:
 
     class _FormattedCompletedResult(TypedDict):
@@ -169,7 +170,7 @@ else:
         extensions: dict[str, Any] | None
         formatted: _FormattedSubsequentIncrementalExecutionResult
 
-    class ExperimentalIncrementalExecutionResults(Protocol):
+    class ExperimentalIncrementalExecutionResults(Protocol):  # type: ignore[no-redef]
         initial_result: _InitialIncrementalExecutionResult
         subsequent_results: AsyncGenerator[_SubsequentIncrementalExecutionResult, None]
 
@@ -887,7 +888,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     context: DjangoRequestProtocol[TUser]
     """The context passed to the GraphQL operation. This is always the Django request object."""
 
-    is_awaitable: Callable[[Any], bool]
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
     """Function for testing whether the GraphQL resolver is awaitable or not."""
 
 

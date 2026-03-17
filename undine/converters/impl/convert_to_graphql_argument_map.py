@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from types import FunctionType
 from typing import Any
 
@@ -48,7 +49,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
             graphql_type = GraphQLNonNull(graphql_type)
 
         arguments[to_schema_name(param.name)] = GraphQLArgument(
-            graphql_type,
+            graphql_type,  # type: ignore[arg-type]
             default_value=param.default_value,
             description=arg_descriptions.get(param.name),
             deprecation_reason=deprecation_descriptions.get(param.name),
@@ -141,7 +142,7 @@ def _(ref: type[UnionType], **kwargs: Any) -> GraphQLArgumentMap:
 
     if ref.__orderset__:
         enum_type = ref.__orderset__.__enum_type__()
-        input_type = GraphQLList(GraphQLNonNull(enum_type))
+        input_type = GraphQLList(GraphQLNonNull(enum_type))  # type: ignore[assignment]
         arguments[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY] = GraphQLArgument(input_type)
 
     return arguments
@@ -149,12 +150,9 @@ def _(ref: type[UnionType], **kwargs: Any) -> GraphQLArgumentMap:
 
 @convert_to_graphql_argument_map.register
 def _(ref: LazyRelation, **kwargs: Any) -> GraphQLArgumentMap:
-    try:
-        value = ref.get_type()
-    except RegistryMissingTypeError:
-        value = ref.field
-
-    return convert_to_graphql_argument_map(value, **kwargs)
+    with suppress(RegistryMissingTypeError):
+        return convert_to_graphql_argument_map(ref.get_type(), **kwargs)
+    return convert_to_graphql_argument_map(ref.field, **kwargs)
 
 
 @convert_to_graphql_argument_map.register
@@ -267,14 +265,14 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLArgumentMap:
 
 @convert_to_graphql_argument_map.register
 def _(ref: InterfaceField, **kwargs: Any) -> GraphQLArgumentMap:
-    return ref.get_field_arguments()
+    return ref.get_field_arguments()  # type: ignore[return-value]
 
 
 @convert_to_graphql_argument_map.register
 def _(ref: type[Node], **kwargs: Any) -> GraphQLArgumentMap:
     return {
         ref.id.schema_name: GraphQLArgument(
-            ref.id.get_field_type(),
+            ref.id.get_field_type(),  # type: ignore[arg-type,arg-type]
             description=ref.id.description,
             out_name=ref.id.name,
         ),

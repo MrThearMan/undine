@@ -80,9 +80,9 @@ class DataLoader(Generic[TKey, TResult]):
     @property
     def should_create_new_batch(self) -> bool:
         current_batch = self.current_batch
-        return current_batch.dispatched or (self.max_batch_size and len(current_batch.loads) >= self.max_batch_size)
+        return current_batch.dispatched or bool(self.max_batch_size and len(current_batch.loads) >= self.max_batch_size)
 
-    def load(self, key: TKey) -> Future[TResult | BaseException]:
+    def load(self, key: TKey) -> Future[TResult]:
         """Schedule a load for the given key."""
         if self.reuse_loads:
             load = self.reusable_loads.get(self.key_hash_fn(key))
@@ -281,7 +281,7 @@ class DataLoaderBatch(Generic[TKey, TResult]):
                 else:
                     load.future.set_result(value)
 
-    def load(self, keys: list[TKey]) -> asyncio.Task[list[TResult]]:
+    def load(self, keys: list[TKey]) -> asyncio.Task[SortedSequence[TResult | BaseException]]:
         """Schedule the load function to run with the given keys."""
         load_function_task = self.loader.loop.create_task(self.loader.load_fn(keys))
 

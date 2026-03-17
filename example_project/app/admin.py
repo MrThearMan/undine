@@ -76,6 +76,6 @@ class SessionAdmin(admin.ModelAdmin):
     @admin.display(description="Session data")
     def session_data_decoded(self, obj: Session) -> str:
         session_store = Session.get_session_store_class()
-        session = session_store(obj.session_key)
+        session = session_store(obj.session_key)  # type: ignore[misc]
         data = json.dumps(session.load(), indent=2, sort_keys=True)
         return mark_safe(f"<pre>{data}</pre>")  # noqa: S308

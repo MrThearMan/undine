@@ -30,6 +30,10 @@ class Command(BaseCommand):
                 [mypy]
                 python_executable = {python_exe}
                 plugins = mypy_django_plugin.main
+                exclude = (?x)(
+                    tests/.*
+                    | docs/.*
+                  )
 
                 [mypy.plugins.django-stubs]
                 django_settings_module = example_project.project.settings

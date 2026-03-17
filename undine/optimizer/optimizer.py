@@ -95,7 +95,7 @@ def optimize_sync(
         optimized_queryset = optimized_queryset.filter(**kwargs)
 
     if limit is not None or offset > 0:
-        optimized_queryset = optimized_queryset[offset : offset + limit]
+        optimized_queryset = optimized_queryset[offset : offset + (limit or 0)]
 
     instances = evaluate_with_prefetch_hack_sync(optimized_queryset)
 
@@ -144,7 +144,7 @@ async def optimize_async(
         optimized_queryset = optimized_queryset.filter(**kwargs)
 
     if limit is not None or offset > 0:
-        optimized_queryset = optimized_queryset[offset : offset + limit]
+        optimized_queryset = optimized_queryset[offset : offset + (limit or 0)]
 
     instances = await evaluate_with_prefetch_hack_async(optimized_queryset)
 
@@ -603,7 +603,7 @@ class OptimizationData:
         for name, prefetch_related_data in self.prefetch_related.items():
             # Only need `to_attr` if it's different from the field name.
             to_attr: str | None = name
-            if to_attr == get_related_name(prefetch_related_data.related_field):  # type: ignore[union-attr]
+            if to_attr == get_related_name(prefetch_related_data.related_field):  # type: ignore[union-attr,arg-type]
                 to_attr = None
 
             prefetch = self._process_prefetch(prefetch_related_data, to_attr=to_attr)
@@ -615,7 +615,7 @@ class OptimizationData:
 
             # Only need `to_attr` if it's different from the field name.
             to_attr = name
-            if to_attr == get_related_name(generic_prefetches[0].related_field):  # type: ignore[union-attr]
+            if to_attr == get_related_name(generic_prefetches[0].related_field):  # type: ignore[union-attr,arg-type]
                 to_attr = None
 
             generic_prefetch = self._process_generic_prefetch(generic_prefetches, to_attr=to_attr)
@@ -629,7 +629,7 @@ class OptimizationData:
         queryset = data.queryset_callback(data.info)  # type: ignore[arg-type]
         optimized_queryset = optimizations.apply(queryset, data.info)  # type: ignore[arg-type]
 
-        field_name = get_related_name(data.related_field)  # type: ignore[union-attr]
+        field_name = get_related_name(data.related_field)  # type: ignore[union-attr,arg-type]
         return Prefetch(field_name, optimized_queryset, to_attr=to_attr)
 
     def _process_generic_prefetch(self, data: list[OptimizationData], *, to_attr: str | None = None) -> GenericPrefetch:
@@ -642,7 +642,7 @@ class OptimizationData:
             optimized_queryset = optimizations.apply(queryset, model_data.info)  # type: ignore[arg-type]
             optimized_querysets.append(optimized_queryset)
 
-        field_name = get_related_name(data[0].related_field)  # type: ignore[union-attr]
+        field_name = get_related_name(data[0].related_field)  # type: ignore[union-attr,arg-type]
         return GenericPrefetch(field_name, optimized_querysets, to_attr=to_attr)
 
 

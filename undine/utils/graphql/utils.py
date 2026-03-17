@@ -15,6 +15,7 @@ from graphql import (
     GraphQLIncludeDirective,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLResolveInfo,
     GraphQLScalarType,
@@ -48,9 +49,7 @@ if TYPE_CHECKING:
     from graphql import (
         DirectiveLocation,
         DocumentNode,
-        GraphQLCompositeType,
         GraphQLField,
-        GraphQLList,
         GraphQLNonNull,
         GraphQLOutputType,
         GraphQLSchema,
@@ -88,12 +87,15 @@ __all__ = [
 
 TGraphQLType = TypeVar(
     "TGraphQLType",
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLInputObjectType,
+    bound=(
+        GraphQLObjectType
+        | GraphQLInterfaceType
+        | GraphQLUnionType
+        | GraphQLEnumType
+        | GraphQLScalarType
+        | GraphQLInputObjectType
+        | GraphQLList
+    ),
 )
 
 
@@ -127,7 +129,7 @@ def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
     return original_name if info.path.key == info.field_name else info.path.key  # type: ignore[return-value]
 
 
-def get_field_def(schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode) -> GraphQLField:
+def get_field_def(schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode) -> GraphQLField:
     try:
         from graphql.execution.execute import get_field_def  # noqa: PLC0415
 
@@ -135,7 +137,7 @@ def get_field_def(schema: GraphQLSchema, parent_type: GraphQLCompositeType, fiel
 
     # graphql-core >= 3.3.0
     except ImportError:
-        return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)
+        return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)  # type: ignore[attr-defined]
 
 
 def get_operation_definition(document: DocumentNode, operation_name: str | None) -> OperationDefinitionNode:
@@ -323,13 +325,13 @@ def check_directives(directives: Iterable[Directive] | None, *, location: Direct
         seen_directives.add(type(directive))
 
 
-def graphql_errors_hook(errors: list[GraphQLError]) -> list[GraphQLError]:
+def graphql_errors_hook(errors: list[GraphQLError] | None) -> list[GraphQLError]:
     """Handle GraphQL errors before adding them to the response."""
     if not errors:
-        return errors
+        return errors or []
 
     for error in errors:
-        extensions: dict[str, Any] = error.extensions
+        extensions: dict[str, Any] = error.extensions  # type: ignore[assignment]
 
         if error.original_error is None or isinstance(error.original_error, GraphQLError):
             extensions.setdefault("status_code", HTTPStatus.BAD_REQUEST)

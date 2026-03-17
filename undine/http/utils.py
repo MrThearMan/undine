@@ -96,5 +96,5 @@ def get_graphql_event_stream_token(request: DjangoRequestProtocol) -> str | None
     if undine_settings.SSE_TOKEN_HEADER_NAME in request.headers:
         return request.headers[undine_settings.SSE_TOKEN_HEADER_NAME]
     if undine_settings.SSE_TOKEN_QUERY_PARAM_NAME in request.GET:
-        return request.GET[undine_settings.SSE_TOKEN_QUERY_PARAM_NAME]
+        return request.GET[undine_settings.SSE_TOKEN_QUERY_PARAM_NAME]  # type: ignore[return-value]
     return None

@@ -73,7 +73,7 @@ from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
 if version_info >= (3, 3, 0):
-    from graphql.execution.execute import execute_subscription
+    from graphql.execution.execute import execute_subscription  # type: ignore[attr-defined]
 else:
     from graphql.execution.subscribe import execute_subscription
 
@@ -82,8 +82,8 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from graphql import DocumentNode, GraphQLInputType, GraphQLOutputType, GraphQLSchema, Node, ValueNode
-    from graphql.execution.collect_fields import FieldGroup
-    from graphql.execution.execute import IncrementalContext
+    from graphql.execution.collect_fields import FieldGroup  # type: ignore[attr-defined]
+    from graphql.execution.execute import IncrementalContext  # type: ignore[attr-defined]
     from graphql.pyutils import AwaitableOrValue, Path
 
     from undine.dataclasses import GraphQLHttpParams
@@ -149,13 +149,13 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result
 
     if version_info >= (3, 3, 0):
-        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
+        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
         if isinstance(context.result, ExperimentalIncrementalExecutionResults):
             context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
             return context.result
 
-    return context.result
+    return context.result  # type: ignore[return-value]
 
 
 @with_parse_lifecycle_hooks_manager
@@ -182,7 +182,7 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
         return
 
     validation_errors = _validate(
-        document=context.document,
+        document=context.document,  # type: ignore[arg-type]
         variables=context.variables,
         request=context.request,
     )
@@ -199,7 +199,7 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
 def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
     try:
         exec_context = _get_execution_context(
-            document=context.document,
+            document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -213,19 +213,19 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
     result = _execute(exec_context)
 
     if exec_context.is_awaitable(result):
-        cancel_awaitable(result)
+        cancel_awaitable(result)  # type: ignore[arg-type]
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
     if version_info >= (3, 3, 0):
-        from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
+        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
         if isinstance(result, ExperimentalIncrementalExecutionResults):
             context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
             return context.result
 
     context.result = result
-    return context.result
+    return context.result  # type: ignore[return-value]
 
 
 # HTTP async execution
@@ -309,7 +309,7 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
         return
 
     validation_errors = _validate(
-        document=context.document,
+        document=context.document,  # type: ignore[arg-type]
         variables=context.variables,
         request=context.request,
     )
@@ -333,7 +333,7 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
 async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
     try:
         exec_context = _get_execution_context(
-            document=context.document,
+            document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -351,7 +351,7 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
         return context.result
 
     if exec_context.is_awaitable(result):
-        result = await result
+        result = await result  # type: ignore[misc]
 
     context.result = result
     return context.result
@@ -403,7 +403,7 @@ async def _run_operation_with_subscription(context: LifecycleHookContext) -> Gra
         if context.result is None:
             await _validate_document_async(context)
             if context.result is None:
-                operation_type = get_operation_type(context.document, context.operation_name)
+                operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
                 if operation_type == OperationType.SUBSCRIPTION:
                     return await _subscribe(context)
                 return await _execute_async(context)
@@ -430,7 +430,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     """
     try:
         exec_context = _get_execution_context(
-            document=context.document,
+            document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
             variable_values=context.variables,
@@ -491,7 +491,7 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
                     continue
 
                 exec_context = _get_execution_context(
-                    document=context.document,
+                    document=context.document,  # type: ignore[arg-type]
                     root_value=payload,
                     context_value=context.request,
                     variable_values=context.variables,
@@ -501,15 +501,15 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
                 # Result cannot be incremental for a subscription
                 result: AwaitableOrValue[ExecutionResult] = _execute(exec_context)
 
-                context.result = await result if exec_context.is_awaitable(result) else result
-                yield context.result
+                context.result = await result if exec_context.is_awaitable(result) else result  # type: ignore[misc]
+                yield context.result  # type: ignore[misc]
 
 
 # Helpers
 
 
 def _validate_http(context: LifecycleHookContext) -> None:
-    operation_type = get_operation_type(context.document, context.operation_name)
+    operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
 
     if operation_type == OperationType.MUTATION and context.request.method != "POST":
         context.result = get_error_execution_result(GraphQLCannotUseHTTPForMutationsNonPostRequestError())
@@ -521,7 +521,7 @@ def _validate_http(context: LifecycleHookContext) -> None:
 
 
 def _validate_multipart_mixed(context: LifecycleHookContext) -> None:
-    operation_type = get_operation_type(context.document, context.operation_name)
+    operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
 
     if operation_type == OperationType.QUERY and not undine_settings.ALLOW_QUERIES_WITH_MULTIPART_MIXED:
         context.result = get_error_execution_result(GraphQLCannotUseMultipartMixedForQueriesError())
@@ -542,7 +542,7 @@ def _validate_incremental(context: LifecycleHookContext) -> None:
         context.result = get_error_execution_result(GraphQLIncrementalDeliveryNotSupportedError())
         return
 
-    operation_type = get_operation_type(context.document, context.operation_name)
+    operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
 
     if operation_type == OperationType.MUTATION and context.request.method != "POST":
         context.result = get_error_execution_result(GraphQLCannotUseHTTPForMutationsNonPostRequestError())
@@ -554,7 +554,7 @@ def _validate_incremental(context: LifecycleHookContext) -> None:
 
 
 def _validate_sse(context: LifecycleHookContext) -> None:
-    operation_type = get_operation_type(context.document, context.operation_name)
+    operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
 
     if operation_type == OperationType.QUERY and not undine_settings.ALLOW_QUERIES_WITH_SSE:
         context.result = get_error_execution_result(GraphQLCannotUseSSEForQueriesError())
@@ -571,7 +571,7 @@ def _validate_sse(context: LifecycleHookContext) -> None:
 
 
 def _validate_websockets(context: LifecycleHookContext) -> None:
-    operation_type = get_operation_type(context.document, context.operation_name)
+    operation_type = get_operation_type(context.document, context.operation_name)  # type: ignore[arg-type]
 
     if operation_type == OperationType.QUERY and not undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS:
         context.result = get_error_execution_result(GraphQLCannotUseWebSocketsForQueriesError())
@@ -636,7 +636,7 @@ def _get_execution_context(
     if isinstance(context_or_errors, list):
         raise GraphQLErrorGroup(errors=context_or_errors)
 
-    return context_or_errors
+    return context_or_errors  # type: ignore[return-value]
 
 
 def _get_middleware_manager(lifecycle_hooks: list[LifecycleHook]) -> MiddlewareManager | None:
@@ -700,7 +700,7 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
 
         async def await_result() -> ExecutionResult:
             try:
-                data = await data_or_awaitable
+                data = await data_or_awaitable  # type: ignore[misc]
 
             except GraphQLError as err:
                 context.errors.append(err)
@@ -717,15 +717,15 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
         return await_result()
 
     graphql_errors_hook(context.errors)
-    return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)
+    return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)  # type: ignore[arg-type]
 
 
 def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:
     """Execution for graphql-core >= 3.3.0a12."""
-    from graphql import ExperimentalIncrementalExecutionResults  # noqa: PLC0415
+    from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
     try:
-        data = context.execute_operation()
+        data = context.execute_operation()  # type: ignore[call-arg]
 
     except GraphQLError as error:
         context.errors = context.errors or []
@@ -741,7 +741,7 @@ def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLRes
 
         async def await_result() -> GraphQLResult:
             try:
-                awaited_data = await data
+                awaited_data = await data  # type: ignore[misc]
 
             except GraphQLError as error:
                 context.errors = context.errors or []
@@ -783,7 +783,7 @@ class UndineExecutionContext(ExecutionContext):
 
     if version_info >= (3, 3, 0):
 
-        def handle_field_error(
+        def handle_field_error(  # type: ignore[override]
             self,
             raw_error: Exception,
             return_type: GraphQLOutputType,
@@ -791,7 +791,7 @@ class UndineExecutionContext(ExecutionContext):
             path: Path,
             incremental_context: IncrementalContext | None = None,
         ) -> None:
-            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+            from graphql.execution.execute import to_nodes  # type: ignore[attr-defined] # noqa: PLC0415
 
             match raw_error:
                 case ValidationError():
@@ -802,7 +802,7 @@ class UndineExecutionContext(ExecutionContext):
                     self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
 
                 case _:
-                    super().handle_field_error(
+                    super().handle_field_error(  # type: ignore[call-arg]
                         raw_error=raw_error,
                         return_type=return_type,
                         field_group=field_group,
@@ -818,7 +818,7 @@ class UndineExecutionContext(ExecutionContext):
             path: Path,
             incremental_context: IncrementalContext | None = None,
         ) -> None:
-            from graphql.execution.execute import to_nodes  # noqa: PLC0415
+            from graphql.execution.execute import to_nodes  # type: ignore[attr-defined] # noqa: PLC0415
 
             for err in raw_error.flatten():
                 if not err.path:
@@ -840,7 +840,7 @@ class UndineExecutionContext(ExecutionContext):
 
     else:
 
-        def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:
+        def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:  # type: ignore[misc,override]
             raw_error: Exception = error.original_error or error
             path = error.path or []
             field_nodes = error.nodes or []
@@ -848,15 +848,15 @@ class UndineExecutionContext(ExecutionContext):
             match raw_error:
                 case ValidationError():
                     error_group = located_validation_error(raw_error, field_nodes, path)
-                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)
+                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)  # type: ignore[arg-type]
 
                 case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_nodes, path)
+                    self.handle_field_errors_group(raw_error, return_type, field_nodes, path)  # type: ignore[arg-type]
 
                 case _:
                     super().handle_field_error(error=error, return_type=return_type)
 
-        def handle_field_errors_group(
+        def handle_field_errors_group(  # type: ignore[misc]
             self,
             raw_error: GraphQLErrorGroup,
             return_type: GraphQLOutputType,
@@ -873,7 +873,7 @@ class UndineExecutionContext(ExecutionContext):
                 raise raw_error
 
             for err in raw_error.flatten():
-                self.handle_field_error(err, return_type)
+                self.handle_field_error(err, return_type)  # type: ignore[call-arg]
 
 
 class UndineValidationContext(ValidationContext):

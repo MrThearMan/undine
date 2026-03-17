@@ -39,7 +39,7 @@ def _(ref: type[Model], **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: TypeRef, **kwargs: Any) -> bool:
-    ann = get_non_null_type(ref.value)
+    ann = get_non_null_type(ref.value)  # type: ignore[arg-type]
     annotation = get_origin_or_noop(ann)
     return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
 

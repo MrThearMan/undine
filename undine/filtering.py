@@ -45,7 +45,7 @@ from undine.utils.reflection import (
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable
+    from collections.abc import Callable, Container, Iterable
 
     from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
@@ -131,7 +131,7 @@ class FilterSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_input_object_type(cls.__input_type__())
 
-    def __getitem__(cls, models: type[type[TModel]] | tuple[type[TModel], ...]) -> type[FilterSet[*TModels]]:
+    def __getitem__(cls, models: type[TModel] | tuple[type[TModel], ...]) -> type[FilterSet[*TModels]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'FilterSet'!
         FilterSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
@@ -318,6 +318,8 @@ class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
     __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    __init__: Callable[[Any], None]
 
     @classmethod
     def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
@@ -532,9 +534,9 @@ def get_filters_for_models(models: tuple[type[TModel], ...], *, exclude: Iterabl
     common_fields = functools.reduce(operator.and_, fields_by_model.values())
 
     graphql_types_by_model: dict[str, dict[type[Model], GraphQLInputType]] = defaultdict(dict)
-    for model in fields_by_model:
+    for model in fields_by_model:  # type: ignore[assignment]
         for field_name in common_fields:
-            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)
+            graphql_types_by_model[field_name][model] = convert_to_graphql_type(field_name, model=model, is_input=True)  # type: ignore[assignment]
 
     usable_fields: set[str] = set()
     for field_name, model_map in graphql_types_by_model.items():

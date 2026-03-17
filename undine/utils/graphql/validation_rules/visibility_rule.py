@@ -97,46 +97,46 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         node_value = node.value
         if isinstance(node_value, ast.VariableNode):
-            node_value = self.context.variable_as_ast(node_value.name.value, graphql_input_type)
+            node_value = self.context.variable_as_ast(node_value.name.value, graphql_input_type)  # type: ignore[assignment]
             if node_value is None:
                 return None
 
         while hasattr(graphql_input_type, "of_type"):
             graphql_input_type = graphql_input_type.of_type
 
-        undine_filterset = get_undine_filterset(graphql_input_type)
+        undine_filterset = get_undine_filterset(graphql_input_type)  # type: ignore[arg-type]
         if undine_filterset is not None:
-            if not undine_filterset.__is_visible__(self.context.request):
+            if not undine_filterset.__is_visible__(self.context.request):  # type: ignore[arg-type]
                 self.report_field_argument_error(parent_type, field_node, node)
                 return self.BREAK
 
             filterset_node_value: ast.ObjectValueNode = node_value  # type: ignore[assignment]
-            return self.handle_filters(graphql_input_type, filterset_node_value)
+            return self.handle_filters(graphql_input_type, filterset_node_value)  # type: ignore[arg-type]
 
-        undine_orderset = get_undine_orderset(graphql_input_type)
+        undine_orderset = get_undine_orderset(graphql_input_type)  # type: ignore[arg-type]
         if undine_orderset is not None:
-            if not undine_orderset.__is_visible__(self.context.request):
+            if not undine_orderset.__is_visible__(self.context.request):  # type: ignore[arg-type]
                 self.report_field_argument_error(parent_type, field_node, node)
                 return self.BREAK
 
             orderset_node_value: ast.EnumValueNode | ast.ListValueNode = node_value  # type: ignore[assignment]
-            return self.handle_orders(graphql_input_type, orderset_node_value)
+            return self.handle_orders(graphql_input_type, orderset_node_value)  # type: ignore[arg-type]
 
-        undine_mutation_type = get_undine_mutation_type(graphql_input_type)
+        undine_mutation_type = get_undine_mutation_type(graphql_input_type)  # type: ignore[arg-type]
         if undine_mutation_type is not None:
-            if not undine_mutation_type.__is_visible__(self.context.request):
+            if not undine_mutation_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
                 self.report_field_argument_error(parent_type, field_node, node)
                 return self.BREAK
 
             mutation_node_value: ast.ObjectValueNode | ast.ListValueNode = node_value  # type: ignore[assignment]
-            return self.handle_inputs(graphql_input_type, mutation_node_value)
+            return self.handle_inputs(graphql_input_type, mutation_node_value)  # type: ignore[arg-type]
 
         undine_calculation_arg = get_undine_calculation_argument(graphql_argument)
         if undine_calculation_arg is not None:
             if undine_calculation_arg.visible_func is None:
                 return None
 
-            if not undine_calculation_arg.visible_func(undine_calculation_arg, self.context.request):
+            if not undine_calculation_arg.visible_func(undine_calculation_arg, self.context.request):  # type: ignore[arg-type]
                 self.report_field_argument_error(parent_type, field_node, node)
                 return self.BREAK
 
@@ -154,26 +154,26 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             # Handled by `graphql.validation.rules.known_type_names.KnownTypeNamesRule`
             return None
 
-        undine_query_type = get_undine_query_type(graphql_type)
+        undine_query_type = get_undine_query_type(graphql_type)  # type: ignore[arg-type]
         if undine_query_type is not None:
-            if not undine_query_type.__is_visible__(self.context.request):
-                self.report_type_error(graphql_type, node)
+            if not undine_query_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
+                self.report_type_error(graphql_type, node)  # type: ignore[arg-type]
                 return self.BREAK
 
             return None
 
-        undine_interface_type = get_undine_interface_type(graphql_type)
+        undine_interface_type = get_undine_interface_type(graphql_type)  # type: ignore[arg-type]
         if undine_interface_type is not None:
-            if not undine_interface_type.__is_visible__(self.context.request):
-                self.report_type_error(graphql_type, node)
+            if not undine_interface_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
+                self.report_type_error(graphql_type, node)  # type: ignore[arg-type]
                 return self.BREAK
 
             return None
 
-        undine_union_type = get_undine_union_type(graphql_type)
+        undine_union_type = get_undine_union_type(graphql_type)  # type: ignore[arg-type]
         if undine_union_type is not None:
-            if not undine_union_type.__is_visible__(self.context.request):
-                self.report_type_error(graphql_type, node)
+            if not undine_union_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
+                self.report_type_error(graphql_type, node)  # type: ignore[arg-type]
                 return self.BREAK
 
             return None
@@ -189,7 +189,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if undine_directive is None:
             return None
 
-        if not undine_directive.__is_visible__(self.context.request):
+        if not undine_directive.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_directive_error(graphql_directive, node)
             return self.BREAK
 
@@ -204,7 +204,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         field_node: ast.FieldNode,
     ) -> VisitorAction:
         if undine_entrypoint.visible_func is not None:
-            if not undine_entrypoint.visible_func(undine_entrypoint, self.context.request):
+            if not undine_entrypoint.visible_func(undine_entrypoint, self.context.request):  # type: ignore[arg-type]
                 self.report_field_error(parent_type, field_node)
                 return self.BREAK
 
@@ -241,7 +241,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         field_node: ast.FieldNode,
     ) -> VisitorAction:
         if undine_field.visible_func is not None:
-            if not undine_field.visible_func(undine_field, self.context.request):
+            if not undine_field.visible_func(undine_field, self.context.request):  # type: ignore[arg-type]
                 self.report_field_error(parent_type, field_node)
                 return self.BREAK
 
@@ -280,7 +280,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if undine_interface_field.visible_func is None:
             return None
 
-        if not undine_interface_field.visible_func(undine_interface_field, self.context.request):
+        if not undine_interface_field.visible_func(undine_interface_field, self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
@@ -292,7 +292,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> VisitorAction:
-        if not ref.__is_visible__(self.context.request):
+        if not ref.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
@@ -304,13 +304,13 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> VisitorAction:
-        if not ref.__is_visible__(self.context.request):
+        if not ref.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
         output_type = ref.__output_type__()
         query_type = get_undine_query_type(output_type)
-        if query_type is not None and not query_type.__is_visible__(self.context.request):
+        if query_type is not None and not query_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
@@ -322,7 +322,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> VisitorAction:
-        if not ref.__is_visible__(self.context.request):
+        if not ref.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
@@ -334,7 +334,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> VisitorAction:
-        if not ref.__is_visible__(self.context.request):
+        if not ref.__is_visible__(self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
 
@@ -362,7 +362,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             if undine_filter.visible_func is None:
                 continue
 
-            if not undine_filter.visible_func(undine_filter, self.context.request):
+            if not undine_filter.visible_func(undine_filter, self.context.request):  # type: ignore[arg-type]
                 self.report_input_field_error(input_type, field_node)
                 action = self.BREAK
 
@@ -379,7 +379,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             node = ast.ListValueNode(values=[node])
 
         value_node: ast.EnumValueNode | ast.VariableNode
-        for value_node in node.values:
+        for value_node in node.values:  # type: ignore[assignment]
             if isinstance(value_node, ast.VariableNode):
                 value_node = self.context.variable_as_ast(value_node.name.value, enum_type)  # type: ignore[assignment]  # noqa: PLW2901
                 if not isinstance(value_node, ast.EnumValueNode):
@@ -397,7 +397,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             if undine_order.visible_func is None:
                 continue
 
-            if not undine_order.visible_func(undine_order, self.context.request):
+            if not undine_order.visible_func(undine_order, self.context.request):  # type: ignore[arg-type]
                 self.report_enum_error(enum_type, value_node)
                 action = self.BREAK
 
@@ -414,13 +414,13 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             node = ast.ListValueNode(values=[node])
 
         item: ast.ObjectValueNode | ast.VariableNode
-        for item in node.values:
+        for item in node.values:  # type: ignore[assignment]
             if isinstance(item, ast.VariableNode):
                 item = self.context.variable_as_ast(item.name.value, input_type)  # type: ignore[assignment]  # noqa: PLW2901
                 if item is None:
                     continue
 
-            for field_node in item.fields:
+            for field_node in item.fields:  # type: ignore[union-attr]
                 input_name = field_node.name.value
                 input_field = input_type.fields.get(input_name)
                 if input_field is None:
@@ -436,13 +436,13 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                     if undine_mutation_type is None:
                         continue
 
-                    if not undine_mutation_type.__is_visible__(self.context.request):
+                    if not undine_mutation_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
                         self.report_input_field_error(input_type, field_node)
                         action = self.BREAK
 
                     continue
 
-                if not undine_input.visible_func(undine_input, self.context.request):
+                if not undine_input.visible_func(undine_input, self.context.request):  # type: ignore[arg-type]
                     self.report_input_field_error(input_type, field_node)
                     action = self.BREAK
 
@@ -464,7 +464,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if undine_directive_arg.visible_func is None:
             return None
 
-        if not undine_directive_arg.visible_func(undine_directive_arg, self.context.request):
+        if not undine_directive_arg.visible_func(undine_directive_arg, self.context.request):  # type: ignore[arg-type]
             self.report_directive_argument_error(directive_type, node)
             return self.BREAK
 
@@ -554,11 +554,11 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         if node.name.value in {"AND", "OR", "XOR", "NOT"} and isinstance(node_value, ast.ObjectValueNode):
             for sub_node in node_value.fields:
-                field_type = input_type.fields[sub_node.name.value].type
+                field_type = input_type.fields[sub_node.name.value].type  # type: ignore[union-attr]
                 yield from self.flatten_filters(sub_node, field_type)
 
         elif isinstance(node_value, ast.VariableNode):
-            input_field = input_type.fields.get(node_value.name.value)
+            input_field = input_type.fields.get(node_value.name.value)  # type: ignore[union-attr]
             if input_field is None:
                 yield None
             else:

@@ -138,13 +138,13 @@ class Task(Model):
     image = ImageField(null=True, blank=True)
     attachment = FileField(null=True, blank=True)
 
-    related_tasks: RelatedManager[Task] = ManyToManyField("self")
+    related_tasks: RelatedManager[Task] = ManyToManyField("self")  # type: ignore[assignment]
 
     request = OneToOneField(ServiceRequest, null=True, blank=True, default=None, on_delete=SET_NULL)
     project = ForeignKey(Project, null=True, blank=True, on_delete=CASCADE, related_name="tasks")
-    assignees: RelatedManager[Person] = ManyToManyField(Person, related_name="tasks")
+    assignees: RelatedManager[Person] = ManyToManyField(Person, related_name="tasks")  # type: ignore[assignment]
 
-    comments: RelatedManager[Comment] = GenericRelation(Comment)
+    comments: RelatedManager[Comment] = GenericRelation(Comment)  # type: ignore[assignment]
 
     # Reverse relation hints
     result: TaskResult | None

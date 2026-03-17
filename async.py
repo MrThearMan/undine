@@ -4,6 +4,7 @@ import os
 
 from granian import Granian
 from granian.constants import Interfaces
+from granian.log import LogLevels
 
 if __name__ == "__main__":
     os.environ.setdefault("ASYNC", "true")
@@ -12,5 +13,5 @@ if __name__ == "__main__":
         target="example_project.project.asgi:application",
         port=8000,
         interface=Interfaces.ASGI,
-        log_level="info",
+        log_level=LogLevels.info,
     ).serve()

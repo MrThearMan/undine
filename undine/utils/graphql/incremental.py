@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from graphql import ExecutionResult, InitialIncrementalExecutionResult
+from graphql import ExecutionResult, InitialIncrementalExecutionResult  # type: ignore[attr-defined]
 
 from undine.dataclasses import IncrementalDeliveryComplete, IncrementalDeliveryHeartbeat, IncrementalDeliveryResponse
 from undine.execution import execute_graphql_http_async

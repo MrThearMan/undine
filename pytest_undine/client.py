@@ -36,13 +36,13 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files import File
     from django.http import StreamingHttpResponse
-    from graphql import (
+    from graphql import (  # type: ignore[attr-defined]
         FormattedInitialIncrementalExecutionResult,
         FormattedSubsequentIncrementalExecutionResult,
         GraphQLFormattedError,
         IncrementalResult,
     )
-    from graphql.execution import CompletedResult, PendingResult
+    from graphql.execution import CompletedResult, PendingResult  # type: ignore[attr-defined]
 
     from undine.typing import DjangoTestClientResponseProtocol
 
@@ -107,7 +107,7 @@ class WebSocketMixin:
         websocket = self.websocket()
 
         if headers is not None:
-            websocket.scope["headers"] += [
+            websocket.scope["headers"] += [  # type: ignore[operator]
                 (name.encode("ascii"), value.encode("ascii")) for name, value in headers.items()
             ]
 
@@ -390,7 +390,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             content_type="application/json",
             headers=headers,
         )
-        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)  # type: ignore[arg-type]
 
         while True:
             with capture_database_queries(enabled=count_queries) as results:
@@ -403,11 +403,11 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             event: NextEventDC | CompletedEventDC | KeepAliveSignalDC | None = None
             for decode in [_decode_sse_keep_alive_dc, _decode_sse_next_event_dc, _decode_sse_complete_event_dc]:
                 with suppress(Exception):
-                    event = decode(event_data)
+                    event = decode(event_data)  # type: ignore[assignment]
                     break
 
             if event is None:
-                msg = f"Unknown event type: {event_data}"
+                msg = f"Unknown event type: {event_data}"  # type: ignore[str-bytes-safe]
                 raise RuntimeError(msg)
 
             if isinstance(event, KeepAliveSignalDC):
@@ -416,7 +416,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             if isinstance(event, CompletedEventDC):
                 break
 
-            yield GraphQLClientSSEResponse(event.data, results)
+            yield GraphQLClientSSEResponse(event.data, results)  # type: ignore[arg-type]
 
     # Multipart/mixed HTTP subscriptions
 
@@ -464,7 +464,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             content_type="application/json",
             headers=headers,
         )
-        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)  # type: ignore[arg-type]
 
         while True:
             with capture_database_queries(enabled=count_queries) as results:
@@ -480,11 +480,11 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
                 _decode_multipart_mixed,
             ]:
                 with suppress(Exception):
-                    event = decode(event_data)
+                    event = decode(event_data)  # type: ignore[assignment]
                     break
 
             if event is None:
-                msg = f"Unknown event type: {event_data}"
+                msg = f"Unknown event type: {event_data}"  # type: ignore[str-bytes-safe]
                 raise RuntimeError(msg)
 
             if isinstance(event, MultipartMixedHttpHeartbeat):
@@ -545,7 +545,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             content_type="application/json",
             headers=headers,
         )
-        responses: AsyncIterator[bytes] = aiter(response.streaming_content)
+        responses: AsyncIterator[bytes] = aiter(response.streaming_content)  # type: ignore[arg-type]
 
         while True:
             with capture_database_queries(enabled=count_queries) as results:
@@ -563,11 +563,11 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
                 _decode_incremental_delivery,
             ]:
                 with suppress(Exception):
-                    event = decode(event_data)
+                    event = decode(event_data)  # type: ignore[assignment]
                     break
 
             if event is None:
-                msg = f"Unknown event type: {event_data}"
+                msg = f"Unknown event type: {event_data}"  # type: ignore[str-bytes-safe]
                 raise RuntimeError(msg)
 
             if isinstance(event, IncrementalDeliveryHeartbeat):
@@ -874,7 +874,7 @@ def _decode_sse_next_event_dc(event_data: bytes | str) -> NextEventDC:
                     msg = f"Expected 'next' event, got {value!r}"
                     raise ValueError(msg)
 
-                event = value
+                event = value  # type: ignore[assignment]
 
             case "data":
                 # TODO: Validate data
@@ -892,7 +892,7 @@ def _decode_sse_next_event_dc(event_data: bytes | str) -> NextEventDC:
         msg = "Missing 'data' key"
         raise ValueError(msg)
 
-    return NextEventDC(data=data)
+    return NextEventDC(data=data)  # type: ignore[arg-type]
 
 
 def _decode_sse_complete_event_dc(event_data: bytes | str) -> CompletedEventDC:
@@ -915,7 +915,7 @@ def _decode_sse_complete_event_dc(event_data: bytes | str) -> CompletedEventDC:
                     msg = f"Expected 'complete' event, got {value!r}"
                     raise ValueError(msg)
 
-                event = value
+                event = value  # type: ignore[assignment]
 
             case "data":
                 if value:
@@ -990,7 +990,10 @@ def _decode_multipart_mixed_heartbeat(event_data: bytes | str) -> MultipartMixed
 
 
 def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDeliveryResponse:
-    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # noqa: PLC0415
+    from graphql import (  # type: ignore[attr-defined] # noqa: PLC0415
+        InitialIncrementalExecutionResult,
+        SubsequentIncrementalExecutionResult,
+    )
 
     if isinstance(event_data, bytes):
         event_data = event_data.decode()
@@ -1070,7 +1073,7 @@ def _decode_incremental_delivery_complete(event_data: bytes | str) -> Incrementa
 
 
 def _decode_pending_results(event_data: list[dict[str, Any]]) -> list[PendingResult]:
-    from graphql.execution import PendingResult  # noqa: PLC0415
+    from graphql.execution import PendingResult  # type: ignore[attr-defined] # noqa: PLC0415
 
     return [
         PendingResult(
@@ -1083,7 +1086,7 @@ def _decode_pending_results(event_data: list[dict[str, Any]]) -> list[PendingRes
 
 
 def _decode_completed_results(event_data: list[dict[str, Any]]) -> list[CompletedResult]:
-    from graphql.execution import CompletedResult  # noqa: PLC0415
+    from graphql.execution import CompletedResult  # type: ignore[attr-defined] # noqa: PLC0415
 
     completed: list[CompletedResult] = []
     for data in event_data:
@@ -1097,7 +1100,7 @@ def _decode_completed_results(event_data: list[dict[str, Any]]) -> list[Complete
 
 
 def _decode_incremental_results(event_data: list[dict[str, Any]]) -> list[IncrementalResult]:
-    from graphql import IncrementalDeferResult, IncrementalStreamResult  # noqa: PLC0415
+    from graphql import IncrementalDeferResult, IncrementalStreamResult  # type: ignore[attr-defined] # noqa: PLC0415
 
     results: list[IncrementalResult] = []
 
@@ -1119,7 +1122,7 @@ def _decode_incremental_results(event_data: list[dict[str, Any]]) -> list[Increm
             continue
 
         if "items" in data:
-            errors: list[GraphQLError] | None = None
+            errors: list[GraphQLError] | None = None  # type: ignore[no-redef]
             if "errors" in data:
                 errors = _decode_formatted_errors(data["errors"])
 

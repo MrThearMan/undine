@@ -125,9 +125,9 @@ class SSESessionStore:
         """Force load of the session data from the session store."""
         # Django 5.0 compat: SessionBase.aload was added in Django 5.1.
         if hasattr(self.session, "aload"):
-            self.session._session_cache = await self.session.aload()  # noqa: SLF001
+            self.session._session_cache = await self.session.aload()  # type: ignore[attr-defined]  # noqa: SLF001
         else:
-            self.session._session_cache = await sync_to_async(self.session.load)()  # noqa: SLF001
+            self.session._session_cache = await sync_to_async(self.session.load)()  # type: ignore[attr-defined]  # noqa: SLF001
 
     async def save(self) -> None:
         # Django 5.0 compat: SessionBase.asave was added in Django 5.1.
@@ -423,7 +423,7 @@ class SSERequest:
     @property
     def response_content_type(self) -> MediaType:
         if hasattr(self, "_response_content_type"):
-            return self._response_content_type
+            return self._response_content_type  # type: ignore[has-type]
         self._response_content_type = MediaType("application/json")
         return self._response_content_type
 
@@ -434,7 +434,7 @@ class SSERequest:
     @property
     def response_headers(self) -> ResponseHeaders:
         if hasattr(self, "_response_headers"):
-            return self._response_headers
+            return self._response_headers  # type: ignore[has-type]
         self._response_headers = ResponseHeaders({})
         return self._response_headers
 

@@ -153,21 +153,21 @@ class ModelSaveSubscription(QueryTypeSignalSubscription[TModel]):
 
     signal = post_save
 
-    def transform(self, params: PostSaveParams[TModel]) -> TModel:
+    def transform(self, params: PostSaveParams[TModel]) -> TModel:  # type: ignore[override]
         return params["instance"]
 
 
 class ModelCreateSubscription(ModelSaveSubscription[TModel]):
     """Subscription that sends an event after a model instance has been created."""
 
-    def filter(self, params: PostSaveParams[TModel]) -> bool:
+    def filter(self, params: PostSaveParams[TModel]) -> bool:  # type: ignore[override]
         return not params["created"]
 
 
 class ModelUpdateSubscription(ModelSaveSubscription[TModel]):
     """Subscription that sends an event after a model instance has been updated."""
 
-    def filter(self, params: PostSaveParams[TModel]) -> bool:
+    def filter(self, params: PostSaveParams[TModel]) -> bool:  # type: ignore[override]
         return params["created"]
 
 
@@ -176,7 +176,7 @@ class ModelDeleteSubscription(QueryTypeSignalSubscription[TModel]):
 
     signal = pre_delete
 
-    def process(self, params: PostDeleteParams[TModel]) -> PostDeleteParams[TModel]:
+    def process(self, params: PostDeleteParams[TModel]) -> PostDeleteParams[TModel]:  # type: ignore[override]
         # It's possible that the instance is no longer in the database when
         # a subscriber receives the event. Therefore, make a deepcopy of it
         # so that its pk is still available when querying for the output.
@@ -184,5 +184,5 @@ class ModelDeleteSubscription(QueryTypeSignalSubscription[TModel]):
         params["instance"] = deepcopy(params["instance"])
         return params
 
-    def transform(self, params: PostDeleteParams[TModel]) -> TModel:
+    def transform(self, params: PostDeleteParams[TModel]) -> TModel:  # type: ignore[override]
         return params["instance"]

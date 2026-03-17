@@ -14,7 +14,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("__debug__/", include("debug_toolbar.urls")),
     path("graphql/sync/", graphql_view_sync, name="graphql_sync"),
-    path("graphql/async/", graphql_view_async, name="graphql_async"),
+    path("graphql/async/", graphql_view_async, name="graphql_async"),  # type: ignore[arg-type]
 ]
 
 if settings.DEBUG:

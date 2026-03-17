@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q, QuerySet
-    from graphql import (
+    from graphql import (  # type: ignore[attr-defined]
         ExecutionResult,
         FieldNode,
         GraphQLError,
@@ -204,7 +204,7 @@ class LazyGenericForeignKey:
         return [
             QUERY_TYPE_REGISTRY[field.remote_field.related_model]  # type: ignore[index]
             for field in generic_relations_for_generic_foreign_key(self.field)
-            if field.remote_field.related_model in QUERY_TYPE_REGISTRY  # type: ignore[index]
+            if field.remote_field.related_model in QUERY_TYPE_REGISTRY  # type: ignore[operator]
         ]
 
 
@@ -399,7 +399,7 @@ class CompletedEventSC:
 class MultipartMixedHttpResponse:
     """Multipart/mixed HTTP response."""
 
-    payload: ExecutionResult | None
+    payload: ExecutionResult
     errors: list[GraphQLError] | None = None
 
     @property

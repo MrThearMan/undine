@@ -112,14 +112,14 @@ files = [
 name = "channels"
 version = "4.3.2"
 description = "Brings async, event-driven capabilities to Django."
-optional = true
+optional = false
 python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"channels\""
+groups = ["main", "lint"]
 files = [
     {file = "channels-4.3.2-py3-none-any.whl", hash = "sha256:fef47e9055a603900cf16cef85f050d522d9ac4b3daccf24835bd9580705c176"},
     {file = "channels-4.3.2.tar.gz", hash = "sha256:f2bb6bfb73ad7fb4705041d07613c7b4e69528f01ef8cb9fb6c21d9295f15667"},
 ]
+markers = {main = "extra == \"channels\""}
 
 [package.dependencies]
 asgiref = ">=3.9.0,<4"
@@ -129,6 +129,23 @@ Django = ">=4.2"
 daphne = ["daphne (>=4.0.0)"]
 tests = ["async-timeout", "coverage (>=4.5,<5.0)", "pytest", "pytest-asyncio", "pytest-django", "selenium"]
 types = ["types-channels"]
+
+[[package]]
+name = "channels-stubs"
+version = "0.1.9"
+description = "Stubs for django channels"
+optional = false
+python-versions = "<4.0,>=3.9"
+groups = ["lint"]
+files = [
+    {file = "channels_stubs-0.1.9-py3-none-any.whl", hash = "sha256:f35fe06ba85d3e4e8d03fe72bf26f7288669da1b337183d08c2b851e079115ac"},
+    {file = "channels_stubs-0.1.9.tar.gz", hash = "sha256:2a884a5ad24d490206d51c4cde74b54b9e179310f6f2fe1eeb03a0a40d5dd2d9"},
+]
+
+[package.dependencies]
+channels = ">=4"
+django = ">=4.2,<6"
+django-stubs = ">=4.2.0,<6"
 
 [[package]]
 name = "charset-normalizer"
@@ -2403,4 +2420,4 @@ image = ["pillow"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "01ea77aadaddfc383eee17297cbd5aa2fac71d999441ae8dd8eeb5aa540a6482"
+content-hash = "6a58e7526f69798805b7f5dc34f62cc0e8c92827a6cef028d72c04d9c0098f1a"

@@ -53,7 +53,7 @@ class ScalarType(Generic[TParse, TSerialize]):
         self.name = name
         self.description = description
         self.specified_by_url = specified_by_url
-        self.directives = DirectiveList(directives, location=DirectiveLocation.SCALAR)
+        self.directives = DirectiveList(directives, location=DirectiveLocation.SCALAR)  # type: ignore[arg-type]
 
         self.extensions = extensions or {}
         self.extensions[undine_settings.SCALAR_EXTENSIONS_KEY] = self
@@ -62,7 +62,7 @@ class ScalarType(Generic[TParse, TSerialize]):
         self.parse: FunctionDispatcher[TParse] = FunctionDispatcher(wrapper=error_wrapper)
         self.serialize: FunctionDispatcher[TSerialize] = FunctionDispatcher(wrapper=error_wrapper)
 
-        @self.serialize.register
+        @self.serialize.register  # type: ignore[arg-type]
         @self.parse.register
         def _(value: Any) -> NoReturn:
             raise GraphQLScalarTypeNotSupportedError(input_type=type(value))

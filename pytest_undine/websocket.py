@@ -169,7 +169,7 @@ class TestWebSocket:
         self.close_event = None
 
         stack = AuthMiddlewareStack(self.consumer)
-        self.task = asyncio.create_task(stack(self.scope, self._to_consumer, self._from_consumer))
+        self.task = asyncio.create_task(stack(self.scope, self._to_consumer, self._from_consumer))  # type: ignore[arg-type,call-arg]
 
         await self.accepted.wait()
         return self

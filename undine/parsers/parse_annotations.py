@@ -85,7 +85,7 @@ def parse_first_param_type(func: FunctionType | Callable[..., Any], *, depth: in
     if param_type is Undefined:
         raise NoFunctionParametersError(func=func)
 
-    return param_type
+    return param_type  # type: ignore[return-value]
 
 
 def parse_return_annotation(func: FunctionType | Callable[..., Any], *, depth: int = 0) -> type:

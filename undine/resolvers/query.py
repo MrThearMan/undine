@@ -1050,7 +1050,7 @@ class UnionTypeResolver(Generic[TModel]):
         queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
     ) -> FilterResults:
         filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
-        filter_results = self.union_type.__filterset__.__build__(filter_data, info)
+        filter_results = self.union_type.__filterset__.__build__(filter_data, info)  # type: ignore[union-attr]
         if filter_results.none:
             return filter_results
 
@@ -1073,7 +1073,7 @@ class UnionTypeResolver(Generic[TModel]):
         queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
     ) -> OrderResults:
         order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
-        order_results = self.union_type.__orderset__.__build__(order_data, info)
+        order_results = self.union_type.__orderset__.__build__(order_data, info)  # type: ignore[union-attr]
 
         for query_type, queryset in queryset_map.items():
             if order_results.aliases:
@@ -1291,7 +1291,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
     ) -> FilterResults:
         filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
-        filter_results = self.union_type.__filterset__.__build__(filter_data, info)
+        filter_results = self.union_type.__filterset__.__build__(filter_data, info)  # type: ignore[union-attr]
         if filter_results.none:
             return filter_results
 
@@ -1314,7 +1314,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
     ) -> OrderResults:
         order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
-        order_results = self.union_type.__orderset__.__build__(order_data, info)
+        order_results = self.union_type.__orderset__.__build__(order_data, info)  # type: ignore[union-attr]
 
         for query_type, queryset in queryset_map.items():
             if order_results.aliases:
@@ -1358,7 +1358,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             queryset = query_type.__get_queryset__(info)
             queryset_map[query_type] = optimizations.apply(queryset, info)
 
-        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)
+        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)  # type: ignore[arg-type]
 
     def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
         typename = self.union_type.__schema_name__
@@ -1740,7 +1740,7 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
             queryset = query_type.__get_queryset__(info)
             queryset_map[query_type] = optimizations.apply(queryset, info)
 
-        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)
+        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)  # type: ignore[arg-type]
 
     def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
         typename = self.interface_type.__schema_name__

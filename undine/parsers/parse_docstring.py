@@ -159,20 +159,20 @@ def parse_class_attribute_docstrings(cls: type, /) -> dict[str, str]:
     except OSError:  # Classes created with `type(...)` don't have a source.
         return descriptions
 
-    class_def: ast.ClassDef = module.body[0]
+    class_def: ast.ClassDef = module.body[0]  # type: ignore[assignment]
 
     name: str | None = None
     for expr in class_def.body:
         # Variable docstrings are always directly below the class attribute definition.
         if name is not None:
             if isinstance(expr, ast.Expr) and isinstance(expr.value, ast.Constant):
-                descriptions[name] = inspect.cleandoc(expr.value.value)
+                descriptions[name] = inspect.cleandoc(expr.value.value)  # type: ignore[arg-type]
             name = None
             continue
 
         if isinstance(expr, ast.AnnAssign):
-            name = expr.target.id
+            name = expr.target.id  # type: ignore[union-attr]
         elif isinstance(expr, ast.Assign):
-            name = expr.targets[0].id
+            name = expr.targets[0].id  # type: ignore[union-attr,attr-defined]
 
     return descriptions

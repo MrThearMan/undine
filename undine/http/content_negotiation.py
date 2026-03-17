@@ -229,7 +229,7 @@ def get_preferred_response_content_type(
     if not preference:
         return None
 
-    return MediaType(min(preference, key=preference.get))
+    return MediaType(min(preference, key=preference.get))  # type: ignore[arg-type]
 
 
 def media_type_match(self: MediaType | str, other: MediaType | str) -> bool:
@@ -287,7 +287,7 @@ def media_type_range_params(media_type: MediaType, /) -> dict[str, bytes | str]:
     """Port of Django>=5.2 `MediaType.range_params` property."""
     range_params = media_type.params.copy()
     range_params.pop("q", None)
-    return range_params
+    return range_params  # type: ignore[return-value]
 
 
 def add_media_type_param(media_type: MediaType, *, name: str, value: str) -> MediaType:

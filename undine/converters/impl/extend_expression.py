@@ -37,7 +37,7 @@ def _(expression: Q, **kwargs: Any) -> Q:
             continue
 
         new_expression = extend_expression(child, field_name=field_name)
-        expression.children.append(new_expression)
+        expression.children.append(new_expression)  # type: ignore[arg-type]
 
     return expression
 
@@ -48,7 +48,7 @@ def _(expression: Expression, **kwargs: Any) -> Expression:
     expression = deepcopy(expression)
 
     expressions = [extend_expression(expr, field_name=field_name) for expr in expression.get_source_expressions()]
-    expression.set_source_expressions(expressions)
+    expression.set_source_expressions(expressions)  # type: ignore[arg-type]
     return expression
 
 

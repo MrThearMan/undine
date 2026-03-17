@@ -87,10 +87,11 @@ beautifulsoup4 = "4.14.3"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.5.1"
-mypy = "1.19.1"
-django-stubs = "5.2.9"
 py-spy = "0.4.1"
 httpx = "0.28.1"
+mypy = "1.19.1"
+django-stubs = "5.2.9"
+channels-stubs = "0.1.9"
 
 [tool.poetry.extras]
 image = ["pillow"]

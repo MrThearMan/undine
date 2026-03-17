@@ -71,7 +71,7 @@ class Example(BaseModel):
 
     example_foto = OneToOneField("ExampleFOTO", related_name="example", on_delete=CASCADE, null=True, blank=True)
     example_ffk = ForeignKey("ExampleFFK", related_name="example_set", on_delete=CASCADE, null=True, blank=True)
-    example_fmtm_set = ManyToManyField("ExampleFMTM", related_name="example_set")
+    example_fmtm_set = ManyToManyField("ExampleFMTM", related_name="example_set")  # type: ignore[var-annotated]
 
     example_roto: ExampleROTO | None
     example_rfk_set: RelatedManager[ExampleRFK]
@@ -98,7 +98,7 @@ class ExampleFOTO(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_foto_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_foto_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -122,7 +122,7 @@ class ExampleFFK(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_ffk_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_ffk_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -146,7 +146,7 @@ class ExampleFMTM(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_fmtm_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_fmtm_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -173,7 +173,7 @@ class ExampleROTO(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_roto_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_roto_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -197,7 +197,7 @@ class ExampleRFK(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_rfk_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_rfk_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -205,7 +205,7 @@ class ExampleRFK(BaseModel):
 
 
 class ExampleRMTM(BaseModel):
-    examples = ManyToManyField("Example", related_name="example_rmtm_set")
+    examples = ManyToManyField("Example", related_name="example_rmtm_set")  # type: ignore[var-annotated]
 
     example_foto = OneToOneField(
         "NestedExampleFOTO",
@@ -221,7 +221,7 @@ class ExampleRMTM(BaseModel):
         null=True,
         blank=True,
     )
-    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_rmtm_set")
+    example_fmtm_set = ManyToManyField("NestedExampleFMTM", related_name="example_rmtm_set")  # type: ignore[var-annotated]
 
     example_roto: NestedExampleROTO | None
     example_rfk_set: RelatedManager[NestedExampleRFK]
@@ -285,13 +285,13 @@ class NestedExampleRFK(BaseModel):
 
 
 class NestedExampleRMTM(BaseModel):
-    example_foto_set = ManyToManyField("ExampleFOTO", related_name="example_rmtm_set")
-    example_ffk_set = ManyToManyField("ExampleFFK", related_name="example_rmtm_set")
-    example_fmtm_set = ManyToManyField("ExampleFMTM", related_name="example_rmtm_set")
+    example_foto_set = ManyToManyField("ExampleFOTO", related_name="example_rmtm_set")  # type: ignore[var-annotated]
+    example_ffk_set = ManyToManyField("ExampleFFK", related_name="example_rmtm_set")  # type: ignore[var-annotated]
+    example_fmtm_set = ManyToManyField("ExampleFMTM", related_name="example_rmtm_set")  # type: ignore[var-annotated]
 
-    example_roto_set = ManyToManyField("ExampleROTO", related_name="example_rmtm_set")
-    example_rfk_set = ManyToManyField("ExampleRFK", related_name="example_rmtm_set")
-    example_rmtm_set = ManyToManyField("ExampleRMTM", related_name="example_rmtm_set")
+    example_roto_set = ManyToManyField("ExampleROTO", related_name="example_rmtm_set")  # type: ignore[var-annotated]
+    example_rfk_set = ManyToManyField("ExampleRFK", related_name="example_rmtm_set")  # type: ignore[var-annotated]
+    example_rmtm_set = ManyToManyField("ExampleRMTM", related_name="example_rmtm_set")  # type: ignore[var-annotated]
 
 
 # --------------------------------------------------------------------
