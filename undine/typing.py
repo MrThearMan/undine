@@ -745,6 +745,12 @@ class UndineErrorCodes(StrEnum):
     def _generate_next_value_(name: str, start: Any, count: int, last_values: list[Any]) -> Any:  # noqa: ARG004
         return name
 
+    APQ_HASH_INVALID = auto()
+    APQ_HASH_MISSING = auto()
+    APQ_NOT_SUPPORTED = auto()
+    APQ_VERSION_INVALID = auto()
+    APQ_VERSION_MISSING = auto()
+    APQ_VERSION_NOT_SUPPORTED = auto()
     ASYNC_ATOMIC_MUTATION_NOT_SUPPORTED = auto()
     ASYNC_NOT_SUPPORTED = auto()
     CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST = auto()

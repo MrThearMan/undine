@@ -13,13 +13,19 @@ from typing import TYPE_CHECKING, Any, Self
 from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
 from django.utils.connection import ConnectionProxy
-from graphql import ExecutionResult, OperationType
+from graphql import ExecutionResult, GraphQLError, OperationType
 
-from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
+from undine.exceptions import GraphQLAPQHashInvalidError, GraphQLAsyncAtomicMutationNotSupportedError
+from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
 from undine.typing import CacheKeyData, ResultCacheData
 from undine.utils.graphql.caching import RequestCacheCalculator
-from undine.utils.graphql.utils import get_fragment_definitions, get_operation_definition, is_atomic_mutation
+from undine.utils.graphql.utils import (
+    get_error_execution_result,
+    get_fragment_definitions,
+    get_operation_definition,
+    is_atomic_mutation,
+)
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
@@ -74,7 +80,11 @@ class LifecycleHookContext:
     def __post_init__(self) -> None:
         hooks = itertools.chain(
             undine_settings.LIFECYCLE_HOOKS,
-            [RequestCacheHook, AtomicMutationHook],
+            [
+                RequestCacheHook,
+                AtomicMutationHook,
+                *((AutomaticPersistedQueriesHook,) if undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED else []),
+            ],
         )
         self.lifecycle_hooks = [hook(context=self) for hook in hooks]
 
@@ -338,6 +348,84 @@ class RequestCacheHook(LifecycleHook):
 
         key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
         return f"{undine_settings.REQUEST_CACHE_PREFIX}:{key}"
+
+
+class AutomaticPersistedQueriesHook(LifecycleHook):
+    """Hook for saving automatic persisted queries."""
+
+    def on_execution(self) -> Generator[None, None, None]:
+        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
+            yield
+            return
+
+        if "persistedQuery" not in self.context.extensions or "persistedQueryUsed" in self.context.extensions:
+            yield
+            return
+
+        operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
+        if operation.operation != OperationType.QUERY:
+            yield
+            return
+
+        try:
+            apq_id = GraphQLRequestParamsParser.get_apq_document_id(self.context.extensions)
+        except GraphQLError as error:
+            self.context.result = get_error_execution_result(error)
+            yield
+            return
+
+        from undine.persisted_documents.models import PersistedDocument  # noqa: PLC0415
+        from undine.persisted_documents.utils import to_document_id  # noqa: PLC0415
+
+        document_id = to_document_id(self.context.source)
+        if document_id != apq_id:
+            self.context.result = get_error_execution_result(GraphQLAPQHashInvalidError())
+            yield
+            return
+
+        PersistedDocument.objects.update_or_create(
+            document_id=document_id,
+            defaults={"document": self.context.source},
+        )
+
+        yield
+
+    async def on_execution_async(self) -> AsyncGenerator[None, None]:
+        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
+            yield
+            return
+
+        if "persistedQuery" not in self.context.extensions or "persistedQueryUsed" in self.context.extensions:
+            yield
+            return
+
+        operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
+        if operation.operation != OperationType.QUERY:
+            yield
+            return
+
+        try:
+            apq_id = GraphQLRequestParamsParser.get_apq_document_id(self.context.extensions)
+        except GraphQLError as error:
+            self.context.result = get_error_execution_result(error)
+            yield
+            return
+
+        from undine.persisted_documents.models import PersistedDocument  # noqa: PLC0415
+        from undine.persisted_documents.utils import to_document_id  # noqa: PLC0415
+
+        document_id = to_document_id(self.context.source)
+        if document_id != apq_id:
+            self.context.result = get_error_execution_result(GraphQLAPQHashInvalidError())
+            yield
+            return
+
+        await PersistedDocument.objects.aupdate_or_create(
+            document_id=document_id,
+            defaults={"document": self.context.source},
+        )
+
+        yield
 
 
 # Hook managers

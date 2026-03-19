@@ -478,6 +478,12 @@ to control whether the cache should be read from or written to based on a given 
 -8<- "schema/entrypoint_cache_should_read_write.py"
 ```
 
+In addition to server-side caching, `Entrypoint` caching also sends the appropriate
+`Cache-Control` and `Age` headers to the client, so that browser and CDN caching can be used.
+
+Note also that `Entrypoint` caching cannot be used for subscriptions or requests
+using incremental delivery.
+
 ### Directives
 
 You can add directives to the `Entrypoint` by providing them using the `directives` argument.

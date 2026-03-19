@@ -197,6 +197,9 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
 
 @with_execution_lifecycle_hooks_manager
 def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
+    if context.result is not None:
+        return context.result  # type: ignore[return-value]
+
     try:
         exec_context = _get_execution_context(
             document=context.document,  # type: ignore[arg-type]
@@ -331,6 +334,9 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
 
 @with_execution_lifecycle_hooks_manager_async
 async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
+    if context.result is not None:
+        return context.result  # type: ignore[return-value]
+
     try:
         exec_context = _get_execution_context(
             document=context.document,  # type: ignore[arg-type]

@@ -537,7 +537,7 @@ class SSEOperationConsumer(GraphQLSSESingleConnectionConsumer):
         if not stream_token:
             raise GraphQLSSEStreamTokenMissingError
 
-        params = GraphQLRequestParamsParser.run(self.request)
+        params = await GraphQLRequestParamsParser.run_async(self.request)
 
         operation_id = str(params.extensions.get("operationId", ""))
         if not operation_id:

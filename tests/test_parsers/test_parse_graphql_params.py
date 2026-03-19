@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import urllib.parse
 from typing import Generator
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import QueryDict
 
@@ -11,11 +13,17 @@ from tests.factories import PersistedDocumentFactory
 from tests.helpers import MockRequest, create_graphql_multipart_spec_request, create_multipart_form_data_request, exact
 from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import (
+    GraphQLAPQHashInvalidError,
+    GraphQLAPQHashMissingError,
+    GraphQLAPQNotSuppoertedError,
+    GraphQLAPQVersionInvalidError,
+    GraphQLAPQVersionMissingError,
+    GraphQLAPQVersionNotSupportedError,
     GraphQLMissingContentTypeError,
+    GraphQLMissingDocumentError,
     GraphQLMissingDocumentIDError,
     GraphQLMissingFileMapError,
     GraphQLMissingOperationsError,
-    GraphQLMissingQueryAndDocumentIDError,
     GraphQLMissingQueryError,
     GraphQLPersistedDocumentNotFoundError,
     GraphQLRequestDecodingError,
@@ -23,6 +31,7 @@ from undine.exceptions import (
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.persisted_documents.apps import UndinePersistedDocumentsConfig
+from undine.persisted_documents.utils import to_document_id
 
 
 @pytest.fixture
@@ -39,6 +48,39 @@ def _no_persisted_documents(settings) -> Generator[None, None, None]:
     settings.INSTALLED_APPS.pop(index)
     yield
     settings.INSTALLED_APPS.insert(index, app_name)
+
+
+def test_parse_graphql_params() -> None:
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"query": "query MyQuery { hello }", "variables": {}}',
+    )
+
+    params = GraphQLRequestParamsParser.run(request)
+
+    assert isinstance(params, GraphQLHttpParams)
+    assert params.document == "query MyQuery { hello }"
+    assert params.variables == {}
+    assert params.operation_name is None
+    assert params.extensions == {}
+
+
+@pytest.mark.asyncio
+async def test_parse_graphql_params__async() -> None:
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"query": "query MyQuery { hello }", "variables": {}}',
+    )
+
+    params = await GraphQLRequestParamsParser.run_async(request)
+
+    assert isinstance(params, GraphQLHttpParams)
+    assert params.document == "query MyQuery { hello }"
+    assert params.variables == {}
+    assert params.operation_name is None
+    assert params.extensions == {}
 
 
 def test_parse_graphql_params__get_request() -> None:
@@ -79,22 +121,6 @@ def test_parse_graphql_params__no_content_type_header() -> None:
 
     with pytest.raises(GraphQLMissingContentTypeError):
         GraphQLRequestParamsParser.run(request)
-
-
-def test_parse_graphql_params__json_content() -> None:
-    request = MockRequest(
-        method="POST",
-        content_type="application/json",
-        body=b'{"query": "query MyQuery { hello }", "variables": {}}',
-    )
-
-    params = GraphQLRequestParamsParser.run(request)
-
-    assert isinstance(params, GraphQLHttpParams)
-    assert params.document == "query MyQuery { hello }"
-    assert params.variables == {}
-    assert params.operation_name is None
-    assert params.extensions == {}
 
 
 def test_parse_graphql_params__json_content__decode_error() -> None:
@@ -275,7 +301,7 @@ def test_parse_graphql_params__null_query() -> None:
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__mising_query__has_document() -> None:
+def test_parse_graphql_params__persisted_documents() -> None:
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
 
     request = MockRequest(
@@ -293,7 +319,7 @@ def test_parse_graphql_params__mising_query__has_document() -> None:
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__mising_query__no_document_id() -> None:
+def test_parse_graphql_params__persisted_documents__no_document_id() -> None:
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
 
     request = MockRequest(
@@ -302,12 +328,12 @@ def test_parse_graphql_params__mising_query__no_document_id() -> None:
         body=b'{"variables": {}}',
     )
 
-    with pytest.raises(GraphQLMissingQueryAndDocumentIDError):
+    with pytest.raises(GraphQLMissingDocumentError):
         GraphQLRequestParamsParser.run(request)
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__mising_query__no_document_matching_id() -> None:
+def test_parse_graphql_params__persisted_documents__no_document_matching_id() -> None:
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
 
     request = MockRequest(
@@ -321,7 +347,7 @@ def test_parse_graphql_params__mising_query__no_document_matching_id() -> None:
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__persisted_documents_only__no_document_id(undine_settings) -> None:
+def test_parse_graphql_params__persisted_documents__only__no_document_id(undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
@@ -337,7 +363,7 @@ def test_parse_graphql_params__persisted_documents_only__no_document_id(undine_s
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__persisted_documents_only__query_ignored(undine_settings) -> None:
+def test_parse_graphql_params__persisted_documents__only__query_ignored(undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
@@ -357,7 +383,7 @@ def test_parse_graphql_params__persisted_documents_only__query_ignored(undine_se
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__persisted_documents_only__query_ignored__no_document_id(undine_settings) -> None:
+def test_parse_graphql_params__persisted_documents__only__query_ignored__no_document_id(undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
@@ -369,4 +395,150 @@ def test_parse_graphql_params__persisted_documents_only__query_ignored__no_docum
     )
 
     with pytest.raises(GraphQLMissingDocumentIDError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_parse_graphql_params__persisted_document__async() -> None:
+    await sync_to_async(PersistedDocumentFactory.create)(document_id="1", document="query MyQuery { hello }")
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"documentId": "1"}',
+    )
+
+    params = await GraphQLRequestParamsParser.run_async(request)
+
+    assert isinstance(params, GraphQLHttpParams)
+    assert params.document == "query MyQuery { hello }"
+    assert params.variables == {}
+    assert params.operation_name is None
+    assert params.extensions == {}
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__not_enabled() -> None:
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": "1"}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQNotSuppoertedError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    document = "query MyQuery { hello }"
+    document_id = to_document_id(document)
+    PersistedDocumentFactory.create(document_id=document_id, document=document)
+
+    sha_hash = document_id.split(":")[1]
+    body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": sha_hash}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    params = GraphQLRequestParamsParser.run(request)
+
+    assert isinstance(params, GraphQLHttpParams)
+    assert params.document == "query MyQuery { hello }"
+    assert params.variables == {}
+    assert params.operation_name is None
+    assert params.extensions == {"persistedQuery": {"version": 1, "sha256Hash": sha_hash}, "persistedQueryUsed": True}
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__version_missing(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"sha256Hash": "1"}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQVersionMissingError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__invalid_version(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"version": "foo", "sha256Hash": "1"}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQVersionInvalidError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__unsupported_version(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"version": 2, "sha256Hash": "1"}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQVersionNotSupportedError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__hash_missing(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"version": 1}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQHashMissingError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.django_db
+def test_parse_graphql_params__aqp__invalid_hash(undine_settings) -> None:
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
+
+    PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
+    body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": 1}}}
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=json.dumps(body).encode("utf-8"),
+    )
+
+    with pytest.raises(GraphQLAPQHashInvalidError):
         GraphQLRequestParamsParser.run(request)

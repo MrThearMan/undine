@@ -76,6 +76,7 @@ class WebSocketMixin:
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> AsyncGenerator[GraphQLClientWebSocketResponse, None]:
@@ -87,6 +88,7 @@ class WebSocketMixin:
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -103,6 +105,8 @@ class WebSocketMixin:
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         websocket = self.websocket()
 
@@ -201,6 +205,7 @@ class GraphQLClient(WebSocketMixin, Client):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> GraphQLClientHTTPResponse:
@@ -212,6 +217,7 @@ class GraphQLClient(WebSocketMixin, Client):
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -228,6 +234,8 @@ class GraphQLClient(WebSocketMixin, Client):
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         files = extract_files(variables)
         data = _create_multipart_data(body, files) if files else body
@@ -278,6 +286,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> GraphQLClientHTTPResponse:
@@ -289,6 +298,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -305,6 +315,8 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         files = extract_files(variables)
         data = _create_multipart_data(body, files) if files else body
@@ -353,6 +365,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> AsyncGenerator[GraphQLClientSSEResponse, None]:
@@ -364,6 +377,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -381,6 +395,8 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         headers["Accept"] = "text/event-stream"
 
@@ -427,6 +443,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> AsyncGenerator[GraphQLClientMultipartMixedHTTPSubscriptionResponse, None]:
@@ -438,6 +455,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -455,6 +473,8 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         headers["Accept"] = "multipart/mixed; subscriptionSpec=1.0"
 
@@ -504,6 +524,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         variables: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         operation_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
         use_persisted_document: bool = False,
         count_queries: bool = False,
     ) -> AsyncGenerator[GraphQLClientIncrementalDeliveryResponse, None]:
@@ -515,6 +536,7 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
         :param headers: Headers for the request.
         :param operation_name: If given document includes multiple operations,
                                this is required to select the operation to execute.
+        :param extensions: GraphQL operation extensions for the request.
         :param use_persisted_document: Instead of sending the whole document,
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
@@ -536,6 +558,8 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
             body["variables"] = variables
         if operation_name is not None:
             body["operationName"] = operation_name
+        if extensions is not None:
+            body["extensions"] = extensions
 
         headers["Accept"] = "multipart/mixed"
 

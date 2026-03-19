@@ -331,7 +331,7 @@ class GraphQLOverWebSocketHandler:
             raise WebSocketSubscriberForOperationIdAlreadyExistsError(id=message["id"])
 
         try:
-            params = GraphQLRequestParamsParser.get_graphql_params(message["payload"])
+            params = await GraphQLRequestParamsParser.get_graphql_params_async(message["payload"])
         except GraphQLError as error:
             raise WebSocketInvalidSubscribePayloadError(reason=error.message) from error
 

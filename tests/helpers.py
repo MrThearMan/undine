@@ -23,6 +23,7 @@ from django.core.files.uploadhandler import MemoryFileUploadHandler
 from django.http import HttpHeaders, QueryDict
 from django.http.multipartparser import MultiPartParser
 from django.http.request import MediaType
+from django.http.response import ResponseHeaders
 from django.test.client import BOUNDARY
 from django.utils.datastructures import MultiValueDict
 from graphql import (
@@ -207,9 +208,25 @@ class MockRequest:
     content_type: str | None = "application/json"
     content_params: dict[str, str] | None = dataclasses.field(default_factory=dict)
     accepted_types: list[MediaType] = dataclasses.field(default_factory=list)
+    response_content_type: MediaType = dataclasses.field(default_factory=lambda: MediaType("application/json"))
+    response_headers: ResponseHeaders = dataclasses.field(default_factory=lambda: ResponseHeaders({}))
 
     async def auser(self) -> User | AnonymousUser:
         return self.user
+
+    def is_secure(self) -> bool: ...  # type: ignore[empty-body]
+
+    def accepts(self, media_type: str) -> bool: ...  # type: ignore[empty-body]
+
+    def get_host(self) -> str: ...  # type: ignore[empty-body]
+
+    def get_port(self) -> str: ...  # type: ignore[empty-body]
+
+    def get_full_path(self, force_append_slash: bool = False) -> str: ...  # type: ignore[empty-body]  # noqa: FBT001,FBT002
+
+    def get_full_path_info(self, force_append_slash: bool = False) -> str: ...  # type: ignore[empty-body]  # noqa: FBT001,FBT002
+
+    def build_absolute_uri(self, location: str | None = None) -> str: ...  # type: ignore[empty-body]
 
 
 def mock_gql_info(  # noqa: PLR0913

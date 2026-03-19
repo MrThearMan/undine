@@ -21,7 +21,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-Then, add the persisted document registration view to your URLconf:
+Then, add the persisted document registration view to your URL conf:
 
 ```python hl_lines="5"
 -8<- "persisted_documents/urls.py"
@@ -129,3 +129,17 @@ UNDINE = {
 
 When operating in this mode, your clients should call `PersistedDocumentsView`
 during build time to register their queries and mutations.
+
+## Automatic persisted queries
+
+Automatic persisted queries (APQ) are a technique which allows creating persisted documents
+for GraphQL operations during the request phase, instead of during build time. To use this feature, enable it using
+the [`AUTOMATIC_PERSISTED_QUERIES_ENABLED`](settings.md#automatic_persisted_queries_enabled) setting.
+You'll also need a client library that supports the APQ protocol, such as Apollo Client.
+See the [Apollo documentation]{:target="_blank"} for more information.
+
+[Apollo documentation]: https://www.apollographql.com/docs/apollo-server/performance/apq
+
+> It's recommended to send requests using GET when using APQs, as this allows the requests
+> to benefit from browser and CDN caching. See Undine can add `Cache-Control` headers to the response
+> using [`Entrypoint` caching](schema.md#caching) to help with this.

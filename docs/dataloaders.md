@@ -25,7 +25,7 @@ Let's look at an example which fetches a list of pokemon from an external API by
 ```
 
 Here, the `DataLoader` load function `load_pokemon` receives a list of keys (pokemon names in this case)
-and makes an equal number of concurrent HTTP requests to an external API to fetch these pokemon information.
+and makes an equal number of concurrent HTTP requests to an external API to fetch information for these pokemon.
 
 The keys which the load function receives for a given GraphQL operation are defined by
 calls to `DataLoader.load`, like in the `pokemon_by_name` `Entrypoint` resolver in the above example.

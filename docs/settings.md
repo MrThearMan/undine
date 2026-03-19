@@ -127,6 +127,15 @@ Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `Mutat
 
 ///
 
+/// details | `AUTOMATIC_PERSISTED_QUERIES_ENABLED`
+    attrs: {id: automatic_persisted_queries_enabled}
+
+Type `bool` | Default: `False`
+
+Whether to enable support for automatic persisted queries.
+
+///
+
 /// details | `CALCULATION_ARGUMENT_EXTENSIONS_KEY`
     attrs: {id: calculation_argument_extensions_key}
 

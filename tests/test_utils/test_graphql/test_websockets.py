@@ -655,10 +655,7 @@ async def test_websocket_handler__receive__subscribe__payload__parsing_error(und
     await handler.receive(data=json.dumps(message))
 
     assert websocket.close_code == GraphQLWebSocketCloseCode.BAD_REQUEST
-    assert websocket.close_reason == (
-        "Request data must contain either a `query` string describing the graphql document "
-        "or a `documentId` string identifying a persisted document."
-    )
+    assert websocket.close_reason == "Could not find GraphQL document or persisted document based on request data."
 
 
 async def test_websocket_handler__receive__subscribe__error(undine_settings) -> None:

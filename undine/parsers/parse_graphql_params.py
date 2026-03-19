@@ -7,11 +7,17 @@ from django.http.request import MediaType
 
 from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import (
+    GraphQLAPQHashInvalidError,
+    GraphQLAPQHashMissingError,
+    GraphQLAPQNotSuppoertedError,
+    GraphQLAPQVersionInvalidError,
+    GraphQLAPQVersionMissingError,
+    GraphQLAPQVersionNotSupportedError,
     GraphQLMissingContentTypeError,
+    GraphQLMissingDocumentError,
     GraphQLMissingDocumentIDError,
     GraphQLMissingFileMapError,
     GraphQLMissingOperationsError,
-    GraphQLMissingQueryAndDocumentIDError,
     GraphQLMissingQueryError,
     GraphQLPersistedDocumentNotFoundError,
     GraphQLPersistedDocumentsNotSupportedError,
@@ -40,6 +46,11 @@ class GraphQLRequestParamsParser:
     def run(cls, request: DjangoRequestProtocol) -> GraphQLHttpParams:
         data = cls.parse_body(request)
         return cls.get_graphql_params(data)
+
+    @classmethod
+    async def run_async(cls, request: DjangoRequestProtocol) -> GraphQLHttpParams:
+        data = cls.parse_body(request)
+        return await cls.get_graphql_params_async(data)
 
     @classmethod
     def parse_body(cls, request: DjangoRequestProtocol) -> dict[str, str]:
@@ -111,10 +122,38 @@ class GraphQLRequestParamsParser:
 
     @classmethod
     def get_graphql_params(cls, data: dict[str, Any]) -> GraphQLHttpParams:
-        document = cls.parse_document(data)
+        extensions = cls.get_operation_extensions(data)
+        document = cls.parse_document(data, extensions)
+        variables = cls.get_operation_variables(data)
+        operation_name = cls.get_operation_name(data)
 
-        operation_name: str | None = data.get("operationName") or None
+        return GraphQLHttpParams(
+            document=document,
+            variables=variables,
+            operation_name=operation_name,
+            extensions=extensions,
+        )
 
+    @classmethod
+    async def get_graphql_params_async(cls, data: dict[str, Any]) -> GraphQLHttpParams:
+        extensions = cls.get_operation_extensions(data)
+        document = await cls.parse_document_async(data, extensions)
+        variables = cls.get_operation_variables(data)
+        operation_name = cls.get_operation_name(data)
+
+        return GraphQLHttpParams(
+            document=document,
+            variables=variables,
+            operation_name=operation_name,
+            extensions=extensions,
+        )
+
+    @classmethod
+    def get_operation_name(cls, data: dict[str, Any]) -> str | None:
+        return data.get("operationName") or None
+
+    @classmethod
+    def get_operation_variables(cls, data: dict[str, Any]) -> dict[str, str]:
         variables: dict[str, str] | str | None = data.get("variables")
         if isinstance(variables, str):
             variables = load_json_dict(
@@ -122,7 +161,10 @@ class GraphQLRequestParamsParser:
                 decode_error_msg="Variables are invalid JSON.",
                 type_error_msg="Variables must be a mapping.",
             )
+        return variables or {}
 
+    @classmethod
+    def get_operation_extensions(cls, data: dict[str, Any]) -> dict[str, str]:
         extensions: dict[str, str] | str | None = data.get("extensions")
         if isinstance(extensions, str):
             extensions = load_json_dict(
@@ -130,36 +172,96 @@ class GraphQLRequestParamsParser:
                 decode_error_msg="Extensions are invalid JSON.",
                 type_error_msg="Extensions must be a mapping.",
             )
-
-        return GraphQLHttpParams(
-            document=document,
-            variables=variables or {},
-            operation_name=operation_name,
-            extensions=extensions or {},
-        )
+        return extensions or {}
 
     @classmethod
-    def parse_document(cls, data: dict[str, Any]) -> str:
-        persisted_documents_installed = "undine.persisted_documents" in settings.INSTALLED_APPS
-
+    def parse_document(cls, data: dict[str, Any], extensions: dict[str, str]) -> str:
         if not undine_settings.PERSISTED_DOCUMENTS_ONLY:
             query = data.get("query")
             if query:
                 return query
 
-            if not persisted_documents_installed:
+            if not cls.persisted_documents_installed():
                 raise GraphQLMissingQueryError
 
-        if not persisted_documents_installed:
-            raise GraphQLPersistedDocumentsNotSupportedError
+        if not cls.persisted_documents_installed():
+            # Add 'code' so that Apollo Client knows what's going on.
+            extensions = {"code": "PERSISTED_QUERY_NOT_SUPPORTED"}
+            raise GraphQLPersistedDocumentsNotSupportedError(extensions=extensions)
 
         document_id = data.get("documentId")
         if not document_id:
+            document_id = cls.get_apq_document_id(extensions)
+
+        if not document_id:
             if undine_settings.PERSISTED_DOCUMENTS_ONLY:
                 raise GraphQLMissingDocumentIDError
-            raise GraphQLMissingQueryAndDocumentIDError
+            raise GraphQLMissingDocumentError
 
         return cls.get_persisted_document(document_id)
+
+    @classmethod
+    async def parse_document_async(cls, data: dict[str, Any], extensions: dict[str, str]) -> str:
+        if not undine_settings.PERSISTED_DOCUMENTS_ONLY:
+            query = data.get("query")
+            if query:
+                return query
+
+            if not cls.persisted_documents_installed():
+                raise GraphQLMissingQueryError
+
+        if not cls.persisted_documents_installed():
+            # Add 'code' so that Apollo Client knows what's going on.
+            extensions = {"code": "PERSISTED_QUERY_NOT_SUPPORTED"}
+            raise GraphQLPersistedDocumentsNotSupportedError(extensions=extensions)
+
+        document_id = data.get("documentId")
+        if not document_id:
+            document_id = cls.get_apq_document_id(extensions)
+
+        if not document_id:
+            if undine_settings.PERSISTED_DOCUMENTS_ONLY:
+                raise GraphQLMissingDocumentIDError
+            raise GraphQLMissingDocumentError
+
+        return await cls.get_persisted_document_async(document_id)
+
+    @classmethod
+    def persisted_documents_installed(cls) -> bool:
+        return "undine.persisted_documents" in settings.INSTALLED_APPS
+
+    @classmethod
+    def get_apq_document_id(cls, extensions: dict[str, Any]) -> str | None:
+        persisted_query: dict[str, Any] | None = extensions.get("persistedQuery")
+        if persisted_query is None:
+            return None
+
+        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
+            # Add 'code' so that Apollo Client knows what's going on.
+            extensions = {"code": "PERSISTED_QUERY_NOT_SUPPORTED"}
+            raise GraphQLAPQNotSuppoertedError(extensions=extensions)
+
+        version: int | None = persisted_query.get("version")
+        if version is None:
+            raise GraphQLAPQVersionMissingError
+
+        if not isinstance(version, int):
+            raise GraphQLAPQVersionInvalidError
+
+        if version != 1:
+            raise GraphQLAPQVersionNotSupportedError(version=version)
+
+        sha256_hash: str | None = persisted_query.get("sha256Hash")
+        if sha256_hash is None:
+            raise GraphQLAPQHashMissingError
+
+        if not isinstance(sha256_hash, str):
+            raise GraphQLAPQHashInvalidError
+
+        # Mark the persisted query as used so that we won't try to save it again.
+        extensions["persistedQueryUsed"] = True
+
+        return f"sha256:{sha256_hash}"
 
     @classmethod
     def get_persisted_document(cls, document_id: str) -> str:
@@ -168,6 +270,21 @@ class GraphQLRequestParamsParser:
         try:
             persisted_document = PersistedDocument.objects.get(document_id=document_id)
         except PersistedDocument.DoesNotExist as error:
-            raise GraphQLPersistedDocumentNotFoundError(document_id=document_id) from error
+            # Add 'code' so that Apollo Client knows what's going on.
+            extensions = {"code": "PERSISTED_DOCUMENT_NOT_FOUND"}
+            raise GraphQLPersistedDocumentNotFoundError(document_id=document_id, extensions=extensions) from error
+
+        return persisted_document.document
+
+    @classmethod
+    async def get_persisted_document_async(cls, document_id: str) -> str:
+        from undine.persisted_documents.models import PersistedDocument  # noqa: PLC0415
+
+        try:
+            persisted_document = await PersistedDocument.objects.aget(document_id=document_id)
+        except PersistedDocument.DoesNotExist as error:
+            # Add 'code' so that Apollo Client knows what's going on.
+            extensions = {"code": "PERSISTED_DOCUMENT_NOT_FOUND"}
+            raise GraphQLPersistedDocumentNotFoundError(document_id=document_id, extensions=extensions) from error
 
         return persisted_document.document

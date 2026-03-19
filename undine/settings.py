@@ -168,6 +168,9 @@ class UndineDefaultSettings(NamedTuple):
 
     # Persisted documents
 
+    AUTOMATIC_PERSISTED_QUERIES_ENABLED: bool = False
+    """Whether to enable automated persisted queries support."""
+
     PERSISTED_DOCUMENTS_ONLY: bool = False
     """Whether to only allow persisted documents to be executed."""
 

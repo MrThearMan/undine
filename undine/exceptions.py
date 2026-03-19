@@ -551,6 +551,54 @@ class GraphQLErrorGroup(ExceptionGroup):
         return self
 
 
+class GraphQLAPQHashInvalidError(GraphQLStatusError):
+    """Error raised when automated persisted query sent with an invalid hash."""
+
+    msg = "Automated Persisted Query hash is invalid."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_HASH_INVALID
+
+
+class GraphQLAPQHashMissingError(GraphQLStatusError):
+    """Error raised when automated persisted query sent without a hash."""
+
+    msg = "Automated Persisted Query hash information is missing."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_HASH_MISSING
+
+
+class GraphQLAPQNotSuppoertedError(GraphQLStatusError):
+    """Error raised when automated persisted query is not supported."""
+
+    msg = "Automated Persisted Queries are not supported."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_NOT_SUPPORTED
+
+
+class GraphQLAPQVersionInvalidError(GraphQLStatusError):
+    """Error raised when automated persisted query sent with an invalid version."""
+
+    msg = "Automated Persisted Query version information is invalid."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_VERSION_INVALID
+
+
+class GraphQLAPQVersionMissingError(GraphQLStatusError):
+    """Error raised when automated persisted query sent without a version."""
+
+    msg = "Automated Persisted Query version information is missing."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_VERSION_MISSING
+
+
+class GraphQLAPQVersionNotSupportedError(GraphQLStatusError):
+    """Error raised when automated persisted query sent using an unsupported version."""
+
+    msg = "Automated Persisted Query version {version} is not supported."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.APQ_VERSION_NOT_SUPPORTED
+
+
 class GraphQLAsyncAtomicMutationNotSupportedError(GraphQLStatusError):
     """Error raised when a trying to use atomic mutations with async views."""
 
@@ -768,10 +816,18 @@ class GraphQLMissingOperationsError(GraphQLStatusError):
     code = UndineErrorCodes.MISSING_OPERATIONS
 
 
+class GraphQLMissingDocumentError(GraphQLStatusError):
+    """Error raised if a graphql document could not be found from the request."""
+
+    msg = "Could not find GraphQL document or persisted document based on request data."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
+
+
 class GraphQLMissingDocumentIDError(GraphQLStatusError):
     """Error raised if persisted document id are missing from the request."""
 
-    msg = "Request data must contain a `documentId` string identifying a persisted document."
+    msg = "Could not find persisted document based on request data."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
 
@@ -782,17 +838,6 @@ class GraphQLMissingQueryError(GraphQLStatusError):
     msg = "Request data must contain a `query` string describing the graphql document."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_GRAPHQL_QUERY_PARAMETER
-
-
-class GraphQLMissingQueryAndDocumentIDError(GraphQLStatusError):
-    """Error raised both neither the query string and persisted document id are missing from the request."""
-
-    msg = (
-        "Request data must contain either a `query` string describing the graphql document "
-        "or a `documentId` string identifying a persisted document."
-    )
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_GRAPHQL_QUERY_AND_DOCUMENT_PARAMETERS
 
 
 class GraphQLMissingInstancesToDeleteError(GraphQLStatusError):

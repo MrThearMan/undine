@@ -65,7 +65,7 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
         return await _handle_incremental(request)
 
     try:
-        params = GraphQLRequestParamsParser.run(request)
+        params = await GraphQLRequestParamsParser.run_async(request)
     except (GraphQLError, GraphQLErrorGroup) as error:
         result = get_error_execution_result(error)
     else:
@@ -84,7 +84,7 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
         return HttpEventSourcingNotAllowedResponse()
 
     try:
-        params = GraphQLRequestParamsParser.run(request)
+        params = await GraphQLRequestParamsParser.run_async(request)
     except (GraphQLError, GraphQLErrorGroup) as error:
         result = get_error_execution_result(error)
         event_stream = result_to_sse_dc(result)
@@ -104,7 +104,7 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
 
 async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     try:
-        params = GraphQLRequestParamsParser.run(request)
+        params = await GraphQLRequestParamsParser.run_async(request)
     except (GraphQLError, GraphQLErrorGroup) as error:
         result = get_error_execution_result(error)
         event_stream = result_to_multipart_mixed_response(result)
@@ -130,7 +130,7 @@ async def _handle_incremental(request: DjangoRequestProtocol) -> DjangoResponseP
     )
 
     try:
-        params = GraphQLRequestParamsParser.run(request)
+        params = await GraphQLRequestParamsParser.run_async(request)
     except (GraphQLError, GraphQLErrorGroup) as error:
         result = get_error_execution_result(error)
         event_stream = result_to_incremental_response(result)
