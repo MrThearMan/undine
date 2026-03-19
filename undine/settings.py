@@ -120,7 +120,10 @@ class UndineDefaultSettings(NamedTuple):
     EXECUTION_CONTEXT_CLASS: type[UndineExecutionContext] = "undine.execution.UndineExecutionContext"  # type: ignore[assignment]
     """GraphQL execution context class used by the schema."""
 
-    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = []
+    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [
+        "undine.hooks.RequestCacheHook",  # type: ignore[list-item]
+        "undine.hooks.AtomicMutationHook",  # type: ignore[list-item]
+    ]
     """Lifecycle hooks to use during GraphQL operations."""
 
     MAX_ALLOWED_ALIASES: int = 15
@@ -167,9 +170,6 @@ class UndineDefaultSettings(NamedTuple):
     """Controls whether the SSE subscription client uses single connection mode."""
 
     # Persisted documents
-
-    AUTOMATIC_PERSISTED_QUERIES_ENABLED: bool = False
-    """Whether to enable automated persisted queries support."""
 
     PERSISTED_DOCUMENTS_ONLY: bool = False
     """Whether to only allow persisted documents to be executed."""

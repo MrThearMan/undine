@@ -9,6 +9,7 @@ from example_project.app.models import Comment, Person, Project, Task, TaskStep,
 from tests.factories import PersonFactory, ProjectFactory
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
+from undine.hooks import AtomicMutationHook
 
 
 @pytest.mark.django_db
@@ -785,7 +786,7 @@ def test_create_mutation__generic_relation(graphql, undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_create_mutation__atomic_mutation(graphql, undine_settings):
-    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.LIFECYCLE_HOOKS = [AtomicMutationHook]
 
     class TaskType(QueryType[Task]): ...
 

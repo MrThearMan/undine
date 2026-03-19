@@ -160,5 +160,8 @@ UNDINE = {
     "LIFECYCLE_HOOKS": [
         "example_project.app.hooks.ErrorLoggingMiddleware",
         "example_project.app.hooks.ExampleHook",
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.hooks.AutomaticPersistedQueriesHook",
     ],
 }

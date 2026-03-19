@@ -133,8 +133,9 @@ during build time to register their queries and mutations.
 ## Automatic persisted queries
 
 Automatic persisted queries (APQ) are a technique which allows creating persisted documents
-for GraphQL operations during the request phase, instead of during build time. To use this feature, enable it using
-the [`AUTOMATIC_PERSISTED_QUERIES_ENABLED`](settings.md#automatic_persisted_queries_enabled) setting.
+for GraphQL operations during the request phase, instead of during build time. To use this feature,
+you must add the `undine.hooks.AutomaticPersistedQueriesHook` to the
+[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) setting.
 You'll also need a client library that supports the APQ protocol, such as Apollo Client.
 See the [Apollo documentation]{:target="_blank"} for more information.
 

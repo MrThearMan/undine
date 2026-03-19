@@ -866,6 +866,9 @@ mutation ($taskInput: TaskCreateMutation! $projectInput: ProjectCreateMutation!)
 }
 ```
 
+Note that atomic mutations require the `undine.hooks.AtomicMutationHook`
+to be in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks), which it is by default.
+
 Now if any of the mutations fail, all created objects during the execution phase
 of the mutation will be rolled back. Specifically, a rollback will be triggered
 if any errors are thrown from top-level resolvers of a mutation operation.

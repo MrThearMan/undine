@@ -127,15 +127,6 @@ Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `Mutat
 
 ///
 
-/// details | `AUTOMATIC_PERSISTED_QUERIES_ENABLED`
-    attrs: {id: automatic_persisted_queries_enabled}
-
-Type `bool` | Default: `False`
-
-Whether to enable support for automatic persisted queries.
-
-///
-
 /// details | `CALCULATION_ARGUMENT_EXTENSIONS_KEY`
     attrs: {id: calculation_argument_extensions_key}
 
@@ -412,11 +403,22 @@ The key used to store a `InterfaceType` in the `extensions` of its `GraphQLInter
 /// details | `LIFECYCLE_HOOKS`
     attrs: {id: lifecycle_hooks}
 
-Type: `list[type[LifecycleHook]]` | Default: `[]`
+Type: `list[type[LifecycleHook]]`
+
+Default:
+```
+[
+    "undine.hooks.RequestCacheHook",
+    "undine.hooks.AtomicMutationHook",
+]
+```
 
 Hooks to use during the GraphQL request.
 See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
 Values should be given as the dotted paths to the lifecycle hooks used.
+
+> Note that if you change the default value, you must also include the built-in hooks
+> if you which to use them!
 
 ///
 

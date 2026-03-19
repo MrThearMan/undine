@@ -419,7 +419,9 @@ async def test_parse_graphql_params__persisted_document__async() -> None:
 
 
 @pytest.mark.django_db
-def test_parse_graphql_params__aqp__not_enabled() -> None:
+def test_parse_graphql_params__aqp__not_enabled(undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = []
+
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": "1"}}}
 
@@ -435,7 +437,6 @@ def test_parse_graphql_params__aqp__not_enabled() -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query MyQuery { hello }"
     document_id = to_document_id(document)
@@ -461,7 +462,6 @@ def test_parse_graphql_params__aqp(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__version_missing(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"sha256Hash": "1"}}}
@@ -478,7 +478,6 @@ def test_parse_graphql_params__aqp__version_missing(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__invalid_version(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": "foo", "sha256Hash": "1"}}}
@@ -495,7 +494,6 @@ def test_parse_graphql_params__aqp__invalid_version(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__unsupported_version(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": 2, "sha256Hash": "1"}}}
@@ -512,7 +510,6 @@ def test_parse_graphql_params__aqp__unsupported_version(undine_settings) -> None
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__hash_missing(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": 1}}}
@@ -529,7 +526,6 @@ def test_parse_graphql_params__aqp__hash_missing(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__invalid_hash(undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": 1}}}

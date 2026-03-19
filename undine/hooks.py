@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import itertools
 import json
 import time
 from abc import ABC, abstractmethod
@@ -78,15 +77,7 @@ class LifecycleHookContext:
     """Lifecycle hooks for this operation."""
 
     def __post_init__(self) -> None:
-        hooks = itertools.chain(
-            undine_settings.LIFECYCLE_HOOKS,
-            [
-                RequestCacheHook,
-                AtomicMutationHook,
-                *((AutomaticPersistedQueriesHook,) if undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED else []),
-            ],
-        )
-        self.lifecycle_hooks = [hook(context=self) for hook in hooks]
+        self.lifecycle_hooks = [hook(context=self) for hook in undine_settings.LIFECYCLE_HOOKS]
 
     @classmethod
     def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
@@ -354,10 +345,6 @@ class AutomaticPersistedQueriesHook(LifecycleHook):
     """Hook for saving automatic persisted queries."""
 
     def on_execution(self) -> Generator[None, None, None]:
-        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
-            yield
-            return
-
         if "persistedQuery" not in self.context.extensions or "persistedQueryUsed" in self.context.extensions:
             yield
             return
@@ -391,10 +378,6 @@ class AutomaticPersistedQueriesHook(LifecycleHook):
         yield
 
     async def on_execution_async(self) -> AsyncGenerator[None, None]:
-        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
-            yield
-            return
-
         if "persistedQuery" not in self.context.extensions or "persistedQueryUsed" in self.context.extensions:
             yield
             return

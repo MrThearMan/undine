@@ -400,7 +400,10 @@ You can also cache the response on per-user basis by using the `cache_per_user` 
 -8<- "schema/entrypoint_cache_per_use.py"
 ```
 
-Note that only responses without any errors will be cached, since errors can result
+Note that caching requires the `undine.hooks.RequestCacheHook`
+to be in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks), which it is by default.
+
+Only responses without any errors will be cached, since errors can result
 from transient issues such as a database connection being down. Also, responses for authenticated
 and anonymous users are be cached separately, since its quite common that a schema
 will return slightly different results for unauthenticated users.

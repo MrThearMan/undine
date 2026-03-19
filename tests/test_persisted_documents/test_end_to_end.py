@@ -161,7 +161,6 @@ def test_persisted_documents__only__not_installed(graphql, undine_settings) -> N
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -185,7 +184,6 @@ def test_persisted_documents__apq__save(graphql, undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__missing_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -213,7 +211,6 @@ def test_persisted_documents__apq__save__missing_version(graphql, undine_setting
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__invalid_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -241,7 +238,6 @@ def test_persisted_documents__apq__save__invalid_version(graphql, undine_setting
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__unsupported_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -269,7 +265,6 @@ def test_persisted_documents__apq__save__unsupported_version(graphql, undine_set
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__missing_hash(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -297,7 +292,6 @@ def test_persisted_documents__apq__save__missing_hash(graphql, undine_settings) 
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__invalid_hash(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -325,7 +319,6 @@ def test_persisted_documents__apq__save__invalid_hash(graphql, undine_settings) 
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__save__document_does_not_match_hash(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
 
@@ -355,7 +348,6 @@ def test_persisted_documents__apq__save__document_does_not_match_hash(graphql, u
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -389,7 +381,6 @@ def test_persisted_documents__apq__use(graphql, undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__missing_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -429,7 +420,6 @@ def test_persisted_documents__apq__use__missing_version(graphql, undine_settings
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__invalid_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -470,7 +460,6 @@ def test_persisted_documents__apq__use__invalid_version(graphql, undine_settings
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__unsupported_version(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -511,7 +500,6 @@ def test_persisted_documents__apq__use__unsupported_version(graphql, undine_sett
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__missing_hash(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -551,7 +539,6 @@ def test_persisted_documents__apq__use__missing_hash(graphql, undine_settings) -
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__invalid_hash(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -592,7 +579,6 @@ def test_persisted_documents__apq__use__invalid_hash(graphql, undine_settings) -
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__not_found(graphql, undine_settings) -> None:
-    undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED = True
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
@@ -634,6 +620,8 @@ def test_persisted_documents__apq__use__not_found(graphql, undine_settings) -> N
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__not_enabled(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = []
+
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)
 

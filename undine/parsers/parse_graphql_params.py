@@ -231,12 +231,17 @@ class GraphQLRequestParamsParser:
         return "undine.persisted_documents" in settings.INSTALLED_APPS
 
     @classmethod
+    def automatic_persisted_queries_enabled(cls) -> bool:
+        # Check by name so that users can switch the hook to their own implementation if desired.
+        return "AutomaticPersistedQueriesHook" in {hook.__name__ for hook in undine_settings.LIFECYCLE_HOOKS}
+
+    @classmethod
     def get_apq_document_id(cls, extensions: dict[str, Any]) -> str | None:
         persisted_query: dict[str, Any] | None = extensions.get("persistedQuery")
         if persisted_query is None:
             return None
 
-        if not undine_settings.AUTOMATIC_PERSISTED_QUERIES_ENABLED:
+        if not cls.automatic_persisted_queries_enabled():
             # Add 'code' so that Apollo Client knows what's going on.
             extensions = {"code": "PERSISTED_QUERY_NOT_SUPPORTED"}
             raise GraphQLAPQNotSuppoertedError(extensions=extensions)
