@@ -44,7 +44,6 @@ if TYPE_CHECKING:
         OrderParams,
         OrderSetParams,
         T,
-        TModel,
         VisibilityFunc,
     )
 
@@ -116,7 +115,7 @@ class OrderSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_enum_type(cls.__enum_type__())
 
-    def __getitem__(cls, models: type[TModel] | tuple[type[TModel], ...]) -> type[OrderSet[*TModels]]:
+    def __getitem__(cls, models: type[Model] | tuple[type[Model], ...]) -> type[OrderSet[*TModels]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'OrderSet'!
         OrderSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
