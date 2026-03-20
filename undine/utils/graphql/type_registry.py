@@ -384,6 +384,14 @@ def register_builtins() -> None:
     for directive in specified_directives:
         GRAPHQL_REGISTRY[directive.name] = directive
 
+    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY and version_info >= (3, 3, 0):
+        from graphql import GraphQLDeferDirective, GraphQLStreamDirective  # type: ignore[attr-defined] # noqa: PLC0415
+
+        if GraphQLDeferDirective.name not in GRAPHQL_REGISTRY:
+            GRAPHQL_REGISTRY[GraphQLDeferDirective.name] = GraphQLDeferDirective
+        if GraphQLStreamDirective.name not in GRAPHQL_REGISTRY:
+            GRAPHQL_REGISTRY[GraphQLStreamDirective.name] = GraphQLStreamDirective
+
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:
     additional_directives: tuple[GraphQLDirective, ...] = ()
