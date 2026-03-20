@@ -3,7 +3,15 @@ from __future__ import annotations
 from collections import UserList
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLBoolean, GraphQLInt, GraphQLNonNull, Undefined
+from graphql import (
+    DirectiveLocation,
+    GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull,
+    Undefined,
+)
 
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import TypeRef
@@ -49,6 +57,7 @@ __all__ = [
     "Directive",
     "DirectiveArgument",
     "DirectiveList",
+    "SemanticNonNullDirective",
 ]
 
 
@@ -504,4 +513,41 @@ class CacheRulesDirective(
             other: RootType | QueryType | InterfaceType | UnionType  # type: ignore[no-redef]
             other.__cache_time__ = self.cache_time
             other.__cache_per_user__ = self.cache_per_user
+            return
+
+
+class SemanticNonNullDirective(
+    Directive,
+    locations=[DirectiveLocation.FIELD_DEFINITION],
+    schema_name="semanticNonNull",
+):
+    """Indicates that a field is only null if there's a matching error in the `errors` array."""
+
+    levels = DirectiveArgument(
+        GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
+        default_value=[0],
+        description=(
+            """
+            Which parts of a list should be considered for the non-null check.
+            For an n-dimensional list, integers 0 through n-1 account for the lists and n accounts for the items.
+            E.g. a regular single dimensional list: 0 for the list, 1 for the items.
+            """
+        ),
+    )
+
+    def __init__(self, *, levels: list[int] | None = None) -> None:
+        if levels is None:
+            levels = [0]
+
+        for level in levels:
+            if level < 0:
+                msg = f"Values in `levels` must all be positive integers or zero. Found {level}."
+                raise ValueError(msg)
+
+        super().__init__(levels=levels)
+
+    def __connected__(self, other: Any) -> None:
+        if hasattr(other, "nullable"):
+            other: Field | Entrypoint  # type: ignore[no-redef]
+            other.nullable = True
             return
