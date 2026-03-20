@@ -16,9 +16,16 @@ from undine.dataclasses import MaybeManyOrNonNull
 from undine.directives import CacheRulesDirective, ComplexityDirective, DirectiveList
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
+from undine.utils.graphql.error_unions import build_union_with_errors, error_union_resolver_wrapper
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
-from undine.utils.text import dotpath, get_docstring, to_schema_name
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    cache_signature_if_function,
+    get_members,
+    get_wrapped_func,
+    sort_by_mro,
+)
+from undine.utils.text import dotpath, get_docstring, to_pascal_case, to_schema_name
 
 if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
@@ -151,6 +158,8 @@ class Entrypoint:
         :param cache_time: How many seconds this `Entrypoint` can be cached for.
         :param cache_per_user: Whether the `Entrypoint` is cached per user or not.
         :param schema_name: Actual name in the GraphQL schema. Only needed if argument name is a python keyword.
+        :param errors: List of errors that when raised by the `Entrypoint` should be returned as values.
+                       If any errors are defined here, the `Entrypoint's` return type will be a union with the errors.
         :param directives: GraphQL directives for the `Entrypoint`.
         :param extensions: GraphQL extensions for the `Entrypoint`.
         """
@@ -165,6 +174,7 @@ class Entrypoint:
         self.cache_time: int | None = kwargs.get("cache_time")
         self.cache_per_user: bool = kwargs.get("cache_per_user", False)
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
+        self.errors: list[type[Exception]] = sort_by_mro(kwargs.get("errors", []))
 
         directives = kwargs.get("directives", [])
         if self.complexity:
@@ -222,7 +232,11 @@ class Entrypoint:
 
     def get_field_type(self) -> GraphQLOutputType:
         value = MaybeManyOrNonNull(self.ref, many=self.many, nullable=self.nullable)
-        return convert_to_graphql_type(value, model=None)  # type: ignore[return-value]
+        entrypoint_type: GraphQLOutputType = convert_to_graphql_type(value, model=None)  # type: ignore[assignment]
+        if self.errors:
+            name = self.root_type.__schema_name__ + to_pascal_case(self.schema_name)
+            return build_union_with_errors(name, entrypoint_type, self.errors)
+        return entrypoint_type
 
     def get_field_arguments(self) -> GraphQLArgumentMap:
         if self.resolver_func is not None:
@@ -230,9 +244,11 @@ class Entrypoint:
         return convert_to_graphql_argument_map(self.ref, many=self.many, entrypoint=True)
 
     def get_resolver(self) -> GraphQLFieldResolver:
-        if self.resolver_func is not None:
-            return convert_to_entrypoint_resolver(self.resolver_func, caller=self)
-        return convert_to_entrypoint_resolver(self.ref, caller=self)
+        ref = self.resolver_func if self.resolver_func is not None else self.ref
+        resolver = convert_to_entrypoint_resolver(ref, caller=self)
+        if self.errors:
+            return error_union_resolver_wrapper(resolver, self.errors)
+        return resolver
 
     def get_subscription(self) -> GraphQLFieldResolver | None:
         return convert_to_entrypoint_subscription(self.ref, caller=self)

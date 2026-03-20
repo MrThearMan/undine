@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 import operator as op
 import types
-from collections import defaultdict
+from collections import UserDict, defaultdict
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import suppress
 from enum import Enum, StrEnum, auto
@@ -234,6 +234,9 @@ __all__ = [
     "EntrypointParams",
     "EntrypointPermFunc",
     "ErrorMessage",
+    "ErrorUnionFieldErrorDict",
+    "ErrorUnionFieldValueDict",
+    "ErrorUnionType",
     "FieldParams",
     "FieldPermFunc",
     "FilterAliasesFunc",
@@ -835,7 +838,7 @@ class UndineErrorCodes(StrEnum):
     VALIDATION_ERROR = auto()
 
 
-# Model
+# Django specific
 
 ToOneField: TypeAlias = OneToOneField | OneToOneRel | ForeignKey
 ToManyField: TypeAlias = ManyToManyField | ManyToManyRel | ManyToOneRel
@@ -848,8 +851,12 @@ CombinableExpression: TypeAlias = Expression | Subquery
 Annotatable: TypeAlias = CombinableExpression | F | Q
 SupportsLookup: TypeAlias = RegisterLookupMixin | type[RegisterLookupMixin]
 QuerySetMap: TypeAlias = dict[type["QueryType"], QuerySet]
+SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
+AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
+SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
+AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 
-# GraphQL
+# GraphQL specific
 
 
 class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
@@ -957,6 +964,7 @@ class EntrypointParams(TypedDict, total=False):
     cache_time: int
     cache_per_user: bool
     schema_name: str
+    errors: Iterable[type[Exception]]
     directives: list[Directive]
     extensions: dict[str, Any]
 
@@ -990,6 +998,7 @@ class FieldParams(TypedDict, total=False):
     cache_per_user: bool
     field_name: str
     schema_name: str
+    errors: Iterable[type[Exception]]
     directives: list[Directive]
     extensions: dict[str, Any]
 
@@ -1308,6 +1317,19 @@ class ResultCacheData(TypedDict):
 
     result: ExecutionResult
     created_at: int
+
+
+class ErrorUnionFieldValueDict(TypedDict):
+    value: Any
+
+
+class ErrorUnionFieldErrorDict(UserDict[str, Any]):
+    def __init__(self, data: dict[str, Any], /, *, error: Exception) -> None:
+        self.error = error
+        super().__init__(data)
+
+
+ErrorUnionType: TypeAlias = ErrorUnionFieldValueDict | ErrorUnionFieldErrorDict
 
 
 FTSLang: TypeAlias = Literal[
@@ -1672,9 +1694,3 @@ class FormattedMultipartMixedHttpResult(TypedDict):
 
     payload: FormattedExecutionResult | None
     errors: NotRequired[list[GraphQLFormattedError]]
-
-
-SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
-AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
-SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
-AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]

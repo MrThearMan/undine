@@ -20,11 +20,18 @@ from undine.exceptions import MissingModelGenericError
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModel
+from undine.utils.graphql.error_unions import build_union_with_errors, error_union_resolver_wrapper
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.model_utils import get_default_manager, get_model_fields_for_graphql, get_related_name
-from undine.utils.reflection import FunctionEqualityWrapper, cache_signature_if_function, get_members, get_wrapped_func
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    cache_signature_if_function,
+    get_members,
+    get_wrapped_func,
+    sort_by_mro,
+)
 from undine.utils.registy import Registry
-from undine.utils.text import dotpath, get_docstring, to_schema_name
+from undine.utils.text import dotpath, get_docstring, to_pascal_case, to_schema_name
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Container
@@ -285,6 +292,8 @@ class Field:
         :param field_name: Name of the field in the Django model. If not provided, use the name of the attribute.
         :param schema_name: Actual name of the `Field` in the GraphQL schema. Can be used to alias the `Field`
                             for the schema, or when the desired name is a Python keyword (e.g. `if` or `from`).
+        :param errors: List of errors that when raised by the `Field` should be returned as values.
+                       If any errors are defined here, the `Field's` return type will be a union with the errors.
         :param directives: GraphQL directives for the `Field`.
         :param extensions: GraphQL extensions for the `Field`.
         """
@@ -299,6 +308,7 @@ class Field:
         self.cache_per_user: bool = kwargs.get("cache_per_user", False)
         self.field_name: str = kwargs.get("field_name", Undefined)  # type: ignore[assignment]
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
+        self.errors: list[type[Exception]] = sort_by_mro(kwargs.get("errors", []))
 
         directives = kwargs.get("directives", [])
         if self.complexity:
@@ -368,15 +378,21 @@ class Field:
 
     def get_field_type(self) -> GraphQLOutputType:
         value = MaybeManyOrNonNull(self.ref, many=self.many, nullable=self.nullable)
-        return convert_to_graphql_type(value, model=self.query_type.__model__)  # type: ignore[return-value]
+        field_type: GraphQLOutputType = convert_to_graphql_type(value, model=self.query_type.__model__)  # type: ignore[assignment]
+        if self.errors:
+            name = self.query_type.__schema_name__ + to_pascal_case(self.schema_name)
+            return build_union_with_errors(name, field_type, self.errors)
+        return field_type
 
     def get_field_arguments(self) -> GraphQLArgumentMap | None:
         return convert_to_graphql_argument_map(self.ref, many=self.many)
 
     def get_resolver(self) -> GraphQLFieldResolver:
-        if self.resolver_func is not None:
-            return convert_to_field_resolver(self.resolver_func, caller=self)
-        return convert_to_field_resolver(self.ref, caller=self)
+        ref = self.resolver_func if self.resolver_func is not None else self.ref
+        resolver = convert_to_field_resolver(ref, caller=self)
+        if self.errors:
+            return error_union_resolver_wrapper(resolver, self.errors)
+        return resolver
 
     def resolve(self, func: GraphQLFieldResolver | None = None, /) -> GraphQLFieldResolver:
         """

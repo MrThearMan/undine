@@ -3,7 +3,15 @@ from __future__ import annotations
 from inspect import cleandoc
 
 import pytest
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLNonNull, GraphQLString
+from graphql import (
+    DirectiveLocation,
+    GraphQLArgument,
+    GraphQLError,
+    GraphQLInt,
+    GraphQLNonNull,
+    GraphQLString,
+    GraphQLUnionType,
+)
 
 from undine import Entrypoint, RootType
 from undine.directives import Directive, DirectiveArgument
@@ -32,6 +40,7 @@ def test_entrypoint__function__attributes() -> None:
     assert Query.double.description == "Description."
     assert Query.double.deprecation_reason is None
     assert Query.double.complexity == 0
+    assert Query.double.errors == []
     assert Query.double.extensions == {"undine_entrypoint": Query.double}
     assert Query.double.root_type == Query
     assert Query.double.name == "double"
@@ -238,3 +247,26 @@ def test_entrypoint__function__str__entrypoint() -> None:
         ): Int!
         """
     )
+
+
+def test_entrypoint__union_errors() -> None:
+    class Query(RootType):
+        @Entrypoint(errors=[GraphQLError])
+        def example(self) -> int:
+            return 0
+
+    Query.example.errors = [GraphQLError]
+
+    graphql_type = Query.example.get_field_type()
+
+    assert isinstance(graphql_type, GraphQLNonNull)
+    assert isinstance(graphql_type.of_type, GraphQLUnionType)
+    assert graphql_type.of_type.name == "QueryExample"
+
+    assert graphql_type.of_type.types[0].name == "QueryExampleValue"
+    assert graphql_type.of_type.types[0].fields["value"]
+    assert graphql_type.of_type.types[0].fields["value"].type == GraphQLNonNull(GraphQLInt)
+
+    assert graphql_type.of_type.types[1].name == "GraphQLError"
+    assert graphql_type.of_type.types[1].fields["message"]
+    assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)

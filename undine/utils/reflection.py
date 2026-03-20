@@ -33,7 +33,7 @@ from undine.settings import undine_settings
 from undine.typing import GQLInfo, LiteralArg, ParametrizedType
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Hashable, Sequence
+    from collections.abc import Awaitable, Callable, Hashable, Iterable, Sequence
     from types import FrameType, TracebackType
 
     from graphql.pyutils import AwaitableOrValue
@@ -68,6 +68,7 @@ __all__ = [
     "is_same_func",
     "is_subclass",
     "reverse_enumerate",
+    "sort_by_mro",
 ]
 
 
@@ -375,6 +376,33 @@ async def async_enumerate(it: AsyncIterable[T]) -> AsyncGenerator[tuple[int, T],
     counter = itertools.count()
     async for item in it:
         yield next(counter), item
+
+
+def sort_by_mro(classes: Iterable[type[T]]) -> list[type[T]]:
+    """
+    Sorts a list of classes so that subclasses appear above their parents.
+    If classes are unrelated, their relative order is preserved.
+    """
+    class_set = set(classes)
+    sorted_list: list[type[T]] = []
+    visited: set[type[T]] = set()
+
+    def visit(cls: type[T]) -> None:
+        if cls in visited or cls not in class_set:
+            return
+
+        for base in cls.__mro__[1:]:
+            if base in class_set:
+                visit(base)
+
+        if cls not in visited:
+            visited.add(cls)
+            sorted_list.append(cls)
+
+    for cls_ in classes:
+        visit(cls_)
+
+    return sorted_list[::-1]
 
 
 def get_traceback(traceback: TracebackType) -> list[str]:

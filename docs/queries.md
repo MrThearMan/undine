@@ -596,6 +596,126 @@ decorating it with the `@<field_name>.optimize` decorator.
 This hook can be helpful when you require data from outside the GraphQL execution context
 to e.g. make permission checks.
 
+### Errors as data
+
+By default, when an error occurs during the execution of a field, it follows the
+GraphQL error handling rules as defined in the [GraphQL spec][error-spec]{:target="_blank"}.
+If the `Field` where the error occurs is not nullable, the error will cascade up
+until it finds a nullable field, all the way up to the root. This behavior can prevent the client
+from receiving partial results in case it can handle them. However, simply making all fields nullable
+makes handling of the values a pain on the client with null values everywhere.
+
+[error-spec]: https://spec.graphql.org/September2025/#sec-Handling-Execution-Errors
+
+While there are many solutions to this problem ([`@semanticNonNull`][semantic]{:target="_blank"},
+[`graphql-toe`][graphql-toe]{:target="_blank"}), Undine also provides support for
+the ["Error as Data"]{:target="_blank"} pattern, where errors are represented
+in the `Field's` type as a union. To use this on a field, simply add the exceptions that
+a field can raise to the `errors` argument of the `Field`.
+
+[semantic]: https://relay.dev/docs/guides/semantic-nullability/
+[graphql-toe]: https://github.com/graphile/graphql-toe
+["Error as Data"]: https://www.apollographql.com/docs/graphos/schema-design/guides/errors-as-data-explained
+
+```python
+-8<- "queries/field_errors_as_data.py"
+```
+
+This creates the following schema:
+
+```graphql
+type TaskTypeExampleValue {
+    value: String!
+}
+
+type GraphQLError {
+    message: String!
+}
+
+union TaskTypeExample = TaskTypeExampleValue | GraphQLError
+
+type TaskType {
+    example: TaskTypeExample!
+}
+```
+
+You can query this field like this:
+
+```graphql
+query {
+  task(id: 1) {
+    example {
+       __typename
+      ... on TaskTypeExampleValue {
+        value
+      }
+      ... on GraphQLError {
+        message
+      }
+    }
+  }
+}
+```
+
+You'll receive either the successful response:
+
+```json
+{
+  "data": {
+    "task": {
+      "example": {
+        "__typename": "TaskTypeExampleValue",
+        "value": "OK"
+      }
+    }
+  }
+}
+```
+
+Or the error response:
+
+```json
+{
+  "data": {
+    "task": {
+      "example": {
+        "__typename": "GraphQLError",
+        "message": "Permission denied."
+      }
+    }
+  }
+}
+```
+
+The way this works is that the `Field` resolver is wrapped in a middleware that catches any raised exceptions that are
+in the list, or are those exceptions' subclasses, and returns them as data instead.
+
+If you raise custom exceptions, you can add two static methods to your Exception class
+to customize the GraphQL fields available from the error type: `graphql_fields` and `graphql_resolve`.
+
+```python
+-8<- "queries/field_errors_as_data_custom_exception.py"
+```
+
+This will result in the following schema:
+
+```graphql
+type TaskTypeExampleValue {
+    value: String!
+}
+
+type TimestampedError {
+    message: String!
+    timestamp: DateTime!
+}
+
+union TaskTypeExample = TaskTypeExampleValue | TimestampedError
+
+type TaskType {
+    example: TaskTypeExample!
+}
+```
+
 ### Directives
 
 You can add directives to the `Field` by providing them using the `directives` argument.

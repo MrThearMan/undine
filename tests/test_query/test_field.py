@@ -3,7 +3,17 @@ from __future__ import annotations
 import pytest
 from django.db.models import Count, Value
 from django.db.models.functions import Upper
-from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString
+from graphql import (
+    DirectiveLocation,
+    GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLError,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLString,
+    GraphQLUnionType,
+)
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
@@ -51,6 +61,7 @@ def test_field__attributes() -> None:
     assert MyQueryType.name.description is None
     assert MyQueryType.name.deprecation_reason is None
     assert MyQueryType.name.schema_name == "name"
+    assert MyQueryType.name.errors == []
     assert MyQueryType.name.directives == []
     assert MyQueryType.name.extensions == {"undine_field": MyQueryType.name}
 
@@ -433,3 +444,24 @@ def test_field__calculation_field() -> None:
     field = MyQueryType.example
     field_type = field.get_field_type()
     assert field_type == GraphQLInt
+
+
+def test_field__union_errors() -> None:
+    class TaskType(QueryType[Task]):
+        done = Field(errors=[GraphQLError])
+
+    TaskType.done.errors = [GraphQLError]
+
+    graphql_type = TaskType.done.get_field_type()
+
+    assert isinstance(graphql_type, GraphQLNonNull)
+    assert isinstance(graphql_type.of_type, GraphQLUnionType)
+    assert graphql_type.of_type.name == "TaskTypeDone"
+
+    assert graphql_type.of_type.types[0].name == "TaskTypeDoneValue"
+    assert graphql_type.of_type.types[0].fields["value"]
+    assert graphql_type.of_type.types[0].fields["value"].type == GraphQLNonNull(GraphQLBoolean)
+
+    assert graphql_type.of_type.types[1].name == "GraphQLError"
+    assert graphql_type.of_type.types[1].fields["message"]
+    assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)

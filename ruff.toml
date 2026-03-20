@@ -245,6 +245,7 @@ ignore = [
     "E402",     # Imports not at top of file are fine in snippets
     "BLE001",   # Allow catching all exceptions
     "S101",     # Allowing asserts in snippets
+    "S311",     # Random is fine in snippets
     "ANN001",   # Allowing no annotation in snippets
     "I002",     # Don't require importing `from __future__ import annotations`
     "ICN003",   # Allowing imports from "django.db"
@@ -257,6 +258,7 @@ ignore = [
     "RUF029",   # Allow async functions without async used
     "FURB118",  # No need to operator.itemgettr()
     "A002",     # Argument shadowing is ok in snippets
+    "ARG004",   # Allow unused arguments in snippets
 ]
 "example_project/app/schema.py" = [
     # No type-checking blocks in graphql schema

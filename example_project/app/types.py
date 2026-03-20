@@ -6,7 +6,7 @@ from typing import TypedDict
 
 from django.db.models import Count, F, Q, Value
 from django.db.models.functions import Coalesce, Length, Now, Upper
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLError, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import (
     AcceptanceCriteria,
@@ -171,6 +171,13 @@ class TaskType(QueryType[Task]):
     @echo.optimize
     def echo_optimized(self, data: OptimizationData, info: GQLInfo) -> None:
         return data.only_fields.add("points")
+
+    @Field(errors=[GraphQLError])
+    def points(self: Task, info: GQLInfo) -> int:
+        if self.points is None:
+            msg = "No points set for this task"
+            raise GraphQLError(msg)
+        return self.points
 
 
 class CommentableFilterSet(FilterSet[Task, Project, Report], auto=True): ...

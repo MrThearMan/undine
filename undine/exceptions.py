@@ -4,7 +4,7 @@ from http import HTTPStatus
 from string import Formatter
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
-from graphql import GraphQLError
+from graphql import GraphQLError, GraphQLField, GraphQLInt, GraphQLNonNull, GraphQLString
 
 from undine.typing import GraphQLWebSocketCloseCode, UndineErrorCodes
 
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Sequence
 
     from graphql import GraphQLErrorExtensions, Node, Source
+
+    from undine.typing import GQLInfo
 
 
 class ErrorMessageFormatter(Formatter):
@@ -505,6 +507,25 @@ class GraphQLStatusError(GraphQLError):
             original_error=original_error,
             extensions=extensions,
         )
+
+    @staticmethod
+    def graphql_fields() -> dict[str, GraphQLField]:
+        """Return the GraphQL fields for this error for field unions."""
+        return {
+            "message": GraphQLField(GraphQLNonNull(GraphQLString)),
+            "code": GraphQLField(GraphQLString),
+            "status": GraphQLField(GraphQLInt),
+        }
+
+    @staticmethod
+    def graphql_resolve(root: GraphQLStatusError, info: GQLInfo, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG004
+        """Resolve the given GraphQL error for field unions."""
+        extensions = root.extensions or {}
+        return {
+            "message": root.message,
+            "code": extensions.get("error_code"),
+            "status": extensions.get("status_code"),
+        }
 
 
 class GraphQLErrorGroup(ExceptionGroup):

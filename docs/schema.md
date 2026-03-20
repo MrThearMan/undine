@@ -487,6 +487,19 @@ In addition to server-side caching, `Entrypoint` caching also sends the appropri
 Note also that `Entrypoint` caching cannot be used for subscriptions or requests
 using incremental delivery.
 
+### Errors as data
+
+You can use an `Entrypoint's` `errors` argument to define a list of Exceptions that
+can be raised by the `Entrypoint` and have them represented as a union in the schema instead of
+following the GraphQL error handling rules defined in the [GraphQL spec][error-spec]{:target="_blank"}.
+See [`Field` errors as data](queries.md#errors-as-data) section for more details.
+
+[error-spec]: https://spec.graphql.org/September2025/#sec-Handling-Execution-Errors
+
+```python
+-8<- "schema/entrypoint_errors_as_data.py"
+```
+
 ### Directives
 
 You can add directives to the `Entrypoint` by providing them using the `directives` argument.
