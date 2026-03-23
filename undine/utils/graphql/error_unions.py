@@ -10,7 +10,10 @@ from undine.typing import ErrorUnionFieldErrorDict, ErrorUnionFieldValueDict
 from undine.utils.graphql.type_registry import get_or_create_graphql_interface_type, get_or_create_graphql_object_type
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable
+
     from graphql import GraphQLAbstractType, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
+    from graphql.pyutils import AwaitableOrValue
 
     from undine import GQLInfo
     from undine.typing import ErrorUnionType
@@ -70,17 +73,39 @@ def build_union_with_errors(
 
 
 def error_union_resolver_wrapper(resolver: GraphQLFieldResolver, errors: list[type[Exception]]) -> GraphQLFieldResolver:
-    def wrapped_resolver(root: Any, info: GQLInfo, **args: Any) -> ErrorUnionType:
+    def handle_error(error: Exception, info: GQLInfo, **args: Any) -> ErrorUnionType | None:
+        for error_type in errors:
+            if isinstance(error, error_type):
+                error_resolver: GraphQLFieldResolver
+                error_resolver = getattr(error, "graphql_resolve", default_union_error_resolver)
+                result = error_resolver(error, info, **args)
+                return ErrorUnionFieldErrorDict(result, error=error)
+
+        return None
+
+    def wrapped_resolver(root: Any, info: GQLInfo, **args: Any) -> AwaitableOrValue[ErrorUnionType]:
         try:
-            result = resolver(root, info, **args)
+            result: ErrorUnionType | None = resolver(root, info, **args)
 
         except Exception as error:
-            for error_type in errors:
-                if isinstance(error, error_type):
-                    error_resolver: GraphQLFieldResolver
-                    error_resolver = getattr(error, "graphql_resolve", default_union_error_resolver)
-                    result = error_resolver(error, info, **args)
-                    return ErrorUnionFieldErrorDict(result, error=error)
+            result = handle_error(error=error, info=info, **args)
+            if result is not None:
+                return result
+            raise
+
+        if info.is_awaitable(result):
+            return wrap_awaitable(result, info, **args)
+
+        return ErrorUnionFieldValueDict(value=result)
+
+    async def wrap_awaitable(coro: Awaitable[ErrorUnionType], info: GQLInfo, **args: Any) -> ErrorUnionType:
+        try:
+            result: ErrorUnionType | None = await coro
+
+        except Exception as error:
+            result = handle_error(error=error, info=info, **args)
+            if result is not None:
+                return result
             raise
 
         return ErrorUnionFieldValueDict(value=result)
