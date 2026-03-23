@@ -680,7 +680,7 @@ Or the error response:
     "task": {
       "example": {
         "__typename": "GraphQLError",
-        "message": "Permission denied."
+        "message": "Failed"
       }
     }
   }
