@@ -25,7 +25,7 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, get_or_create_graphql_directive
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_members, get_wrapped_func
+from undine.utils.reflection import get_enum_from_string, get_members, get_wrapped_func
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -89,7 +89,7 @@ class DirectiveMeta(type):
         directive = super().__new__(cls, _name, _bases, _attrs)
 
         # Members should use `__dunder__` names to avoid name collisions with possible `DirectiveArgument` names.
-        directive.__locations__ = [DirectiveLocation(location) for location in locations]
+        directive.__locations__ = [get_enum_from_string(DirectiveLocation, location) for location in locations]
         directive.__arguments__ = get_members(directive, DirectiveArgument)
         directive.__is_repeatable__ = kwargs.get("is_repeatable", False)
         directive.__schema_name__ = kwargs.get("schema_name", _name)
@@ -139,9 +139,6 @@ class Directive(metaclass=DirectiveMeta):
 
     `schema_name: str = <class name>`
         Override name for the `GraphQLDirective` for this `Directive` in the GraphQL schema.
-
-    `directives`: `list[Directive] = []`
-        `Directives` to add to the created `GraphQLDirective`.
 
     `extensions`: `dict[str, Any] = {}`
         GraphQL extensions for the created `GraphQLDirective`.
@@ -303,7 +300,7 @@ class DirectiveArgument:
         arg = self.as_graphql_argument()
         return undine_settings.SDL_PRINTER.print_directive_argument(self.schema_name, arg, indent=False)
 
-    def __get__(self, instance: Directive | None, cls: type[Directive]) -> Any:
+    def __get__(self, instance: Directive | None, cls: type[Directive]) -> Self:
         if instance is None:
             return self
         return instance.__parameters__[self.name]

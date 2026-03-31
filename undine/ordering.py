@@ -372,7 +372,7 @@ class Order:
         ...     name = Order()
         ...
         ...     @name.aliases
-        ...     def name_aliases(self: Order, info: GQLInfo, *, value: str) -> dict[str, DjangoExpression]:
+        ...     def name_aliases(self: Order, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]:
         ...         return {"foo": Value("bar")}
         """
         if func is None:  # Allow `@<order_name>.aliases()`

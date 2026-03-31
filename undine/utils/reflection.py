@@ -6,6 +6,7 @@ import itertools
 import sys
 import types
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Generator
+from enum import Enum
 from functools import partial
 from traceback import format_tb
 from types import FunctionType, GenericAlias, LambdaType, TracebackType, UnionType
@@ -48,6 +49,7 @@ __all__ = [
     "cache_signature_if_function",
     "can_be_literal_arg",
     "cancel_awaitable",
+    "get_enum_from_string",
     "get_flattened_generic_params",
     "get_instance_name",
     "get_members",
@@ -84,6 +86,7 @@ except ImportError:  # pragma: no cover
 T = TypeVar("T")
 P = ParamSpec("P")
 TType = TypeVar("TType", bound=type)
+TEnum = TypeVar("TEnum", bound=Enum)
 
 
 def get_members(obj: object, type_: type[T]) -> dict[str, T]:
@@ -127,6 +130,18 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     Flattens any union types.
     """
     return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, UnionType) else (arg,)))
+
+
+def get_enum_from_string(enum_type: type[TEnum], value: str | TEnum) -> TEnum:
+    """Get an enum value from a string, allowing either the enum value or the string representation of the value."""
+    try:
+        return enum_type(value)
+    except ValueError:
+        try:
+            return enum_type[value]  # type: ignore[index]
+        except KeyError:
+            msg = f"Invalid value for enum {enum_type.__name__}: {value!r}"
+            raise ValueError(msg) from None
 
 
 def get_non_null_type(type_: type) -> Any:

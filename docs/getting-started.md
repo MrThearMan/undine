@@ -58,3 +58,13 @@ You should see the message _"System check identified no issues (0 silenced)."_
 
 Undine requires the `"django.contrib.contenttypes"` app to be installed,
 but there is no need to place `"undine"` in any specific order in the `INSTALLED_APPS` setting.
+
+## Static typing
+
+Undine ships a mypy plugin named `mypy_undine` that adds additional static type checking
+for types defined in Undine.
+
+```ini
+[mypy]
+plugins = mypy_undine
+```

@@ -278,6 +278,10 @@ ignore = [
     "TC002",
     "TC003",
 ]
+"tests/test_mypy/*.py" = [
+    "I002",  # Don't require importing `from __future__ import annotations`
+    "E501",  # Docstrings can be long
+]
 
 [lint.isort]
 combine-as-imports = false

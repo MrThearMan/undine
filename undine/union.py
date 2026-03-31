@@ -133,6 +133,12 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
 
     The following parameters can be passed in the class definition:
 
+    `filterset: type[FilterSet] = None`
+        `FilterSet` class this `UnionType` uses for filtering.
+
+    `orderset: type[OrderSet] = None`
+        `OrderSet` class this `UnionType` uses for ordering.
+
     `schema_name: str = <class name>`
         Override name for `UnionType` in the GraphQL schema.
 

@@ -25,3 +25,44 @@ jobs:
       os: '["ubuntu-latest"]'
       env: '{"ASYNC": "true"}'
       coveralls: false
+
+  test-mypy:
+    name: "Test mypy"
+    runs-on: "ubuntu-latest"
+
+    # Cancel old workflows when a new workflow is triggered for the same PR/branch/tag
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v6
+        with:
+          submodules: ${{ inputs.submodules }}
+          fetch-depth: ${{ inputs.fetch-depth }}
+
+      - name: "Set up python"
+        id: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: MrThearMan/CI/.github/actions/poetry@v0.5.2
+        with:
+          os: "ubuntu-latest"
+          poetry-version: "2.3.2"
+          python-version: ${{ steps.setup-python.outputs.python-version }}
+
+      - name: "Install dependencies"
+        run: |
+          poetry install --all-extras --all-groups
+
+      - name: "Run mypy tests"
+        run: |
+          poetry run python manage.py generate_test_mypy_yml
+          RUN_MYPY_TESTS=1 poetry run pytest tests/test_mypy/cases/*.yml

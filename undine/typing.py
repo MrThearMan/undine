@@ -1125,7 +1125,6 @@ class DirectiveParams(TypedDict, total=False):
     locations: list[DirectiveLocation | str]
     is_repeatable: bool
     schema_name: str
-    directives: list[Directive]
     extensions: dict[str, Any]
 
 

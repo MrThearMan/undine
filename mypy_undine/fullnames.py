@@ -1,0 +1,30 @@
+from __future__ import annotations
+
+ROOT_TYPE = "undine.entrypoint.RootType"
+QUERY_TYPE = "undine.query.QueryType"
+MUTATION_TYPE = "undine.mutation.MutationType"
+FILTER_SET = "undine.filtering.FilterSet"
+ORDER_SET = "undine.ordering.OrderSet"
+UNION_TYPE = "undine.union.UnionType"
+INTERFACE_TYPE = "undine.interface.InterfaceType"
+DIRECTIVE = "undine.directives.Directive"
+
+ROOT_TYPE_META = "undine.entrypoint.RootTypeMeta"
+QUERY_TYPE_META = "undine.query.QueryTypeMeta"
+MUTATION_TYPE_META = "undine.mutation.MutationTypeMeta"
+FILTER_SET_META = "undine.filtering.FilterSetMeta"
+ORDER_SET_META = "undine.ordering.OrderSetMeta"
+UNION_TYPE_META = "undine.union.UnionTypeMeta"
+INTERFACE_TYPE_META = "undine.interface.InterfaceTypeMeta"
+DIRECTIVE_META = "undine.directives.DirectiveMeta"
+
+ENTRYPOINT = "undine.entrypoint.Entrypoint"
+FIELD = "undine.query.Field"
+INPUT = "undine.mutation.Input"
+FILTER = "undine.filtering.Filter"
+ORDER = "undine.ordering.Order"
+INTERFACE_FIELD = "undine.interface.InterfaceField"
+DIRECTIVE_ARGUMENT = "undine.directives.DirectiveArgument"
+
+GQL_INFO = "undine.typing.GQLInfo"
+MODEL = "django.db.models.base.Model"

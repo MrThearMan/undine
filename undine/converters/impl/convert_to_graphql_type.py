@@ -681,7 +681,7 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> GraphQLInputType | GraphQLOutput
 
             MutationTypeMeta.__model__ = model
 
-            class RelatedMutation(MutationType, kind="related", schema_name=schema_name): ...
+            class RelatedMutation(MutationType, kind="related", schema_name=schema_name): ...  # type: ignore[misc,arg-type]
 
             field_name = to_camel_case(model.__name__)
             input_type = RelatedMutation.__input_type__()
@@ -833,7 +833,7 @@ def _(ref: LazyGenericForeignKey, **kwargs: Any) -> GraphQLInputType | GraphQLOu
 
     type(UnionType).__query_types__ = ref.get_types()
 
-    class GenericUnion(UnionType, schema_name=name): ...
+    class GenericUnion(UnionType, schema_name=name): ...  # type: ignore[misc,arg-type]
 
     return convert_to_graphql_type(GenericUnion)
 

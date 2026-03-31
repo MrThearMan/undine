@@ -74,6 +74,14 @@ migrate:
 migrations:
     @poetry run python manage.py makemigrations
 
+# Run mypy
+mypy:
+    @poetry run mypy .
+
+# Generate mypy tests
+mypy-test-gen:
+    @poetry run python manage.py generate_test_mypy_yml
+
 # Run tests in all supported python and core dependency versions using nox
 nox:
     @poetry run nox
@@ -108,7 +116,12 @@ structure dir=".":
 
 # Run all tests with coverage
 test dir=".":
-    @poetry run pytest "{{dir}}"
+    @poetry run pytest {{dir}}
+
+# Run mypy tests
+test-mypy name="*":
+    @poetry run python manage.py generate_test_mypy_yml --silent
+    @RUN_MYPY_TESTS=1 poetry run pytest tests/test_mypy/cases/test_{{name}}.yml
 
 # Run a specific test(s) by keyword (pytest "-k" option)
 test-one name:

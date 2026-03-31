@@ -2,7 +2,7 @@
 
 ## Commands
 
-- Before you do anything, run `just help` for a list of all common commands
+- Before you do anything, run `just help` to get a list of all available commands. USE THEM WHEN APPLICABLE!
 - If using a sandbox, always setup virtualenv with `just install`
 - Always use `poetry run` when running python or related commands like pytest
 
@@ -39,6 +39,13 @@
   fail with conflicting color flags — always unset them first: `unset FORCE_COLOR NO_COLOR`
 - Existing nox session virtualenvs live under `.nox/`
   You can use them directly if you need to debug something in them: `.nox/<session-dir>/bin/python <command>`
+
+### Mypy tests
+
+- Do not manually write mypy tests in `tests/test_mypy/test_mypy.yml`!
+- Write mypy tests in individual files in `tests/test_mypy/cases` and generate the test file with `just mypy-test-gen`
+- Use `typing.assert_type` instead of `reveal_type` to check types
+- See `generate_test_mypy_yml.py` for how the test file is generated
 
 ## Documentation style
 

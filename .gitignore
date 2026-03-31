@@ -19,6 +19,7 @@
 /example_project/project/testdb
 /example_project/static
 /example_project/media
+/tests/test_mypy/cases/
 
 # Local configs
 /.idea

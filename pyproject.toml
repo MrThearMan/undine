@@ -45,8 +45,12 @@ dynamic = [
 requires-poetry = ">=2.0.0"
 packages = [
     { include = "undine" },
+    { include = "mypy_undine" },
     { include = "pytest_undine" },
 ]
+
+[project.entry-points."mypy.plugins"]
+mypy_undine = "mypy_undine:plugin"
 
 [project.entry-points.pytest11]
 undine = "pytest_undine.fixtures"
@@ -68,6 +72,7 @@ channels = { version = ">=4.2.2", optional = true }
 pytest = "9.0.2"
 pytest-django = "4.12.0"
 pytest-asyncio = "1.3.0"
+pytest-mypy-plugins = "4.0.0"
 coverage = "7.13.5"
 hypothesis = "6.151.10"
 freezegun = "1.5.5"
@@ -103,6 +108,7 @@ relative_files = true
 branch = true
 include = [
     "undine/*",
+    "mypy_undine/*",
     "pytest_undine/*",
     "tests/*",  # Make sure all tests are actually run
 ]

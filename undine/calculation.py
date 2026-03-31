@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLArgument, Undefined
 
@@ -145,7 +145,7 @@ class CalculationArgument:
         arg = self.as_graphql_argument()
         return undine_settings.SDL_PRINTER.print_field_argument(self.schema_name, arg, indent=False)
 
-    def __get__(self, instance: Calculation | None, cls: type[Calculation]) -> Any:
+    def __get__(self, instance: Calculation | None, cls: type[Calculation]) -> Self:
         if instance is None:
             return self
         return instance.__parameters__[self.name]
