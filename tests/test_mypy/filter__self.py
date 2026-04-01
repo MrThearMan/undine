@@ -12,8 +12,8 @@ from typing import assert_type
 from django.db.models import Q, Value
 
 from example_project.app.models import Task
-from undine import DjangoExpression, Filter, FilterSet, GQLInfo
-from undine.typing import DjangoRequestProtocol
+from undine import Filter, FilterSet, GQLInfo
+from undine.typing import DjangoExpression, DjangoRequestProtocol
 
 
 class TaskFilterSet(FilterSet[Task]):

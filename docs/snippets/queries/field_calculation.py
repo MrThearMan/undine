@@ -1,6 +1,7 @@
 from django.db.models import Value
 
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, QueryType
+from undine import Calculation, CalculationArgument, Field, GQLInfo, QueryType
+from undine.typing import DjangoExpression
 
 from .models import Task
 

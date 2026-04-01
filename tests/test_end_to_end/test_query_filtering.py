@@ -12,7 +12,6 @@ from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskF
 from undine import (
     Calculation,
     CalculationArgument,
-    DjangoExpression,
     Entrypoint,
     Field,
     Filter,
@@ -26,6 +25,7 @@ from undine import (
 from undine.exceptions import EmptyFilterResult
 from undine.optimizer.optimizer import optimize_async, optimize_sync
 from undine.relay import Connection
+from undine.typing import DjangoExpression
 from undine.utils.graphql.utils import get_arguments
 
 

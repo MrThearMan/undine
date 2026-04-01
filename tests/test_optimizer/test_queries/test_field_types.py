@@ -6,17 +6,8 @@ from django.db.models.functions import Left
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
-from undine import (
-    Calculation,
-    CalculationArgument,
-    DjangoExpression,
-    Entrypoint,
-    Field,
-    GQLInfo,
-    QueryType,
-    RootType,
-    create_schema,
-)
+from undine import Calculation, CalculationArgument, Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.typing import DjangoExpression
 
 
 @pytest.mark.django_db

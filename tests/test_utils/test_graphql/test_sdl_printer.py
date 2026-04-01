@@ -10,7 +10,6 @@ from example_project.app.models import Project, Task
 from undine import (
     Calculation,
     CalculationArgument,
-    DjangoExpression,
     Entrypoint,
     Field,
     Filter,
@@ -30,6 +29,7 @@ from undine.directives import AtomicDirective, CacheRulesDirective, ComplexityDi
 from undine.interface import InterfaceField
 from undine.relay import Node
 from undine.scalars import ScalarType
+from undine.typing import DjangoExpression
 from undine.utils.graphql.sdl_printer import SDLPrinter
 
 

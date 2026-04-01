@@ -1,6 +1,7 @@
 from django.db.models.functions import Lower
 
-from undine import DjangoExpression, GQLInfo, Order, OrderSet
+from undine import GQLInfo, Order, OrderSet
+from undine.typing import DjangoExpression
 
 from .models import Task
 

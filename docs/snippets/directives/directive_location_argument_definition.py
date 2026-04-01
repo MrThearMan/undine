@@ -1,8 +1,9 @@
 from django.db.models import Value
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo
+from undine import Calculation, CalculationArgument, GQLInfo
 from undine.directives import Directive, DirectiveArgument
+from undine.typing import DjangoExpression
 
 
 class NewDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION], schema_name="new"): ...

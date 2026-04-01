@@ -12,7 +12,6 @@ from tests.factories import PersonFactory, ProjectFactory, TaskFactory, TeamFact
 from undine import (
     Calculation,
     CalculationArgument,
-    DjangoExpression,
     Entrypoint,
     Field,
     FilterSet,
@@ -23,6 +22,7 @@ from undine import (
 )
 from undine.optimizer import OptimizationData
 from undine.pagination import OffsetPagination
+from undine.typing import DjangoExpression
 
 
 @pytest.mark.django_db

@@ -9,11 +9,12 @@ from graphql import GraphQLNonNull, GraphQLScalarType, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, GQLInfo, InterfaceField, InterfaceType, QueryType
+from undine import Calculation, CalculationArgument, GQLInfo, InterfaceField, InterfaceType, QueryType
 from undine.converters import convert_to_description
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
+from undine.typing import DjangoExpression
 
 
 class Params(NamedTuple):
@@ -144,7 +145,6 @@ def test_convert_to_description__offset_pagination__from_query_type() -> None:
 
     result = convert_to_description(pagination)
     assert result == "foo"
-
 
 
 def test_convert_to_description__interface_field() -> None:

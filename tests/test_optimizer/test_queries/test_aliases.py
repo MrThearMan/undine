@@ -5,17 +5,8 @@ from django.db.models import Value
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory
-from undine import (
-    Calculation,
-    CalculationArgument,
-    DjangoExpression,
-    Entrypoint,
-    Field,
-    GQLInfo,
-    QueryType,
-    RootType,
-    create_schema,
-)
+from undine import Calculation, CalculationArgument, Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.typing import DjangoExpression
 
 
 @pytest.mark.django_db

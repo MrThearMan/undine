@@ -7,7 +7,6 @@ from example_project.app.models import Project, Task
 from undine import (
     Calculation,
     CalculationArgument,
-    DjangoExpression,
     Entrypoint,
     Field,
     Filter,
@@ -28,6 +27,7 @@ from undine.converters import convert_to_graphql_type
 from undine.directives import Directive, DirectiveArgument
 from undine.relay import Connection
 from undine.scalars import ScalarType
+from undine.typing import DjangoExpression
 from undine.utils.graphql.undine_extensions import (
     get_undine_calculation_argument,
     get_undine_connection,
@@ -227,6 +227,7 @@ def test_undine_extensions__get_undine_scalar() -> None:
 
 def test_undine_extensions__get_undine_union_type() -> None:
     class TaskType(QueryType[Task]): ...
+
     class ProjectType(QueryType[Project]): ...
 
     class MyUnion(UnionType[TaskType, ProjectType]): ...

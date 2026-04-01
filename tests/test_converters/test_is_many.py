@@ -9,21 +9,13 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
-from undine import (
-    Calculation,
-    CalculationArgument,
-    DjangoExpression,
-    GQLInfo,
-    InterfaceField,
-    InterfaceType,
-    MutationType,
-    QueryType,
-)
+from undine import Calculation, CalculationArgument, GQLInfo, InterfaceField, InterfaceType, MutationType, QueryType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldNotARelationOfModelError
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
+from undine.typing import DjangoExpression
 
 
 class Params(NamedTuple):

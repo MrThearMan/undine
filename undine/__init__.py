@@ -9,14 +9,13 @@ from .mutation import Input, MutationType
 from .ordering import Order, OrderSet
 from .query import Field, QueryType
 from .schema import create_schema
-from .typing import DjangoExpression, GQLInfo
+from .typing import GQLInfo
 from .union import UnionType
 
 __all__ = [
     "Calculation",
     "CalculationArgument",
     "DataLoader",
-    "DjangoExpression",
     "Entrypoint",
     "Field",
     "Filter",

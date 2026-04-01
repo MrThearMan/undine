@@ -7,16 +7,7 @@ from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import exact
-from undine import (
-    Calculation,
-    CalculationArgument,
-    DjangoExpression,
-    Field,
-    GQLInfo,
-    InterfaceField,
-    InterfaceType,
-    QueryType,
-)
+from undine import Calculation, CalculationArgument, Field, GQLInfo, InterfaceField, InterfaceType, QueryType
 from undine.converters import convert_to_field_resolver
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import FunctionDispatcherError
@@ -31,7 +22,7 @@ from undine.resolvers import (
     NestedQueryTypeSingleResolver,
 )
 from undine.resolvers.query import ModelGenericForeignKeyResolver, NestedConnectionResolver
-from undine.typing import RelatedField
+from undine.typing import DjangoExpression, RelatedField
 
 
 def test_convert_field_ref_to_resolver__function() -> None:

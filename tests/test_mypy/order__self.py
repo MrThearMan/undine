@@ -12,8 +12,8 @@ from typing import assert_type
 from django.db.models import Value
 
 from example_project.app.models import Task
-from undine import DjangoExpression, GQLInfo, Order, OrderSet
-from undine.typing import DjangoRequestProtocol
+from undine import GQLInfo, Order, OrderSet
+from undine.typing import DjangoExpression, DjangoRequestProtocol
 
 
 class TaskOrderSet(OrderSet[Task]):

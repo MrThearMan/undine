@@ -69,7 +69,7 @@ from graphql import (
 
 from example_project.app.models import Comment, Project, Task
 from tests.helpers import exact, mock_gql_info, parametrize_helper
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, Input, MutationType, QueryType
+from undine import Calculation, CalculationArgument, Field, GQLInfo, Input, MutationType, QueryType
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
 from undine.exceptions import GraphQLTypedDictAnnotatedIncorrectMetadataError
@@ -94,6 +94,7 @@ from undine.scalars import (
     GraphQLURL,
     GraphQLUUID,
 )
+from undine.typing import DjangoExpression
 from undine.utils.model_fields import TextChoicesField
 
 

@@ -18,13 +18,13 @@ from graphql import (
 from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import mock_gql_info
-from undine import Calculation, CalculationArgument, DjangoExpression, Field, GQLInfo, QueryType
+from undine import Calculation, CalculationArgument, Field, GQLInfo, QueryType
 from undine.directives import Directive, DirectiveArgument
 from undine.exceptions import DirectiveLocationError, GraphQLPermissionError
 from undine.optimizer.optimizer import OptimizationData
 from undine.query import QueryTypeMeta
 from undine.resolvers import FieldFunctionResolver, ModelAttributeResolver
-from undine.typing import OptimizerFunc
+from undine.typing import DjangoExpression, OptimizerFunc
 
 
 def test_field__repr() -> None:

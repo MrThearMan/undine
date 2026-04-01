@@ -19,7 +19,6 @@ from example_project.app.models import Comment, Project, Task
 from undine import (
     Calculation,
     CalculationArgument,
-    DjangoExpression,
     FilterSet,
     GQLInfo,
     Input,
@@ -33,6 +32,7 @@ from undine.converters import convert_to_graphql_argument_map
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
+from undine.typing import DjangoExpression
 from undine.utils.reflection import get_signature
 
 

@@ -12,22 +12,14 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info, parametrize_helper
-from undine import (
-    Calculation,
-    CalculationArgument,
-    DjangoExpression,
-    Field,
-    GQLInfo,
-    InterfaceField,
-    InterfaceType,
-    QueryType,
-)
+from undine import Calculation, CalculationArgument, Field, GQLInfo, InterfaceField, InterfaceType, QueryType
 from undine.converters import convert_to_field_ref
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import InterfaceFieldDoesNotExistError, InterfaceFieldTypeMismatchError
 from undine.optimizer import OptimizationData
 from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
+from undine.typing import DjangoExpression
 
 
 def test_convert_to_field_ref__str() -> None:

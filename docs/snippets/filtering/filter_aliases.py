@@ -1,6 +1,7 @@
 from django.db.models import F, OuterRef, Q
 
-from undine import DjangoExpression, Filter, FilterSet, GQLInfo
+from undine import Filter, FilterSet, GQLInfo
+from undine.typing import DjangoExpression
 from undine.utils.model_utils import SubqueryCount
 
 from .models import Task
