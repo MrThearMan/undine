@@ -4,13 +4,19 @@ import json
 import sys
 from inspect import cleandoc
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.core.management.base import BaseCommand
+
+if TYPE_CHECKING:
+    from django.core.management import CommandParser
 
 
 class Command(BaseCommand):
     help = "Set up local config files (mypy.ini, pyrightconfig.json, pytest.ini)."
+
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument("--claude-md", action="store_true", default=False, help="Create symlink to CLAUDE.md.")
 
     def handle(self, *args: Any, **options: Any) -> None:
         root = Path(__file__).resolve().parents[4]
@@ -20,7 +26,9 @@ class Command(BaseCommand):
         self.setup_mypy_ini(root, python_exe)
         self.setup_pyrightconfig(root, venv)
         self.setup_pytest_ini(root)
-        self.setup_claude_md(root)
+
+        if options["claude_md"]:
+            self.setup_claude_md(root)
 
     def setup_mypy_ini(self, root: Path, python_exe: Path) -> None:
         path = root / "mypy.ini"
@@ -29,7 +37,7 @@ class Command(BaseCommand):
                 f"""
                 [mypy]
                 python_executable = {python_exe}
-                plugins = mypy_django_plugin.main
+                plugins = mypy_django_plugin.main, mypy_undine
                 exclude = (?x)(
                     tests/.*
                     | docs/.*
@@ -37,6 +45,9 @@ class Command(BaseCommand):
 
                 [mypy.plugins.django-stubs]
                 django_settings_module = example_project.project.settings
+
+                [mypy-debug_toolbar.*]
+                ignore_missing_imports = True
                 """
             )
             + "\n"
@@ -77,11 +88,3 @@ class Command(BaseCommand):
 
         agents_path = root / "AGENTS.md"
         claude_path.symlink_to(agents_path)
-
-    def setup_contributing_md(self, root: Path) -> None:
-        contributing_path = root / "CONTRIBUTING.md"
-        if contributing_path.exists():
-            contributing_path.unlink()
-
-        docs_contributing_path = root / "docs" / "contributing.md"
-        contributing_path.symlink_to(docs_contributing_path)
