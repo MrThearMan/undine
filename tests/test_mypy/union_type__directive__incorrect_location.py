@@ -7,14 +7,13 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
-main:18: error: Directive "TestDirective" does not support location "UNION"  [misc]
+main:17: error: Directive "TestDirective" does not support location "UNION"  [misc]
 """
 
 from graphql import DirectiveLocation
 
 from example_project.app.models import Project, Task
-from undine import QueryType, UnionType
-from undine.directives import Directive
+from undine import Directive, QueryType, UnionType
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

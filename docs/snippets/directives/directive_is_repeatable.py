@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import Entrypoint, RootType
-from undine.directives import Directive
+from undine import Directive, Entrypoint, RootType
 
 
 class NewDirective(

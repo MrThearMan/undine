@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
     from undine import (
         CalculationArgument,
+        Directive,
+        DirectiveArgument,
         Entrypoint,
         Field,
         Filter,
@@ -36,7 +38,6 @@ if TYPE_CHECKING:
         RootType,
         UnionType,
     )
-    from undine.directives import Directive, DirectiveArgument
     from undine.pagination import OffsetPagination
     from undine.relay import Connection
     from undine.scalars import ScalarType

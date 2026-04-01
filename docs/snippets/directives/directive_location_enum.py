@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import OrderSet
-from undine.directives import Directive
+from undine import Directive, OrderSet
 
 from .models import Task
 

@@ -18,8 +18,7 @@ from graphql import (
 from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import mock_gql_info
-from undine import Calculation, CalculationArgument, Field, GQLInfo, QueryType
-from undine.directives import Directive, DirectiveArgument
+from undine import Calculation, CalculationArgument, Directive, DirectiveArgument, Field, GQLInfo, QueryType
 from undine.exceptions import DirectiveLocationError, GraphQLPermissionError
 from undine.optimizer.optimizer import OptimizationData
 from undine.query import QueryTypeMeta

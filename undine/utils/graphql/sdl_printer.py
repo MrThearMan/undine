@@ -54,7 +54,7 @@ if TYPE_CHECKING:
         GraphQLSchema,
     )
 
-    from undine.directives import Directive
+    from undine import Directive
 
 __all__ = [
     "SDLPrinter",

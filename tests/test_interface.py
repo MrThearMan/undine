@@ -6,8 +6,7 @@ import pytest
 from graphql import DirectiveLocation, GraphQLField, GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Task
-from undine import Field, InterfaceType, QueryType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Field, InterfaceType, QueryType
 from undine.exceptions import DirectiveLocationError
 from undine.interface import InterfaceField
 

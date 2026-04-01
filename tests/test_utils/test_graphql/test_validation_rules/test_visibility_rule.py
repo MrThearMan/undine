@@ -9,6 +9,8 @@ from tests.factories import TaskFactory
 from undine import (
     Calculation,
     CalculationArgument,
+    Directive,
+    DirectiveArgument,
     Entrypoint,
     Field,
     Filter,
@@ -24,7 +26,6 @@ from undine import (
     UnionType,
     create_schema,
 )
-from undine.directives import Directive, DirectiveArgument
 from undine.relay import Connection
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 

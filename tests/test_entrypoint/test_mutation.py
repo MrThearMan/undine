@@ -13,8 +13,7 @@ from graphql import (
 )
 
 from example_project.app.models import Task
-from undine import Entrypoint, MutationType, QueryType, RootType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Entrypoint, MutationType, QueryType, RootType
 from undine.resolvers import BulkCreateResolver, CreateResolver
 
 

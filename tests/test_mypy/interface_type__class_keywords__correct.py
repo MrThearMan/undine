@@ -9,8 +9,7 @@ django_settings_module = example_project.project.settings
 
 from graphql import DirectiveLocation
 
-from undine.directives import Directive
-from undine.interface import InterfaceType
+from undine import Directive, InterfaceType
 
 
 class MockInterface(InterfaceType): ...

@@ -9,9 +9,7 @@ django_settings_module = example_project.project.settings
 
 from graphql import DirectiveLocation
 
-from undine import GQLInfo
-from undine.directives import Directive
-from undine.entrypoint import Entrypoint, RootType
+from undine import Directive, Entrypoint, GQLInfo, RootType
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

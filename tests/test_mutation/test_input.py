@@ -5,8 +5,7 @@ from graphql import DirectiveLocation, GraphQLList, GraphQLNonNull, GraphQLStrin
 
 from example_project.app.models import Project, Task
 from tests.helpers import exact, mock_gql_info
-from undine import Input, MutationType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Input, MutationType
 from undine.exceptions import DirectiveLocationError, GraphQLPermissionError
 from undine.mutation import MutationTypeMeta
 from undine.typing import GQLInfo

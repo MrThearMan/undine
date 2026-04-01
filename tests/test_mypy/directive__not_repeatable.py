@@ -7,15 +7,14 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
+main:11: error: Directive "MockDirective" is not repeatable  [misc]
 main:12: error: Directive "MockDirective" is not repeatable  [misc]
-main:13: error: Directive "MockDirective" is not repeatable  [misc]
 """
 
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine import QueryType
-from undine.directives import Directive
+from undine import Directive, QueryType
 
 
 class MockDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...

@@ -7,12 +7,11 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
-main:19: error: FilterSet models do not match UnionType member models  [misc]
+main:18: error: FilterSet models do not match UnionType member models  [misc]
 """
 
 from example_project.app.models import Person, Project, Task
-from undine import FilterSet, UnionType
-from undine.query import QueryType
+from undine import FilterSet, QueryType, UnionType
 
 
 class PersonFilterSet(FilterSet[Task, Person]): ...

@@ -5,8 +5,7 @@ from django.db.models import Value
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLNonNull, Undefined
 
 from tests.helpers import mock_gql_info
-from undine import Calculation, CalculationArgument, GQLInfo
-from undine.directives import Directive
+from undine import Calculation, CalculationArgument, Directive, GQLInfo
 from undine.exceptions import GraphQLMissingCalculationArgumentError, GraphQLUnexpectedCalculationArgumentError
 from undine.typing import DjangoExpression
 

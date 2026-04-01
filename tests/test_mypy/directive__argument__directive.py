@@ -9,7 +9,9 @@ django_settings_module = example_project.project.settings
 
 from typing import assert_type
 
-from undine.directives import Directive, DirectiveArgument, DirectiveLocation
+from graphql import DirectiveLocation
+
+from undine import Directive, DirectiveArgument
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.ARGUMENT_DEFINITION]): ...

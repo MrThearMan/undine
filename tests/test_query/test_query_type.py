@@ -8,8 +8,7 @@ from graphql import DirectiveLocation, GraphQLEnumType, GraphQLField, GraphQLNon
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
 from tests.helpers import mock_gql_info
-from undine import Field, FilterSet, OrderSet, QueryType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Field, FilterSet, OrderSet, QueryType
 from undine.exceptions import DirectiveLocationError, MismatchingModelError, MissingModelGenericError
 from undine.optimizer.optimizer import OptimizationData
 from undine.query import QUERY_TYPE_REGISTRY

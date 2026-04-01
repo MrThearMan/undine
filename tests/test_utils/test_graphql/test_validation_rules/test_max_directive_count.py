@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from graphql import DirectiveLocation
 
-from undine import Entrypoint, RootType, create_schema
-from undine.directives import Directive
+from undine import Directive, Entrypoint, RootType, create_schema
 
 
 def test_validation_rules__max_directive_count(graphql, undine_settings) -> None:

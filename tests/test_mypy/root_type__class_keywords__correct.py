@@ -1,13 +1,15 @@
 """
 ### mypy_config
 [mypy]
-plugins = mypy_undine
+plugins = mypy_django_plugin.main, mypy_undine
+
+[mypy.plugins.django-stubs]
+django_settings_module = example_project.project.settings
 """
 
 from graphql import DirectiveLocation
 
-from undine.directives import Directive
-from undine.entrypoint import RootType
+from undine import Directive, RootType
 
 
 class MockDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...

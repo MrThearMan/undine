@@ -10,7 +10,7 @@ django_settings_module = example_project.project.settings
 main:5: error: Missing required class definition keyword argument "locations" for "TestDirective"  [misc]
 """
 
-from undine.directives import Directive
+from undine import Directive
 
 
 class TestDirective(Directive): ...

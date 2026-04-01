@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .calculation import Calculation, CalculationArgument
 from .dataloaders import DataLoader
+from .directives import Directive, DirectiveArgument
 from .entrypoint import Entrypoint, RootType
 from .filtering import Filter, FilterSet
 from .interface import InterfaceField, InterfaceType
@@ -16,6 +17,8 @@ __all__ = [
     "Calculation",
     "CalculationArgument",
     "DataLoader",
+    "Directive",
+    "DirectiveArgument",
     "Entrypoint",
     "Field",
     "Filter",

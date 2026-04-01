@@ -207,8 +207,7 @@ if TYPE_CHECKING:
     )
     from graphql.pyutils import Path
 
-    from undine import FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
-    from undine.directives import Directive
+    from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
     from undine.optimizer.optimizer import OptimizationData
     from undine.utils.graphql.websocket import WebSocketRequest
 

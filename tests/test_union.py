@@ -5,8 +5,7 @@ from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonN
 
 from example_project.app.models import Project, Task
 from tests.helpers import mock_gql_info
-from undine import Entrypoint, Field, FilterSet, OrderSet, QueryType, RootType, UnionType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Entrypoint, Field, FilterSet, OrderSet, QueryType, RootType, UnionType
 from undine.exceptions import DirectiveLocationError
 
 

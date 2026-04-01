@@ -12,7 +12,7 @@ main:10: error: Class "A" does not support directives  [misc]
 
 from graphql import DirectiveLocation
 
-from undine.directives import Directive
+from undine import Directive
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...

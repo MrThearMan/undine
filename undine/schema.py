@@ -25,8 +25,7 @@ from undine.utils.reflection import get_signature
 if TYPE_CHECKING:
     from graphql import GraphQLNamedType
 
-    from undine import RootType
-    from undine.directives import Directive
+    from undine import Directive, RootType
 
 __all__ = [
     "create_schema",

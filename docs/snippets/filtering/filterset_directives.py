@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import Filter, FilterSet
-from undine.directives import Directive
+from undine import Directive, Filter, FilterSet
 
 from .models import Task
 

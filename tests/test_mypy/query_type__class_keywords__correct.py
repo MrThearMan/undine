@@ -10,9 +10,7 @@ django_settings_module = example_project.project.settings
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine import FilterSet, InterfaceType, OrderSet
-from undine.directives import Directive
-from undine.query import QueryType
+from undine import Directive, FilterSet, InterfaceType, OrderSet, QueryType
 
 
 class TaskFilterSet(FilterSet[Task]): ...

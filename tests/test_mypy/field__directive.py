@@ -10,10 +10,7 @@ django_settings_module = example_project.project.settings
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine import Field
-from undine.directives import Directive
-from undine.query import QueryType
-from undine.typing import GQLInfo
+from undine import Directive, Field, GQLInfo, QueryType
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

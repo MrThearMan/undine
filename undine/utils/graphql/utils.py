@@ -59,8 +59,7 @@ if TYPE_CHECKING:
     )
     from graphql.execution.values import NodeWithDirective
 
-    from undine import Field, GQLInfo
-    from undine.directives import Directive
+    from undine import Directive, Field, GQLInfo
     from undine.typing import ModelField
 
 

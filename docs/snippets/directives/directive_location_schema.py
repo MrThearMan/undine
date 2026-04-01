@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import Entrypoint, RootType, create_schema
-from undine.directives import Directive
+from undine import Directive, Entrypoint, RootType, create_schema
 
 
 class NewDirective(Directive, locations=[DirectiveLocation.SCHEMA], schema_name="new"): ...

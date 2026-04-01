@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import QueryType, UnionType
-from undine.directives import Directive
+from undine import Directive, QueryType, UnionType
 
 from .models import Project, Task
 

@@ -35,8 +35,7 @@ if TYPE_CHECKING:
     )
     from graphql.type.definition import GraphQLEnumValueMap, GraphQLInputFieldOutType
 
-    from undine import GQLInfo
-    from undine.directives import Directive
+    from undine import Directive, GQLInfo
     from undine.typing import UniquelyNamedGraphQLElement
     from undine.utils.reflection import FunctionEqualityWrapper
 

@@ -1,6 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine.directives import Directive
+from undine import Directive
 from undine.typing import DjangoRequestProtocol
 
 

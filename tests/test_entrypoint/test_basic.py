@@ -13,8 +13,7 @@ from graphql import (
     GraphQLUnionType,
 )
 
-from undine import Entrypoint, RootType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Entrypoint, RootType
 from undine.exceptions import DirectiveLocationError
 from undine.resolvers import EntrypointFunctionResolver
 

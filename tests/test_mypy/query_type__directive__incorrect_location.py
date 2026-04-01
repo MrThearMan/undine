@@ -7,12 +7,13 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
-main:10: error: Directive "TestDirective" does not support location "OBJECT"  [misc]
+main:11: error: Directive "TestDirective" does not support location "OBJECT"  [misc]
 """
 
+from graphql import DirectiveLocation
+
 from example_project.app.models import Task
-from undine.directives import Directive, DirectiveLocation
-from undine.query import QueryType
+from undine import Directive, QueryType
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

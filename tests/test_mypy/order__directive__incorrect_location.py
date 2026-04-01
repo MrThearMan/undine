@@ -7,14 +7,13 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
-main:13: error: Directive "TestDirective" does not support location "ENUM_VALUE"  [misc]
+main:12: error: Directive "TestDirective" does not support location "ENUM_VALUE"  [misc]
 """
 
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine import Order, OrderSet
-from undine.directives import Directive
+from undine import Directive, Order, OrderSet
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

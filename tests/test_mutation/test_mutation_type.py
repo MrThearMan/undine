@@ -8,8 +8,7 @@ from graphql import DirectiveLocation, GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Task
 from tests.helpers import exact, mock_gql_info
-from undine import Input, MutationType, QueryType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Input, MutationType, QueryType
 from undine.exceptions import DirectiveLocationError, MissingModelGenericError
 from undine.typing import GQLInfo, MutationKind
 from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY

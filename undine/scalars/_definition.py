@@ -8,7 +8,8 @@ from django.core.exceptions import ValidationError
 from graphql import DirectiveLocation, GraphQLScalarType
 from graphql.pyutils import inspect
 
-from undine.directives import Directive, DirectiveList
+from undine import Directive
+from undine.directives import DirectiveList
 from undine.exceptions import GraphQLScalarConversionError, GraphQLScalarTypeNotSupportedError
 from undine.settings import undine_settings
 from undine.typing import DispatchProtocol, T

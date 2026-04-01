@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation
 
-from undine import FilterSet, MutationType
-from undine.directives import Directive
+from undine import Directive, FilterSet, MutationType
 
 from .models import Task
 

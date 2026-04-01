@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from undine import InterfaceField, InterfaceType
-from undine.directives import Directive
+from undine import Directive, InterfaceField, InterfaceType
 
 
 class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]): ...

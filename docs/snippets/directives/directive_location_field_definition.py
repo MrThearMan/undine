@@ -1,7 +1,6 @@
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType
-from undine.directives import Directive
+from undine import Directive, Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType
 
 from .models import Task
 

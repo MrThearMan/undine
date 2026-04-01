@@ -7,8 +7,7 @@ from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Person, Task
 from tests.helpers import mock_gql_info
-from undine import GQLInfo, Order, OrderSet
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, GQLInfo, Order, OrderSet
 from undine.exceptions import DirectiveLocationError
 from undine.ordering import OrderSetMeta
 from undine.typing import DjangoExpression

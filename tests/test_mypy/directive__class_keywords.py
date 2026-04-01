@@ -14,7 +14,7 @@ main:10: error: Argument "extensions" to "TestDirective" has incompatible type; 
 main:11: error: Unexpected keyword argument "typo_keyword" for "Directive" class definition  [misc]
 """
 
-from undine.directives import Directive
+from undine import Directive
 
 
 class TestDirective(

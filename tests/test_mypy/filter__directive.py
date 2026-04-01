@@ -11,8 +11,7 @@ from django.db.models import Q
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine import Filter, FilterSet, GQLInfo
-from undine.directives import Directive
+from undine import Directive, Filter, FilterSet, GQLInfo
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.INPUT_FIELD_DEFINITION]): ...

@@ -7,6 +7,8 @@ from example_project.app.models import Project, Task
 from undine import (
     Calculation,
     CalculationArgument,
+    Directive,
+    DirectiveArgument,
     Entrypoint,
     Field,
     Filter,
@@ -24,7 +26,6 @@ from undine import (
     create_schema,
 )
 from undine.converters import convert_to_graphql_type
-from undine.directives import Directive, DirectiveArgument
 from undine.relay import Connection
 from undine.scalars import ScalarType
 from undine.typing import DjangoExpression

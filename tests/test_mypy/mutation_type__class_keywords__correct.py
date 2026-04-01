@@ -10,8 +10,7 @@ django_settings_module = example_project.project.settings
 from graphql import DirectiveLocation
 
 from example_project.app.models import Task
-from undine.directives import Directive
-from undine.mutation import MutationType
+from undine import Directive, MutationType
 
 
 class MockDirective(Directive, locations=[DirectiveLocation.INPUT_OBJECT]): ...

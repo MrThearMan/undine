@@ -1,8 +1,7 @@
 from django.db.models import Value
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from undine import Calculation, CalculationArgument, GQLInfo
-from undine.directives import Directive, DirectiveArgument
+from undine import Calculation, CalculationArgument, Directive, DirectiveArgument, GQLInfo
 from undine.typing import DjangoExpression
 
 

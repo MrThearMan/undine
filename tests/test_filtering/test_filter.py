@@ -9,8 +9,7 @@ from graphql import DirectiveLocation, GraphQLBoolean, GraphQLInt, GraphQLList, 
 
 from example_project.app.models import Project, Task
 from tests.helpers import mock_gql_info
-from undine import Filter, FilterSet
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Filter, FilterSet
 from undine.exceptions import DirectiveLocationError
 from undine.filtering import FilterSetMeta
 from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver

@@ -16,8 +16,7 @@ from graphql import (
 )
 
 from example_project.app.models import Task
-from undine import Entrypoint, FilterSet, GQLInfo, OrderSet, QueryType, RootType
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument, Entrypoint, FilterSet, GQLInfo, OrderSet, QueryType, RootType
 from undine.exceptions import MissingEntrypointRefError
 from undine.optimizer.optimizer import optimize_sync
 from undine.resolvers import EntrypointFunctionResolver, QueryTypeManyResolver, QueryTypeSingleResolver

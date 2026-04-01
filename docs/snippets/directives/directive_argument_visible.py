@@ -1,6 +1,6 @@
 from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
 
-from undine.directives import Directive, DirectiveArgument
+from undine import Directive, DirectiveArgument
 from undine.typing import DjangoRequestProtocol
 
 

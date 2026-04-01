@@ -7,9 +7,10 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 """
 
+from graphql import DirectiveLocation
+
 from example_project.app.models import Task
-from undine.directives import Directive, DirectiveLocation
-from undine.query import Field, QueryType
+from undine import Directive, Field, QueryType
 
 
 class TestDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
