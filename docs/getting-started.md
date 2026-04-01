@@ -61,8 +61,8 @@ but there is no need to place `"undine"` in any specific order in the `INSTALLED
 
 ## Static typing
 
-Undine ships a mypy plugin named `mypy_undine` that adds additional static type checking
-for types defined in Undine.
+Undine ships a mypy plugin that adds additional static type checking for types defined in Undine.
+See the [mypy](integrations.md#mypy) section for more details.
 
 ```ini
 [mypy]
