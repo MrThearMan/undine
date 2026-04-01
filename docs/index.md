@@ -56,6 +56,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - Optional persisted documents support
 - Lifecycle hooks for customizing the GraphQL request cycle
 - Hiding fields and types from schema (experimental)
+- Incremental delivery (experimental)
 - Built-in testing tools
 
 ```python
