@@ -80,6 +80,8 @@ This is a [link]{:target="_blank"}
 
 ## Boundaries
 
-- Never commit secrets, credential, or tokens
+- Never ever, under any circumstances, run `poetry publish` or change the version number
+- Never make git commits, let me handle that
+- Never put secrets, credential, or tokens in git tracked files
 - Never add or remove dependencies without EXPLICIT permission from the user
 - Never remove or repurpose tests without EXPLICIT permission from the user

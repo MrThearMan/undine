@@ -233,7 +233,7 @@ def get_many_to_many_through_field(field: ManyToManyField | ManyToManyRel) -> Fo
     return field.through._meta.get_field(field.field.m2m_field_name())  # type: ignore[union-attr,return-value]
 
 
-def get_related_name(related_field: RelatedField | GenericField) -> str:
+def get_related_name(related_field: RelatedField | GenericField) -> str:  # pragma: no cover
     """
     Get by which the relation of this field can be used in:
 

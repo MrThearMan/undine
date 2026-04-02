@@ -72,9 +72,9 @@ from undine.utils.graphql.utils import (
 from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
-if version_info >= (3, 3, 0):
+if version_info >= (3, 3, 0):  # pragma: no cover
     from graphql.execution.execute import execute_subscription  # type: ignore[attr-defined]
-else:
+else:  # pragma: no cover
     from graphql.execution.subscribe import execute_subscription
 
 
@@ -148,7 +148,7 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
-    if version_info >= (3, 3, 0):
+    if version_info >= (3, 3, 0):  # pragma: no cover
         from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
         if isinstance(context.result, ExperimentalIncrementalExecutionResults):
@@ -220,7 +220,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
-    if version_info >= (3, 3, 0):
+    if version_info >= (3, 3, 0):  # pragma: no cover
         from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
         if isinstance(result, ExperimentalIncrementalExecutionResults):
@@ -683,13 +683,13 @@ def _validate(
     return errors
 
 
-def _execute(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:
+def _execute(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     if version_info < (3, 3, 0):
         return _execute_old(context)
     return _execute_new(context)
 
 
-def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:
+def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
     """Execution for graphql-core < 3.3.0."""
     try:
         data_or_awaitable = context.execute_operation(context.operation, context.root_value)
@@ -726,7 +726,7 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
     return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)  # type: ignore[arg-type]
 
 
-def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:
+def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     """Execution for graphql-core >= 3.3.0a12."""
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
@@ -787,7 +787,7 @@ def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLRes
 class UndineExecutionContext(ExecutionContext):
     """Custom GraphQL execution context class."""
 
-    if version_info >= (3, 3, 0):
+    if version_info >= (3, 3, 0):  # pragma: no cover
 
         def handle_field_error(  # type: ignore[override]
             self,
@@ -844,7 +844,7 @@ class UndineExecutionContext(ExecutionContext):
                     incremental_context=incremental_context,
                 )
 
-    else:
+    else:  # pragma: no cover
 
         def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:  # type: ignore[misc,override]
             raw_error: Exception = error.original_error or error

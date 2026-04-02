@@ -108,9 +108,12 @@ relative_files = true
 branch = true
 include = [
     "undine/*",
+]
+omit = [
     "mypy_undine/*",
     "pytest_undine/*",
-    "tests/*",  # Make sure all tests are actually run
+    "tests/*",
+    "undine/utils/full_text_search.py",  # Requires PostgreSQL to test
 ]
 
 [tool.coverage.report]

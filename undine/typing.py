@@ -85,9 +85,9 @@ if TYPE_CHECKING:
 
     from graphql import GraphQLError
 
-if version_info >= (3, 3, 0):
+if version_info >= (3, 3, 0):  # pragma: no cover
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
-else:
+else:  # pragma: no cover
 
     class _FormattedCompletedResult(TypedDict):
         id: str

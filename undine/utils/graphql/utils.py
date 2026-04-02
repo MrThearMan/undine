@@ -129,13 +129,13 @@ def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
 
 
 def get_field_def(schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode) -> GraphQLField:
-    try:
+    try:  # pragma: no cover
         from graphql.execution.execute import get_field_def  # noqa: PLC0415
 
         return get_field_def(schema, parent_type, field_node)
 
     # graphql-core >= 3.3.0
-    except ImportError:
+    except ImportError:  # pragma: no cover
         return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)  # type: ignore[attr-defined]
 
 
