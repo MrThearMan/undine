@@ -125,7 +125,7 @@ class InterfaceTypeMeta(type):
                 field.__connect__(implementation, field_name)
                 interface_field.check_inheritance(field)
 
-        elif is_subclass(implementation, InterfaceType):
+        elif is_subclass(implementation, InterfaceType):  # pragma: no branch
             for field_name, interface_field in cls.__field_map__.items():
                 existing = implementation.__field_map__.get(field_name)
                 if existing is not None:

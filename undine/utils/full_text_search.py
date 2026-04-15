@@ -7,7 +7,6 @@ import urllib.parse
 from collections import UserString
 from typing import TYPE_CHECKING, Unpack
 
-from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.db.models import Q
 from django.utils.translation import get_language_from_path, get_language_from_request
 
@@ -24,7 +23,7 @@ __all__ = [
 ]
 
 
-class PostgresFTS:
+class PostgresFTS:  # pragma: no cover
     """
     Filter reference for Postgres full text search.
 
@@ -45,6 +44,8 @@ class PostgresFTS:
         :param separator: Separator for each search term in the query.
         :param lang_specific: Fields specific to each language.
         """
+        from django.contrib.postgres.search import SearchVector  # noqa: PLC0415
+
         self.separator = separator
         self.vectors: dict[FTSLang, SearchVector] = {
             lang: SearchVector(*set(*common, *fields), config=lang)  # type: ignore[misc]
@@ -62,12 +63,14 @@ class PostgresFTS:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class PostgresFTSExpressionResolver:
+class PostgresFTSExpressionResolver:  # pragma: no cover
     """Resolves a filter using a Postgres full text search."""
 
     fts: PostgresFTS
 
     def __call__(self, root: Filter, info: GQLInfo, *, value: str) -> Q:
+        from django.contrib.postgres.search import SearchQuery  # noqa: PLC0415
+
         lang = self.fts.get_search_language(info)
         key = self.fts.get_vector_alias_key(root, lang)
         search = build_pg_search(value, separator=self.fts.separator)

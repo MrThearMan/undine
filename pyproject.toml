@@ -110,17 +110,25 @@ include = [
     "undine/*",
 ]
 omit = [
+    "docs/*",
+    "example_project/*",
     "mypy_undine/*",
     "pytest_undine/*",
     "tests/*",
-    "undine/utils/full_text_search.py",  # Requires PostgreSQL to test
+    "undine/persisted_documents/migrations/*",
+    "async.py",
+    "manage.py",
+    "noxfile.py",
 ]
 
 [tool.coverage.report]
 exclude_also = [
     "if TYPE_CHECKING:",
     "except ImportError:",
+    "with suppress(ImportError):",
+    "with contextlib.suppress(ImportError):",
     "pragma: no cover",
+    "pragma: no branch",
     "pass",
 ]
 

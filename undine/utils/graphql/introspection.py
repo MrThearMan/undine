@@ -85,7 +85,7 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
                     return connection.union_type.__is_visible__(info.context)
                 if connection.interface_type is not None:
                     return connection.interface_type.__is_visible__(info.context)
-                return True  # Should never happen
+                return True  # Should never happen  # pragma: no cover
 
         case GraphQLInputObjectType():
             mutation_type = get_undine_mutation_type(obj)

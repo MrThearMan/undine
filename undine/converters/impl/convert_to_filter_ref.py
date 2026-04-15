@@ -174,7 +174,7 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
     return ref
 
 
-with suppress(ImportError):  # pragma: no cover
+with suppress(ImportError):
     from undine.utils.full_text_search import PostgresFTS
 
     @convert_to_filter_ref.register

@@ -12,7 +12,8 @@ check:
 
 # Run all tests with coverage
 coverage:
-    @poetry run coverage run -m
+    @poetry run coverage run -m pytest .
+    @poetry run coverage report
 
 # Print the required versions of main dependencies
 deps:

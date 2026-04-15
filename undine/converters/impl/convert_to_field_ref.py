@@ -195,11 +195,6 @@ def _(ref: type[dict], **kwargs: Any) -> Any:
 
 
 @convert_to_field_ref.register
-def _(ref: type[Calculation], **kwargs: Any) -> Any:
-    return ref
-
-
-@convert_to_field_ref.register
 def _(ref: type[QueryType], **kwargs: Any) -> Any:
     return ref
 

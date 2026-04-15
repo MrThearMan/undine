@@ -20,6 +20,7 @@ __all__ = [
     "convert_to_description",
     "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
+    "convert_to_entrypoint_subscription",
     "convert_to_field_ref",
     "convert_to_field_resolver",
     "convert_to_filter_lookups",
