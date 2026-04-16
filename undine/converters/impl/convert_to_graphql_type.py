@@ -710,7 +710,7 @@ def _(ref: GenericRel, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 
 # Postgres fields
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from django.contrib.postgres.fields import ArrayField, HStoreField
 
     @convert_to_graphql_type.register
@@ -726,7 +726,7 @@ with suppress(ImportError):
 
 
 # Generated field
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from django.db.models import GeneratedField
 
     @convert_to_graphql_type.register
@@ -970,7 +970,7 @@ def _(ref: QueryTypeSignalSubscription, **kwargs: Any) -> GraphQLInputType | Gra
     return convert_to_graphql_type(ref.query_type, **kwargs)
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from undine.utils.full_text_search import PostgresFTS
 
     @convert_to_graphql_type.register

@@ -42,13 +42,12 @@ def persisted_documents_view(request: DjangoRequestProtocol) -> DjangoResponsePr
         result = get_error_execution_result(error)
         return graphql_result_response(result, status=HTTPStatus.BAD_REQUEST)
 
-    if undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK is not None:
-        try:
-            undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK(request, document_map)
+    try:
+        undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK(request, document_map)
 
-        except (GraphQLError, GraphQLErrorGroup) as error:
-            result = get_error_execution_result(error)
-            return graphql_result_response(result, status=HTTPStatus.FORBIDDEN)
+    except (GraphQLError, GraphQLErrorGroup) as error:
+        result = get_error_execution_result(error)
+        return graphql_result_response(result, status=HTTPStatus.FORBIDDEN)
 
     try:
         document_id_map = register_persisted_documents(document_map)

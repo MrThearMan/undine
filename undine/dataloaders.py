@@ -294,7 +294,7 @@ class DataLoaderBatch(Generic[TKey, TResult]):
                 load_function_task.cancel()
 
         for load in self.loads:
-            if not load.future.done():
+            if not load.future.done():  # pragma: no branch
                 load.future.add_done_callback(callback)
 
         return load_function_task

@@ -16,7 +16,7 @@ from .reflection import get_members
 
 if TYPE_CHECKING:
     from undine import Filter
-    from undine.typing import FTSLang, GQLInfo, LangCode, LangSep, PostgresFTSLangSpecificFields
+    from undine.typing import DjangoRequestProtocol, FTSLang, GQLInfo, LangCode, LangSep, PostgresFTSLangSpecificFields
 
 __all__ = [
     "PostgresFTS",
@@ -53,7 +53,7 @@ class PostgresFTS:  # pragma: no cover
         }
 
     def get_search_language(self, info: GQLInfo) -> SearchLanguage:
-        lang = get_request_search_language(info)
+        lang = get_request_search_language(info.context)
         if lang not in self.vectors:
             return TextSearchLang.ENGLISH
         return lang
@@ -163,7 +163,7 @@ def build_pg_search(text: str, *, separator: LangSep = "|") -> str:
     return f" {separator} ".join(search_terms)
 
 
-def get_request_search_language(info: GQLInfo) -> SearchLanguage:
+def get_request_search_language(request: DjangoRequestProtocol) -> SearchLanguage:
     """
     Get language from the given request using this order:
 
@@ -173,12 +173,12 @@ def get_request_search_language(info: GQLInfo) -> SearchLanguage:
     4. Accept-Language header
     5. Default language as set by the LANGUAGE_CODE setting
     """
-    referer = info.context.META.get("HTTP_REFERER")
+    referer = request.META.get("HTTP_REFERER")
     if referer:
         path = urllib.parse.urlparse(referer).path
         lang: LangCode = get_language_from_path(path)  # type: ignore[assignment]
         if lang is not None:
             return TextSearchLang.for_code(lang)
 
-    lang = get_language_from_request(info.context, check_path=True)  # type: ignore[assignment,arg-type]
+    lang = get_language_from_request(request, check_path=True)  # type: ignore[assignment,arg-type]
     return TextSearchLang.for_code(lang)

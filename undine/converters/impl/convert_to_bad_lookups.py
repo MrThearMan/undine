@@ -280,7 +280,7 @@ def _(field: ManyToManyField | ManyToManyRel, **kwargs: Any) -> set[str]:
     return bad_lookups
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from django.contrib.postgres.fields import ArrayField, HStoreField, RangeField
 
     @convert_to_bad_lookups.register

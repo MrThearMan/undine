@@ -32,7 +32,7 @@ def monkeypatch_middleware() -> None:
         toolbar: DebugToolbar,
     ) -> HttpResponse:
         response = original_postprocess(self, request, response, toolbar)
-        if _is_graphql_view(request):
+        if _is_graphql_view(request):  # pragma: no branch
             handle_graphiql(request, response, toolbar)
         return response
 

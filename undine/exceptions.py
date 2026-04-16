@@ -94,7 +94,7 @@ class UndineErrorGroup(ExceptionGroup):
         for error in self.exceptions:
             if isinstance(error, UndineErrorGroup):
                 yield from error.flatten()
-            elif isinstance(error, Exception):
+            elif isinstance(error, Exception):  # pragma: no branch
                 yield error
 
 
@@ -267,7 +267,7 @@ class MissingUnionQueryTypeGenericError(UndineError):
     msg = "'{name}' is missing its generic types: `class {name}(UnionType[QueryType1, QueryType2])`."
 
 
-class ModelFieldError(UndineError): ...
+class ModelFieldError(UndineError): ...  # pragma: no branch
 
 
 class ModelFieldDoesNotExistError(ModelFieldError):

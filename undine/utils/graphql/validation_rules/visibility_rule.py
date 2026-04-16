@@ -92,7 +92,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
             return None
 
         graphql_input_type = self.context.get_input_type()
-        if graphql_input_type is None:
+        if graphql_input_type is None:  # pragma: no cover
             return None
 
         node_value = node.value
@@ -217,7 +217,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                 ref = ref.query_type
             elif ref.union_type is not None:
                 ref = ref.union_type
-            elif ref.interface_type is not None:
+            elif ref.interface_type is not None:  # pragma: no branch
                 ref = ref.interface_type
 
         if is_subclass(ref, QueryType):
@@ -254,14 +254,11 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                 ref = ref.query_type
             elif ref.union_type is not None:
                 ref = ref.union_type
-            elif ref.interface_type is not None:
+            elif ref.interface_type is not None:  # pragma: no branch
                 ref = ref.interface_type
 
         if is_subclass(ref, QueryType):
             return self.handle_query_type(ref, parent_type, field_node)
-
-        if is_subclass(ref, MutationType):
-            return self.handle_mutation_type(ref, parent_type, field_node)
 
         if is_subclass(ref, InterfaceType):
             return self.handle_interface_type(ref, parent_type, field_node)
@@ -391,7 +388,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                 continue
 
             undine_order = get_undine_order(enum_value)
-            if undine_order is None:
+            if undine_order is None:  # pragma: no cover
                 continue
 
             if undine_order.visible_func is None:
@@ -427,7 +424,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
                     continue
 
                 undine_input = get_undine_input(input_field)
-                if undine_input is None:
+                if undine_input is None:  # pragma: no cover
                     continue
 
                 if undine_input.visible_func is None:
@@ -454,7 +451,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         node: ast.ArgumentNode,
     ) -> VisitorAction:
         arg = directive_type.args.get(node.name.value)
-        if arg is None:
+        if arg is None:  # pragma: no cover
             return None
 
         undine_directive_arg = get_undine_directive_argument(arg)

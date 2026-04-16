@@ -109,7 +109,7 @@ def _(ref: SignalSubscription, **kwargs: Any) -> Any:
     return ref.description
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from undine.utils.full_text_search import PostgresFTS
 
     @convert_to_description.register

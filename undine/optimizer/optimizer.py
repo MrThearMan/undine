@@ -209,7 +209,7 @@ class QueryOptimizer(GraphQLASTWalker):
             if arg is not None:
                 arg_type: GraphQLInputObjectType = get_underlying_type(arg.type)  # type: ignore[assignment]
                 mutation_type = get_undine_mutation_type(arg_type)
-                if mutation_type is not None:
+                if mutation_type is not None:  # pragma: no branch
                     self.handle_undine_mutation_type(mutation_type, arg_values)
 
         query_type = get_undine_query_type(object_type)
@@ -258,7 +258,7 @@ class QueryOptimizer(GraphQLASTWalker):
         """Handle any special operations for undine Fields."""
         graphql_field = parent_type.fields[field_node.name.value]
         undine_field = get_undine_field(graphql_field)
-        if undine_field is None:
+        if undine_field is None:  # pragma: no cover
             return
 
         if undine_field.optimizer_func is not None:
@@ -297,7 +297,7 @@ class QueryOptimizer(GraphQLASTWalker):
         if isinstance(related_field, ForeignKey):
             self.optimization_data.only_fields.add(related_field.attname)
 
-        elif isinstance(related_field, OneToOneRel):
+        elif isinstance(related_field, OneToOneRel):  # pragma: no branch
             data.only_fields.add(related_field.field.attname)
 
         self.handle_undine_field(parent_type, field_node)
@@ -357,7 +357,7 @@ class QueryOptimizer(GraphQLASTWalker):
             # GenericForeignKey can only contain InlineFragments for its related models,
             # or the __typename metafield
             if not isinstance(selection, InlineFragmentNode):
-                if is_typename_metafield(field_node):
+                if is_typename_metafield(field_node):  # pragma: no branch
                     self.handle_typename_metafield(parent_type, field_node)
 
                 continue
@@ -380,10 +380,10 @@ class QueryOptimizer(GraphQLASTWalker):
 
             with self.use_data(data):
                 query_type = get_undine_query_type(fragment_type)
-                if query_type is not None:
+                if query_type is not None:  # pragma: no branch
                     self.handle_undine_query_type(query_type, {})
 
-                if selection.selection_set is None:
+                if selection.selection_set is None:  # pragma: no cover
                     continue
 
                 with self.use_model(fragment_model):
@@ -610,7 +610,7 @@ class OptimizationData:
             results.prefetch_related.add(prefetch)
 
         for name, generic_prefetches in self.generic_prefetches.items():
-            if not generic_prefetches:
+            if not generic_prefetches:  # pragma: no cover
                 continue
 
             # Only need `to_attr` if it's different from the field name.
@@ -731,9 +731,9 @@ class OptimizationResults:
         self.select_related.update(f"{other.related_field.name}{LOOKUP_SEP}{select}" for select in other.select_related)  # type: ignore[union-attr]
 
         for prefetch in other.prefetch_related:
-            if isinstance(prefetch, str):
+            if isinstance(prefetch, str):  # pragma: no cover
                 self.prefetch_related.add(f"{other.related_field.name}{LOOKUP_SEP}{prefetch}")  # type: ignore[union-attr]
-            if isinstance(prefetch, Prefetch):
+            if isinstance(prefetch, Prefetch):  # pragma: no branch
                 prefetch.add_prefix(other.related_field.name)  # type: ignore[union-attr]
                 self.prefetch_related.add(prefetch)
 

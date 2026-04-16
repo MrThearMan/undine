@@ -10,10 +10,14 @@ async port="8000":
 check:
     @poetry run python manage.py check undine
 
-# Run all tests with coverage
+# Run all tests with coverage and show coverage report
 coverage:
     @poetry run coverage run -m pytest .
     @poetry run coverage report
+
+# Show files without test coverage
+coverage-missing:
+    @poetry run coverage report --skip-covered --show-missing
 
 # Print the required versions of main dependencies
 deps:

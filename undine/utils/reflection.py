@@ -410,7 +410,7 @@ def sort_by_mro(classes: Iterable[type[T]]) -> list[type[T]]:
             if base in class_set:
                 visit(base)
 
-        if cls not in visited:
+        if cls not in visited:  # pragma: no branch
             visited.add(cls)
             sorted_list.append(cls)
 

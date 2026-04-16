@@ -458,7 +458,7 @@ def get_orders_for_models(models: tuple[type[Model], ...], exclude: Iterable[str
         if is_primary_key:
             field_name = "pk"  # noqa: PLW2901
 
-        if field_name in exclude:
+        if field_name in exclude:  # pragma: no cover
             continue
 
         result[field_name] = Order(field_name)

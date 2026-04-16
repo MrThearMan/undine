@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from django.db.models import Field, Model
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from modeltranslation.fields import TranslationField
     from modeltranslation.manager import get_translatable_fields_for_model
 

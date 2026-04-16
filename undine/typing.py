@@ -444,6 +444,10 @@ class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
         """A string representing the full request path, not including the scheme, domain, or query string."""
 
     @property
+    def path_info(self) -> str:
+        """Same as path but without script mount path prefix."""
+
+    @property
     def method(self) -> RequestMethod:
         """A string representing the HTTP method used in the request."""
 

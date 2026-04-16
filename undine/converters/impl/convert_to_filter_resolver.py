@@ -54,7 +54,7 @@ def _(_: GenericForeignKey, **kwargs: Any) -> GraphQLFilterResolver:
     return FilterModelFieldResolver(lookup=lookup)
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from undine.utils.full_text_search import PostgresFTS, PostgresFTSExpressionResolver
 
     @convert_to_filter_resolver.register

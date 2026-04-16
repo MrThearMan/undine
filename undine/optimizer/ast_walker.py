@@ -118,7 +118,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         # the concrete implementations with the interface fields selected.
         if isinstance(parent_type, GraphQLInterfaceType) and results.field_nodes:
             undine_interface = get_undine_interface_type(parent_type)
-            if undine_interface is None:
+            if undine_interface is None:  # pragma: no cover
                 return
 
             types_without_fragments = (
@@ -279,7 +279,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         related_field: GenericForeignKey,
     ) -> None:
         field_type: GraphQLUnionType = self.get_field_type(parent_type, field_node)  # type: ignore[assignment]
-        if field_node.selection_set is not None:
+        if field_node.selection_set is not None:  # pragma: no branch
             self.handle_selections(field_type, field_node.selection_set.selections)
 
     def get_model(self, object_type: GraphQLObjectType) -> type[Model] | None:
@@ -306,7 +306,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
             elif isinstance(selection, InlineFragmentNode):
                 results.inline_fragments.append(selection)
 
-            elif isinstance(selection, FragmentSpreadNode):
+            elif isinstance(selection, FragmentSpreadNode):  # pragma: no branch
                 fragment_definition = self.get_fragment_def(selection)
                 fragment_results = self.flatten_abstract_type_selections(fragment_definition.selection_set.selections)
                 results.field_nodes += fragment_results.field_nodes

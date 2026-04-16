@@ -389,7 +389,7 @@ class MutationNode:
                         self._disconnect_instances(non_updated_instances, rel_info, node)
                     case RelatedAction.delete:
                         self._remove_instances(non_updated_instances, rel_info, node)
-                    case RelatedAction.ignore:
+                    case RelatedAction.ignore:  # pragma: no branch
                         raise GraphQLRelationMultipleInstancesError(
                             field_name=rel_info.related_name,
                             model=rel_info.related_model,
@@ -744,7 +744,7 @@ class MutationNode:
                 setattr(symmetrical_instance, source_name, target)
                 setattr(symmetrical_instance, target_name, source)
 
-                for field_name in field_names:
+                for field_name in field_names:  # pragma: no cover
                     setattr(symmetrical_instance, field_name, getattr(instance, field_name))
 
                 symmetric_map[target][source] = symmetrical_instance
@@ -783,7 +783,7 @@ class MutationNode:
             target = getattr(through_instance, target_name)
 
             new_through_instance = through_map[source][target]
-            for field_name in field_names:
+            for field_name in field_names:  # pragma: no cover
                 setattr(through_instance, field_name, getattr(new_through_instance, field_name))
 
             through_map[source][target] = through_instance

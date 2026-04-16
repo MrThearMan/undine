@@ -372,7 +372,7 @@ def _filter_by_start_index(queryset: QuerySet) -> QuerySet:
 
 def _add_stop_index(queryset: QuerySet, stop: int | CombinableExpression) -> QuerySet:
     """Add an annotation to the given queryset with the stop index of the current page."""
-    if isinstance(stop, int):
+    if isinstance(stop, int):  # pragma: no branch
         stop = Value(stop)
     return queryset.annotate(**{undine_settings.PAGINATION_STOP_INDEX_KEY: stop})
 

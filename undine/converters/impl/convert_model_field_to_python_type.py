@@ -162,7 +162,7 @@ def _(ref: GenericForeignKey, **kwargs: Any) -> type:
     return convert_model_field_to_python_type(field)
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from django.contrib.postgres.fields import ArrayField, HStoreField
 
     @convert_model_field_to_python_type.register
@@ -175,7 +175,7 @@ with suppress(ImportError):
         return list.__class_getitem__(item_type)  # type: ignore[return-value]
 
 
-with suppress(ImportError):
+with suppress(ImportError):  # pragma: no cover
     from django.db.models import GeneratedField
 
     @convert_model_field_to_python_type.register

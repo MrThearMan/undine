@@ -116,6 +116,7 @@ omit = [
     "pytest_undine/*",
     "tests/*",
     "undine/persisted_documents/migrations/*",
+    "undine/utils/graphql/introspection.py",  # grpahql-core>=3.3.0a12 required
     "async.py",
     "manage.py",
     "noxfile.py",
@@ -123,13 +124,15 @@ omit = [
 
 [tool.coverage.report]
 exclude_also = [
-    "if TYPE_CHECKING:",
-    "except ImportError:",
-    "with suppress(ImportError):",
-    "with contextlib.suppress(ImportError):",
-    "pragma: no cover",
-    "pragma: no branch",
-    "pass",
+    'if TYPE_CHECKING:',
+    'except ImportError:',
+    'with suppress\(ImportError\):',
+    'with contextlib.suppress\(ImportError\):',
+    'class .+\(.*\bProtocol(\[.+\])?\):',
+    'pragma: no cover',
+    'pragma: no branch',
+    '\A(?s:.*# pragma: exclude file.*)\Z',
+    'pass',
 ]
 
 [tool.pytest.ini_options]
