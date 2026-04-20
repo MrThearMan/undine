@@ -209,7 +209,7 @@ def test_pre_mutation__permissions__field__multiple() -> None:
             msg = "Invalid name"
             raise GraphQLPermissionError(msg)
 
-        @type.permissions
+        @type.permissions  # noqa: A003
         def type_permissions(self, info: GQLInfo, value: TaskTypeChoices) -> None:
             msg = "Invalid type"
             raise GraphQLPermissionError(msg)
@@ -283,7 +283,7 @@ def test_pre_mutation__validate__field__multiple() -> None:
             msg = "Invalid name"
             raise GraphQLValidationError(msg)
 
-        @type.validate
+        @type.validate  # noqa: A003
         def type_validate(self, info: GQLInfo, value: TaskTypeChoices) -> None:
             msg = "Invalid type"
             raise GraphQLValidationError(msg)
@@ -635,6 +635,156 @@ def test_pre_mutation__related_mutation_type__validate__field__multiple() -> Non
     assert errors[1].path == ["task", "project", "team"]
 
 
+def test_pre_mutation__hidden_input__no_default_value_no_func() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        done = Input(bool, hidden=True)
+
+    instance = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data: dict[str, Any] = {"name": "Test task"}
+
+    pre_mutation(instance=instance, info=mock_info, input_data=input_data, mutation_type=TaskCreateMutation)
+
+    assert "done" not in input_data
+
+
+def test_pre_mutation__function_input__not_in_input_data() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        @Input
+        def name(self, info: GQLInfo, value: str) -> str:
+            nonlocal called
+            called = True
+            return value.upper()
+
+    instance = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data: dict[str, Any] = {}
+
+    pre_mutation(instance=instance, info=mock_info, input_data=input_data, mutation_type=TaskCreateMutation)
+
+    assert not called
+    assert "name" not in input_data
+
+
+def test_pre_mutation__permissions__field__default_value_skipped() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input(str, default_value="default_name")
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            nonlocal called
+            called = True
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "default_name"}
+
+    pre_mutation(instance=inst, info=mock_info, input_data=data, mutation_type=TaskCreateMutation)
+
+    assert not called
+
+
+def test_pre_mutation__permissions__field__error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLErrorGroup([GraphQLPermissionError("error 1"), GraphQLPermissionError("error 2")])
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task"}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        pre_mutation(instance=inst, info=mock_info, input_data=data, mutation_type=TaskCreateMutation)
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+def test_pre_mutation__validate__field__default_value_skipped() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input(str, default_value="default_name")
+
+        @name.validate
+        def name_validate(self, info: GQLInfo, value: str) -> None:
+            nonlocal called
+            called = True
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "default_name"}
+
+    pre_mutation(instance=inst, info=mock_info, input_data=data, mutation_type=TaskCreateMutation)
+
+    assert not called
+
+
+def test_pre_mutation__validate__field__error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.validate
+        def name_validate(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLErrorGroup([GraphQLValidationError("error 1"), GraphQLValidationError("error 2")])
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task"}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        pre_mutation(instance=inst, info=mock_info, input_data=data, mutation_type=TaskCreateMutation)
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+def test_pre_mutation_many__graphql_error() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            raise GraphQLPermissionError
+
+    instances = [Task(), Task()]
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data = [{"name": "task1"}, {"name": "task2"}]
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        pre_mutation_many(instances=instances, info=mock_info, input_data=input_data, mutation_type=TaskCreateMutation)
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+def test_pre_mutation_many__graphql_error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLPermissionError
+
+    instances = [Task(), Task()]
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data = [{"name": "task1"}, {"name": "task2"}]
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        pre_mutation_many(instances=instances, info=mock_info, input_data=input_data, mutation_type=TaskCreateMutation)
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
 # Async
 
 
@@ -954,7 +1104,7 @@ async def test_pre_mutation_async__permissions__field__multiple() -> None:
         def name_permissions(self, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
-        @type.permissions
+        @type.permissions  # noqa: A003
         def type_permissions(self, info: GQLInfo, value: TaskTypeChoices) -> None:
             raise GraphQLPermissionError
 
@@ -1094,7 +1244,7 @@ async def test_pre_mutation_async__validate__field__multiple() -> None:
         def name_validate(self, info: GQLInfo, value: str) -> None:
             raise GraphQLValidationError
 
-        @type.validate
+        @type.validate  # noqa: A003
         def type_validate(self, info: GQLInfo, value: TaskTypeChoices) -> None:
             raise GraphQLValidationError
 
@@ -1176,6 +1326,154 @@ async def test_pre_mutation_async__input_only_inputs() -> None:
     assert input_only_data == {"name": "Test task", "foo": "bar"}
 
 
+@pytest.mark.asyncio
+async def test_pre_mutation_async__hidden_input__no_default_value_no_func() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        done = Input(bool, hidden=True)
+
+    instance = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data: dict[str, Any] = {"name": "Test task"}
+
+    await pre_mutation_async(
+        instance=instance,
+        info=mock_info,
+        input_data=input_data,
+        mutation_type=TaskCreateMutation,
+    )
+
+    assert "done" not in input_data
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__function_input__not_in_input_data() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        @Input
+        def name(self, info: GQLInfo, value: str) -> str:
+            nonlocal called
+            called = True
+            return value.upper()
+
+    instance = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data: dict[str, Any] = {}
+
+    await pre_mutation_async(
+        instance=instance,
+        info=mock_info,
+        input_data=input_data,
+        mutation_type=TaskCreateMutation,
+    )
+
+    assert not called
+    assert "name" not in input_data
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__permissions__field__default_value_skipped() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input(str, default_value="default_name")
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            nonlocal called
+            called = True
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "default_name"}
+
+    await pre_mutation_async(
+        instance=inst,
+        info=mock_info,
+        input_data=data,
+        mutation_type=TaskCreateMutation,
+    )
+
+    assert not called
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__permissions__field__error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLErrorGroup([GraphQLPermissionError("error 1"), GraphQLPermissionError("error 2")])
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task"}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__validate__field__default_value_skipped() -> None:
+    called = False
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input(str, default_value="default_name")
+
+        @name.validate
+        def name_validate(self, info: GQLInfo, value: str) -> None:
+            nonlocal called
+            called = True
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "default_name"}
+
+    await pre_mutation_async(
+        instance=inst,
+        info=mock_info,
+        input_data=data,
+        mutation_type=TaskCreateMutation,
+    )
+
+    assert not called
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__validate__field__error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.validate
+        def name_validate(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLErrorGroup([GraphQLValidationError("error 1"), GraphQLValidationError("error 2")])
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task"}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
 # Async - related
 
 
@@ -1198,3 +1496,200 @@ async def test_pre_mutation_async__related_mutation_type() -> None:
         input_data=data,
         mutation_type=TaskCreateMutation,
     )
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__related_mutation_type__null_field_data() -> None:
+    class RelatedProject(MutationType[Project], kind="related", auto=False):
+        name = Input()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        project = Input(RelatedProject)
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task", "project": None}
+
+    await pre_mutation_async(
+        instance=inst,
+        info=mock_info,
+        input_data=data,
+        mutation_type=TaskCreateMutation,
+    )
+
+    assert data["project"] is None
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__related_mutation_type__permissions__error_group() -> None:
+    class RelatedProject(MutationType[Project], kind="related", auto=False):
+        name = Input()
+
+        @classmethod
+        def __permissions__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            raise GraphQLErrorGroup([GraphQLPermissionError("e1"), GraphQLPermissionError("e2")])
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        project = Input(RelatedProject)
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task", "project": {"name": "Test project"}}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__related_mutation_type__many__permissions() -> None:
+    class RelatedProject(MutationType[Project], kind="related", auto=False):
+        name = Input()
+
+        @classmethod
+        def __permissions__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            raise GraphQLPermissionError
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        project = Input(RelatedProject, many=True)
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {
+        "name": "Test task",
+        "project": [{"name": "project 1"}, {"name": "project 2"}],
+    }
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__related_mutation_type__many__error_group() -> None:
+    class RelatedProject(MutationType[Project], kind="related", auto=False):
+        name = Input()
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLPermissionError
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        project = Input(RelatedProject, many=True)
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {
+        "name": "Test task",
+        "project": [{"name": "project 1"}, {"name": "project 2"}],
+    }
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_many_async__graphql_error() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            raise GraphQLPermissionError
+
+    instances = [Task(), Task()]
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data = [{"name": "task1"}, {"name": "task2"}]
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_many_async(
+            instances=instances,
+            info=mock_info,
+            input_data=input_data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_async__related_mutation_type__single__graphql_error() -> None:
+    class RelatedProject(MutationType[Project], kind="related", auto=False):
+        name = Input()
+
+        @classmethod
+        def __permissions__(cls, instance: Project, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            msg = "forbidden"
+            raise GraphQLPermissionError(msg)
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        project = Input(RelatedProject)
+
+    inst = Task()
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    data: dict[str, Any] = {"name": "Test task", "project": {"name": "Test project"}}
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_async(
+            instance=inst,
+            info=mock_info,
+            input_data=data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 1
+    assert isinstance(errors[0], GraphQLPermissionError)
+
+
+@pytest.mark.asyncio
+async def test_pre_mutation_many_async__graphql_error_group() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+        @name.permissions
+        def name_permissions(self, info: GQLInfo, value: str) -> None:
+            raise GraphQLPermissionError
+
+    instances = [Task(), Task()]
+    mock_info = mock_gql_info(path=Path(prev=None, key="task", typename=None))
+    input_data = [{"name": "task1"}, {"name": "task2"}]
+
+    with pytest.raises(GraphQLErrorGroup) as exc_info:
+        await pre_mutation_many_async(
+            instances=instances,
+            info=mock_info,
+            input_data=input_data,
+            mutation_type=TaskCreateMutation,
+        )
+
+    errors = list(exc_info.value.flatten())
+    assert len(errors) == 2

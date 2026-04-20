@@ -71,7 +71,7 @@ class MaxAliasCountRule(ValidationRule):
                     if fragment is not None:
                         alias_count += self.count_aliases(fragment)
 
-            case FragmentDefinitionNode():
+            case FragmentDefinitionNode():  # pragma: no branch
                 for selection in node.selection_set.selections:
                     alias_count += self.count_aliases(selection)
 

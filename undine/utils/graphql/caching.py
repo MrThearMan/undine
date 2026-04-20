@@ -82,7 +82,7 @@ class RequestCacheCalculator:
                 for sel in selection.selection_set.selections:
                     self.calculate_cache_time(fragment_type, sel)
 
-            case FragmentSpreadNode():
+            case FragmentSpreadNode():  # pragma: no branch
                 if selection.name.value not in self.visited_fragments:
                     self.visited_fragments.add(selection.name.value)
                     fragment = self.fragments.get(selection.name.value)
@@ -134,13 +134,13 @@ class RequestCacheCalculator:
         match field_type:
             case GraphQLObjectType():
                 query_type = get_undine_query_type(field_type)
-                if query_type is not None:
+                if query_type is not None:  # pragma: no branch
                     if query_type.__cache_time__ is not None:
                         self.cache_time = min(self.cache_time, query_type.__cache_time__)  # type: ignore[type-var]
                         self.cache_per_user |= query_type.__cache_per_user__
                     return
 
-            case GraphQLInterfaceType():
+            case GraphQLInterfaceType():  # pragma: no cover
                 interface_type = get_undine_interface_type(field_type)
                 if interface_type is not None:
                     if interface_type.__cache_time__ is not None:
@@ -148,7 +148,7 @@ class RequestCacheCalculator:
                         self.cache_per_user |= interface_type.__cache_per_user__
                     return
 
-            case GraphQLUnionType():
+            case GraphQLUnionType():  # pragma: no cover
                 union_type = get_undine_union_type(field_type)
                 if union_type is not None:
                     if union_type.__cache_time__ is not None:

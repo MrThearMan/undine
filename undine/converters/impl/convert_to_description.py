@@ -15,6 +15,7 @@ from undine.parsers import docstring_parser
 from undine.relay import Connection
 from undine.subscriptions import SignalSubscription
 from undine.typing import CombinableExpression, ModelField
+from undine.utils.reflection import is_namedtuple
 from undine.utils.text import get_docstring
 
 
@@ -48,9 +49,16 @@ def _(_: TypeRef, **kwargs: Any) -> Any:
 
 
 @convert_to_description.register
-def _(_: type[tuple], **kwargs: Any) -> Any:
+def _(ref: type[tuple], **kwargs: Any) -> Any:
+    if not is_namedtuple(ref):
+        return None
+
     # For NamedTuples, don't use the generated docstring.
-    return None
+    default_doc = ref.__name__ + str(ref._fields).replace("'", "")
+    if ref.__doc__ == default_doc:
+        return None
+
+    return ref.__doc__
 
 
 @convert_to_description.register

@@ -6,6 +6,7 @@ from example_project.app.models import Comment, Person, Project, Report, Task, T
 from tests.factories import CommentFactory, PersonFactory, ReportFactory, TaskFactory, TaskStepFactory, TeamFactory
 from tests.helpers import cache_content_types
 from undine import Entrypoint, Field, OrderSet, QueryType, RootType, create_schema
+from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node, offset_to_cursor, to_global_id
 
 # Relay Node interface
@@ -1066,6 +1067,64 @@ def test_optimizer__relay__connection__alias(graphql, undine_settings) -> None:
     }
 
     response.assert_query_count(2)
+
+
+@pytest.mark.django_db
+def test_optimizer__relay__connection__has_next_page(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(Connection(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="Task 1")
+
+    query = """
+        query {
+          tasks {
+            pageInfo {
+              hasNextPage
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert "hasNextPage" in response.data["tasks"]["pageInfo"]
+
+
+@pytest.mark.django_db
+def test_optimizer__relay__connection__total_count__no_pagination(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(Connection(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="T1")
+    TaskFactory.create(name="T2")
+
+    query = """
+        query {
+          tasks {
+            totalCount
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert response.data["tasks"]["totalCount"] == 2
 
 
 # Nested Relay Connections
@@ -3565,3 +3624,104 @@ def test_optimizer__relay__nested_connection__third_level_connection(graphql, un
     }
 
     response.assert_query_count(3)
+
+
+# Offset pagination
+
+
+@pytest.mark.django_db
+def test_optimizer__offset_pagination(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="Task 1")
+    TaskFactory.create(name="Task 2")
+    TaskFactory.create(name="Task 3")
+
+    query = """
+        query ($offset: Int!) {
+          tasks(offset: $offset) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query, variables={"offset": 1}, count_queries=True)
+
+    assert response.has_errors is False, response.errors
+    assert response.data == {
+        "tasks": [
+            {"name": "Task 2"},
+            {"name": "Task 3"},
+        ],
+    }
+
+    response.assert_query_count(1)
+
+
+@pytest.mark.django_db
+def test_optimizer__offset_pagination__nested(graphql, undine_settings) -> None:
+    class PersonType(QueryType[Person], auto=False):
+        name = Field()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        assignees = Field(OffsetPagination(PersonType))
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    person_1 = PersonFactory.create(name="Assignee 1")
+    person_2 = PersonFactory.create(name="Assignee 2")
+    person_3 = PersonFactory.create(name="Assignee 3")
+    person_4 = PersonFactory.create(name="Assignee 4")
+    person_5 = PersonFactory.create(name="Assignee 5")
+
+    TaskFactory.create(name="Task 1", assignees=[person_1, person_2, person_3])
+    TaskFactory.create(name="Task 2", assignees=[person_3, person_4])
+    TaskFactory.create(name="Task 3", assignees=[person_5])
+
+    query = """
+        query {
+          tasks {
+            name
+            assignees(offset: 1) {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+
+    assert response.has_errors is False, response.errors
+    assert response.data == {
+        "tasks": [
+            {
+                "name": "Task 1",
+                "assignees": [
+                    {"name": "Assignee 2"},
+                    {"name": "Assignee 3"},
+                ],
+            },
+            {
+                "name": "Task 2",
+                "assignees": [
+                    {"name": "Assignee 4"},
+                ],
+            },
+            {
+                "name": "Task 3",
+                "assignees": [],
+            },
+        ]
+    }
+
+    response.assert_query_count(2)

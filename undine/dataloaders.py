@@ -17,8 +17,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, Future
     from collections.abc import Callable, Coroutine, Hashable, Iterable, MutableMapping
 
-    from undine.typing import SortedSequence
-
+    from undine.typing import SortedSequence, SortedSequenceWithErrors
 
 __all__ = [
     "DataLoader",
@@ -35,7 +34,7 @@ class DataLoader(Generic[TKey, TResult]):
     def __init__(
         self,
         *,
-        load_fn: Callable[[list[TKey]], Coroutine[None, None, SortedSequence[TResult | BaseException]]],
+        load_fn: Callable[[list[TKey]], Coroutine[None, None, SortedSequenceWithErrors[TResult]]],
         max_batch_size: int | None = None,
         reuse_loads: bool = True,
         key_hash_fn: Callable[[TKey], Hashable] = lambda x: x,
@@ -142,7 +141,7 @@ class DataLoader(Generic[TKey, TResult]):
     def prime_many(
         self,
         keys: SortedSequence[TKey],
-        values: SortedSequence[TResult | BaseException],
+        values: SortedSequenceWithErrors[TResult],
         *,
         can_prime_pending_loads: bool = False,
     ) -> Self:
@@ -193,7 +192,7 @@ class DataLoader(Generic[TKey, TResult]):
 
         return self
 
-    def _prime_batch(self, keys: SortedSequence[TKey], values: SortedSequence[TResult | BaseException]) -> None:
+    def _prime_batch(self, keys: SortedSequence[TKey], values: SortedSequenceWithErrors[TResult]) -> None:
         """Set values for loads in the current batch for the given keys."""
         if self.current_batch.dispatched:
             return
@@ -207,7 +206,7 @@ class DataLoader(Generic[TKey, TResult]):
             if load.future.done():
                 continue
 
-            if load.key in keys:
+            if load.key in keys:  # pragma: no branch
                 batch_updated = True
                 value = values[keys.index(load.key)]
 
@@ -281,7 +280,7 @@ class DataLoaderBatch(Generic[TKey, TResult]):
                 else:
                     load.future.set_result(value)
 
-    def load(self, keys: list[TKey]) -> asyncio.Task[SortedSequence[TResult | BaseException]]:
+    def load(self, keys: list[TKey]) -> asyncio.Task[SortedSequenceWithErrors[TResult]]:
         """Schedule the load function to run with the given keys."""
         load_function_task = self.loader.loop.create_task(self.loader.load_fn(keys))
 

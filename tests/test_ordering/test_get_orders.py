@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from example_project.app.models import Task
-from undine.ordering import get_orders_for_model
+from example_project.app.models import Project, ServiceRequest, Task
+from undine.ordering import get_orders_for_model, get_orders_for_models
 
 
 def test_get_orders_for_model() -> None:
@@ -65,3 +65,41 @@ def test_get_orders_for_model__exclude() -> None:
         "type",
         "worked_hours",
     ]
+
+
+def test_get_orders_for_models() -> None:
+    orders = get_orders_for_models((Task, Project))
+
+    # Both Task and Project have 'name', so it should be included.
+    assert "name" in orders
+
+    # Task-specific fields should not be included.
+    assert "type" not in orders
+    assert "done" not in orders
+
+
+def test_get_orders_for_models__exclude_pk() -> None:
+    orders = get_orders_for_models((Task, Project), exclude=["pk"])
+
+    assert "pk" not in orders
+    assert "name" in orders
+
+
+def test_get_orders_for_models__incompatible_field_types_excluded() -> None:
+    # Only fields with the same graphql type across all models should be included.
+    orders = get_orders_for_models((Task, Project))
+
+    assert sorted(orders) == ["comments", "name", "pk"]
+
+
+def test_get_orders_for_models__mismatched_field_types_skipped() -> None:
+    # Task.created_at is DateTimeField, ServiceRequest.created_at is DateField.
+    # created_at will be in common_fields but with different types, so it should be excluded.
+    orders = get_orders_for_models((Task, ServiceRequest))
+    assert "created_at" not in orders
+
+
+def test_get_orders_for_models__exclude_pk_field() -> None:
+    # When the resolved field_name is "pk" (primary key), it should be excluded.
+    orders = get_orders_for_models((Task, Project), exclude=["pk"])
+    assert "pk" not in orders

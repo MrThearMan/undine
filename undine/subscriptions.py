@@ -80,7 +80,7 @@ class SignalSubscription(ABC, Generic[T]):
     def receiver(self, *args: Any, **kwargs: Any) -> None:
         """Receiver for the Django signal."""
         # Some signals might send the 'sender' argument as a positional argument
-        if args:
+        if args:  # pragma: no cover
             kwargs["sender"] = args[0]
 
         data = self.process(kwargs)

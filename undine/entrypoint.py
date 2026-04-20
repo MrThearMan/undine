@@ -261,8 +261,8 @@ class Entrypoint:
         ...     task = Entrypoint(TaskType, many=True)
         ...
         ...     @task.resolve
-        ...     def resolve_task(self: Any, info: GQLInfo, name: str) -> list[Task]:
-        ...         qs = Task.objects.filter(name__icontains=name)
+        ...     def resolve_task(self: Any, info: GQLInfo) -> list[Task]:
+        ...         qs = Task.objects.filter(name__icontains="foo")
         ...         return optimize_sync(qs, info)
         """
         if func is None:  # Allow `@<entrypoint_name>.resolve()`
@@ -278,7 +278,7 @@ class Entrypoint:
         ...     task = Entrypoint(TaskType, many=True)
         ...
         ...     @task.permissions
-        ...     def task_permissions(self: Any, info: GQLInfo, name: str) -> None:
+        ...     def task_permissions(self: Any, info: GQLInfo, task: Task) -> None:
         ...         raise GraphQLPermissionError
         """
         if func is None:  # Allow `@<entrypoint_name>.permissions()`

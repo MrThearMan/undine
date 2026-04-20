@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from graphql import GraphQLObjectType
+from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 from example_project.app.models import Task
 from undine import Entrypoint, Field, MutationType, QueryType, RootType, create_schema
+from undine.schema import sort_schema_types
 from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY
 
 
@@ -104,3 +105,18 @@ def test_create_schema__extensions() -> None:
 def test_create_schema__query_type_required() -> None:
     with pytest.raises(TypeError):
         create_schema()
+
+
+def test_sort_schema_types__fallthrough() -> None:
+    query_type = GraphQLObjectType("Query", {"field": GraphQLField(GraphQLString)})
+    schema = GraphQLSchema(query=query_type)
+
+    # Inject an object that doesn't match any of the known GraphQL type classes.
+    class UnknownType:
+        name = "Unknown"
+
+    schema.type_map["Unknown"] = UnknownType()  # type: ignore[assignment]
+
+    sort_schema_types(schema)
+
+    assert "Unknown" in schema.type_map

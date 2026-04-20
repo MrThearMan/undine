@@ -15,16 +15,20 @@ from django.db.models import (
     DateTimeField,
     DecimalField,
     DurationField,
+    FileField,
     FloatField,
+    ImageField,
     IntegerField,
+    JSONField,
     TextField,
     TimeField,
     UUIDField,
 )
 
-from example_project.app.models import Comment, Task
+from example_project.app.models import Comment, Task, TaskTypeChoices
 from tests.helpers import parametrize_helper
 from undine.converters import convert_model_field_to_python_type
+from undine.utils.model_fields import TextChoicesField
 
 
 class Params(NamedTuple):
@@ -149,6 +153,22 @@ class Params(NamedTuple):
         "GenericForeignKey": Params(
             input_type=Comment._meta.get_field("target"),
             output_type=str,
+        ),
+        "TextChoicesField": Params(
+            input_type=TextChoicesField(choices_enum=TaskTypeChoices),
+            output_type=TaskTypeChoices,
+        ),
+        "FileField": Params(
+            input_type=FileField(),
+            output_type=str,
+        ),
+        "ImageField": Params(
+            input_type=ImageField(),
+            output_type=str,
+        ),
+        "JSONField": Params(
+            input_type=JSONField(),
+            output_type=dict[str, str],
         ),
     }),
 )

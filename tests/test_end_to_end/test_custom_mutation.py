@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any, TypedDict
 
 import pytest
@@ -8,6 +7,7 @@ from asgiref.sync import sync_to_async
 from graphql import GraphQLField, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices
+from tests.conftest import skip_if_async
 from tests.factories import ProjectFactory, TaskFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.converters import convert_to_graphql_type
@@ -15,7 +15,7 @@ from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
@@ -98,7 +98,7 @@ async def test_custom_mutation__async(graphql_async, undine_settings):
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation__related(graphql, undine_settings):
     undine_settings.ASYNC = False
 
@@ -201,7 +201,7 @@ async def test_custom_mutation__related__async(graphql_async, undine_settings):
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation__related_id(graphql, undine_settings):
     related_input = None
 
@@ -585,7 +585,7 @@ def test_custom_mutation__default_of_dict(graphql, undine_settings):
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation__hidden_input(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 
@@ -688,7 +688,7 @@ async def test_custom_mutation__hidden_input__async(graphql_async, undine_settin
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation__input_only_input(graphql, undine_settings):
     input_only_data = None
     not_in_mutate = False
@@ -811,7 +811,7 @@ async def test_custom_mutation__input_only_input__async(graphql_async, undine_se
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")
+@skip_if_async
 def test_custom_mutation__related_fake(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 

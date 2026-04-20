@@ -10,7 +10,7 @@ from tests.helpers import mock_gql_info
 from undine import Directive, DirectiveArgument, GQLInfo, Order, OrderSet
 from undine.exceptions import DirectiveLocationError
 from undine.ordering import OrderSetMeta
-from undine.typing import DjangoExpression
+from undine.typing import DjangoExpression, DjangoRequestProtocol
 from undine.utils.graphql.utils import get_underlying_type
 
 
@@ -233,7 +233,7 @@ def test_order__aliases() -> None:
         name = Order()
 
         @name.aliases
-        def name_aliases(self, info: GQLInfo, descending: bool) -> dict[str, DjangoExpression]:
+        def name_aliases(self, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]:
             return {"foo": Count("*")}
 
     data = ["name_asc"]
@@ -242,3 +242,26 @@ def test_order__aliases() -> None:
 
     assert results.order_by == [OrderBy(F("name"))]
     assert results.aliases == {"foo": Count("*")}
+
+
+def test_order__aliases__no_args() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.aliases()
+        def name_aliases(self, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]:
+            return {"foo": Count("*")}
+
+    info = mock_gql_info()
+    assert MyOrderSet.name.aliases_func(None, info, descending=True) == {"foo": Count("*")}
+
+
+def test_order__visible__no_args() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.visible()
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    assert MyOrderSet.name.visible_func(None, None) is False

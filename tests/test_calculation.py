@@ -6,7 +6,11 @@ from graphql import DirectiveLocation, GraphQLArgument, GraphQLInt, GraphQLNonNu
 
 from tests.helpers import mock_gql_info
 from undine import Calculation, CalculationArgument, Directive, GQLInfo
-from undine.exceptions import GraphQLMissingCalculationArgumentError, GraphQLUnexpectedCalculationArgumentError
+from undine.exceptions import (
+    GraphQLMissingCalculationArgumentError,
+    GraphQLUnexpectedCalculationArgumentError,
+    MissingCalculationReturnTypeError,
+)
 from undine.typing import DjangoExpression
 
 
@@ -215,3 +219,39 @@ def test_calculation__instance__extra_argument() -> None:
 
     with pytest.raises(GraphQLUnexpectedCalculationArgumentError):
         ExampleCalculation("foo", value=1, extra=2)
+
+
+def test_calculation__missing_return_type() -> None:
+    with pytest.raises(MissingCalculationReturnTypeError):
+
+        class BadCalc(Calculation):
+            def __call__(self, info: GQLInfo) -> DjangoExpression:
+                return Value(0)
+
+
+def test_calculation_argument__visible() -> None:
+    class ExampleCalculation(Calculation[int]):
+        value = CalculationArgument(int)
+
+        @value.visible
+        def my_visible(self, request) -> bool:
+            return True
+
+        def __call__(self, info: GQLInfo) -> DjangoExpression:
+            return Value(self.value)
+
+    assert ExampleCalculation.value.visible_func is not None
+
+
+def test_calculation_argument__visible__call() -> None:
+    class ExampleCalculation(Calculation[int]):
+        value = CalculationArgument(int)
+
+        @value.visible()
+        def my_visible(self, request) -> bool:
+            return True
+
+        def __call__(self, info: GQLInfo) -> DjangoExpression:
+            return Value(self.value)
+
+    assert ExampleCalculation.value.visible_func is not None

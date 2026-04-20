@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import NotRequired, TypedDict
 
 import pytest
@@ -8,6 +7,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from example_project.app.models import Person, Project, Task
+from tests.conftest import skip_if_async
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory
 from undine import (
     Calculation,
@@ -807,7 +807,7 @@ def test_end_to_end__filtering__max_filters(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-@pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Only running async version of this test")
+@skip_if_async
 def test_end_to_end__filtering__custom_resolver(graphql, undine_settings) -> None:
     undine_settings.ASYNC = False
 

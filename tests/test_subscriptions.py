@@ -220,3 +220,30 @@ async def test_signal_subscription__permissions(graphql, undine_settings) -> Non
                 extensions={"error_code": "PERMISSION_DENIED", "status_code": 403},
             )
         ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_signal_subscription__timeout(graphql, undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=True): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Subscription(RootType):
+        saved_tasks = Entrypoint(ModelSaveSubscription(TaskType, timeout=0.01))
+
+    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
+
+    payload = {"query": "subscription { savedTasks { pk name } }"}
+
+    async with graphql.websocket() as websocket:
+        await websocket.connection_init()
+
+        # Subscribe and wait for the timeout error message
+        result = await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME * 10)
+
+        assert result["type"] == "error"
+        assert result["payload"][0]["message"] == "Subscription timed out"

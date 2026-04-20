@@ -6,7 +6,11 @@ from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonN
 from example_project.app.models import Project, Task
 from tests.helpers import mock_gql_info
 from undine import Directive, DirectiveArgument, Entrypoint, Field, FilterSet, OrderSet, QueryType, RootType, UnionType
-from undine.exceptions import DirectiveLocationError
+from undine.exceptions import (
+    DirectiveLocationError,
+    GraphQLUnionResolveTypeInvalidValueError,
+    MissingUnionQueryTypeGenericError,
+)
 
 
 def test_union__str() -> None:
@@ -210,3 +214,38 @@ def test_union__orderset__decorator() -> None:
     class Commentable(UnionType[TaskType, ProjectType]): ...
 
     assert Commentable.__orderset__ == CommentableOrderSet
+
+
+def test_union__no_generic() -> None:
+    with pytest.raises(MissingUnionQueryTypeGenericError):
+
+        class Commentable(UnionType): ...
+
+
+def test_union__contains() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    assert TaskType in Commentable
+    assert ProjectType in Commentable
+
+
+def test_union__resolve_type__invalid_value() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    info = mock_gql_info()
+    abs_type = Commentable.__union_type__()
+
+    with pytest.raises(GraphQLUnionResolveTypeInvalidValueError):
+        Commentable.__resolve_type__("not_a_model", info, abs_type)

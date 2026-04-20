@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import dataclasses
 import json
+from typing import Any
 
-import pytest
-from graphql import ExecutionResult, GraphQLError, version_info
+from graphql import ExecutionResult, GraphQLError
 
+from example_project.app.models import Comment, Project, Task
+from undine import QueryType
 from undine.dataclasses import (
+    BulkCreateKwargs,
+    CacheControlResults,
     CompletedEventDataSC,
     CompletedEventDC,
     CompletedEventSC,
     IncrementalDeliveryComplete,
+    IncrementalDeliveryHeartbeat,
     IncrementalDeliveryResponse,
     KeepAliveSignalDC,
+    LazyGenericForeignKey,
+    LazyRelation,
     MultipartMixedHttpComplete,
     MultipartMixedHttpHeartbeat,
     MultipartMixedHttpResponse,
@@ -175,14 +183,51 @@ def test_multipart_mixed_http_heartbeat__encode() -> None:
     assert encoded == "\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{}"
 
 
+def test_multipart_mixed_http_response__formatted__with_errors() -> None:
+    payload = ExecutionResult(data={"count": 1})
+    errors = [GraphQLError("something went wrong")]
+    event_data = MultipartMixedHttpResponse(payload=payload, errors=errors)
+    formatted = event_data.formatted
+    assert "errors" in formatted
+    assert formatted["errors"][0]["message"] == "something went wrong"
+
+
 # Incremental delivery over HTTP mode
 
 
-@pytest.mark.skipif(version_info < (3, 3, 0), reason="requires graphql >= 3.3.0")
-def test_incremental_http_response__initial__encode() -> None:
-    from graphql import InitialIncrementalExecutionResult  # noqa: PLC0415
+@dataclasses.dataclass
+class MockInitialIncrementalExecutionResult:
+    data: dict[str, Any]
+    pending: list[Any] = dataclasses.field(default_factory=list)
+    has_next: bool = False
 
-    initial_result = InitialIncrementalExecutionResult(data={"count": 1})
+    @property
+    def formatted(self) -> dict[str, Any]:
+        return {"data": self.data, "pending": self.pending, "hasNext": self.has_next}
+
+
+@dataclasses.dataclass
+class MockIncrementalDeferResult:
+    data: dict[str, Any]
+    id: str
+
+    @property
+    def formatted(self) -> dict[str, Any]:
+        return {"data": self.data, "id": self.id}
+
+
+@dataclasses.dataclass
+class MockSubsequentIncrementalExecutionResult:
+    incremental: list[MockIncrementalDeferResult]
+    has_next: bool = False
+
+    @property
+    def formatted(self) -> dict[str, Any]:
+        return {"hasNext": self.has_next, "incremental": [item.formatted for item in self.incremental]}
+
+
+def test_incremental_http_response__initial__encode() -> None:
+    initial_result = MockInitialIncrementalExecutionResult(data={"count": 1})
     response = IncrementalDeliveryResponse(result=initial_result)
     encoded = response.encode()
 
@@ -191,12 +236,9 @@ def test_incremental_http_response__initial__encode() -> None:
     )
 
 
-@pytest.mark.skipif(version_info < (3, 3, 0), reason="requires graphql >= 3.3.0")
 def test_incremental_http_response__subsequent__encode() -> None:
-    from graphql import IncrementalDeferResult, SubsequentIncrementalExecutionResult  # noqa: PLC0415
-
-    defer_result = IncrementalDeferResult(data={"count": 1}, id="1")
-    initial_result = SubsequentIncrementalExecutionResult(incremental=[defer_result])
+    defer_result = MockIncrementalDeferResult(data={"count": 1}, id="1")
+    initial_result = MockSubsequentIncrementalExecutionResult(incremental=[defer_result])
     response = IncrementalDeliveryResponse(result=initial_result)
     encoded = response.encode()
 
@@ -214,3 +256,81 @@ def test_incremental_http_complete__encode() -> None:
     encoded = response.encode()
 
     assert encoded == "\r\n--graphql--\r\n"
+
+
+def test_incremental_http_heartbeat__encode() -> None:
+    response = IncrementalDeliveryHeartbeat()
+    encoded = response.encode()
+
+    assert encoded == '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}'
+
+
+# BulkCreateKwargs
+
+
+def test_bulk_create_kwargs__default() -> None:
+    kwargs = BulkCreateKwargs()
+    assert kwargs.update_fields is None
+    assert kwargs.update_conflicts is False
+    assert kwargs.unique_fields is None
+    assert bool(kwargs) is False
+
+
+def test_bulk_create_kwargs__with_update_fields() -> None:
+    kwargs = BulkCreateKwargs(update_fields={"name"})
+    assert kwargs.update_conflicts is True
+    assert kwargs.unique_fields == {"pk"}
+    assert bool(kwargs) is True
+
+
+def test_bulk_create_kwargs__iter() -> None:
+    kwargs = BulkCreateKwargs(update_fields={"name"})
+    assert set(kwargs) == {"update_fields", "update_conflicts", "unique_fields"}
+
+
+def test_bulk_create_kwargs__len() -> None:
+    kwargs = BulkCreateKwargs()
+    assert len(kwargs) == 3
+
+
+def test_bulk_create_kwargs__getitem() -> None:
+    kwargs = BulkCreateKwargs(update_fields={"name"})
+    assert kwargs["update_conflicts"] is True
+
+
+# CacheControlResults
+
+
+def test_cache_control_results__with_time_and_private() -> None:
+    result = CacheControlResults(cache_time=60, cache_per_user=True)
+    assert result.to_cache_control_header() == "max-age=60, private"
+
+
+def test_cache_control_results__time_only() -> None:
+    result = CacheControlResults(cache_time=120, cache_per_user=False)
+    assert result.to_cache_control_header() == "max-age=120"
+
+
+def test_cache_control_results__empty() -> None:
+    result = CacheControlResults(cache_time=0, cache_per_user=False)
+    assert result.to_cache_control_header() == ""
+
+
+# LazyRelation and LazyGenericForeignKey
+
+
+def test_lazy_relation__get_type() -> None:
+    class ProjectType(QueryType[Project]): ...
+
+    field = Task._meta.get_field("project")
+    lazy = LazyRelation(field=field)
+    assert lazy.get_type() is ProjectType
+
+
+def test_lazy_generic_foreign_key__get_types() -> None:
+    class TaskType(QueryType[Task]): ...
+
+    field = Comment._meta.get_field("target")
+    lazy = LazyGenericForeignKey(field=field)
+    types = lazy.get_types()
+    assert TaskType in types

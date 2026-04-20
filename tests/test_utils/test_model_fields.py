@@ -98,3 +98,7 @@ def test_text_choices_field__from_db_value__null__not_nullable() -> None:
     msg = ["This field cannot be null."]
     with pytest.raises(ValidationError, match=exact(str(msg))):
         field.validate(None, None)
+
+
+def test_text_choices_field__get_prep_value() -> None:
+    assert FIELD.get_prep_value("admin") == Role.ADMIN

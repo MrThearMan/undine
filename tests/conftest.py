@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generator
+import os
+from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pytest
 
@@ -49,3 +50,7 @@ def session_logger(settings) -> Generator[AccessLog, Any, None]:
         yield SessionStore.log
     finally:
         SessionStore.log = []
+
+
+def skip_if_async(func: Callable[..., Any]) -> Any:
+    return pytest.mark.skipif(os.getenv("ASYNC", "false").lower() == "true", reason="Sync only")(func)

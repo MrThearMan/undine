@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from django.db.models import CharField, Model
 from graphql import GraphQLNonNull, GraphQLString
 from modeltranslation.decorators import register
 from modeltranslation.translator import TranslationOptions
 
 from undine import FilterSet, MutationType, OrderSet, QueryType
+from undine.integrations import modeltranslation as modeltranslation_module
 
 
 class TestModel(Model):
@@ -239,3 +242,14 @@ def test_modeltranslation__orderset_orders__only_translations(undine_settings) -
 
     orders = TranslationOrderSet.__order_map__
     assert sorted(orders) == ["name_en", "name_fi"]
+
+
+def test_modeltranslation__is_translation_field__not_installed() -> None:
+    field = TestModel._meta.get_field("name")
+    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", False):
+        assert modeltranslation_module.is_translation_field(field) is False
+
+
+def test_modeltranslation__get_translatable_fields__not_installed() -> None:
+    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", False):
+        assert modeltranslation_module.get_translatable_fields(TestModel) == set()

@@ -3,7 +3,7 @@ from __future__ import annotations
 import operator
 
 import pytest
-from django.db.models import Count, Q, Subquery
+from django.db.models import Count, Q, Subquery, Value
 from django.db.models.functions import Now
 from graphql import DirectiveLocation, GraphQLBoolean, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLString
 
@@ -13,7 +13,7 @@ from undine import Directive, DirectiveArgument, Filter, FilterSet
 from undine.exceptions import DirectiveLocationError
 from undine.filtering import FilterSetMeta
 from undine.resolvers import FilterFunctionResolver, FilterModelFieldResolver
-from undine.typing import DjangoExpression, GQLInfo, ManyMatch
+from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo, ManyMatch
 
 
 def test_filter__repr() -> None:
@@ -208,6 +208,17 @@ def test_filter__function__with_args() -> None:
     assert MyFilter.in_the_past.distinct is True
 
 
+def test_filter__function__resolver__no_root_param() -> None:
+    def my_filter(*, value: str) -> Q:
+        return Q(name=value)
+
+    resolver = FilterFunctionResolver(func=my_filter)
+    assert resolver.root_param is None
+
+    result = resolver(root=None, info=mock_gql_info(), value="foo")
+    assert result == Q(name="foo")
+
+
 def test_filter__lookup() -> None:
     class MyFilter(FilterSet[Task], auto=False):
         name = Filter(lookup="in")
@@ -377,7 +388,7 @@ def test_filter__aliases() -> None:
         name = Filter()
 
         @name.aliases
-        def name_aliases(self, info: GQLInfo, value: str) -> dict[str, DjangoExpression]:
+        def name_aliases(self, info: GQLInfo, *, value: str) -> dict[str, DjangoExpression]:
             return {"foo": Count("*")}
 
     data = {"name": "foo"}
@@ -387,3 +398,26 @@ def test_filter__aliases() -> None:
     assert results.filters == [Q(name__exact="foo")]
     assert results.distinct is False
     assert results.aliases == {"foo": Count("*")}
+
+
+def test_filter__aliases__no_args() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+        @name.aliases()
+        def name_aliases(self, info: GQLInfo, *, value: str) -> dict[str, DjangoExpression]:
+            return {"foo": Value("bar")}
+
+    info = mock_gql_info()
+    assert MyFilterSet.name.aliases_func(None, info, value="foo") == {"foo": Value("bar")}
+
+
+def test_filter__visible__no_args() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+        @name.visible()
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    assert MyFilterSet.name.visible_func(None, None) is False

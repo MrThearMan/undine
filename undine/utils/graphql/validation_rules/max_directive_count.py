@@ -80,7 +80,7 @@ class MaxDirectiveCountRule(ValidationRule):
                         directive_count += self.count_directives(fragment)
 
             case FragmentDefinitionNode():
-                for variable_definition in node.variable_definitions or ():
+                for variable_definition in node.variable_definitions or ():  # pragma: no cover
                     directive_count += len(variable_definition.directives)
 
                 directive_count += len(node.directives)

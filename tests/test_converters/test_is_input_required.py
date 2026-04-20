@@ -115,3 +115,17 @@ def test_is_required__generic_relation() -> None:
 
     field = Task._meta.get_field("comments")
     assert is_input_required(field, caller=TaskCreateMutation.comments) is False
+
+
+def test_is_required__model__field_not_found() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        nonexistent = Input(Task)
+
+    assert is_input_required(Task, caller=TaskCreateMutation.nonexistent) is True
+
+
+def test_is_required__type_ref__nullable() -> None:
+    class TaskUpdateMutation(MutationType[Task]):
+        field = Input(int | None)
+
+    assert is_input_required(TypeRef(int | None), caller=TaskUpdateMutation.field) is False

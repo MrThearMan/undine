@@ -48,3 +48,57 @@ def test_validation_rules__max_aliases_count__at_limit(graphql, undine_settings)
     response = graphql(query)
 
     assert response.has_errors is False, response.errors
+
+
+def test_validation_rules__max_aliases_count__fragment_spread(graphql, undine_settings) -> None:
+    undine_settings.MAX_ALLOWED_ALIASES = 0
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment ExampleFrag on Query {
+            alias: example
+        }
+        query {
+            ...ExampleFrag
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.errors == [
+        {
+            "message": "Operation has more than 0 aliases, which exceeds the maximum allowed.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+def test_validation_rules__max_aliases_count__fragment_spread__already_visited(graphql, undine_settings) -> None:
+    undine_settings.MAX_ALLOWED_ALIASES = 1
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment ExampleFrag on Query {
+            alias: example
+        }
+        query {
+            ...ExampleFrag
+            ...ExampleFrag
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors

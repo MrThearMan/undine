@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import UserList
+from inspect import cleandoc
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import (
@@ -83,7 +84,7 @@ class DirectiveMeta(type):
             return super().__new__(cls, _name, _bases, _attrs)
 
         locations = kwargs.get("locations", [])
-        if locations is None:
+        if not locations:
             raise MissingDirectiveLocationsError(name=_name)
 
         directive = super().__new__(cls, _name, _bases, _attrs)
@@ -307,7 +308,7 @@ class DirectiveArgument:
 
     def __set__(self, instance: Directive | None, value: Any) -> None:
         if instance is None:
-            msg = f"Can't set attribute {self.name} on {type(self).__name__}"
+            msg = f"Can't set attribute {self.name!r} on {self.directive.__name__!r}"
             raise AttributeError(msg)
         instance.__parameters__[self.name] = value
 
@@ -475,7 +476,7 @@ class CacheRulesDirective(
         description="Whether the value is cached per user or not.",
     )
 
-    def __init__(self, *, cache_time: int = Undefined, cache_per_user: bool = False) -> None:  # type: ignore[assignment]
+    def __init__(self, *, cache_time: int = ..., cache_per_user: bool = False) -> None:  # type: ignore[assignment]
         """
         Create a new `CacheDirective`.
 
@@ -494,11 +495,15 @@ class CacheRulesDirective(
     def __connected__(self, other: Any) -> None:
         from undine import Entrypoint  # noqa: PLC0415
 
-        if self.cache_time is Undefined:
+        if self.cache_time is ...:
             if isinstance(other, Entrypoint):
                 self.cache_time = undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME
             else:
                 self.cache_time = None  # Inherit from parent
+
+        if self.cache_time is None:
+            msg = f"No `cache_time` defined for {type(self).__name__!r}"
+            raise ValueError(msg)
 
         if hasattr(other, "cache_time"):
             other: Entrypoint | Field | InterfaceField  # type: ignore[no-redef]
@@ -523,7 +528,7 @@ class SemanticNonNullDirective(
     levels = DirectiveArgument(
         GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLInt))),
         default_value=[0],
-        description=(
+        description=cleandoc(
             """
             Which parts of a list should be considered for the non-null check.
             For an n-dimensional list, integers 0 through n-1 account for the lists and n accounts for the items.

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from django.db.models import F, Q, Subquery
+import pytest
+from django.db.models import F, Func, Q, Subquery, Value
 from django.db.models.functions import Now
 
-from example_project.app.models import Comment, Task
-from undine import Filter, FilterSet
+from example_project.app.models import Comment, Project, ServiceRequest, Task
+from tests.helpers import mock_gql_info
+from undine import Filter, FilterSet, GQLInfo
 from undine.converters import convert_to_filter_ref
+from undine.dataclasses import UnionFilterRef
+from undine.exceptions import UnionModelFieldDirectUsageError, UnionModelFieldMismatchError
+from undine.typing import DjangoExpression
 
 
 def test_convert_to_filter_ref__str() -> None:
@@ -157,3 +162,114 @@ def test_convert_to_filter_ref__generic_foreign_key__direct_ref() -> None:
 
     field = Comment._meta.get_field("target")
     assert convert_to_filter_ref(Comment.target, caller=CommentFilterSet.target) == field
+
+
+def test_convert_to_filter_ref__str__multi_model() -> None:
+    class MultiFilterSet(FilterSet[Task, Project]):
+        name = Filter("name")
+
+    result = convert_to_filter_ref("name", caller=MultiFilterSet.name)
+    assert result == UnionFilterRef(ref="name", models=(Task, Project))
+
+
+def test_convert_to_filter_ref__str__multi_model__type_mismatch() -> None:
+    with pytest.raises(UnionModelFieldMismatchError):
+
+        class MultiFilterSet(FilterSet[Task, ServiceRequest]):
+            created_at = Filter("created_at")
+
+
+def test_convert_to_filter_ref__model_field__multi_model() -> None:
+    field = Task._meta.get_field("name")
+
+    class MultiFilterSet(FilterSet[Task, Project]):
+        name = Filter()
+
+    with pytest.raises(UnionModelFieldDirectUsageError):
+        convert_to_filter_ref(field, caller=MultiFilterSet.name)
+
+
+def test_convert_to_filter_ref__q_expression__calls_aliases_func() -> None:
+    q = Q(name="foo")
+
+    class TaskFilterSet(FilterSet[Task]):
+        custom = Filter(q)
+
+    info = mock_gql_info()
+    result = TaskFilterSet.custom.aliases_func(TaskFilterSet.custom, info, value=True)
+    assert result == {"custom": q}
+
+
+def test_convert_to_filter_ref__q_expression__with_existing_aliases_func() -> None:
+    q = Q(name="foo")
+
+    class TaskFilterSet(FilterSet[Task]):
+        custom = Filter(q)
+
+        @custom.aliases
+        def existing_func(root, info: GQLInfo, *, value: bool) -> dict[str, DjangoExpression]:
+            return {"existing": Value(value)}
+
+    info = mock_gql_info()
+    result = TaskFilterSet.custom.aliases_func(TaskFilterSet.custom, info, value=True)
+
+    assert result == {"custom": q, "existing": Value(True)}  # noqa: FBT003
+
+
+def test_convert_to_filter_ref__expression__calls_aliases_func() -> None:
+    expr = Now()
+
+    class TaskFilterSet(FilterSet[Task]):
+        custom = Filter(expr)
+
+    info = mock_gql_info()
+    result = TaskFilterSet.custom.aliases_func(TaskFilterSet.custom, info, value=True)
+    assert result == {"custom": expr}
+
+
+def test_convert_to_filter_ref__expression__with_existing_aliases_func() -> None:
+    expr = Now()
+
+    class TaskFilterSet(FilterSet[Task]):
+        custom = Filter(expr)
+
+        @custom.aliases
+        def existing_func(root, info: GQLInfo, *, value: bool) -> dict[str, DjangoExpression]:
+            return {"existing": Value(value)}
+
+    info = mock_gql_info()
+    result = TaskFilterSet.custom.aliases_func(TaskFilterSet.custom, info, value=True)
+
+    assert result == {"custom": expr, "existing": Value(True)}  # noqa: FBT003
+
+
+def test_convert_to_filter_ref__expression__multi_model() -> None:
+    expr = Now()
+
+    class MultiFilterSet(FilterSet[Task, Project]):
+        custom = Filter(expr)
+
+    result = convert_to_filter_ref(expr, caller=MultiFilterSet.custom)
+    assert result is expr
+
+
+def test_convert_to_filter_ref__expression__multi_model__type_mismatch() -> None:
+    class FieldFunc(Func):
+        function = "COALESCE"
+
+    expr = FieldFunc(F("created_at"))
+
+    with pytest.raises(UnionModelFieldMismatchError):
+
+        class MultiFilterSet(FilterSet[Task, ServiceRequest]):
+            created_at = Filter(expr)
+
+
+def test_convert_to_filter_ref__generic_foreign_key__multi_model() -> None:
+    field = Comment._meta.get_field("target")
+
+    class MultiFilterSet(FilterSet[Task, Project]):
+        name = Filter()
+
+    with pytest.raises(UnionModelFieldDirectUsageError):
+        convert_to_filter_ref(field, caller=MultiFilterSet.name)

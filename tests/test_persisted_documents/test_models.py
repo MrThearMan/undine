@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ValidationError
+from django.test import RequestFactory
 
 from tests.factories import PersistedDocumentFactory
+from undine.persisted_documents.admin import PersistedDocumentAdmin
+from undine.persisted_documents.models import PersistedDocument
 from undine.settings import example_schema
 
 
@@ -44,3 +48,24 @@ def test_persisted_document__invalid_document_id(undine_settings) -> None:
 
     error: ValidationError = exc_info.value
     assert error.messages == ["Document ID contains invalid characters: = @"]
+
+
+@pytest.mark.django_db
+def test_persisted_document__str(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    doc = PersistedDocumentFactory.create()
+    assert str(doc) == f"Persisted document '{doc.document_id}'"
+
+
+@pytest.mark.django_db
+def test_persisted_document_admin__permissions(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    factory = RequestFactory()
+    request = factory.get("/admin/")
+    request.user = AnonymousUser()
+
+    admin_instance = PersistedDocumentAdmin(PersistedDocument, None)
+
+    assert admin_instance.has_add_permission(request) is False
+    assert admin_instance.has_change_permission(request) is False
+    assert admin_instance.has_delete_permission(request) is False

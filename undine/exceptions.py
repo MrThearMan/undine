@@ -309,7 +309,7 @@ class NoFunctionParametersError(UndineError):
 class NotCompatibleWithError(UndineError):
     """Error raised if a given object is not compatible with some other object."""
 
-    msg = "Cannot use '{obj:dotpath}' with '{other:dotpath}'"
+    msg = "Cannot use '{obj}' with '{other}'"
 
 
 class FunctionDispatcherError(UndineError):

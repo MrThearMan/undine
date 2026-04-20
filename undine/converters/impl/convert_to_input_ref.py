@@ -173,8 +173,9 @@ def _(ref: type[MutationType], **kwargs: Any) -> Any:
     try:
         field: RelatedField | GenericField = get_model_field(model=model, lookup=caller.field_name)  # type: ignore[assignment]
     except ModelFieldDoesNotExistError:
-        # Allow using relations "wrong", e.g. provide single dict for many related field.
-        # Actual mutation for related mutations will be handled by the user.
+        # Allow MutationTypes to be used as inputs for non-model fields.
+        # Intended use case for this is to provide a single input object for updating a many-related field.
+        # Requires that the mutation is handled manually by the user.
         return ref
 
     relation_type = RelationType.for_related_field(field)

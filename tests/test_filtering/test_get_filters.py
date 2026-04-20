@@ -23,8 +23,8 @@ from django.db.models import (
     UUIDField,
 )
 
-from example_project.app.models import Task
-from undine.filtering import get_filters_for_model
+from example_project.app.models import Project, ServiceRequest, Task
+from undine.filtering import get_filters_for_model, get_filters_for_models
 
 
 class OneRelated(Model):
@@ -620,3 +620,70 @@ def test_get_filters_for_model__distinct() -> None:
 
     frt = filters["assignees"]
     assert frt.distinct is True
+
+
+def test_get_filters_for_models() -> None:
+    filters = get_filters_for_models((Task, Project))
+
+    # Both Task and Project have 'name', so it should be included.
+    assert "name" in filters
+    assert "name_contains" in filters
+
+    # Task-specific fields should not be included.
+    assert "type" not in filters
+    assert "done" not in filters
+
+
+def test_get_filters_for_models__exclude_pk() -> None:
+    filters = get_filters_for_models((Task, Project), exclude=["pk"])
+
+    assert "pk" not in filters
+    assert "name" in filters
+
+
+def test_get_filters_for_models__incompatible_field_types_excluded() -> None:
+    filters = get_filters_for_models((Task, Project))
+
+    assert sorted(filters) == [
+        "comments",
+        "comments_gt",
+        "comments_gte",
+        "comments_in",
+        "comments_is_null",
+        "comments_lt",
+        "comments_lte",
+        "name",
+        "name_contains",
+        "name_contains_exact",
+        "name_ends_with",
+        "name_ends_with_exact",
+        "name_exact",
+        "name_in",
+        "name_starts_with",
+        "name_starts_with_exact",
+        "pk",
+        "pk_contains",
+        "pk_ends_with",
+        "pk_gt",
+        "pk_gte",
+        "pk_in",
+        "pk_lt",
+        "pk_lte",
+        "pk_range",
+        "pk_starts_with",
+    ]
+
+
+def test_get_filters_for_models__mismatched_field_types_skipped() -> None:
+    # Task.created_at is DateTimeField, ServiceRequest.created_at is DateField.
+    # created_at will be in common_fields but with different types, so it should be excluded.
+    filters = get_filters_for_models((Task, ServiceRequest))
+    assert "created_at" not in filters
+
+
+def test_get_filters_for_models__exclude_generated_filter_name() -> None:
+    # Exclude a specific generated filter name (not just the field name).
+    filters = get_filters_for_models((Task, Project), exclude=["name_exact"])
+
+    assert "name" in filters
+    assert "name_exact" not in filters

@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.db.models import Field
 from graphql import Undefined
 
-from example_project.app.models import Comment, Project, Task
+from example_project.app.models import Comment, Project, Task, TaskStep
 from undine import Input, MutationType, QueryType
 from undine.converters import convert_to_default_value
 from undine.dataclasses import LazyLambda, TypeRef
@@ -32,6 +32,12 @@ def test_convert_to_default_value__field__blank() -> None:
 def test_convert_to_default_value__rel() -> None:
     rel = Task._meta.get_field("steps")
     result = convert_to_default_value(rel)
+    assert result is Undefined
+
+
+def test_convert_to_default_value__foreign_key__not_null() -> None:
+    field = TaskStep._meta.get_field("task")
+    result = convert_to_default_value(field)
     assert result is Undefined
 
 

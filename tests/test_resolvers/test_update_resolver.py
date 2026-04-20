@@ -160,3 +160,73 @@ async def test_update_resolver__async(undine_settings) -> None:
 
     assert isinstance(result, Task)
     assert result.name == "New task"
+
+
+@pytest.mark.django_db
+def test_update_resolver__non_model_return(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    task = TaskFactory.create(name="Test task")
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            return None
+
+    class Query(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    resolver = UpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.update_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
+
+    assert result is None
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_update_resolver__async__lookup_field_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    resolver = UpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.update_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"name": "New task"})
+    assert isawaitable(result)
+
+    with pytest.raises(GraphQLMissingLookupFieldError):
+        await result
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_update_resolver__async__non_model_return(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    task = await sync_to_async(TaskFactory.create)(name="Test task")
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            return None
+
+    class Query(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    resolver = UpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.update_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"pk": task.pk})
+    assert isawaitable(result)
+    result = await result
+
+    assert result is None

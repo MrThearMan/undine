@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import pytest
+from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
-from undine import Entrypoint, Field, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, create_schema
 
 
 @pytest.mark.django_db
@@ -249,3 +250,47 @@ def test_optimizer__fragment_spread__same_relation_in_multiple_fragments(graphql
     }
 
     response.assert_query_count(2)
+
+
+@pytest.mark.django_db
+def test_ast_walker__fragment_spread__flatten_abstract_type_selections(graphql, undine_settings) -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        type = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(ProjectType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="T1", type=TaskTypeChoices.TASK)
+    ProjectFactory.create(name="P1")
+
+    query = """
+        query {
+          named {
+            ...NamedFragment
+          }
+        }
+
+        fragment NamedFragment on Named {
+          ... on TaskType {
+            type
+          }
+          ... on ProjectType {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+    assert len(response.data["named"]) == 2

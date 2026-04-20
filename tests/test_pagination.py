@@ -567,3 +567,17 @@ def test_pagination_handler__paginate_prefetch_queryset__no_page_size__last(undi
     assert pagination.total_count == total_count
     assert str(pagination.start) == str(Greatest(total_count - Value(2), Value(0)))
     assert pagination.stop is None
+
+
+def test_pagination_handler__paginate_prefetch_queryset__requires_total_count_and_last(undine_settings) -> None:
+    related_field: ToManyField = Task._meta.get_field("assignees")
+
+    pagination = PaginationHandler(typename="Test", last=3, page_size=100)
+    pagination.requires_total_count = True
+    pagination.paginate_prefetch_queryset(Person.objects.all(), related_field, mock_gql_info())
+
+    total_count = F(undine_settings.PAGINATION_TOTAL_COUNT_KEY)
+
+    assert pagination.total_count == total_count
+    assert str(pagination.start) == str(Greatest(total_count - Value(3), Value(0)))
+    assert pagination.stop is None

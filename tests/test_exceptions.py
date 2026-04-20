@@ -5,10 +5,10 @@ from typing import Any, NamedTuple
 import pytest
 from django.db.models import Q
 from django.db.models.fields import CharField
-from graphql import DirectiveLocation, GraphQLError
+from graphql import DirectiveLocation, GraphQLError, NameNode
 
 from example_project.app.models import Project, Task
-from tests.helpers import parametrize_helper
+from tests.helpers import mock_gql_info, parametrize_helper
 from undine import Entrypoint
 from undine.exceptions import (
     BulkMutateNeedsImplementationError,
@@ -173,7 +173,6 @@ from undine.exceptions import (
 from undine.typing import GraphQLWebSocketCloseCode
 
 # Testing error message formatter
-
 
 formatter = ErrorMessageFormatter()
 
@@ -400,8 +399,8 @@ class UndineErrorParams(NamedTuple):
         ),
         NotCompatibleWithError.__name__: UndineErrorParams(
             cls=NotCompatibleWithError,
-            args={"obj": MyClass, "other": my_func},
-            message="Cannot use 'tests.test_exceptions.MyClass' with 'tests.test_exceptions.my_func'",
+            args={"obj": "MyClass", "other": "my_func"},
+            message="Cannot use 'MyClass' with 'my_func'",
         ),
         UnionTypeModelsDifferentError.__name__: UndineErrorParams(
             cls=UnionTypeModelsDifferentError,
@@ -513,6 +512,14 @@ def test_undine_error_group() -> None:
 
     assert list(group_1.flatten()) == [error_1, error_2]
     assert list(group_2.flatten()) == [error_1, error_2, error_3]
+
+
+def test_undine_error_group__with_kwargs() -> None:
+    class MyGroup(UndineErrorGroup):
+        msg = "Error: {name}"
+
+    err = MyGroup(errors=[ValueError("test")], name="test_name")
+    assert "test_name" in str(err)
 
 
 class GQLErrorParams(NamedTuple):
@@ -1094,6 +1101,80 @@ def test_graphql_error_group() -> None:
 
     assert list(group_1.flatten()) == [error_1, error_2]
     assert list(group_2.flatten()) == [error_1, error_2, error_3]
+
+
+def test_graphql_error_group__with_kwargs() -> None:
+    class MyGroup(GraphQLErrorGroup):
+        msg = "Error: {name}"
+
+    err = MyGroup(errors=[GraphQLError("test")], name="test_name")
+    assert "test_name" in err.args[0]
+
+
+def test_graphql_error_group__str() -> None:
+    error_1 = GraphQLError("foo")
+    error_2 = GraphQLError("bar")
+    group = GraphQLErrorGroup(errors=[error_1, error_2])
+    result = str(group)
+    assert "foo" in result
+    assert "bar" in result
+
+
+def test_graphql_error_group__located() -> None:
+    error = GraphQLError("test")
+    group = GraphQLErrorGroup(errors=[error])
+    group.located(path=["field"], nodes=None)
+    assert error.path == ["field"]
+
+
+def test_graphql_error_group__located__already_set() -> None:
+    error = GraphQLError("test", path=["existing"], nodes=[])
+    group = GraphQLErrorGroup(errors=[error])
+    group.located(path=["field"], nodes=None)
+    assert error.path == ["existing"]
+
+
+def test_graphql_error_group__flatten__non_graphql_error() -> None:
+    error = GraphQLError("real")
+    # Use a plain Exception that is not GraphQLError and not GraphQLErrorGroup
+    other = ValueError("not-graphql")
+    group = GraphQLErrorGroup(errors=[error, other])
+    result = list(group.flatten())
+    assert result == [error]
+
+
+def test_graphql_error_group__located__nodes_already_set() -> None:
+    existing_node = NameNode(value="test")
+    error = GraphQLError("test", nodes=[existing_node])
+    assert not error.path
+    assert error.nodes  # nodes already set
+
+    group = GraphQLErrorGroup(errors=[error])
+    group.located(path=["field"], nodes=None)
+
+    assert error.path == ["field"]
+    assert existing_node in error.nodes
+
+
+def test_graphql_status_error__no_code() -> None:
+    error = GraphQLStatusError("something went wrong")
+    assert "error_code" not in error.extensions
+    assert error.extensions["status_code"] == 500  # default status
+
+
+def test_graphql_status_error__graphql_fields() -> None:
+    fields = GraphQLStatusError.graphql_fields()
+    assert "message" in fields
+    assert "code" in fields
+    assert "status" in fields
+
+
+def test_graphql_status_error__graphql_resolve() -> None:
+    error = GraphQLPermissionError()
+    result = GraphQLStatusError.graphql_resolve(error, mock_gql_info())
+    assert result["message"] == "Permission denied."
+    assert result["code"] == "PERMISSION_DENIED"
+    assert result["status"] == 403
 
 
 class WebsocketErrorParams(NamedTuple):

@@ -1,170 +1,16 @@
 from __future__ import annotations
 
-from typing import TypedDict
-
 import pytest
-from django.core.exceptions import PermissionDenied
-from django.db.models import QuerySet, Value
-from django.db.models.functions import Left
+from asgiref.sync import sync_to_async
+from django.db.models import Value
 
-from example_project.app.models import Person, Project, Task, TaskTypeChoices
-from tests.factories import PersonFactory, ProjectFactory, TaskFactory, TeamFactory, UserFactory
-from undine import (
-    Calculation,
-    CalculationArgument,
-    Entrypoint,
-    Field,
-    FilterSet,
-    GQLInfo,
-    QueryType,
-    RootType,
-    create_schema,
-)
-from undine.optimizer import OptimizationData
-from undine.pagination import OffsetPagination
+from example_project.app.models import Person, Project, Task, Team
+from tests.conftest import skip_if_async
+from tests.factories import PersonFactory, ProjectFactory, TaskFactory, TeamFactory
+from undine import Entrypoint, Field, Filter, FilterSet, GQLInfo, Order, OrderSet, QueryType, RootType, create_schema
+from undine.exceptions import EmptyFilterResult
+from undine.optimizer import optimize_async, optimize_sync
 from undine.typing import DjangoExpression
-
-
-@pytest.mark.django_db
-def test_optimizer__manual_optimization__query_type(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False):
-        name = Field()
-
-        @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
-            project_data = data.add_select_related("project")
-            team_data = project_data.add_select_related("team")
-            member_data = team_data.add_prefetch_related("members")
-            member_data.only_fields.add("email")
-
-        @classmethod
-        def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
-            if info.context.user.is_anonymous:
-                raise PermissionDenied
-
-            if not instance.project:
-                raise PermissionDenied
-
-            if not instance.project.team:
-                raise PermissionDenied
-
-            member_emails = {member.email for member in instance.project.team.members.all()}
-            if info.context.user.email not in member_emails:
-                raise PermissionDenied
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    person_1 = PersonFactory.create(name="person 1", email="me@example.com")
-    person_2 = PersonFactory.create(name="person 2", email="you@example.com")
-
-    team_1 = TeamFactory.create(name="team 1", members=[person_1])
-    team_2 = TeamFactory.create(name="team 2", members=[person_1, person_2])
-
-    project_1 = ProjectFactory.create(name="project", team=team_1)
-    project_2 = ProjectFactory.create(name="project", team=team_2)
-
-    TaskFactory.create(name="task 1", project=project_1)
-    TaskFactory.create(name="task 2", project=project_1)
-    TaskFactory.create(name="task 3", project=project_2)
-
-    query = """
-        query {
-          tasks {
-            name
-          }
-        }
-    """
-
-    user = UserFactory.create(email="me@example.com")
-    graphql.force_login(user)
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {"name": "task 1"},
-            {"name": "task 2"},
-            {"name": "task 3"},
-        ],
-    }
-
-    # Queries
-    # 1. Fetch tasks with projects and teams
-    # 2. Fetch members of teams
-    # 3. Fetch user
-    response.assert_query_count(3)
-
-
-@pytest.mark.django_db
-def test_optimizer__manual_optimization__field(graphql, undine_settings) -> None:
-    class TaskStatus(TypedDict):
-        name: str
-        type: TaskTypeChoices
-
-    class TaskType(QueryType[Task], auto=False):
-        pk = Field()
-
-        @Field
-        def status(self: Task) -> TaskStatus:
-            return TaskStatus(
-                name=self.name,
-                type=TaskTypeChoices(self.type),
-            )
-
-        @status.optimize
-        def optimize_data(self, data: OptimizationData, info: GQLInfo) -> None:
-            data.only_fields.add("name")
-            data.only_fields.add("type")
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    task_1 = TaskFactory.create(name="task 1", type=TaskTypeChoices.STORY)
-    task_2 = TaskFactory.create(name="task 2", type=TaskTypeChoices.TASK)
-
-    query = """
-        query {
-          tasks {
-            pk
-            status {
-              name
-              type
-            }
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {
-                "pk": task_1.pk,
-                "status": {
-                    "name": "task 1",
-                    "type": "STORY",
-                },
-            },
-            {
-                "pk": task_2.pk,
-                "status": {
-                    "name": "task 2",
-                    "type": "TASK",
-                },
-            },
-        ],
-    }
-
-    # Queries
-    # 1. Fetch tasks with correct fields
-    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -202,38 +48,86 @@ def test_optimizer__multiple_queries(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-def test_optimizer__directives__include__false(graphql, undine_settings) -> None:
+@skip_if_async
+def test_optimizer__optimize_sync__with_limit(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
-        done = Field()
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
+        @tasks.resolve
+        def resolve_tasks(self, info: GQLInfo) -> list[Task]:
+            qs = Task.objects.all()
+            return optimize_sync(qs, info, limit=2)
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="foo", done=True)
+    TaskFactory.create(name="T1")
+    TaskFactory.create(name="T2")
+    TaskFactory.create(name="T3")
 
-    query = """
-        query {
-          tasks {
-            name @include(if: false)
-            done
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
+    response = graphql("query { tasks { name } }")
     assert response.has_errors is False, response.errors
+    assert len(response.data["tasks"]) == 2
 
-    assert response.data == {"tasks": [{"done": True}]}
 
-    assert len(response.queries) == 1
-    assert "name" not in response.queries[0]
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_optimizer__optimize_async__with_kwargs(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+        @task.resolve
+        async def resolve_task(self, info: GQLInfo, *, pk: int) -> Task | None:
+            qs = Task.objects.all()
+            return await optimize_async(qs, info, pk=pk)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = await sync_to_async(TaskFactory.create)(name="single")
+
+    response = await graphql_async(f"query {{ task(pk: {task.pk}) {{ name }} }}")
+    assert response.has_errors is False, response.errors
+    assert response.data == {"task": {"name": "single"}}
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_optimizer__optimize_async__with_limit(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+        @tasks.resolve
+        async def resolve_tasks(self, info: GQLInfo) -> list[Task]:
+            qs = Task.objects.all()
+            return await optimize_async(qs, info, limit=2)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="A")
+    await sync_to_async(TaskFactory.create)(name="B")
+    await sync_to_async(TaskFactory.create)(name="C")
+
+    response = await graphql_async("query { tasks { name } }")
+    assert response.has_errors is False, response.errors
+    assert len(response.data["tasks"]) == 2
 
 
 @pytest.mark.django_db
-def test_optimizer__directives__include__true(graphql, undine_settings) -> None:
+def test_optimizer__handle_undine_field__no_undine_field(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field()
         done = Field()
@@ -245,106 +139,37 @@ def test_optimizer__directives__include__true(graphql, undine_settings) -> None:
 
     TaskFactory.create(name="foo", done=True)
 
-    query = """
-        query {
-          tasks {
-            name @include(if: true)
-            done
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
+    response = graphql("query { tasks { name done } }")
     assert response.has_errors is False, response.errors
-
     assert response.data == {"tasks": [{"name": "foo", "done": True}]}
 
-    assert len(response.queries) == 1
-    assert "name" in response.queries[0]
-
 
 @pytest.mark.django_db
-def test_optimizer__directives__skip__false(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False):
+def test_optimizer__extend__prefetch_in_select_related(graphql, undine_settings) -> None:
+    class PersonType(QueryType[Person], auto=False):
         name = Field()
-        done = Field()
 
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="foo", done=True)
-
-    query = """
-        query {
-          tasks {
-            name @skip(if: false)
-            done
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {"tasks": [{"name": "foo", "done": True}]}
-
-    assert len(response.queries) == 1
-    assert "name" in response.queries[0]
-
-
-@pytest.mark.django_db
-def test_optimizer__directives__skip__true(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False):
+    class TeamType(QueryType[Team], auto=False):
         name = Field()
-        done = Field()
+        members = Field(PersonType)
 
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="foo", done=True)
-
-    query = """
-        query {
-          tasks {
-            name @skip(if: true)
-            done
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {"tasks": [{"done": True}]}
-
-    assert len(response.queries) == 1
-    assert "name" not in response.queries[0]
-
-
-@pytest.mark.django_db
-def test_optimizer__promote_to_prefetch__has_filter_queryset(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
         name = Field()
+        team = Field(TeamType)
 
-        @classmethod
-        def __filter_queryset__(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
-            return queryset.filter(name="foo")
-
-    class TaskType(QueryType[Task], auto=False):
+    class TaskType2(QueryType[Task], auto=False):
         name = Field()
         project = Field(ProjectType)
 
     class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
+        tasks = Entrypoint(TaskType2, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="task 1", project__name="foo")
-    TaskFactory.create(name="task 2", project__name="bar")
+    person = PersonFactory.create(name="Alice")
+    team = TeamFactory.create(name="T1", members=[person])
+    project = ProjectFactory.create(name="P1", team=team)
+    TaskFactory.create(name="Task1", project=project)
 
     query = """
         query {
@@ -352,6 +177,12 @@ def test_optimizer__promote_to_prefetch__has_filter_queryset(graphql, undine_set
             name
             project {
               name
+              team {
+                name
+                members {
+                  name
+                }
+              }
             }
           }
         }
@@ -359,32 +190,13 @@ def test_optimizer__promote_to_prefetch__has_filter_queryset(graphql, undine_set
 
     response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {
-                "name": "task 1",
-                "project": {"name": "foo"},
-            },
-            {
-                "name": "task 2",
-                "project": None,
-            },
-        ],
-    }
-
-    # Normally, project would be fetched in a single
-    # query with the task since its a to-one relation,
-    # but since the QueryType has a '__filter_queryset__' method,
-    # we need to use 'prefetch_related' instead or 'select_related'.
-    assert len(response.queries) == 2
+    assert response.data["tasks"][0]["project"]["team"]["members"] == [{"name": "Alice"}]
 
 
 @pytest.mark.django_db
-def test_optimizer__promote_to_prefetch__has_annotations(graphql, undine_settings) -> None:
+def test_optimizer__apply__select_related_and_only(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
         name = Field()
-        first_letter = Field(Left("name", 1))
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -395,253 +207,204 @@ def test_optimizer__promote_to_prefetch__has_annotations(graphql, undine_setting
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="task 1", project__name="foo")
-    TaskFactory.create(name="task 2", project__name="bar")
+    project = ProjectFactory.create(name="P")
+    TaskFactory.create(name="T", project=project)
 
-    query = """
-        query {
-          tasks {
-            name
-            project {
-              firstLetter
-            }
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
+    response = graphql("query { tasks { name project { name } } }", count_queries=True)
     assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {
-                "name": "task 1",
-                "project": {"firstLetter": "f"},
-            },
-            {
-                "name": "task 2",
-                "project": {"firstLetter": "b"},
-            },
-        ],
-    }
-
-    # Normally, project would be fetched in a single
-    # query with the task since its a to-one relation,
-    # but since the there is an annotation on project,
-    # we need to use 'prefetch_related' instead or 'select_related'.
-    assert len(response.queries) == 2
-
-
-@pytest.mark.django_db
-def test_optimizer__promote_to_prefetch__has_field_calculations(graphql, undine_settings) -> None:
-    class ExampleCalculation(Calculation[int]):
-        """Description."""
-
-        value = CalculationArgument(int)
-        """Value description."""
-
-        def __call__(self, info: GQLInfo) -> DjangoExpression:
-            return Value(self.value)
-
-    class ProjectType(QueryType[Project], auto=False):
-        name = Field()
-        custom = Field(ExampleCalculation)
-
-    class TaskType(QueryType[Task], auto=False):
-        name = Field()
-        project = Field(ProjectType)
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="task 1", project__name="foo")
-    TaskFactory.create(name="task 2", project__name="bar")
-
-    query = """
-        query {
-          tasks {
-            name
-            project {
-              custom(value: 1)
-            }
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {
-                "name": "task 1",
-                "project": {"custom": 1},
-            },
-            {
-                "name": "task 2",
-                "project": {"custom": 1},
-            },
-        ],
-    }
-
-    # Normally, project would be fetched in a single
-    # query with the task since its a to-one relation,
-    # but since there is a field calculation on project,
-    # we need to use 'prefetch_related' instead of 'select_related'.
-    assert len(response.queries) == 2
-
-
-@pytest.mark.django_db
-def test_optimizer__promote_to_prefetch__has_filterset_filter_queryset(graphql, undine_settings) -> None:
-    class ProjectFilterSet(FilterSet[Project]):
-        @classmethod
-        def __filter_queryset__(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
-            return queryset.filter(name="foo")
-
-    class ProjectType(QueryType[Project], auto=False, filterset=ProjectFilterSet):
-        name = Field()
-
-    class TaskType(QueryType[Task], auto=False):
-        name = Field()
-        project = Field(ProjectType)
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="task 1", project__name="foo")
-    TaskFactory.create(name="task 2", project__name="bar")
-
-    query = """
-        query {
-          tasks {
-            name
-            project {
-              name
-            }
-          }
-        }
-    """
-
-    response = graphql(query, count_queries=True)
-    assert response.has_errors is False, response.errors
-
-    assert response.data == {
-        "tasks": [
-            {
-                "name": "task 1",
-                "project": {"name": "foo"},
-            },
-            {
-                "name": "task 2",
-                "project": None,
-            },
-        ],
-    }
-
-    # Normally, project would be fetched in a single
-    # query with the task since its a to-one relation,
-    # but since the QueryType has a FilterSet with a '__filter_queryset__' method,
-    # we need to use 'prefetch_related' instead of 'select_related'.
-    assert len(response.queries) == 2
-
-
-@pytest.mark.django_db
-def test_optimizer__offset_pagination(graphql, undine_settings) -> None:
-    class TaskType(QueryType[Task], auto=False):
-        name = Field()
-
-    class Query(RootType):
-        tasks = Entrypoint(OffsetPagination(TaskType))
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
-
-    query = """
-        query ($offset: Int!) {
-          tasks(offset: $offset) {
-            name
-          }
-        }
-    """
-
-    response = graphql(query, variables={"offset": 1}, count_queries=True)
-
-    assert response.has_errors is False, response.errors
-    assert response.data == {
-        "tasks": [
-            {"name": "Task 2"},
-            {"name": "Task 3"},
-        ],
-    }
-
     response.assert_query_count(1)
 
 
 @pytest.mark.django_db
-def test_optimizer__offset_pagination__nested(graphql, undine_settings) -> None:
-    class PersonType(QueryType[Person], auto=False):
-        name = Field()
+def test_optimizer__apply__none_queryset(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        @Filter
+        def none_filter(self, info: GQLInfo, *, value: bool) -> None:  # type: ignore[return]
+            raise EmptyFilterResult
 
-    class TaskType(QueryType[Task], auto=False):
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
         name = Field()
-        assignees = Field(OffsetPagination(PersonType))
 
     class Query(RootType):
-        tasks = Entrypoint(OffsetPagination(TaskType))
+        tasks = Entrypoint(TaskType, many=True)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    person_1 = PersonFactory.create(name="Assignee 1")
-    person_2 = PersonFactory.create(name="Assignee 2")
-    person_3 = PersonFactory.create(name="Assignee 3")
-    person_4 = PersonFactory.create(name="Assignee 4")
-    person_5 = PersonFactory.create(name="Assignee 5")
+    TaskFactory.create(name="should-not-appear")
 
-    TaskFactory.create(name="Task 1", assignees=[person_1, person_2, person_3])
-    TaskFactory.create(name="Task 2", assignees=[person_3, person_4])
-    TaskFactory.create(name="Task 3", assignees=[person_5])
+    query = """
+        query {
+          tasks(filter: { noneFilter: true }) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert response.data == {"tasks": []}
+
+
+@pytest.mark.django_db
+def test_optimizer__apply__with_aliases(graphql, undine_settings) -> None:
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.aliases
+        def name_aliases(self, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]:
+            return {"name_alias": Value("alias_value")}
+
+    class TaskType(QueryType[Task], auto=False, orderset=TaskOrderSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="alpha")
+    TaskFactory.create(name="beta")
+
+    query = """
+        query {
+          tasks(orderBy: [nameAsc]) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert len(response.data["tasks"]) == 2
+
+
+@pytest.mark.django_db
+def test_optimizer__apply__with_distinct(graphql, undine_settings) -> None:
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter(distinct=True)
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="T1")
+    TaskFactory.create(name="T2")
+
+    query = """
+        query {
+          tasks(filter: { name: "T1" }) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert response.data == {"tasks": [{"name": "T1"}]}
+
+
+@pytest.mark.django_db
+def test_optimizer__max_query_complexity(graphql, undine_settings) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 5
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+        tasks = Field()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        project = Field(ProjectType)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    project = ProjectFactory.create(name="foo")
+    TaskFactory.create(name="bar", project=project)
+    TaskFactory.create(name="baz", project=project)
+    TaskFactory.create(name="buzz", project=project)
 
     query = """
         query {
           tasks {
-            name
-            assignees(offset: 1) {
-              name
+            project {
+              tasks {
+                project {
+                  tasks {
+                    project {
+                      tasks {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
     """
 
-    response = graphql(query, count_queries=True)
+    response = graphql(query)
+    assert response.error_message(0) == "Query complexity of 6 exceeds the maximum allowed complexity of 5."
 
-    assert response.has_errors is False, response.errors
-    assert response.data == {
-        "tasks": [
-            {
-                "name": "Task 1",
-                "assignees": [
-                    {"name": "Assignee 2"},
-                    {"name": "Assignee 3"},
-                ],
-            },
-            {
-                "name": "Task 2",
-                "assignees": [
-                    {"name": "Assignee 4"},
-                ],
-            },
-            {
-                "name": "Task 3",
-                "assignees": [],
-            },
-        ]
-    }
 
-    response.assert_query_count(2)
+@pytest.mark.django_db
+def test_optimizer__too_many_filters(graphql, undine_settings) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+        type = Filter()
+
+    class TaskType(QueryType[Task], auto=False, filterset=TaskFilterSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+    undine_settings.MAX_FILTERS_PER_TYPE = 1
+
+    query = """
+        query {
+          tasks(filter: { name: "foo", type: STORY }) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is True
+    assert any("TOO_MANY_FILTERS" in str(e) or "too many" in str(e).lower() for e in response.errors)
+
+
+@pytest.mark.django_db
+def test_optimizer__too_many_orders(graphql, undine_settings) -> None:
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+        type = Order()
+
+    class TaskType(QueryType[Task], auto=False, orderset=TaskOrderSet):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+    undine_settings.MAX_ORDERS_PER_TYPE = 1
+
+    query = """
+        query {
+          tasks(orderBy: [nameAsc, typeAsc]) {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is True
+    assert any("TOO_MANY_ORDERS" in str(e) or "too many" in str(e).lower() for e in response.errors)

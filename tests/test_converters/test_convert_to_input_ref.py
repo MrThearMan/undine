@@ -4,15 +4,17 @@ import datetime
 import decimal
 import uuid
 from enum import Enum
+from typing import Any
 
 import pytest
 from django.db.models import F, TextChoices
 
 from example_project.app.models import Comment, Person, Project, Report, Task, TaskResult, TaskStep
-from undine import Input, MutationType
+from undine import GQLInfo, Input, MutationType
 from undine.converters import convert_to_input_ref
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import InvalidInputMutationTypeError
+from undine.utils.mutation_tree import mutate
 
 
 def test_convert_to_input_ref__str() -> None:
@@ -186,3 +188,47 @@ def test_convert_to_input_ref__generic_foreign_key() -> None:
         target = Input(field)
 
     assert convert_to_input_ref(field, caller=CommentCreateMutation.target) == field
+
+
+def test_convert_to_input_ref__mutation_type__single_input_for_many_related_field() -> None:
+    class TaskStepMutation(MutationType[TaskStep], kind="related", auto=False):
+        done = Input()
+
+    class TaskUpdateMutation(MutationType[Task], auto=False):
+        name = Input()
+        step_data = Input(TaskStepMutation, many=False, required=False)
+
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> Task:
+            step_data = input_data.pop("step_data", None)
+            task = mutate(model=Task, data=input_data, related_action=cls.__related_action__)
+            if step_data:
+                task.steps.update(**step_data)
+            return task
+
+    assert TaskUpdateMutation.step_data.ref == TaskStepMutation
+
+
+def test_convert_to_input_ref__mutation_type__generic_relation() -> None:
+    class RelatedCommentMutation(MutationType[Comment], kind="related"): ...
+
+    assert "target" in RelatedCommentMutation.__input_map__
+
+    class TaskCreateMutation(MutationType[Task]):
+        comments = Input(RelatedCommentMutation)
+
+    result = convert_to_input_ref(RelatedCommentMutation, caller=TaskCreateMutation.comments)
+    assert result is RelatedCommentMutation
+
+    # Reverse field is removed from the input map
+    assert "target" not in RelatedCommentMutation.__input_map__
+
+
+def test_convert_to_input_ref__mutation_type__generic_foreign_key_related() -> None:
+    class RelatedTaskMutation(MutationType[Task], kind="related"): ...
+
+    class CommentCreateMutation(MutationType[Comment]):
+        target = Input(RelatedTaskMutation)
+
+    result = convert_to_input_ref(RelatedTaskMutation, caller=CommentCreateMutation.target)
+    assert result is RelatedTaskMutation

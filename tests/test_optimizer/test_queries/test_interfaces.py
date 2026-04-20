@@ -21,7 +21,7 @@ from undine import (
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint(graphql, undine_settings) -> None:
+def test_optimizer__interfaces(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -87,7 +87,7 @@ def test_interfaces__entrypoint(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__only_one_fragment(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__only_one_fragment(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -148,7 +148,7 @@ def test_interfaces__entrypoint__only_one_fragment(graphql, undine_settings) -> 
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__only_interface_fields(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__only_interface_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -204,7 +204,7 @@ def test_interfaces__entrypoint__only_interface_fields(graphql, undine_settings)
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__only_fragment_fields(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__only_fragment_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -265,7 +265,7 @@ def test_interfaces__entrypoint__only_fragment_fields(graphql, undine_settings) 
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -317,7 +317,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment(graphql
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment__typename(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typename(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -372,7 +372,7 @@ def test_interfaces__entrypoint__only_fragment_fields__from_one_fragment__typena
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__multiple_interface_fields(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__multiple_interface_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         id = InterfaceField(GraphQLNonNull(GraphQLInt))
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -444,7 +444,7 @@ def test_interfaces__entrypoint__multiple_interface_fields(graphql, undine_setti
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__typename(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__typename(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -515,7 +515,7 @@ def test_interfaces__entrypoint__typename(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__filtering(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__filtering(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -586,7 +586,7 @@ def test_interfaces__entrypoint__filtering(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-def test_interfaces__entrypoint__ordering(graphql, undine_settings) -> None:
+def test_optimizer__interfaces__ordering(graphql, undine_settings) -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
@@ -644,3 +644,121 @@ def test_interfaces__entrypoint__ordering(graphql, undine_settings) -> None:
     }
 
     response.assert_query_count(3)
+
+
+@pytest.mark.django_db
+def test_optimizer__interfaces__skip_inline_fragment(graphql, undine_settings) -> None:
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        pk = Field()
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        type = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(ProjectType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="Project 1")
+    TaskFactory.create(name="Task 1", type=TaskTypeChoices.TASK)
+
+    query = """
+        query {
+          named {
+            name
+            ... on ProjectType @skip(if: true) {
+              pk
+            }
+            ... on TaskType {
+              type
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    # ProjectType fragment was skipped, so only TaskType fields appear
+    assert all("pk" not in item for item in response.data["named"])
+
+
+@pytest.mark.django_db
+def test_optimizer__interfaces__inline_fragment_no_type_condition(graphql, undine_settings) -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        type = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        pk = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(ProjectType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="P1")
+    TaskFactory.create(name="T1", type=TaskTypeChoices.BUG_FIX)
+
+    query = """
+        query {
+          named {
+            ... {
+              name
+            }
+            ... on TaskType {
+              type
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    named = response.data["named"]
+    assert len(named) > 0
+
+
+@pytest.mark.django_db
+def test_optimizer__interfaces__no_other_fields(graphql, undine_settings) -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        pk = Field()
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        type = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(ProjectType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="Project 1")
+    TaskFactory.create(name="Task 1", type=TaskTypeChoices.STORY)
+
+    query = """
+        query {
+          named {
+            name
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert len(response.data["named"]) == 2

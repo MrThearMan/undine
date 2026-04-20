@@ -26,8 +26,10 @@ from undine.exceptions import (
     GraphQLMissingOperationsError,
     GraphQLMissingQueryError,
     GraphQLPersistedDocumentNotFoundError,
+    GraphQLPersistedDocumentsNotSupportedError,
     GraphQLRequestDecodingError,
     GraphQLStatusError,
+    GraphQLUnsupportedContentTypeError,
 )
 from undine.parsers import GraphQLRequestParamsParser
 from undine.persisted_documents.apps import UndinePersistedDocumentsConfig
@@ -538,3 +540,74 @@ def test_parse_graphql_params__aqp__invalid_hash(undine_settings) -> None:
 
     with pytest.raises(GraphQLAPQHashInvalidError):
         GraphQLRequestParamsParser.run(request)
+
+
+def test_parse_graphql_params__unsupported_application_content_type() -> None:
+    request = MockRequest(
+        method="POST",
+        content_type="application/xml",
+        body=b"<query>hello</query>",
+    )
+
+    with pytest.raises(GraphQLUnsupportedContentTypeError):
+        GraphQLRequestParamsParser.run(request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.usefixtures("_no_persisted_documents")
+async def test_parse_graphql_params__async__no_query__persisted_docs_not_installed() -> None:
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"variables": {}}',
+    )
+
+    with pytest.raises(GraphQLMissingQueryError):
+        await GraphQLRequestParamsParser.run_async(request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.usefixtures("_no_persisted_documents")
+async def test_parse_graphql_params__async__persisted_docs_only__not_installed(undine_settings) -> None:
+    undine_settings.PERSISTED_DOCUMENTS_ONLY = True
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"variables": {}}',
+    )
+
+    with pytest.raises(GraphQLPersistedDocumentsNotSupportedError):
+        await GraphQLRequestParamsParser.run_async(request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_parse_graphql_params__async__persisted_documents_only__no_document_id(undine_settings) -> None:
+    undine_settings.PERSISTED_DOCUMENTS_ONLY = True
+
+    await sync_to_async(PersistedDocumentFactory.create)(document_id="1", document="query { hello }")
+
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"variables": {}}',
+    )
+
+    with pytest.raises(GraphQLMissingDocumentIDError):
+        await GraphQLRequestParamsParser.run_async(request)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_parse_graphql_params__async__persisted_document__not_found() -> None:
+    request = MockRequest(
+        method="POST",
+        content_type="application/json",
+        body=b'{"documentId": "nonexistent", "variables": {}}',
+    )
+
+    with pytest.raises(GraphQLPersistedDocumentNotFoundError):
+        await GraphQLRequestParamsParser.run_async(request)

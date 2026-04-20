@@ -4,12 +4,17 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator
+from contextlib import suppress
 from http import HTTPStatus
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from asgiref.typing import HTTPRequestEvent, WebSocketDisconnectEvent
+from channels.exceptions import InvalidChannelLayerError, StopConsumer
 from django.conf import settings as django_settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import caches
+from django.http import HttpResponse
 from graphql import GraphQLError
 
 from tests.helpers import TEST_WAIT_TIME
@@ -35,9 +40,26 @@ from tests.test_integrations.helpers import (
     sse_send_request,
 )
 from undine import Entrypoint, RootType, create_schema
+from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import GraphQLErrorGroup
 from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.typing import GQLInfo, PingMessage, PongMessage, RequestMethod, SSEState
+from undine.integrations.channels import (
+    GraphQLSSEOperationRouter,
+    GraphQLWebSocketConsumer,
+    SSEEventStreamConsumer,
+    SSEOperationConsumer,
+    SSEStreamReservationConsumer,
+)
+from undine.typing import (
+    GQLInfo,
+    PingMessage,
+    PongMessage,
+    RequestMethod,
+    SSEOperationCancelEvent,
+    SSEOperationResultEvent,
+    SSEState,
+    SSEStreamOpenEvent,
+)
 from undine.utils.graphql.server_sent_events import (
     get_sse_operation_claim_key,
     get_sse_operation_key,
@@ -112,6 +134,21 @@ async def test_channels__websocket__subscribe(graphql, undine_settings) -> None:
         result = await websocket.receive()
         assert result["type"] == "complete"
         assert result["id"] == operation_id
+
+
+async def test_channels__websocket__disconnect_method() -> None:
+    consumer = GraphQLWebSocketConsumer()
+    consumer.handler = MagicMock()
+    consumer.handler.disconnect = AsyncMock()
+
+    # Patch base_send so StopConsumer doesn't crash the test
+    consumer.base_send = AsyncMock()
+
+    event = WebSocketDisconnectEvent(type="websocket.disconnect", code=1000, reason="error")
+    with pytest.raises(StopConsumer):
+        await consumer.websocket_disconnect(event)
+
+    consumer.handler.disconnect.assert_awaited_once()
 
 
 # SSE - Authentication
@@ -447,6 +484,57 @@ async def test_channels__sse__get_stream__stream_token_missing() -> None:
     assert response["json"]["errors"][0]["message"] == "Stream token missing"
 
 
+async def test_channels__sse__get_stream__event_stream_disconnect_before_open() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+
+    communicator = make_sse_communicator(
+        method="GET",
+        headers=[(b"accept", b"text/event-stream")],
+        query_string=f"token={token}".encode(),
+        user=user,
+        session=session,
+    )
+    await sse_send_request(communicator)
+    start = await communicator.receive_output(timeout=3)
+    assert start["type"] == "http.response.start"
+
+    # Send a disconnect before the stream body is sent (force http.disconnect)
+    await communicator.send_input({"type": "http.disconnect"})
+
+    # The consumer should handle the disconnect gracefully
+    # without trying to send the close body (since `_stream_opened` may be False)
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+
+async def test_channels__sse__get_stream__operation_event_stream_not_opened() -> None:
+    consumer = SSEEventStreamConsumer()
+    consumer._stream_opened = False
+    consumer.base_send = AsyncMock()
+
+    event = SSEOperationResultEvent(type="sse.operation.event", event="data: test\n\n")
+    await consumer.sse_operation_event(event)
+
+    # `base_send` should not have been called since stream is not opened
+    consumer.base_send.assert_not_awaited()
+
+
+async def test_channels__sse__get_stream__disconnect_before_stream_opened() -> None:
+    consumer = SSEEventStreamConsumer()
+    consumer._stream_opened = False
+    consumer.scope = make_http_scope(query_string=b"token=test-token")  # type: ignore[arg-type]
+    consumer.messages = []
+    consumer.handler = MagicMock()
+    consumer.handler.disconnect_stream = AsyncMock()
+    consumer.base_send = AsyncMock()
+
+    await consumer.disconnect()
+
+    consumer.handler.disconnect_stream.assert_awaited_once_with("test-token")
+    consumer.base_send.assert_not_awaited()
+
+
 # SSE - Keep-alive pings
 
 
@@ -767,6 +855,152 @@ async def test_channels__sse__subscribe__cache_claim_released_after_session_save
     assert await cache.aget(cache_key) is None
 
 
+async def test_channels__sse__subscribe__sse_stream_open() -> None:
+    consumer = SSEOperationConsumer()
+    consumer._stream_opened = asyncio.Event()
+
+    event = SSEStreamOpenEvent(type="sse.stream.open")
+    await consumer.sse_stream_open(event)
+
+    assert consumer._stream_opened.is_set()
+
+
+async def test_channels__sse__subscribe__sse_stream_open__already_open() -> None:
+    consumer = SSEOperationConsumer()
+    consumer._stream_opened = asyncio.Event()
+    consumer._stream_opened.set()  # already set
+
+    event = SSEStreamOpenEvent(type="sse.stream.open")
+    await consumer.sse_stream_open(event)
+
+    # Should still be set (no error, no-op effectively)
+    assert consumer._stream_opened.is_set()
+
+
+async def test_channels__sse__subscribe__operation_consumer_disconnect_with_token() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+    await _open_stream(user, session, token)
+
+    communicator = make_sse_operation_communicator(user=user, session=session, token=token)
+    body = make_operation_body(query="subscription { nonexistent }", operation_id="op-dc")
+
+    # Send the request but force a disconnect immediately
+    await communicator.send_input({"type": "http.request", "body": body, "more_body": False})
+
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+    # Send http.disconnect to trigger disconnect() in the consumer
+    await communicator.send_input({"type": "http.disconnect"})
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+
+async def test_channels__sse__subscribe__dispatch_loop_channel_task_done_covers_wait_for_branch() -> None:
+    consumer = SSEOperationConsumer()
+    consumer._stream_opened = asyncio.Event()
+    consumer.base_send = AsyncMock()
+    consumer.scope = make_http_scope(headers=[(b"x-graphql-event-stream-token", b"test-token")])  # type: ignore[arg-type]
+    consumer.messages = []
+    consumer.handler = MagicMock()
+    consumer.handler.disconnect_operation = AsyncMock()
+
+    # An operation task that completes immediately.
+    async def instant_operation() -> None:
+        pass
+
+    consumer.operation = asyncio.create_task(instant_operation())
+    # Let the event loop run so the operation task is already done.
+    await asyncio.sleep(0)
+
+    loop = asyncio.get_event_loop()
+
+    def make_done_future() -> asyncio.Future:
+        future: asyncio.Future = loop.create_future()
+        future.set_result(SSEOperationCancelEvent(type="sse.operation.cancel"))
+        return future
+
+    consumer.channel_receive = make_done_future  # type: ignore[method-assign]
+
+    async def blocking_receive() -> None:
+        await asyncio.sleep(100)
+
+    # dispatch_loop exits via StopConsumer when the already-done operation is detected.
+    with suppress(StopConsumer):
+        await consumer.dispatch_loop(blocking_receive)
+
+    # The operation task is still done (not re-cancelled).
+    assert consumer.operation.done()
+
+
+async def test_channels__sse__subscribe__disconnect_cancels_pending_operation() -> None:
+    consumer = SSEOperationConsumer()
+    consumer.scope = make_http_scope(headers=[(b"x-graphql-event-stream-token", b"test-token")])  # type: ignore[arg-type]
+    consumer.messages = []
+    consumer.handler = MagicMock()
+    consumer.handler.disconnect_operation = AsyncMock()
+    consumer.base_send = AsyncMock()
+
+    async def slow_operation() -> None:
+        await asyncio.sleep(100)
+
+    consumer.operation = asyncio.create_task(slow_operation())
+    assert not consumer.operation.done()
+
+    await consumer.disconnect()
+
+    assert consumer.operation.done()
+    assert consumer.operation.cancelled()
+
+
+async def test_channels__sse__subscribe__execute_on_stream_open__cancelled_after_accept() -> None:
+    consumer = SSEOperationConsumer()
+    consumer._stream_opened = asyncio.Event()
+    consumer._stream_opened.set()
+    consumer.base_send = AsyncMock()
+    consumer.scope = make_http_scope()  # type: ignore[arg-type]
+    consumer.messages = []
+    consumer.handler = MagicMock()
+    consumer.handler.execute_operation = AsyncMock(side_effect=asyncio.CancelledError())
+    consumer.handler.finalize_operation = AsyncMock()
+
+    params = GraphQLHttpParams(document="query { test }", variables={}, operation_name=None, extensions={})
+
+    await consumer.execute_on_stream_open("test-token", "op-1", params)
+
+    # finalize_operation must always run (finally block).
+    consumer.handler.finalize_operation.assert_awaited_once_with("test-token", "op-1")
+    # Only two base_send calls for the 202 ACCEPTED response; no 204 response.
+    assert consumer.base_send.call_count == 2
+
+
+async def test_channels__sse__subscribe__sse_operation_cancel__when_operation_none() -> None:
+    consumer = SSEOperationConsumer()
+    consumer.operation = None
+
+    event = SSEOperationCancelEvent(type="sse.operation.cancel")
+    await consumer.sse_operation_cancel(event)
+
+    assert consumer.operation is None
+
+
+async def test_channels__sse__subscribe__sse_operation_cancel__when_operation_already_done() -> None:
+    consumer = SSEOperationConsumer()
+
+    async def instant_operation() -> None:
+        pass
+
+    consumer.operation = asyncio.create_task(instant_operation())
+    await asyncio.sleep(0)
+    assert consumer.operation.done()
+
+    event = SSEOperationCancelEvent(type="sse.operation.cancel")
+    await consumer.sse_operation_cancel(event)
+
+    # Still done, not re-cancelled.
+    assert consumer.operation.done()
+
+
 # SSE - Cancel Subscription
 
 
@@ -985,6 +1219,39 @@ async def test_channels__sse__cancel_subscription__stream_token_missing() -> Non
 
     assert response["status"] == HTTPStatus.BAD_REQUEST
     assert response["json"]["errors"][0]["message"] == "Stream token missing"
+
+
+async def test_channels__sse__cancel_subscription__after_accept(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_SSE = True
+
+    class Query(RootType):
+        @Entrypoint
+        def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    user = await _create_user()
+    session = await _create_session(user)
+    token = await _reserve_stream(user, session)
+    stream_communicator = await _open_stream(user, session, token)
+
+    operation_id = "op-584"
+    op_communicator = make_sse_operation_communicator(user=user, session=session, token=token)
+    body = make_operation_body(query="query { test }", operation_id=operation_id)
+    await sse_send_request(op_communicator, body=body)
+
+    op_response = await sse_get_response(op_communicator)
+    assert op_response["status"] == HTTPStatus.ACCEPTED
+
+    # Consume the events on the stream
+    next_event = await sse_read_stream_event(stream_communicator)
+    assert next_event["event"] == "next"
+
+    complete_event = await sse_read_stream_event(stream_communicator)
+    assert complete_event["event"] == "complete"
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 # SSE - Stream Event Tests
@@ -2046,6 +2313,16 @@ async def test_channels__sse_router__post_without_token_routes_to_asgi(http_vers
     router.sse_application.assert_not_awaited()
 
 
+async def test_channels__sse_router__other_method_routes_to_asgi() -> None:
+    router = get_graphql_sse_router()
+    scope = make_http_scope(method="PATCH")  # type: ignore[arg-type]
+
+    await router(scope, None, None)
+
+    router.django_application.assert_awaited_once()
+    router.sse_application.assert_not_awaited()
+
+
 # SSE Operation Router
 
 
@@ -2152,3 +2429,114 @@ async def test_channels__sse_operation_router__cancellation(undine_settings) -> 
     router.event_stream_consumer.assert_not_awaited()
     router.operation_consumer.assert_not_awaited()
     router.operation_cancellation_consumer.assert_awaited_once()
+
+
+async def test_channels__sse_operation_router__send_http_response_static() -> None:
+    events = []
+
+    async def mock_send(event: dict) -> None:  # noqa: RUF029
+        events.append(event)
+
+    response = HttpResponse(content=b"hello", status=200, content_type="text/plain")
+    await GraphQLSSEOperationRouter.send_http_response(mock_send, response=response)
+
+    assert len(events) == 2
+    assert events[0]["type"] == "http.response.start"
+    assert events[0]["status"] == 200
+
+    assert events[1]["type"] == "http.response.body"
+    assert events[1]["body"] == b"hello"
+    assert events[1]["more_body"] is False
+
+
+# SSE consumer
+
+
+async def test_channels__sse_consumer__no_channel_layer() -> None:
+    consumer = SSEStreamReservationConsumer()
+
+    scope = make_http_scope(method="PUT")
+    scope["session"] = None  # type: ignore[typeddict-unknown-key]
+
+    with (
+        patch("undine.integrations.channels.get_channel_layer", return_value=None),
+        pytest.raises(InvalidChannelLayerError),
+    ):
+        await consumer(scope, None, None)  # type: ignore[arg-type]
+
+
+async def test_channels__sse_consumer__chunked_body_request() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+
+    # First, reserve a stream normally to get the session into a known state
+    communicator = make_sse_communicator(
+        method="PUT",
+        headers=[(b"accept", b"text/plain")],
+        user=user,
+        session=session,
+    )
+
+    # Send body with more_body=True first (partial chunk), then False to complete
+    await communicator.send_input(HTTPRequestEvent(type="http.request", body=b"", more_body=True))
+    # The consumer is waiting for more body -> send the final chunk
+    await communicator.send_input(HTTPRequestEvent(type="http.request", body=b"", more_body=False))
+
+    response = await sse_get_response(communicator)
+    assert response["status"] == HTTPStatus.CREATED
+
+
+async def test_channels__sse_consumer__unexpected_exception_in_handler() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+
+    communicator = make_sse_communicator(
+        method="PUT",
+        headers=[(b"accept", b"text/plain")],
+        user=user,
+        session=session,
+    )
+
+    with patch(
+        "undine.integrations.channels.SSEStreamReservationConsumer.handle",
+        new=AsyncMock(side_effect=RuntimeError("boom")),
+    ):
+        await sse_send_request(communicator)
+        response = await sse_get_response(communicator)
+
+    assert response["status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert "boom" in response["json"]["errors"][0]["message"]
+
+
+async def test_channels__sse_consumer__graphql_error_group_response() -> None:
+    user = await _create_user()
+    session = await _create_session(user)
+
+    communicator = make_sse_communicator(
+        method="PUT",
+        headers=[(b"accept", b"text/plain")],
+        user=user,
+        session=session,
+    )
+
+    error_group = GraphQLErrorGroup([GraphQLError("err1"), GraphQLError("err2")])
+
+    with patch(
+        "undine.integrations.channels.SSEStreamReservationConsumer.handle",
+        new=AsyncMock(side_effect=error_group),
+    ):
+        await sse_send_request(communicator)
+        response = await sse_get_response(communicator)
+
+    # GraphQLErrorGroup has no extensions.status_code so defaults to 500
+    assert response["status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+async def test_channels__sse_consumer__http_request__raises_stop_consumer_when_unauthenticated() -> None:
+    consumer = SSEStreamReservationConsumer()
+    consumer.scope = make_http_scope(user=AnonymousUser())  # type: ignore[arg-type]
+    consumer.base_send = AsyncMock()
+
+    message = HTTPRequestEvent(type="http.request", body=b"", more_body=False)
+    with pytest.raises(StopConsumer):
+        await consumer.http_request(message)

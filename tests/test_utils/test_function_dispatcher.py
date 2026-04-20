@@ -2,13 +2,18 @@ from __future__ import annotations
 
 from functools import wraps
 from types import FunctionType
-from typing import Any, Callable, Literal, NotRequired, Required
+from typing import Any, Callable, Literal, NotRequired, Required, Union
 
 import pytest
 from graphql import Undefined
 
 from tests.helpers import exact
-from undine.exceptions import FunctionDispatcherError, FunctionDispatcherImplementationNotFoundError
+from undine.exceptions import (
+    FunctionDispatcherError,
+    FunctionDispatcherImplementationNotFoundError,
+    FunctionDispatcherImproperLiteralError,
+    FunctionDispatcherUnknownArgumentError,
+)
 from undine.typing import Lambda
 from undine.utils.function_dispatcher import FunctionDispatcher
 
@@ -58,7 +63,7 @@ def test_function_dispatcher__wrong_implementation() -> None:
     dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
 
     @dispatcher.register
-    def _(key: str) -> str:  # pragma: no cover
+    def _(key: str) -> str:
         return key
 
     with pytest.raises(FunctionDispatcherImplementationNotFoundError):
@@ -81,7 +86,7 @@ def test_function_dispatcher__different_implementations() -> None:
     dispatcher: FunctionDispatcher[int | str] = FunctionDispatcher()
 
     @dispatcher.register
-    def _(key: int) -> int:  # noqa: FURB118
+    def _(key: int) -> int:
         return -key
 
     @dispatcher.register
@@ -119,7 +124,7 @@ def test_function_dispatcher__class_should_not_use_instance_implementation() -> 
 
     @dispatcher.register
     def _(key: Parent) -> int:
-        return key.foo  # pragma: no cover
+        return key.foo
 
     with pytest.raises(FunctionDispatcherError):
         dispatcher(Child)
@@ -319,3 +324,84 @@ def test_function_dispatcher__literals() -> None:
     assert dispatcher(1) == 11
 
     assert dispatcher(2) == 22
+
+
+def test_function_dispatcher__class_getitem() -> None:
+    result = FunctionDispatcher[str]
+    assert result is FunctionDispatcher
+
+
+def test_function_dispatcher__contains() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: str) -> str:
+        return key
+
+    assert "test" in dispatcher
+    assert 42 not in dispatcher
+
+
+def test_function_dispatcher__lambda_no_impl() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: str) -> str:
+        return key
+
+    with pytest.raises(FunctionDispatcherImplementationNotFoundError):
+        dispatcher(lambda x: x)
+
+
+def test_function_dispatcher__unhashable_instance() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: list) -> str:
+        return str(key)
+
+    result = dispatcher([1, 2, 3])
+    assert result == "[1, 2, 3]"
+
+
+def test_function_dispatcher__improper_literal() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    with pytest.raises(FunctionDispatcherImproperLiteralError):
+
+        @dispatcher.register
+        def _(key: Literal[1.0]) -> str:  # float is not a valid LiteralArg
+            return str(key)
+
+
+def test_function_dispatcher__unknown_argument() -> None:
+
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    with pytest.raises(FunctionDispatcherUnknownArgumentError):
+
+        @dispatcher.register
+        def _(key: str | dict[str, int]) -> str:
+            return str(key)
+
+
+def test_function_dispatcher__type_union_arg() -> None:
+
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(key: type[Union[str, int]]) -> str:
+        return "str or int type"
+
+    assert dispatcher(str) == "str or int type"
+    assert dispatcher(int) == "str or int type"
+
+
+def test_function_dispatcher__type_generic_nested_arg() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    with pytest.raises(Exception):  # noqa: B017,PT011
+
+        @dispatcher.register
+        def _(key: type[str | list[str]]) -> str:
+            return "nested"

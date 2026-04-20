@@ -19,9 +19,11 @@ from example_project.example.models import (
     NestedExampleRMTM,
     NestedExampleROTO,
 )
+from tests.conftest import skip_if_async
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory, TeamFactory
 from tests.factories.example import ExampleFactory
-from undine import Entrypoint, Field, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.optimizer import OptimizationData
 
 ###############################################################################################
 
@@ -30,7 +32,7 @@ def example_schema() -> None:
     class ExampleGenericType(QueryType[ExampleGeneric]):
         @Field
         def content_type(self: ExampleGeneric) -> int:
-            return self.content_type.pk  # pragma: no cover
+            return self.content_type.pk
 
     class ExampleType(QueryType[Example]): ...
 
@@ -1486,6 +1488,174 @@ def test_optimizer__relations__generic_foreign_key__with_nested_relations(graphq
 
 
 @pytest.mark.django_db
+def test_optimizer__relations__generic_foreign_key__reuse_existing(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class CommentType(QueryType[Comment], auto=False):
+        target = Field()
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.BUG_FIX.value)
+    CommentFactory.create(contents="c1", target=task)
+    CommentFactory.create(contents="c2", target=task)
+
+    query = """
+        query {
+          comments {
+            target {
+              ... on TaskType {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+    assert all(c["target"]["type"] == "BUG_FIX" for c in response.data["comments"])
+
+
+@pytest.mark.django_db
+@skip_if_async
+def test_optimizer__relations__generic_foreign_key__skip_inline_fragment(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class CommentType(QueryType[Comment], auto=False):
+        target = Field()
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.STORY.value)
+    CommentFactory.create(contents="c1", target=task)
+
+    query = """
+        query {
+          comments {
+            target {
+              ... on TaskType @skip(if: true) {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_optimizer__relations__generic_foreign_key__typename_field(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class CommentType(QueryType[Comment], auto=False):
+        target = Field()
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.TASK.value)
+    CommentFactory.create(contents="c1", target=task)
+
+    query = """
+        query {
+          comments {
+            target {
+              __typename
+              ... on TaskType {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_optimizer__relations__generic_foreign_key__inline_fragment_no_type_condition(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class CommentType(QueryType[Comment], auto=False):
+        contents = Field()
+        target = Field()
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.BUG_FIX.value)
+    CommentFactory.create(contents="test", target=task)
+
+    query = """
+        query {
+          comments {
+            target {
+              ... {
+                __typename
+              }
+              ... on TaskType {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_optimizer__relations__generic_foreign_key__custom_to_attr(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class CommentType(QueryType[Comment], auto=False):
+        target = Field()
+
+        @classmethod
+        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+            data.add_generic_prefetch_related("target", Task, query_type=TaskType, to_attr="task_target")
+            data.add_generic_prefetch_related("target", Project, query_type=ProjectType, to_attr="task_target")
+
+    class Query(RootType):
+        comments = Entrypoint(CommentType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(type=TaskTypeChoices.STORY.value)
+    CommentFactory.create(contents="c1", target=task)
+
+    query = "query { comments { target { ... on TaskType { type } } } }"
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+
+# Misc.
+
+
+@pytest.mark.django_db
 def test_optimizer__relations__same_relation_multiple_times(graphql, undine_settings) -> None:
     class PersonType(QueryType[Person], auto=False):
         name = Field()
@@ -1644,49 +1814,3 @@ def test_optimizer__relations__related_objects_shared_by_multiple_objects(graphq
     }
 
     response.assert_query_count(2)
-
-
-@pytest.mark.django_db
-def test_optimizer__relations__max_query_complexity(graphql, undine_settings) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 5
-
-    class ProjectType(QueryType[Project], auto=False):
-        name = Field()
-        tasks = Field()
-
-    class TaskType(QueryType[Task], auto=False):
-        name = Field()
-        project = Field(ProjectType)
-
-    class Query(RootType):
-        tasks = Entrypoint(TaskType, many=True)
-
-    undine_settings.SCHEMA = create_schema(query=Query)
-
-    project = ProjectFactory.create(name="foo")
-    TaskFactory.create(name="bar", project=project)
-    TaskFactory.create(name="baz", project=project)
-    TaskFactory.create(name="buzz", project=project)
-
-    query = """
-        query {
-          tasks {
-            project {
-              tasks {
-                project {
-                  tasks {
-                    project {
-                      tasks {
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-    """
-
-    response = graphql(query)
-    assert response.error_message(0) == "Query complexity of 6 exceeds the maximum allowed complexity of 5."

@@ -1,34 +1,63 @@
 from __future__ import annotations
 
 from typing import NamedTuple
+from unittest.mock import patch
 
 import pytest
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
-from django.db.models import CharField, DateField
+from django.db.models import CharField, DateField, F, Value
+from django.db.models.fields.related import ManyToManyRel
 from django.db.models.functions import Upper
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
+from django.db.utils import IntegrityError
 
 from example_project.app.models import AcceptanceCriteria, Comment, Project, Report, Task, Team
 from tests.factories import ProjectFactory, TaskFactory
 from tests.helpers import parametrize_helper
 from undine.dataclasses import BulkCreateKwargs
-from undine.exceptions import GraphQLModelNotFoundError, ModelFieldDoesNotExistError, ModelFieldNotARelationError
+from undine.exceptions import (
+    ExpressionMultipleOutputFieldError,
+    ExpressionNoOutputFieldError,
+    GraphQLDuplicatePrimaryKeysError,
+    GraphQLModelConstraintViolationError,
+    GraphQLModelNotFoundError,
+    GraphQLModelsNotFoundError,
+    GraphQLPrimaryKeysMissingError,
+    ModelFieldDoesNotExistError,
+    ModelFieldNotARelationError,
+)
 from undine.utils.model_utils import (
+    SubqueryCount,
+    convert_integrity_errors,
+    create_union_queryset,
     determine_output_field,
     generic_foreign_key_for_generic_relation,
     generic_relations_for_generic_foreign_key,
     get_bulk_create_kwargs,
     get_bulk_create_update_fields,
+    get_db_features,
+    get_field_name,
     get_instance_or_raise,
     get_instances_or_raise,
+    get_many_to_many_through_field,
     get_model,
     get_model_field,
     get_model_fields_for_graphql,
+    get_pks_from_list_of_dicts,
+    get_related_query_name,
     get_save_update_fields,
     get_validation_error_messages,
+    has_default,
+    is_generic_foreign_key,
     is_to_many,
     is_to_one,
     lookup_to_display_name,
+    set_forward_ids,
+    use_delete_signals,
+    use_m2m_add_signals,
+    use_m2m_remove_signals,
+    use_save_signals,
 )
 
 pytestmark = [
@@ -434,3 +463,312 @@ class ValidationErrorTestParams(NamedTuple):
 )
 def test_get_validation_error_messages(error, output) -> None:
     assert get_validation_error_messages(error) == output
+
+
+def test_get_instances_or_raise__multiple_missing() -> None:
+    with pytest.raises(GraphQLModelsNotFoundError):
+        get_instances_or_raise(model=Project, pks=[1, 2])
+
+
+def test_get_pks_from_list_of_dicts() -> None:
+    result = get_pks_from_list_of_dicts([{"pk": 1}, {"pk": 2}])
+    assert result == [1, 2]
+
+
+def test_get_pks_from_list_of_dicts__missing_pk() -> None:
+    with pytest.raises(GraphQLPrimaryKeysMissingError):
+        get_pks_from_list_of_dicts([{"pk": 1}, {"name": "no pk"}])
+
+
+def test_get_pks_from_list_of_dicts__duplicate_pks() -> None:
+    with pytest.raises(GraphQLDuplicatePrimaryKeysError):
+        get_pks_from_list_of_dicts([{"pk": 1}, {"pk": 1}])
+
+
+def test_get_model__not_found_no_app_label() -> None:
+    result = get_model(name="NonExistentModel999")
+    assert result is None
+
+
+def test_get_many_to_many_through_field__forward() -> None:
+    field = Task._meta.get_field("assignees")
+    result = get_many_to_many_through_field(field)
+    assert result is not None
+
+
+def test_get_many_to_many_through_field__reverse() -> None:
+    field = Task._meta.get_field("assignees")
+    rel: ManyToManyRel = field.remote_field
+    result = get_many_to_many_through_field(rel)
+    assert result is not None
+
+
+def test_get_related_query_name__callable() -> None:
+    field = Task._meta.get_field("acceptancecriteria")
+    # Test that we get a string result regardless of whether it's callable or not
+    result = get_related_query_name(field)
+    assert isinstance(result, str)
+
+
+def test_get_related_query_name__callable_method() -> None:
+    class MockFieldWithCallable:
+        name = "field"
+
+        @property
+        def related_query_name(self):
+            return lambda: "query_name"
+
+    result = get_related_query_name(MockFieldWithCallable())
+    assert result == "query_name"
+
+
+def test_get_field_name() -> None:
+    field = Task._meta.get_field("project")
+    assert get_field_name(field) == "project"
+
+
+def test_get_related_query_name__non_callable() -> None:
+    class MockField:
+        related_query_name = "query_name"
+        name = "field"
+
+    result = get_related_query_name(MockField())
+    assert result == "query_name"
+
+
+def test_get_related_query_name__no_attr() -> None:
+    class MockField:
+        name = "field"
+
+    result = get_related_query_name(MockField())
+    assert result == "field"
+
+
+def test_is_generic_foreign_key__true() -> None:
+    field = Comment._meta.get_field("target")
+    assert is_generic_foreign_key(field) is True
+
+
+def test_is_generic_foreign_key__false() -> None:
+    field = Task._meta.get_field("project")
+    assert is_generic_foreign_key(field) is False
+
+
+def test_has_default__auto_now() -> None:
+    field = Task._meta.get_field("created_at")
+    assert has_default(field) is True
+
+
+def test_has_default__no_default() -> None:
+    field = Task._meta.get_field("name")
+    assert has_default(field) is False
+
+
+def test_use_save_signals__no_listeners() -> None:
+    project = Project(name="Test")
+    with use_save_signals(Project, [project], update_fields=None):
+        pass  # just verify no error
+
+
+def test_use_delete_signals__no_listeners() -> None:
+    project = Project(name="Test")
+    with use_delete_signals(Project, [project]):
+        pass  # just verify no error
+
+
+def test_use_m2m_signals__no_listeners() -> None:
+    task = TaskFactory.build()
+    task.pk = 998
+    with use_m2m_remove_signals(Task, {task: {1}}, target_name="assignees", reverse=False):
+        pass
+
+    with use_m2m_add_signals(Task, {task: {1}}, target_name="assignees", reverse=False):
+        pass
+
+
+def test_use_save_signals() -> None:
+    received = []
+
+    def handler(sender, instance, **kwargs):
+        received.append((sender, instance))
+
+    pre_save.connect(handler, sender=Project)
+    post_save.connect(handler, sender=Project)
+
+    project = Project(name="Test")
+    try:
+        with use_save_signals(Project, [project], update_fields=None):
+            pass
+    finally:
+        pre_save.disconnect(handler, sender=Project)
+        post_save.disconnect(handler, sender=Project)
+
+    assert len(received) == 2
+
+
+def test_use_delete_signals() -> None:
+    received = []
+
+    def handler(sender, instance, **kwargs):
+        received.append((sender, instance))
+
+    pre_delete.connect(handler, sender=Project)
+    post_delete.connect(handler, sender=Project)
+
+    project = Project(name="Test")
+    try:
+        with use_delete_signals(Project, [project]):
+            pass
+    finally:
+        pre_delete.disconnect(handler, sender=Project)
+        post_delete.disconnect(handler, sender=Project)
+
+    assert len(received) == 2
+
+
+def test_use_m2m_remove_signals() -> None:
+    received = []
+
+    def handler(sender, action, **kwargs):
+        received.append(action)
+
+    m2m_changed.connect(handler, sender=Task)
+
+    task = TaskFactory.build()
+    task.pk = 999
+    try:
+        with use_m2m_remove_signals(Task, {task: {1}}, target_name="assignees", reverse=False):
+            pass
+    finally:
+        m2m_changed.disconnect(handler, sender=Task)
+
+    assert "pre_remove" in received
+    assert "post_remove" in received
+
+
+def test_use_m2m_add_signals() -> None:
+    received = []
+
+    def handler(sender, action, **kwargs):
+        received.append(action)
+
+    m2m_changed.connect(handler, sender=Task)
+
+    task = TaskFactory.build()
+    task.pk = 999
+    try:
+        with use_m2m_add_signals(Task, {task: {1}}, target_name="assignees", reverse=False):
+            pass
+    finally:
+        m2m_changed.disconnect(handler, sender=Task)
+
+    assert "pre_add" in received
+    assert "post_add" in received
+
+
+def test_determine_output_field__sub_expressions() -> None:
+    # ExpressionWrapper without output_field at creation time but with sub-expressions
+    # that have output_field
+    inner = Value(1)
+    expr = inner + Value(2)
+    output_field = determine_output_field(expr, model=Task)
+    assert output_field is not None
+
+
+def test_determine_output_field__with_f_expression() -> None:
+    # Use a combination expression where one sub-expr is F
+    class ExprWithoutOutputField:
+        def get_source_expressions(self):
+            return [F("name")]
+
+    expr = ExprWithoutOutputField()
+    output_field = determine_output_field(expr, model=Task)
+    assert output_field is not None
+
+
+def test_determine_output_field__sub_expr_no_output_field_no_f() -> None:
+    class UnknownExpr:
+        pass
+
+    class ExprWithUnknownSource:
+        def get_source_expressions(self):
+            return [UnknownExpr()]
+
+    expr = ExprWithUnknownSource()
+    # This should skip the expr since it has no output_field and is not F
+    # ExpressionNoOutputFieldError since no fields collected
+    with pytest.raises(Exception):  # noqa: PT011,B017
+        determine_output_field(expr, model=Task)
+
+
+def test_determine_output_field__no_output_fields() -> None:
+    class ExprWithNoSources:
+        def get_source_expressions(self):
+            return []
+
+    expr = ExprWithNoSources()
+    with pytest.raises(ExpressionNoOutputFieldError):
+        determine_output_field(expr, model=Task)
+
+
+def test_determine_output_field__multiple_output_fields() -> None:
+    class ExprWithMultipleSources:
+        def get_source_expressions(self):
+            return [Value("text"), Value(1)]
+
+    expr = ExprWithMultipleSources()
+    with pytest.raises(ExpressionMultipleOutputFieldError):
+        determine_output_field(expr, model=Task)
+
+
+def test_set_forward_ids__with_generic_fk() -> None:
+    comment = Comment(object_id="1")
+    set_forward_ids(comment)  # should not error
+
+
+def test_create_union_queryset() -> None:
+    qs1 = Task.objects.filter(pk=1)
+    qs2 = Task.objects.filter(pk=2)
+    result = create_union_queryset([qs1, qs2])
+    assert result is not None
+
+
+def test_get_db_features() -> None:
+    features = get_db_features()
+    assert features is not None
+
+
+def test_create_union_queryset__no_reorder() -> None:
+    get_db_features()
+    features_with_support = type("F", (), {"supports_slicing_ordering_in_compound": True})()
+
+    with patch("undine.utils.model_utils.get_db_features", return_value=features_with_support):
+        qs1 = Task.objects.filter(pk=1)
+        qs2 = Task.objects.filter(pk=2)
+        result = create_union_queryset([qs1, qs2])
+        assert result is not None
+
+
+def test_subquery_count__repr__exception() -> None:
+    qs = Task.objects.all()
+    sq = SubqueryCount(qs)
+
+    class BrokenQuery:
+        def __str__(self):
+            msg = "broken"
+            raise ValueError(msg)
+
+    sq.query = BrokenQuery()
+    result = repr(sq)
+    assert "<subquery>" in result
+
+
+def test_set_forward_ids() -> None:
+    task = Task(name="Test")
+    set_forward_ids(task)  # just verify no error
+
+
+def test_convert_integrity_errors() -> None:
+    msg = "UNIQUE constraint failed: app_task.name"
+    with pytest.raises(GraphQLModelConstraintViolationError), convert_integrity_errors():
+        raise IntegrityError(msg)

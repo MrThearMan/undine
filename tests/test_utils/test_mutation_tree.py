@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import datetime
+
 import pytest
 from django.contrib.contenttypes.models import ContentType
 
+from example_project.app.models import Comment, ServiceRequest, Task, TaskResult, TaskStep, TaskTypeChoices
 from example_project.example.models import Example, ExampleGeneric
 from pytest_undine.query_logging import capture_database_queries
+from tests.factories import PersonFactory, TaskFactory, TaskResultFactory, TaskStepFactory, TeamFactory
 from tests.factories.example import (
     ExampleFactory,
     ExampleFFKFactory,
@@ -14,7 +18,15 @@ from tests.factories.example import (
     ExampleRMTMFactory,
     ExampleROTOFactory,
 )
-from undine.utils.mutation_tree import mutate
+from undine.dataclasses import RelInfo
+from undine.exceptions import (
+    GraphQLInvalidInputDataError,
+    GraphQLMutationTreeModelMismatchError,
+    GraphQLRelationMultipleInstancesError,
+    GraphQLRelationNotNullableError,
+)
+from undine.typing import RelatedAction, RelationType
+from undine.utils.mutation_tree import MutationNode, mutate
 
 
 @pytest.mark.django_db
@@ -603,3 +615,389 @@ def test_mutation_optimization__generic_foreign_key__pk(undine_settings) -> None
 
     assert example_generic.content_object is not None
     assert example_generic.content_object == example
+
+
+@pytest.mark.django_db
+def test_mutation__forward_o2o__none__not_nullable(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.FORWARD_ONE_TO_ONE,
+        field_name="request",
+        model=Task,
+        model_pk_type=int,
+        nullable=False,
+        related_name="task",
+        related_model=Task,
+        related_model_pk_type=int,
+        related_nullable=False,
+    )
+    node = MutationNode(model=Task, related_action=RelatedAction.null)
+    instance = Task()
+
+    with pytest.raises(GraphQLRelationNotNullableError):
+        node._handle_forward_o2o(None, rel_info, instance, MutationNode(model=Task))
+
+
+@pytest.mark.django_db
+def test_mutation__forward_o2o__invalid_data(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.FORWARD_ONE_TO_ONE,
+        field_name="request",
+        model=Task,
+        model_pk_type=int,
+        nullable=True,
+        related_name="task",
+        related_model=Task,
+        related_model_pk_type=int,
+        related_nullable=True,
+    )
+    node = MutationNode(model=Task, related_action=RelatedAction.null)
+    instance = Task()
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        node._handle_forward_o2o([1, 2, 3], rel_info, instance, MutationNode(model=Task))
+
+
+@pytest.mark.django_db
+def test_mutation__reverse_o2o__invalid_data(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.REVERSE_ONE_TO_ONE,
+        field_name="result",
+        model=Task,
+        model_pk_type=int,
+        nullable=True,
+        related_name="task",
+        related_model=TaskResult,
+        related_model_pk_type=int,
+        related_nullable=True,
+    )
+    node = MutationNode(model=Task, related_action=RelatedAction.null)
+    instance = Task()
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        node._handle_reverse_o2o([1, 2, 3], rel_info, instance, MutationNode(model=TaskResult))
+
+
+@pytest.mark.django_db
+def test_mutation__reverse_o2o__ignore__multiple_instances(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    existing_result = TaskResultFactory.create()
+    task = existing_result.task
+
+    data = {
+        "pk": task.pk,
+        "result": {"details": "new result", "time_used": None},
+    }
+
+    with pytest.raises(GraphQLRelationMultipleInstancesError):
+        mutate(model=Task, data=data, related_action=RelatedAction.ignore)
+
+
+@pytest.mark.django_db
+def test_mutation__o2m__invalid_data(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.REVERSE_ONE_TO_MANY,
+        field_name="steps",
+        model=Task,
+        model_pk_type=int,
+        nullable=True,
+        related_name="task",
+        related_model=TaskStep,
+        related_model_pk_type=int,
+        related_nullable=False,
+    )
+    node = MutationNode(model=Task, related_action=RelatedAction.null)
+    instance = Task()
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        node._handle_o2m("invalid_string", rel_info, instance, MutationNode(model=TaskStep))
+
+
+@pytest.mark.django_db
+def test_mutation__m2m__invalid_data(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.FORWARD_MANY_TO_MANY,
+        field_name="example_fmtm_set",
+        model=Example,
+        model_pk_type=int,
+        nullable=True,
+        related_name="example_set",
+        related_model=ExampleGeneric,
+        related_model_pk_type=int,
+        related_nullable=True,
+    )
+    node = MutationNode(model=Example, related_action=RelatedAction.null)
+    instance = Example()
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        node._handle_m2m("invalid_string", rel_info, instance, MutationNode(model=ExampleGeneric))
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__not_dict(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    ContentType.objects.get_for_model(Example)
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        mutate(
+            model=ExampleGeneric,
+            data={
+                "name": "bar",
+                "content_object": 123,
+            },
+        )
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__empty_dict(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    ContentType.objects.get_for_model(Example)
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        mutate(
+            model=ExampleGeneric,
+            data={
+                "name": "bar",
+                "content_object": {},
+            },
+        )
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__unknown_model(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    ContentType.objects.get_for_model(Example)
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        mutate(
+            model=ExampleGeneric,
+            data={
+                "name": "bar",
+                "content_object": {"UnknownModel": {"name": "foo"}},
+            },
+        )
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__null_value(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    ContentType.objects.get_for_model(Task)
+
+    comment = mutate(
+        model=Comment,
+        data={
+            "contents": "test comment",
+            "target": {"task": None},
+        },
+    )
+
+    comment.refresh_from_db()
+    assert comment.contents == "test comment"
+    assert comment.target is None
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__invalid_model_data(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    ContentType.objects.get_for_model(Task)
+
+    with pytest.raises(GraphQLInvalidInputDataError):
+        mutate(
+            model=Comment,
+            data={
+                "contents": "test comment",
+                "target": {"task": 123},
+            },
+        )
+
+
+@pytest.mark.django_db
+def test_mutation__merge__model_mismatch(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    task_node = MutationNode(model=Task)
+    step_node = MutationNode(model=TaskStep)
+
+    with pytest.raises(GraphQLMutationTreeModelMismatchError):
+        task_node.merge(step_node)
+
+
+@pytest.mark.django_db
+def test_mutation__merge__before_and_after_nodes(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    team = TeamFactory.create(name="team")
+
+    data = [
+        {
+            "name": "task1",
+            "type": TaskTypeChoices.TASK,
+            "project": {"name": "p1", "team": team.pk},
+        },
+        {
+            "name": "task2",
+            "type": TaskTypeChoices.TASK,
+            "project": {"name": "p2", "team": team.pk},
+        },
+    ]
+
+    tasks = mutate(model=Task, data=data)
+
+    assert len(tasks) == 2
+    assert tasks[0].name == "task1"
+    assert tasks[1].name == "task2"
+    assert tasks[0].project is not None
+    assert tasks[1].project is not None
+
+
+@pytest.mark.django_db
+def test_mutation__forward_o2o__instance(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    request = ServiceRequest(details="Test request")
+    request.save()
+
+    data = {
+        "name": "Test task",
+        "type": TaskTypeChoices.TASK,
+        "request": request,
+    }
+
+    task = mutate(model=Task, data=data)
+    task.refresh_from_db()
+
+    assert task.request == request
+
+
+@pytest.mark.django_db
+def test_mutation__reverse_o2o__instance(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    task = TaskFactory.create()
+    result = TaskResult(task=task, details="result", time_used=datetime.timedelta(seconds=10))
+    result.save()
+
+    task.refresh_from_db()
+    data = {
+        "pk": task.pk,
+        "result": result,
+    }
+
+    updated_task = mutate(model=Task, data=data)
+    updated_task.refresh_from_db()
+
+    assert updated_task.result == result
+
+
+@pytest.mark.django_db
+def test_mutation__reverse_o2o__delete(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    task = TaskFactory.create()
+    existing_result = TaskResult(task=task, details="old result", time_used=datetime.timedelta(seconds=5))
+    existing_result.save()
+
+    task.refresh_from_db()
+    data = {
+        "pk": task.pk,
+        "result": {"details": "new result", "time_used": datetime.timedelta(seconds=10)},
+    }
+
+    updated_task = mutate(model=Task, data=data, related_action=RelatedAction.delete)
+    updated_task.refresh_from_db()
+
+    assert updated_task.result is not None
+    assert updated_task.result.details == "new result"
+    assert not TaskResult.objects.filter(pk=existing_result.pk).exists()
+
+
+@pytest.mark.django_db
+def test_mutation__o2m__instance(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    task = TaskFactory.create()
+    step = TaskStepFactory.create()
+
+    data = {
+        "pk": task.pk,
+        "steps": [step],
+    }
+
+    updated_task = mutate(model=Task, data=data)
+    updated_task.refresh_from_db()
+
+    assert list(updated_task.steps.all()) == [step]
+
+
+@pytest.mark.django_db
+def test_mutation__o2m__delete(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    task = TaskFactory.create()
+    existing_step = TaskStepFactory.create(task=task)
+
+    data = {
+        "pk": task.pk,
+        "steps": [{"name": "new step"}],
+    }
+
+    updated_task = mutate(model=Task, data=data, related_action=RelatedAction.delete)
+    updated_task.refresh_from_db()
+
+    assert updated_task.steps.count() == 1
+    assert not TaskStep.objects.filter(pk=existing_step.pk).exists()
+
+
+@pytest.mark.django_db
+def test_mutation__m2m__instance(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    person = PersonFactory.create()
+
+    data = {
+        "name": "Test task",
+        "type": TaskTypeChoices.TASK,
+        "assignees": [person],
+    }
+
+    task = mutate(model=Task, data=data)
+    task.refresh_from_db()
+
+    assert list(task.assignees.all()) == [person]
+
+
+@pytest.mark.django_db
+def test_mutation__generic_fk__null_not_nullable(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    rel_info = RelInfo(
+        relation_type=RelationType.GENERIC_MANY_TO_ONE,
+        field_name="content_object",
+        model=ExampleGeneric,
+        model_pk_type=int,
+        nullable=False,
+        related_name=None,
+        related_model=None,
+        related_model_pk_type=int,
+        related_nullable=False,  # Not nullable
+    )
+    node = MutationNode(model=ExampleGeneric, related_action=RelatedAction.null)
+    instance = ExampleGeneric()
+
+    with pytest.raises(GraphQLRelationNotNullableError):
+        node._handle_generic_fk({"example": None}, rel_info, instance, MutationNode(model=Example))

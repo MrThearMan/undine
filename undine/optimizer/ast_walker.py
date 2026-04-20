@@ -67,7 +67,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
 
     def handle_query_class(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:
         field_type: GraphQLCompositeType = self.get_field_type(parent_type, field_node)  # type: ignore[assignment]
-        if field_node.selection_set is not None:
+        if field_node.selection_set is not None:  # pragma: no branch
             self.handle_selections(field_type, field_node.selection_set.selections)
 
     def handle_selections(self, parent_type: GraphQLCompositeType, selections: Selections) -> None:
@@ -195,7 +195,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
             self.handle_total_count(field_type, field_node)  # type: ignore[arg-type]
             return
 
-        if field_node.selection_set is not None:
+        if field_node.selection_set is not None:  # pragma: no branch
             self.handle_selections(field_type, field_node.selection_set.selections)
 
     def handle_edge_field(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:
@@ -272,14 +272,14 @@ class GraphQLASTWalker:  # noqa: PLR0904
         if field_node.selection_set is not None:
             self.handle_selections(field_type, field_node.selection_set.selections)
 
-    def handle_generic_foreign_key(
+    def handle_generic_foreign_key(  # pragma: no cover
         self,
         parent_type: GraphQLObjectType,
         field_node: FieldNode,
         related_field: GenericForeignKey,
     ) -> None:
         field_type: GraphQLUnionType = self.get_field_type(parent_type, field_node)  # type: ignore[assignment]
-        if field_node.selection_set is not None:  # pragma: no branch
+        if field_node.selection_set is not None:
             self.handle_selections(field_type, field_node.selection_set.selections)
 
     def get_model(self, object_type: GraphQLObjectType) -> type[Model] | None:

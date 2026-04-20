@@ -23,7 +23,7 @@ from undine.exceptions import DirectiveLocationError, GraphQLPermissionError
 from undine.optimizer.optimizer import OptimizationData
 from undine.query import QueryTypeMeta
 from undine.resolvers import FieldFunctionResolver, ModelAttributeResolver
-from undine.typing import DjangoExpression, OptimizerFunc
+from undine.typing import DjangoExpression, DjangoRequestProtocol, OptimizerFunc
 
 
 def test_field__repr() -> None:
@@ -464,3 +464,14 @@ def test_field__union_errors() -> None:
     assert graphql_type.of_type.types[1].name == "GraphQLError"
     assert graphql_type.of_type.types[1].fields["message"]
     assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_field__visible__call_without_args() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @name.visible()
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    assert TaskType.name.visible_func(None, None) is False

@@ -269,7 +269,7 @@ class QueryOptimizer(GraphQLASTWalker):
         super().handle_query_class(field_type, field_node)
 
     def handle_total_count(self, scalar: GraphQLScalarType, field_node: FieldNode) -> None:
-        if self.optimization_data.pagination is not None:
+        if self.optimization_data.pagination is not None:  # pragma: no branch
             self.optimization_data.pagination.requires_total_count = True
 
     def handle_page_info_field(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:

@@ -13,9 +13,11 @@ from graphql import (
     GraphQLUnionType,
 )
 
-from undine import Directive, DirectiveArgument, Entrypoint, RootType
-from undine.exceptions import DirectiveLocationError
+from example_project.app.models import Task
+from undine import Directive, DirectiveArgument, Entrypoint, Field, GQLInfo, QueryType, RootType
+from undine.exceptions import DirectiveLocationError, GraphQLPermissionError
 from undine.resolvers import EntrypointFunctionResolver
+from undine.typing import DjangoRequestProtocol
 
 
 def test_entrypoint__function() -> None:
@@ -269,3 +271,67 @@ def test_entrypoint__union_errors() -> None:
     assert graphql_type.of_type.types[1].name == "GraphQLError"
     assert graphql_type.of_type.types[1].fields["message"]
     assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_root_type__contains() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    assert "task" in Query
+    assert "nonexistent" not in Query
+
+
+def test_entrypoint__resolve__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+        @double.resolve()
+        def resolve_double(self, number: int) -> int:
+            return number * 3
+
+    assert Query.double.resolver_func(None, 1) == 3
+
+
+def test_entrypoint__permissions__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+        @double.permissions()
+        def double_permissions(self, info: GQLInfo, result: int) -> None:
+            raise GraphQLPermissionError
+
+    with pytest.raises(GraphQLPermissionError):
+        Query.double.permissions_func(None, None, 1)
+
+
+def test_entrypoint__visible__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+        @double.visible()
+        def double_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    assert Query.double.visible_func(None, None) is True
+
+
+def test_entrypoint__description_from_docstring(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        """My task entrypoint."""
+
+    assert Query.task.description == "My task entrypoint."

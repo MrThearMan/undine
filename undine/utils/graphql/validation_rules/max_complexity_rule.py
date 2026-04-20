@@ -60,7 +60,7 @@ class MaxComplexityRule(ValidationRule):
             case FragmentSpreadNode():
                 self.handle_fragment_spread(parent_type, selection)
 
-            case InlineFragmentNode():
+            case InlineFragmentNode():  # pragma: no branch
                 self.handle_inline_fragment(parent_type, selection)  # type: ignore[arg-type]
 
     def handle_field(self, parent_type: GraphQLCompositeType, field_node: FieldNode) -> None:

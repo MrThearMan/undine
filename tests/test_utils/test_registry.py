@@ -51,3 +51,32 @@ def test_registry__clear() -> None:
 
     assert "foo" not in registry
     assert "fizz" not in registry
+
+
+def test_registry__iter() -> None:
+    registry = Registry()
+    registry["foo"] = "bar"
+    registry["fizz"] = "buzz"
+
+    assert list(registry) == ["foo", "fizz"]
+
+
+def test_registry__keys() -> None:
+    registry = Registry()
+    registry["foo"] = "bar"
+
+    assert list(registry.keys()) == ["foo"]
+
+
+def test_registry__values() -> None:
+    registry = Registry()
+    registry["foo"] = "bar"
+
+    assert list(registry.values()) == ["bar"]
+
+
+def test_registry__items() -> None:
+    registry = Registry()
+    registry["foo"] = "bar"
+
+    assert list(registry.items()) == [("foo", "bar")]

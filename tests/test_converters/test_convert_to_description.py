@@ -76,10 +76,30 @@ class Params(NamedTuple):
             value=GraphQLNonNull(GraphQLScalarType(name="Foo", description="Description.")),
             description=None,
         ),
+        "tuple": Params(
+            value=tuple,
+            description=None,
+        ),
     }),
 )
 def test_parse_description(value, description) -> None:
     assert convert_to_description(value) == description
+
+
+def test_parse_description__named_tuple() -> None:
+    class MyTuple(NamedTuple):
+        field: int
+
+    assert convert_to_description(MyTuple) is None
+
+
+def test_parse_description__named_tuple__docstring() -> None:
+    class MyTuple(NamedTuple):
+        """Description."""
+
+        field: int
+
+    assert convert_to_description(MyTuple) == "Description."
 
 
 def test_parse_description__class() -> None:
