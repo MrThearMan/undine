@@ -657,6 +657,121 @@ async def test_dataloader__prime__clear_then_prime_also_updates_current_batch() 
 
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__key_exists__cannot_prime_pending() -> None:  # noqa: RUF029
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+    loader.prime(key=1, value=10)
+    loader.prime(key=1, value=20)
+
+    future = loader.reusable_loads[1].future
+    assert future.done()
+    assert future.result() == 10
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__pending_already_done() -> None:  # noqa: RUF029
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+    loader.prime(key=1, value=10)
+    loader.prime(key=1, value=20, can_prime_pending_loads=True)
+
+    future = loader.reusable_loads[1].future
+    assert future.done()
+    assert future.result() == 10
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__pending_exception() -> None:
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+
+    # Schedule a load — future is pending (not done)
+    future = loader.load(key=1)
+    assert not future.done()
+
+    error = ValueError("primed error")
+    loader.prime(key=1, value=error, can_prime_pending_loads=True)
+
+    assert future.done()
+    with pytest.raises(ValueError, match="primed error"):
+        await future
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__new_load_exception() -> None:  # noqa: RUF029
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+
+    error = ValueError("new load error")
+    loader.prime(key=999, value=error)
+
+    assert 999 in loader.reusable_loads
+
+    future = loader.reusable_loads[999].future
+    assert future.done()
+    assert future.exception() is error
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__exception_value() -> None:
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+
+    # Schedule load for key 2 (puts it in `current_batch.loads` with undone future)
+    future = loader.load(key=2)
+    assert not future.done()
+
+    # Clear key 2 from `reusable_loads` so priming creates a new entry
+    loader.clear(key=2)
+    assert 2 not in loader.reusable_loads
+
+    # Prime key 2 with an exception
+    error = ValueError("batch error")
+    loader.prime(key=2, value=error)
+
+    # The original pending future (from `loader.load(2)`) should now have the exception
+    assert future.done()
+    with pytest.raises(ValueError, match="batch error"):
+        await future
+
+    # Also consume the new future
+    new_future = loader.reusable_loads[2].future
+    assert new_future.done()
+    with pytest.raises(ValueError, match="batch error"):
+        await new_future
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime__multiple_prime_calls() -> None:  # noqa: RUF029
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+
+    loader.prime(key=3, value=30)
+    loader.prime(key=5, value=50)
+
+    assert 3 in loader.reusable_loads
+    assert 5 in loader.reusable_loads
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime_many() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
     ts_2 = await sync_to_async(TaskFactory.create)(name="Task 2")
@@ -700,6 +815,18 @@ async def test_dataloader__prime_many__different_lengths() -> None:
 
     with pytest.raises(GraphQLDataLoaderPrimingError):
         loader.prime_many(keys=[ts_1.pk], values=[ts_1, ts_2])
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__prime_batch__different_lengths() -> None:  # noqa: RUF029
+    async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
+        return keys
+
+    loader = DataLoader(load_fn=load_fn)
+
+    with pytest.raises(GraphQLDataLoaderPrimingError):
+        loader._prime_batch(keys=[1, 2], values=[10])
 
 
 @pytest.mark.asyncio
@@ -828,3 +955,81 @@ async def test_dataloader__key_hash_fn() -> None:
 
     assert ts_1.pk not in loader.reusable_loads
     assert ts_2.pk not in loader.reusable_loads
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__future_cancelled_during_load_fn() -> None:
+    ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
+    ts_2 = await sync_to_async(TaskFactory.create)(name="Task 2")
+
+    future_to_cancel: asyncio.Future | None = None
+
+    async def load_tasks(keys: list[int]) -> list[Task]:  # noqa: RUF029
+        if future_to_cancel is not None:
+            future_to_cancel.cancel()
+        return [ts_1, ts_2]
+
+    loader = DataLoader(load_fn=load_tasks)
+
+    f1 = loader.load(ts_1.pk)
+    future_to_cancel = f1
+    f2 = loader.load(ts_2.pk)
+
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+    assert f1.cancelled()
+    assert not f2.cancelled()
+    assert f2.result() == ts_2
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__future_cancelled_before_exception_handling() -> None:
+    ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
+    ts_2 = await sync_to_async(TaskFactory.create)(name="Task 2")
+
+    future_to_cancel: asyncio.Future | None = None
+    load_error = ValueError("Load failed")
+
+    async def load_tasks(keys: list[int]) -> list[Task]:  # noqa: RUF029
+        if future_to_cancel is not None:
+            future_to_cancel.cancel()
+        raise load_error
+
+    loader = DataLoader(load_fn=load_tasks)
+
+    f1 = loader.load(ts_1.pk)
+    future_to_cancel = f1
+    f2 = loader.load(ts_2.pk)
+
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+    assert f1.cancelled()
+    assert not f2.cancelled()
+    assert f2.exception() is load_error
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_dataloader__load_function_task_cancelled_when_all_futures_done(django_db_blocker) -> None:
+    ts = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    load_fn_started = asyncio.Event()
+
+    async def load_tasks(keys: list[int]) -> list[Task]:
+        load_fn_started.set()
+        await asyncio.sleep(10.0)
+        return []
+
+    loader = DataLoader(load_fn=load_tasks)
+    future = loader.load(ts.pk)
+
+    await load_fn_started.wait()
+    future.cancel()
+
+    with count_db_accesses(django_db_blocker) as log:
+        await asyncio.sleep(TEST_WAIT_TIME)
+
+    assert future.cancelled()
+    assert log.count == 0

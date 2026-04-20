@@ -6,6 +6,7 @@ import pytest
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLNonNull, Undefined
 
 from example_project.app.models import Project, Task
+from tests.helpers import exact
 from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, UnionType
 from undine.directives import (
     AtomicDirective,
@@ -14,8 +15,16 @@ from undine.directives import (
     Directive,
     DirectiveArgument,
     DirectiveList,
+    SemanticNonNullDirective,
 )
-from undine.exceptions import DirectiveLocationError, DirectiveRepeatedError
+from undine.exceptions import (
+    DirectiveLocationError,
+    DirectiveRepeatedError,
+    MissingDirectiveArgumentError,
+    MissingDirectiveLocationsError,
+    NotCompatibleWithError,
+    UnexpectedDirectiveArgumentError,
+)
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY
 from undine.utils.reflection import is_subclass
 
@@ -68,6 +77,15 @@ def test_directive__str() -> None:
     )
 
 
+def test_directive__str__instance() -> None:
+    class NewDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="new"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    directive = NewDirective(value=42)
+
+    assert str(directive) == "@new(value: 42)"
+
+
 def test_directive__as_graphql_directive() -> None:
     class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value"):
         """Description."""
@@ -84,6 +102,102 @@ def test_directive__as_graphql_directive() -> None:
     assert directive.is_repeatable is False
     assert directive.description == "Description."
     assert directive.extensions == {"undine_directive": ValueDirective}
+
+
+def test_directive__locations_missing_raises() -> None:
+    with pytest.raises(MissingDirectiveLocationsError):
+
+        class BadDirective(Directive): ...
+
+
+def test_directive__init__missing_required_argument() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        required = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    with pytest.raises(MissingDirectiveArgumentError):
+        ValueDirective()
+
+
+def test_directive__init__unexpected_argument() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    with pytest.raises(UnexpectedDirectiveArgumentError):
+        ValueDirective(value=1, extra_kwarg="oops")
+
+
+def test_directive__repr__instance() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], schema_name="value_repr"):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    directive = ValueDirective(value=7)
+
+    assert repr(directive) == "<tests.test_directives.test_directive__repr__instance.<locals>.ValueDirective(value=7)>"
+
+
+def test_directive__eq() -> None:
+    class NewDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    assert NewDirective(value=1) == NewDirective(value=1)
+
+
+def test_directive__eq__different_arg_values() -> None:
+    class NewDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    assert NewDirective(value=1) != NewDirective(value=2)
+
+
+def test_directive__eq__not_same_type() -> None:
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    class BDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    assert ADirective(value=1) != BDirective(value=1)
+
+
+def test_directive__hash() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    d1 = ValueDirective(value=1)
+    d2 = ValueDirective(value=1)
+
+    assert hash(d1) == hash(d2)
+
+
+def test_directive__hash__different_arg_values() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    d1 = ValueDirective(value=1)
+    d2 = ValueDirective(value=2)
+
+    assert hash(d1) != hash(d2)
+
+
+def test_directive__connect__incompatible_type_raises() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt), default_value=0)
+
+    directive = ValueDirective()
+
+    class IncompatibleTarget: ...
+
+    with pytest.raises(NotCompatibleWithError):
+        directive.__connect__(IncompatibleTarget())
+
+
+def test_directive__contains() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    assert "value" in ValueDirective
+
+    assert "other" not in ValueDirective
 
 
 # DirectiveArgument
@@ -198,6 +312,36 @@ def test_directive__argument__as_graphql_argument() -> None:
     assert argument.description is None
     assert argument.out_name == "value"
     assert argument.extensions == {"undine_directive_argument": ValueDirective.value}
+
+
+def test_directive_argument__set__on_instance() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    directive = ValueDirective(value=1)
+    directive.value = 99
+
+    assert directive.value == 99
+
+
+def test_directive_argument__set__on_class_raises() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    msg = "Can't set attribute 'value' on 'ValueDirective'"
+    with pytest.raises(AttributeError, match=exact(msg)):
+        ValueDirective.value.__set__(None, 99)
+
+
+def test_directive_argument__visible__no_func() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+        @value.visible()
+        def value_visible(self, request) -> bool:
+            return False
+
+    assert ValueDirective.value.visible_func is not None
 
 
 # DirectiveList
@@ -419,6 +563,42 @@ def test_directive_list__extend():
         directive_list.extend([directive_c])
 
 
+def test_directive_list__get_other_data__list() -> None:
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    directive_a = ADirective()
+
+    directive_list = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+    result = directive_list + [directive_a]  # noqa: RUF005
+
+    assert result.data == [directive_a, directive_a]
+
+
+def test_directive_list__get_other_data__user_list() -> None:
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    directive_a = ADirective()
+
+    list_a = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+    list_b = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+
+    result = list_a + list_b
+
+    assert result.data == [directive_a, directive_a]
+
+
+def test_directive_list__get_other_data__generator() -> None:
+    class ADirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION], is_repeatable=True): ...
+
+    directive_a = ADirective()
+
+    directive_list = DirectiveList([directive_a], location=DirectiveLocation.FIELD_DEFINITION)
+
+    result = directive_list + (d for d in [directive_a])
+
+    assert result.data == [directive_a, directive_a]
+
+
 # Custom directives
 
 
@@ -479,6 +659,21 @@ def test_complexity_directive__add_to_interface_field() -> None:
 
     assert Named.name.complexity == 1
     assert Named.name.directives == [directive]
+
+
+def test_complexity_directive__negative_value_raises() -> None:
+    msg = "`value` must be a positive integer."
+    with pytest.raises(ValueError, match=exact(msg)):
+        ComplexityDirective(value=-1)
+
+
+def test_complexity_directive__connected_no_complexity_attr() -> None:
+    directive = ComplexityDirective(value=5)
+
+    class Dummy: ...
+
+    # Does not raise an error
+    directive.__connected__(Dummy())
 
 
 def test_cache_rules_directive__str() -> None:
@@ -572,3 +767,106 @@ def test_cache_rules_directive__add_to_union_type() -> None:
     assert Commentable.__cache_time__ == 1
     assert Commentable.__cache_per_user__ is False
     assert Commentable.__directives__ == [directive]
+
+
+def test_cache_rules_directive__connected__undefined_cache_time__entrypoint(undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = 60
+
+    directive = CacheRulesDirective()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True) @ directive
+
+    assert Query.tasks.cache_time == 60
+
+
+def test_cache_rules_directive__connected__undefined_cache_time__entrypoint__setting_none(undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = None
+
+    directive = CacheRulesDirective()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    msg = "No `cache_time` defined for 'CacheRulesDirective'"
+    with pytest.raises(ValueError, match=exact(msg)):
+
+        class Query(RootType):
+            tasks = Entrypoint(TaskType, many=True) @ directive
+
+
+def test_cache_rules_directive__connected__undefined_cache_time__non_entrypoint() -> None:
+    directive = CacheRulesDirective()
+
+    msg = "No `cache_time` defined for 'CacheRulesDirective'"
+    with pytest.raises(ValueError, match=exact(msg)):
+
+        class TaskType(QueryType[Task], auto=False):
+            name = Field() @ directive
+
+
+def test_cache_rules_directive__negative_cache_time_raises() -> None:
+    msg = "`cache_time` must be a positive integer."
+    with pytest.raises(ValueError, match=exact(msg)):
+        CacheRulesDirective(cache_time=-1)
+
+
+def test_cache_rules_directive__connected__no_cache_attr() -> None:
+    directive = CacheRulesDirective(cache_time=10)
+
+    class Dummy: ...
+
+    # Does not raise an error
+    directive.__connected__(Dummy())
+
+
+def test_semantic_non_null_directive__str() -> None:
+    assert str(SemanticNonNullDirective) == cleandoc(
+        '''
+        """
+        Indicates that a field is only null if there's a matching error in the `errors` array.
+        """
+        directive @semanticNonNull(
+          """
+          Which parts of a list should be considered for the non-null check.
+          For an n-dimensional list, integers 0 through n-1 account for the lists and n accounts for the items.
+          E.g. a regular single dimensional list: 0 for the list, 1 for the items.
+          """
+          levels: [Int!]! = [0]
+        ) on FIELD_DEFINITION
+        '''
+    )
+
+
+def test_semantic_non_null_directive__negative_level_raises() -> None:
+    msg = "Values in `levels` must all be positive integers or zero. Found -1."
+    with pytest.raises(ValueError, match=exact(msg)):
+        SemanticNonNullDirective(levels=[-1])
+
+
+def test_semantic_non_null_directive__default_levels() -> None:
+    directive = SemanticNonNullDirective()
+
+    assert directive.levels == [0]
+
+
+def test_semantic_non_null_directive__add_to_field() -> None:
+    directive = SemanticNonNullDirective(levels=[0, 1])
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field() @ directive
+
+    assert TaskType.name.nullable is True
+    assert TaskType.name.directives == [directive]
+
+
+def test_semantic_non_null_directive__connected__no_nullable_attr() -> None:
+    directive = SemanticNonNullDirective()
+
+    class Dummy: ...
+
+    # Does not raise an error
+    directive.__connected__(Dummy())

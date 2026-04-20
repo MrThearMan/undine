@@ -287,6 +287,7 @@ __all__ = [
     "Selections",
     "Self",
     "ServerMessage",
+    "SortedSequenceWithErrors",
     "SubscribeMessage",
     "SupportsLookup",
     "TInterfaceType",
@@ -325,6 +326,7 @@ DefaultValueType: TypeAlias = int | float | str | bool | dict | list | Undefined
 GraphQLResult: TypeAlias = ExecutionResult | ExperimentalIncrementalExecutionResults
 GraphQLStream: TypeAlias = AsyncIterator[ExecutionResult]
 SortedSequence: TypeAlias = list[T] | tuple[T, ...]
+SortedSequenceWithErrors: TypeAlias = SortedSequence[T] | SortedSequence[T | BaseException]
 
 # Bound TypeVars
 
