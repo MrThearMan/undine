@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from inspect import isawaitable
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 from asgiref.sync import sync_to_async
 from django.db.models import Prefetch, Value
+from graphql import GraphQLNonNull, GraphQLString
 from graphql.pyutils import Path
 
-from example_project.app.models import Person, Task
-from tests.factories import TaskFactory
+from example_project.app.models import Person, Project, Task
+from tests.factories import ProjectFactory, TaskFactory
 from tests.helpers import mock_gql_info, patch_optimizer
-from undine import Entrypoint, Field, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, UnionType, create_schema
+from undine.dataclasses import QuerySetMapWithPagination
 from undine.exceptions import (
     GraphQLNodeInterfaceMissingError,
     GraphQLNodeInvalidGlobalIDError,
@@ -21,7 +25,15 @@ from undine.exceptions import (
 )
 from undine.pagination import PaginationHandler
 from undine.relay import Connection, Node, offset_to_cursor, to_global_id
-from undine.resolvers import ConnectionResolver, GlobalIDResolver, NestedConnectionResolver, NodeResolver
+from undine.resolvers import (
+    ConnectionResolver,
+    GlobalIDResolver,
+    InterfaceTypeConnectionResolver,
+    InterfaceTypeResolver,
+    NestedConnectionResolver,
+    NodeResolver,
+    UnionTypeConnectionResolver,
+)
 from undine.typing import ConnectionDict, GQLInfo, NodeDict, PageInfoDict
 
 
@@ -534,3 +546,874 @@ async def test_resolvers__nested_connection_resolver__async(undine_settings) -> 
             ],
         )
     )
+
+
+# UnionTypeConnectionResolver
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__union_type_connection_resolver__fetch_instances_async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+    project = await sync_to_async(ProjectFactory.create)(name="Project 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    project_qs = Project.objects.filter(pk=project.pk).annotate(__typename=Value(ProjectType.__schema_name__))
+
+
+    pagination = PaginationHandler(typename=Searchable.__schema_name__, first=10)
+    result_with_pagination = QuerySetMapWithPagination(
+        queryset_map={TaskType: task_qs, ProjectType: project_qs},
+        pagination=pagination,
+    )
+
+    with patch("undine.resolvers.query.get_arguments", return_value={}):
+        instances = await resolver.fetch_instances_async(
+            root=None,
+            info=mock_gql_info(),
+            result=result_with_pagination,
+        )
+
+    assert len(instances) == 2
+    pks = {i.pk for i in instances}
+    assert task.pk in pks
+    assert project.pk in pks
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__union_type_connection_resolver__check_permissions_async__sync_func(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    called_with: list[Any] = []
+
+    def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:
+        called_with.append(instance)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    Query.searchable.permissions_func = permissions_func
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    await resolver.check_permissions_async(
+        root=None,
+        info=mock_gql_info(),
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__union_type_connection_resolver__check_permissions_async__async_func(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    called_with: list[Any] = []
+
+    async def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:  # noqa: RUF029
+        called_with.append(instance)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    Query.searchable.permissions_func = permissions_func
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    await resolver.check_permissions_async(
+        root=None,
+        info=mock_gql_info(),
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__union_type_connection_resolver__check_permissions_async__query_type_async_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @classmethod
+        async def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            root=None,
+            info=mock_gql_info(),
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__union_type_connection_resolver__check_permissions_async__query_type_sync_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            root=None,
+            info=mock_gql_info(),
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db
+def test_resolvers__union_type_connection_resolver__empty_connection(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Searchable(UnionType[TaskType, ProjectType]): ...
+
+    connection = Connection(Searchable)
+
+    class Query(RootType):
+        searchable = Entrypoint(connection)
+
+    resolver: UnionTypeConnectionResolver = UnionTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.searchable,
+    )
+
+    result = resolver.empty_connection()
+
+    assert result == ConnectionDict(
+        totalCount=0,
+        pageInfo=PageInfoDict(
+            hasNextPage=False,
+            hasPreviousPage=False,
+            startCursor=None,
+            endCursor=None,
+        ),
+        edges=[],
+    )
+
+
+# InterfaceTypeResolver
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__fetch_instances_async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+    project = await sync_to_async(ProjectFactory.create)(name="My Project")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    project_qs = Project.objects.filter(pk=project.pk).annotate(__typename=Value(ProjectType.__schema_name__))
+
+    queryset_map = {TaskType: task_qs, ProjectType: project_qs}
+
+    results = await resolver.fetch_instances_async(
+        info=mock_gql_info(),
+        root=None,
+        queryset_map=queryset_map,
+    )
+
+    assert len(results) == 2
+    pks = {r.pk for r in results}
+    assert task.pk in pks
+    assert project.pk in pks
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__check_permissions_async__sync_func(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    called_with: list[Any] = []
+
+    def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:
+        called_with.append(instance)
+
+    Query.named.permissions_func = permissions_func
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+
+    await resolver.check_permissions_async(
+        info=mock_gql_info(),
+        root=None,
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__check_permissions_async__async_func(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    called_with: list[Any] = []
+
+    async def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:  # noqa: RUF029
+        called_with.append(instance)
+
+    Query.named.permissions_func = permissions_func
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+
+    await resolver.check_permissions_async(
+        info=mock_gql_info(),
+        root=None,
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__check_permissions_async__query_type_sync_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            info=mock_gql_info(),
+            root=None,
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__check_permissions_async__query_type_async_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+        @classmethod
+        async def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            info=mock_gql_info(),
+            root=None,
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__run_sync_async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver: InterfaceTypeResolver = InterfaceTypeResolver(
+        interface=Named,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="My Task")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+
+    with patch.object(InterfaceTypeResolver, "optimize", return_value={TaskType: task_qs}):
+        results = await resolver.run_sync_async(root=None, info=mock_gql_info())
+
+    assert len(results) == 1
+    assert results[0].pk == task.pk
+
+
+# InterfaceTypeConnectionResolver
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__fetch_instances(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = TaskFactory.create(name="Task 1")
+    project = ProjectFactory.create(name="Project 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    project_qs = Project.objects.filter(pk=project.pk).annotate(__typename=Value(ProjectType.__schema_name__))
+
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result_with_pagination = QuerySetMapWithPagination(
+        queryset_map={TaskType: task_qs, ProjectType: project_qs},
+        pagination=pagination,
+    )
+
+    instances = resolver.fetch_instances(root=None, info=mock_gql_info(), result=result_with_pagination)
+
+    assert len(instances) == 2
+    pks = {i.pk for i in instances}
+    assert task.pk in pks
+    assert project.pk in pks
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__check_permissions(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = TaskFactory.create(name="Task 1")
+
+    with pytest.raises(GraphQLPermissionError):
+        resolver.check_permissions(root=None, info=mock_gql_info(), query_type=TaskType, instances=[task])
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__check_permissions__permissions_func(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    called_with: list[Any] = []
+
+    def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:
+        called_with.append(instance)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    Query.named.permissions_func = permissions_func
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = TaskFactory.create(name="Task 1")
+
+    resolver.check_permissions(root=None, info=mock_gql_info(), query_type=TaskType, instances=[task])
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__run_async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result_with_pagination = QuerySetMapWithPagination(
+        queryset_map={TaskType: task_qs},
+        pagination=pagination,
+    )
+
+    with patch.object(InterfaceTypeConnectionResolver, "optimize", return_value=result_with_pagination):
+        connection_dict = await resolver.run_async(root=None, info=mock_gql_info())
+
+    assert len(connection_dict["edges"]) == 1
+    assert connection_dict["edges"][0]["node"].pk == task.pk
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__fetch_instances_async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+    project = await sync_to_async(ProjectFactory.create)(name="Project 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    project_qs = Project.objects.filter(pk=project.pk).annotate(__typename=Value(ProjectType.__schema_name__))
+
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result_with_pagination = QuerySetMapWithPagination(
+        queryset_map={TaskType: task_qs, ProjectType: project_qs},
+        pagination=pagination,
+    )
+
+    instances = await resolver.fetch_instances_async(root=None, info=mock_gql_info(), result=result_with_pagination)
+
+    assert len(instances) == 2
+    pks = {i.pk for i in instances}
+    assert task.pk in pks
+    assert project.pk in pks
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__check_permissions_async__sync_func(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    called_with: list[Any] = []
+
+    def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:
+        called_with.append(instance)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    Query.named.permissions_func = permissions_func
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    await resolver.check_permissions_async(
+        root=None,
+        info=mock_gql_info(),
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__check_permissions_async__async_func(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    called_with: list[Any] = []
+
+    async def permissions_func(root: Any, info: GQLInfo, instance: Any) -> None:  # noqa: RUF029
+        called_with.append(instance)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    Query.named.permissions_func = permissions_func
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    await resolver.check_permissions_async(
+        root=None,
+        info=mock_gql_info(),
+        query_type=TaskType,
+        instances=[task],
+    )
+
+    assert called_with == [task]
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__check_permissions_async__query_type_sync_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            root=None,
+            info=mock_gql_info(),
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__check_permissions_async__query_type_async_perms(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+        @classmethod
+        async def __permissions__(cls, instance: Task, info: GQLInfo) -> None:
+            raise GraphQLPermissionError
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    with pytest.raises(GraphQLPermissionError):
+        await resolver.check_permissions_async(
+            root=None,
+            info=mock_gql_info(),
+            query_type=TaskType,
+            instances=[task],
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__call__async(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+
+
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result_with_pagination = QuerySetMapWithPagination(
+        queryset_map={TaskType: task_qs},
+        pagination=pagination,
+    )
+
+    with patch.object(InterfaceTypeConnectionResolver, "optimize", return_value=result_with_pagination):
+        coroutine = resolver(root=None, info=mock_gql_info())
+        assert isawaitable(coroutine)
+        connection_dict = await coroutine
+
+    assert len(connection_dict["edges"]) == 1

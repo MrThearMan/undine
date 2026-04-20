@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from django.db.models import F, Subquery
+import pytest
+from django.db.models import F, Func, Subquery
 from django.db.models.functions import Now
 
-from example_project.app.models import Comment, Task
+from example_project.app.models import Comment, Project, ServiceRequest, Task
 from undine import Order, OrderSet
 from undine.converters import convert_to_order_ref
+from undine.exceptions import UnionModelFieldDirectUsageError, UnionModelFieldMismatchError
 
 
 def test_convert_to_order_ref__str() -> None:
@@ -130,3 +132,60 @@ def test_convert_to_field_ref__generic_foreign_key__direct_ref() -> None:
         target = Order(Comment.target)
 
     assert convert_to_order_ref(Comment.target, caller=CommentOrderSet.target) == F("target")
+
+
+def test_convert_to_order_ref__str__multi_model() -> None:
+    class MultiOrderSet(OrderSet[Task, Project]):
+        name = Order("name")
+
+    result = convert_to_order_ref("name", caller=MultiOrderSet.name)
+    assert result == F("name")
+
+
+def test_convert_to_order_ref__str__multi_model__type_mismatch() -> None:
+    with pytest.raises(UnionModelFieldMismatchError):
+
+        class MultiOrderSet(OrderSet[Task, ServiceRequest]):
+            created_at = Order("created_at")
+
+
+def test_convert_to_order_ref__model_field__multi_model() -> None:
+    field = Task._meta.get_field("name")
+
+    class MultiOrderSet(OrderSet[Task, Project]):
+        name = Order()
+
+    with pytest.raises(UnionModelFieldDirectUsageError):
+        convert_to_order_ref(field, caller=MultiOrderSet.name)
+
+
+def test_convert_to_order_ref__expression__multi_model() -> None:
+    expr = Now()
+
+    class MultiOrderSet(OrderSet[Task, Project]):
+        custom = Order(expr)
+
+    result = convert_to_order_ref(expr, caller=MultiOrderSet.custom)
+    assert result is expr
+
+
+def test_convert_to_order_ref__expression__multi_model__type_mismatch() -> None:
+    class FieldFunc(Func):
+        function = "COALESCE"
+
+    expr = FieldFunc(F("created_at"))
+
+    with pytest.raises(UnionModelFieldMismatchError):
+
+        class MultiOrderSet(OrderSet[Task, ServiceRequest]):
+            created_at = Order(expr)
+
+
+def test_convert_to_order_ref__generic_foreign_key__multi_model() -> None:
+    field = Comment._meta.get_field("target")
+
+    class MultiOrderSet(OrderSet[Task, Project]):
+        name = Order()
+
+    with pytest.raises(UnionModelFieldDirectUsageError):
+        convert_to_order_ref(field, caller=MultiOrderSet.name)

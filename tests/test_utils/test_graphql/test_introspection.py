@@ -7,8 +7,20 @@ import pytest
 from django.db.models import Value
 from graphql import (
     DirectiveLocation,
+    GraphQLArgument,
+    GraphQLDirective,
+    GraphQLEnumType,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLInterfaceType,
     GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLScalarType,
+    GraphQLSchema,
     GraphQLString,
+    GraphQLUnionType,
     TypeMetaFieldDef,
     get_introspection_query,
     version_info,
@@ -37,6 +49,7 @@ from undine import (
     create_schema,
 )
 from undine.relay import Connection
+from undine.settings import undine_settings as _undine_settings
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 from undine.utils.graphql.introspection import (
     directive_introspection_type,
@@ -45,7 +58,21 @@ from undine.utils.graphql.introspection import (
     get_field_fields,
     get_schema_fields,
     get_type_fields,
+    is_visible,
+    patch_introspection_schema,
+    resolve_directive_args,
+    resolve_directive_description,
+    resolve_directive_is_repeatable,
+    resolve_field_args,
+    resolve_field_description,
+    resolve_schema_description,
+    resolve_type_description,
+    resolve_type_enum_values,
+    resolve_type_fields,
+    resolve_type_input_fields,
+    resolve_type_is_one_of,
     resolve_type_meta_field_def,
+    resolve_type_specified_by_url,
     schema_introspection_type,
     type_introspection_type,
 )
@@ -123,13 +150,13 @@ def test_introspection(graphql, undine_settings):
         "atomic",
         "cacheRules",
         "complexity",
-        *(("defer", ) if version_info >= (3, 3, 0) else []),
+        *(("defer",) if version_info >= (3, 3, 0) else []),
         "deprecated",
         "include",
         "oneOf",
         "skip",
         "specifiedBy",
-        *(("stream", ) if version_info >= (3, 3, 0) else []),
+        *(("stream",) if version_info >= (3, 3, 0) else []),
     ]
 
     types = get_types(response)
@@ -834,3 +861,244 @@ def test_introspection__visibility__directive__argument(graphql, undine_settings
     directives = get_directives(response)
 
     assert len(directives["Version"]["args"]) == (1 if is_visible else 0)
+
+
+def test_is_visible__plain_input_object_type() -> None:
+    """GraphQLInputObjectType with no undine mutation_type or filterset → falls through to return True."""
+    gql_type = GraphQLInputObjectType("PlainInput", fields={"x": GraphQLInputField(GraphQLString)})
+    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
+
+
+def test_is_visible__plain_interface_type() -> None:
+    """GraphQLInterfaceType with no undine interface_type → falls through to return True."""
+    gql_type = GraphQLInterfaceType("PlainIface", fields={"x": GraphQLField(GraphQLString)})
+    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
+
+
+def test_is_visible__plain_union_type() -> None:
+    """GraphQLUnionType with no undine union_type → falls through to return True."""
+    member = GraphQLObjectType("PlainUnionMember", fields={"x": GraphQLField(GraphQLString)})
+    gql_type = GraphQLUnionType("PlainUnion", types=[member])
+    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
+
+
+def test_is_visible__calculation_argument_no_visible_func() -> None:
+    """GraphQLArgument with CalculationArgument extension but no visible_func → returns True."""
+    from undine.calculation import CalculationArgument as CalcArg
+
+    calc_arg = CalcArg(GraphQLString)
+    assert calc_arg.visible_func is None
+
+    gql_arg = GraphQLArgument(
+        GraphQLString,
+        extensions={_undine_settings.CALCULATION_ARGUMENT_EXTENSIONS_KEY: calc_arg},
+    )
+
+    class _FakeInfo:
+        context = None
+
+    assert is_visible(gql_arg, _FakeInfo()) is True  # type: ignore[arg-type]
+
+
+def test_patch_introspection_schema__fields_cached() -> None:
+    """patch_introspection_schema deletes cached fields (True branches)."""
+    with enable_visibility_patch():
+        # Access .fields inside the patch context to populate the cache,
+        # then call patch_introspection_schema which will delete those cached entries.
+        _ = schema_introspection_type.fields
+        _ = directive_introspection_type.fields
+        _ = type_introspection_type.fields
+        _ = field_introspection_type.fields
+        patch_introspection_schema()
+
+
+def test_patch_introspection_schema__fields_not_cached() -> None:
+    """patch_introspection_schema when cache is empty (False branches)."""
+    with enable_visibility_patch():
+        # enable_visibility_patch already cleared the cache; calling
+        # patch_introspection_schema without re-accessing .fields exercises
+        # the 'if "fields" in __dict__' → False branches.
+        patch_introspection_schema()
+
+
+@pytest.mark.django_db
+def test_resolve_type_meta_field_def__type_not_found(undine_settings) -> None:
+    """resolve_type_meta_field_def returns None when the type name is not in the schema."""
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+    schema = undine_settings.SCHEMA
+
+    class _FakeInfo:
+        context = None
+
+    info = _FakeInfo()
+    info.schema = schema  # type: ignore[attr-defined]
+
+    result = resolve_type_meta_field_def(None, info, name="NonExistentType")  # type: ignore[arg-type]
+    assert result is None
+
+
+def test_resolve_schema_description() -> None:
+    """resolve_schema_description returns schema description."""
+    schema = GraphQLSchema(
+        query=GraphQLObjectType("Query", fields={"x": GraphQLField(GraphQLString)}),
+        description="My schema",
+    )
+    assert resolve_schema_description(schema, None) == "My schema"  # type: ignore[arg-type]
+
+
+def test_resolve_directive_description() -> None:
+    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], description="desc")
+    assert resolve_directive_description(directive, None) == "desc"  # type: ignore[arg-type]
+
+
+def test_resolve_directive_is_repeatable() -> None:
+    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], is_repeatable=True)
+    assert resolve_directive_is_repeatable(directive, None) is True  # type: ignore[arg-type]
+
+
+def test_resolve_directive_args__include_deprecated() -> None:
+    """resolve_directive_args with includeDeprecated=True returns all args."""
+    arg = GraphQLArgument(GraphQLString, deprecation_reason="old")
+    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], args={"x": arg})
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_directive_args(directive, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
+    assert len(result) == 1
+
+
+def test_resolve_type_description() -> None:
+    gql_type = GraphQLObjectType("Foo", fields={"x": GraphQLField(GraphQLString)}, description="bar")
+    assert resolve_type_description(gql_type, None) == "bar"  # type: ignore[arg-type]
+
+
+def test_resolve_type_specified_by_url() -> None:
+    scalar = GraphQLScalarType("MyScalar", specified_by_url="https://example.com/")
+    assert resolve_type_specified_by_url(scalar, None) == "https://example.com/"  # type: ignore[arg-type]
+
+
+def test_resolve_type_fields__include_deprecated() -> None:
+    """resolve_type_fields with includeDeprecated=True returns deprecated fields too."""
+    gql_type = GraphQLObjectType(
+        "FooWithDeprecated",
+        fields={
+            "active": GraphQLField(GraphQLString),
+            "old": GraphQLField(GraphQLString, deprecation_reason="use active"),
+        },
+    )
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_type_fields(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
+    assert result is not None
+    assert len(result) == 2
+
+
+def test_resolve_type_fields__exclude_deprecated() -> None:
+    """resolve_type_fields with includeDeprecated=False filters out deprecated fields."""
+    gql_type = GraphQLObjectType(
+        "FooExcludeDeprecated",
+        fields={
+            "active": GraphQLField(GraphQLString),
+            "old": GraphQLField(GraphQLString, deprecation_reason="use active"),
+        },
+    )
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_type_fields(gql_type, _FakeInfo(), includeDeprecated=False)  # type: ignore[arg-type]
+    assert result is not None
+    assert len(result) == 1
+    assert result[0][0] == "active"
+
+
+def test_resolve_type_enum_values__include_deprecated() -> None:
+    """resolve_type_enum_values with includeDeprecated=True returns all values."""
+    gql_type = GraphQLEnumType(
+        "MyEnumAll",
+        values={
+            "A": GraphQLEnumValue("A"),
+            "B": GraphQLEnumValue("B", deprecation_reason="old"),
+        },
+    )
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_type_enum_values(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
+    assert result is not None
+    assert len(result) == 2
+
+
+def test_resolve_type_enum_values__exclude_deprecated() -> None:
+    """resolve_type_enum_values with includeDeprecated=False filters deprecated values."""
+    gql_type = GraphQLEnumType(
+        "MyEnumFiltered",
+        values={
+            "A": GraphQLEnumValue("A"),
+            "B": GraphQLEnumValue("B", deprecation_reason="old"),
+        },
+    )
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_type_enum_values(gql_type, _FakeInfo(), includeDeprecated=False)  # type: ignore[arg-type]
+    assert result is not None
+    assert len(result) == 1
+    assert result[0][0] == "A"
+
+
+def test_resolve_type_input_fields__include_deprecated() -> None:
+    """resolve_type_input_fields with includeDeprecated=True returns all fields."""
+    gql_type = GraphQLInputObjectType(
+        "MyInput",
+        fields={
+            "active": GraphQLInputField(GraphQLString),
+            "old": GraphQLInputField(GraphQLString, deprecation_reason="use active"),
+        },
+    )
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_type_input_fields(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
+    assert result is not None
+    assert len(result) == 2
+
+
+def test_resolve_type_is_one_of__input_type() -> None:
+    gql_type = GraphQLInputObjectType("MyInput", fields={"x": GraphQLInputField(GraphQLString)}, is_one_of=True)
+    assert resolve_type_is_one_of(gql_type, None) is True  # type: ignore[arg-type]
+
+
+def test_resolve_type_is_one_of__non_input_type() -> None:
+    gql_type = GraphQLObjectType("Foo", fields={"x": GraphQLField(GraphQLString)})
+    assert resolve_type_is_one_of(gql_type, None) is None  # type: ignore[arg-type]
+
+
+def test_resolve_field_description() -> None:
+    item = ("myField", GraphQLField(GraphQLString, description="a field"))
+    assert resolve_field_description(item, None) == "a field"  # type: ignore[arg-type]
+
+
+def test_resolve_field_args__include_deprecated() -> None:
+    """resolve_field_args with includeDeprecated=True returns deprecated args too."""
+    arg = GraphQLArgument(GraphQLString, deprecation_reason="old")
+    field = GraphQLField(GraphQLString, args={"x": arg})
+    item = ("myField", field)
+
+    class _FakeInfo:
+        context = None
+
+    result = resolve_field_args(item, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
+    assert len(result) == 1

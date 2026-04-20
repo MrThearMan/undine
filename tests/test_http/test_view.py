@@ -2,19 +2,27 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
+import types
 import urllib.parse
 from inspect import iscoroutine
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from django.http import HttpResponse, StreamingHttpResponse
 from django.http.request import MediaType, QueryDict
 from django.urls import reverse
-from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql import GraphQLError, GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 from tests.helpers import MockRequest, create_multipart_form_data_request
-from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedContentTypeResponse
-from undine.http.views import graphql_view_async, graphql_view_sync
+from undine.http.content_negotiation import add_media_type_param
+from undine.http.responses import (
+    HttpEventSourcingNotAllowedResponse,
+    HttpMethodNotAllowedResponse,
+    HttpUnsupportedContentTypeResponse,
+)
+from undine.http.views import _handle_incremental, graphql_view_async, graphql_view_sync  # noqa: PLC2701
 from undine.typing import GQLInfo, RequestMethod
 
 
@@ -364,3 +372,196 @@ def test_graphql_view__content_negotiation__multipart_mixed(undine_settings) -> 
 
     assert response.status_code == 200
     assert response["Content-Type"] == "multipart/mixed; boundary=graphql; subscriptionspec=1.0"
+
+
+def test_graphql_view__async__parse_error(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("application/json")],
+        body=b"not json",
+    )
+
+    with patch(
+        "undine.http.views.GraphQLRequestParamsParser.run_async",
+        new_callable=AsyncMock,
+        side_effect=GraphQLError("parse error"),
+    ):
+        coro = graphql_view_async(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, HttpResponse)
+    assert response.status_code == 200
+
+    data = json.loads(response.content.decode())
+    assert data["errors"][0]["message"] == "parse error"
+
+
+def test_graphql_view__event_stream__http1_sse_not_allowed(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = False
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("text/event-stream")],
+        body=b'{"query": "query { hello }"}',
+        META={"SERVER_PROTOCOL": "HTTP/1.1"},
+    )
+
+    coro = graphql_view_async(request)  # type: ignore[arg-type]
+    assert iscoroutine(coro)
+    response = asyncio.run(coro)
+
+    assert isinstance(response, HttpEventSourcingNotAllowedResponse)
+    assert response.status_code == 426
+    assert response["Upgrade"] == "HTTP/2.0"
+
+
+def test_graphql_view__event_stream__parse_error(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+    undine_settings.USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1 = True
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("text/event-stream")],
+        body=b"not json",
+    )
+
+    with patch(
+        "undine.http.views.GraphQLRequestParamsParser.run_async",
+        new_callable=AsyncMock,
+        side_effect=GraphQLError("sse parse error"),
+    ):
+        coro = graphql_view_async(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/event-stream"
+
+
+def test_graphql_view__multipart_mixed_subscription__parse_error(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("multipart/mixed; subscriptionSpec=1.0")],
+        body=b"not json",
+    )
+
+    with patch(
+        "undine.http.views.GraphQLRequestParamsParser.run_async",
+        new_callable=AsyncMock,
+        side_effect=GraphQLError("multipart parse error"),
+    ):
+        coro = graphql_view_async(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "multipart/mixed; boundary=graphql; subscriptionspec=1.0"
+
+
+def _make_incremental_mocks():
+    """Return a context manager that patches incremental module functions."""
+    fake_module = types.ModuleType("undine.utils.graphql.incremental")
+
+    async def fake_execute(params, request):  # noqa: RUF029
+        yield object()  # type: ignore[misc]
+
+    async def fake_result_to_response(result):  # noqa: RUF029
+        yield object()  # type: ignore[misc]
+
+    async def fake_heartbeat(stream):
+        async for event in stream:
+            yield event
+
+    fake_module.execute_graphql_incremental = fake_execute
+    fake_module.result_to_incremental_response = fake_result_to_response
+    fake_module.with_incremental_stream_heartbeat = fake_heartbeat
+
+    return patch.dict(sys.modules, {"undine.utils.graphql.incremental": fake_module})
+
+
+def test_graphql_view__incremental__success(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    response_content_type = MediaType("multipart/mixed")
+    add_media_type_param(response_content_type, name="boundary", value="graphql")
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("multipart/mixed")],
+        body=b'{"query": "query { hello }"}',
+        response_content_type=response_content_type,
+    )
+
+    with _make_incremental_mocks():
+        coro = _handle_incremental(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "multipart/mixed; boundary=graphql"
+    assert response["Connection"] == "keep-alive"
+    assert response["Cache-Control"] == "no-cache, no-store, must-revalidate"
+
+
+def test_graphql_view__incremental__parse_error(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    response_content_type = MediaType("multipart/mixed")
+    add_media_type_param(response_content_type, name="boundary", value="graphql")
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("multipart/mixed")],
+        body=b"not json",
+        response_content_type=response_content_type,
+    )
+
+    with (
+        _make_incremental_mocks(),
+        patch(
+            "undine.http.views.GraphQLRequestParamsParser.run_async",
+            new_callable=AsyncMock,
+            side_effect=GraphQLError("incremental parse error"),
+        ),
+    ):
+        coro = _handle_incremental(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "multipart/mixed; boundary=graphql"
+
+
+def test_graphql_view__async__routes_to_incremental(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    response_content_type = MediaType("multipart/mixed")
+    add_media_type_param(response_content_type, name="boundary", value="graphql")
+
+    # Bypass the decorator by setting response_content_type directly so the
+    # `media_type_match(..., "multipart/mixed; boundary=graphql")` branch is hit.
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("multipart/mixed")],
+        body=b'{"query": "query { hello }"}',
+        response_content_type=response_content_type,
+    )
+
+    with _make_incremental_mocks():
+        coro = graphql_view_async.__wrapped__(request)  # type: ignore[attr-defined]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "multipart/mixed; boundary=graphql"

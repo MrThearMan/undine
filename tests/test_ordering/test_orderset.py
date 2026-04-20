@@ -6,11 +6,18 @@ import pytest
 from django.db.models import F, OrderBy
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonNull, GraphQLString
 
-from example_project.app.models import Task
+from example_project.app.models import Person, Project, Task
 from tests.helpers import mock_gql_info
-from undine import Directive, DirectiveArgument, Field, Order, OrderSet, QueryType
+from undine import Directive, DirectiveArgument, Field, Order, OrderSet, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map
-from undine.exceptions import DirectiveLocationError, MissingModelGenericError
+from undine.exceptions import (
+    DirectiveLocationError,
+    MissingModelGenericError,
+    NotCompatibleWithError,
+    QueryTypeRequiresSingleModelError,
+    UnionTypeModelsDifferentError,
+    UnionTypeRequiresMultipleModelsError,
+)
 from undine.utils.graphql.utils import get_underlying_type
 
 
@@ -294,3 +301,55 @@ def test_orderset__add_to_query_type__decorator() -> None:
     assert args == {
         "orderBy": GraphQLArgument(GraphQLList(GraphQLNonNull(MyOrderSet.__enum_type__()))),
     }
+
+
+def test_orderset__contains() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    assert "name" in MyOrderSet
+    assert "missing" not in MyOrderSet
+
+
+def test_orderset__call__not_compatible() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    with pytest.raises(NotCompatibleWithError):
+        MyOrderSet(object)
+
+
+def test_orderset__add_to_query_type__multiple_models_error() -> None:
+    class MyOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    with pytest.raises(QueryTypeRequiresSingleModelError):
+
+        class TaskType(QueryType[Task], auto=False, orderset=MyOrderSet): ...
+
+
+def test_orderset__add_to_union_type__single_model_error() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class MyOrderSet(OrderSet[Task], auto=False): ...
+
+    with pytest.raises(UnionTypeRequiresMultipleModelsError):
+
+        class Commentable(UnionType[TaskType, ProjectType], orderset=MyOrderSet): ...
+
+
+def test_orderset__add_to_union_type__models_different_error() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class MyOrderSet(OrderSet[Task, Person], auto=False): ...
+
+    with pytest.raises(UnionTypeModelsDifferentError):
+
+        class Commentable(UnionType[TaskType, ProjectType], orderset=MyOrderSet): ...

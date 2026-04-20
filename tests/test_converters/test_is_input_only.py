@@ -90,3 +90,10 @@ def test_is_input_only__function__model_field() -> None:
         name = Input(func)
 
     assert is_input_only(func, caller=TaskCreateMutation.name) is False
+
+
+def test_is_input_only__model__field_not_found() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        nonexistent = Input(Task)
+
+    assert is_input_only(Task, caller=TaskCreateMutation.nonexistent) is True

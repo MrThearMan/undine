@@ -220,3 +220,68 @@ async def test_signal_subscription__permissions(graphql, undine_settings) -> Non
                 extensions={"error_code": "PERMISSION_DENIED", "status_code": 403},
             )
         ]
+
+
+def test_signal_subscription__receiver__positional_sender(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=True): ...
+
+    subscription = ModelSaveSubscription(TaskType)
+
+    received_data: list[dict] = []
+
+    class FakeSubscriber:
+        def __init__(self):
+            self.events_data: list = []
+
+        def put_nowait(self, data: dict) -> None:
+            received_data.append(data)
+
+    FakeSubscriber()
+
+    class FakeQueue:
+        def put_nowait(self, data: dict) -> None:
+            received_data.append(data)
+
+    original_subscribers = subscription.subscribers
+    fake_key = "test"
+
+    class FakeSignalSubscriber:
+        events = FakeQueue()
+
+    subscription.subscribers = {fake_key: FakeSignalSubscriber()}
+
+    task = Task(name="Test")
+    subscription.receiver(Task, instance=task, created=True, raw=False, update_fields=None, using="default")
+
+    subscription.subscribers = original_subscribers
+
+    assert len(received_data) == 1
+    assert received_data[0]["sender"] == Task
+    assert received_data[0]["instance"] == task
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_signal_subscription__timeout(graphql, undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task], auto=True): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Subscription(RootType):
+        saved_tasks = Entrypoint(ModelSaveSubscription(TaskType, timeout=0.01))
+
+    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
+
+    payload = {"query": "subscription { savedTasks { pk name } }"}
+
+    async with graphql.websocket() as websocket:
+        await websocket.connection_init()
+
+        # Subscribe and wait for the timeout error message
+        result = await websocket.subscribe(payload=payload, timeout=TEST_WAIT_TIME * 10)
+
+        assert result["type"] == "error"
+        assert result["payload"][0]["message"] == "Subscription timed out"

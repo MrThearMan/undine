@@ -79,7 +79,7 @@ class CustomFactoryWrapper:
             self.callable = factory_
             return
 
-        if not (isinstance(factory_, str) and "." in factory_):  # pragma: no cover
+        if not (isinstance(factory_, str) and "." in factory_):
             msg = (
                 "The factory must be one of: "
                 "1) a string with the format 'module.path.FactoryClass' "
@@ -150,7 +150,7 @@ class ForeignKeyFactory(SubFactory, Generic[TModel]):
 
     @property
     def null(self) -> bool:
-        if self.required:  # pragma: no cover
+        if self.required:
             return False
         return self.owner._meta.model._meta.get_field(self.name).null
 
@@ -195,7 +195,7 @@ class ReverseForeignKeyFactory(PostFactory[TModel]):
             manager = self.manager(instance)
             try:
                 field_name = manager.field.name
-            except AttributeError:  # pragma: no cover
+            except AttributeError:
                 # GenericForeignKey
                 field = next(
                     field

@@ -82,6 +82,13 @@ def test_parse_description(value, description) -> None:
     assert convert_to_description(value) == description
 
 
+def test_parse_description__named_tuple() -> None:
+    class MyTuple(NamedTuple):
+        field: int
+
+    assert convert_to_description(MyTuple) is None
+
+
 def test_parse_description__class() -> None:
     class MyClass:
         """Description."""

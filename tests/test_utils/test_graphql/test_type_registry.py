@@ -3,6 +3,8 @@ from __future__ import annotations
 import pytest
 from django.db.models import TextChoices
 from graphql import (
+    DirectiveLocation,
+    GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -17,6 +19,7 @@ from graphql import (
 
 from undine.exceptions import GraphQLDuplicateTypeError
 from undine.utils.graphql.type_registry import (
+    get_or_create_graphql_directive,
     get_or_create_graphql_enum,
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_interface_type,
@@ -273,3 +276,43 @@ def test_undine_extensions__get_or_create_graphql_scalar__different_graphql_enti
 
     with pytest.raises(GraphQLDuplicateTypeError):
         get_or_create_graphql_scalar(name="foo", specified_by_url="bar")
+
+
+def test_undine_extensions__get_or_create_graphql_directive__same() -> None:
+    directive_1 = get_or_create_graphql_directive(
+        name="foo",
+        locations=[DirectiveLocation.FIELD],
+    )
+    directive_2 = get_or_create_graphql_directive(
+        name="foo",
+        locations=[DirectiveLocation.FIELD],
+    )
+
+    assert isinstance(directive_1, GraphQLDirective)
+    assert directive_1 == directive_2
+
+
+def test_undine_extensions__get_or_create_graphql_directive__different() -> None:
+    get_or_create_graphql_directive(
+        name="foo",
+        locations=[DirectiveLocation.FIELD],
+    )
+
+    with pytest.raises(GraphQLDuplicateTypeError):
+        get_or_create_graphql_directive(
+            name="foo",
+            locations=[DirectiveLocation.FRAGMENT_SPREAD],
+        )
+
+
+def test_undine_extensions__get_or_create_graphql_directive__different_graphql_entity() -> None:
+    get_or_create_graphql_enum(
+        name="foo",
+        values={"foo": GraphQLEnumValue(value="foo")},
+    )
+
+    with pytest.raises(GraphQLDuplicateTypeError):
+        get_or_create_graphql_directive(
+            name="foo",
+            locations=[DirectiveLocation.FIELD],
+        )

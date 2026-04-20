@@ -186,3 +186,43 @@ def test_convert_to_input_ref__generic_foreign_key() -> None:
         target = Input(field)
 
     assert convert_to_input_ref(field, caller=CommentCreateMutation.target) == field
+
+
+def test_convert_to_input_ref__mutation_type__field_not_found() -> None:
+    class RelatedProjectMutation(MutationType[Project], kind="related"): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        project = Input(RelatedProjectMutation)
+
+    original_field_name = TaskCreateMutation.project.field_name
+    TaskCreateMutation.project.field_name = "nonexistent"
+
+    try:
+        result = convert_to_input_ref(RelatedProjectMutation, caller=TaskCreateMutation.project)
+    finally:
+        TaskCreateMutation.project.field_name = original_field_name
+
+    assert result is RelatedProjectMutation
+
+
+def test_convert_to_input_ref__mutation_type__generic_relation() -> None:
+    class RelatedCommentMutation(MutationType[Comment], kind="related"): ...
+
+    assert "target" in RelatedCommentMutation.__input_map__
+
+    class TaskCreateMutation(MutationType[Task]):
+        comments = Input(RelatedCommentMutation)
+
+    result = convert_to_input_ref(RelatedCommentMutation, caller=TaskCreateMutation.comments)
+    assert result is RelatedCommentMutation
+    assert "target" not in RelatedCommentMutation.__input_map__
+
+
+def test_convert_to_input_ref__mutation_type__generic_foreign_key_related() -> None:
+    class RelatedTaskMutation(MutationType[Task], kind="related"): ...
+
+    class CommentCreateMutation(MutationType[Comment]):
+        target = Input(RelatedTaskMutation)
+
+    result = convert_to_input_ref(RelatedTaskMutation, caller=CommentCreateMutation.target)
+    assert result is RelatedTaskMutation

@@ -464,3 +464,14 @@ def test_field__union_errors() -> None:
     assert graphql_type.of_type.types[1].name == "GraphQLError"
     assert graphql_type.of_type.types[1].fields["message"]
     assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_field__visible__call_without_args() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @name.visible()
+        def name_visible(self, request) -> bool:
+            return False
+
+    assert TaskType.name.visible_func is not None

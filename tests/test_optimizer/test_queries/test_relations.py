@@ -30,7 +30,7 @@ def example_schema() -> None:
     class ExampleGenericType(QueryType[ExampleGeneric]):
         @Field
         def content_type(self: ExampleGeneric) -> int:
-            return self.content_type.pk  # pragma: no cover
+            return self.content_type.pk
 
     class ExampleType(QueryType[Example]): ...
 

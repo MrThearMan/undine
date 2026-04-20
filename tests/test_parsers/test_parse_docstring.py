@@ -143,3 +143,26 @@ def test_parse_class_variable_docstrings(undine_settings) -> None:
         buzz: int = 3
 
     assert parse_class_attribute_docstrings(Foo) == {"bar": "Description.", "baz": "Another\ndescription."}
+
+
+def test_parse_class_attribute_docstrings__no_source(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
+    # type(...) creates a class without inspectable source (raises OSError)
+    DynamicClass = type("DynamicClass", (), {"x": 1})
+
+    result = parse_class_attribute_docstrings(DynamicClass)
+    assert result == {}
+
+
+def test_parse_class_attribute_docstrings__attribute_no_docstring(undine_settings) -> None:
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
+    class Foo:
+        bar: int = 1
+        baz: int = 2  # No docstring after 'bar'
+
+    result = parse_class_attribute_docstrings(Foo)
+    # Neither 'bar' nor 'baz' have docstrings
+    assert "bar" not in result
+    assert "baz" not in result

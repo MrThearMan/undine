@@ -7,8 +7,9 @@ from graphql import DirectiveLocation, GraphQLField, GraphQLNonNull, GraphQLStri
 
 from example_project.app.models import Task
 from undine import Directive, DirectiveArgument, Field, InterfaceType, QueryType
+from undine.directives import ComplexityDirective
 from undine.exceptions import DirectiveLocationError
-from undine.interface import InterfaceField
+from undine.interface import InterfaceField, get_with_inherited_interfaces
 
 
 def test_interface_type__definition(undine_settings) -> None:
@@ -296,3 +297,69 @@ def test_interface_type__add_to_query_type__decorator() -> None:
 
     assert TaskType.__interfaces__ == [Named]
     assert list(TaskType.__field_map__) == ["name"]
+
+
+def test_interface_type__contains() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert "name" in Named
+    assert "nonexistent" not in Named
+
+
+def test_interface_type__interface_inherits_interface() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class ExtendedNamed(InterfaceType): ...
+
+    assert ExtendedNamed.__interfaces__ == [Named]
+    assert "name" in ExtendedNamed.__field_map__
+
+
+def test_interface_type__interface_inherits_interface__existing_field() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class ExtendedNamed(InterfaceType, interfaces=[Named]):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert "name" in ExtendedNamed.__field_map__
+
+
+def test_interface_field__complexity() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString), complexity=5)
+
+    assert any(isinstance(d, ComplexityDirective) for d in Named.name.directives)
+
+
+def test_interface_field__visible__no_args() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    visible_decorator = Named.name.visible()
+
+    @visible_decorator
+    def name_visible(self, request) -> bool:
+        return False
+
+    assert Named.name.visible_func is not None
+
+
+def test_interface_type__get_with_inherited_interfaces__already_added() -> None:
+    class A(InterfaceType): ...
+
+    class B(InterfaceType, interfaces=[A]): ...
+
+    result = get_with_inherited_interfaces([A, B])
+    assert A in result
+    assert B in result
+
+
+def test_interface_type__get_with_inherited_interfaces__duplicate_in_list() -> None:
+    class A(InterfaceType): ...
+
+    result = get_with_inherited_interfaces([A, A])
+    assert result.count(A) == 1

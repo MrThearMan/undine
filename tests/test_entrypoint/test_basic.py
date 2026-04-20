@@ -13,7 +13,8 @@ from graphql import (
     GraphQLUnionType,
 )
 
-from undine import Directive, DirectiveArgument, Entrypoint, RootType
+from example_project.app.models import Task
+from undine import Directive, DirectiveArgument, Entrypoint, Field, QueryType, RootType
 from undine.exceptions import DirectiveLocationError
 from undine.resolvers import EntrypointFunctionResolver
 
@@ -269,3 +270,73 @@ def test_entrypoint__union_errors() -> None:
     assert graphql_type.of_type.types[1].name == "GraphQLError"
     assert graphql_type.of_type.types[1].fields["message"]
     assert graphql_type.of_type.types[1].fields["message"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_root_type__contains() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    assert "task" in Query
+    assert "nonexistent" not in Query
+
+
+def test_entrypoint__resolve__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+    resolve_decorator = Query.double.resolve()
+
+    @resolve_decorator
+    def resolve_double(self, number: int) -> int:
+        return number * 3
+
+    assert Query.double.resolver_func is not None
+
+
+def test_entrypoint__permissions__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+    permissions_decorator = Query.double.permissions()
+
+    @permissions_decorator
+    def double_permissions(self, info) -> None:
+        pass
+
+    assert Query.double.permissions_func is not None
+
+
+def test_entrypoint__visible__no_args() -> None:
+    class Query(RootType):
+        @Entrypoint
+        def double(self, number: int) -> int:
+            return number * 2
+
+    visible_decorator = Query.double.visible()
+
+    @visible_decorator
+    def double_visible(self, request) -> bool:
+        return True
+
+    assert Query.double.visible_func is not None
+
+
+def test_entrypoint__description_from_docstring(undine_settings) -> None:
+    """Entrypoint with docstring-based description from attribute_docstrings."""
+    undine_settings.ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        """My task entrypoint."""
+
+    assert Query.task.description == "My task entrypoint."

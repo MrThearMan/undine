@@ -27,6 +27,7 @@ from undine import (
     MutationType,
     OrderSet,
     QueryType,
+    UnionType,
 )
 from undine.converters import convert_to_graphql_argument_map
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
@@ -523,3 +524,26 @@ def test_to_argument_map__interface_field() -> None:
 
     result = convert_to_graphql_argument_map(Named.name, many=False)
     assert sorted(result) == []
+
+
+def test_to_argument_map__offset_pagination__union_type() -> None:
+    class TaskType(QueryType[Task], auto=False): ...
+
+    class ProjectType(QueryType[Project], auto=False): ...
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    pagination = OffsetPagination(Commentable)
+
+    result = convert_to_graphql_argument_map(pagination, many=True)
+    assert sorted(result) == ["limit", "offset"]
+
+
+def test_to_argument_map__offset_pagination__interface_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    pagination = OffsetPagination(Named)
+
+    result = convert_to_graphql_argument_map(pagination, many=True)
+    assert sorted(result) == ["limit", "offset"]

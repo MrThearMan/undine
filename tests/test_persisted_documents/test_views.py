@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from django.test import Client
 from django.urls import reverse
+from graphql import GraphQLError
 
 from undine.settings import example_schema
 
@@ -223,3 +224,23 @@ def test_register_persisted_documents_view__errors_in_document(client: Client, u
 def test_register_persisted_documents_view__reverse(undine_settings) -> None:
     path = reverse(f"undine.persisted_documents:{undine_settings.PERSISTED_DOCUMENTS_VIEW_NAME}")
     assert path == f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
+
+
+@pytest.mark.django_db
+def test_register_persisted_documents_view__permission_callback_raises(client: Client, undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    def deny_all(request, document_map) -> None:
+        msg = "Permission denied."
+        raise GraphQLError(msg)
+
+    undine_settings.PERSISTED_DOCUMENTS_PERMISSION_CALLBACK = deny_all
+
+    url = f"/{undine_settings.PERSISTED_DOCUMENTS_PATH}"
+
+    data = {"documents": {"foo": "query { testing }"}}
+
+    response = client.post(path=url, data=data, content_type="application/json")
+
+    assert response.status_code == 403, response.content
+    assert response.json()["errors"][0]["message"] == "Permission denied."

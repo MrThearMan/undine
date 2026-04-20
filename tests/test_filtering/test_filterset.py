@@ -6,11 +6,19 @@ import pytest
 from django.db.models import Count, Q, Subquery
 from graphql import DirectiveLocation, GraphQLArgument, GraphQLInputField, GraphQLNonNull, GraphQLString
 
-from example_project.app.models import Person, Task, TaskTypeChoices
+from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info
-from undine import Directive, DirectiveArgument, Field, QueryType
+from undine import Directive, DirectiveArgument, Field, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map
-from undine.exceptions import DirectiveLocationError, MissingModelGenericError
+from undine.exceptions import (
+    DirectiveLocationError,
+    MismatchingModelError,
+    MissingModelGenericError,
+    NotCompatibleWithError,
+    QueryTypeRequiresSingleModelError,
+    UnionTypeModelsDifferentError,
+    UnionTypeRequiresMultipleModelsError,
+)
 from undine.filtering import Filter, FilterSet
 
 CREATED_AT_FIELDS = (
@@ -475,3 +483,92 @@ def test_filterset__add_to_query_type__decorator() -> None:
     assert args == {
         "filter": GraphQLArgument(MyFilterSet.__input_type__()),
     }
+
+
+def test_filterset__contains() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    assert "name" in MyFilterSet
+    assert "missing" not in MyFilterSet
+
+
+def test_filterset__call__not_compatible() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    with pytest.raises(NotCompatibleWithError):
+        MyFilterSet(object)
+
+
+def test_filterset__build__not_block__empty() -> None:
+    class MyFilterSet(FilterSet[Task]): ...
+
+    data = {"NOT": {}}
+
+    results = MyFilterSet.__build__(filter_data=data, info=mock_gql_info())
+
+    assert results.filters == []
+    assert results.distinct is False
+    assert results.aliases == {}
+
+
+def test_filterset__build__and_block__empty() -> None:
+    class MyFilterSet(FilterSet[Task]): ...
+
+    data = {"AND": {}}
+
+    results = MyFilterSet.__build__(filter_data=data, info=mock_gql_info())
+
+    assert results.filters == []
+    assert results.distinct is False
+    assert results.aliases == {}
+
+
+def test_filterset__build__empty_value() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    data = {"name": None}
+
+    results = MyFilterSet.__build__(filter_data=data, info=mock_gql_info())
+
+    assert results.filters == []
+    assert results.distinct is False
+    assert results.aliases == {}
+
+
+def test_filterset__add_to_query_type__multiple_models_error() -> None:
+    class MyFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    with pytest.raises(QueryTypeRequiresSingleModelError):
+
+        class TaskType(QueryType[Task], auto=False, filterset=MyFilterSet): ...
+
+
+def test_filterset__add_to_union_type__single_model_error() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class MyFilterSet(FilterSet[Task], auto=False): ...
+
+    with pytest.raises(UnionTypeRequiresMultipleModelsError):
+
+        class Commentable(UnionType[TaskType, ProjectType], filterset=MyFilterSet): ...
+
+
+def test_filterset__add_to_union_type__models_different_error() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class MyFilterSet(FilterSet[Task, Person], auto=False): ...
+
+    with pytest.raises(UnionTypeModelsDifferentError):
+
+        class Commentable(UnionType[TaskType, ProjectType], filterset=MyFilterSet): ...

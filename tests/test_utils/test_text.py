@@ -72,3 +72,17 @@ def test_get_docstring() -> None:
         """Foo docstring"""
 
     assert get_docstring(Foo) == "Foo docstring"
+
+
+def test_get_docstring__none() -> None:
+    class Foo: ...
+
+    assert get_docstring(Foo) is None
+
+
+def test_to_camel_case__empty() -> None:
+    assert to_camel_case("") == ""
+
+
+def test_to_pascal_case__empty() -> None:
+    assert to_pascal_case("") == ""

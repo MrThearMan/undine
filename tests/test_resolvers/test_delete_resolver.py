@@ -145,3 +145,22 @@ async def test_delete_resolver__async(undine_settings) -> None:
     assert result == SimpleNamespace(pk=task.pk)
 
     assert (await Task.objects.all().acount()) == 0
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_delete_resolver__async__lookup_field_not_found(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskDeleteMutation(MutationType[Task]): ...
+
+    class Mutation(RootType):
+        delete_task = Entrypoint(TaskDeleteMutation)
+
+    resolver: DeleteResolver[Task] = DeleteResolver(mutation_type=TaskDeleteMutation, entrypoint=Mutation.delete_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={})
+    assert isawaitable(result)
+
+    with pytest.raises(GraphQLMissingLookupFieldError):
+        await result

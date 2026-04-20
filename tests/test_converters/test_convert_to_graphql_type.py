@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import uuid
 from asyncio import Future
@@ -69,10 +70,21 @@ from graphql import (
 
 from example_project.app.models import Comment, Project, Task
 from tests.helpers import exact, mock_gql_info, parametrize_helper
-from undine import Calculation, CalculationArgument, Field, GQLInfo, Input, MutationType, QueryType
+from undine import (
+    Calculation,
+    CalculationArgument,
+    Field,
+    GQLInfo,
+    Input,
+    InterfaceField,
+    InterfaceType,
+    MutationType,
+    QueryType,
+    UnionType,
+)
 from undine.converters import convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, LookupRef, MaybeManyOrNonNull, TypeRef
-from undine.exceptions import GraphQLTypedDictAnnotatedIncorrectMetadataError
+from undine.exceptions import FunctionDispatcherError, GraphQLTypedDictAnnotatedIncorrectMetadataError
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
 from undine.resolvers.query import TypedDictFieldResolver
@@ -1235,3 +1247,100 @@ def test_convert_to_graphql_type__offset_pagination() -> None:
     pagination = OffsetPagination(TaskType)
 
     assert convert_to_graphql_type(pagination) == TaskType.__output_type__()
+
+
+class PointTuple(NamedTuple):
+    x: int
+    y: str
+
+
+def test_convert_to_graphql_type__tuple__homogeneous() -> None:
+    result = convert_to_graphql_type(tuple[int, ...])
+    assert result == GraphQLList(GraphQLNonNull(GraphQLInt))
+
+
+def test_convert_to_graphql_type__tuple__nullable() -> None:
+    # tuple[int | None, ...] flattens to (int, NoneType, Ellipsis) → nullable single type
+    result = convert_to_graphql_type(tuple[int | None, ...])
+    assert result == GraphQLList(GraphQLInt)
+
+
+def test_convert_to_graphql_type__tuple__multiple_types() -> None:
+    result = convert_to_graphql_type(tuple[int, str])
+    assert result == GraphQLList(GraphQLAny)
+
+
+def test_convert_to_graphql_type__named_tuple__output() -> None:
+    result = convert_to_graphql_type(PointTuple)
+    assert isinstance(result, GraphQLObjectType)
+    assert result.name == "PointTupleType"
+    assert sorted(result.fields) == ["x", "y"]
+    assert result.fields["x"].type == GraphQLNonNull(GraphQLInt)
+    assert result.fields["y"].type == GraphQLNonNull(GraphQLString)
+
+
+def test_convert_to_graphql_type__named_tuple__input() -> None:
+    result = convert_to_graphql_type(PointTuple, is_input=True)
+    assert isinstance(result, GraphQLInputObjectType)
+    assert result.name == "PointTupleInput"
+    assert sorted(result.fields) == ["x", "y"]
+
+
+def test_convert_to_graphql_type__async_generator__no_args() -> None:
+    with pytest.raises(FunctionDispatcherError):
+        convert_to_graphql_type(AsyncGenerator)
+
+
+def test_convert_to_graphql_type__async_generator__multiple_union_types() -> None:
+    result = convert_to_graphql_type(AsyncGenerator[int | str, None])
+    assert result == GraphQLAny
+
+
+def test_convert_to_graphql_type__future__no_args() -> None:
+    with pytest.raises(FunctionDispatcherError):
+        convert_to_graphql_type(asyncio.Future)
+
+
+def test_convert_to_graphql_type__future__multiple_union_types() -> None:
+    result = convert_to_graphql_type(Future[int | str])
+    assert result == GraphQLAny
+
+
+def test_convert_to_graphql_type__future__exception_filtered() -> None:
+    # Future[int | Exception] → strips Exception, nullable=False → GraphQLNonNull(GraphQLInt)
+    result = convert_to_graphql_type(Future[int | Exception])
+    assert result == GraphQLNonNull(GraphQLInt)
+
+
+def test_convert_to_graphql_type__maybe_many_or_non_null__many__already_non_null() -> None:
+    value = MaybeManyOrNonNull(GraphQLNonNull(GraphQLString), many=True, nullable=True)
+    assert convert_to_graphql_type(value) == GraphQLList(GraphQLNonNull(GraphQLString))
+
+
+def test_convert_to_graphql_type__maybe_many_or_non_null__many__value_already_non_null__not_stripped() -> None:
+    # nullable=False means the NonNull is NOT stripped, so line 868 False branch is hit
+    value = MaybeManyOrNonNull(GraphQLNonNull(GraphQLString), many=True, nullable=False)
+    assert convert_to_graphql_type(value) == GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
+
+
+def test_convert_to_graphql_type__offset_pagination__union_type() -> None:
+    class PaginationTaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class PaginationProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class TaskOrProject(UnionType[PaginationTaskType, PaginationProjectType]): ...
+
+    pagination = OffsetPagination(TaskOrProject)
+
+    assert convert_to_graphql_type(pagination) == TaskOrProject.__union_type__()
+
+
+def test_convert_to_graphql_type__offset_pagination__interface_type() -> None:
+    class PaginationNamed(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    pagination = OffsetPagination(PaginationNamed)
+
+    assert convert_to_graphql_type(pagination) == PaginationNamed.__interface__()

@@ -17,7 +17,7 @@ class UserFactory(GenericDjangoModelFactory[User]):
     email = UndineFaker("email")
 
     @classmethod
-    def create_superuser(cls, **kwargs: Any) -> User:  # pragma: no cover
+    def create_superuser(cls, **kwargs: Any) -> User:
         kwargs["is_staff"] = True
         kwargs["is_superuser"] = True
         kwargs["is_active"] = True

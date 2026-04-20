@@ -4,6 +4,7 @@ import datetime
 import decimal
 import uuid
 from typing import NamedTuple
+from unittest.mock import patch
 
 import pytest
 from django.db.models import F, Q, Subquery, Value
@@ -311,6 +312,36 @@ def test_convert_to_field_ref__calculation() -> None:
         name = Field(ExampleCalculation)
 
     assert convert_to_field_ref(ExampleCalculation, caller=TaskType.name) == ExampleCalculation
+
+
+def test_convert_to_field_ref__calculation__with_existing_optimizer_func() -> None:
+    class ExampleCalculation(Calculation[int | None]):
+        """Description."""
+
+        value = CalculationArgument(int)
+        """Value description."""
+
+        def __call__(self, info: GQLInfo) -> DjangoExpression:
+            return Value(self.value)
+
+    call_count = [0]
+
+    def existing_optimizer(field: Field, data: OptimizationData, info: GQLInfo) -> None:
+        call_count[0] += 1
+
+    class TaskType(QueryType[Task]):
+        name = Field(ExampleCalculation)
+
+    TaskType.name.optimizer_func = existing_optimizer
+
+    convert_to_field_ref(ExampleCalculation, caller=TaskType.name)
+
+    info = mock_gql_info()
+    data = OptimizationData(model=Task, info=info)
+    with patch("undine.converters.impl.convert_to_field_ref.get_arguments", return_value={"value": 1}):
+        TaskType.name.optimizer_func(TaskType.name, data, info)
+
+    assert call_count[0] == 1
 
 
 def test_convert_to_field_ref__connection(undine_settings) -> None:

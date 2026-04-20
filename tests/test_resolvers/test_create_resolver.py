@@ -537,3 +537,48 @@ async def test_create_resolver__async(undine_settings) -> None:
     assert isinstance(tasks, Task)
     assert tasks.name == "Test task"
     assert tasks.type == TaskTypeChoices.STORY
+
+
+@pytest.mark.django_db
+def test_create_resolver__non_model_return(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            return None
+
+    class Query(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    resolver = CreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.create_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"name": "Test", "type": TaskTypeChoices.STORY.value})
+
+    assert result is None
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_create_resolver__async__non_model_return(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            return None
+
+    class Query(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    resolver = CreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.create_task)
+
+    result = resolver(root=None, info=mock_gql_info(), input={"name": "Test", "type": TaskTypeChoices.STORY.value})
+    assert isawaitable(result)
+    result = await result
+
+    assert result is None

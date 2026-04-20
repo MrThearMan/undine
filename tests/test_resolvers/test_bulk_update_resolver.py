@@ -33,7 +33,7 @@ from tests.factories import (
 )
 from tests.helpers import mock_gql_info, patch_optimizer
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType
-from undine.exceptions import GraphQLErrorGroup, GraphQLModelNotFoundError
+from undine.exceptions import GraphQLErrorGroup, GraphQLModelNotFoundError, GraphQLMutationInstanceLimitError
 from undine.resolvers import BulkUpdateResolver
 from undine.utils.mutation_tree import mutate
 
@@ -762,3 +762,59 @@ async def test_bulk_update_resolver__async(undine_settings) -> None:
     assert isinstance(results[1], Task)
     assert results[1].name == "Test task 2"
     assert results[1].type == TaskTypeChoices.STORY
+
+
+@pytest.mark.django_db
+def test_bulk_update_resolver__instance_limit_exceeded(undine_settings) -> None:
+    undine_settings.ASYNC = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    task_1 = TaskFactory.create(name="Task 1", type=TaskTypeChoices.STORY)
+    task_2 = TaskFactory.create(name="Task 2", type=TaskTypeChoices.BUG_FIX)
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        bulk_update_tasks = Entrypoint(TaskUpdateMutation)
+
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.bulk_update_tasks)
+
+    data = [
+        {"pk": task_1.pk, "name": "New Task 1"},
+        {"pk": task_2.pk, "name": "New Task 2"},
+    ]
+
+    with pytest.raises(GraphQLMutationInstanceLimitError):
+        resolver(root=None, info=mock_gql_info(), input=data)
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_bulk_update_resolver__async__instance_limit_exceeded(undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    task_1 = await sync_to_async(TaskFactory.create)(name="Task 1", type=TaskTypeChoices.STORY)
+    task_2 = await sync_to_async(TaskFactory.create)(name="Task 2", type=TaskTypeChoices.BUG_FIX)
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        bulk_update_tasks = Entrypoint(TaskUpdateMutation)
+
+    resolver = BulkUpdateResolver(mutation_type=TaskUpdateMutation, entrypoint=Query.bulk_update_tasks)
+
+    data = [
+        {"pk": task_1.pk, "name": "New Task 1"},
+        {"pk": task_2.pk, "name": "New Task 2"},
+    ]
+
+    result = resolver(root=None, info=mock_gql_info(), input=data)
+    assert isawaitable(result)
+
+    with pytest.raises(GraphQLMutationInstanceLimitError):
+        await result

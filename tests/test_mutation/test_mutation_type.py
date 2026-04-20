@@ -9,7 +9,7 @@ from graphql import DirectiveLocation, GraphQLInt, GraphQLNonNull, GraphQLString
 from example_project.app.models import Task
 from tests.helpers import exact, mock_gql_info
 from undine import Directive, DirectiveArgument, Input, MutationType, QueryType
-from undine.exceptions import DirectiveLocationError, MissingModelGenericError
+from undine.exceptions import DirectiveLocationError, MissingModelGenericError, MutationTypeKindCannotBeDeterminedError
 from undine.typing import GQLInfo, MutationKind
 from undine.utils.graphql.type_registry import GRAPHQL_REGISTRY
 
@@ -459,3 +459,27 @@ def test_mutation_type__validate() -> None:
 
     with pytest.raises(ValueError, match=exact("Foo must be True")):
         TaskCreateMutation.__validate__(Task(), mock_gql_info(), {"foo": False})
+
+
+def test_mutation_type__kind_cannot_be_determined() -> None:
+    with pytest.raises(MutationTypeKindCannotBeDeterminedError):
+
+        class TaskMutation(MutationType[Task], auto=False): ...
+
+
+def test_mutation_type__contains() -> None:
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+
+    assert "name" in TaskCreateMutation
+    assert "missing" not in TaskCreateMutation
+
+
+def test_mutation_type__filter_queryset__default() -> None:
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    qs = Task.objects.all()
+    info = mock_gql_info()
+    result = TaskCreateMutation.__filter_queryset__(qs, info)
+
+    assert result is qs

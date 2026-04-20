@@ -9,7 +9,7 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import parametrize_helper
-from undine import Calculation, CalculationArgument, GQLInfo, InterfaceField, InterfaceType, MutationType, QueryType
+from undine import Calculation, CalculationArgument, GQLInfo, InterfaceField, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldNotARelationOfModelError
@@ -262,3 +262,17 @@ def test_is_many__interface_field() -> None:
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
     assert is_many(Named.name, model=Task, name="name") is False
+
+
+def test_is_many__model__field_not_found() -> None:
+    assert is_many(Project, model=Task, name="nonexistent_field") is False
+
+
+def test_is_many__union_type() -> None:
+    class ProjectType(QueryType[Project]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectOrTask(UnionType[ProjectType, TaskType]): ...
+
+    assert is_many(ProjectOrTask, model=Task, name="name") is True

@@ -1740,3 +1740,607 @@ def test_validation_rules__visibility_rule__directive__argument(graphql, undine_
                 "extensions": {"status_code": 400},
             }
         ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_field__no_parent_type(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Inline fragment on unknown type → parent_type is None when entering 'name'
+    query = """
+        query {
+            tasks {
+                ... on NonExistentType {
+                    name
+                }
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_field__no_graphql_field(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Non-existent field → graphql_field is None
+    query = """
+        query {
+            tasks {
+                nonExistentField
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_argument__no_parent_type(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # @skip(if:) inside inline fragment on unknown type → parent_type is None when entering 'if' arg
+    query = """
+        query {
+            tasks {
+                ... on NonExistentType {
+                    name @skip(if: true)
+                }
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_argument__no_graphql_argument(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Unknown argument → graphql_argument is None
+    query = """
+        query {
+            tasks(unknownArgument: "foo") {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_argument__variable_node__none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Nullable variable not provided → variable_as_ast returns None
+    query = """
+        query($filter: TaskFilterSet) {
+            tasks(filter: $filter) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__mutation_type__argument__hidden(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        type = Input()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+        @create_task.visible
+        def create_task_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    query = """
+        mutation {
+            createTask(input: {name: "Test", type: STORY}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.errors == [
+        {
+            "message": "Unknown argument 'input' on field 'Mutation.createTask'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__calculation_argument__no_visible_func(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class Calc(Calculation[int]):
+        value = CalculationArgument(int)
+
+        def __call__(self, info: GQLInfo) -> DjangoExpression:
+            return Value(self.value)
+
+    class TaskType(QueryType[Task], auto=False):
+        custom = Field(Calc)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # CalculationArgument without visible_func → returns None (line 137)
+    query = """
+        query {
+            tasks {
+                custom(value: 1)
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_argument__relay_arg(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(Connection(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Relay 'first' arg is a plain scalar arg → falls through to line 149
+    query = """
+        query {
+            tasks(first: 5) {
+                edges {
+                    node {
+                        name
+                    }
+                }
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_named_type__unknown_type(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Unknown type in fragment → get_type() returns None
+    query = """
+        fragment F on NonExistentType {
+            name
+        }
+
+        query {
+            tasks {
+                ...F
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+def test_validation_rules__visibility_rule__enter_directive__unknown_directive(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Unknown directive → get_directive() returns None
+    query = """
+        query {
+            tasks {
+                name @unknownDirective
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__enter_directive__builtin_directive(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Built-in @skip directive → get_undine_directive returns None (line 190)
+    # Also covers handle_directive_arguments line 462 (undine_directive_arg is None for 'if' arg)
+    query = """
+        query {
+            tasks {
+                name @skip(if: false)
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+def test_validation_rules__visibility_rule__handle_entrypoint__plain_return_type(
+    graphql, undine_settings
+) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Plain @Entrypoint with str return and no visible_func → hits line 235 return None
+    query = """
+        query {
+            example
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_filters__field_node_none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Variable named 'differentName' but filter field is 'name'
+    # flatten_filters: input_type.fields.get("differentName") → None → yield None → line 351: continue
+    query = """
+        query($differentName: String) {
+            tasks(filter: {name: $differentName}) {
+                name
+            }
+        }
+    """
+    response = graphql(query, variables={"differentName": "foo"})
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_filters__input_field_none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Unknown filter field → input_type.fields.get("unknownField") returns None → line 356: continue
+    query = """
+        query {
+            tasks(filter: {unknownField: "foo"}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_filters__no_undine_filter(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # AND field with non-object value forces AND node through flatten_filters as leaf
+    # get_undine_filter(AND field) → None → line 360: continue
+    query = """
+        query {
+            tasks(filter: {AND: ""}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_orders__variable_not_enum(
+    graphql, undine_settings
+) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @TaskOrderSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Variable not provided → variable_as_ast returns None
+    # isinstance(None, EnumValueNode) → False → line 386: continue
+    query = """
+        query($order: TaskOrderSet) {
+            tasks(orderBy: [$order]) {
+                name
+            }
+        }
+    """
+    graphql(query)
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_orders__enum_value_none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @TaskOrderSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Unknown enum value → enum_type.values.get("INVALID") → None → line 391: continue
+    query = """
+        query {
+            tasks(orderBy: [INVALID_ORDER_VALUE]) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_inputs__variable_none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        type = Input()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Mutation(RootType):
+        bulk_create_task = Entrypoint(TaskCreateMutation, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    # Variable not provided → variable_as_ast returns None → line 421: continue
+    query = """
+        mutation($input: TaskCreateMutation) {
+            bulkCreateTask(input: [$input]) {
+                name
+            }
+        }
+    """
+    graphql(query)
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_inputs__input_field_none(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        type = Input()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    # Unknown field in mutation input → input_type.fields.get("unknownField") → None → line 427: continue
+    query = """
+        mutation {
+            createTask(input: {unknownField: "foo"}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is True
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__flatten_filters__and_branch(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Nested AND filter → flatten_filters AND/OR/XOR/NOT branch (lines 556-558)
+    query = """
+        query {
+            tasks(filter: {AND: {name: "foo"}}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__flatten_filters__variable_node(graphql, undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Filter field value is a variable matching the field name → lines 561-566
+    query = """
+        query($name: String) {
+            tasks(filter: {name: $name}) {
+                name
+            }
+        }
+    """
+    response = graphql(query, variables={"name": "foo"})
+    assert response.has_errors is False

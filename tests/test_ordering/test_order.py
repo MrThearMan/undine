@@ -233,7 +233,7 @@ def test_order__aliases() -> None:
         name = Order()
 
         @name.aliases
-        def name_aliases(self, info: GQLInfo, descending: bool) -> dict[str, DjangoExpression]:
+        def name_aliases(self, info: GQLInfo, *, descending: bool) -> dict[str, DjangoExpression]:
             return {"foo": Count("*")}
 
     data = ["name_asc"]
@@ -242,3 +242,19 @@ def test_order__aliases() -> None:
 
     assert results.order_by == [OrderBy(F("name"))]
     assert results.aliases == {"foo": Count("*")}
+
+
+def test_order__aliases__no_args() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    result = MyOrderSet.name.aliases()
+    assert callable(result)
+
+
+def test_order__visible__no_args() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+
+    result = MyOrderSet.name.visible()
+    assert callable(result)

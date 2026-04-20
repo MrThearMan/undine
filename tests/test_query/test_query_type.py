@@ -298,3 +298,11 @@ def test_query_type__output_type_field() -> None:
     assert isinstance(output_type.fields["type"].type, GraphQLNonNull)
     assert isinstance(output_type.fields["type"].type.of_type, GraphQLEnumType)
     assert sorted(output_type.fields["type"].type.of_type.values) == ["BUG_FIX", "STORY", "TASK"]
+
+
+def test_query_type__contains() -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    assert "name" in TaskType
+    assert "nonexistent" not in TaskType

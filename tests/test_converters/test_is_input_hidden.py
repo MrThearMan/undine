@@ -63,3 +63,11 @@ def test_is_input_only__mutation_type() -> None:
     class TaskCreateMutation(MutationType[Task]): ...
 
     assert is_input_hidden(TaskCreateMutation) is False
+
+
+def test_is_input_hidden__model__field_not_found() -> None:
+    class TaskCreateMutation(MutationType[Task]):
+        nonexistent = Input(Task)
+
+    result = is_input_hidden(Task, caller=TaskCreateMutation.nonexistent)
+    assert result is False

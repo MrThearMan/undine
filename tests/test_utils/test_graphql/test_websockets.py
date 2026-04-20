@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import dataclasses
 import json
 from functools import cached_property
 from http import HTTPStatus
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from asgiref.typing import ASGISendEvent
 from django.contrib.auth.models import AnonymousUser, User
-from graphql import GraphQLError, GraphQLFormattedError
+from django.http.request import MediaType
+from django.http.response import ResponseHeaders
+from graphql import ExecutionResult, GraphQLError, GraphQLFormattedError
 
 from undine import Entrypoint, RootType, create_schema
 from undine.typing import (
@@ -209,6 +213,47 @@ async def test_websocket_handler__disconnect__cancel_operation(undine_settings) 
     assert operation.task.done() is True
     assert operation.task.cancelled() is True
     assert operation.is_completed is True
+
+
+async def test_websocket_handler__disconnect__already_done_operation_in_map(undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint
+        async def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+
+    con_message = ConnectionInitMessage(type="connection_init")
+    await handler.receive(data=json.dumps(con_message))
+
+    sub_message = SubscribeMessage(type="subscribe", id="1", payload={"query": "query { test }"})
+    await handler.receive(data=json.dumps(sub_message))
+
+    operation = handler.operations.get("1")
+    assert operation is not None
+    assert operation.task.done() is False
+
+    # Cancel the task BEFORE it starts running (before yielding to the event loop).
+    operation.task.cancel()
+
+    # Yield to the event loop to let the cancellation propagate.
+    # run() never executed, so set_completed() was never called.
+    with contextlib.suppress(asyncio.CancelledError):
+        await operation.task
+
+    # Task is done (cancelled) but operation is still in handler.operations
+    assert operation.task.done() is True
+    assert operation.task.cancelled() is True
+    assert "1" in handler.operations  # Not removed since set_completed() never ran
+
+    # disconnect() encounters a done task → skips cancel (branch 180->183)
+    await handler.disconnect()
+
+    # After disconnect(), operation is removed (popped at line 179)
+    assert "1" not in handler.operations
 
 
 async def test_websocket_handler__receive__no_data() -> None:
@@ -899,3 +944,192 @@ async def test_websocket_handler__receive__complete__operation_id_not_string(und
 
     assert websocket.close_code == GraphQLWebSocketCloseCode.BAD_REQUEST
     assert websocket.close_reason == "Complete message 'id' must be a string"
+
+
+async def test_websocket_handler__receive__unknown_message_type() -> None:
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+
+    # Send a message with an unrecognised type
+    await handler.receive(data='{"type": "totally_unknown"}')
+
+    assert websocket.close_code == GraphQLWebSocketCloseCode.BAD_REQUEST
+    assert websocket.close_reason == "Unknown message type: 'totally_unknown'"
+
+
+async def test_websocket_handler__disconnect__already_done_operation(undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint
+        async def test(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+
+    con_message = ConnectionInitMessage(type="connection_init")
+    await handler.receive(data=json.dumps(con_message))
+
+    sub_message = SubscribeMessage(type="subscribe", id="1", payload={"query": "query { test }"})
+    await handler.receive(data=json.dumps(sub_message))
+
+    operation = handler.operations.get("1")
+    assert operation is not None
+
+    # Wait for the operation to complete before disconnecting
+    await operation.task
+
+    assert operation.task.done() is True
+    assert operation.task.cancelled() is False
+
+    # disconnect() should handle an already-done task without cancelling it
+    await handler.disconnect()
+
+    assert operation.task.done() is True
+    assert operation.task.cancelled() is False
+
+
+async def test_websocket_handler__connection_init_timeout__already_received() -> None:
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+
+    # Mark connection_init as already received before timeout fires
+    handler.connection_init_received = True
+
+    # Calling handle_connection_init_timeout directly should return early
+    await handler.handle_connection_init_timeout()
+
+    # No close was sent since connection_init_received is True
+    assert websocket.close_code is None
+    assert websocket.close_reason is None
+
+
+async def test_websocket_handler__receive__subscribe__unexpected_result_type(undine_settings) -> None:
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+    handler.connection_acknowledged = True
+
+    async def fake_unexpected(*args, **kwargs):
+        return "unexpected"
+
+    # Patch execute_graphql_with_subscription to return something that is not ExecutionResult or AsyncIterator
+    with patch("undine.utils.graphql.websocket.execute_graphql_with_subscription", side_effect=fake_unexpected):
+        message = SubscribeMessage(type="subscribe", id="1", payload={"query": "query { test }"})
+        await handler.receive(data=json.dumps(message))
+
+        operation = handler.operations.get("1")
+        assert operation is not None
+        await operation.task
+
+    assert operation.is_completed is True
+    # An error message should have been sent
+    assert len(websocket.messages) == 1
+    error_msg = websocket.messages[0]
+    assert error_msg["type"] == "error"
+    assert error_msg["id"] == "1"
+
+
+async def test_websocket_handler__receive__subscribe__subscription_initial_errors(undine_settings) -> None:
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+    handler.connection_acknowledged = True
+
+    # Patch execute_graphql_with_subscription to return an AsyncIterator whose first item has errors
+    async def fake_stream():
+        yield ExecutionResult(data=None, errors=[GraphQLError("initial subscription error")])
+        yield ExecutionResult(data={"events": 2})
+
+    with patch("undine.utils.graphql.websocket.execute_graphql_with_subscription", return_value=fake_stream()):
+        message = SubscribeMessage(type="subscribe", id="1", payload={"query": "subscription { events }"})
+        await handler.receive(data=json.dumps(message))
+
+        operation = handler.operations.get("1")
+        assert operation is not None
+        await operation.task
+
+    assert operation.is_completed is True
+    assert len(websocket.messages) == 1
+    error_msg = websocket.messages[0]
+    assert error_msg["type"] == "error"
+    assert error_msg["id"] == "1"
+
+
+async def test_websocket_handler__receive__subscribe__subscription_exception(undine_settings) -> None:
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+    handler.connection_acknowledged = True
+
+    # Patch execute_graphql_with_subscription to return an AsyncIterator that raises an unexpected exception
+    async def fake_stream():
+        yield ExecutionResult(data={"events": 1})
+        msg = "unexpected error"
+        raise RuntimeError(msg)
+
+    with patch("undine.utils.graphql.websocket.execute_graphql_with_subscription", return_value=fake_stream()):
+        message = SubscribeMessage(type="subscribe", id="1", payload={"query": "subscription { events }"})
+        await handler.receive(data=json.dumps(message))
+
+        operation = handler.operations.get("1")
+        assert operation is not None
+        await operation.task
+
+    assert operation.is_completed is True
+    # Should have gotten a next message for the first yield, then an error for the exception
+    assert len(websocket.messages) == 2
+    assert websocket.messages[0]["type"] == "next"
+    assert websocket.messages[1]["type"] == "error"
+
+
+async def test_websocket_request__properties() -> None:
+    scope = default_scope()
+    scope["session"] = None  # type: ignore[typeddict-item]
+
+    message = ConnectionInitMessage(type="connection_init", payload={})
+    request = WebSocketRequest(scope=scope, message=message)
+
+    # Trigger and verify each property
+    assert request.GET is not None
+    assert request.POST is not None
+    assert request.COOKIES is not None
+    assert request.FILES is not None
+    assert request.META is not None
+    assert request.scheme is not None
+    assert request.path is not None
+    assert request.method is not None
+    assert request.headers is not None
+    assert request.body is not None
+    assert request.encoding is None or isinstance(request.encoding, str)
+
+    # user comes from scope
+    assert isinstance(request.user, AnonymousUser)
+    assert isinstance(await request.auser(), AnonymousUser)
+
+    # session comes from scope
+    assert request.session is None
+
+    assert request.content_type is not None or request.content_type is None
+    assert request.content_params is not None or request.content_params is None
+    assert isinstance(request.accepted_types, list)
+
+    # response_content_type: second access goes through hasattr branch
+    ct = request.response_content_type
+    assert ct is not None
+    ct2 = request.response_content_type
+    assert ct2 is ct
+
+    # setter
+    new_ct = MediaType("text/plain")
+    request.response_content_type = new_ct
+    assert request.response_content_type is new_ct
+
+    # response_headers: first access creates it, second hits hasattr branch
+    rh = request.response_headers
+    assert isinstance(rh, ResponseHeaders)
+    rh2 = request.response_headers
+    assert rh2 is rh
+
+    # setter
+    new_rh = ResponseHeaders({})
+    request.response_headers = new_rh
+    assert request.response_headers is new_rh
