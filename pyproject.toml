@@ -74,13 +74,13 @@ pytest-django = "4.12.0"
 pytest-asyncio = "1.3.0"
 pytest-mypy-plugins = "4.0.2"
 coverage = "7.13.5"
-hypothesis = "6.152.3"
+hypothesis = "6.152.4"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2026.4.10"
 urllib3 = "2.6.3"
 django-modeltranslation = "0.20.3"
-psycopg = { version = "3.3.3", extras = ["binary", "pool"] }
+psycopg = { version = "3.3.4", extras = ["binary", "pool"] }
 granian = { version = "2.7.4", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
