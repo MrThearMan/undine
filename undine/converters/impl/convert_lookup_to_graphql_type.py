@@ -53,6 +53,7 @@ def _(
         "iregex",
         "istartswith",
         "regex",
+        "search",
     ],
     **kwargs: Any,
 ) -> GraphQLInputType | GraphQLOutputType:
