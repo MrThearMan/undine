@@ -16,7 +16,7 @@ jobs:
   test:
     uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.2
     with:
-      coveralls: ${{ fromJSON(vars.COVERALLS_ENABLED) }}
+      coveralls: ${{ fromJSON(vars.COVERALLS_ENABLED || 'false') }}
 
   test-async:
     uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.2
