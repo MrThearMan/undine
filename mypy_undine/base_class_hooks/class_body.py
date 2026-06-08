@@ -10,7 +10,6 @@ from mypy.nodes import (
     AssignmentStmt,
     CallExpr,
     Decorator,
-    FuncDef,
     MemberExpr,
     NameExpr,
     OpExpr,
