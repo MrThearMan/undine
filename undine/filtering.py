@@ -8,9 +8,9 @@ from collections import defaultdict
 from functools import reduce
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
-from django.db.models import Model, Q
+from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
-from graphql import DirectiveLocation, GraphQLInputField, GraphQLInputType, Undefined
+from graphql import DirectiveLocation, GraphQLInputField, Undefined
 
 from undine.converters import (
     convert_to_description,

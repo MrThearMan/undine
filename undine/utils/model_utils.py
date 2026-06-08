@@ -38,7 +38,6 @@ from undine.exceptions import (
 )
 from undine.integrations.modeltranslation import get_translatable_fields, is_translation_field
 from undine.settings import undine_settings
-from undine.typing import ModelField
 from undine.utils.constraints import get_constraint_message
 
 if TYPE_CHECKING:

@@ -9,7 +9,7 @@ from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Genera
 from enum import Enum
 from functools import partial
 from traceback import format_tb
-from types import FunctionType, GenericAlias, LambdaType, TracebackType, UnionType
+from types import FunctionType, GenericAlias, LambdaType, UnionType
 from typing import (
     TYPE_CHECKING,
     Annotated,
