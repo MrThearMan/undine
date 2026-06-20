@@ -11,6 +11,7 @@ from graphql import (
     GraphQLResolveInfo,
     GraphQLUnionType,
     InlineFragmentNode,
+    version_info,
 )
 from graphql.execution.collect_fields import get_field_entry_key
 
@@ -345,6 +346,11 @@ class GraphQLASTWalker:  # noqa: PLR0904
             variable_values=self.info.variable_values,
             context=self.info.context,
             is_awaitable=self.info.is_awaitable,
+            **(
+                {"abort_signal": self.info.abort_signal, "async_helpers": self.info.async_helpers}
+                if version_info >= (3, 3, 0)
+                else {}
+            ),
         )
 
         try:

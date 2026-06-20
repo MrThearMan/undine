@@ -20,11 +20,12 @@ from graphql import (
 from graphql.type.definition import GraphQLArgument, GraphQLField, GraphQLList, GraphQLNonNull
 
 from tests.helpers import MockRequest
+from undine import Entrypoint, RootType, create_schema
 from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import GraphQLError, GraphQLErrorGroup
 from undine.execution import (
     UndineValidationContext,
-    _get_execution_context,  # noqa: PLC2701
+    _get_executor,  # noqa: PLC2701
     _is_incremental_request,  # noqa: PLC2701
     _is_multipart_mixed_request,  # noqa: PLC2701
     _is_sse_request,  # noqa: PLC2701
@@ -91,7 +92,17 @@ def test_execute_graphql__parse_error(undine_settings) -> None:
 
 
 def test_execute_graphql__non_query_operation_on_get_request(undine_settings) -> None:
-    undine_settings.SCHEMA = example_schema
+    class Query(RootType):
+        @Entrypoint
+        def placeholder(self) -> str:
+            return "Hello, World!"
+
+    class Mutation(RootType):
+        @Entrypoint
+        def hello(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
     params = GraphQLHttpParams(
         document="mutation { hello }",
@@ -361,7 +372,17 @@ async def test_execute_graphql_http_async__validation_error(undine_settings) -> 
 
 @pytest.mark.asyncio
 async def test_execute_graphql_http_async__mutation_non_post(undine_settings) -> None:
-    undine_settings.SCHEMA = example_schema
+    class Query(RootType):
+        @Entrypoint
+        def placeholder(self) -> str:
+            return "Hello, World!"
+
+    class Mutation(RootType):
+        @Entrypoint
+        def testing(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
     params = GraphQLHttpParams(
         document="mutation { testing }",
@@ -564,7 +585,7 @@ async def test_execute_graphql_http_async__execute_context_error_group(undine_se
     error2 = GraphQLError("context error 2")
     error_group = GraphQLErrorGroup(errors=[error1, error2])
 
-    with patch("undine.execution._get_execution_context", side_effect=error_group):
+    with patch("undine.execution._get_executor", side_effect=error_group):
         undine_settings.SCHEMA = example_schema
 
         params = GraphQLHttpParams(
@@ -912,7 +933,7 @@ async def test_create_source_event_stream__graphql_error_group_in_execution_cont
     )
     undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
 
-    with patch("undine.execution._get_execution_context", side_effect=error_group):
+    with patch("undine.execution._get_executor", side_effect=error_group):
         params = GraphQLHttpParams(
             document="subscription { testing }",
             variables={},
@@ -1452,7 +1473,7 @@ def test_execute_graphql_http_sync__execute_context_error_group(undine_settings)
 
     undine_settings.SCHEMA = example_schema
 
-    with patch("undine.execution._get_execution_context", side_effect=error_group):
+    with patch("undine.execution._get_executor", side_effect=error_group):
         params = GraphQLHttpParams(
             document="query { testing }",
             variables={},
@@ -1733,7 +1754,7 @@ def test_get_execution_context__success(undine_settings) -> None:
     )
 
     document = parse("query { hello }")
-    context = _get_execution_context(
+    context = _get_executor(
         document=document,
         root_value=None,
         context_value=MockRequest(method="POST"),
@@ -1845,8 +1866,19 @@ async def test_execute_graphql_http_async__multipart_mixed_mutation_allowed(undi
 
 @pytest.mark.asyncio
 async def test_execute_graphql_http_async__websocket_mutation_not_allowed(undine_settings) -> None:
-    undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_MUTATIONS_WITH_WEBSOCKETS = False
+
+    class Query(RootType):
+        @Entrypoint
+        def placeholder(self) -> str:
+            return "Hello, World!"
+
+    class Mutation(RootType):
+        @Entrypoint
+        def testing(self) -> str:
+            return "Hello, World!"
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
     params = GraphQLHttpParams(
         document="mutation { testing }",
@@ -2177,7 +2209,7 @@ def test_get_execution_context__invalid_variable_values(undine_settings) -> None
 
     # Pass wrong type for the variable to trigger coercion errors
     with pytest.raises(GraphQLErrorGroup):
-        _get_execution_context(
+        _get_executor(
             document=document,
             root_value=None,
             context_value=MockRequest(method="POST"),

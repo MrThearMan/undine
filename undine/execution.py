@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from graphql import (
-    ExecutionContext,
     ExecutionResult,
     GraphQLEnumType,
     GraphQLError,
@@ -73,8 +72,10 @@ from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
 if version_info >= (3, 3, 0):  # pragma: no cover
+    from graphql import Executor
     from graphql.execution.execute import execute_subscription  # type: ignore[attr-defined]
 else:  # pragma: no cover
+    from graphql import ExecutionContext as Executor
     from graphql.execution.subscribe import execute_subscription
 
 
@@ -82,7 +83,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from graphql import DocumentNode, GraphQLInputType, GraphQLOutputType, GraphQLSchema, Node, ValueNode
-    from graphql.execution.collect_fields import FieldGroup  # type: ignore[attr-defined]
+    from graphql.execution.collect_fields import FieldDetailsList  # type: ignore[attr-defined]
     from graphql.execution.execute import IncrementalContext  # type: ignore[attr-defined]
     from graphql.pyutils import AwaitableOrValue, Path
 
@@ -201,7 +202,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result  # type: ignore[return-value]
 
     try:
-        exec_context = _get_execution_context(
+        exec_context = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
@@ -338,7 +339,7 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
         return context.result  # type: ignore[return-value]
 
     try:
-        exec_context = _get_execution_context(
+        exec_context = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
@@ -435,7 +436,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     each of which triggers a GraphQL execution for that event.
     """
     try:
-        exec_context = _get_execution_context(
+        exec_context = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             context_value=context.request,
@@ -496,7 +497,7 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
                     yield context.result
                     continue
 
-                exec_context = _get_execution_context(
+                exec_context = _get_executor(
                     document=context.document,  # type: ignore[arg-type]
                     root_value=payload,
                     context_value=context.request,
@@ -620,7 +621,7 @@ def _is_websocket_request(request: DjangoRequestProtocol) -> bool:
     return request.method == "WEBSOCKET"
 
 
-def _get_execution_context(
+def _get_executor(
     *,
     document: DocumentNode,
     root_value: Any,
@@ -628,8 +629,8 @@ def _get_execution_context(
     variable_values: dict[str, Any],
     operation_name: str | None,
     middleware: MiddlewareManager | None,
-) -> UndineExecutionContext:
-    context_or_errors = undine_settings.EXECUTION_CONTEXT_CLASS.build(
+) -> UndineExecutor:
+    executor_or_errors = undine_settings.EXECUTOR_CLASS.build(
         schema=undine_settings.SCHEMA,
         document=document,
         root_value=root_value,
@@ -639,10 +640,10 @@ def _get_execution_context(
         middleware=middleware,
     )
 
-    if isinstance(context_or_errors, list):
-        raise GraphQLErrorGroup(errors=context_or_errors)
+    if isinstance(executor_or_errors, list):
+        raise GraphQLErrorGroup(errors=executor_or_errors)
 
-    return context_or_errors  # type: ignore[return-value]
+    return executor_or_errors  # type: ignore[return-value]
 
 
 def _get_middleware_manager(lifecycle_hooks: list[LifecycleHook]) -> MiddlewareManager | None:
@@ -683,13 +684,13 @@ def _validate(
     return errors
 
 
-def _execute(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
+def _execute(context: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     if version_info < (3, 3, 0):
         return _execute_old(context)
     return _execute_new(context)
 
 
-def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
+def _execute_old(context: UndineExecutor) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
     """Execution for graphql-core < 3.3.0."""
     try:
         data_or_awaitable = context.execute_operation(context.operation, context.root_value)
@@ -726,7 +727,7 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
     return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)  # type: ignore[arg-type]
 
 
-def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
+def _execute_new(context: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     """Execution for graphql-core >= 3.3.0."""
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
@@ -784,8 +785,8 @@ def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLRes
 # Contexts
 
 
-class UndineExecutionContext(ExecutionContext):
-    """Custom GraphQL execution context class."""
+class UndineExecutor(Executor):
+    """Custom GraphQL executor class."""
 
     if version_info >= (3, 3, 0):  # pragma: no cover
 
@@ -793,7 +794,7 @@ class UndineExecutionContext(ExecutionContext):
             self,
             raw_error: Exception,
             return_type: GraphQLOutputType,
-            field_group: FieldGroup,
+            field_details_list: FieldDetailsList,
             path: Path,
             incremental_context: IncrementalContext | None = None,
         ) -> None:
@@ -801,17 +802,33 @@ class UndineExecutionContext(ExecutionContext):
 
             match raw_error:
                 case ValidationError():
-                    error_group = located_validation_error(raw_error, to_nodes(field_group), path.as_list())
-                    self.handle_field_errors_group(error_group, return_type, field_group, path, incremental_context)
+                    error_group = located_validation_error(
+                        raw_error,
+                        to_nodes(field_details_list),
+                        path.as_list(),
+                    )
+                    self.handle_field_errors_group(
+                        error_group,
+                        return_type,
+                        field_details_list,
+                        path,
+                        incremental_context,
+                    )
 
                 case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_group, path, incremental_context)
+                    self.handle_field_errors_group(
+                        raw_error,
+                        return_type,
+                        field_details_list,
+                        path,
+                        incremental_context,
+                    )
 
                 case _:
                     super().handle_field_error(  # type: ignore[call-arg]
                         raw_error=raw_error,
                         return_type=return_type,
-                        field_group=field_group,
+                        field_details_list=field_details_list,
                         path=path,
                         incremental_context=incremental_context,
                     )
@@ -820,7 +837,7 @@ class UndineExecutionContext(ExecutionContext):
             self,
             raw_error: GraphQLErrorGroup,
             return_type: GraphQLOutputType,
-            field_group: FieldGroup,
+            field_details_list: FieldDetailsList,
             path: Path,
             incremental_context: IncrementalContext | None = None,
         ) -> None:
@@ -830,7 +847,7 @@ class UndineExecutionContext(ExecutionContext):
                 if not err.path:
                     err.path = path.as_list()
                 if not err.nodes:
-                    err.nodes = to_nodes(field_group)
+                    err.nodes = to_nodes(field_details_list)
 
             if is_non_null_type(return_type):
                 raise raw_error
@@ -839,7 +856,7 @@ class UndineExecutionContext(ExecutionContext):
                 self.handle_field_error(
                     raw_error=err,
                     return_type=return_type,
-                    field_group=field_group,
+                    field_details_list=field_details_list,
                     path=path,
                     incremental_context=incremental_context,
                 )

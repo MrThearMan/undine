@@ -64,10 +64,9 @@ def test_validation_rules__one_of_input_object__multiple_keys(graphql, undine_se
     assert response.errors == [
         {
             "message": (
-                "Variable '$input' got invalid value "
-                "{'task': {'name': 'Test Task', 'type': 'TASK'}, "
-                "'project': {'name': 'Test Project'}} at 'input.target'; "
-                "Exactly one key must be specified for OneOf type 'CommentTargetInput'."
+                "Variable '$input' has invalid value at .target: Within OneOf "
+                "Input Object type 'CommentTargetInput', exactly one field must "
+                "be specified, and the value for that field must be non-null."
             ),
             "extensions": {"status_code": 400},
         }
@@ -120,7 +119,9 @@ def test_validation_rules__one_of_input_object__null_key(graphql, undine_setting
     assert response.errors == [
         {
             "message": (
-                "Variable '$input' got invalid value None at 'input.target.task'; Field 'task' must be non-null."
+                "Variable '$input' has invalid value at .target.task: Within "
+                "OneOf Input Object type 'CommentTargetInput', exactly one field "
+                "must be specified, and the value for that field must be non-null."
             ),
             "extensions": {"status_code": 400},
         }
@@ -185,7 +186,10 @@ def test_validation_rules__one_of_input_object__multiple_keys__document(graphql,
 
     assert response.errors == [
         {
-            "message": "OneOf Input Object 'CommentTargetInput' must specify exactly one key.",
+            "message": (
+                "Within OneOf Input Object type 'CommentTargetInput', exactly one "
+                "field must be specified, and the value for that field must be non-null."
+            ),
             "extensions": {"status_code": 400},
         }
     ]
@@ -237,7 +241,10 @@ def test_validation_rules__one_of_input_object__null_key__document(graphql, undi
 
     assert response.errors == [
         {
-            "message": "Field 'CommentTargetInput.task' must be non-null.",
+            "message": (
+                "Within OneOf Input Object type 'CommentTargetInput', exactly one "
+                "field must be specified, and the value for that field must be non-null."
+            ),
             "extensions": {"status_code": 400},
         }
     ]
@@ -289,7 +296,10 @@ def test_validation_rules__one_of_input_object__null_key__document_variable(grap
 
     assert response.errors == [
         {
-            "message": "Variable '$target' of non-null type 'CommentTargetTaskInput!' must not be null.",
+            "message": (
+                "Variable '$target' has invalid value: Expected value of non-null "
+                "type 'CommentTargetTaskInput!' not to be None."
+            ),
             "extensions": {"status_code": 400},
         }
     ]

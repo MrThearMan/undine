@@ -35,6 +35,7 @@ from graphql import (
     OperationType,
     SelectionSetNode,
     Undefined,
+    version_info,
 )
 from graphql.pyutils import Path
 from urllib3 import encode_multipart_formdata
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
 
     from django.contrib.auth.models import User
     from django.core.files.uploadedfile import UploadedFile
-    from graphql import FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
+    from graphql import AbortSignal, FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
     from pytest_django import DjangoDbBlocker
 
     from undine.typing import RequestMethod
@@ -243,6 +244,7 @@ def mock_gql_info(  # noqa: PLR0913
     variable_values: dict[str, Any] | None = None,
     context: Any | None = None,
     is_awaitable: Callable[[Any], bool] | None = None,
+    abort_signal: AbortSignal | None = None,
 ) -> GQLInfo:
     """Create a GraphQL resolve info object for testing purposes."""
     _default_field_nodes = [
@@ -273,6 +275,7 @@ def mock_gql_info(  # noqa: PLR0913
         variable_values={} if variable_values is None else variable_values,
         context=MockRequest() if context is None else context,
         is_awaitable=(lambda _: False) if is_awaitable is None else is_awaitable,
+        **({"abort_signal": abort_signal, "async_helpers": None} if version_info >= (3, 3, 0) == None else {}),
     )
 
 

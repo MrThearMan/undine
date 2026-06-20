@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from graphql import ASTValidationRule
 
-    from undine.execution import UndineExecutionContext
+    from undine.execution import UndineExecutor
     from undine.hooks import LifecycleHook, LifecycleHookContext
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import (
@@ -117,8 +117,8 @@ class UndineDefaultSettings(NamedTuple):
     ADDITIONAL_VALIDATION_RULES: list[type[ASTValidationRule]] = []
     """Additional validation rules to use for validating the GraphQL schema."""
 
-    EXECUTION_CONTEXT_CLASS: type[UndineExecutionContext] = "undine.execution.UndineExecutionContext"  # type: ignore[assignment]
-    """GraphQL execution context class used by the schema."""
+    EXECUTOR_CLASS: type[UndineExecutor] = "undine.execution.UndineExecutor"  # type: ignore[assignment]
+    """GraphQL executor class used by the schema."""
 
     LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [
         "undine.hooks.RequestCacheHook",  # type: ignore[list-item]
@@ -394,7 +394,7 @@ DEFAULTS: dict[str, Any] = UndineDefaultSettings()._asdict()
 IMPORT_STRINGS: set[str | bytes] = {
     "ADDITIONAL_VALIDATION_RULES.0",
     "DOCSTRING_PARSER",
-    "EXECUTION_CONTEXT_CLASS",
+    "EXECUTOR_CLASS",
     "LIFECYCLE_HOOKS.0",
     "OPTIMIZER_CLASS",
     "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
@@ -421,6 +421,7 @@ REMOVED_SETTINGS: dict[str, Any] = {
     "VALIDATION_HOOKS": "LIFECYCLE_HOOKS",
     "EXECUTION_HOOKS": "LIFECYCLE_HOOKS",
     "MIDDLEWARE": "LIFECYCLE_HOOKS",
+    "EXECUTION_CONTEXT_CLASS": "EXECUTOR_CLASS",
 }
 
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]

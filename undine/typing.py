@@ -83,7 +83,7 @@ from graphql.pyutils import AwaitableOrValue
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from graphql import GraphQLError
+    from graphql import AbortSignal, GraphQLError, GraphQLResolveInfoHelpers, VariableValues
 
 if version_info >= (3, 3, 0):  # pragma: no cover
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
@@ -900,7 +900,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     operation: OperationDefinitionNode
     """The GraphQL AST Operation Definition Node currently being executed."""
 
-    variable_values: dict[str, Any]
+    variable_values: VariableValues
     """The variables passed to the GraphQL operation."""
 
     context: DjangoRequestProtocol[TUser]
@@ -908,6 +908,12 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
     """Function for testing whether the GraphQL resolver is awaitable or not."""
+
+    abort_signal: AbortSignal | None
+    """The abort signal passed to the GraphQL operation."""
+
+    async_helpers: GraphQLResolveInfoHelpers
+    """The async helpers passed to the GraphQL operation."""
 
 
 UniquelyNamedGraphQLElement: TypeAlias = (

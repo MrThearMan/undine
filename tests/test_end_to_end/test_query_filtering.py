@@ -961,8 +961,7 @@ def test_end_to_end__filtering__incorrect_variable_value(graphql, undine_setting
     assert response.errors == [
         {
             "message": (
-                "Variable '$email' got invalid value 'b'; "
-                "'Email' cannot represent value 'b': Enter a valid email address."
+                "Variable '$email' has invalid value: 'Email' cannot represent value 'b': Enter a valid email address."
             ),
             "extensions": {
                 "error_code": "SCALAR_CONVERSION_ERROR",
@@ -1004,7 +1003,7 @@ def test_end_to_end__filtering__incorrect_variable_value__object(graphql, undine
     assert response.errors == [
         {
             "message": (
-                "Variable '$input' got invalid value 'b' at 'input.contactEmail'; "
+                "Variable '$input' has invalid value at .contactEmail: "
                 "'Email' cannot represent value 'b': Enter a valid email address."
             ),
             "extensions": {

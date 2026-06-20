@@ -26,6 +26,7 @@ from graphql import (
     Undefined,
     get_argument_values,
     get_directive_values,
+    version_info,
 )
 
 from undine.exceptions import (
@@ -57,7 +58,7 @@ if TYPE_CHECKING:
         Node,
         SelectionNode,
     )
-    from graphql.execution.values import NodeWithDirective
+    from graphql.execution.values import NodeWithDirective, VariableValues
 
     from undine import Directive, Field, GQLInfo
     from undine.typing import ModelField
@@ -238,7 +239,7 @@ def is_relation_id(field: ModelField, field_node: FieldNode) -> TypeGuard[Field]
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
-def should_skip_node(node: NodeWithDirective, variable_values: dict[str, Any]) -> bool:
+def should_skip_node(node: NodeWithDirective, variable_values: VariableValues) -> bool:
     skip_args = get_directive_values(GraphQLSkipDirective, node, variable_values)
     if skip_args is not None and skip_args["if"] is True:
         return True
@@ -257,7 +258,7 @@ def is_atomic_mutation(operation: OperationDefinitionNode) -> bool:
         return False
 
     # Note: String "atomic" is from `GraphQLAtomicDirective.name` but don't import that here just for that
-    return "atomic" in {directive.name.value for directive in operation.directives}
+    return "atomic" in {directive.name.value for directive in operation.directives or ()}
 
 
 # Misc.
@@ -290,6 +291,11 @@ def graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Genera
             variable_values=info.variable_values,
             context=info.context,
             is_awaitable=info.is_awaitable,
+            **(
+                {"abort_signal": info.abort_signal, "async_helpers": info.async_helpers}
+                if version_info >= (3, 3, 0)
+                else {}
+            ),
         )
 
     try:

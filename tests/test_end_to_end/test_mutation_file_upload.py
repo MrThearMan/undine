@@ -173,7 +173,7 @@ def test_end_to_end__mutation__image_upload__not_image(graphql, undine_settings)
     response = graphql(query, variables={"input": data})
 
     assert response.error_message(0) == (
-        "Variable '$input' got invalid value <InMemoryUploadedFile instance> at 'input.image'; "
+        "Variable '$input' has invalid value at .image: "
         "'Image' cannot represent value <InMemoryUploadedFile instance>: "
         "File either not an image or a corrupted image."
     )
