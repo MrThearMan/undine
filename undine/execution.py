@@ -727,7 +727,7 @@ def _execute_old(context: UndineExecutionContext) -> AwaitableOrValue[ExecutionR
 
 
 def _execute_new(context: UndineExecutionContext) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
-    """Execution for graphql-core >= 3.3.0a12."""
+    """Execution for graphql-core >= 3.3.0."""
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
     try:
@@ -846,32 +846,44 @@ class UndineExecutionContext(ExecutionContext):
 
     else:  # pragma: no cover
 
-        def handle_field_error(self, error: GraphQLError, return_type: GraphQLOutputType) -> None:  # type: ignore[misc,override]
+        @property
+        def errors(self) -> list[GraphQLError]:
+            return self.collected_errors.errors
+
+        @errors.setter
+        def errors(self, value: list[GraphQLError]) -> None:
+            self.collected_errors._errors = value  # noqa: SLF001
+
+        def handle_field_error(
+            self,
+            error: GraphQLError,
+            return_type: GraphQLOutputType,
+            path: Path,
+        ) -> None:  # type: ignore[misc,override]
             raw_error: Exception = error.original_error or error
-            path = error.path or []
             field_nodes = error.nodes or []
 
             match raw_error:
                 case ValidationError():
-                    error_group = located_validation_error(raw_error, field_nodes, path)
+                    error_group = located_validation_error(raw_error, field_nodes, path.as_list())
                     self.handle_field_errors_group(error_group, return_type, field_nodes, path)  # type: ignore[arg-type]
 
                 case GraphQLErrorGroup():
                     self.handle_field_errors_group(raw_error, return_type, field_nodes, path)  # type: ignore[arg-type]
 
                 case _:
-                    super().handle_field_error(error=error, return_type=return_type)
+                    super().handle_field_error(error=error, return_type=return_type, path=path)
 
         def handle_field_errors_group(  # type: ignore[misc]
             self,
             raw_error: GraphQLErrorGroup,
             return_type: GraphQLOutputType,
             field_nodes: list[Node],
-            path: list[str | int],
+            path: Path,
         ) -> None:
             for err in raw_error.flatten():
                 if not err.path:
-                    err.path = path
+                    err.path = path.as_list()
                 if not err.nodes:
                     err.nodes = field_nodes
 
@@ -879,7 +891,7 @@ class UndineExecutionContext(ExecutionContext):
                 raise raw_error
 
             for err in raw_error.flatten():
-                self.handle_field_error(err, return_type)  # type: ignore[call-arg]
+                self.handle_field_error(err, return_type, path)
 
 
 class UndineValidationContext(ValidationContext):

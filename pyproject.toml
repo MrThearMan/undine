@@ -61,7 +61,7 @@ metaDescriptions = "docs.plugins.meta_description:MetaDescriptionPlugin"
 
 [tool.poetry.dependencies]
 django = ">=5.2.14"
-graphql-core = ">=3.2.7"
+graphql-core = ">=3.2.11"
 django-settings-holder = ">=0.3.0"
 sqlparse = ">=0.5.3"
 pillow = { version = ">=11.2.1", optional = true }
@@ -69,26 +69,26 @@ django-debug-toolbar = { version = ">=5.2.0", optional = true }
 channels = { version = ">=4.2.2", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "9.0.3"
+pytest = "9.1.1"
 pytest-django = "4.12.0"
 pytest-asyncio = "1.4.0"
 pytest-mypy-plugins = "4.0.3"
 coverage = "7.14.1"
-hypothesis = "6.155.1"
+hypothesis = "6.155.6"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
 nox = "2026.4.10"
 urllib3 = "2.7.0"
 django-modeltranslation = "0.20.3"
 psycopg = { version = "3.3.4", extras = ["binary", "pool"] }
-granian = { version = "2.7.5", extras = ["pname", "uvloop", "reload"] }
+granian = { version = "2.7.6", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
 pymdown-extensions = "10.21.3"
 pygments = "2.20.0"
 mkdocs-mermaid2-plugin = "1.2.3"
-beautifulsoup4 = "4.14.3"
+beautifulsoup4 = "4.15.0"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.6.0"
