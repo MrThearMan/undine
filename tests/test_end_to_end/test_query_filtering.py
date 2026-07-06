@@ -5,6 +5,7 @@ from typing import NotRequired, TypedDict
 import pytest
 from asgiref.sync import sync_to_async
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
+from graphql import version_info
 
 from example_project.app.models import Person, Project, Task
 from tests.conftest import skip_if_async
@@ -957,13 +958,16 @@ def test_end_to_end__filtering__incorrect_variable_value(graphql, undine_setting
     response = graphql(query, variables={"email": "b"})
     assert response.has_errors is True, response
 
+    msg = (
+        "Variable '$email' has invalid value: 'Email' cannot represent value 'b': Enter a valid email address."
+        if version_info >= (3, 3, 0)
+        else "Variable '$email' got invalid value 'b'; 'Email' cannot represent value 'b': Enter a valid email address."
+    )
+
     # TODO: It would be nice if this had the path to the field that caused the error.
     assert response.errors == [
         {
-            "message": (
-                "Variable '$email' got invalid value 'b'; "
-                "'Email' cannot represent value 'b': Enter a valid email address."
-            ),
+            "message": msg,
             "extensions": {
                 "error_code": "SCALAR_CONVERSION_ERROR",
                 "status_code": 400,
@@ -1000,13 +1004,22 @@ def test_end_to_end__filtering__incorrect_variable_value__object(graphql, undine
     response = graphql(query, variables={"input": {"contactEmail": "b"}})
     assert response.has_errors is True, response
 
+    msg = (
+        (
+            "Variable '$input' has invalid value at .contactEmail: "
+            "'Email' cannot represent value 'b': Enter a valid email address."
+        )
+        if version_info >= (3, 3, 0)
+        else (
+            "Variable '$input' got invalid value 'b' at 'input.contactEmail'; "
+            "'Email' cannot represent value 'b': Enter a valid email address."
+        )
+    )
+
     # TODO: It would be nice if this had the path to the field that caused the error.
     assert response.errors == [
         {
-            "message": (
-                "Variable '$input' got invalid value 'b' at 'input.contactEmail'; "
-                "'Email' cannot represent value 'b': Enter a valid email address."
-            ),
+            "message": msg,
             "extensions": {
                 "error_code": "SCALAR_CONVERSION_ERROR",
                 "status_code": 400,

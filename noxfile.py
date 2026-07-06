@@ -44,7 +44,7 @@ def get_versions(pattern: re.Pattern[str]) -> list[str]:
 
 @nox.session(python=python_versions(), reuse_venv=True)
 @nox.parametrize("django", django_versions())
-@nox.parametrize("graphql_core", ["3.2.*", "3.3.0a12"])
+@nox.parametrize("graphql_core", ["3.2.*", "3.3.0rc0"])
 def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     # Django 6.0 is only supports Python 3.12 and above
     if session.python == "3.11" and django == "6.0.*":

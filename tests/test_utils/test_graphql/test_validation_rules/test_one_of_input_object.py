@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from graphql import version_info
 
 from example_project.app.models import Comment, Project, Task, TaskTypeChoices
 from undine import Entrypoint, Field, Input, MutationType, QueryType, RootType, create_schema
@@ -61,14 +62,24 @@ def test_validation_rules__one_of_input_object__multiple_keys(graphql, undine_se
     }
     response = graphql(query, variables={"input": input_data})
 
+    msg = (
+        (
+            "Variable '$input' has invalid value at .target: Within OneOf "
+            "Input Object type 'CommentTargetInput', exactly one field must "
+            "be specified, and the value for that field must be non-null."
+        )
+        if version_info >= (3, 3, 0)
+        else (
+            "Variable '$input' got invalid value "
+            "{'task': {'name': 'Test Task', 'type': 'TASK'}, "
+            "'project': {'name': 'Test Project'}} at 'input.target'; "
+            "Exactly one key must be specified for OneOf type 'CommentTargetInput'."
+        )
+    )
+
     assert response.errors == [
         {
-            "message": (
-                "Variable '$input' got invalid value "
-                "{'task': {'name': 'Test Task', 'type': 'TASK'}, "
-                "'project': {'name': 'Test Project'}} at 'input.target'; "
-                "Exactly one key must be specified for OneOf type 'CommentTargetInput'."
-            ),
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]
@@ -117,11 +128,19 @@ def test_validation_rules__one_of_input_object__null_key(graphql, undine_setting
     }
     response = graphql(query, variables={"input": input_data})
 
+    msg = (
+        (
+            "Variable '$input' has invalid value at .target.task: Within "
+            "OneOf Input Object type 'CommentTargetInput', exactly one field "
+            "must be specified, and the value for that field must be non-null."
+        )
+        if version_info >= (3, 3, 0)
+        else "Variable '$input' got invalid value None at 'input.target.task'; Field 'task' must be non-null."
+    )
+
     assert response.errors == [
         {
-            "message": (
-                "Variable '$input' got invalid value None at 'input.target.task'; Field 'task' must be non-null."
-            ),
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]
@@ -183,9 +202,18 @@ def test_validation_rules__one_of_input_object__multiple_keys__document(graphql,
 
     response = graphql(query)
 
+    msg = (
+        (
+            "Within OneOf Input Object type 'CommentTargetInput', exactly one "
+            "field must be specified, and the value for that field must be non-null."
+        )
+        if version_info >= (3, 3, 0)
+        else "OneOf Input Object 'CommentTargetInput' must specify exactly one key."
+    )
+
     assert response.errors == [
         {
-            "message": "OneOf Input Object 'CommentTargetInput' must specify exactly one key.",
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]
@@ -235,9 +263,18 @@ def test_validation_rules__one_of_input_object__null_key__document(graphql, undi
 
     response = graphql(query)
 
+    msg = (
+        (
+            "Within OneOf Input Object type 'CommentTargetInput', exactly one "
+            "field must be specified, and the value for that field must be non-null."
+        )
+        if version_info >= (3, 3, 0)
+        else "Field 'CommentTargetInput.task' must be non-null."
+    )
+
     assert response.errors == [
         {
-            "message": "Field 'CommentTargetInput.task' must be non-null.",
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]
@@ -287,9 +324,18 @@ def test_validation_rules__one_of_input_object__null_key__document_variable(grap
 
     response = graphql(query, variables={"target": None})
 
+    msg = (
+        (
+            "Variable '$target' has invalid value: Expected value of non-null "
+            "type 'CommentTargetTaskInput!' not to be None."
+        )
+        if version_info >= (3, 3, 0)
+        else "Variable '$target' of non-null type 'CommentTargetTaskInput!' must not be null."
+    )
+
     assert response.errors == [
         {
-            "message": "Variable '$target' of non-null type 'CommentTargetTaskInput!' must not be null.",
+            "message": msg,
             "extensions": {"status_code": 400},
         }
     ]

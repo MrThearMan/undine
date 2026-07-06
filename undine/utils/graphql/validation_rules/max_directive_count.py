@@ -49,7 +49,7 @@ class MaxDirectiveCountRule(ValidationRule):
 
         match node:
             case FieldNode():
-                directive_count += len(node.directives)
+                directive_count += len(node.directives or [])
 
                 if node.selection_set is not None:
                     for selection in node.selection_set.selections:
@@ -57,21 +57,21 @@ class MaxDirectiveCountRule(ValidationRule):
 
             case OperationDefinitionNode():
                 for variable_definition in node.variable_definitions or ():
-                    directive_count += len(variable_definition.directives)
+                    directive_count += len(variable_definition.directives or [])
 
-                directive_count += len(node.directives)
+                directive_count += len(node.directives or [])
 
                 for selection in node.selection_set.selections:
                     directive_count += self.count_directives(selection)
 
             case InlineFragmentNode():
-                directive_count += len(node.directives)
+                directive_count += len(node.directives or [])
 
                 for selection in node.selection_set.selections:
                     directive_count += self.count_directives(selection)
 
             case FragmentSpreadNode():
-                directive_count += len(node.directives)
+                directive_count += len(node.directives or [])
 
                 if node.name.value not in self.visited_fragments:
                     self.visited_fragments.add(node.name.value)
@@ -81,9 +81,9 @@ class MaxDirectiveCountRule(ValidationRule):
 
             case FragmentDefinitionNode():
                 for variable_definition in node.variable_definitions or ():  # pragma: no cover
-                    directive_count += len(variable_definition.directives)
+                    directive_count += len(variable_definition.directives or [])
 
-                directive_count += len(node.directives)
+                directive_count += len(node.directives or [])
 
                 for selection in node.selection_set.selections:
                     directive_count += self.count_directives(selection)
