@@ -282,6 +282,9 @@ ignore = [
     "I002",  # Don't require importing `from __future__ import annotations`
     "E501",  # Docstrings can be long
 ]
+"tests/test_federation/test_tracing.py" = [
+    "E501",  # Expected ftv1 trace strings contain long protobuf-serialized JSON error payloads that can't be wrapped
+]
 
 [lint.isort]
 combine-as-imports = false

@@ -21,6 +21,8 @@ __all__ = [
     "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
     "convert_to_entrypoint_subscription",
+    "convert_to_federation_field_ref",
+    "convert_to_federation_field_resolver",
     "convert_to_field_ref",
     "convert_to_field_resolver",
     "convert_to_filter_lookups",
@@ -126,6 +128,28 @@ Arguments:
 `ref: Any`: The reference to convert.
 
 `caller: Entrypoint`: The Entrypoint instance that is calling this function.
+"""
+
+convert_to_federation_field_ref: FunctionDispatcher[Any] = FunctionDispatcher()
+"""
+Convert the given value to a reference that FederationField can deal with.
+
+Arguments:
+
+`ref: Any`: The value to convert.
+
+`caller: FederationField`: The FederationField instance that is calling this function.
+"""
+
+convert_to_federation_field_resolver: FunctionDispatcher[GraphQLFieldResolver] = FunctionDispatcher()
+"""
+Convert the given reference to a GraphQL field resolver function for FederationField.
+
+Arguments:
+
+`ref: Any`: The reference to convert.
+
+`caller: FederationField`: The FederationField instance that is calling this function.
 """
 
 convert_to_field_complexity: FunctionDispatcher[int] = FunctionDispatcher()
@@ -294,7 +318,7 @@ Arguments:
 
 `ref: Any`: The reference to look at.
 
-`model: type[Model]`: The Django Model associated with the reference.
+`model: type[Model] | None`: The Django Model associated with the reference.
 
 `name: str`: A name associated with the reference (e.g. field name)
 """

@@ -11,9 +11,10 @@ from graphql import GraphQLFieldResolver, GraphQLID, GraphQLType, GraphQLWrappin
 from undine import Calculation, Field, InterfaceField, QueryType
 from undine.converters import convert_to_field_resolver
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
-from undine.exceptions import FunctionDispatcherError, RegistryMissingTypeError
+from undine.exceptions import FunctionDispatcherError, MissingFederationReferenceResolverError, RegistryMissingTypeError
+from undine.federation import FederationType
 from undine.pagination import OffsetPagination
-from undine.relay import Connection
+from undine.relay import Connection, Node
 from undine.resolvers import (
     GlobalIDResolver,
     ModelAttributeResolver,
@@ -107,7 +108,9 @@ def _(ref: GraphQLWrappingType, **kwargs: Any) -> GraphQLFieldResolver:
 @convert_to_field_resolver.register
 def _(_: GraphQLID, **kwargs: Any) -> GraphQLFieldResolver:  # type: ignore[valid-type]
     caller: Field = kwargs["caller"]
-    return GlobalIDResolver(typename=caller.query_type.__schema_name__)
+    if Node in caller.query_type.__interfaces__:
+        return GlobalIDResolver(typename=caller.query_type.__schema_name__)
+    return ModelAttributeResolver(field=caller)
 
 
 @convert_to_field_resolver.register
@@ -128,6 +131,12 @@ def _(ref: type[QueryType], **kwargs: Any) -> GraphQLFieldResolver:
     if caller.many:
         return NestedQueryTypeManyResolver(field=caller, query_type=ref)
     return NestedQueryTypeSingleResolver(field=caller, query_type=ref)
+
+
+@convert_to_field_resolver.register
+def _(ref: type[FederationType], **kwargs: Any) -> GraphQLFieldResolver:
+    caller: Field = kwargs["caller"]
+    raise MissingFederationReferenceResolverError(cls=caller.query_type, name=caller.name, ref=ref)
 
 
 @convert_to_field_resolver.register

@@ -68,7 +68,7 @@ def test_undine_extensions__get_undine_schema_directives() -> None:
     assert get_undine_schema_directives(schema) == directives
 
 
-def test_undine_extensions__get_undine_schema_directives__not_found() -> None:
+def test_undine_extensions__get_undine_schema_directives__empty() -> None:
     class Query(RootType):
         @Entrypoint
         def foo(self) -> str:
@@ -76,7 +76,7 @@ def test_undine_extensions__get_undine_schema_directives__not_found() -> None:
 
     schema = create_schema(query=Query)
 
-    assert get_undine_schema_directives(schema) is None
+    assert get_undine_schema_directives(schema) == []
 
 
 def test_undine_extensions__get_undine_root_type() -> None:

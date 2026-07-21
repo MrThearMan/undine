@@ -102,6 +102,12 @@ This function is used by `Filters` to handle their given reference.
 Otherwise, it works the same as [`convert_to_entrypoint_ref`](#convert_to_entrypoint_ref),
 with the `caller` parameter set to the `Filter` instance.
 
+### `convert_to_federation_field_ref`
+
+This function is used by `FederationFields` to handle their given reference.
+Otherwise, it works the same as [`convert_to_entrypoint_ref`](#convert_to_entrypoint_ref),
+with the `caller` parameter set to the `FederationField` instance.
+
 ### `convert_to_field_resolver`
 
 This function is used to convert a value to a GraphQL field resolver.
@@ -129,6 +135,12 @@ for filtering. A `Filter` resolver function always returns a Django expression.
 In addition to the value to convert, the function also accepts the following values:
 
 - `caller: Filter`: The `Filter` instance that is calling this function.
+
+### `convert_to_federation_field_resolver`
+
+This function is used to convert a value to a GraphQL field resolver for a `FederationField`.
+Otherwise, it works the same as [`convert_to_field_resolver`](#convert_to_field_resolver),
+with the `caller` parameter set to the `FederationField` instance.
 
 ### `convert_to_entrypoint_subscription`
 
@@ -335,6 +347,18 @@ Here are the converters that a new `Field` reference might need to implement:
 6. [`convert_to_description`](#convert_to_description) to convert the reference to a description.
 7. [`is_field_nullable`](#is_field_nullable) to know whether the reference is nullable or not.
 8. [`is_many`](#is_many) to know whether the reference contains many objects or not.
+
+### FederationFields
+
+Here are the converters that a new `FederationField` reference might need to implement:
+
+1. [`convert_to_federation_field_ref`](#convert_to_federation_field_ref) to allow the new reference to be used in `FederationFields`.
+2. [`convert_to_federation_field_resolver`](#convert_to_federation_field_resolver) to convert the reference to a resolver function.
+3. [`convert_to_graphql_type`](#convert_to_graphql_type) to convert the reference to a GraphQL type.
+4. [`convert_to_graphql_argument_map`](#convert_to_graphql_argument_map) to convert the reference to a GraphQL argument map.
+5. [`convert_to_description`](#convert_to_description) to convert the reference to a description.
+6. [`is_field_nullable`](#is_field_nullable) to know whether the reference is nullable or not.
+7. [`is_many`](#is_many) to know whether the reference contains many objects or not.
 
 ### Inputs
 

@@ -591,6 +591,9 @@ async def test_channels__sse__subscribe(undine_settings) -> None:
 
     assert response["status"] == HTTPStatus.ACCEPTED
 
+    # Wait for the operation task to finalize (which saves the session) before teardown.
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__subscribe__unauthenticated() -> None:
     session = await _create_session()
@@ -712,6 +715,14 @@ async def test_channels__sse__subscribe__before_stream_opened(undine_settings) -
     assert event["type"] == "http.response.body"
     assert b"event: next" in event["body"]
     assert b'"Hello, World!"' in event["body"]
+
+    # Consume the complete event so the operation task can run to completion
+    # (including 'finalize_operation', which saves the session) before teardown.
+    complete_event = await stream_communicator.receive_output(timeout=5)
+    assert complete_event["type"] == "http.response.body"
+    assert b"event: complete" in complete_event["body"]
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__subscribe__wrong_stream_token() -> None:
@@ -853,6 +864,9 @@ async def test_channels__sse__subscribe__cache_claim_released_after_session_save
     cache = caches[django_settings.SESSION_CACHE_ALIAS]
     cache_key = get_sse_operation_claim_key(token, operation_id)
     assert await cache.aget(cache_key) is None
+
+    # Wait for the operation task to finalize (which saves the session) before teardown.
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__subscribe__sse_stream_open() -> None:
@@ -1379,6 +1393,8 @@ async def test_channels__sse__subscription_streaming(undine_settings) -> None:
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__subscription_with_variables(undine_settings) -> None:
     class Query(RootType):
@@ -1420,6 +1436,8 @@ async def test_channels__sse__subscription_with_variables(undine_settings) -> No
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__query_result_on_stream(undine_settings) -> None:
     undine_settings.ALLOW_QUERIES_WITH_SSE = True
@@ -1451,6 +1469,8 @@ async def test_channels__sse__query_result_on_stream(undine_settings) -> None:
     complete_event = await sse_read_stream_event(stream_communicator)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__concurrent_operations(undine_settings) -> None:
@@ -1488,6 +1508,8 @@ async def test_channels__sse__concurrent_operations(undine_settings) -> None:
 
     assert received_events["op-1"] == ["next", "complete"]
     assert received_events["op-2"] == ["next", "complete"]
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__cancel_running_subscription(undine_settings) -> None:
@@ -1707,6 +1729,8 @@ async def test_channels__sse__validation_error_on_submit(undine_settings) -> Non
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__mutation_over_sse(undine_settings) -> None:
     undine_settings.ALLOW_MUTATIONS_WITH_SSE = True
@@ -1744,6 +1768,8 @@ async def test_channels__sse__mutation_over_sse(undine_settings) -> None:
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__get_operation_submit(undine_settings) -> None:
     undine_settings.ALLOW_QUERIES_WITH_SSE = True
@@ -1780,6 +1806,8 @@ async def test_channels__sse__get_operation_submit(undine_settings) -> None:
     complete_event = await sse_read_stream_event(stream_communicator)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__get_stream__token_via_header() -> None:
@@ -1940,6 +1968,8 @@ async def test_channels__sse__query_rejected_when_not_allowed(undine_settings) -
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
 
+    await asyncio.sleep(TEST_WAIT_TIME)
+
 
 async def test_channels__sse__mutation_rejected_when_not_allowed(undine_settings) -> None:
     class Query(RootType):
@@ -1976,6 +2006,8 @@ async def test_channels__sse__mutation_rejected_when_not_allowed(undine_settings
     complete_event = await sse_read_stream_event(stream_communicator)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == operation_id
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__subscribe__empty_operation_id() -> None:
@@ -2045,6 +2077,8 @@ async def test_channels__sse__subscribe__non_string_operation_id(undine_settings
     complete_event = await sse_read_stream_event(stream_communicator)
     assert complete_event["event"] == "complete"
     assert complete_event["data"]["id"] == "1"
+
+    await asyncio.sleep(TEST_WAIT_TIME)
 
 
 async def test_channels__sse__multiple_subscriptions_cancelled_on_disconnect(undine_settings) -> None:
@@ -2540,3 +2574,53 @@ async def test_channels__sse_consumer__http_request__raises_stop_consumer_when_u
     message = HTTPRequestEvent(type="http.request", body=b"", more_body=False)
     with pytest.raises(StopConsumer):
         await consumer.http_request(message)
+
+
+async def test_channels__sse__subscribe__dispatch_loop_receive_task_done_covers_wait_for_branch() -> None:
+    consumer = SSEOperationConsumer()
+    consumer._stream_opened = asyncio.Event()
+    consumer.base_send = AsyncMock()
+    consumer.scope = make_http_scope(headers=[(b"x-graphql-event-stream-token", b"test-token")])  # type: ignore[arg-type]
+    consumer.messages = []
+    consumer.handler = MagicMock()
+    consumer.handler.disconnect_operation = AsyncMock()
+
+    # Operation task remains running until we signal it, keeping the loop past iter 1.
+    op_complete = asyncio.Event()
+
+    async def operation_task() -> None:
+        await op_complete.wait()
+
+    consumer.operation = asyncio.create_task(operation_task())
+
+    # receive returns immediately once; subsequent calls block.
+    receive_call_count = 0
+
+    async def receive() -> dict:
+        nonlocal receive_call_count
+        receive_call_count += 1
+        if receive_call_count == 1:
+            return {"type": "http.disconnect"}
+        await asyncio.sleep(100)
+        return {"type": "http.disconnect"}
+
+    # channel_receive always blocks so the loop waits for receive_task or the operation.
+    async def blocking_channel_receive() -> dict:
+        await asyncio.sleep(100)
+        return {}
+
+    consumer.channel_receive = blocking_channel_receive  # type: ignore[method-assign]
+
+    async def finish_operation() -> None:
+        # Wait long enough for at least two dispatch_loop iterations to run,
+        # ensuring line 507 evaluates `receive_task.done()` as True.
+        await asyncio.sleep(0.05)
+        op_complete.set()
+
+    finisher = asyncio.create_task(finish_operation())
+
+    with suppress(StopConsumer):
+        await consumer.dispatch_loop(receive)
+
+    await finisher
+    assert consumer.operation.done()

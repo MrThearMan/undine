@@ -1,0 +1,68 @@
+directive @custom on OBJECT
+
+type CaseStudy {
+  caseNumber: ID!
+  description: String
+}
+
+type DeprecatedProduct @key(fields: "sku package") {
+  createdBy: User
+  package: String!
+  reason: String
+  sku: String!
+}
+
+type Inventory @interfaceObject @key(fields: "id") {
+  deprecatedProducts: [DeprecatedProduct!]!
+  id: ID!
+}
+
+type Product @custom @key(fields: "id") @key(fields: "sku package") @key(fields: "sku variation { id }") {
+  createdBy: User @provides(fields: "totalProductsCreated")
+  dimensions: ProductDimension
+  id: ID!
+  notes: String @tag(name: "internal")
+  package: String
+  research: [ProductResearch!]!
+  sku: String
+  variation: ProductVariation
+}
+
+type ProductDimension @shareable {
+  size: String
+  unit: String @inaccessible
+  weight: Float
+}
+
+type ProductResearch @key(fields: "study { caseNumber }") {
+  outcome: String
+  study: CaseStudy!
+}
+
+type ProductVariation {
+  id: ID!
+}
+
+extend type User @key(fields: "email") {
+  averageProductsCreatedPerYear: Int @requires(fields: "totalProductsCreated yearsOfEmployment")
+  email: ID! @external
+  name: String @override(from: "users")
+  totalProductsCreated: Int @external
+  yearsOfEmployment: Int! @external
+}
+
+type Query {
+  _entities(
+    representations: [_Any!]!
+  ): [_Entity]!
+  _service: _Service!
+  deprecatedProduct(
+    package: String!
+    sku: String!
+  ): DeprecatedProduct @deprecated(reason: "Use product query instead")
+  product(
+    id: ID!
+  ): Product
+}
+
+extend schema @link(import: ["@composeDirective", "@external", "@inaccessible", "@interfaceObject", "@key", "@override", "@provides", "@requires", "@shareable", "@tag"], url: "https://specs.apollo.dev/federation/v2.15") @link(import: ["@custom"], url: "https://myspecs.dev/myCustomDirective/v1.0") @composeDirective(name: "@custom")

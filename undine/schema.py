@@ -53,10 +53,10 @@ def create_schema(
     """
     started = time.perf_counter()
     extensions = extensions or {}
+    schema_definition_directives = schema_definition_directives or []
 
-    if schema_definition_directives is not None:
-        check_directives(schema_definition_directives, location=DirectiveLocation.SCHEMA)
-        extensions[undine_settings.SCHEMA_DIRECTIVES_EXTENSIONS_KEY] = schema_definition_directives
+    check_directives(schema_definition_directives, location=DirectiveLocation.SCHEMA)
+    extensions[undine_settings.SCHEMA_DIRECTIVES_EXTENSIONS_KEY] = schema_definition_directives
 
     directives = get_registered_directives()
 
@@ -83,6 +83,9 @@ def create_schema(
         description=description,
         extensions=extensions,
     )
+
+    for directive in schema_definition_directives:
+        directive.__connected__(schema)
 
     sort_schema_types(schema)
 

@@ -1,0 +1,21 @@
+"""
+### mypy_config
+[mypy]
+plugins = mypy_django_plugin.main, mypy_undine
+
+[mypy.plugins.django-stubs]
+django_settings_module = example_project.project.settings
+"""
+
+from graphql import DirectiveLocation
+
+from example_project.app.models import Task
+from undine import Directive, QueryType
+
+
+class MockDirective(Directive, locations=[DirectiveLocation.OBJECT], is_repeatable=True): ...
+
+
+@MockDirective()
+@MockDirective()
+class TaskType(QueryType[Task]): ...

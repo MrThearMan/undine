@@ -49,6 +49,7 @@ __all__ = [
     "cache_signature_if_function",
     "can_be_literal_arg",
     "cancel_awaitable",
+    "get_all_subclasses",
     "get_enum_from_string",
     "get_flattened_generic_params",
     "get_instance_name",
@@ -130,6 +131,16 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     Flattens any union types.
     """
     return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, UnionType) else (arg,)))
+
+
+def get_all_subclasses(cls: TType) -> list[TType]:
+    all_subclasses = []
+
+    for subclass in cls.__subclasses__():
+        all_subclasses.append(subclass)
+        all_subclasses.extend(get_all_subclasses(subclass))
+
+    return all_subclasses
 
 
 def get_enum_from_string(enum_type: type[TEnum], value: str | TEnum) -> TEnum:

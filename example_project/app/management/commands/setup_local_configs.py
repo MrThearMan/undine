@@ -16,7 +16,7 @@ class Command(BaseCommand):
     help = "Set up local config files (mypy.ini, pyrightconfig.json, pytest.ini)."
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument("--claude-md", action="store_true", default=False, help="Create symlink to CLAUDE.md.")
+        parser.add_argument("--claude-", action="store_true", default=False, help="Create symlinks for Claude")
 
     def handle(self, *args: Any, **options: Any) -> None:
         root = Path(__file__).resolve().parents[4]
@@ -28,7 +28,7 @@ class Command(BaseCommand):
         self.setup_pytest_ini(root)
 
         if options["claude_md"]:
-            self.setup_claude_md(root)
+            self.setup_claude(root)
 
     def setup_mypy_ini(self, root: Path, python_exe: Path) -> None:
         path = root / "mypy.ini"
@@ -80,11 +80,13 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"Created {path}")
 
-    def setup_claude_md(self, root: Path) -> None:
-        claude_path = root / "CLAUDE.md"
-        if claude_path.exists():
-            self.stdout.write(f"{claude_path} already exists, skipping")
-            return
+    def setup_claude(self, root: Path) -> None:
+        claude_ms_path = root / "CLAUDE.md"
+        if not claude_ms_path.exists():
+            agents_md_path = root / "AGENTS.md"
+            claude_ms_path.symlink_to(agents_md_path)
 
-        agents_path = root / "AGENTS.md"
-        claude_path.symlink_to(agents_path)
+        dot_claude_path = root / ".claude"
+        if not dot_claude_path.exists():
+            dot_agents_path = root / ".agents"
+            dot_claude_path.symlink_to(dot_agents_path)

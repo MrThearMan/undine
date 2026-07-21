@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from mypy_undine.fullnames import (
     DIRECTIVE_META,
+    FEDERATION_TYPE_META,
     FILTER_SET_META,
     INTERFACE_TYPE_META,
     MUTATION_TYPE_META,
@@ -13,11 +14,13 @@ from mypy_undine.fullnames import (
     ROOT_TYPE_META,
     UNION_TYPE_META,
 )
+from mypy_undine.utils.types_utils import stash_directive_metadata
 
 from .class_body import fix_class_body
 from .class_generics import GENERIC_CHECKS
 from .class_keywords import KEYWORD_CHECKS, validate_class_keywords
 from .directive_init import create_directive_init
+from .federation_type_init import create_federation_type_init
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -40,7 +43,10 @@ def get_base_class_hook(info: TypeInfo) -> Callable[[ClassDefContext], None] | N
     if info.metaclass_type is not None:
         metaclass_type = info.metaclass_type.type.fullname
         if metaclass_type == DIRECTIVE_META:
-            hooks.append(create_directive_init)
+            hooks.extend((_stash_directive_metadata, create_directive_init))
+
+        if metaclass_type == FEDERATION_TYPE_META:
+            hooks.append(create_federation_type_init)
 
         if metaclass_type in {
             ROOT_TYPE_META,
@@ -51,6 +57,7 @@ def get_base_class_hook(info: TypeInfo) -> Callable[[ClassDefContext], None] | N
             UNION_TYPE_META,
             INTERFACE_TYPE_META,
             DIRECTIVE_META,
+            FEDERATION_TYPE_META,
         }:
             hooks.append(fix_class_body)
 
@@ -66,3 +73,7 @@ def get_base_class_hook(info: TypeInfo) -> Callable[[ClassDefContext], None] | N
             hook(ctx)
 
     return handle_base_classes
+
+
+def _stash_directive_metadata(ctx: ClassDefContext) -> None:
+    stash_directive_metadata(ctx.cls.info)

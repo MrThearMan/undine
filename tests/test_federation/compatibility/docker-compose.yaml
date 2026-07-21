@@ -1,0 +1,8 @@
+services:
+  products:
+    container_name: federation-undine
+    build:
+      context: ../../..
+      dockerfile: tests/test_federation/compatibility/Dockerfile
+    ports:
+      - 4001:4001

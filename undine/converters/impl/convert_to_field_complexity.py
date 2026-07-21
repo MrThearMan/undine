@@ -8,6 +8,7 @@ from undine import Field as UndineField
 from undine import InterfaceField, QueryType
 from undine.converters import convert_to_field_complexity
 from undine.dataclasses import LazyGenericForeignKey, LazyRelation
+from undine.federation import FederationType
 from undine.typing import ModelField, ToManyField, ToOneField
 from undine.utils.model_utils import get_model_field
 
@@ -35,6 +36,11 @@ def _(_: GenericForeignKey, **kwargs: Any) -> Any:
 @convert_to_field_complexity.register
 def _(_: type[QueryType], **kwargs: Any) -> Any:
     return 1
+
+
+@convert_to_field_complexity.register
+def _(_: type[FederationType], **kwargs: Any) -> Any:
+    return 0
 
 
 @convert_to_field_complexity.register

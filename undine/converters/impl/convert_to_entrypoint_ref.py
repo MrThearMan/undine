@@ -3,11 +3,12 @@ from __future__ import annotations
 from types import FunctionType
 from typing import Any
 
-from graphql import UndefinedType
+from graphql import GraphQLType, UndefinedType
 
 from undine import Entrypoint, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_entrypoint_ref, is_many
-from undine.exceptions import MissingEntrypointRefError
+from undine.exceptions import FunctionDispatcherError, MissingEntrypointRefError
+from undine.federation.entities import EntitiesRef
 from undine.pagination import OffsetPagination
 from undine.parsers import parse_is_nullable
 from undine.relay import Connection, Node
@@ -24,7 +25,7 @@ def _(_: UndefinedType, **kwargs: Any) -> Any:
 @convert_to_entrypoint_ref.register
 def _(ref: FunctionType, **kwargs: Any) -> Any:
     caller: Entrypoint = kwargs["caller"]
-    caller.many = is_many(ref)
+    caller.many = is_many(ref, model=None, name=caller.name)
     caller.nullable = parse_is_nullable(ref)
     return ref
 
@@ -80,4 +81,18 @@ def _(ref: OffsetPagination, **kwargs: Any) -> Any:
 def _(ref: SignalSubscription, **kwargs: Any) -> Any:
     caller: Entrypoint = kwargs["caller"]
     caller.many = False
+    return ref
+
+
+@convert_to_entrypoint_ref.register
+def _(ref: GraphQLType, **kwargs: Any) -> Any:
+    caller: Entrypoint = kwargs["caller"]
+    if caller.resolver_func is None:
+        msg = "Entrypoints that return GraphQL type must have a resolver function."
+        raise FunctionDispatcherError(msg)
+    return ref
+
+
+@convert_to_entrypoint_ref.register
+def _(ref: EntitiesRef, **kwargs: Any) -> Any:
     return ref

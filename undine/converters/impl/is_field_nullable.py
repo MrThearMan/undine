@@ -11,6 +11,7 @@ from undine import Calculation, InterfaceField, QueryType
 from undine import Field as UndineField
 from undine.converters import is_field_nullable
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.federation import FederationType
 from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
@@ -97,6 +98,11 @@ def _(_: type[QueryType], **kwargs: Any) -> bool:
     caller: UndineField = kwargs["caller"]
     field = get_model_field(model=caller.query_type.__model__, lookup=caller.field_name)
     return is_field_nullable(field, **kwargs)
+
+
+@is_field_nullable.register
+def _(_: type[FederationType], **kwargs: Any) -> bool:
+    return False
 
 
 @is_field_nullable.register  # Required for Django<5.1

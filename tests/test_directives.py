@@ -870,3 +870,14 @@ def test_semantic_non_null_directive__connected__no_nullable_attr() -> None:
 
     # Does not raise an error
     directive.__connected__(Dummy())
+
+
+def test_directive_argument__get__missing_parameter_raises_value_error() -> None:
+    class ValueDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]):
+        value = DirectiveArgument(GraphQLNonNull(GraphQLInt))
+
+    directive = ValueDirective(value=1)
+    del directive.__parameters__["value"]
+
+    with pytest.raises(ValueError, match="DirectiveArgument 'value' not found"):
+        _ = directive.value

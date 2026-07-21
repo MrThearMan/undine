@@ -58,7 +58,7 @@ if TYPE_CHECKING:
         Node,
         SelectionNode,
     )
-    from graphql.execution.values import NodeWithDirective, VariableValues
+    from graphql.execution.values import NodeWithDirective, VariableValues  # type: ignore[attr-defined]
 
     from undine import Directive, Field, GQLInfo
     from undine.typing import ModelField

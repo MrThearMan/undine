@@ -116,6 +116,12 @@ class DirectiveRepeatedError(UndineError):
     msg = "Directive {directive!r} is not repeatable"
 
 
+class DirectiveVersionError(UndineError):
+    """Error raised if a federation directive is used against a lower `FEDERATION_VERSION` setting."""
+
+    msg = "Federation directive '@{directive}' requires 'FEDERATION_VERSION' to be at least {min_version!r}."
+
+
 class EmptyFilterResult(UndineError):  # noqa: N818
     """Error that should be raised when using a filter should result in an empty queryset."""
 
@@ -138,6 +144,78 @@ class ExpressionNoOutputFieldError(UndineError):
         "Could not determine an output field for expression {expr!r}. "
         "No output field found from any source expressions."
     )
+
+
+class FederationFieldSetTooComplexError(UndineError):
+    """Error raised if a `@KeyDirective` `fields` FieldSet is too complex for the default resolver."""
+
+    msg = (
+        "'@key(fields: {fields!r})' on '{cls:dotpath}' contains a compound key, a nested selection or field alias, "
+        "which the default '__resolve_reference__' does not support. "
+        "Define '__resolve_reference__' as a classmethod on the class to handle this key."
+    )
+
+
+class FederationKeyRequiresCustomResolverError(UndineError):
+    """Error raised if a `@KeyDirective` `fields` token cannot be mapped to a declared field."""
+
+    msg = (
+        "'@key(fields: {fields!r})' on '{cls:dotpath}' references field {token!r}, "
+        "which is not declared on the class. "
+        "Define '__resolve_reference__' as a classmethod on the class to handle this key."
+    )
+
+
+class FederationMultipleKeysRequireCustomResolverError(UndineError):
+    """Error raised if a `QueryType` has multiple resolvable `@KeyDirective`s without a custom resolver."""
+
+    msg = (
+        "'{cls:dotpath}' has zero or multiple resolvable '@key' directives. "
+        "Define '__resolve_reference__' as a classmethod on the class to handle this."
+    )
+
+
+class FederationRequiresNonExternalFieldError(UndineError):
+    """Error raised if a `@RequiresDirective` on a `FederationField` references a non-`@external` field."""
+
+    msg = (
+        "'@requires(fields: {fields!r})' on '{cls:dotpath}.{name}' references field {token!r}, "
+        "which is not marked with '@external'. "
+        "Fields listed in '@requires' must carry '@ExternalDirective()' on the same 'FederationType'."
+    )
+
+
+class FederationRequiresUnknownFieldError(UndineError):
+    """Error raised if a `@RequiresDirective` on a `FederationField` references an unknown field."""
+
+    msg = (
+        "'@requires(fields: {fields!r})' on '{cls:dotpath}.{name}' references field {token!r}, "
+        "which is not declared as a 'FederationField' on the 'FederationType'."
+    )
+
+
+class FederationServiceFieldConflictError(UndineError):
+    """Error raised if the user's query type already declares a '_service' entrypoint."""
+
+    msg = (
+        "Cannot inject federation '_service' field: query type '{query:dotpath}' already "
+        "declares a '_service' entrypoint."
+    )
+
+
+class FederationEntitiesFieldConflictError(UndineError):
+    """Error raised if the user's query type already declares an '_entities' entrypoint."""
+
+    msg = (
+        "Cannot inject federation '_entities' field: query type '{query:dotpath}' already "
+        "declares an '_entities' entrypoint."
+    )
+
+
+class FederationFeatureVersionError(UndineError):
+    """Error raised if a federation feature is used against a lower `FEDERATION_VERSION` setting."""
+
+    msg = "Federation feature {feature!r} requires 'FEDERATION_VERSION' to be at least {min_version!r}."
 
 
 class FunctionSignatureParsingError(UndineError):
@@ -226,6 +304,41 @@ class MissingEntrypointRefError(UndineError):
     """Error raised when an entrypoint is missing a reference."""
 
     msg = "Entrypoint '{name}' in class '{cls:dotpath}' must have a reference."
+
+
+class MissingFederationFieldRefError(UndineError):
+    """Error raised when a `FederationField` is missing a reference."""
+
+    msg = "FederationField '{name}' in class '{cls:dotpath}' must have a reference."
+
+
+class MissingFederationFieldResolverError(UndineError):
+    """Error raised when a `FederationField` cannot be resolved via any of the three-case dispatch rules."""
+
+    msg = (
+        "FederationField '{cls:dotpath}.{name}' has no resolver: it is not part of any '@key(fields=...)', "
+        "is not marked with '@ExternalDirective()', and no '@{name}.resolve' function was registered. "
+        "Add '@{name}.resolve' to provide a resolver."
+    )
+
+
+class MissingFederationReferenceResolverError(UndineError):
+    """Error raised when a `Field` references a `FederationType` but has no resolver."""
+
+    msg = (
+        "Field '{cls:dotpath}.{name}' references FederationType '{ref:dotpath}' owned by another subgraph. "
+        "Add '@{name}.resolve' that returns a representation dict (e.g. {{'id': ...}}) matching the "
+        "entity's '@KeyDirective(fields=...)'."
+    )
+
+
+class MissingFederationKeysError(UndineError):
+    """Error raised when a `FederationType` is missing at least one `@KeyDirective`."""
+
+    msg = (
+        "'{cls:dotpath}' must be decorated with at least one '@KeyDirective(fields=...)' to be a valid "
+        "Federation entity."
+    )
 
 
 class MissingFunctionAnnotationsError(UndineError):
@@ -444,6 +557,14 @@ class UnionTypeRequiresMultipleModelsError(UndineError):
     """Error raised when a FilterSet or OrderSet with a single model is added to a UnionType."""
 
     msg = "Cannot add a {kind} with a single model to a UnionType"
+
+
+class UnsupportedFederationVersionError(UndineError):
+    """Error raised if `FEDERATION_VERSION` is not in `SUPPORTED_FEDERATION_VERSIONS`."""
+
+    msg = (
+        "'FEDERATION_VERSION' {version!r} is not supported. Supported versions are: {supported_versions:comma_sep_and}."
+    )
 
 
 # GraphQL Errors
@@ -877,6 +998,14 @@ class GraphQLModelConstraintViolationError(GraphQLStatusError):
     code = UndineErrorCodes.MODEL_CONSTRAINT_VIOLATION
 
 
+class GraphQLModelFieldNotFoundError(GraphQLStatusError):
+    """Error raised when a model lookup by a specific field fails to find a matching row."""
+
+    msg = "Field {field!r} with value {value!r} on model '{model:dotpath}' did not match any row."
+    status = HTTPStatus.NOT_FOUND
+    code = UndineErrorCodes.MODEL_INSTANCE_NOT_FOUND
+
+
 class GraphQLModelNotFoundError(GraphQLStatusError):
     """Error raised when a model lookup fails to find a matching row."""
 
@@ -891,6 +1020,14 @@ class GraphQLModelsNotFoundError(GraphQLStatusError):
     msg = "Primary keys {missing:comma_sep_and} on model '{model:dotpath}' did not match any row."
     status = HTTPStatus.NOT_FOUND
     code = UndineErrorCodes.MODEL_INSTANCE_NOT_FOUND
+
+
+class GraphQLMultipleModelsFoundError(GraphQLStatusError):
+    """Error raised when model lookup finds multiple matching rows."""
+
+    msg = "Field {field!r} with value {value!r} on model '{model:dotpath}' matched multiple rows."
+    status = HTTPStatus.NOT_FOUND
+    code = UndineErrorCodes.MULTIPLE_MODEL_INSTANCES_FOUND
 
 
 class GraphQLMutationInputNotFoundError(GraphQLStatusError):

@@ -8,7 +8,7 @@ from graphql import GraphQLNonNull, GraphQLString
 from example_project.app.models import Project, Task
 from undine import Entrypoint, GQLInfo, InterfaceField, InterfaceType, MutationType, QueryType, RootType, UnionType
 from undine.converters import convert_to_entrypoint_ref
-from undine.exceptions import MissingEntrypointRefError
+from undine.exceptions import FunctionDispatcherError, MissingEntrypointRefError
 from undine.pagination import OffsetPagination
 from undine.relay import Connection, Node
 
@@ -141,3 +141,24 @@ def test_convert_to_entrypoint_ref__offset_pagination() -> None:
     assert convert_to_entrypoint_ref(off, caller=Query.tasks) == off
     assert Query.tasks.many is True
     assert Query.tasks.nullable is False
+
+
+def test_convert_to_entrypoint_ref__graphql_type_with_resolver() -> None:
+    class Query(RootType):
+        example = Entrypoint(GraphQLNonNull(GraphQLString))
+
+        @example.resolve
+        def resolve_example(root: Any, info: GQLInfo) -> str:
+            return "Hello"
+
+    assert convert_to_entrypoint_ref(GraphQLNonNull(GraphQLString), caller=Query.example) == GraphQLNonNull(
+        GraphQLString
+    )
+
+
+def test_convert_to_entrypoint_ref__graphql_type_without_resolver_raises() -> None:
+    with pytest.raises(FunctionDispatcherError, match="must have a resolver function"):
+
+        class Query(RootType):
+            example = Entrypoint(GraphQLNonNull(GraphQLString))
+

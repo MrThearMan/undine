@@ -266,6 +266,64 @@ when using this feature.
 
 ///
 
+/// details | `FEDERATION_BUILTIN_EXTENSIONS_KEY`
+    attrs: {id: federation_builtin_extensions_key}
+
+Type: `str` | Default: `"undine_federation_builtin"`
+
+Marker key set to `True` on the extensions of Apollo Federation builtin scalars and types.
+
+///
+
+/// details | `FEDERATION_FIELD_EXTENSIONS_KEY`
+    attrs: {id: federation_field_extensions_key}
+
+Type: `str` | Default: `"undine_federation_field"`
+
+The key used to store a `FederationField` in the `extensions` of its `GraphQLField`.
+
+///
+
+/// details | `FEDERATION_MIN_VERSION_EXTENSIONS_KEY`
+    attrs: {id: federation_min_version_extensions_key}
+
+Type: `str` | Default: `"undine_federation_min_version"`
+
+The key on the `extensions` of a builtin federation `Directive` that records the minimum
+`FEDERATION_VERSION` at which the directive is available. Used by `create_federation_schema`
+to reject directives applied on subgraphs pinned to an older federation version.
+
+///
+
+/// details | `FEDERATION_SDL_EXTENSIONS_KEY`
+    attrs: {id: federation_sdl_extensions_key}
+
+Type: `str` | Default: `"undine_federation_sdl"`
+
+The key on schema extensions where the pre-computed federation SDL string is cached by
+[`create_federation_schema`](federation.md#setup). The `_service` resolver reads from this key.
+
+///
+
+/// details | `FEDERATION_TYPE_EXTENSIONS_KEY`
+    attrs: {id: federation_type_extensions_key}
+
+Type: `str` | Default: `"undine_federation_type"`
+
+The key used to store a `FederationType` in the `extensions` of its `GraphQLObjectType`.
+
+///
+
+/// details | `FEDERATION_VERSION`
+    attrs: {id: federation_version}
+
+Type: `str` | Default: `"2.15"`
+
+The Apollo Federation 2 spec version used by [`create_federation_schema`](federation.md#setup). Must be one
+of `"2.0"` through `"2.15"`.
+
+///
+
 /// details | `FIELD_EXTENSIONS_KEY`
     attrs: {id: field_extensions_key}
 

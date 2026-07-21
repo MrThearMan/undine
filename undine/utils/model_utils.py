@@ -30,8 +30,10 @@ from undine.exceptions import (
     ExpressionNoOutputFieldError,
     GraphQLDuplicatePrimaryKeysError,
     GraphQLModelConstraintViolationError,
+    GraphQLModelFieldNotFoundError,
     GraphQLModelNotFoundError,
     GraphQLModelsNotFoundError,
+    GraphQLMultipleModelsFoundError,
     GraphQLPrimaryKeysMissingError,
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
@@ -68,7 +70,10 @@ __all__ = [
     "get_allowed_bulk_create_fields",
     "get_bulk_create_update_fields",
     "get_db_features",
+    "get_instance_by_field_or_raise",
+    "get_instance_by_field_or_raise_async",
     "get_instance_or_raise",
+    "get_instance_or_raise_async",
     "get_instances_or_raise",
     "get_many_to_many_through_field",
     "get_model",
@@ -102,6 +107,18 @@ def get_instance_or_raise(*, model: type[TModel], pk: Any) -> TModel:
         raise GraphQLModelNotFoundError(pk=pk, model=model) from error
 
 
+async def get_instance_or_raise_async(*, model: type[TModel], pk: Any) -> TModel:
+    """
+    Get model instance by the given key with the given primary key.
+
+    :raises GraphQLModelNotFoundError: If an instance for the given primary key does not exists.
+    """
+    try:
+        return await get_default_manager(model).aget(pk=pk)
+    except model.DoesNotExist as error:  # type: ignore[attr-defined]
+        raise GraphQLModelNotFoundError(pk=pk, model=model) from error
+
+
 def get_instances_or_raise(*, model: type[TModel], pks: list[Any]) -> list[TModel]:
     """
     Get model instances by the given primary keys.
@@ -115,6 +132,36 @@ def get_instances_or_raise(*, model: type[TModel], pks: list[Any]) -> list[TMode
             raise GraphQLModelNotFoundError(pk=missing.pop(), model=model)
         raise GraphQLModelsNotFoundError(missing=missing, model=model)
     return instances
+
+
+def get_instance_by_field_or_raise(*, queryset: QuerySet, field_name: str, value: Any) -> Model:
+    """
+    Get model instances by the given field and value.
+
+    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exists.
+    :raises GraphQLMultipleModelsFoundError: If an instance for the given field and value matches multiple instances.
+    """
+    try:
+        return queryset.get(**{field_name: value})
+    except queryset.model.DoesNotExist as error:  # type: ignore[attr-defined]
+        raise GraphQLModelFieldNotFoundError(field=field_name, value=value, model=queryset.model) from error
+    except queryset.model.MultipleObjectsReturned as error:  # type: ignore[attr-defined]
+        raise GraphQLMultipleModelsFoundError(field=field_name, value=value, model=queryset.model) from error
+
+
+async def get_instance_by_field_or_raise_async(*, queryset: QuerySet, field_name: str, value: Any) -> Model:
+    """
+    Get model instances by the given field and value.
+
+    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exists.
+    :raises GraphQLMultipleModelsFoundError: If an instance for the given field and value matches multiple instances.
+    """
+    try:
+        return await queryset.aget(**{field_name: value})
+    except queryset.model.DoesNotExist as error:  # type: ignore[attr-defined]
+        raise GraphQLModelFieldNotFoundError(field=field_name, value=value, model=queryset.model) from error
+    except queryset.model.MultipleObjectsReturned as error:  # type: ignore[attr-defined]
+        raise GraphQLMultipleModelsFoundError(field=field_name, value=value, model=queryset.model) from error
 
 
 def get_pks_from_list_of_dicts(input_data: list[dict[str, Any]]) -> list[Any]:

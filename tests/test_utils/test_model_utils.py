@@ -4,6 +4,7 @@ from typing import NamedTuple
 from unittest.mock import patch
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db.models import CharField, DateField, F, Value
@@ -21,8 +22,10 @@ from undine.exceptions import (
     ExpressionNoOutputFieldError,
     GraphQLDuplicatePrimaryKeysError,
     GraphQLModelConstraintViolationError,
+    GraphQLModelFieldNotFoundError,
     GraphQLModelNotFoundError,
     GraphQLModelsNotFoundError,
+    GraphQLMultipleModelsFoundError,
     GraphQLPrimaryKeysMissingError,
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
@@ -38,7 +41,10 @@ from undine.utils.model_utils import (
     get_bulk_create_update_fields,
     get_db_features,
     get_field_name,
+    get_instance_by_field_or_raise,
+    get_instance_by_field_or_raise_async,
     get_instance_or_raise,
+    get_instance_or_raise_async,
     get_instances_or_raise,
     get_many_to_many_through_field,
     get_model,
@@ -772,3 +778,71 @@ def test_convert_integrity_errors() -> None:
     msg = "UNIQUE constraint failed: app_task.name"
     with pytest.raises(GraphQLModelConstraintViolationError), convert_integrity_errors():
         raise IntegrityError(msg)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_get_instance_or_raise_async() -> None:
+    project = await sync_to_async(ProjectFactory.create)()
+
+    instance = await get_instance_or_raise_async(model=Project, pk=project.pk)
+    assert instance.pk == project.pk
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_get_instance_or_raise_async__missing() -> None:
+    with pytest.raises(GraphQLModelNotFoundError):
+        await get_instance_or_raise_async(model=Project, pk=1)
+
+
+def test_get_instance_by_field_or_raise() -> None:
+    project = ProjectFactory.create(name="unique-project")
+
+    instance = get_instance_by_field_or_raise(queryset=Project.objects.all(), field_name="name", value="unique-project")
+    assert instance.pk == project.pk
+
+
+def test_get_instance_by_field_or_raise__missing() -> None:
+    with pytest.raises(GraphQLModelFieldNotFoundError):
+        get_instance_by_field_or_raise(queryset=Project.objects.all(), field_name="name", value="does-not-exist")
+
+
+def test_get_instance_by_field_or_raise__multiple() -> None:
+    ProjectFactory.create(name="duplicate")
+    ProjectFactory.create(name="duplicate")
+
+    with pytest.raises(GraphQLMultipleModelsFoundError):
+        get_instance_by_field_or_raise(queryset=Project.objects.all(), field_name="name", value="duplicate")
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_get_instance_by_field_or_raise_async() -> None:
+    project = await sync_to_async(ProjectFactory.create)(name="async-unique-project")
+
+    instance = await get_instance_by_field_or_raise_async(
+        queryset=Project.objects.all(), field_name="name", value="async-unique-project"
+    )
+    assert instance.pk == project.pk
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_get_instance_by_field_or_raise_async__missing() -> None:
+    with pytest.raises(GraphQLModelFieldNotFoundError):
+        await get_instance_by_field_or_raise_async(
+            queryset=Project.objects.all(), field_name="name", value="does-not-exist"
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_get_instance_by_field_or_raise_async__multiple() -> None:
+    await sync_to_async(ProjectFactory.create)(name="async-duplicate")
+    await sync_to_async(ProjectFactory.create)(name="async-duplicate")
+
+    with pytest.raises(GraphQLMultipleModelsFoundError):
+        await get_instance_by_field_or_raise_async(
+            queryset=Project.objects.all(), field_name="name", value="async-duplicate"
+        )

@@ -16,6 +16,7 @@ class TestDirective(
     Directive,
     locations=[DirectiveLocation.QUERY],
     is_repeatable=False,
+    register=True,
     schema_name="test",
     extensions={"foo": "bar"},
 ): ...

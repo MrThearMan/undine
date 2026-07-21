@@ -83,7 +83,13 @@ from graphql.pyutils import AwaitableOrValue
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from graphql import AbortSignal, GraphQLError, GraphQLResolveInfoHelpers, VariableValues
+    from graphql import (  # type: ignore[attr-defined]
+        AbortSignal,
+        GraphQLError,
+        GraphQLResolveInfoHelpers,
+        VariableValues,
+    )
+
 
 if version_info >= (3, 3, 0):  # pragma: no cover
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
@@ -212,6 +218,7 @@ if TYPE_CHECKING:
     from undine.utils.graphql.websocket import WebSocketRequest
 
 __all__ = [
+    "ID",
     "Annotatable",
     "CacheKeyData",
     "CalculationArgumentParams",
@@ -355,6 +362,10 @@ Type used to register a different implementations for lambda functions
 as opposed to a regular function in the FunctionDispatcher.
 """
 
+ID = NewType("ID", str)
+"""
+A GraphQL ID type.
+"""
 
 # Protocols
 
@@ -795,6 +806,7 @@ class UndineErrorCodes(StrEnum):
     MISSING_SUBSCRIPTION_ARGUMENT = auto()
     MODEL_CONSTRAINT_VIOLATION = auto()
     MODEL_INSTANCE_NOT_FOUND = auto()
+    MULTIPLE_MODEL_INSTANCES_FOUND = auto()
     MUTATION_TOO_MANY_OBJECTS = auto()
     MUTATION_TREE_MODEL_MISMATCH = auto()
     NO_EVENT_STREAM = auto()
@@ -909,7 +921,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
     """Function for testing whether the GraphQL resolver is awaitable or not."""
 
-    if version_info >= (3, 3, 0):
+    if version_info >= (3, 3, 0):  # pragma: no cover
         abort_signal: AbortSignal | None
         """The abort signal passed to the GraphQL operation."""
 
@@ -1011,6 +1023,26 @@ class FieldParams(TypedDict, total=False):
     field_name: str
     schema_name: str
     errors: Iterable[type[Exception]]
+    directives: list[Directive]
+    extensions: dict[str, Any]
+
+
+class FederationTypeParams(TypedDict, total=False):
+    """Arguments for an Undine `FederationType`."""
+
+    schema_name: str
+    directives: list[Directive]
+    extensions: dict[str, Any]
+
+
+class FederationFieldParams(TypedDict, total=False):
+    """Arguments for an Undine `FederationField`."""
+
+    many: bool
+    nullable: bool
+    description: str | None
+    deprecation_reason: str | None
+    schema_name: str
     directives: list[Directive]
     extensions: dict[str, Any]
 
@@ -1138,6 +1170,7 @@ class DirectiveParams(TypedDict, total=False):
     is_repeatable: bool
     schema_name: str
     extensions: dict[str, Any]
+    register: bool
 
 
 class DirectiveArgumentParams(TypedDict, total=False):
@@ -1416,11 +1449,13 @@ _AnyField: TypeAlias = Annotated[Any, "undine.Field"]
 _AnyInput: TypeAlias = Annotated[Any, "undine.Input"]
 _AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
 _AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
+_AnyFederationType: TypeAlias = Annotated[Any, "undine.federation.FederationType"]
 
 EntrypointPermFunc: TypeAlias = Callable[[Any, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+FederationFieldPermFunc: TypeAlias = Callable[[_AnyFederationType, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 
 ConvertionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
 VisibilityFunc: TypeAlias = Callable[[Any, DjangoRequestProtocol], bool]

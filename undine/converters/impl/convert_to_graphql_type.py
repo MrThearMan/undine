@@ -59,6 +59,7 @@ from graphql import (
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
+    GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInputType,
@@ -90,6 +91,8 @@ from undine.exceptions import (
     GraphQLTypedDictAnnotatedIncorrectMetadataError,
     RegistryMissingTypeError,
 )
+from undine.federation import FederationType
+from undine.federation.entities import EntitiesRef
 from undine.mutation import Input, MutationTypeMeta
 from undine.pagination import OffsetPagination
 from undine.parsers import parse_first_param_type, parse_is_nullable, parse_return_annotation
@@ -115,7 +118,7 @@ from undine.scalars import (
 )
 from undine.settings import undine_settings
 from undine.subscriptions import QueryTypeSignalSubscription
-from undine.typing import CombinableExpression, ModelField, eval_type
+from undine.typing import ID, CombinableExpression, ModelField, eval_type
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_enum,
     get_or_create_graphql_input_object_type,
@@ -262,6 +265,11 @@ def _(ref: type[IntegerChoices], **kwargs: Any) -> GraphQLInputType | GraphQLOut
         values=values,
         description=convert_to_description(ref),
     )
+
+
+@convert_to_graphql_type.register
+def _(_: ID, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return GraphQLID
 
 
 @convert_to_graphql_type.register
@@ -896,9 +904,9 @@ def _(ref: LookupRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: Connection, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     ref_type: type[UnionType | InterfaceType | QueryType]
     if ref.union_type is not None:
-        ref_type = ref.union_type
+        ref_type = ref.union_type  # type: ignore[assignment]
     elif ref.interface_type is not None:
-        ref_type = ref.interface_type
+        ref_type = ref.interface_type  # type: ignore[assignment]
     else:
         ref_type = ref.query_type  # type: ignore[assignment]
 
@@ -968,6 +976,16 @@ def _(ref: InterfaceField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputTyp
 @convert_to_graphql_type.register
 def _(ref: QueryTypeSignalSubscription, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return convert_to_graphql_type(ref.query_type, **kwargs)
+
+
+@convert_to_graphql_type.register
+def _(ref: type[FederationType], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return ref.__output_type__()
+
+
+@convert_to_graphql_type.register
+def _(ref: EntitiesRef, **kwargs: Any) -> GraphQLOutputType:
+    return GraphQLList(ref.entity_union)
 
 
 with suppress(ImportError):  # pragma: no cover

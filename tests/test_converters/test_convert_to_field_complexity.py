@@ -38,6 +38,24 @@ def test_convert_to_field_complexity__query_type() -> None:
     assert result == 1
 
 
+def test_convert_to_field_complexity__federation_type() -> None:
+    from undine.federation import FederationField, FederationType, KeyDirective
+
+    @KeyDirective(fields="id", resolvable=False)
+    class UserStub(FederationType, schema_name="User"):
+        id = FederationField(int)
+
+    class TaskType(QueryType[Task]):
+        assigned_to = Field(UserStub)
+
+        @assigned_to.resolve
+        def resolve_assigned_to(root, info):  # noqa: ANN001, ARG001
+            return {"id": 1}
+
+    result = convert_to_field_complexity(UserStub, caller=TaskType.assigned_to)
+    assert result == 0
+
+
 def test_convert_to_field_complexity__interface_field() -> None:
     class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))

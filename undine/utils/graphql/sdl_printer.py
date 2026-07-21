@@ -1,30 +1,53 @@
 from __future__ import annotations
 
+import math
+import re
 import textwrap
+from collections.abc import Mapping
 from itertools import chain, starmap
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from graphql import (
     DEFAULT_DEPRECATION_REASON,
     GraphQLEnumType,
+    GraphQLID,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLUnionType,
-    ast_from_value,
+    Undefined,
+    is_enum_type,
+    is_input_object_type,
+    is_leaf_type,
+    is_list_type,
+    is_non_null_type,
     is_specified_directive,
     print_ast,
 )
+from graphql.language.ast import (
+    BooleanValueNode,
+    EnumValueNode,
+    FloatValueNode,
+    IntValueNode,
+    ListValueNode,
+    NameNode,
+    NullValueNode,
+    ObjectFieldNode,
+    ObjectValueNode,
+    StringValueNode,
+)
 from graphql.language.block_string import is_printable_as_block_string, print_block_string
 from graphql.language.print_string import print_string
-from graphql.pyutils import inspect
+from graphql.pyutils import inspect, is_iterable
 from graphql.utilities.print_schema import is_defined_type
 
 from undine.utils.graphql.undine_extensions import (
     get_undine_calculation_argument,
     get_undine_directive_argument,
     get_undine_entrypoint,
+    get_undine_federation_field,
+    get_undine_federation_type,
     get_undine_field,
     get_undine_filter,
     get_undine_filterset,
@@ -50,9 +73,11 @@ if TYPE_CHECKING:
         GraphQLEnumValue,
         GraphQLField,
         GraphQLInputField,
+        GraphQLInputType,
         GraphQLNamedType,
         GraphQLSchema,
     )
+    from graphql.language.ast import ValueNode
 
     from undine import Directive
 
@@ -71,13 +96,14 @@ class SDLPrinter:  # noqa: PLR0904
         *,
         directive_filter: Callable[[GraphQLDirective], bool] | None = None,
         type_filter: Callable[[GraphQLNamedType], bool] | None = None,
+        extend_schema: bool = False,
     ) -> str:
         if directive_filter is None:
             directive_filter = cls.default_directive_filter
         if type_filter is None:
             type_filter = cls.default_type_filter
 
-        schema_definition = cls.print_schema_definition(schema)
+        schema_definition = cls.print_schema_definition(schema, extend_schema=extend_schema)
 
         directives = (
             cls.print_directive(directive)  # ...
@@ -99,11 +125,11 @@ class SDLPrinter:  # noqa: PLR0904
         )
 
     @classmethod
-    def print_schema_definition(cls, schema: GraphQLSchema) -> str:
+    def print_schema_definition(cls, schema: GraphQLSchema, *, extend_schema: bool = False) -> str:
         root_types: dict[str, str] = {}
         description = cls.print_docstring(schema.description)
 
-        schema_str: str = "schema"
+        schema_str: str = "extend schema" if extend_schema else "schema"
         has_directives = False
 
         undine_schema_directives = get_undine_schema_directives(schema)
@@ -125,10 +151,11 @@ class SDLPrinter:  # noqa: PLR0904
         has_default_root_types = not non_default_root_types
 
         # The schema definition only needs to be printed if its not the default schema definition.
-        if not description and (not root_types or has_default_root_types) and not has_directives:
+        if not extend_schema and not description and (not root_types or has_default_root_types) and not has_directives:
             return ""
 
-        schema_str += cls.print_block(root_types.values())
+        if root_types and not (extend_schema and has_default_root_types):
+            schema_str += cls.print_block(root_types.values())
         if description:
             schema_str = f"{description}\n{schema_str}"
 
@@ -165,17 +192,25 @@ class SDLPrinter:  # noqa: PLR0904
     def print_object_type(cls, object_type: GraphQLObjectType) -> str:
         object_type_str = f"type {object_type.name}"
 
+        undine_federation_type = get_undine_federation_type(object_type)
+        if undine_federation_type is not None and cls._is_resolvable_federation_type(undine_federation_type):
+            object_type_str = f"extend {object_type_str}"
+
         if object_type.interfaces:
             object_type_str += " implements " + " & ".join(interface.name for interface in object_type.interfaces)
 
         undine_query_type = get_undine_query_type(object_type)
         if undine_query_type is not None:
-            for directive in undine_query_type.__directives__:
+            for directive in reversed(undine_query_type.__directives__):
                 object_type_str += cls.print_directive_usage(directive)
 
         undine_root_type = get_undine_root_type(object_type)
         if undine_root_type is not None:
-            for directive in undine_root_type.__directives__:
+            for directive in reversed(undine_root_type.__directives__):
+                object_type_str += cls.print_directive_usage(directive)
+
+        if undine_federation_type is not None:
+            for directive in reversed(undine_federation_type.__directives__):
                 object_type_str += cls.print_directive_usage(directive)
 
         if object_type.fields:
@@ -188,6 +223,15 @@ class SDLPrinter:  # noqa: PLR0904
 
         return object_type_str
 
+    @staticmethod
+    def _is_resolvable_federation_type(federation_type: Any) -> bool:
+        from undine.federation.directives import KeyDirective  # noqa: PLC0415
+
+        return any(
+            isinstance(directive, KeyDirective) and directive.__parameters__["resolvable"]
+            for directive in federation_type.__directives__
+        )
+
     @classmethod
     def print_interface_type(cls, interface_type: GraphQLInterfaceType) -> str:
         interface_type_str = f"interface {interface_type.name}"
@@ -197,7 +241,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_interface = get_undine_interface_type(interface_type)
         if undine_interface is not None:
-            for directive in undine_interface.__directives__:
+            for directive in reversed(undine_interface.__directives__):
                 interface_type_str += cls.print_directive_usage(directive)
 
         if interface_type.fields:
@@ -228,17 +272,22 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_entrypoint = get_undine_entrypoint(field)
         if undine_entrypoint is not None:
-            for directive in undine_entrypoint.directives:
+            for directive in reversed(undine_entrypoint.directives):
                 field_str += cls.print_directive_usage(directive)
 
         undine_field = get_undine_field(field)
         if undine_field is not None:
-            for directive in undine_field.directives:
+            for directive in reversed(undine_field.directives):
+                field_str += cls.print_directive_usage(directive)
+
+        undine_federation_field = get_undine_federation_field(field)
+        if undine_federation_field is not None:
+            for directive in reversed(undine_federation_field.directives):
                 field_str += cls.print_directive_usage(directive)
 
         undine_interface_field = get_undine_interface_field(field)
         if undine_interface_field is not None:
-            for directive in undine_interface_field.directives:
+            for directive in reversed(undine_interface_field.directives):
                 field_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(field.description)
@@ -254,7 +303,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         arg_str: str = f"{indentation}{name}: {arg.type}"
 
-        default_ast = ast_from_value(arg.default_value, arg.type)
+        default_ast = cls.ast_from_value(arg.default_value, arg.type)
         if default_ast:
             arg_str += f" = {print_ast(default_ast)}"
 
@@ -262,7 +311,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_calculation_argument = get_undine_calculation_argument(arg)
         if undine_calculation_argument is not None:
-            for directive in undine_calculation_argument.directives:
+            for directive in reversed(undine_calculation_argument.directives):
                 arg_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(arg.description)
@@ -283,12 +332,12 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_mutation_type = get_undine_mutation_type(input_object_type)
         if undine_mutation_type is not None:
-            for directive in undine_mutation_type.__directives__:
+            for directive in reversed(undine_mutation_type.__directives__):
                 input_object_type_str += cls.print_directive_usage(directive)
 
         undine_filterset = get_undine_filterset(input_object_type)
         if undine_filterset is not None:
-            for directive in undine_filterset.__directives__:
+            for directive in reversed(undine_filterset.__directives__):
                 input_object_type_str += cls.print_directive_usage(directive)
 
         if input_object_type.fields:
@@ -307,7 +356,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         input_field_str: str = f"{indentation}{name}: {input_field.type}"
 
-        default_ast = ast_from_value(input_field.default_value, input_field.type)
+        default_ast = cls.ast_from_value(input_field.default_value, input_field.type)
         if default_ast:
             input_field_str += f" = {print_ast(default_ast)}"
 
@@ -315,12 +364,12 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_input = get_undine_input(input_field)
         if undine_input is not None:
-            for directive in undine_input.directives:
+            for directive in reversed(undine_input.directives):
                 input_field_str += cls.print_directive_usage(directive)
 
         undine_filter = get_undine_filter(input_field)
         if undine_filter is not None:
-            for directive in undine_filter.directives:
+            for directive in reversed(undine_filter.directives):
                 input_field_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(input_field.description)
@@ -338,7 +387,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_orderset = get_undine_orderset(enum_type)
         if undine_orderset is not None:
-            for directive in undine_orderset.__directives__:
+            for directive in reversed(undine_orderset.__directives__):
                 enum_str += cls.print_directive_usage(directive)
 
         if enum_type.values:
@@ -360,7 +409,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_order = get_undine_order(value)
         if undine_order is not None:
-            for directive in undine_order.directives:
+            for directive in reversed(undine_order.directives):
                 enum_value_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(value.description)
@@ -381,7 +430,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_scalar = get_undine_scalar(scalar_type)
         if undine_scalar is not None:
-            for directive in undine_scalar.directives:
+            for directive in reversed(undine_scalar.directives):
                 scalar_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(scalar_type.description)
@@ -398,7 +447,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_union = get_undine_union_type(union_type)
         if undine_union is not None:
-            for directive in undine_union.__directives__:
+            for directive in reversed(undine_union.__directives__):
                 union_str += cls.print_directive_usage(directive)
 
         if union_type.types:
@@ -440,7 +489,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         arg_str: str = f"{indentation}{name}: {arg.type}"
 
-        default_ast = ast_from_value(arg.default_value, arg.type)
+        default_ast = cls.ast_from_value(arg.default_value, arg.type)
         if default_ast:
             arg_str += f" = {print_ast(default_ast)}"
 
@@ -448,7 +497,7 @@ class SDLPrinter:  # noqa: PLR0904
 
         undine_dir_arg = get_undine_directive_argument(arg)
         if undine_dir_arg is not None:
-            for directive in undine_dir_arg.directives:
+            for directive in reversed(undine_dir_arg.directives):
                 arg_str += cls.print_directive_usage(directive)
 
         description = cls.print_docstring(arg.description)
@@ -471,8 +520,10 @@ class SDLPrinter:  # noqa: PLR0904
             directive_argument = directive.__arguments__[parameter]
             if value == directive_argument.default_value:
                 continue
+            if value is None:
+                continue
 
-            value_ast = ast_from_value(value, directive_argument.get_argument_type())
+            value_ast = cls.ast_from_value(value, directive_argument.get_argument_type())
             if value_ast is None:
                 continue
 
@@ -515,3 +566,85 @@ class SDLPrinter:  # noqa: PLR0904
     @classmethod
     def default_type_filter(cls, named_type: GraphQLNamedType) -> bool:
         return is_defined_type(named_type)
+
+    @classmethod
+    def ast_from_value(cls, value: Any, type_: Any) -> ValueNode | None:  # noqa: PLR0911
+        """Extended `graphql.utilities.ast_from_value.ast_from_value` to handle JSON-like scalars."""
+        if is_non_null_type(type_):
+            ast_value = cls.ast_from_value(value, type_.of_type)
+            if isinstance(ast_value, NullValueNode):
+                return None
+            return ast_value
+
+        if value is None:
+            return NullValueNode()
+
+        if value is Undefined:
+            return None
+
+        if is_list_type(type_):
+            item_type = type_.of_type
+            if is_iterable(value):
+                maybe_value_nodes = (cls.ast_from_value(item, item_type) for item in value)
+                value_nodes = tuple(node for node in maybe_value_nodes if node)
+                return ListValueNode(values=value_nodes)
+            return cls.ast_from_value(value, item_type)
+
+        if is_input_object_type(type_):
+            if value is None or not isinstance(value, Mapping):
+                return None
+
+            field_items = (
+                (field_name, cls.ast_from_value(value[field_name], field.type))
+                for field_name, field in type_.fields.items()
+                if field_name in value
+            )
+            field_nodes = tuple(
+                ObjectFieldNode(name=NameNode(value=field_name), value=field_value)
+                for field_name, field_value in field_items
+                if field_value
+            )
+            return ObjectValueNode(fields=tuple(field_nodes))
+
+        if is_leaf_type(type_):
+            serialized = type_.serialize(value)
+            if serialized is None or serialized is Undefined:  # pragma: no cover
+                return None
+
+            return cls.ast_from_leaf_type(serialized, type_)
+
+        msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
+
+    @classmethod
+    def ast_from_leaf_type(cls, serialized: object, type_: GraphQLInputType | None) -> ValueNode:
+        if isinstance(serialized, bool):
+            return BooleanValueNode(value=serialized)
+
+        if isinstance(serialized, int):
+            return IntValueNode(value=str(serialized))
+
+        if isinstance(serialized, float) and math.isfinite(serialized):
+            return FloatValueNode(value=str(serialized).removesuffix(".0"))
+
+        if isinstance(serialized, str):
+            if type_ and is_enum_type(type_):
+                return EnumValueNode(value=serialized)
+
+            if type_ is GraphQLID and _re_integer_string.match(serialized):
+                return IntValueNode(value=serialized)
+
+            return StringValueNode(value=serialized)
+
+        if isinstance(serialized, dict):
+            fields = tuple(
+                ObjectFieldNode(name=NameNode(value=key), value=cls.ast_from_leaf_type(value, None))
+                for key, value in serialized.items()
+            )
+            return ObjectValueNode(fields=fields)
+
+        msg = f"Cannot convert value to AST: {inspect(serialized)}."  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
+
+
+_re_integer_string = re.compile("^-?(?:0|[1-9][0-9]*)$")

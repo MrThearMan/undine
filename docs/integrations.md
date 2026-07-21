@@ -124,12 +124,14 @@ The plugin adds the following additional type checks:
 
 - [x] Check that `QueryTypes`, `MutationTypes`, `FilterSets`, `OrderSets`, and `UnionTypes`
       contain correct generic parameters
-- [x] Check that `RootTypes`, `QueryTypes`, `MutationTypes`, `FilterSets`, `OrderSets`, `InterfaceTypes`
-      and `UnionTypes` are created using the correct class definition keyword arguments
-- [x] Check that `Entrypoints`, `Fields`, `Inputs` and `Filters` are applied to a method with
+- [x] Check that `RootTypes`, `QueryTypes`, `MutationTypes`, `FilterSets`, `OrderSets`, `InterfaceTypes`,
+      `UnionTypes` and `FederationTypes` are created using the correct class definition keyword arguments
+- [x] Check that `Entrypoints`, `Fields`, `FederationFields`, `Inputs` and `Filters` are applied to a method with
       the correct signature when used as decorators
-- [x] Check that `Entrypoints`, `Fields`, `Inputs`, `Filters` and `Orders` decorator methods
+- [x] Check that `Entrypoints`, `Fields`, `FederationFields`, `Inputs`, `Filters` and `Orders` decorator methods
       (e.g. `@Field.permissions` or `@Input.validate`) are applied to a method with the correct signature
+- [x] Check that the return type of a resolver method for an `Entrypoint`, `Field` or `FederationField`
+      is compatible with the field's ref type (honouring `many=True`, `nullable=True` and `@ExternalDirective`)
 - [x] Check that `FilterSets` and `OrderSets` are applied to `QueryTypes` or `UnionTypes` that are
       defined for the same Django Models
 - [x] Check that `FilterSets`, `OrderSets`, and `InterfaceTypes` are applied to `QueryTypes`
@@ -137,7 +139,10 @@ The plugin adds the following additional type checks:
 - [x] Check that `Directives` are applied to objects that support them
 - [x] Check that `Directives` are applied to objects that match their allowed locations
 - [x] Check that `Directives` that are not repeatable are only applied once
+- [x] Type `DirectiveArgument` and `FederationField` class attributes as their declared ref type
+      so that accessing them (e.g. `self.my_arg`) resolves to the underlying value type
 - [x] Create `Directive.__init__` for typing purposes based on `DirectiveArguments` if one does not exist
+- [x] Create `FederationType.__init__` for typing purposes based on `FederationFields` if one does not exist
 
 > If there is a check that you think should be included, please open an issue or a pull request!
 

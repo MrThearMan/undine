@@ -37,6 +37,10 @@ Note that most Django models already contain an `id` field for as the primary ke
 and that implementing this interface will override it with the _Global Object ID_ field. To access the
 model `id` field, you can use the `pk` field instead.
 
+> `Field(GraphQLID)` only auto-wires the _Global Object ID_ resolver when
+> the containing `QueryType` implements `Node`. On a non-`Node` `QueryType`,
+> `Field(GraphQLID)` resolves to the raw primary key.
+
 ## Node Entrypoint
 
 A _Global Object ID_ can be used for refetching objects from a special `Node` `Entrypoint`.

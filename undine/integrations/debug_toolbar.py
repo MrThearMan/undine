@@ -36,7 +36,7 @@ def monkeypatch_middleware() -> None:
             handle_graphiql(request, response, toolbar)
         return response
 
-    DebugToolbarMiddleware._postprocess = patched_postprocess  # noqa: SLF001
+    DebugToolbarMiddleware._postprocess = patched_postprocess  # type: ignore[attr-defined,method-assign]  # noqa: SLF001
 
 
 def handle_graphiql(request: HttpRequest, response: HttpResponse, toolbar: DebugToolbar) -> None:
@@ -75,7 +75,7 @@ def add_debug_toolbar_data(response: HttpResponse, toolbar: DebugToolbar) -> Non
         request_id = toolbar.request_id
     except AttributeError:
         #  Debug toolbar < 6.0.0 compatibility
-        request_id = toolbar.store_id
+        request_id = toolbar.store_id  # type: ignore[attr-defined]
 
     payload["debugToolbar"] = {"requestId": request_id, "panels": {}}
 

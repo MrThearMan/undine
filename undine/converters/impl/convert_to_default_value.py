@@ -8,9 +8,10 @@ from django.db.models import Field, ForeignKey, Model, OneToOneField, OneToOneRe
 from graphql import Undefined
 
 from undine import Input, MutationType
-from undine.converters import convert_to_default_value
+from undine.converters import convert_to_default_value, convert_to_description
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import ModelFieldDoesNotExistError
+from undine.federation.entities import EntitiesRef
 from undine.typing import ToManyField
 from undine.utils.model_utils import get_model_field
 
@@ -66,6 +67,11 @@ def _(_: FunctionType, **kwargs: Any) -> Any:
 @convert_to_default_value.register
 def _(_: type[MutationType], **kwargs: Any) -> Any:
     return Undefined
+
+
+@convert_to_description.register
+def _(_: EntitiesRef, **kwargs: Any) -> str | None:
+    return None
 
 
 @convert_to_default_value.register

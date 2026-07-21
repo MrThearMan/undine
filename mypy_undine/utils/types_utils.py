@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from graphql import DirectiveLocation
-from mypy.nodes import FuncDef, ListExpr, MemberExpr, StrExpr
+from mypy.nodes import FuncDef, ListExpr, MemberExpr, NameExpr, StrExpr
 from mypy.subtypes import is_same_type
 from mypy.types import Instance, TypeType, get_proper_type
 
@@ -131,7 +131,60 @@ def supports_interfaces(info: TypeInfo) -> bool:
     return any(cls.fullname in {INTERFACE_TYPE, QUERY_TYPE} for cls in info.mro)
 
 
+DIRECTIVE_METADATA_KEY = "undine_directive"
+
+
+def stash_directive_metadata(info: TypeInfo) -> None:
+    """
+    Persist directive `locations` / `is_repeatable` from class keywords into `info.metadata`.
+
+    Called from the base_class_hook while `info.defn.keywords` is still populated.
+    Reading from metadata is serialization-safe (`info.defn` loses its keywords when a
+    module is loaded from mypy's incremental cache), so downstream lookups should
+    consult metadata as the source of truth and fall back to `defn.keywords`.
+    """
+    data: dict[str, object] = {}
+
+    locations_expr = info.defn.keywords.get("locations")
+    if isinstance(locations_expr, ListExpr):
+        locations: list[str] = []
+        for item in locations_expr.items:
+            if isinstance(item, StrExpr):
+                try:
+                    locations.append(DirectiveLocation(item.value).name)
+                except ValueError:
+                    continue
+                continue
+            if isinstance(item, MemberExpr):
+                try:
+                    locations.append(DirectiveLocation[item.name].name)
+                except KeyError:
+                    continue
+        data["locations"] = locations
+
+    repeatable_expr = info.defn.keywords.get("is_repeatable")
+    if isinstance(repeatable_expr, NameExpr):
+        data["is_repeatable"] = repeatable_expr.fullname == "builtins.True"
+
+    if data:
+        info.metadata[DIRECTIVE_METADATA_KEY] = data
+
+
 def directive_locations_from_class(info: TypeInfo) -> set[DirectiveLocation]:
+    metadata = info.metadata.get(DIRECTIVE_METADATA_KEY)
+    if isinstance(metadata, dict):
+        cached = metadata.get("locations")
+        if isinstance(cached, list):
+            result: set[DirectiveLocation] = set()
+            for name in cached:
+                if not isinstance(name, str):
+                    continue
+                try:
+                    result.add(DirectiveLocation[name])
+                except KeyError:
+                    continue
+            return result
+
     location: Expression | None = info.defn.keywords.get("locations")
     if location is None:
         return set()
@@ -150,6 +203,21 @@ def directive_locations_from_class(info: TypeInfo) -> set[DirectiveLocation]:
             continue
 
     return locations
+
+
+def is_repeatable_from_class(info: TypeInfo) -> bool:
+    metadata = info.metadata.get(DIRECTIVE_METADATA_KEY)
+    if isinstance(metadata, dict) and "is_repeatable" in metadata:
+        return bool(metadata["is_repeatable"])
+
+    location: Expression | None = info.defn.keywords.get("is_repeatable")
+    if location is None:
+        return False
+
+    if not isinstance(location, NameExpr):
+        return False
+
+    return location.fullname == "builtins.True"
 
 
 def has_init(cls_def: ClassDef) -> bool:

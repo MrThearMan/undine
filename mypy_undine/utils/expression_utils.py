@@ -238,4 +238,11 @@ GRAPHQL_SCALARS: dict[str, str] = {
     "undine.scalars.time.GraphQLTime": "datetime.time",
     "undine.scalars.url.GraphQLURL": "str",
     "undine.scalars.uuid.GraphQLUUID": "uuid.UUID",
+    "undine.federation.scalars.FederationAnyScalar": "typing.Any",
+    "undine.federation.scalars.FederationContextFieldValue": "str",
+    "undine.federation.scalars.FederationFieldSet": "str",
+    "undine.federation.scalars.FederationLinkImport": "str",
+    "undine.federation.scalars.FederationLinkPurpose": "str",
+    "undine.federation.scalars.FederationPolicy": "str",
+    "undine.federation.scalars.FederationScope": "str",
 }

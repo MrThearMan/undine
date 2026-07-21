@@ -9,6 +9,8 @@ from pytest_undine.fixtures import graphql, graphql_async, undine_settings
 from tests.factories._base import UndineFaker
 from tests.helpers import SessionStore
 from undine.directives import AtomicDirective, CacheRulesDirective, ComplexityDirective
+from undine.federation.directives import USED_FEDERATION_DIRECTIVES
+from undine.federation.federation_type import FEDERATION_TYPE_REGISTRY
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
 
@@ -27,6 +29,8 @@ def _clear_registries() -> None:
     QUERY_TYPE_REGISTRY.clear()
     GRAPHQL_REGISTRY.clear()
     DIRECTIVE_REGISTRY.clear()
+    USED_FEDERATION_DIRECTIVES.clear()
+    FEDERATION_TYPE_REGISTRY.clear()
 
     DIRECTIVE_REGISTRY[AtomicDirective.__schema_name__] = AtomicDirective
     DIRECTIVE_REGISTRY[CacheRulesDirective.__schema_name__] = CacheRulesDirective

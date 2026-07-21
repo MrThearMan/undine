@@ -10,6 +10,13 @@ async port="8000":
 check:
     @poetry run python manage.py check undine
 
+# Run Apollo's subgraph compatibility suite
+compliance:
+    @cd tests/test_federation/compatibility \
+      && just up \
+      && just compliance \
+      && just down
+
 # Run all tests with coverage and show coverage report
 coverage:
     @poetry run coverage run -m pytest .
@@ -26,6 +33,10 @@ deps:
 # Print top level dependencies
 deps-top:
     @poetry show --top-level --only=main --no-truncate
+
+# Print all outdated dependencies
+deps-out:
+    @poetry show --outdated --format json | jq -r '.[] | [.name, .version, .latest_version] | @tsv' | column -t -s $'\t' -o ' '
 
 # Print all dependencies as a tree
 deps-tree:
@@ -80,12 +91,16 @@ migrations:
     @poetry run python manage.py makemigrations
 
 # Run mypy
-mypy:
-    @poetry run mypy .
+mypy dir=".":
+    @poetry run mypy {{dir}}
 
 # Generate mypy tests
 mypy-test-gen:
     @poetry run python manage.py generate_test_mypy_yml
+
+# Clear mypy cache
+mypy-cache-clear:
+    @rm -rf .mypy_cache
 
 # Run tests in all supported python and core dependency versions using nox
 nox:
@@ -102,6 +117,15 @@ nox-one name:
 # Run py-spy to profiler on a given process
 profile pid:
     @poetry run py-spy --threads --subprocesses --output profile.svg --pid "{{pid}}"
+
+# Run a command in python with django setup
+[positional-arguments]
+run-python cmd:
+    @DJANGO_SETTINGS_MODULE=example_project.project.settings poetry run python -c 'import sys; import django; django.setup(); exec(sys.argv[1])' "$1"
+
+# Run Python code from stdin with django setup
+run-python-stdin:
+    @DJANGO_SETTINGS_MODULE=example_project.project.settings poetry run python -c 'import sys; import django; django.setup(); exec(sys.stdin.read())'
 
 # Print the GraphQL schema
 schema:

@@ -19,6 +19,7 @@ nav:
   - Unions: unions.md
   - Scalars: scalars.md
   - Directives: directives.md
+  - Federation: federation.md
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
   - Async Support: async.md

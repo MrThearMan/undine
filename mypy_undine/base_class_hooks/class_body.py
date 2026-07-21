@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from graphql import DirectiveLocation
@@ -17,6 +18,7 @@ from mypy.nodes import (
     TypeInfo,
     Var,
 )
+from mypy.subtypes import is_subtype
 from mypy.types import CallableType, Instance, NoneType, UnboundType
 
 from mypy_undine.fullnames import (
@@ -24,6 +26,9 @@ from mypy_undine.fullnames import (
     DIRECTIVE_ARGUMENT,
     DIRECTIVE_META,
     ENTRYPOINT,
+    FEDERATION_FIELD,
+    FEDERATION_TYPE,
+    FEDERATION_TYPE_META,
     FIELD,
     FILTER,
     FILTER_SET,
@@ -43,8 +48,10 @@ from mypy_undine.fullnames import (
     ROOT_TYPE,
     ROOT_TYPE_META,
 )
+from mypy_undine.utils.field_types import find_field_call, resolvable, resolve_field_call_ref_type
 from mypy_undine.utils.types_utils import (
     directive_locations_from_class,
+    is_repeatable_from_class,
     mutation_type_model_from_class,
     query_type_model_from_class,
 )
@@ -54,6 +61,7 @@ if TYPE_CHECKING:
 
     from mypy.nodes import Argument, Expression, FuncDef
     from mypy.plugin import ClassDefContext
+    from mypy.types import Type
 
 
 def fix_class_body(ctx: ClassDefContext) -> None:
@@ -65,7 +73,7 @@ def fix_class_body(ctx: ClassDefContext) -> None:
         if isinstance(statement, AssignmentStmt):
             value = statement.rvalue
             if isinstance(value, OpExpr) and value.op == "@":
-                check_rmatmul_directives(ctx, value)
+                check_rmatmul_directives(ctx, value, defaultdict(int))
             continue
 
 
@@ -134,14 +142,18 @@ def fix_decorated_methods(ctx: ClassDefContext, value: Decorator) -> None:  # no
             continue
 
 
-def check_rmatmul_directives(ctx: ClassDefContext, value: OpExpr) -> TypeInfo | None:
+def check_rmatmul_directives(
+    ctx: ClassDefContext,
+    value: OpExpr,
+    decorator_counts: defaultdict[str, int],
+) -> TypeInfo | None:
     left_value = value.left
 
     if isinstance(left_value, OpExpr):
         if left_value.op != "@":
             return None
 
-        left_symbol_node = check_rmatmul_directives(ctx, left_value)
+        left_symbol_node = check_rmatmul_directives(ctx, left_value, decorator_counts)
         if left_symbol_node is None:
             return None
 
@@ -171,6 +183,12 @@ def check_rmatmul_directives(ctx: ClassDefContext, value: OpExpr) -> TypeInfo | 
 
     if location not in accepted_locations:
         msg = f'Directive "{right_symbol_node.name}" does not support location "{location.name}"'
+        ctx.api.fail(msg, right_value)
+
+    decorator_counts[right_symbol_node.fullname] += 1
+    is_repeatable = is_repeatable_from_class(right_symbol_node)
+    if not is_repeatable and decorator_counts[right_symbol_node.fullname] > 1:
+        msg = f'Directive "{right_symbol_node.name}" is not repeatable'
         ctx.api.fail(msg, right_value)
 
     return left_symbol_node
@@ -297,6 +315,8 @@ def check_entrypoint_resolve_func(ctx: ClassDefContext, func: FuncDef, name: str
             check_arg_type(ctx, arg, expected=GQL_INFO)
             break
 
+    _check_resolve_return_type(ctx, func, name, factory_fullname=ENTRYPOINT, kind_label="Entrypoint")
+
 
 def check_field_resolve_func(ctx: ClassDefContext, func: FuncDef, name: str) -> None:
     # Resolvers can have some info and self missing so dont check positions
@@ -316,6 +336,68 @@ def check_field_resolve_func(ctx: ClassDefContext, func: FuncDef, name: str) -> 
         if arg.variable.name == "info":
             check_arg_type(ctx, arg, expected=GQL_INFO)
             break
+
+    _check_resolve_return_type(ctx, func, name, factory_fullname=FIELD, kind_label="Field")
+
+
+def check_federation_field_resolve_func(ctx: ClassDefContext, func: FuncDef, name: str) -> None:
+    self_type = Instance(ctx.cls.info, [])
+    for index, arg in enumerate(func.arguments):
+        if index == 0 and arg.variable.name in {"self", "cls", "root"}:
+            to_staticmethod(ctx, func)
+            arg.variable.type = self_type
+            arg.type_annotation = self_type
+            if isinstance(func.type, CallableType):
+                func.type.arg_types[index] = self_type
+            continue
+
+        if arg.variable.name == "info":
+            check_arg_type(ctx, arg, expected=GQL_INFO)
+            break
+
+    _check_resolve_return_type(ctx, func, name, factory_fullname=FEDERATION_FIELD, kind_label="FederationField")
+
+
+def _check_resolve_return_type(
+    ctx: ClassDefContext,
+    func: FuncDef,
+    name: str,
+    *,
+    factory_fullname: str,
+    kind_label: str,
+) -> None:
+    call = find_field_call(ctx.cls, name, factory_fullname)
+    if call is None:
+        return
+
+    expected_type = resolve_field_call_ref_type(ctx, call)
+    if not resolvable(expected_type):
+        return
+
+    if not isinstance(func.type, CallableType):
+        return
+
+    ret_type = func.type.ret_type
+    if isinstance(ret_type, UnboundType):
+        try:
+            analyzed = ctx.api.anal_type(ret_type)
+        except Exception:  # noqa: BLE001
+            return
+        if analyzed is None:
+            return
+        ret_type = analyzed
+
+    try:
+        if is_subtype(ret_type, expected_type):
+            return
+    except Exception:  # noqa: BLE001
+        return
+
+    msg = (
+        f'Return type of resolver for "{name}" is incompatible with the '
+        f"{kind_label} ref type; expected a subtype of the ref type"
+    )
+    ctx.api.fail(msg, func)
 
 
 def check_input_func(ctx: ClassDefContext, func: FuncDef, name: str) -> None:
@@ -404,7 +486,7 @@ def check_optimize_func(ctx: ClassDefContext, func: FuncDef, name: str) -> None:
 def check_permissions_func(ctx: ClassDefContext, func: FuncDef, name: str) -> None:
     if len(func.arguments) != 3:  # noqa: PLR2004
         msg = (
-            f"The @{name}.permission decorator must be applied to a method with "
+            f"The @{name}.permissions decorator must be applied to a method with "
             f"signature 'def (self, info: GQLInfo, value: Any) -> None'"
         )
         ctx.api.fail(msg, func)
@@ -418,18 +500,21 @@ def check_permissions_func(ctx: ClassDefContext, func: FuncDef, name: str) -> No
     if metaclass is not None:
         metaclass_name = metaclass.type.fullname
 
+        self_type: Type | None
         if metaclass_name == QUERY_TYPE_META:
-            model_type = query_type_model_from_class(ctx.cls.info)
+            self_type = query_type_model_from_class(ctx.cls.info)
         elif metaclass_name == MUTATION_TYPE_META:
-            model_type = mutation_type_model_from_class(ctx.cls.info)
+            self_type = mutation_type_model_from_class(ctx.cls.info)
+        elif metaclass_name == FEDERATION_TYPE_META:
+            self_type = Instance(ctx.cls.info, [])
         else:
-            model_type = None
+            self_type = None
 
-        if model_type is not None:
-            arg_1.variable.type = model_type
-            arg_1.type_annotation = model_type
+        if self_type is not None:
+            arg_1.variable.type = self_type
+            arg_1.type_annotation = self_type
             if isinstance(func.type, CallableType):
-                func.type.arg_types[0] = model_type
+                func.type.arg_types[0] = self_type
 
     check_arg_type(ctx, arg_2, expected=GQL_INFO)
 
@@ -582,6 +667,7 @@ DESCRIPTOR_MAPPING: dict[str, str] = {
     ORDER: ORDER_SET,
     INTERFACE_FIELD: INTERFACE_TYPE,
     DIRECTIVE_ARGUMENT: DIRECTIVE,
+    FEDERATION_FIELD: FEDERATION_TYPE,
 }
 DESCRIPTOR_REVERSE_MAPPING = {v: k for k, v in DESCRIPTOR_MAPPING.items()}
 
@@ -594,6 +680,7 @@ METACLASS_MAPPING: dict[str, str] = {
     ORDER_SET_META: ORDER_SET,
     INTERFACE_TYPE_META: INTERFACE_TYPE,
     DIRECTIVE_META: DIRECTIVE,
+    FEDERATION_TYPE_META: FEDERATION_TYPE,
 }
 
 
@@ -620,6 +707,9 @@ DECORATOR_METHODS: dict[tuple[str, str], Callable[[ClassDefContext, FuncDef, str
     (INTERFACE_TYPE, INTERFACE_FIELD): check_field_resolve_func,
     (INTERFACE_TYPE, "visible"): check_visible_func,
     (DIRECTIVE, "visible"): check_visible_func,
+    (FEDERATION_TYPE, FEDERATION_FIELD): check_federation_field_resolve_func,
+    (FEDERATION_TYPE, "resolve"): check_federation_field_resolve_func,
+    (FEDERATION_TYPE, "permissions"): check_permissions_func,
 }
 
 
@@ -631,4 +721,5 @@ LOCATION_MAP: dict[str, DirectiveLocation] = {
     INPUT: DirectiveLocation.INPUT_FIELD_DEFINITION,
     INTERFACE_FIELD: DirectiveLocation.FIELD_DEFINITION,
     ORDER: DirectiveLocation.ENUM_VALUE,
+    FEDERATION_FIELD: DirectiveLocation.FIELD_DEFINITION,
 }

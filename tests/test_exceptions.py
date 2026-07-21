@@ -64,6 +64,7 @@ from undine.exceptions import (
     GraphQLMissingOperationsError,
     GraphQLMissingQueryError,
     GraphQLModelConstraintViolationError,
+    GraphQLModelFieldNotFoundError,
     GraphQLModelNotFoundError,
     GraphQLModelsNotFoundError,
     GraphQLMutationInputNotFoundError,
@@ -780,6 +781,12 @@ class GQLErrorParams(NamedTuple):
             args={"message": "Violation"},
             message="Violation",
             extensions={"error_code": "MODEL_CONSTRAINT_VIOLATION", "status_code": 400},
+        ),
+        GraphQLModelFieldNotFoundError.__name__: GQLErrorParams(
+            cls=GraphQLModelFieldNotFoundError,
+            args={"field": "name", "value": "foo", "model": Task},
+            message="Field 'name' with value 'foo' on model 'example_project.app.models.Task' did not match any row.",
+            extensions={"error_code": "MODEL_INSTANCE_NOT_FOUND", "status_code": 404},
         ),
         GraphQLModelNotFoundError.__name__: GQLErrorParams(
             cls=GraphQLModelNotFoundError,

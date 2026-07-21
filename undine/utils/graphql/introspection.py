@@ -80,11 +80,11 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
             connection = get_undine_connection(obj)
             if connection is not None:
                 if connection.query_type is not None:
-                    return connection.query_type.__is_visible__(info.context)
+                    return connection.query_type.__is_visible__(info.context)  # type: ignore[attr-defined]
                 if connection.union_type is not None:
-                    return connection.union_type.__is_visible__(info.context)
+                    return connection.union_type.__is_visible__(info.context)  # type: ignore[attr-defined]
                 if connection.interface_type is not None:
-                    return connection.interface_type.__is_visible__(info.context)
+                    return connection.interface_type.__is_visible__(info.context)  # type: ignore[attr-defined]
                 return True  # Should never happen  # pragma: no cover
 
         case GraphQLInputObjectType():

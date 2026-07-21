@@ -1,0 +1,29 @@
+# List all available commands
+help:
+    @just -l
+
+# Start docker container
+up:
+    @docker compose up --build --detach
+
+# Stop docker container
+down:
+    @docker compose down --remove-orphans --volumes
+
+# Remove docker image and layer cache
+clean:
+    @docker compose rm
+    @docker builder prune --force
+
+# Export schema
+export:
+    @poetry run python manage.py export
+
+# Run Apollo's subgraph compatibility runner against the composed supergraph
+compliance:
+    @curl -sSL https://raw.githubusercontent.com/apollographql/apollo-federation-subgraph-compatibility/main/implementations/_template_library_/products.graphql \
+        -o /tmp/apollo-products.graphql
+    @npx --yes @apollo/federation-subgraph-compatibility docker \
+        --compose docker-compose.yaml \
+        --schema /tmp/apollo-products.graphql
+    @rm -f /tmp/apollo-products.graphql

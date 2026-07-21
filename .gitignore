@@ -20,10 +20,15 @@
 /example_project/static
 /example_project/media
 /tests/test_mypy/cases/
+/tests/test_federation/compatibility/results.md
+/tests/test_federation/compatibility/supergraph.graphql
+/tests/test_federation/compatibility/supergraph-compose.yaml
+/tests/test_federation/compatibility/supergraph-config.yaml
 
 # Local configs
 /.idea
 /.vscode
+/.claude
 /pytest.ini
 /mypy.ini
 /pyrightconfig.json

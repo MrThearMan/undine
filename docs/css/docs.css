@@ -325,6 +325,24 @@ Inline code
 }
 
 /*
+Tables
+ */
+.rst-content table.docutils {
+    thead {
+        color: var(--undine-text-color);
+        background-color: var(--undine-nav-color);
+    }
+
+    td {
+        background-color: var(--undine-code-color);
+    }
+
+    :not(.field-list) tr:nth-child(2n-1) td {
+        background-color: var(--undine-code-color);
+    }
+}
+
+/*
 Search page search bar
 */
 #mkdocs-search-query {

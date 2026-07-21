@@ -256,6 +256,26 @@ class UndineDefaultSettings(NamedTuple):
     INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL: int = 12
     """Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable."""
 
+    # Federation
+
+    FEDERATION_VERSION: str = "2.15"
+    """The Apollo Federation 2 spec version used by `create_federation_schema`."""
+
+    FEDERATION_SDL_EXTENSIONS_KEY: str = "undine_federation_sdl"
+    """The key on `schema.extensions` where the pre-computed federation SDL string is cached."""
+
+    FEDERATION_BUILTIN_EXTENSIONS_KEY: str = "undine_federation_builtin"
+    """The key set to `True` on the extensions of federation builtins for programmatic identification."""
+
+    FEDERATION_MIN_VERSION_EXTENSIONS_KEY: str = "undine_federation_min_version"
+    """The key on `directive.extensions` storing the minimum federation version a builtin directive requires."""
+
+    FEDERATION_TYPE_EXTENSIONS_KEY: str = "undine_federation_type"
+    """The key used to store a `FederationType` in the object type GraphQL extensions."""
+
+    FEDERATION_FIELD_EXTENSIONS_KEY: str = "undine_federation_field"
+    """The key used to store a `FederationField` in the field GraphQL extensions."""
+
     # Django-modeltranslation
 
     MODELTRANSLATION_INCLUDE_TRANSLATABLE: bool = False

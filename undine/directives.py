@@ -103,7 +103,8 @@ class DirectiveMeta(type):
             argument.__connect__(directive, name)  # type: ignore[arg-type]
 
         # Set the directive to the directive registry so that it shows up in the GraphQL schema automatically.
-        DIRECTIVE_REGISTRY[directive.__schema_name__] = directive  # type: ignore[assignment]
+        if kwargs.get("register", True):
+            DIRECTIVE_REGISTRY[directive.__schema_name__] = directive  # type: ignore[assignment]
 
         return directive
 
@@ -223,7 +224,8 @@ class Directive(metaclass=DirectiveMeta):
         if isinstance(getattr(other, "directives", None), DirectiveList):
             other: CalculationArgument | Entrypoint | Field | Filter | Order  # type: ignore[no-redef]
             other.directives.append(self)
-            self.__connected__(other)
+            # Should not call `__connected__` since this method is exclusively used in "field-like" objects,
+            # and their "parent" objects will call each "field's" `__connected__` when they are created.
             return
 
         if isinstance(getattr(other, "__directives__", None), DirectiveList):
@@ -237,6 +239,7 @@ class Directive(metaclass=DirectiveMeta):
                 | UnionTypeMeta
             )
             other.__directives__.append(self)
+            # Must call `__connected__` since these "parent" objects have already been created.
             self.__connected__(other)
             return
 
@@ -304,7 +307,11 @@ class DirectiveArgument:
     def __get__(self, instance: Directive | None, cls: type[Directive]) -> Self:
         if instance is None:
             return self
-        return instance.__parameters__[self.name]
+        try:
+            return instance.__parameters__[self.name]
+        except KeyError as error:
+            msg = f"DirectiveArgument {self.name!r} not found on {instance!r}"
+            raise ValueError(msg) from error
 
     def __set__(self, instance: Directive | None, value: Any) -> None:
         if instance is None:

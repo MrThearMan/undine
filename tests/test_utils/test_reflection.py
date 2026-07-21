@@ -23,6 +23,7 @@ from undine.utils.reflection import (
     can_be_literal_arg,
     cancel_awaitable,
     delegate_to_subgenerator,
+    get_all_subclasses,
     get_enum_from_string,
     get_instance_name,
     get_non_null_type,
@@ -323,6 +324,26 @@ def test_get_enum_from_string__invalid() -> None:
 
     with pytest.raises(ValueError):  # noqa: PT011
         get_enum_from_string(Color, "BLUE")
+
+
+def test_get_all_subclasses() -> None:
+    class Root: ...
+
+    class Child1(Root): ...
+
+    class Child2(Root): ...
+
+    class Grandchild(Child1): ...
+
+    result = get_all_subclasses(Root)
+    assert set(result) == {Child1, Child2, Grandchild}
+
+
+def test_get_all_subclasses__no_subclasses() -> None:
+    class Lonely: ...
+
+    result = get_all_subclasses(Lonely)
+    assert result == []
 
 
 def test_get_non_null_type__simple() -> None:

@@ -21,4 +21,4 @@ class OtherDirective(Directive, locations=[DirectiveLocation.OBJECT]):
     one = DirectiveArgument(str) @ TestDirective()
 
 
-assert_type(OtherDirective.one, DirectiveArgument)
+assert_type(OtherDirective.one, str)

@@ -21,6 +21,9 @@ from undine import Calculation, InterfaceField, InterfaceType, MutationType, Que
 from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import RegistryMissingTypeError
+from undine.federation import FederationType
+from undine.federation.entities import EntitiesRef
+from undine.federation.scalars import FederationAnyScalar
 from undine.pagination import OffsetPagination
 from undine.parsers import docstring_parser, parse_is_nullable, parse_parameters
 from undine.relay import Connection, Node
@@ -282,6 +285,18 @@ def _(ref: type[Node], **kwargs: Any) -> GraphQLArgumentMap:
 @convert_to_graphql_argument_map.register
 def _(_: SignalSubscription, **kwargs: Any) -> GraphQLArgumentMap:
     return {}
+
+
+@convert_to_graphql_argument_map.register
+def _(_: type[FederationType], **kwargs: Any) -> GraphQLArgumentMap:
+    return {}
+
+
+@convert_to_graphql_argument_map.register
+def _(_: EntitiesRef, **kwargs: Any) -> GraphQLArgumentMap:
+    return {
+        "representations": GraphQLArgument(GraphQLNonNull(GraphQLList(GraphQLNonNull(FederationAnyScalar)))),
+    }
 
 
 # --- GraphQL types ------------------------------------------------------------------------------------------------

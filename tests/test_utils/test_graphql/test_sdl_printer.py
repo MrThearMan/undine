@@ -11,6 +11,7 @@ from graphql import (
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
@@ -25,6 +26,7 @@ from graphql import (
     GraphQLUnionType,
 )
 from graphql.language import DirectiveLocation
+from graphql.language.ast import EnumValueNode, FloatValueNode, IntValueNode, ObjectValueNode
 
 from example_project.app.models import Project, Task
 from undine import (
@@ -1904,10 +1906,8 @@ def test_sdl_printer__directive_usage__value_ast_none() -> None:
     ):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
 
-    # Pass None as value — ast_from_value(None, NonNull(String)) returns None
     directive = BadValueDir(value=None)  # type: ignore[arg-type]
     result = SDLPrinter.print_directive_usage(directive)
-    # No args since value_ast is None
     assert result == " @badValueDir"
 
 
@@ -1921,3 +1921,65 @@ def test_sdl_printer__print_union_type__empty_types() -> None:
     union_type = GraphQLUnionType("EmptyUnion", [])
     result = SDLPrinter.print_union_type(union_type)
     assert result == "union EmptyUnion"
+
+
+def test_sdl_printer__ast_from_value__non_null_with_none_value() -> None:
+    result = SDLPrinter.ast_from_value(None, GraphQLNonNull(GraphQLString))
+    assert result is None
+
+
+def test_sdl_printer__ast_from_value__list_type_with_non_iterable_value() -> None:
+    result = SDLPrinter.ast_from_value(5, GraphQLList(GraphQLInt))
+    assert isinstance(result, IntValueNode)
+    assert result.value == "5"
+
+
+def test_sdl_printer__ast_from_value__input_object_type__mapping_value() -> None:
+    input_type = GraphQLInputObjectType(
+        "MyInput",
+        fields={"x": GraphQLInputField(GraphQLInt), "y": GraphQLInputField(GraphQLString)},
+    )
+    result = SDLPrinter.ast_from_value({"x": 1, "y": "hello", "ignored": 99}, input_type)
+    assert isinstance(result, ObjectValueNode)
+    field_names = {field.name.value for field in result.fields}
+    assert field_names == {"x", "y"}
+
+
+def test_sdl_printer__ast_from_value__input_object_type__non_mapping_value() -> None:
+    input_type = GraphQLInputObjectType("MyInput", fields={"x": GraphQLInputField(GraphQLInt)})
+    result = SDLPrinter.ast_from_value("not a mapping", input_type)
+    assert result is None
+
+
+def test_sdl_printer__directive_usage__input_object_arg__non_mapping_value_skipped() -> None:
+    input_type = GraphQLInputObjectType("MyInput", fields={"x": GraphQLInputField(GraphQLInt)})
+
+    class WithInputDir(
+        Directive,
+        locations=[DirectiveLocation.FIELD_DEFINITION],
+        schema_name="withInputDir",
+    ):
+        val = DirectiveArgument(input_type)
+
+    directive = WithInputDir(val="not a mapping")
+    result = SDLPrinter.print_directive_usage(directive)
+    assert result == " @withInputDir"
+
+
+def test_sdl_printer__ast_from_leaf_type__finite_float() -> None:
+    result = SDLPrinter.ast_from_leaf_type(1.5, None)
+    assert isinstance(result, FloatValueNode)
+    assert result.value == "1.5"
+
+
+def test_sdl_printer__ast_from_leaf_type__enum_string() -> None:
+    enum_type = GraphQLEnumType("Color", values={"RED": GraphQLEnumValue()})
+    result = SDLPrinter.ast_from_leaf_type("RED", enum_type)
+    assert isinstance(result, EnumValueNode)
+    assert result.value == "RED"
+
+
+def test_sdl_printer__ast_from_leaf_type__graphql_id_integer_string() -> None:
+    result = SDLPrinter.ast_from_leaf_type("42", GraphQLID)
+    assert isinstance(result, IntValueNode)
+    assert result.value == "42"

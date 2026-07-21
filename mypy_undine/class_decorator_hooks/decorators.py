@@ -8,6 +8,7 @@ from mypy.nodes import CallExpr, ListExpr, NameExpr
 
 from mypy_undine.fullnames import (
     DIRECTIVE_META,
+    FEDERATION_TYPE,
     FILTER_SET,
     FILTER_SET_META,
     INTERFACE_TYPE,
@@ -22,6 +23,7 @@ from mypy_undine.fullnames import (
 from mypy_undine.utils.types_utils import (
     directive_locations_from_class,
     filterset_models_from_class,
+    is_repeatable_from_class,
     models_match,
     orderset_models_from_class,
     query_type_model_from_class,
@@ -124,6 +126,7 @@ def interface_hook(ctx: ClassDefContext, info: TypeInfo) -> None:
 def directive_hook(ctx: ClassDefContext, info: TypeInfo) -> None:
     target = ctx.cls.info
     accepted_locations = directive_locations_from_class(info)
+    is_repeatable = is_repeatable_from_class(info)
 
     for base in target.mro[1:]:
         location = LOCATION_MAP.get(base.fullname)
@@ -161,7 +164,7 @@ def directive_hook(ctx: ClassDefContext, info: TypeInfo) -> None:
             continue
 
         directive_count += 1
-        if directive_count > 1:
+        if not is_repeatable and directive_count > 1:
             msg = f'Directive "{info.name}" is not repeatable'
             ctx.api.fail(msg, ctx.reason)
             break
@@ -187,4 +190,5 @@ LOCATION_MAP: dict[str, DirectiveLocation] = {
     QUERY_TYPE: DirectiveLocation.OBJECT,
     ROOT_TYPE: DirectiveLocation.OBJECT,
     UNION_TYPE: DirectiveLocation.UNION,
+    FEDERATION_TYPE: DirectiveLocation.OBJECT,
 }

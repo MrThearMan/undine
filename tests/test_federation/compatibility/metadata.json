@@ -1,0 +1,15 @@
+{
+  "fullName": "Undine",
+  "language": "Python",
+  "documentation": "https://mrthearman.github.io/undine",
+  "type": "Code first",
+  "repository": {
+    "name": "undine",
+    "owner": "MrThearMan",
+    "link": "https://github.com/MrThearMan/undine"
+  },
+  "coreLibrary": {
+    "name": "GraphQL-core 3",
+    "link": "https://github.com/graphql-python/graphql-core"
+  }
+}

@@ -97,7 +97,7 @@ def test_create_schema__extensions() -> None:
         extensions={"foo": "1"},
     )
 
-    assert schema.extensions == {"foo": "1"}
+    assert schema.extensions == {"foo": "1", "undine_schema_directives": []}
     assert schema.query_type.extensions == {"foo": "2", "undine_root_type": Query}
     assert schema.mutation_type.extensions == {"foo": "3", "undine_root_type": Mutation}
 

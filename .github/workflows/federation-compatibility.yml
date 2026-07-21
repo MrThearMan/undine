@@ -1,0 +1,67 @@
+name: Federation compatibility
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "undine/**"
+      - "tests/test_federation/compatibility/**"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/federation-compatibility.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  federation-compatibility:
+    name: "Apollo Federation subgraph compatibility"
+    runs-on: "ubuntu-latest"
+
+    # Cancel old workflows when a new workflow is triggered for the same PR/branch/tag
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: "Set up python"
+        id: setup-python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - uses: MrThearMan/CI/.github/actions/poetry@v0.5.2
+        with:
+          os: "ubuntu-latest"
+          poetry-version: "2.3.2"
+          python-version: ${{ steps.setup-python.outputs.python-version }}
+
+      - name: "Install dependencies"
+        run: |
+          poetry install --all-extras --all-groups
+
+      - name: "Export subgraph schema"
+        working-directory: tests/test_federation/compatibility
+        run: |
+          poetry run python manage.py export
+
+      - name: "Run Apollo subgraph compatibility harness"
+        uses: apollographql/federation-subgraph-compatibility@v2
+        with:
+          compose: tests/test_federation/compatibility/docker-compose.yaml
+          schema: tests/test_federation/compatibility/schema.graphql
+          port: 4001
+          failOnWarning: true
+          failOnRequired: true

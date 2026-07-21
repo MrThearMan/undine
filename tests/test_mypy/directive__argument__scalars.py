@@ -7,11 +7,12 @@ plugins = mypy_django_plugin.main, mypy_undine
 django_settings_module = example_project.project.settings
 
 ### out
-main:13: error: Argument "one" to "TestDirective" has incompatible type "int"; expected "str"  [arg-type]
-main:13: error: Argument "two" to "TestDirective" has incompatible type "int"; expected "str | None"  [arg-type]
+main:14: error: Argument "one" to "TestDirective" has incompatible type "int"; expected "str"  [arg-type]
+main:14: error: Argument "two" to "TestDirective" has incompatible type "int"; expected "str | None"  [arg-type]
+main:14: error: Argument "three" to "TestDirective" has incompatible type "int"; expected "list[str | None]"  [arg-type]
 """
 
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLList, GraphQLNonNull, GraphQLString
 
 from example_project.app import models
 from undine import Directive, DirectiveArgument, QueryType
@@ -20,7 +21,8 @@ from undine import Directive, DirectiveArgument, QueryType
 class TestDirective(Directive, locations=[DirectiveLocation.OBJECT]):
     one = DirectiveArgument(GraphQLNonNull(GraphQLString))
     two = DirectiveArgument(GraphQLString)
+    three = DirectiveArgument(GraphQLList(GraphQLString))
 
 
-@TestDirective(one=1, two=1)
+@TestDirective(one=1, two=1, three=1)
 class TaskType(QueryType[models.Task]): ...

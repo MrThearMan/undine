@@ -7,10 +7,11 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import F, Model, Q, QuerySet
 from graphql import GraphQLList, GraphQLNonNull, GraphQLType
 
-from undine import Calculation, InterfaceField, MutationType, QueryType, UnionType
+from undine import Calculation, InterfaceField, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import is_many
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import ModelFieldDoesNotExistError, ModelFieldNotARelationOfModelError
+from undine.federation import FederationType
 from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
@@ -46,7 +47,7 @@ def _(ref: TypeRef, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: CombinableExpression, **kwargs: Any) -> bool:
-    return is_many(ref.output_field)
+    return is_many(ref.output_field, **kwargs)
 
 
 @is_many.register
@@ -56,7 +57,7 @@ def _(_: F | Q, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: LazyRelation, **kwargs: Any) -> bool:
-    return is_many(ref.field)
+    return is_many(ref.field, **kwargs)
 
 
 @is_many.register
@@ -71,7 +72,7 @@ def _(_: LazyLambda, **kwargs: Any) -> bool:
 
 @is_many.register
 def _(ref: type[Calculation], **kwargs: Any) -> bool:
-    return is_many(TypeRef(value=ref.__returns__))
+    return is_many(TypeRef(value=ref.__returns__), **kwargs)
 
 
 @is_many.register
@@ -96,6 +97,16 @@ def _(_: type[QueryType], **kwargs: Any) -> bool:
 def _(_: type[MutationType], **kwargs: Any) -> bool:
     field = get_model_field(model=kwargs["model"], lookup=kwargs["name"])
     return is_many(field, **kwargs)
+
+
+@is_many.register
+def _(_: type[InterfaceType], **kwargs: Any) -> bool:
+    return False
+
+
+@is_many.register
+def _(_: type[FederationType], **kwargs: Any) -> bool:
+    return False
 
 
 @is_many.register  # Required for Django<5.1

@@ -23,6 +23,7 @@ from undine import Field as UndineField
 from undine.converters import convert_to_field_ref
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import InterfaceFieldDoesNotExistError, ModelFieldDoesNotExistError
+from undine.federation import FederationType
 from undine.optimizer.optimizer import OptimizationData
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
@@ -196,6 +197,11 @@ def _(ref: type[dict], **kwargs: Any) -> Any:
 
 @convert_to_field_ref.register
 def _(ref: type[QueryType], **kwargs: Any) -> Any:
+    return ref
+
+
+@convert_to_field_ref.register
+def _(ref: type[FederationType], **kwargs: Any) -> Any:
     return ref
 
 

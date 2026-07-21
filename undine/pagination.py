@@ -338,7 +338,7 @@ def _add_partition_index(queryset: QuerySet, related_name: str) -> QuerySet:
                 Window(
                     expression=RowNumber(),
                     partition_by=F(related_name),
-                    order_by=queryset.query.order_by or copy(queryset.model._meta.ordering) or None,
+                    order_by=queryset.query.order_by or copy(queryset.model._meta.ordering) or None,  # type: ignore[arg-type]
                 )
                 - Value(1)  # Start from zero.
             ),

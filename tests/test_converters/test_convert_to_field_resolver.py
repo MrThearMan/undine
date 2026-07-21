@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from django.db.models import Subquery, Value
 from django.db.models.functions import Now
-from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
+from graphql import GraphQLID, GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.helpers import exact
@@ -12,9 +12,10 @@ from undine.converters import convert_to_field_resolver
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
 from undine.exceptions import FunctionDispatcherError
 from undine.pagination import OffsetPagination
-from undine.relay import Connection
+from undine.relay import Connection, Node
 from undine.resolvers import (
     FieldFunctionResolver,
+    GlobalIDResolver,
     ModelAttributeResolver,
     ModelManyRelatedFieldResolver,
     ModelSingleRelatedFieldResolver,
@@ -282,6 +283,26 @@ def test_convert_field_ref_to_resolver__graphql_type() -> None:
     msg = "Must define a custom resolve for 'total' since using GraphQLType 'Int' as a reference."
     with pytest.raises(FunctionDispatcherError, match=exact(msg)):
         convert_to_field_resolver(GraphQLInt, caller=TaskType.total)
+
+
+def test_convert_field_ref_to_resolver__graphql_id__non_node() -> None:
+    class TaskType(QueryType[Task]):
+        id = Field(GraphQLNonNull(GraphQLID))
+
+    resolver = convert_to_field_resolver(GraphQLID, caller=TaskType.id)
+
+    assert isinstance(resolver, ModelAttributeResolver)
+    assert resolver.field == TaskType.id
+
+
+def test_convert_field_ref_to_resolver__graphql_id__node() -> None:
+    class TaskType(QueryType[Task], interfaces=[Node]):
+        id = Field(GraphQLNonNull(GraphQLID))
+
+    resolver = convert_to_field_resolver(GraphQLID, caller=TaskType.id)
+
+    assert isinstance(resolver, GlobalIDResolver)
+    assert resolver.typename == TaskType.__schema_name__
 
 
 def test_convert_field_ref_to_resolver__connection() -> None:

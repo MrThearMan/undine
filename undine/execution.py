@@ -72,7 +72,7 @@ from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
 if version_info >= (3, 3, 0):  # pragma: no cover
-    from graphql import Executor
+    from graphql import Executor  # type: ignore[attr-defined]
     from graphql.execution.execute import execute_subscription  # type: ignore[attr-defined]
 else:  # pragma: no cover
     from graphql import ExecutionContext as Executor
@@ -871,7 +871,7 @@ class UndineExecutor(Executor):
         def errors(self, value: list[GraphQLError]) -> None:
             self.collected_errors._errors = value  # noqa: SLF001
 
-        def handle_field_error(
+        def handle_field_error(  # type: ignore[misc]
             self,
             error: GraphQLError,
             return_type: GraphQLOutputType,
@@ -908,7 +908,7 @@ class UndineExecutor(Executor):
                 raise raw_error
 
             for err in raw_error.flatten():
-                self.handle_field_error(err, return_type, path)
+                self.handle_field_error(err, return_type, path)  # type: ignore[call-arg]
 
 
 class UndineValidationContext(ValidationContext):

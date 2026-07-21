@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         RootType,
         UnionType,
     )
+    from undine.federation import FederationField, FederationType
     from undine.pagination import OffsetPagination
     from undine.relay import Connection
     from undine.scalars import ScalarType
@@ -49,6 +50,8 @@ __all__ = [
     "get_undine_directive",
     "get_undine_directive_argument",
     "get_undine_entrypoint",
+    "get_undine_federation_field",
+    "get_undine_federation_type",
     "get_undine_field",
     "get_undine_filter",
     "get_undine_filterset",
@@ -145,3 +148,11 @@ def get_undine_union_type(union: GraphQLUnionType) -> type[UnionType] | None:
 
 def get_undine_calculation_argument(arg: GraphQLArgument) -> CalculationArgument | None:
     return arg.extensions.get(undine_settings.CALCULATION_ARGUMENT_EXTENSIONS_KEY)
+
+
+def get_undine_federation_type(object_type: GraphQLObjectType) -> type[FederationType] | None:
+    return object_type.extensions.get(undine_settings.FEDERATION_TYPE_EXTENSIONS_KEY)
+
+
+def get_undine_federation_field(field: GraphQLField) -> FederationField | None:
+    return field.extensions.get(undine_settings.FEDERATION_FIELD_EXTENSIONS_KEY)

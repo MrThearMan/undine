@@ -12,6 +12,7 @@ from mypy.nodes import CallExpr, ListExpr, NameExpr, TypeInfo
 from mypy_undine.fullnames import (
     DIRECTIVE,
     DIRECTIVE_META,
+    FEDERATION_TYPE,
     FILTER_SET,
     INTERFACE_TYPE,
     MUTATION_TYPE,
@@ -34,7 +35,7 @@ from mypy_undine.utils.expression_utils import (
     is_related_action,
     is_string,
 )
-from mypy_undine.utils.types_utils import directive_locations_from_class
+from mypy_undine.utils.types_utils import directive_locations_from_class, is_repeatable_from_class
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -129,8 +130,10 @@ def check_directives(ctx: ClassDefContext, expr: Expression) -> None:  # noqa: C
             ctx.api.fail(msg, directive)
             continue
 
+        is_repeatable = is_repeatable_from_class(type_info)
+
         count = decorator_counts[callee.fullname]
-        if count > 1:
+        if not is_repeatable and count > 1:
             msg = f'Directive "{callee.name}" is not repeatable'
             ctx.api.fail(msg, directive, code=MISC)
             continue
@@ -152,6 +155,10 @@ KEYWORD_CHECKS: Mapping[str, Mapping[str, KeywordData]] = {
             required=True,
         ),
         "is_repeatable": KeywordData(
+            type_checker=is_boolean,
+            expected_type="bool",
+        ),
+        "register": KeywordData(
             type_checker=is_boolean,
             expected_type="bool",
         ),
@@ -361,6 +368,21 @@ KEYWORD_CHECKS: Mapping[str, Mapping[str, KeywordData]] = {
             expected_type="dict[str, Any]",
         ),
     },
+    FEDERATION_TYPE: {
+        "schema_name": KeywordData(
+            type_checker=is_string,
+            expected_type="str",
+        ),
+        "directives": KeywordData(
+            type_checker=is_directive_list,
+            expected_type="list[Directive]",
+            additional_checks=[check_directives],
+        ),
+        "extensions": KeywordData(
+            type_checker=is_extensions,
+            expected_type="dict[str, Any]",
+        ),
+    },
 }
 
 
@@ -372,4 +394,5 @@ LOCATION_MAP: dict[str, DirectiveLocation] = {
     QUERY_TYPE: DirectiveLocation.OBJECT,
     ROOT_TYPE: DirectiveLocation.OBJECT,
     UNION_TYPE: DirectiveLocation.UNION,
+    FEDERATION_TYPE: DirectiveLocation.OBJECT,
 }
