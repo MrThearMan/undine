@@ -65,4 +65,4 @@ type Query {
   ): Product
 }
 
-extend schema @link(import: ["@composeDirective", "@external", "@inaccessible", "@interfaceObject", "@key", "@override", "@provides", "@requires", "@shareable", "@tag"], url: "https://specs.apollo.dev/federation/v2.15") @link(import: ["@custom"], url: "https://myspecs.dev/myCustomDirective/v1.0") @composeDirective(name: "@custom")
+extend schema @link(import: ["@composeDirective", "@external", "@inaccessible", "@interfaceObject", "@key", "@override", "@provides", "@requires", "@shareable", "@tag"], url: "https://specs.apollo.dev/federation/v2.3") @link(import: ["@custom"], url: "https://myspecs.dev/myCustomDirective/v1.0") @composeDirective(name: "@custom")

@@ -85,7 +85,11 @@ UNDINE = {
     "GRAPHIQL_ENABLED": True,
     "GRAPHQL_PATH": "",
     "MAX_QUERY_COMPLEXITY": 999,
-    "FEDERATION_VERSION": "2.15",
+    # Pinned to match Apollo's canonical reference `products.graphql` and to stay within the
+    # federation spec range that Apollo's `supergraph` rover plugin (currently v2.7.1, bundled
+    # with the `apollographql/federation-subgraph-compatibility` action) accepts. Newer versions
+    # cause the harness to fail composition with `Unknown directive` errors.
+    "FEDERATION_VERSION": "2.3",
     "INCLUDE_ERROR_TRACEBACK": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,

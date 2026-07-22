@@ -31,11 +31,16 @@ def test_compatibility_products_schema_matches_tracked_file(undine_settings) -> 
 
     See: https://raw.githubusercontent.com/apollographql/apollo-federation-subgraph-compatibility/refs/heads/main/implementations/_template_library_/products.graphql
     """
-    undine_settings.AUTOGENERATION = False
-    from products.management.commands.export import render_schema  # type: ignore[import-not-found]  # noqa: PLC0415
-    from products.schema import schema  # type: ignore[import-not-found]  # noqa: PLC0415
+    # Override settings to match the products subgraph schema.
+    # Two passes are required to ensure that imported settings can see the overrides.
+    from config.settings import UNDINE as PRODUCT_SCHEMA_SETTINGS  # type: ignore[import-not-found]  # noqa: PLC0415
 
-    undine_settings.SCHEMA = schema
+    for key, value in PRODUCT_SCHEMA_SETTINGS.items():
+        setattr(undine_settings, key, value)
+    for key, value in PRODUCT_SCHEMA_SETTINGS.items():
+        setattr(undine_settings, key, undine_settings.make_imports(key, value))
+
+    from products.management.commands.export import render_schema  # type: ignore[import-not-found]  # noqa: PLC0415
 
     rendered = render_schema()
     tracked = SCHEMA_PATH.read_text()
