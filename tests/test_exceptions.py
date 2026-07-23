@@ -352,6 +352,43 @@ class UndineErrorParams(NamedTuple):
                 "already declares a '_service' entrypoint."
             ),
         ),
+        FunctionDispatcherImplementationNotFoundError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherImplementationNotFoundError,
+            args={"name": "foo", "key": 1, "cls": MyClass},
+            message="'foo' doesn't contain an implementation for 1 (type: tests.test_exceptions.MyClass).",
+        ),
+        FunctionDispatcherImproperLiteralError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherImproperLiteralError,
+            args={"arg": "foo"},
+            message="Literal argument must be a string, integer, bytes, boolean, enum, or None, got 'foo'.",
+        ),
+        FunctionDispatcherNoArgumentAnnotationError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherNoArgumentAnnotationError,
+            args={"func_name": "foo", "name": "bar"},
+            message=(
+                "Function 'foo' must have a type hint for its first argument so that it can be registered for 'bar'."
+            ),
+        ),
+        FunctionDispatcherNoArgumentsError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherNoArgumentsError,
+            args={"func_name": "foo", "name": "bar"},
+            message="Function 'foo' must have at least one argument so that it can be registered for 'bar'.",
+        ),
+        FunctionDispatcherNonRuntimeProtocolError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherNonRuntimeProtocolError,
+            args={"name": "MyProtocol"},
+            message="Protocol 'MyProtocol' is not a runtime checkable protocol.",
+        ),
+        FunctionDispatcherRegistrationError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherRegistrationError,
+            args={"name": "foo", "value": 1},
+            message="Can only register functions with 'foo'. Got 1.",
+        ),
+        FunctionDispatcherUnknownArgumentError.__name__: UndineErrorParams(
+            cls=FunctionDispatcherUnknownArgumentError,
+            args={"annotation": "foo"},
+            message="Unknown argument: 'foo'",
+        ),
         FunctionSignatureParsingError.__name__: UndineErrorParams(
             cls=FunctionSignatureParsingError,
             args={"name": "foo", "func": my_func},
@@ -403,14 +440,6 @@ class UndineErrorParams(NamedTuple):
             args={"kind": "FilterSet"},
             message="Cannot add a FilterSet with a single model to an InterfaceType",
         ),
-        InvalidInputMutationTypeError.__name__: UndineErrorParams(
-            cls=InvalidInputMutationTypeError,
-            args={"ref": MyClass, "kind": "create"},
-            message=(
-                "MutationType 'tests.test_exceptions.MyClass' is a 'create' MutationType, "
-                "but only 'related' MutationTypes can be used as Inputs on other MutationTypes."
-            ),
-        ),
         InvalidDocstringParserError.__name__: UndineErrorParams(
             cls=InvalidDocstringParserError,
             args={"cls": MyClass},
@@ -422,6 +451,14 @@ class UndineErrorParams(NamedTuple):
             message=(
                 "MutationType 'tests.test_exceptions.MyClass' is a 'related' MutationType, "
                 "but only 'create', 'update', 'delete', or 'custom' MutationTypes can be used in Entrypoints."
+            ),
+        ),
+        InvalidInputMutationTypeError.__name__: UndineErrorParams(
+            cls=InvalidInputMutationTypeError,
+            args={"ref": MyClass, "kind": "create"},
+            message=(
+                "MutationType 'tests.test_exceptions.MyClass' is a 'create' MutationType, "
+                "but only 'related' MutationTypes can be used as Inputs on other MutationTypes."
             ),
         ),
         MismatchingModelError.__name__: UndineErrorParams(
@@ -440,21 +477,6 @@ class UndineErrorParams(NamedTuple):
                 "e.g. `class Calc(Calculation[int]):`"
             ),
         ),
-        MissingEntrypointRefError.__name__: UndineErrorParams(
-            cls=MissingEntrypointRefError,
-            args={"name": "foo", "cls": MyClass},
-            message="Entrypoint 'foo' in class 'tests.test_exceptions.MyClass' must have a reference.",
-        ),
-        MissingFunctionAnnotationsError.__name__: UndineErrorParams(
-            cls=MissingFunctionAnnotationsError,
-            args={"missing": ["foo", "bar"], "func": my_func},
-            message="Missing type hints for parameters 'foo' and 'bar' in function 'tests.test_exceptions.my_func'.",
-        ),
-        MissingFunctionReturnTypeError.__name__: UndineErrorParams(
-            cls=MissingFunctionReturnTypeError,
-            args={"func": my_func},
-            message="Missing type hint for return value in function 'tests.test_exceptions.my_func'.",
-        ),
         MissingDirectiveArgumentError.__name__: UndineErrorParams(
             cls=MissingDirectiveArgumentError,
             args={"name": "foo", "directive": MyClass},
@@ -467,6 +489,11 @@ class UndineErrorParams(NamedTuple):
                 "'MyDirective' is missing `locations` keyword argument in its class definition: "
                 "e.g. `class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION])`."
             ),
+        ),
+        MissingEntrypointRefError.__name__: UndineErrorParams(
+            cls=MissingEntrypointRefError,
+            args={"name": "foo", "cls": MyClass},
+            message="Entrypoint 'foo' in class 'tests.test_exceptions.MyClass' must have a reference.",
         ),
         MissingFederationFieldRefError.__name__: UndineErrorParams(
             cls=MissingFederationFieldRefError,
@@ -499,6 +526,16 @@ class UndineErrorParams(NamedTuple):
                 "Add '@bar.resolve' that returns a representation dict (e.g. {'id': ...}) matching "
                 "the entity's '@KeyDirective(fields=...)'."
             ),
+        ),
+        MissingFunctionAnnotationsError.__name__: UndineErrorParams(
+            cls=MissingFunctionAnnotationsError,
+            args={"missing": ["foo", "bar"], "func": my_func},
+            message="Missing type hints for parameters 'foo' and 'bar' in function 'tests.test_exceptions.my_func'.",
+        ),
+        MissingFunctionReturnTypeError.__name__: UndineErrorParams(
+            cls=MissingFunctionReturnTypeError,
+            args={"func": my_func},
+            message="Missing type hint for return value in function 'tests.test_exceptions.my_func'.",
         ),
         MissingModelGenericError.__name__: UndineErrorParams(
             cls=MissingModelGenericError,
@@ -551,67 +588,10 @@ class UndineErrorParams(NamedTuple):
             args={"obj": "MyClass", "other": "my_func"},
             message="Cannot use 'MyClass' with 'my_func'",
         ),
-        UnionTypeModelsDifferentError.__name__: UndineErrorParams(
-            cls=UnionTypeModelsDifferentError,
-            args={"kind": "FilterSet"},
-            message="Cannot add a FilterSet to a UnionType with different models",
-        ),
         QueryTypeRequiresSingleModelError.__name__: UndineErrorParams(
             cls=QueryTypeRequiresSingleModelError,
             args={"kind": "FilterSet"},
             message="Cannot add a FilterSet with multiple models to a QueryType",
-        ),
-        UnionTypeRequiresMultipleModelsError.__name__: UndineErrorParams(
-            cls=UnionTypeRequiresMultipleModelsError,
-            args={"kind": "FilterSet"},
-            message="Cannot add a FilterSet with a single model to a UnionType",
-        ),
-        UnsupportedFederationVersionError.__name__: UndineErrorParams(
-            cls=UnsupportedFederationVersionError,
-            args={"version": "9.0", "supported_versions": ["2.0", "2.1"]},
-            message="'FEDERATION_VERSION' '9.0' is not supported. Supported versions are: '2.0' and '2.1'.",
-        ),
-        FunctionDispatcherImplementationNotFoundError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherImplementationNotFoundError,
-            args={"name": "foo", "key": 1, "cls": MyClass},
-            message="'foo' doesn't contain an implementation for 1 (type: tests.test_exceptions.MyClass).",
-        ),
-        FunctionDispatcherImproperLiteralError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherImproperLiteralError,
-            args={"arg": "foo"},
-            message="Literal argument must be a string, integer, bytes, boolean, enum, or None, got 'foo'.",
-        ),
-        FunctionDispatcherNoArgumentAnnotationError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherNoArgumentAnnotationError,
-            args={"func_name": "foo", "name": "bar"},
-            message=(
-                "Function 'foo' must have a type hint for its first argument so that it can be registered for 'bar'."
-            ),
-        ),
-        FunctionDispatcherNoArgumentsError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherNoArgumentsError,
-            args={"func_name": "foo", "name": "bar"},
-            message="Function 'foo' must have at least one argument so that it can be registered for 'bar'.",
-        ),
-        FunctionDispatcherNonRuntimeProtocolError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherNonRuntimeProtocolError,
-            args={"name": "MyProtocol"},
-            message="Protocol 'MyProtocol' is not a runtime checkable protocol.",
-        ),
-        FunctionDispatcherRegistrationError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherRegistrationError,
-            args={"name": "foo", "value": 1},
-            message="Can only register functions with 'foo'. Got 1.",
-        ),
-        UnionTypeMultipleTypesError.__name__: UndineErrorParams(
-            cls=UnionTypeMultipleTypesError,
-            args={"args": [1, 2]},
-            message="Union type must have a single non-null type argument, got [1, 2].",
-        ),
-        FunctionDispatcherUnknownArgumentError.__name__: UndineErrorParams(
-            cls=FunctionDispatcherUnknownArgumentError,
-            args={"annotation": "foo"},
-            message="Unknown argument: 'foo'",
         ),
         RegistryDuplicateError.__name__: UndineErrorParams(
             cls=RegistryDuplicateError,
@@ -627,6 +607,11 @@ class UndineErrorParams(NamedTuple):
             cls=UnexpectedDirectiveArgumentError,
             args={"directive": MyClass, "kwargs": {"foo": "bar"}},
             message="Unexpected directive arguments for directive 'tests.test_exceptions.MyClass': {'foo': 'bar'}.",
+        ),
+        UnionModelFieldDirectUsageError.__name__: UndineErrorParams(
+            cls=UnionModelFieldDirectUsageError,
+            args={"kind": "FilterSet"},
+            message="Cannot use model reference when FilterSet defined for multiple models",
         ),
         UnionModelFieldMismatchError.__name__: UndineErrorParams(
             cls=UnionModelFieldMismatchError,
@@ -644,10 +629,25 @@ class UndineErrorParams(NamedTuple):
                 "Cannot create a Filter due to mismatching types."
             ),
         ),
-        UnionModelFieldDirectUsageError.__name__: UndineErrorParams(
-            cls=UnionModelFieldDirectUsageError,
+        UnionTypeModelsDifferentError.__name__: UndineErrorParams(
+            cls=UnionTypeModelsDifferentError,
             args={"kind": "FilterSet"},
-            message="Cannot use model reference when FilterSet defined for multiple models",
+            message="Cannot add a FilterSet to a UnionType with different models",
+        ),
+        UnionTypeMultipleTypesError.__name__: UndineErrorParams(
+            cls=UnionTypeMultipleTypesError,
+            args={"args": [1, 2]},
+            message="Union type must have a single non-null type argument, got [1, 2].",
+        ),
+        UnionTypeRequiresMultipleModelsError.__name__: UndineErrorParams(
+            cls=UnionTypeRequiresMultipleModelsError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet with a single model to a UnionType",
+        ),
+        UnsupportedFederationVersionError.__name__: UndineErrorParams(
+            cls=UnsupportedFederationVersionError,
+            args={"version": "9.0", "supported_versions": ["2.0", "2.1"]},
+            message="'FEDERATION_VERSION' '9.0' is not supported. Supported versions are: '2.0' and '2.1'.",
         ),
     })
 )
@@ -703,17 +703,17 @@ class GQLErrorParams(NamedTuple):
             message="Automated Persisted Queries are not supported.",
             extensions={"error_code": "APQ_NOT_SUPPORTED", "status_code": 400},
         ),
-        GraphQLAPQVersionMissingError.__name__: GQLErrorParams(
-            cls=GraphQLAPQVersionMissingError,
-            args={},
-            message="Automated Persisted Query version information is missing.",
-            extensions={"error_code": "APQ_VERSION_MISSING", "status_code": 400},
-        ),
         GraphQLAPQVersionInvalidError.__name__: GQLErrorParams(
             cls=GraphQLAPQVersionInvalidError,
             args={},
             message="Automated Persisted Query version information is invalid.",
             extensions={"error_code": "APQ_VERSION_INVALID", "status_code": 400},
+        ),
+        GraphQLAPQVersionMissingError.__name__: GQLErrorParams(
+            cls=GraphQLAPQVersionMissingError,
+            args={},
+            message="Automated Persisted Query version information is missing.",
+            extensions={"error_code": "APQ_VERSION_MISSING", "status_code": 400},
         ),
         GraphQLAPQVersionNotSupportedError.__name__: GQLErrorParams(
             cls=GraphQLAPQVersionNotSupportedError,
@@ -739,24 +739,6 @@ class GQLErrorParams(NamedTuple):
             message="Cannot use HTTP for mutations if not sent as a POST request.",
             extensions={"error_code": "CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST", "status_code": 405},
         ),
-        GraphQLIncrementalDeliveryNotSupportedError.__name__: GQLErrorParams(
-            cls=GraphQLIncrementalDeliveryNotSupportedError,
-            args={},
-            message="Incremental delivery over HTTP is not supported.",
-            extensions={"error_code": "INCREMENTAL_DELIVERY_NOT_SUPPORTED", "status_code": 400},
-        ),
-        GraphQLUnsupportedProtocolForSubscriptionsError.__name__: GQLErrorParams(
-            cls=GraphQLUnsupportedProtocolForSubscriptionsError,
-            args={},
-            message="Subscriptions are not supported using this protocol.",
-            extensions={"error_code": "UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS", "status_code": 405},
-        ),
-        GraphQLCannotUseMultipartMixedForQueriesError.__name__: GQLErrorParams(
-            cls=GraphQLCannotUseMultipartMixedForQueriesError,
-            args={},
-            message="Cannot use multipart/mixed for queries.",
-            extensions={"error_code": "CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES", "status_code": 405},
-        ),
         GraphQLCannotUseMultipartMixedForMutationsError.__name__: GQLErrorParams(
             cls=GraphQLCannotUseMultipartMixedForMutationsError,
             args={},
@@ -768,6 +750,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Cannot use multipart/mixed for mutations if not sent as a POST request.",
             extensions={"error_code": "CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS_NON_POST_REQUEST", "status_code": 405},
+        ),
+        GraphQLCannotUseMultipartMixedForQueriesError.__name__: GQLErrorParams(
+            cls=GraphQLCannotUseMultipartMixedForQueriesError,
+            args={},
+            message="Cannot use multipart/mixed for queries.",
+            extensions={"error_code": "CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES", "status_code": 405},
         ),
         GraphQLCannotUseSSEForMutationsError.__name__: GQLErrorParams(
             cls=GraphQLCannotUseSSEForMutationsError,
@@ -833,11 +821,11 @@ class GQLErrorParams(NamedTuple):
             ),
             extensions={"error_code": "DUPLICATE_TYPE", "status_code": 400},
         ),
-        GraphQLFilePlacingError.__name__: GQLErrorParams(
-            cls=GraphQLFilePlacingError,
-            args={"value": {"map": {"foo": ["bar"]}}},
-            message="Value '{'map': {'foo': ['bar']}}' in file map does not lead to a null value.",
-            extensions={"error_code": "FILE_NOT_FOUND", "status_code": 400},
+        GraphQLFieldNotNullableError.__name__: GQLErrorParams(
+            cls=GraphQLFieldNotNullableError,
+            args={"typename": "TaskType", "field_name": "name"},
+            message="'TaskType.name' returned null, but field is not nullable.",
+            extensions={"error_code": "FIELD_NOT_NULLABLE", "status_code": 400},
         ),
         GraphQLFileNotFoundError.__name__: GQLErrorParams(
             cls=GraphQLFileNotFoundError,
@@ -845,23 +833,17 @@ class GQLErrorParams(NamedTuple):
             message="File for path 'foo' not found in request files.",
             extensions={"error_code": "FILE_NOT_FOUND", "status_code": 400},
         ),
-        GraphQLRequestMultipleOperationsNoOperationNameError.__name__: GQLErrorParams(
-            cls=GraphQLRequestMultipleOperationsNoOperationNameError,
-            args={},
-            message="Must provide operation name if query contains multiple operations.",
-            extensions={"error_code": "MISSING_OPERATION_NAME", "status_code": 400},
+        GraphQLFilePlacingError.__name__: GQLErrorParams(
+            cls=GraphQLFilePlacingError,
+            args={"value": {"map": {"foo": ["bar"]}}},
+            message="Value '{'map': {'foo': ['bar']}}' in file map does not lead to a null value.",
+            extensions={"error_code": "FILE_NOT_FOUND", "status_code": 400},
         ),
-        GraphQLRequestNoOperationError.__name__: GQLErrorParams(
-            cls=GraphQLRequestNoOperationError,
+        GraphQLIncrementalDeliveryNotSupportedError.__name__: GQLErrorParams(
+            cls=GraphQLIncrementalDeliveryNotSupportedError,
             args={},
-            message="Must provide an operation.",
-            extensions={"error_code": "NO_OPERATION", "status_code": 400},
-        ),
-        GraphQLRequestOperationNotFoundError.__name__: GQLErrorParams(
-            cls=GraphQLRequestOperationNotFoundError,
-            args={"operation_name": "foo"},
-            message="Unknown operation named 'foo'.",
-            extensions={"error_code": "OPERATION_NOT_FOUND", "status_code": 400},
+            message="Incremental delivery over HTTP is not supported.",
+            extensions={"error_code": "INCREMENTAL_DELIVERY_NOT_SUPPORTED", "status_code": 400},
         ),
         GraphQLInvalidInputDataError.__name__: GQLErrorParams(
             cls=GraphQLInvalidInputDataError,
@@ -890,11 +872,29 @@ class GQLErrorParams(NamedTuple):
             message="Must provide a 'Content-Type' header.",
             extensions={"error_code": "CONTENT_TYPE_MISSING", "status_code": 415},
         ),
+        GraphQLMissingDocumentError.__name__: GQLErrorParams(
+            cls=GraphQLMissingDocumentError,
+            args={},
+            message="Could not find GraphQL document or persisted document based on request data.",
+            extensions={"error_code": "MISSING_GRAPHQL_DOCUMENT_PARAMETER", "status_code": 400},
+        ),
+        GraphQLMissingDocumentIDError.__name__: GQLErrorParams(
+            cls=GraphQLMissingDocumentIDError,
+            args={},
+            message="Could not find persisted document based on request data.",
+            extensions={"error_code": "MISSING_GRAPHQL_DOCUMENT_PARAMETER", "status_code": 400},
+        ),
         GraphQLMissingFileMapError.__name__: GQLErrorParams(
             cls=GraphQLMissingFileMapError,
             args={},
             message="File upload must contain an `map` value.",
             extensions={"error_code": "MISSING_FILE_MAP", "status_code": 400},
+        ),
+        GraphQLMissingInstancesToDeleteError.__name__: GQLErrorParams(
+            cls=GraphQLMissingInstancesToDeleteError,
+            args={"given": 1, "to_delete": 0},
+            message="Expected 1 instances to delete, but found 0.",
+            extensions={"error_code": "MISSING_INSTANCES_TO_DELETE", "status_code": 400},
         ),
         GraphQLMissingLookupFieldError.__name__: GQLErrorParams(
             cls=GraphQLMissingLookupFieldError,
@@ -911,29 +911,11 @@ class GQLErrorParams(NamedTuple):
             message="File upload must contain an `operations` value.",
             extensions={"error_code": "MISSING_OPERATIONS", "status_code": 400},
         ),
-        GraphQLMissingDocumentError.__name__: GQLErrorParams(
-            cls=GraphQLMissingDocumentError,
-            args={},
-            message="Could not find GraphQL document or persisted document based on request data.",
-            extensions={"error_code": "MISSING_GRAPHQL_DOCUMENT_PARAMETER", "status_code": 400},
-        ),
-        GraphQLMissingDocumentIDError.__name__: GQLErrorParams(
-            cls=GraphQLMissingDocumentIDError,
-            args={},
-            message="Could not find persisted document based on request data.",
-            extensions={"error_code": "MISSING_GRAPHQL_DOCUMENT_PARAMETER", "status_code": 400},
-        ),
         GraphQLMissingQueryError.__name__: GQLErrorParams(
             cls=GraphQLMissingQueryError,
             args={},
             message="Request data must contain a `query` string describing the graphql document.",
             extensions={"error_code": "MISSING_GRAPHQL_QUERY_PARAMETER", "status_code": 400},
-        ),
-        GraphQLMissingInstancesToDeleteError.__name__: GQLErrorParams(
-            cls=GraphQLMissingInstancesToDeleteError,
-            args={"given": 1, "to_delete": 0},
-            message="Expected 1 instances to delete, but found 0.",
-            extensions={"error_code": "MISSING_INSTANCES_TO_DELETE", "status_code": 400},
         ),
         GraphQLModelConstraintViolationError.__name__: GQLErrorParams(
             cls=GraphQLModelConstraintViolationError,
@@ -1093,17 +1075,29 @@ class GQLErrorParams(NamedTuple):
             ),
             extensions={"error_code": "RELATION_NOT_NULLABLE", "status_code": 400},
         ),
-        GraphQLFieldNotNullableError.__name__: GQLErrorParams(
-            cls=GraphQLFieldNotNullableError,
-            args={"typename": "TaskType", "field_name": "name"},
-            message="'TaskType.name' returned null, but field is not nullable.",
-            extensions={"error_code": "FIELD_NOT_NULLABLE", "status_code": 400},
-        ),
         GraphQLRequestDecodingError.__name__: GQLErrorParams(
             cls=GraphQLRequestDecodingError,
             args={},
             message="Could not decode request.",
             extensions={"error_code": "REQUEST_DECODING_ERROR", "status_code": 400},
+        ),
+        GraphQLRequestMultipleOperationsNoOperationNameError.__name__: GQLErrorParams(
+            cls=GraphQLRequestMultipleOperationsNoOperationNameError,
+            args={},
+            message="Must provide operation name if query contains multiple operations.",
+            extensions={"error_code": "MISSING_OPERATION_NAME", "status_code": 400},
+        ),
+        GraphQLRequestNoOperationError.__name__: GQLErrorParams(
+            cls=GraphQLRequestNoOperationError,
+            args={},
+            message="Must provide an operation.",
+            extensions={"error_code": "NO_OPERATION", "status_code": 400},
+        ),
+        GraphQLRequestOperationNotFoundError.__name__: GQLErrorParams(
+            cls=GraphQLRequestOperationNotFoundError,
+            args={"operation_name": "foo"},
+            message="Unknown operation named 'foo'.",
+            extensions={"error_code": "OPERATION_NOT_FOUND", "status_code": 400},
         ),
         GraphQLRequestParseError.__name__: GQLErrorParams(
             cls=GraphQLRequestParseError,
@@ -1129,17 +1123,17 @@ class GQLErrorParams(NamedTuple):
             message="Type 'tests.test_exceptions.MyClass' is not supported",
             extensions={"error_code": "SCALAR_TYPE_NOT_SUPPORTED", "status_code": 400},
         ),
-        GraphQLSSEOperationIdMissingError.__name__: GQLErrorParams(
-            cls=GraphQLSSEOperationIdMissingError,
-            args={},
-            message="Operation ID is missing",
-            extensions={"error_code": "SSE_OPERATION_ID_MISSING", "status_code": 400},
-        ),
         GraphQLSSEOperationAlreadyExistsError.__name__: GQLErrorParams(
             cls=GraphQLSSEOperationAlreadyExistsError,
             args={},
             message="Operation with ID already exists",
             extensions={"error_code": "SSE_OPERATION_ALREADY_EXISTS", "status_code": 409},
+        ),
+        GraphQLSSEOperationIdMissingError.__name__: GQLErrorParams(
+            cls=GraphQLSSEOperationIdMissingError,
+            args={},
+            message="Operation ID is missing",
+            extensions={"error_code": "SSE_OPERATION_ID_MISSING", "status_code": 400},
         ),
         GraphQLSSESingleConnectionNotAuthenticatedError.__name__: GQLErrorParams(
             cls=GraphQLSSESingleConnectionNotAuthenticatedError,
@@ -1204,6 +1198,18 @@ class GQLErrorParams(NamedTuple):
             ),
             extensions={"error_code": "TYPED_DICT_ANNOTATED_INCORRECT_METADATA", "status_code": 500},
         ),
+        GraphQLUnexpectedCalculationArgumentError.__name__: GQLErrorParams(
+            cls=GraphQLUnexpectedCalculationArgumentError,
+            args={"name": "foo", "kwargs": {"bar": "baz"}},
+            message="Unexpected calculation arguments for field 'foo': {'bar': 'baz'}.",
+            extensions={"error_code": "UNEXPECTED_CALCULATION_ARGUMENT", "status_code": 400},
+        ),
+        GraphQLUnexpectedError.__name__: GQLErrorParams(
+            cls=GraphQLUnexpectedError,
+            args={},
+            message="Unexpected error in GraphQL execution",
+            extensions={"error_code": "UNEXPECTED_ERROR", "status_code": 500},
+        ),
         GraphQLUnexpectedMultiplePayloadsError.__name__: GQLErrorParams(
             cls=GraphQLUnexpectedMultiplePayloadsError,
             args={},
@@ -1225,35 +1231,29 @@ class GQLErrorParams(NamedTuple):
             message="Union 'foo' doesn't contain a type for model 'example_project.app.models.Task'.",
             extensions={"error_code": "UNION_RESOLVE_TYPE_MODEL_NOT_FOUND", "status_code": 400},
         ),
-        GraphQLUnexpectedError.__name__: GQLErrorParams(
-            cls=GraphQLUnexpectedError,
-            args={},
-            message="Unexpected error in GraphQL execution",
-            extensions={"error_code": "UNEXPECTED_ERROR", "status_code": 500},
-        ),
-        GraphQLUnexpectedCalculationArgumentError.__name__: GQLErrorParams(
-            cls=GraphQLUnexpectedCalculationArgumentError,
-            args={"name": "foo", "kwargs": {"bar": "baz"}},
-            message="Unexpected calculation arguments for field 'foo': {'bar': 'baz'}.",
-            extensions={"error_code": "UNEXPECTED_CALCULATION_ARGUMENT", "status_code": 400},
-        ),
         GraphQLUnsupportedContentTypeError.__name__: GQLErrorParams(
             cls=GraphQLUnsupportedContentTypeError,
             args={"content_type": "application/example"},
             message="'application/example' is not a supported content type.",
             extensions={"error_code": "UNSUPPORTED_CONTENT_TYPE", "status_code": 415},
         ),
-        GraphQLValidationError.__name__: GQLErrorParams(
-            cls=GraphQLValidationError,
+        GraphQLUnsupportedProtocolForSubscriptionsError.__name__: GQLErrorParams(
+            cls=GraphQLUnsupportedProtocolForSubscriptionsError,
             args={},
-            message="Validation error.",
-            extensions={"error_code": "VALIDATION_ERROR", "status_code": 400},
+            message="Subscriptions are not supported using this protocol.",
+            extensions={"error_code": "UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS", "status_code": 405},
         ),
         GraphQLValidationAbortedError.__name__: GQLErrorParams(
             cls=GraphQLValidationAbortedError,
             args={},
             message="Too many validation errors, error limit reached. Validation aborted.",
             extensions={"error_code": "VALIDATION_ABORTED", "status_code": 400},
+        ),
+        GraphQLValidationError.__name__: GQLErrorParams(
+            cls=GraphQLValidationError,
+            args={},
+            message="Validation error.",
+            extensions={"error_code": "VALIDATION_ERROR", "status_code": 400},
         ),
     })
 )
@@ -1358,6 +1358,12 @@ class WebsocketErrorParams(NamedTuple):
 
 @pytest.mark.parametrize(
     **parametrize_helper({
+        "WebSocketConnectionClosedError": WebsocketErrorParams(
+            cls=WebSocketConnectionClosedError,
+            args={},
+            reason="Connection closed",
+            code=GraphQLWebSocketCloseCode.NORMAL_CLOSURE,
+        ),
         "WebSocketConnectionInitAlreadyInProgressError": WebsocketErrorParams(
             cls=WebSocketConnectionInitAlreadyInProgressError,
             args={},
@@ -1448,17 +1454,17 @@ class WebsocketErrorParams(NamedTuple):
             reason="Subscribe message must contain an 'payload' field",
             code=GraphQLWebSocketCloseCode.BAD_REQUEST,
         ),
-        "WebSocketTooManyInitialisationRequestsError": WebsocketErrorParams(
-            cls=WebSocketTooManyInitialisationRequestsError,
-            args={},
-            reason="Too many initialisation requests",
-            code=GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS,
-        ),
         "WebSocketSubscriberForOperationIdAlreadyExistsError": WebsocketErrorParams(
             cls=WebSocketSubscriberForOperationIdAlreadyExistsError,
             args={"id": "foo"},
             reason="Subscriber for foo already exists",
             code=GraphQLWebSocketCloseCode.SUBSCRIBER_ALREADY_EXISTS,
+        ),
+        "WebSocketTooManyInitialisationRequestsError": WebsocketErrorParams(
+            cls=WebSocketTooManyInitialisationRequestsError,
+            args={},
+            reason="Too many initialisation requests",
+            code=GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS,
         ),
         "WebSocketTypeMissingError": WebsocketErrorParams(
             cls=WebSocketTypeMissingError,
@@ -1483,12 +1489,6 @@ class WebsocketErrorParams(NamedTuple):
             args={},
             reason="Subprotocol not acceptable",
             code=GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE,
-        ),
-        "WebSocketConnectionClosedError": WebsocketErrorParams(
-            cls=WebSocketConnectionClosedError,
-            args={},
-            reason="Connection closed",
-            code=GraphQLWebSocketCloseCode.NORMAL_CLOSURE,
         ),
     })
 )

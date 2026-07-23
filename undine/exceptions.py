@@ -146,6 +146,21 @@ class ExpressionNoOutputFieldError(UndineError):
     )
 
 
+class FederationEntitiesFieldConflictError(UndineError):
+    """Error raised if the user's query type already declares an '_entities' entrypoint."""
+
+    msg = (
+        "Cannot inject federation '_entities' field: query type '{query:dotpath}' already "
+        "declares an '_entities' entrypoint."
+    )
+
+
+class FederationFeatureVersionError(UndineError):
+    """Error raised if a federation feature is used against a lower `FEDERATION_VERSION` setting."""
+
+    msg = "Federation feature {feature!r} requires 'FEDERATION_VERSION' to be at least {min_version!r}."
+
+
 class FederationFieldSetTooComplexError(UndineError):
     """Error raised if a `@KeyDirective` `fields` FieldSet is too complex for the default resolver."""
 
@@ -201,228 +216,6 @@ class FederationServiceFieldConflictError(UndineError):
         "Cannot inject federation '_service' field: query type '{query:dotpath}' already "
         "declares a '_service' entrypoint."
     )
-
-
-class FederationEntitiesFieldConflictError(UndineError):
-    """Error raised if the user's query type already declares an '_entities' entrypoint."""
-
-    msg = (
-        "Cannot inject federation '_entities' field: query type '{query:dotpath}' already "
-        "declares an '_entities' entrypoint."
-    )
-
-
-class FederationFeatureVersionError(UndineError):
-    """Error raised if a federation feature is used against a lower `FEDERATION_VERSION` setting."""
-
-    msg = "Federation feature {feature!r} requires 'FEDERATION_VERSION' to be at least {min_version!r}."
-
-
-class FunctionSignatureParsingError(UndineError):
-    """Error raised if a function is missing type annotations for its parameters."""
-
-    msg = (
-        "Type '{name}' is not defined in module '{func:module}'. "
-        "Check if it's inside a `if TYPE_CHECKING` block or another class/function. "
-        "The type needs to be available at the runtime so that the signature of '{func:qualname}' can be inspected."
-    )
-
-
-class InterfaceFieldDoesNotExistError(UndineError):
-    """
-    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
-    but the field doesn't exist on the Model.
-    """
-
-    msg = "Field '{field}' from interface '{interface:dotpath}' does not exist on Model '{model:dotpath}'."
-
-
-class InterfaceFieldNodeIDError(UndineError):
-    """
-    Error raised when an InterfaceType is trying to inherit Node, but it has a "id" field
-    that is not a `NodeIDField`.
-    """
-
-    msg = "Interface '{interface:dotpath}' has a 'id' should use or inherit `undine.relay.NodeIDField`."
-
-
-class InterfaceFieldTypeMismatchError(UndineError):
-    """
-    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
-    but its converted GraphQL type doesn't match the GraphQL type converted from the matching Model field.
-    """
-
-    msg = (
-        "Field '{field}' from interface '{interface:dotpath}' expects type '{output_type}' "
-        "but Model field generated type '{field_type}'"
-    )
-
-
-class InvalidInputMutationTypeError(UndineError):
-    """Error raised when trying to create an `Input` using a `MutationType` with a `kind` other than 'related'."""
-
-    msg = (
-        "MutationType '{ref:dotpath}' is a '{kind}' MutationType, "
-        "but only 'related' MutationTypes can be used as Inputs on other MutationTypes."
-    )
-
-
-class InvalidDocstringParserError(UndineError):
-    """Error raised when an invalid docstring parser is provided."""
-
-    msg = "'{cls:dotpath}' does not implement 'DocstringParserProtocol'."
-
-
-class InvalidEntrypointMutationTypeError(UndineError):
-    """Error raised when trying to create an `Entrypoint` using a `MutationType` with an unknown `kind`."""
-
-    msg = (
-        "MutationType '{ref:dotpath}' is a '{kind}' MutationType, "
-        "but only 'create', 'update', 'delete', or 'custom' MutationTypes can be used in Entrypoints."
-    )
-
-
-class MismatchingModelError(UndineError):
-    """
-    Error raised if provided model for `FilterSet` or `OrderSet`
-    doesn't match model of the given `QueryType`.
-    """
-
-    msg = "'{name}' model '{given_model:dotpath}' does not match '{target}' model '{expected_model:dotpath}'."
-
-
-class MissingCalculationReturnTypeError(UndineError):
-    """Error raised if a calculation class doesn't define a return type."""
-
-    msg = (
-        "'{name}' must define the calculation return type using the Generic type argument: "
-        "e.g. `class {name}(Calculation[int]):`"
-    )
-
-
-class MissingEntrypointRefError(UndineError):
-    """Error raised when an entrypoint is missing a reference."""
-
-    msg = "Entrypoint '{name}' in class '{cls:dotpath}' must have a reference."
-
-
-class MissingFederationFieldRefError(UndineError):
-    """Error raised when a `FederationField` is missing a reference."""
-
-    msg = "FederationField '{name}' in class '{cls:dotpath}' must have a reference."
-
-
-class MissingFederationFieldResolverError(UndineError):
-    """Error raised when a `FederationField` cannot be resolved via any of the three-case dispatch rules."""
-
-    msg = (
-        "FederationField '{cls:dotpath}.{name}' has no resolver: it is not part of any '@key(fields=...)', "
-        "is not marked with '@ExternalDirective()', and no '@{name}.resolve' function was registered. "
-        "Add '@{name}.resolve' to provide a resolver."
-    )
-
-
-class MissingFederationReferenceResolverError(UndineError):
-    """Error raised when a `Field` references a `FederationType` but has no resolver."""
-
-    msg = (
-        "Field '{cls:dotpath}.{name}' references FederationType '{ref:dotpath}' owned by another subgraph. "
-        "Add '@{name}.resolve' that returns a representation dict (e.g. {{'id': ...}}) matching the "
-        "entity's '@KeyDirective(fields=...)'."
-    )
-
-
-class MissingFederationKeysError(UndineError):
-    """Error raised when a `FederationType` is missing at least one `@KeyDirective`."""
-
-    msg = (
-        "'{cls:dotpath}' must be decorated with at least one '@KeyDirective(fields=...)' to be a valid "
-        "Federation entity."
-    )
-
-
-class MissingFunctionAnnotationsError(UndineError):
-    """Error raised if a function is missing type annotations for its parameters."""
-
-    msg = "Missing type hints for parameters {missing:comma_sep_and} in function '{func:dotpath}'."
-
-
-class MissingFunctionReturnTypeError(UndineError):
-    """Error raised if a function does not contain a parameter to parse type from."""
-
-    msg = "Missing type hint for return value in function '{func:dotpath}'."
-
-
-class MissingDirectiveArgumentError(UndineError):
-    """Error raised if a directive argument is missing."""
-
-    msg = "Missing directive argument '{name}' for directive '{directive:dotpath}'."
-
-
-class MissingDirectiveLocationsError(UndineError):
-    """Error raised if no locations are provided to `Directive`."""
-
-    msg = (
-        "'{name}' is missing `locations` keyword argument in its class definition: "
-        "e.g. `class {name}(Directive, locations=[DirectiveLocation.FIELD_DEFINITION])`."
-    )
-
-
-class MissingModelGenericError(UndineError):
-    """Error raised if no model is provided to `QueryType`, `MutationType`, `FilterSet`, or `OrderSet`."""
-
-    msg = "'{name}' is missing its generic types: `class {name}({cls}[MyModel])`."
-
-
-class MissingUnionQueryTypeGenericError(UndineError):
-    """Error raised if no models are provided to `UnionType`."""
-
-    msg = "'{name}' is missing its generic types: `class {name}(UnionType[QueryType1, QueryType2])`."
-
-
-class ModelFieldError(UndineError): ...  # pragma: no branch
-
-
-class ModelFieldDoesNotExistError(ModelFieldError):
-    """Error raised if a field does not exist in the given model."""
-
-    msg = "Field '{field}' does not exist in model '{model:dotpath}'."
-
-
-class ModelFieldNotARelationError(ModelFieldError):
-    """Error raised if a field is not a relation in the given model."""
-
-    msg = "Field '{field}' is not a relation in model '{model:dotpath}'."
-
-
-class ModelFieldNotARelationOfModelError(ModelFieldError):
-    """Error raised if a field is not a relation in the given model."""
-
-    msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
-
-
-class MutateNeedsImplementationError(UndineError):
-    """Error raised if a MutationType '__mutate__' method is not implemented when its should be."""
-
-    msg = "Must implement '{mutation_type}.__mutate__' to handle related inputs"
-
-
-class MutationTypeKindCannotBeDeterminedError(UndineError):
-    """Error raised if mutation type cannot determine its kind automatically."""
-
-    msg = "Cannot determine mutation kind for MutationType '{name}'"
-
-
-class NoFunctionParametersError(UndineError):
-    """Error raised if a function does not contain a parameter to parse type from."""
-
-    msg = "Function '{func:dotpath}' must have at least one argument."
-
-
-class NotCompatibleWithError(UndineError):
-    """Error raised if a given object is not compatible with some other object."""
-
-    msg = "Cannot use '{obj}' with '{other}'"
 
 
 class FunctionDispatcherError(UndineError):
@@ -491,6 +284,238 @@ class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):
     msg = "Unknown argument: {annotation!r}"
 
 
+class FunctionSignatureParsingError(UndineError):
+    """Error raised if a function is missing type annotations for its parameters."""
+
+    msg = (
+        "Type '{name}' is not defined in module '{func:module}'. "
+        "Check if it's inside a `if TYPE_CHECKING` block or another class/function. "
+        "The type needs to be available at the runtime so that the signature of '{func:qualname}' can be inspected."
+    )
+
+
+class InterfaceFieldDoesNotExistError(UndineError):
+    """
+    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
+    but the field doesn't exist on the Model.
+    """
+
+    msg = "Field '{field}' from interface '{interface:dotpath}' does not exist on Model '{model:dotpath}'."
+
+
+class InterfaceFieldNodeIDError(UndineError):
+    """
+    Error raised when an InterfaceType is trying to inherit Node, but it has a "id" field
+    that is not a `NodeIDField`.
+    """
+
+    msg = "Interface '{interface:dotpath}' has a 'id' should use or inherit `undine.relay.NodeIDField`."
+
+
+class InterfaceFieldTypeMismatchError(UndineError):
+    """
+    Error raised when a QueryType is trying to inherit a field from an InterfaceType,
+    but its converted GraphQL type doesn't match the GraphQL type converted from the matching Model field.
+    """
+
+    msg = (
+        "Field '{field}' from interface '{interface:dotpath}' expects type '{output_type}' "
+        "but Model field generated type '{field_type}'"
+    )
+
+
+class InterfaceTypeFieldNotDeclaredError(UndineError):
+    """
+    Error raised when a `Filter` or `Order` on an `InterfaceType`-level `FilterSet` / `OrderSet`
+    references a field that is not declared as an `InterfaceField` on the `InterfaceType`.
+    Only fields declared on the interface are guaranteed to exist on all implementing `QueryTypes`.
+    """
+
+    msg = (
+        "{kind} '{name}' references field '{field_name}' which is not declared as an `InterfaceField` "
+        "on `InterfaceType` '{interface:name}'"
+    )
+
+
+class InterfaceTypeModelsDifferentError(UndineError):
+    """Error raised when a FilterSet or OrderSet is added to an InterfaceType with different models."""
+
+    msg = "Cannot add a {kind} to an InterfaceType with different models"
+
+
+class InterfaceTypeRequiresMultipleModelsError(UndineError):
+    """Error raised when a FilterSet or OrderSet with a single model is added to an InterfaceType."""
+
+    msg = "Cannot add a {kind} with a single model to an InterfaceType"
+
+
+class InvalidDocstringParserError(UndineError):
+    """Error raised when an invalid docstring parser is provided."""
+
+    msg = "'{cls:dotpath}' does not implement 'DocstringParserProtocol'."
+
+
+class InvalidEntrypointMutationTypeError(UndineError):
+    """Error raised when trying to create an `Entrypoint` using a `MutationType` with an unknown `kind`."""
+
+    msg = (
+        "MutationType '{ref:dotpath}' is a '{kind}' MutationType, "
+        "but only 'create', 'update', 'delete', or 'custom' MutationTypes can be used in Entrypoints."
+    )
+
+
+class InvalidInputMutationTypeError(UndineError):
+    """Error raised when trying to create an `Input` using a `MutationType` with a `kind` other than 'related'."""
+
+    msg = (
+        "MutationType '{ref:dotpath}' is a '{kind}' MutationType, "
+        "but only 'related' MutationTypes can be used as Inputs on other MutationTypes."
+    )
+
+
+class MismatchingModelError(UndineError):
+    """
+    Error raised if provided model for `FilterSet` or `OrderSet`
+    doesn't match model of the given `QueryType`.
+    """
+
+    msg = "'{name}' model '{given_model:dotpath}' does not match '{target}' model '{expected_model:dotpath}'."
+
+
+class MissingCalculationReturnTypeError(UndineError):
+    """Error raised if a calculation class doesn't define a return type."""
+
+    msg = (
+        "'{name}' must define the calculation return type using the Generic type argument: "
+        "e.g. `class {name}(Calculation[int]):`"
+    )
+
+
+class MissingDirectiveArgumentError(UndineError):
+    """Error raised if a directive argument is missing."""
+
+    msg = "Missing directive argument '{name}' for directive '{directive:dotpath}'."
+
+
+class MissingDirectiveLocationsError(UndineError):
+    """Error raised if no locations are provided to `Directive`."""
+
+    msg = (
+        "'{name}' is missing `locations` keyword argument in its class definition: "
+        "e.g. `class {name}(Directive, locations=[DirectiveLocation.FIELD_DEFINITION])`."
+    )
+
+
+class MissingEntrypointRefError(UndineError):
+    """Error raised when an entrypoint is missing a reference."""
+
+    msg = "Entrypoint '{name}' in class '{cls:dotpath}' must have a reference."
+
+
+class MissingFederationFieldRefError(UndineError):
+    """Error raised when a `FederationField` is missing a reference."""
+
+    msg = "FederationField '{name}' in class '{cls:dotpath}' must have a reference."
+
+
+class MissingFederationFieldResolverError(UndineError):
+    """Error raised when a `FederationField` cannot be resolved via any of the three-case dispatch rules."""
+
+    msg = (
+        "FederationField '{cls:dotpath}.{name}' has no resolver: it is not part of any '@key(fields=...)', "
+        "is not marked with '@ExternalDirective()', and no '@{name}.resolve' function was registered. "
+        "Add '@{name}.resolve' to provide a resolver."
+    )
+
+
+class MissingFederationKeysError(UndineError):
+    """Error raised when a `FederationType` is missing at least one `@KeyDirective`."""
+
+    msg = (
+        "'{cls:dotpath}' must be decorated with at least one '@KeyDirective(fields=...)' to be a valid "
+        "Federation entity."
+    )
+
+
+class MissingFederationReferenceResolverError(UndineError):
+    """Error raised when a `Field` references a `FederationType` but has no resolver."""
+
+    msg = (
+        "Field '{cls:dotpath}.{name}' references FederationType '{ref:dotpath}' owned by another subgraph. "
+        "Add '@{name}.resolve' that returns a representation dict (e.g. {{'id': ...}}) matching the "
+        "entity's '@KeyDirective(fields=...)'."
+    )
+
+
+class MissingFunctionAnnotationsError(UndineError):
+    """Error raised if a function is missing type annotations for its parameters."""
+
+    msg = "Missing type hints for parameters {missing:comma_sep_and} in function '{func:dotpath}'."
+
+
+class MissingFunctionReturnTypeError(UndineError):
+    """Error raised if a function does not contain a parameter to parse type from."""
+
+    msg = "Missing type hint for return value in function '{func:dotpath}'."
+
+
+class MissingModelGenericError(UndineError):
+    """Error raised if no model is provided to `QueryType`, `MutationType`, `FilterSet`, or `OrderSet`."""
+
+    msg = "'{name}' is missing its generic types: `class {name}({cls}[MyModel])`."
+
+
+class MissingUnionQueryTypeGenericError(UndineError):
+    """Error raised if no models are provided to `UnionType`."""
+
+    msg = "'{name}' is missing its generic types: `class {name}(UnionType[QueryType1, QueryType2])`."
+
+
+class ModelFieldError(UndineError): ...  # pragma: no branch
+
+
+class ModelFieldDoesNotExistError(ModelFieldError):
+    """Error raised if a field does not exist in the given model."""
+
+    msg = "Field '{field}' does not exist in model '{model:dotpath}'."
+
+
+class ModelFieldNotARelationError(ModelFieldError):
+    """Error raised if a field is not a relation in the given model."""
+
+    msg = "Field '{field}' is not a relation in model '{model:dotpath}'."
+
+
+class ModelFieldNotARelationOfModelError(ModelFieldError):
+    """Error raised if a field is not a relation in the given model."""
+
+    msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
+
+
+class MutateNeedsImplementationError(UndineError):
+    """Error raised if a MutationType '__mutate__' method is not implemented when its should be."""
+
+    msg = "Must implement '{mutation_type}.__mutate__' to handle related inputs"
+
+
+class MutationTypeKindCannotBeDeterminedError(UndineError):
+    """Error raised if mutation type cannot determine its kind automatically."""
+
+    msg = "Cannot determine mutation kind for MutationType '{name}'"
+
+
+class NoFunctionParametersError(UndineError):
+    """Error raised if a function does not contain a parameter to parse type from."""
+
+    msg = "Function '{func:dotpath}' must have at least one argument."
+
+
+class NotCompatibleWithError(UndineError):
+    """Error raised if a given object is not compatible with some other object."""
+
+    msg = "Cannot use '{obj}' with '{other}'"
+
+
 class QueryTypeRequiresSingleModelError(UndineError):
     """Error raised when a FilterSet or OrderSet with multiple models is added to a QueryType."""
 
@@ -515,13 +540,13 @@ class UnexpectedDirectiveArgumentError(UndineError):
     msg = "Unexpected directive arguments for directive '{directive:dotpath}': {kwargs}."
 
 
-class UnionTypeMultipleTypesError(FunctionDispatcherError):
+class UnionModelFieldDirectUsageError(UndineError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
-    with a Union type that has more than one non-null type.
+    Error raised when trying to create a Filter or an Order from a model field directly,
+    but the corresponding FilterSet or OrderSet contains many models.
     """
 
-    msg = "Union type must have a single non-null type argument, got {args}."
+    msg = "Cannot use model reference when {kind} defined for multiple models"
 
 
 class UnionModelFieldMismatchError(UndineError):
@@ -538,50 +563,25 @@ class UnionModelFieldMismatchError(UndineError):
     )
 
 
-class UnionModelFieldDirectUsageError(UndineError):
-    """
-    Error raised when trying to create a Filter or an Order from a model field directly,
-    but the corresponding FilterSet or OrderSet contains many models.
-    """
-
-    msg = "Cannot use model reference when {kind} defined for multiple models"
-
-
 class UnionTypeModelsDifferentError(UndineError):
     """Error raised when a FilterSet or OrderSet is added to a UnionType with different models."""
 
     msg = "Cannot add a {kind} to a UnionType with different models"
 
 
+class UnionTypeMultipleTypesError(FunctionDispatcherError):
+    """
+    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    with a Union type that has more than one non-null type.
+    """
+
+    msg = "Union type must have a single non-null type argument, got {args}."
+
+
 class UnionTypeRequiresMultipleModelsError(UndineError):
     """Error raised when a FilterSet or OrderSet with a single model is added to a UnionType."""
 
     msg = "Cannot add a {kind} with a single model to a UnionType"
-
-
-class InterfaceTypeModelsDifferentError(UndineError):
-    """Error raised when a FilterSet or OrderSet is added to an InterfaceType with different models."""
-
-    msg = "Cannot add a {kind} to an InterfaceType with different models"
-
-
-class InterfaceTypeRequiresMultipleModelsError(UndineError):
-    """Error raised when a FilterSet or OrderSet with a single model is added to an InterfaceType."""
-
-    msg = "Cannot add a {kind} with a single model to an InterfaceType"
-
-
-class InterfaceTypeFieldNotDeclaredError(UndineError):
-    """
-    Error raised when a `Filter` or `Order` on an `InterfaceType`-level `FilterSet` / `OrderSet`
-    references a field that is not declared as an `InterfaceField` on the `InterfaceType`.
-    Only fields declared on the interface are guaranteed to exist on all implementing `QueryTypes`.
-    """
-
-    msg = (
-        "{kind} '{name}' references field '{field_name}' which is not declared as an `InterfaceField` "
-        "on `InterfaceType` '{interface:name}'"
-    )
 
 
 class UnsupportedFederationVersionError(UndineError):
@@ -790,14 +790,6 @@ class GraphQLCannotUseHTTPForMutationsNonPostRequestError(GraphQLStatusError):
     code = UndineErrorCodes.CANNOT_USE_HTTP_FOR_MUTATIONS_NON_POST_REQUEST
 
 
-class GraphQLCannotUseMultipartMixedForQueriesError(GraphQLStatusError):
-    """Error raised when a query operation is executed over multipart/mixed HTTP."""
-
-    msg = "Cannot use multipart/mixed for queries."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
-    code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES
-
-
 class GraphQLCannotUseMultipartMixedForMutationsError(GraphQLStatusError):
     """Error raised when a mutation operation is executed over multipart/mixed HTTP."""
 
@@ -814,6 +806,14 @@ class GraphQLCannotUseMultipartMixedForMutationsNonPostRequestError(GraphQLStatu
     code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_MUTATIONS_NON_POST_REQUEST
 
 
+class GraphQLCannotUseMultipartMixedForQueriesError(GraphQLStatusError):
+    """Error raised when a query operation is executed over multipart/mixed HTTP."""
+
+    msg = "Cannot use multipart/mixed for queries."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES
+
+
 class GraphQLCannotUseSSEForMutationsError(GraphQLStatusError):
     """Error raised when a mutation operation is executed over Server-Sent Events."""
 
@@ -822,20 +822,20 @@ class GraphQLCannotUseSSEForMutationsError(GraphQLStatusError):
     code = UndineErrorCodes.CANNOT_USE_SSE_FOR_MUTATIONS
 
 
-class GraphQLCannotUseSSEForQueriesError(GraphQLStatusError):
-    """Error raised when a query operation is executed over Server-Sent Events."""
-
-    msg = "Cannot use Server-Sent Events for queries."
-    status = HTTPStatus.METHOD_NOT_ALLOWED
-    code = UndineErrorCodes.CANNOT_USE_SSE_FOR_QUERIES
-
-
 class GraphQLCannotUseSSEForMutationsNonPostRequestError(GraphQLStatusError):
     """Error raised when a mutation operation is executed over Server-Sent Events not sent over HTTP POST."""
 
     msg = "Cannot use Server-Sent Events for mutations if not sent as a POST request."
     status = HTTPStatus.METHOD_NOT_ALLOWED
     code = UndineErrorCodes.CANNOT_USE_SSE_FOR_MUTATIONS_NON_POST_REQUEST
+
+
+class GraphQLCannotUseSSEForQueriesError(GraphQLStatusError):
+    """Error raised when a query operation is executed over Server-Sent Events."""
+
+    msg = "Cannot use Server-Sent Events for queries."
+    status = HTTPStatus.METHOD_NOT_ALLOWED
+    code = UndineErrorCodes.CANNOT_USE_SSE_FOR_QUERIES
 
 
 class GraphQLCannotUseWebSocketsForMutationsError(GraphQLStatusError):
@@ -897,18 +897,26 @@ class GraphQLDuplicateTypeError(GraphQLStatusError):
     code = UndineErrorCodes.DUPLICATE_TYPE
 
 
-class GraphQLFilePlacingError(GraphQLStatusError):
-    """Error raised when placing uploaded files to request data fails."""
+class GraphQLFieldNotNullableError(GraphQLStatusError):
+    """Error raised when field result is null, but the field is not nullable."""
 
-    msg = "Value '{value}' in file map does not lead to a null value."
+    msg = "'{typename}.{field_name}' returned null, but field is not nullable."
     status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.FILE_NOT_FOUND
+    code = UndineErrorCodes.FIELD_NOT_NULLABLE
 
 
 class GraphQLFileNotFoundError(GraphQLStatusError):
     """Error raised when a file is not found in the GraphQL request files map."""
 
     msg = "File for path '{key}' not found in request files."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.FILE_NOT_FOUND
+
+
+class GraphQLFilePlacingError(GraphQLStatusError):
+    """Error raised when placing uploaded files to request data fails."""
+
+    msg = "Value '{value}' in file map does not lead to a null value."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.FILE_NOT_FOUND
 
@@ -956,12 +964,36 @@ class GraphQLMissingContentTypeError(GraphQLStatusError):
     code = UndineErrorCodes.CONTENT_TYPE_MISSING
 
 
+class GraphQLMissingDocumentError(GraphQLStatusError):
+    """Error raised if a graphql document could not be found from the request."""
+
+    msg = "Could not find GraphQL document or persisted document based on request data."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
+
+
+class GraphQLMissingDocumentIDError(GraphQLStatusError):
+    """Error raised if persisted document id are missing from the request."""
+
+    msg = "Could not find persisted document based on request data."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
+
+
 class GraphQLMissingFileMapError(GraphQLStatusError):
     """Error raised when parsing file upload data doesn't contain a `map` files mapping."""
 
     msg = "File upload must contain an `map` value."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_FILE_MAP
+
+
+class GraphQLMissingInstancesToDeleteError(GraphQLStatusError):
+    """Error raised when bulk delete cannot find all instances given to it for deletion."""
+
+    msg = "Expected {given} instances to delete, but found {to_delete}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.MISSING_INSTANCES_TO_DELETE
 
 
 class GraphQLMissingLookupFieldError(GraphQLStatusError):
@@ -983,36 +1015,12 @@ class GraphQLMissingOperationsError(GraphQLStatusError):
     code = UndineErrorCodes.MISSING_OPERATIONS
 
 
-class GraphQLMissingDocumentError(GraphQLStatusError):
-    """Error raised if a graphql document could not be found from the request."""
-
-    msg = "Could not find GraphQL document or persisted document based on request data."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
-
-
-class GraphQLMissingDocumentIDError(GraphQLStatusError):
-    """Error raised if persisted document id are missing from the request."""
-
-    msg = "Could not find persisted document based on request data."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_GRAPHQL_DOCUMENT_PARAMETER
-
-
 class GraphQLMissingQueryError(GraphQLStatusError):
     """Error raised when query string is missing from the request."""
 
     msg = "Request data must contain a `query` string describing the graphql document."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MISSING_GRAPHQL_QUERY_PARAMETER
-
-
-class GraphQLMissingInstancesToDeleteError(GraphQLStatusError):
-    """Error raised when bulk delete cannot find all instances given to it for deletion."""
-
-    msg = "Expected {given} instances to delete, but found {to_delete}."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.MISSING_INSTANCES_TO_DELETE
 
 
 class GraphQLModelConstraintViolationError(GraphQLStatusError):
@@ -1218,6 +1226,14 @@ class GraphQLRelationNotNullableError(GraphQLStatusError):
     code = UndineErrorCodes.RELATION_NOT_NULLABLE
 
 
+class GraphQLRequestDecodingError(GraphQLStatusError):
+    """Error raised when a request content cannot be decoded to python data."""
+
+    msg = "Could not decode request."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.REQUEST_DECODING_ERROR
+
+
 class GraphQLRequestMultipleOperationsNoOperationNameError(GraphQLStatusError):
     """
     Error raised when user tries to execute multiple operations
@@ -1243,22 +1259,6 @@ class GraphQLRequestOperationNotFoundError(GraphQLStatusError):
     msg = "Unknown operation named '{operation_name}'."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.OPERATION_NOT_FOUND
-
-
-class GraphQLFieldNotNullableError(GraphQLStatusError):
-    """Error raised when field result is null, but the field is not nullable."""
-
-    msg = "'{typename}.{field_name}' returned null, but field is not nullable."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.FIELD_NOT_NULLABLE
-
-
-class GraphQLRequestDecodingError(GraphQLStatusError):
-    """Error raised when a request content cannot be decoded to python data."""
-
-    msg = "Could not decode request."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.REQUEST_DECODING_ERROR
 
 
 class GraphQLRequestParseError(GraphQLStatusError):
@@ -1293,14 +1293,6 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
     code = UndineErrorCodes.SCALAR_TYPE_NOT_SUPPORTED
 
 
-class GraphQLSSEOperationIdMissingError(GraphQLStatusError):
-    """Error raised when a SSE request is missing operationId query parameter."""
-
-    msg = "Operation ID is missing"
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.SSE_OPERATION_ID_MISSING
-
-
 class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):
     """
     Error raised when a SSE request is trying to execute an operation
@@ -1310,6 +1302,14 @@ class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):
     msg = "Operation with ID already exists"
     status = HTTPStatus.CONFLICT
     code = UndineErrorCodes.SSE_OPERATION_ALREADY_EXISTS
+
+
+class GraphQLSSEOperationIdMissingError(GraphQLStatusError):
+    """Error raised when a SSE request is missing operationId query parameter."""
+
+    msg = "Operation ID is missing"
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.SSE_OPERATION_ID_MISSING
 
 
 class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):
@@ -1392,6 +1392,22 @@ class GraphQLTypedDictAnnotatedIncorrectMetadataError(GraphQLStatusError):
     code = UndineErrorCodes.TYPED_DICT_ANNOTATED_INCORRECT_METADATA
 
 
+class GraphQLUnexpectedCalculationArgumentError(GraphQLStatusError):
+    """Error raised if a calculation argument is unexpected."""
+
+    msg = "Unexpected calculation arguments for field '{name}': {kwargs}."
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.UNEXPECTED_CALCULATION_ARGUMENT
+
+
+class GraphQLUnexpectedError(GraphQLStatusError):
+    """Error raised when an unexpected error occurs."""
+
+    msg = "Unexpected error in GraphQL execution"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.UNEXPECTED_ERROR
+
+
 class GraphQLUnexpectedMultiplePayloadsError(GraphQLStatusError):
     """Error raised when a GraphQL request returns multiple payloads when it shouldn't."""
 
@@ -1419,22 +1435,6 @@ class GraphQLUnionResolveTypeModelNotFoundError(GraphQLStatusError):
     code = UndineErrorCodes.UNION_RESOLVE_TYPE_MODEL_NOT_FOUND
 
 
-class GraphQLUnexpectedError(GraphQLStatusError):
-    """Error raised when an unexpected error occurs."""
-
-    msg = "Unexpected error in GraphQL execution"
-    status = HTTPStatus.INTERNAL_SERVER_ERROR
-    code = UndineErrorCodes.UNEXPECTED_ERROR
-
-
-class GraphQLUnexpectedCalculationArgumentError(GraphQLStatusError):
-    """Error raised if a calculation argument is unexpected."""
-
-    msg = "Unexpected calculation arguments for field '{name}': {kwargs}."
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.UNEXPECTED_CALCULATION_ARGUMENT
-
-
 class GraphQLUnsupportedContentTypeError(GraphQLStatusError):
     """Error raised when a request is made with an unsupported content type."""
 
@@ -1451,20 +1451,20 @@ class GraphQLUnsupportedProtocolForSubscriptionsError(GraphQLStatusError):
     code = UndineErrorCodes.UNSUPPORTED_PROTOCOL_FOR_SUBSCRIPTIONS
 
 
-class GraphQLValidationError(GraphQLStatusError):
-    """Error meant to be raised for validation errors during mutations."""
-
-    msg = "Validation error."  # Users should add their own message.
-    status = HTTPStatus.BAD_REQUEST
-    code = UndineErrorCodes.VALIDATION_ERROR
-
-
 class GraphQLValidationAbortedError(GraphQLStatusError):
     """Error raised when the validation step of the GraphQL request is aborted, e.g., due to too many errors."""
 
     msg = "Too many validation errors, error limit reached. Validation aborted."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.VALIDATION_ABORTED
+
+
+class GraphQLValidationError(GraphQLStatusError):
+    """Error meant to be raised for validation errors during mutations."""
+
+    msg = "Validation error."  # Users should add their own message.
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.VALIDATION_ERROR
 
 
 # WebSocket errors
@@ -1490,6 +1490,11 @@ class WebSocketError(Exception):
 
         self.reason = reason
         self.code = GraphQLWebSocketCloseCode(code or self.code)
+
+
+class WebSocketConnectionClosedError(WebSocketError):
+    reason = "Connection closed"
+    code = GraphQLWebSocketCloseCode.NORMAL_CLOSURE
 
 
 class WebSocketConnectionInitAlreadyInProgressError(WebSocketError):
@@ -1567,14 +1572,14 @@ class WebSocketMissingSubscribePayloadError(WebSocketError):
     code = GraphQLWebSocketCloseCode.BAD_REQUEST
 
 
-class WebSocketTooManyInitialisationRequestsError(WebSocketError):
-    reason = "Too many initialisation requests"
-    code = GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS
-
-
 class WebSocketSubscriberForOperationIdAlreadyExistsError(WebSocketError):
     reason = "Subscriber for {id} already exists"
     code = GraphQLWebSocketCloseCode.SUBSCRIBER_ALREADY_EXISTS
+
+
+class WebSocketTooManyInitialisationRequestsError(WebSocketError):
+    reason = "Too many initialisation requests"
+    code = GraphQLWebSocketCloseCode.TOO_MANY_INITIALISATION_REQUESTS
 
 
 class WebSocketTypeMissingError(WebSocketError):
@@ -1595,8 +1600,3 @@ class WebSocketUnknownMessageTypeError(WebSocketError):
 class WebSocketUnsupportedSubProtocolError(WebSocketError):
     reason = "Subprotocol not acceptable"
     code = GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE
-
-
-class WebSocketConnectionClosedError(WebSocketError):
-    reason = "Connection closed"
-    code = GraphQLWebSocketCloseCode.NORMAL_CLOSURE
