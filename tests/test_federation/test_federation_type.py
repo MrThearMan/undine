@@ -940,3 +940,26 @@ def test_federation_type__function_resolver_without_root_or_info_params(graphql,
 
     assert response.has_errors is False, response.errors
     assert response.data["_entities"] == [{"rating": 7}]
+
+
+# Visibility
+
+
+def test_federation_type__is_visible_default_returns_true() -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+    assert BookExt.__is_visible__(None) is True  # type: ignore[arg-type]
+
+
+def test_federation_type__is_visible_override_returns_false() -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+        @classmethod
+        def __is_visible__(cls, request) -> bool:
+            return False
+
+    assert BookExt.__is_visible__(None) is False  # type: ignore[arg-type]

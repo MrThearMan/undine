@@ -43,7 +43,14 @@ if TYPE_CHECKING:
     from graphql import GraphQLFieldResolver
     from graphql.pyutils import AwaitableOrValue
 
-    from undine.typing import FederationFieldParams, FederationFieldPermFunc, FederationTypeParams, GQLInfo
+    from undine.typing import (
+        DjangoRequestProtocol,
+        FederationFieldParams,
+        FederationFieldPermFunc,
+        FederationTypeParams,
+        GQLInfo,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "FederationField",
@@ -157,6 +164,14 @@ class FederationType(metaclass=FederationTypeMeta):
     def __permissions__(cls, instance: Self, info: GQLInfo) -> None:
         """Check permissions for accessing an instance through this `FederationType`."""
 
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """
+        Determine if the given `FederationType` is visible in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        """
+        return True
+
 
 class FederationField:
     """
@@ -197,6 +212,7 @@ class FederationField:
 
         self.resolver_func: GraphQLFieldResolver | None = None
         self.permissions_func: FederationFieldPermFunc | None = None
+        self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, federation_type: type[FederationType], name: str) -> None:
         """Connect this `FederationField` to the given `FederationType` using the given name."""
@@ -287,6 +303,24 @@ class FederationField:
         if func is None:  # Allow `@<field_name>.permissions()`
             return self.permissions  # type: ignore[return-value]
         self.permissions_func = get_wrapped_func(func)
+        return func
+
+    def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
+        """
+        Decorate a function to change the FederationField's visibility in the schema.
+        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+
+        >>> @KeyDirective(fields="isbn")
+        >>> class BookType(FederationType):
+        ...     isbn = FederationField(str)
+        ...
+        ...     @isbn.visible
+        ...     def isbn_visible(self: FederationField, request: DjangoRequestProtocol) -> bool:
+        ...         return False
+        """
+        if func is None:  # Allow `@<field_name>.visible()`
+            return self.visible  # type: ignore[return-value]
+        self.visible_func = get_wrapped_func(func)
         return func
 
 

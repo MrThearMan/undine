@@ -695,3 +695,39 @@ def test_federation_field__description_from_user_overrides_docstring(undine_sett
         """Docstring for isbn."""
 
     assert BookExt.__field_map__["isbn"].description == "Explicit description."
+
+
+# Visibility
+
+
+def test_federation_field__visible_default_is_none() -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+    assert BookExt.__field_map__["isbn"].visible_func is None
+
+
+def test_federation_field__visible_decorator_wires_visible_func() -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+        @isbn.visible
+        def isbn_visible(self, request) -> bool:
+            return False
+
+    assert BookExt.__field_map__["isbn"].visible_func is not None
+    assert BookExt.__field_map__["isbn"].visible_func(None, None) is False
+
+
+def test_federation_field__visible_decorator_without_arguments_returns_wrapped_visible() -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+        @isbn.visible()
+        def isbn_visible(self, request) -> bool:
+            return False
+
+    assert BookExt.__field_map__["isbn"].visible_func is not None

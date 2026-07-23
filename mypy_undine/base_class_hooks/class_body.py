@@ -710,6 +710,7 @@ DECORATOR_METHODS: dict[tuple[str, str], Callable[[ClassDefContext, FuncDef, str
     (FEDERATION_TYPE, FEDERATION_FIELD): check_federation_field_resolve_func,
     (FEDERATION_TYPE, "resolve"): check_federation_field_resolve_func,
     (FEDERATION_TYPE, "permissions"): check_permissions_func,
+    (FEDERATION_TYPE, "visible"): check_visible_func,
 }
 
 

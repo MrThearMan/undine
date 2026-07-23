@@ -6,12 +6,15 @@ from graphql import GraphQLError, ValidationRule, ast_from_value
 from graphql.language import ast
 
 from undine import InterfaceType, MutationType, QueryType, UnionType
+from undine.federation import FederationType
 from undine.relay import Connection
 from undine.utils.graphql.undine_extensions import (
     get_undine_calculation_argument,
     get_undine_directive,
     get_undine_directive_argument,
     get_undine_entrypoint,
+    get_undine_federation_field,
+    get_undine_federation_type,
     get_undine_field,
     get_undine_filter,
     get_undine_filterset,
@@ -42,6 +45,7 @@ if TYPE_CHECKING:
 
     from undine import Entrypoint, Field, InterfaceField
     from undine.execution import UndineValidationContext
+    from undine.federation import FederationField
 
 
 __all__ = [
@@ -76,6 +80,10 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         undine_interface_field = get_undine_interface_field(graphql_field)
         if undine_interface_field is not None:
             return self.handle_interface_field(undine_interface_field, parent_type, node)
+
+        undine_federation_field = get_undine_federation_field(graphql_field)
+        if undine_federation_field is not None:
+            return self.handle_federation_field(undine_federation_field, parent_type, node)
 
         return None
 
@@ -148,7 +156,7 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
 
         return None
 
-    def enter_named_type(self, node: ast.NamedTypeNode, *args: Any) -> VisitorAction:
+    def enter_named_type(self, node: ast.NamedTypeNode, *args: Any) -> VisitorAction:  # noqa: PLR0911
         graphql_type = self.context.get_type()
         if graphql_type is None:
             # Handled by `graphql.validation.rules.known_type_names.KnownTypeNamesRule`
@@ -173,6 +181,14 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         undine_union_type = get_undine_union_type(graphql_type)  # type: ignore[arg-type]
         if undine_union_type is not None:
             if not undine_union_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
+                self.report_type_error(graphql_type, node)  # type: ignore[arg-type]
+                return self.BREAK
+
+            return None
+
+        undine_federation_type = get_undine_federation_type(graphql_type)  # type: ignore[arg-type]
+        if undine_federation_type is not None:
+            if not undine_federation_type.__is_visible__(self.context.request):  # type: ignore[arg-type]
                 self.report_type_error(graphql_type, node)  # type: ignore[arg-type]
                 return self.BREAK
 
@@ -266,6 +282,9 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if is_subclass(ref, UnionType):
             return self.handle_union_type(ref, parent_type, field_node)
 
+        if is_subclass(ref, FederationType):
+            return self.handle_federation_type(ref, parent_type, field_node)
+
         return None
 
     def handle_interface_field(
@@ -280,6 +299,35 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
         if not undine_interface_field.visible_func(undine_interface_field, self.context.request):  # type: ignore[arg-type]
             self.report_field_error(parent_type, field_node)
             return self.BREAK
+
+        return None
+
+    def handle_federation_field(
+        self,
+        undine_federation_field: FederationField,
+        parent_type: GraphQLCompositeType,
+        field_node: ast.FieldNode,
+    ) -> VisitorAction:
+        if undine_federation_field.visible_func is not None:
+            if not undine_federation_field.visible_func(undine_federation_field, self.context.request):  # type: ignore[arg-type]
+                self.report_field_error(parent_type, field_node)
+                return self.BREAK
+
+            return None
+
+        ref = undine_federation_field.ref
+
+        if is_subclass(ref, QueryType):
+            return self.handle_query_type(ref, parent_type, field_node)
+
+        if is_subclass(ref, InterfaceType):
+            return self.handle_interface_type(ref, parent_type, field_node)
+
+        if is_subclass(ref, UnionType):
+            return self.handle_union_type(ref, parent_type, field_node)
+
+        if is_subclass(ref, FederationType):
+            return self.handle_federation_type(ref, parent_type, field_node)
 
         return None
 
@@ -328,6 +376,18 @@ class VisibilityRule(ValidationRule):  # noqa: PLR0904
     def handle_union_type(
         self,
         ref: type[UnionType],
+        parent_type: GraphQLCompositeType,
+        field_node: ast.FieldNode,
+    ) -> VisitorAction:
+        if not ref.__is_visible__(self.context.request):  # type: ignore[arg-type]
+            self.report_field_error(parent_type, field_node)
+            return self.BREAK
+
+        return None
+
+    def handle_federation_type(
+        self,
+        ref: type[FederationType],
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> VisitorAction:

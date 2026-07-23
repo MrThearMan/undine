@@ -264,6 +264,10 @@ Note that visibility does not affect "did you mean" suggestions, so it's advised
 these using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](#allow_did_you_mean_suggestions) setting
 when using this feature.
 
+> In a federation schema, visibility does not update the composed supergraph SDL.
+> Visibility still blocks router traffic and surfaces as supergraph errors.
+> See [Federation visibility](federation.md#visibility) for details.
+
 ///
 
 /// details | `FEDERATION_BUILTIN_EXTENSIONS_KEY`

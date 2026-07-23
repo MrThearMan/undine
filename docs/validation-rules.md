@@ -66,9 +66,15 @@ as defined by visibility checks. See how to enable visibility checks for the dif
 - [`InterfaceType` visibility](interfaces.md#visibility)
 - [`InterfaceField` visibility](interfaces.md#visibility_1)
 - [`UnionType` visibility](unions.md#visibility)
+- [`FederationType` visibility](federation.md#visibility)
+- [`FederationField` visibility](federation.md#visibility)
 - [`Directive` visibility](directives.md#visibility)
 - [`DirectiveArgument` visibility](directives.md#visibility_1)
 - [`CalculationArgument` visibility](queries.md#calculation-references)
+
+> In a federation schema, visibility does not update the composed supergraph SDL.
+> Visibility still blocks router traffic and surfaces as supergraph errors.
+> See [Federation visibility](federation.md#visibility) for details.
 
 ## Custom validation rules
 

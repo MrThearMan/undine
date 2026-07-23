@@ -26,6 +26,13 @@ from undine import (
     UnionType,
     create_schema,
 )
+from undine.federation import (
+    ExternalDirective,
+    FederationField,
+    FederationType,
+    KeyDirective,
+    create_federation_schema,
+)
 from undine.relay import Connection
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 
@@ -2325,3 +2332,196 @@ def test_validation_rules__visibility_rule__flatten_filters__variable_node(graph
     """
     response = graphql(query, variables={"name": "foo"})
     assert response.has_errors is False
+
+
+# Federation
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__federation_type(graphql, undine_settings, is_visible) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = """
+        query ($reps: [_Any!]!) {
+            _entities(representations: $reps) { ... on Book { isbn } }
+        }
+    """
+    variables = {"reps": [{"__typename": "Book", "isbn": "978"}]}
+
+    response = graphql(query, variables=variables)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown type 'Book'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__federation_field(graphql, undine_settings, is_visible) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+        title = FederationField(str) @ ExternalDirective()
+
+        @title.visible
+        def title_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = """
+        query ($reps: [_Any!]!) {
+            _entities(representations: $reps) { ... on Book { title } }
+        }
+    """
+    variables = {"reps": [{"__typename": "Book", "isbn": "978", "title": "hello"}]}
+
+    response = graphql(query, variables=variables)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'title' on type 'Book'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__federation_field__federation_type_ref(
+    graphql, undine_settings, is_visible
+) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    @KeyDirective(fields="id", resolvable=False)
+    class AuthorRef(FederationType, schema_name="Author"):
+        id = FederationField(int)
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+        author = FederationField(AuthorRef)
+
+        @author.resolve
+        def resolve_author(self, info: GQLInfo) -> AuthorRef:
+            return AuthorRef(id=1)
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = """
+        query ($reps: [_Any!]!) {
+            _entities(representations: $reps) { ... on Book { author { id } } }
+        }
+    """
+    variables = {"reps": [{"__typename": "Book", "isbn": "978"}]}
+
+    response = graphql(query, variables=variables)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'author' on type 'Book'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__federation_field__query_type_ref(
+    graphql, undine_settings, is_visible
+) -> None:
+    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+
+    class ProjectType(QueryType[Project]):
+        pk = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+        project = FederationField(ProjectType, many=False, nullable=True)
+
+        @project.resolve
+        def resolve_project(self, info: GQLInfo) -> Project | None:
+            return None
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = """
+        query ($reps: [_Any!]!) {
+            _entities(representations: $reps) { ... on Book { project { pk } } }
+        }
+    """
+    variables = {"reps": [{"__typename": "Book", "isbn": "978"}]}
+
+    response = graphql(query, variables=variables)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'project' on type 'Book'.",
+                "extensions": {"status_code": 400},
+            }
+        ]

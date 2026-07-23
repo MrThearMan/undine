@@ -48,6 +48,13 @@ from undine import (
     UnionType,
     create_schema,
 )
+from undine.federation import (
+    ExternalDirective,
+    FederationField,
+    FederationType,
+    KeyDirective,
+    create_federation_schema,
+)
 from undine.relay import Connection
 from undine.settings import undine_settings as _undine_settings
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
@@ -861,6 +868,68 @@ def test_introspection__visibility__directive__argument(graphql, undine_settings
     directives = get_directives(response)
 
     assert len(directives["Version"]["args"]) == (1 if is_visible else 0)
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+def test_introspection__visibility__federation_type(graphql, undine_settings, is_visible) -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = get_introspection_query(descriptions=False)
+
+    with enable_visibility_patch():
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+    types = get_types(response)
+
+    assert ("Book" in types) is is_visible
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+def test_introspection__visibility__federation_field(graphql, undine_settings, is_visible) -> None:
+    @KeyDirective(fields="isbn")
+    class BookExt(FederationType, schema_name="Book"):
+        isbn = FederationField(str)
+        title = FederationField(str) @ ExternalDirective()
+
+        @title.visible
+        def title_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class TaskType(QueryType[Task]):
+        pk = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    query = get_introspection_query(descriptions=False)
+
+    with enable_visibility_patch():
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+    types = get_types(response)
+
+    # 'isbn' is always visible; 'title' is toggled.
+    assert len(types["Book"]["fields"]) == (2 if is_visible else 1)
 
 
 def test_is_visible__plain_input_object_type() -> None:

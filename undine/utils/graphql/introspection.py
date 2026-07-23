@@ -32,6 +32,8 @@ from .undine_extensions import (
     get_undine_directive,
     get_undine_directive_argument,
     get_undine_entrypoint,
+    get_undine_federation_field,
+    get_undine_federation_type,
     get_undine_field,
     get_undine_filter,
     get_undine_filterset,
@@ -87,6 +89,10 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
                     return connection.interface_type.__is_visible__(info.context)  # type: ignore[attr-defined]
                 return True  # Should never happen  # pragma: no cover
 
+            federation_type = get_undine_federation_type(obj)
+            if federation_type is not None:
+                return federation_type.__is_visible__(info.context)
+
         case GraphQLInputObjectType():
             mutation_type = get_undine_mutation_type(obj)
             if mutation_type is not None:
@@ -138,6 +144,12 @@ def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR09
             if interface_field is not None:
                 if interface_field.visible_func is not None:
                     return interface_field.visible_func(interface_field, info.context)
+                return True
+
+            federation_field = get_undine_federation_field(obj)
+            if federation_field is not None:
+                if federation_field.visible_func is not None:
+                    return federation_field.visible_func(federation_field, info.context)
                 return True
 
             field_type = get_underlying_type(obj.type)

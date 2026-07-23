@@ -544,6 +544,32 @@ keep resolving independently:
 Both hooks may also be defined `async`. If a permission check fails, the failing entity slot or field
 becomes `null` with the error attached, leaving the rest of the batch intact.
 
+## Visibility
+
+> This is an experimental feature that needs to be enabled using the
+> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
+
+You can hide a `FederationType` from certain users by using the `__is_visible__` method.
+Selecting a hidden `FederationType` results in an error that looks exactly
+like the type didn't exist in the first place.
+
+```python
+-8<- "federation/federation_type_visible.py"
+```
+
+You can hide a `FederationField` from certain users by decorating a method with the
+`<field_name>.visible` decorator. Hiding a `FederationField` means that trying to select it results
+in an error that looks exactly like the field didn't exist in the first place.
+
+```python
+-8<- "federation/federation_field_visible.py"
+```
+
+> Note that visibility expects clients to introspect and query the your schema directly.
+> In a federation scenario, the composed supergraph that the router advertises does not change per request.
+> This results in hidden types and fields showing when they shouldn't. This also applies to other schema entities
+> where visibility can be used, see [visibility rule](validation-rules.md#visibilityrule).
+
 ## Apollo compatibility
 
 Undine is verified against Apollo's [subgraph compatibility harness]{:target="_blank"}, which
