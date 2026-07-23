@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString
+from graphql import DirectiveLocation, GraphQLDirective, GraphQLField, GraphQLNonNull, GraphQLObjectType, GraphQLString
 
 from example_project.app.models import Task
 from undine import Directive, DirectiveArgument, Entrypoint, Field, QueryType, RootType
@@ -11,6 +11,12 @@ from undine.exceptions import (
     UnsupportedFederationVersionError,
 )
 from undine.federation import create_federation_schema
+from undine.federation.schema import (
+    skip_federation_directive_definitions,
+    skip_federation_field_definitions,
+    skip_federation_type_definitions,
+)
+from undine.federation.validation import validate_directive_min_version
 from undine.federation.version import SUPPORTED_FEDERATION_VERSIONS, parse_version
 
 
@@ -156,3 +162,47 @@ def test_create_federation_schema__unsupported_version_error_lists_versions_in_n
         f"but got positions {positions} for versions {list(SUPPORTED_FEDERATION_VERSIONS)}"
     )
     assert parse_version(SUPPORTED_FEDERATION_VERSIONS[0]) < parse_version(SUPPORTED_FEDERATION_VERSIONS[-1])
+
+
+def test_skip_federation_field_definitions__when_default_field_filter_returns_false(undine_settings) -> None:
+    class CustomPrinter(undine_settings.SDL_PRINTER):  # type: ignore[misc]
+        @classmethod
+        def default_field_filter(cls, field: GraphQLField) -> bool:
+            return False
+
+    undine_settings.SDL_PRINTER = CustomPrinter
+
+    field = GraphQLField(GraphQLString)
+    assert skip_federation_field_definitions(field) is False
+
+
+def test_skip_federation_type_definitions__when_default_type_filter_returns_false(undine_settings) -> None:
+    class CustomPrinter(undine_settings.SDL_PRINTER):  # type: ignore[misc]
+        @classmethod
+        def default_type_filter(cls, named_type) -> bool:
+            return False
+
+    undine_settings.SDL_PRINTER = CustomPrinter
+
+    named_type = GraphQLObjectType("Foo", fields={})
+    assert skip_federation_type_definitions(named_type) is False
+
+
+def test_skip_federation_directive_definitions__when_default_directive_filter_returns_false(undine_settings) -> None:
+    class CustomPrinter(undine_settings.SDL_PRINTER):  # type: ignore[misc]
+        @classmethod
+        def default_directive_filter(cls, directive) -> bool:
+            return False
+
+    undine_settings.SDL_PRINTER = CustomPrinter
+
+    directive = GraphQLDirective("mydir", locations=[DirectiveLocation.FIELD])
+    assert skip_federation_directive_definitions(directive) is False
+
+
+def test_validate_directive_min_version__no_min_version_returns_early() -> None:
+    class MyDirective(Directive, locations=[DirectiveLocation.FIELD], schema_name="mydir"):
+        note = DirectiveArgument(GraphQLNonNull(GraphQLString))
+
+    # Should return early without raising, since no FEDERATION_MIN_VERSION_EXTENSIONS_KEY is set.
+    validate_directive_min_version(MyDirective)

@@ -42,7 +42,7 @@ def _is_tracing_requested(request: DjangoRequestProtocol) -> bool:
 def _require_protobuf() -> None:
     try:
         import google.protobuf.timestamp_pb2  # noqa: F401, PLC0415
-    except ImportError as error:
+    except ImportError as error:  # pragma: no cover
         msg = (
             "FederatedTracingHook requires the 'protobuf' package. "
             "Install it with: pip install 'undine[federation-tracing]'"
@@ -60,11 +60,10 @@ class FederatedTracingHook(LifecycleHook):
         if self.enabled:
             _require_protobuf()
 
-        root = FederationTraceNode()
         root_path: tuple[str | int, ...] = ()
 
-        self.trace: FederationTrace = FederationTrace(root=root)
-        self.nodes: dict[tuple[str | int, ...], FederationTraceNode] = {root_path: root}
+        self.trace: FederationTrace = FederationTrace()
+        self.nodes: dict[tuple[str | int, ...], FederationTraceNode] = {root_path: self.trace.root}
         self.start_perf_counter_ns: int = 0
 
     def on_operation(self) -> Generator[None, None, None]:
@@ -311,7 +310,7 @@ class FederationTrace:
     start_time: Timestamp | None = None
     end_time: Timestamp | None = None
     duration_ns: int = 0
-    root: FederationTraceNode | None = None
+    root: FederationTraceNode = dataclasses.field(default_factory=FederationTraceNode)
 
     def SerializeToString(self) -> bytes:  # noqa: N802
         parts: list[bytes] = []
@@ -330,10 +329,9 @@ class FederationTrace:
             duration_varint = _encode_varint(self.duration_ns)
             parts.extend((_TRACE_DURATION_NS_TAG, duration_varint))
 
-        if self.root is not None:
-            root_bytes = self.root.SerializeToString()
-            root_length = _encode_varint(len(root_bytes))
-            parts.extend((_TRACE_ROOT_TAG, root_length, root_bytes))
+        root_bytes = self.root.SerializeToString()
+        root_length = _encode_varint(len(root_bytes))
+        parts.extend((_TRACE_ROOT_TAG, root_length, root_bytes))
 
         return b"".join(parts)
 

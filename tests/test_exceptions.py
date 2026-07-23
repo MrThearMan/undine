@@ -14,10 +14,19 @@ from undine.exceptions import (
     BulkMutateNeedsImplementationError,
     DirectiveLocationError,
     DirectiveRepeatedError,
+    DirectiveVersionError,
     EmptyFilterResult,
     ErrorMessageFormatter,
     ExpressionMultipleOutputFieldError,
     ExpressionNoOutputFieldError,
+    FederationEntitiesFieldConflictError,
+    FederationFeatureVersionError,
+    FederationFieldSetTooComplexError,
+    FederationKeyRequiresCustomResolverError,
+    FederationMultipleKeysRequireCustomResolverError,
+    FederationRequiresNonExternalFieldError,
+    FederationRequiresUnknownFieldError,
+    FederationServiceFieldConflictError,
     FunctionDispatcherImplementationNotFoundError,
     FunctionDispatcherImproperLiteralError,
     FunctionDispatcherNoArgumentAnnotationError,
@@ -28,6 +37,7 @@ from undine.exceptions import (
     FunctionSignatureParsingError,
     GraphQLAPQHashInvalidError,
     GraphQLAPQHashMissingError,
+    GraphQLAPQNotSuppoertedError,
     GraphQLAPQVersionInvalidError,
     GraphQLAPQVersionMissingError,
     GraphQLAPQVersionNotSupportedError,
@@ -67,6 +77,7 @@ from undine.exceptions import (
     GraphQLModelFieldNotFoundError,
     GraphQLModelNotFoundError,
     GraphQLModelsNotFoundError,
+    GraphQLMultipleModelsFoundError,
     GraphQLMutationInputNotFoundError,
     GraphQLMutationInstanceLimitError,
     GraphQLMutationTreeModelMismatchError,
@@ -119,6 +130,9 @@ from undine.exceptions import (
     InterfaceFieldDoesNotExistError,
     InterfaceFieldNodeIDError,
     InterfaceFieldTypeMismatchError,
+    InterfaceTypeFieldNotDeclaredError,
+    InterfaceTypeModelsDifferentError,
+    InterfaceTypeRequiresMultipleModelsError,
     InvalidDocstringParserError,
     InvalidEntrypointMutationTypeError,
     InvalidInputMutationTypeError,
@@ -127,9 +141,14 @@ from undine.exceptions import (
     MissingDirectiveArgumentError,
     MissingDirectiveLocationsError,
     MissingEntrypointRefError,
+    MissingFederationFieldRefError,
+    MissingFederationFieldResolverError,
+    MissingFederationKeysError,
+    MissingFederationReferenceResolverError,
     MissingFunctionAnnotationsError,
     MissingFunctionReturnTypeError,
     MissingModelGenericError,
+    MissingUnionQueryTypeGenericError,
     ModelFieldDoesNotExistError,
     ModelFieldNotARelationError,
     ModelFieldNotARelationOfModelError,
@@ -148,6 +167,8 @@ from undine.exceptions import (
     UnionTypeModelsDifferentError,
     UnionTypeMultipleTypesError,
     UnionTypeRequiresMultipleModelsError,
+    UnsupportedFederationVersionError,
+    WebSocketConnectionClosedError,
     WebSocketConnectionInitAlreadyInProgressError,
     WebSocketConnectionInitForbiddenError,
     WebSocketConnectionInitTimeoutError,
@@ -240,6 +261,11 @@ class UndineErrorParams(NamedTuple):
             args={"directive": "foo"},
             message="Directive 'foo' is not repeatable",
         ),
+        DirectiveVersionError.__name__: UndineErrorParams(
+            cls=DirectiveVersionError,
+            args={"directive": "foo", "min_version": "2.3"},
+            message="Federation directive '@foo' requires 'FEDERATION_VERSION' to be at least '2.3'.",
+        ),
         EmptyFilterResult.__name__: UndineErrorParams(
             cls=EmptyFilterResult,
             args={},
@@ -260,6 +286,70 @@ class UndineErrorParams(NamedTuple):
             message=(
                 "Could not determine an output field for expression <Q: (AND: )>. "
                 "No output field found from any source expressions."
+            ),
+        ),
+        FederationEntitiesFieldConflictError.__name__: UndineErrorParams(
+            cls=FederationEntitiesFieldConflictError,
+            args={"query": MyClass},
+            message=(
+                "Cannot inject federation '_entities' field: query type 'tests.test_exceptions.MyClass' "
+                "already declares an '_entities' entrypoint."
+            ),
+        ),
+        FederationFeatureVersionError.__name__: UndineErrorParams(
+            cls=FederationFeatureVersionError,
+            args={"feature": "Subscription root type", "min_version": "2.4"},
+            message="Federation feature 'Subscription root type' requires 'FEDERATION_VERSION' to be at least '2.4'.",
+        ),
+        FederationFieldSetTooComplexError.__name__: UndineErrorParams(
+            cls=FederationFieldSetTooComplexError,
+            args={"fields": "a { b }", "cls": MyClass},
+            message=(
+                "'@key(fields: 'a { b }')' on 'tests.test_exceptions.MyClass' contains a compound key, "
+                "a nested selection or field alias, which the default '__resolve_reference__' does not support. "
+                "Define '__resolve_reference__' as a classmethod on the class to handle this key."
+            ),
+        ),
+        FederationKeyRequiresCustomResolverError.__name__: UndineErrorParams(
+            cls=FederationKeyRequiresCustomResolverError,
+            args={"fields": "foo", "cls": MyClass, "token": "foo"},
+            message=(
+                "'@key(fields: 'foo')' on 'tests.test_exceptions.MyClass' references field 'foo', "
+                "which is not declared on the class. "
+                "Define '__resolve_reference__' as a classmethod on the class to handle this key."
+            ),
+        ),
+        FederationMultipleKeysRequireCustomResolverError.__name__: UndineErrorParams(
+            cls=FederationMultipleKeysRequireCustomResolverError,
+            args={"cls": MyClass},
+            message=(
+                "'tests.test_exceptions.MyClass' has zero or multiple resolvable '@key' directives. "
+                "Define '__resolve_reference__' as a classmethod on the class to handle this."
+            ),
+        ),
+        FederationRequiresNonExternalFieldError.__name__: UndineErrorParams(
+            cls=FederationRequiresNonExternalFieldError,
+            args={"fields": "foo", "cls": MyClass, "name": "bar", "token": "foo"},
+            message=(
+                "'@requires(fields: 'foo')' on 'tests.test_exceptions.MyClass.bar' references field 'foo', "
+                "which is not marked with '@external'. "
+                "Fields listed in '@requires' must carry '@ExternalDirective()' on the same 'FederationType'."
+            ),
+        ),
+        FederationRequiresUnknownFieldError.__name__: UndineErrorParams(
+            cls=FederationRequiresUnknownFieldError,
+            args={"fields": "foo", "cls": MyClass, "name": "bar", "token": "foo"},
+            message=(
+                "'@requires(fields: 'foo')' on 'tests.test_exceptions.MyClass.bar' references field 'foo', "
+                "which is not declared as a 'FederationField' on the 'FederationType'."
+            ),
+        ),
+        FederationServiceFieldConflictError.__name__: UndineErrorParams(
+            cls=FederationServiceFieldConflictError,
+            args={"query": MyClass},
+            message=(
+                "Cannot inject federation '_service' field: query type 'tests.test_exceptions.MyClass' "
+                "already declares a '_service' entrypoint."
             ),
         ),
         FunctionSignatureParsingError.__name__: UndineErrorParams(
@@ -294,6 +384,24 @@ class UndineErrorParams(NamedTuple):
                 "Field 'foo' from interface 'tests.test_exceptions.MyClass' expects type '<class 'str'>' "
                 "but Model field generated type '<class 'int'>'"
             ),
+        ),
+        InterfaceTypeFieldNotDeclaredError.__name__: UndineErrorParams(
+            cls=InterfaceTypeFieldNotDeclaredError,
+            args={"kind": "Filter", "name": "foo", "field_name": "foo", "interface": MyClass},
+            message=(
+                "Filter 'foo' references field 'foo' which is not declared as an `InterfaceField` "
+                "on `InterfaceType` 'MyClass'"
+            ),
+        ),
+        InterfaceTypeModelsDifferentError.__name__: UndineErrorParams(
+            cls=InterfaceTypeModelsDifferentError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet to an InterfaceType with different models",
+        ),
+        InterfaceTypeRequiresMultipleModelsError.__name__: UndineErrorParams(
+            cls=InterfaceTypeRequiresMultipleModelsError,
+            args={"kind": "FilterSet"},
+            message="Cannot add a FilterSet with a single model to an InterfaceType",
         ),
         InvalidInputMutationTypeError.__name__: UndineErrorParams(
             cls=InvalidInputMutationTypeError,
@@ -360,10 +468,50 @@ class UndineErrorParams(NamedTuple):
                 "e.g. `class MyDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION])`."
             ),
         ),
+        MissingFederationFieldRefError.__name__: UndineErrorParams(
+            cls=MissingFederationFieldRefError,
+            args={"name": "foo", "cls": MyClass},
+            message="FederationField 'foo' in class 'tests.test_exceptions.MyClass' must have a reference.",
+        ),
+        MissingFederationFieldResolverError.__name__: UndineErrorParams(
+            cls=MissingFederationFieldResolverError,
+            args={"cls": MyClass, "name": "bar"},
+            message=(
+                "FederationField 'tests.test_exceptions.MyClass.bar' has no resolver: "
+                "it is not part of any '@key(fields=...)', is not marked with '@ExternalDirective()', "
+                "and no '@bar.resolve' function was registered. Add '@bar.resolve' to provide a resolver."
+            ),
+        ),
+        MissingFederationKeysError.__name__: UndineErrorParams(
+            cls=MissingFederationKeysError,
+            args={"cls": MyClass},
+            message=(
+                "'tests.test_exceptions.MyClass' must be decorated with at least one '@KeyDirective(fields=...)' "
+                "to be a valid Federation entity."
+            ),
+        ),
+        MissingFederationReferenceResolverError.__name__: UndineErrorParams(
+            cls=MissingFederationReferenceResolverError,
+            args={"cls": MyClass, "name": "bar", "ref": MyClass},
+            message=(
+                "Field 'tests.test_exceptions.MyClass.bar' references FederationType "
+                "'tests.test_exceptions.MyClass' owned by another subgraph. "
+                "Add '@bar.resolve' that returns a representation dict (e.g. {'id': ...}) matching "
+                "the entity's '@KeyDirective(fields=...)'."
+            ),
+        ),
         MissingModelGenericError.__name__: UndineErrorParams(
             cls=MissingModelGenericError,
             args={"name": "TaskType", "cls": "QueryType"},
             message="'TaskType' is missing its generic types: `class TaskType(QueryType[MyModel])`.",
+        ),
+        MissingUnionQueryTypeGenericError.__name__: UndineErrorParams(
+            cls=MissingUnionQueryTypeGenericError,
+            args={"name": "Searchable"},
+            message=(
+                "'Searchable' is missing its generic types: "
+                "`class Searchable(UnionType[QueryType1, QueryType2])`."
+            ),
         ),
         ModelFieldDoesNotExistError.__name__: UndineErrorParams(
             cls=ModelFieldDoesNotExistError,
@@ -417,6 +565,11 @@ class UndineErrorParams(NamedTuple):
             cls=UnionTypeRequiresMultipleModelsError,
             args={"kind": "FilterSet"},
             message="Cannot add a FilterSet with a single model to a UnionType",
+        ),
+        UnsupportedFederationVersionError.__name__: UndineErrorParams(
+            cls=UnsupportedFederationVersionError,
+            args={"version": "9.0", "supported_versions": ["2.0", "2.1"]},
+            message="'FEDERATION_VERSION' '9.0' is not supported. Supported versions are: '2.0' and '2.1'.",
         ),
         FunctionDispatcherImplementationNotFoundError.__name__: UndineErrorParams(
             cls=FunctionDispatcherImplementationNotFoundError,
@@ -543,6 +696,12 @@ class GQLErrorParams(NamedTuple):
             args={},
             message="Automated Persisted Query hash information is missing.",
             extensions={"error_code": "APQ_HASH_MISSING", "status_code": 400},
+        ),
+        GraphQLAPQNotSuppoertedError.__name__: GQLErrorParams(
+            cls=GraphQLAPQNotSuppoertedError,
+            args={},
+            message="Automated Persisted Queries are not supported.",
+            extensions={"error_code": "APQ_NOT_SUPPORTED", "status_code": 400},
         ),
         GraphQLAPQVersionMissingError.__name__: GQLErrorParams(
             cls=GraphQLAPQVersionMissingError,
@@ -799,6 +958,12 @@ class GQLErrorParams(NamedTuple):
             args={"missing": [1, 2], "model": Task},
             message="Primary keys '1' and '2' on model 'example_project.app.models.Task' did not match any row.",
             extensions={"error_code": "MODEL_INSTANCE_NOT_FOUND", "status_code": 404},
+        ),
+        GraphQLMultipleModelsFoundError.__name__: GQLErrorParams(
+            cls=GraphQLMultipleModelsFoundError,
+            args={"field": "pk", "value": 1, "model": Task},
+            message="Field 'pk' with value 1 on model 'example_project.app.models.Task' matched multiple rows.",
+            extensions={"error_code": "MULTIPLE_MODEL_INSTANCES_FOUND", "status_code": 404},
         ),
         GraphQLMutationInputNotFoundError.__name__: GQLErrorParams(
             cls=GraphQLMutationInputNotFoundError,
@@ -1318,6 +1483,12 @@ class WebsocketErrorParams(NamedTuple):
             args={},
             reason="Subprotocol not acceptable",
             code=GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE,
+        ),
+        "WebSocketConnectionClosedError": WebsocketErrorParams(
+            cls=WebSocketConnectionClosedError,
+            args={},
+            reason="Connection closed",
+            code=GraphQLWebSocketCloseCode.NORMAL_CLOSURE,
         ),
     })
 )

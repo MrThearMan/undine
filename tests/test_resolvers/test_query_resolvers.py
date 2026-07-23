@@ -4479,3 +4479,588 @@ def test_resolvers__interface_type_connection_resolver__optimize__filter_order_k
         )
 
     assert result.queryset_map is not None
+
+
+# InterfaceTypeResolver: filter/order paths
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_resolver__fetch_instances__filter_none(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=none_result),
+    ):
+        result = resolver.fetch_instances(info=mock_gql_info(), root=None, queryset_map=queryset_map)
+
+    assert result == []
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__async__fetch_instances__filter_none(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=none_result),
+    ):
+        result = await resolver.fetch_instances_async(info=mock_gql_info(), root=None, queryset_map=queryset_map)
+
+    assert result == []
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__async__fetch_instances__filter_not_none(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    not_none_result = FilterResults(filters=[], aliases={}, distinct=False, none=False)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=not_none_result),
+    ):
+        result = await resolver.fetch_instances_async(info=mock_gql_info(), root=None, queryset_map=queryset_map)
+
+    assert len(result) == 1
+    assert result[0].pk == task.pk
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_resolver__async__fetch_instances__order(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    order_result = OrderResults(order_by=["pk"], aliases={})
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedOrderSet, "__build__", return_value=order_result),
+    ):
+        result = await resolver.fetch_instances_async(info=mock_gql_info(), root=None, queryset_map=queryset_map)
+
+    assert len(result) == 1
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_resolver__filter_interface__none_early_return(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with patch.object(NamedFilterSet, "__build__", return_value=none_result):
+        result = resolver.filter_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.none is True
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_resolver__filter_interface__aliases_distinct_no_filters(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    filter_result = FilterResults(
+        filters=[],
+        aliases={"__test_alias": Value(1)},
+        distinct=True,
+        none=False,
+    )
+
+    with patch.object(NamedFilterSet, "__build__", return_value=filter_result):
+        result = resolver.filter_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.none is False
+    assert result.distinct is True
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_resolver__order_interface__aliases_no_order_by(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    resolver = InterfaceTypeResolver(interface=Named, entrypoint=Query.named)
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    order_result = OrderResults(order_by=[], aliases={"__test_alias": Value(1)})
+
+    with patch.object(NamedOrderSet, "__build__", return_value=order_result):
+        result = resolver.order_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.order_by == []
+
+
+# InterfaceTypeConnectionResolver: filter/order paths
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__fetch_instances__filter_none(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result = QuerySetMapWithPagination(queryset_map={TaskType: task_qs}, pagination=pagination)
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=none_result),
+    ):
+        instances = resolver.fetch_instances(root=None, info=mock_gql_info(), result=result)
+
+    assert instances == []
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__async__fetch_instances__filter_none(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result = QuerySetMapWithPagination(queryset_map={TaskType: task_qs}, pagination=pagination)
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=none_result),
+    ):
+        instances = await resolver.fetch_instances_async(root=None, info=mock_gql_info(), result=result)
+
+    assert instances == []
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__async__fetch_instances__order(undine_settings) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result = QuerySetMapWithPagination(queryset_map={TaskType: task_qs}, pagination=pagination)
+
+    order_result = OrderResults(order_by=["pk"], aliases={})
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedOrderSet, "__build__", return_value=order_result),
+    ):
+        instances = await resolver.fetch_instances_async(root=None, info=mock_gql_info(), result=result)
+
+    assert len(instances) == 1
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__filter_interface__none_early_return(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    none_result = FilterResults(filters=[], aliases={}, distinct=False, none=True)
+
+    with patch.object(NamedFilterSet, "__build__", return_value=none_result):
+        result = resolver.filter_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.none is True
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__filter_interface__aliases_distinct_no_filters(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    filter_result = FilterResults(
+        filters=[],
+        aliases={"__test_alias": Value(1)},
+        distinct=True,
+        none=False,
+    )
+
+    with patch.object(NamedFilterSet, "__build__", return_value=filter_result):
+        result = resolver.filter_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.none is False
+    assert result.distinct is True
+
+
+@pytest.mark.django_db
+def test_resolvers__interface_type_connection_resolver__order_interface__aliases_no_order_by(undine_settings) -> None:
+    undine_settings.ASYNC = False
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task_qs = Task.objects.all().annotate(__typename=Value(TaskType.__schema_name__))
+    queryset_map = {TaskType: task_qs}
+
+    order_result = OrderResults(order_by=[], aliases={"__test_alias": Value(1)})
+
+    with patch.object(NamedOrderSet, "__build__", return_value=order_result):
+        result = resolver.order_interface(arg_values={}, info=mock_gql_info(), queryset_map=queryset_map)
+
+    assert result.order_by == []
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__async__fetch_instances__filter_and_order(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result = QuerySetMapWithPagination(queryset_map={TaskType: task_qs}, pagination=pagination)
+
+    not_none_result = FilterResults(filters=[], aliases={}, distinct=False, none=False)
+    order_result = OrderResults(order_by=["pk"], aliases={})
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=not_none_result),
+        patch.object(NamedOrderSet, "__build__", return_value=order_result),
+    ):
+        instances = await resolver.fetch_instances_async(root=None, info=mock_gql_info(), result=result)
+
+    assert len(instances) == 1
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.asyncio
+async def test_resolvers__interface_type_connection_resolver__async__fetch_instances__filter_only_not_none(
+    undine_settings,
+) -> None:
+    undine_settings.ASYNC = True
+
+    class NamedFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    connection = Connection(Named)
+
+    class Query(RootType):
+        named = Entrypoint(connection)
+
+    resolver: InterfaceTypeConnectionResolver = InterfaceTypeConnectionResolver(
+        connection=connection,
+        entrypoint=Query.named,
+    )
+
+    task = await sync_to_async(TaskFactory.create)(name="Task 1")
+
+    task_qs = Task.objects.filter(pk=task.pk).annotate(__typename=Value(TaskType.__schema_name__))
+    pagination = PaginationHandler(typename=Named.__schema_name__, first=10)
+    result = QuerySetMapWithPagination(queryset_map={TaskType: task_qs}, pagination=pagination)
+
+    not_none_result = FilterResults(filters=[], aliases={}, distinct=False, none=False)
+
+    with (
+        patch("undine.resolvers.query.get_arguments", return_value={}),
+        patch.object(NamedFilterSet, "__build__", return_value=not_none_result),
+    ):
+        instances = await resolver.fetch_instances_async(root=None, info=mock_gql_info(), result=result)
+
+    assert len(instances) == 1

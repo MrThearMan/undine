@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from typing import TypedDict
+from unittest.mock import patch
 
+import pytest
 from django.db.models import Subquery, Value
 from django.db.models.functions.datetime import Now
 from graphql import (
@@ -19,6 +21,7 @@ from example_project.app.models import Comment, Project, Task
 from undine import (
     Calculation,
     CalculationArgument,
+    Field,
     FilterSet,
     GQLInfo,
     Input,
@@ -31,6 +34,7 @@ from undine import (
 )
 from undine.converters import convert_to_graphql_argument_map
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
+from undine.exceptions import InterfaceTypeRequiresMultipleModelsError
 from undine.pagination import OffsetPagination
 from undine.relay import Connection
 from undine.typing import DjangoExpression
@@ -547,3 +551,35 @@ def test_to_argument_map__offset_pagination__interface_type() -> None:
 
     result = convert_to_graphql_argument_map(pagination, many=True)
     assert sorted(result) == ["limit", "offset"]
+
+
+def test_to_argument_map__interface_type__filterset_single_model_error() -> None:
+    class MyFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=MyFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    with patch.object(MyFilterSet, "__models__", (Task,)), pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+        convert_to_graphql_argument_map(Named, many=True)
+
+
+def test_to_argument_map__interface_type__orderset_single_model_error() -> None:
+    class MyOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=MyOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    with patch.object(MyOrderSet, "__models__", (Task,)), pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+        convert_to_graphql_argument_map(Named, many=True)

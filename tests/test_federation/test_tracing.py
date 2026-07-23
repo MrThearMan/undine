@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from textwrap import dedent
-from typing import Any, Generator
+from typing import Any, AsyncGenerator, Generator
 
 import freezegun
 import pytest
@@ -22,7 +22,7 @@ from graphql import (
 from tests.helpers import MockRequest
 from tests.test_federation._proto import reports_pb2
 from undine.dataclasses import GraphQLHttpParams
-from undine.execution import execute_graphql_http_async, execute_graphql_http_sync
+from undine.execution import execute_graphql_http_async, execute_graphql_http_sync, execute_graphql_with_subscription
 from undine.federation import tracing as tracing_module
 from undine.federation.tracing import (
     TRACING_EXTENSION_KEY,
@@ -650,3 +650,142 @@ async def test_federated_tracing__async_captures_errors(undine_settings) -> None
           }
         }
     """)
+
+
+@pytest.mark.asyncio
+async def test_federated_tracing__async_on_operation__disabled_yields_without_attaching(undine_settings) -> None:
+    """When the trigger header is absent, the async operation hook must yield without producing extensions."""
+
+    async def resolve_async(obj: Any, info: Any) -> str:  # noqa: RUF029
+        return "async-hello"
+
+    undine_settings.SCHEMA = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={"greeting": GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_async)},
+        ),
+    )
+    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+
+    params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
+    request = MockRequest(method="POST", headers=_headers({}))
+    result = await execute_graphql_http_async(params=params, request=request)
+
+    assert result.data == {"greeting": "async-hello"}
+    assert not (result.extensions or {}).get(TRACING_EXTENSION_KEY)
+
+
+@pytest.mark.asyncio
+async def test_federated_tracing__subscription_stream__skips_extension_attachment(undine_settings) -> None:
+    """
+    Subscriptions produce a `GraphQLStream` rather than an `ExecutionResult`, so `_attach_trace`
+    must not try to write the `ftv1` extension onto per-event results before iteration starts.
+    """
+
+    async def subscribe_countdown(obj: Any, info: Any) -> AsyncGenerator[int, None]:  # noqa: RUF029
+        for i in range(3, 0, -1):
+            yield i
+
+    def resolve_countdown(payload: int, info: Any) -> int:
+        return payload
+
+    undine_settings.SCHEMA = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={"noop": GraphQLField(GraphQLString)},
+        ),
+        subscription=GraphQLObjectType(
+            "Subscription",
+            fields={
+                "countdown": GraphQLField(
+                    GraphQLNonNull(GraphQLString),
+                    resolve=resolve_countdown,
+                    subscribe=subscribe_countdown,
+                ),
+            },
+        ),
+    )
+    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+
+    params = GraphQLHttpParams(
+        document="subscription { countdown }",
+        variables={},
+        operation_name=None,
+        extensions={},
+    )
+    request = MockRequest(method="WEBSOCKET", headers=_headers({TRACING_HEADER_NAME: TRACING_HEADER_VALUE}))
+    stream = await execute_graphql_with_subscription(params=params, request=request)
+
+    async for event in stream:
+        assert not (event.extensions or {}).get(TRACING_EXTENSION_KEY)
+
+
+def test_federated_tracing__error_on_null_list_item_bubbles_to_parent_node(undine_settings) -> None:
+    """
+    When a non-nullable list item is `null`, graphql-core adds an error at the list index path
+    (e.g. `["people", 1]`) even though no resolver ran for that item. The tracing hook must
+    walk that path up to a node it did resolve for (here: `["people"]`).
+    """
+
+    def resolve_people(obj: Any, info: Any) -> list[dict[str, Any] | None]:
+        return [{"name": "Ada"}, None, {"name": "Grace"}]
+
+    person_type = GraphQLObjectType(
+        "Person",
+        fields={"name": GraphQLField(GraphQLNonNull(GraphQLString))},
+    )
+    undine_settings.SCHEMA = GraphQLSchema(
+        query=GraphQLObjectType(
+            "Query",
+            fields={
+                "people": GraphQLField(
+                    GraphQLList(GraphQLNonNull(person_type)),
+                    resolve=resolve_people,
+                ),
+            },
+        ),
+    )
+    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+
+    result = _run_query("{ people { name } }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
+
+    assert result.errors is not None
+    assert any(err.path == ["people", 1] for err in result.errors)
+
+    trace = _decode(result.extensions[TRACING_EXTENSION_KEY])
+    people = _child_by_name(trace.root, "people")
+    # The null-item error can't attach to `["people", 1]` (no such node), so it bubbles to `["people"]`.
+    assert len(people.error) == 1
+    assert "null" in people.error[0].message.lower()
+
+
+def test_federation_trace_error__serialize__no_fields_produces_empty() -> None:
+    error = tracing_module.FederationTraceError()
+
+    assert error.SerializeToString() == b""
+
+
+def test_federation_trace_error__serialize__line_only_encodes_line_tag() -> None:
+    error = tracing_module.FederationTraceError(location_line=5, location_column=0)
+
+    serialized = error.SerializeToString()
+
+    # Location tag with only line encoded (column varint absent).
+    assert serialized.startswith(b"\x12")
+
+
+def test_federation_trace_error__serialize__column_only_encodes_column_tag() -> None:
+    error = tracing_module.FederationTraceError(location_line=0, location_column=7)
+
+    serialized = error.SerializeToString()
+
+    # Location tag with only column encoded (line varint absent).
+    assert serialized.startswith(b"\x12")
+
+
+def test_federation_trace__serialize__before_start_and_end_times_are_set() -> None:
+    """`start_time` and `end_time` are populated by the hook lifecycle; before that they stay `None`."""
+    trace = tracing_module.FederationTrace()
+
+    # Should emit only the required `root` field.
+    assert trace.SerializeToString() == b"\x72\x00"
