@@ -60,8 +60,9 @@ jobs:
       - name: "Run Apollo subgraph compatibility harness"
         uses: apollographql/federation-subgraph-compatibility@v2
         with:
-          compose: tests/test_federation/compatibility/docker-compose.yaml
-          schema: tests/test_federation/compatibility/schema.graphql
+          workingDirectory: tests/test_federation/compatibility
+          compose: docker-compose.yaml
+          schema: schema.graphql
           port: 4001
           failOnWarning: true
           failOnRequired: true
