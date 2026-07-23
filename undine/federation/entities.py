@@ -45,7 +45,11 @@ def make_entities_entrypoint(
 
     ref = EntitiesRef(entities_by_typename=entities_by_typename, entity_union=entity_union)
 
-    entrypoint = Entrypoint(ref, schema_name="_entities")
+    entrypoint = Entrypoint(
+        ref,
+        schema_name="_entities",
+        extensions={undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY: True},
+    )
     entrypoint.__connect__(query, "_entities")
     return entrypoint
 

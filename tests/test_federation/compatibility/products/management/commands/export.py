@@ -4,7 +4,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.management import BaseCommand
-from graphql import GraphQLDirective, GraphQLNamedType
+from graphql import GraphQLDirective, GraphQLField, GraphQLNamedType
 
 from undine.settings import undine_settings
 
@@ -14,6 +14,7 @@ def render_schema() -> str:
         undine_settings.SCHEMA,
         type_filter=type_filter,
         directive_filter=directive_filter,
+        field_filter=field_filter,
         extend_schema=True,
     )
 
@@ -44,3 +45,9 @@ def directive_filter(directive: GraphQLDirective) -> bool:
         "cacheRules",
         "semanticNonNull",
     }
+
+
+def field_filter(field: GraphQLField) -> bool:
+    if not undine_settings.SDL_PRINTER.default_field_filter(field):
+        return False
+    return not field.extensions.get(undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY, False)

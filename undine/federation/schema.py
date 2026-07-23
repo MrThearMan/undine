@@ -25,7 +25,7 @@ from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_schema_directives
 
 if TYPE_CHECKING:
-    from graphql import GraphQLDirective, GraphQLSchema
+    from graphql import GraphQLDirective, GraphQLField, GraphQLNamedType, GraphQLSchema
 
     from undine import Directive, QueryType
     from undine.entrypoint import RootType
@@ -93,6 +93,8 @@ def create_federation_schema(
     sdl = undine_settings.SDL_PRINTER.print_schema(
         schema,
         directive_filter=skip_federation_directive_definitions,
+        type_filter=skip_federation_type_definitions,
+        field_filter=skip_federation_field_definitions,
         extend_schema=True,
     )
     schema.extensions[undine_settings.FEDERATION_SDL_EXTENSIONS_KEY] = sdl
@@ -103,6 +105,18 @@ def skip_federation_directive_definitions(directive: GraphQLDirective) -> bool:
     if not undine_settings.SDL_PRINTER.default_directive_filter(directive):
         return False
     return not directive.extensions.get(undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY, False)
+
+
+def skip_federation_type_definitions(named_type: GraphQLNamedType) -> bool:
+    if not undine_settings.SDL_PRINTER.default_type_filter(named_type):
+        return False
+    return not named_type.extensions.get(undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY, False)
+
+
+def skip_federation_field_definitions(field: GraphQLField) -> bool:
+    if not undine_settings.SDL_PRINTER.default_field_filter(field):
+        return False
+    return not field.extensions.get(undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY, False)
 
 
 def find_resolvable_entities() -> list[type[QueryType]]:

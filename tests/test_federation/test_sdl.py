@@ -128,7 +128,7 @@ def test_sdl__contains_shareable_usage() -> None:
     assert "@shareable" in sdl
 
 
-def test_sdl__contains_service_type_definition() -> None:
+def test_sdl__omits_service_type_and_field_per_apollo_spec() -> None:
     class TaskType(QueryType[Task]):
         name = Field()
 
@@ -138,9 +138,8 @@ def test_sdl__contains_service_type_definition() -> None:
     schema = create_federation_schema(query=Query)
 
     sdl = schema.extensions["undine_federation_sdl"]
-    assert "type _Service" in sdl
-    assert "sdl: String!" in sdl
-    assert "_service: _Service!" in sdl
+    assert "type _Service" not in sdl
+    assert "_service" not in sdl
 
 
 def test_sdl__doesnt_contain_builtin_scalars() -> None:

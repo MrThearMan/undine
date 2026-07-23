@@ -23,7 +23,11 @@ def _service_resolver(root: Any, info: GQLInfo) -> dict[str, str]:
 
 
 def make_service_entrypoint(query: type[RootType]) -> Entrypoint:
-    entrypoint = Entrypoint(GraphQLNonNull(FederationServiceType), schema_name="_service")
+    entrypoint = Entrypoint(
+        GraphQLNonNull(FederationServiceType),
+        schema_name="_service",
+        extensions={undine_settings.FEDERATION_BUILTIN_EXTENSIONS_KEY: True},
+    )
     entrypoint.resolve(_service_resolver)
     entrypoint.__connect__(query, "_service")
     return entrypoint

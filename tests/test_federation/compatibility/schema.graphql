@@ -52,10 +52,6 @@ extend type User @key(fields: "email") {
 }
 
 type Query {
-  _entities(
-    representations: [_Any!]!
-  ): [_Entity]!
-  _service: _Service!
   deprecatedProduct(
     package: String!
     sku: String!

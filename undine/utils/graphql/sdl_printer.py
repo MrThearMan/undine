@@ -96,12 +96,15 @@ class SDLPrinter:  # noqa: PLR0904
         *,
         directive_filter: Callable[[GraphQLDirective], bool] | None = None,
         type_filter: Callable[[GraphQLNamedType], bool] | None = None,
+        field_filter: Callable[[GraphQLField], bool] | None = None,
         extend_schema: bool = False,
     ) -> str:
         if directive_filter is None:
             directive_filter = cls.default_directive_filter
         if type_filter is None:
             type_filter = cls.default_type_filter
+        if field_filter is None:
+            field_filter = cls.default_field_filter
 
         schema_definition = cls.print_schema_definition(schema, extend_schema=extend_schema)
 
@@ -111,7 +114,7 @@ class SDLPrinter:  # noqa: PLR0904
             if directive_filter(directive)
         )
         types = (
-            cls.print_type(type_)  # ...
+            cls.print_type(type_, field_filter=field_filter)  # ...
             for type_ in schema.type_map.values()
             if type_filter(type_)
         )
@@ -162,16 +165,24 @@ class SDLPrinter:  # noqa: PLR0904
         return schema_str
 
     @classmethod
-    def print_type(cls, named_type: GraphQLNamedType) -> str:
+    def print_type(
+        cls,
+        named_type: GraphQLNamedType,
+        *,
+        field_filter: Callable[[GraphQLField], bool] | None = None,
+    ) -> str:
+        if field_filter is None:
+            field_filter = cls.default_field_filter
+
         match named_type:
             case GraphQLScalarType():
                 return cls.print_scalar_type(named_type)
 
             case GraphQLObjectType():
-                return cls.print_object_type(named_type)
+                return cls.print_object_type(named_type, field_filter=field_filter)
 
             case GraphQLInterfaceType():
-                return cls.print_interface_type(named_type)
+                return cls.print_interface_type(named_type, field_filter=field_filter)
 
             case GraphQLUnionType():
                 return cls.print_union_type(named_type)
@@ -189,7 +200,15 @@ class SDLPrinter:  # noqa: PLR0904
     # --- ObjectType --------------------------------------------------------------------------------------
 
     @classmethod
-    def print_object_type(cls, object_type: GraphQLObjectType) -> str:
+    def print_object_type(
+        cls,
+        object_type: GraphQLObjectType,
+        *,
+        field_filter: Callable[[GraphQLField], bool] | None = None,
+    ) -> str:
+        if field_filter is None:
+            field_filter = cls.default_field_filter
+
         object_type_str = f"type {object_type.name}"
 
         undine_federation_type = get_undine_federation_type(object_type)
@@ -213,8 +232,9 @@ class SDLPrinter:  # noqa: PLR0904
             for directive in reversed(undine_federation_type.__directives__):
                 object_type_str += cls.print_directive_usage(directive)
 
-        if object_type.fields:
-            fields = starmap(cls.print_field, sorted(object_type.fields.items()))
+        filtered_fields = sorted((name, field) for name, field in object_type.fields.items() if field_filter(field))
+        if filtered_fields:
+            fields = starmap(cls.print_field, filtered_fields)
             object_type_str += cls.print_block(fields)
 
         description = cls.print_docstring(object_type.description)
@@ -233,7 +253,15 @@ class SDLPrinter:  # noqa: PLR0904
         )
 
     @classmethod
-    def print_interface_type(cls, interface_type: GraphQLInterfaceType) -> str:
+    def print_interface_type(
+        cls,
+        interface_type: GraphQLInterfaceType,
+        *,
+        field_filter: Callable[[GraphQLField], bool] | None = None,
+    ) -> str:
+        if field_filter is None:
+            field_filter = cls.default_field_filter
+
         interface_type_str = f"interface {interface_type.name}"
 
         if interface_type.interfaces:
@@ -244,8 +272,9 @@ class SDLPrinter:  # noqa: PLR0904
             for directive in reversed(undine_interface.__directives__):
                 interface_type_str += cls.print_directive_usage(directive)
 
-        if interface_type.fields:
-            fields = starmap(cls.print_field, sorted(interface_type.fields.items()))
+        filtered_fields = sorted((name, field) for name, field in interface_type.fields.items() if field_filter(field))
+        if filtered_fields:
+            fields = starmap(cls.print_field, filtered_fields)
             interface_type_str += cls.print_block(fields)
 
         description = cls.print_docstring(interface_type.description)
@@ -566,6 +595,10 @@ class SDLPrinter:  # noqa: PLR0904
     @classmethod
     def default_type_filter(cls, named_type: GraphQLNamedType) -> bool:
         return is_defined_type(named_type)
+
+    @classmethod
+    def default_field_filter(cls, field: GraphQLField) -> bool:
+        return True
 
     @classmethod
     def ast_from_value(cls, value: Any, type_: Any) -> ValueNode | None:  # noqa: PLR0911

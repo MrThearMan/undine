@@ -113,7 +113,7 @@ def test_entities__entrypoint_signature_matches_apollo_spec() -> None:
     assert str(field.args["representations"].type) == "[_Any!]!"
 
 
-def test_entities__sdl_contains_entities_field() -> None:
+def test_entities__sdl_omits_entities_field_per_apollo_spec() -> None:
     @KeyDirective(fields="pk")
     class TaskType(QueryType[Task]):
         pk = Field()
@@ -124,10 +124,9 @@ def test_entities__sdl_contains_entities_field() -> None:
     schema = create_federation_schema(query=Query)
     sdl = schema.extensions["undine_federation_sdl"]
 
-    assert "_entities(" in sdl
-    assert "representations: [_Any!]!" in sdl
-    assert "): [_Entity]!" in sdl
-    assert "union _Entity" in sdl
+    assert "_entities(" not in sdl
+    assert "_Any" not in sdl
+    assert "_Entity" not in sdl
 
 
 # _entities resolver behaviour
