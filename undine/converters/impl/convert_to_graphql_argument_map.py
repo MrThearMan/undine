@@ -20,7 +20,11 @@ from graphql import (
 from undine import Calculation, InterfaceField, InterfaceType, MutationType, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map, convert_to_graphql_type
 from undine.dataclasses import LazyGenericForeignKey, LazyLambda, LazyRelation, TypeRef
-from undine.exceptions import RegistryMissingTypeError
+from undine.exceptions import (
+    InterfaceTypeModelsDifferentError,
+    InterfaceTypeRequiresMultipleModelsError,
+    RegistryMissingTypeError,
+)
 from undine.federation import FederationType
 from undine.federation.entities import EntitiesRef
 from undine.federation.scalars import FederationAnyScalar
@@ -251,7 +255,10 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLArgumentMap:
 
     arguments: GraphQLArgumentMap = {}
 
-    for query_type in ref.__concrete_implementations__():
+    concrete_implementations = ref.__concrete_implementations__()
+    models_on_interface_type = {query_type.__model__ for query_type in concrete_implementations}
+
+    for query_type in concrete_implementations:
         model = query_type.__model__
         args = convert_to_graphql_argument_map(query_type, **kwargs)
 
@@ -262,6 +269,29 @@ def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLArgumentMap:
         if undine_settings.QUERY_TYPE_ORDER_INPUT_KEY in args:
             order_by_key = f"{undine_settings.QUERY_TYPE_ORDER_INPUT_KEY}{model.__name__}"
             arguments[order_by_key] = args[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY]
+
+    if ref.__filterset__:
+        models_on_filterset = set(ref.__filterset__.__models__)
+        if len(models_on_filterset) == 1:
+            raise InterfaceTypeRequiresMultipleModelsError(kind="FilterSet")
+
+        if models_on_interface_type != models_on_filterset:
+            raise InterfaceTypeModelsDifferentError(kind="FilterSet")
+
+        input_type = ref.__filterset__.__input_type__()
+        arguments[undine_settings.QUERY_TYPE_FILTER_INPUT_KEY] = GraphQLArgument(input_type)
+
+    if ref.__orderset__:
+        models_on_orderset = set(ref.__orderset__.__models__)
+        if len(models_on_orderset) == 1:
+            raise InterfaceTypeRequiresMultipleModelsError(kind="OrderSet")
+
+        if models_on_interface_type != models_on_orderset:
+            raise InterfaceTypeModelsDifferentError(kind="OrderSet")
+
+        enum_type = ref.__orderset__.__enum_type__()
+        input_type = GraphQLList(GraphQLNonNull(enum_type))  # type: ignore[assignment]
+        arguments[undine_settings.QUERY_TYPE_ORDER_INPUT_KEY] = GraphQLArgument(input_type)
 
     return arguments
 

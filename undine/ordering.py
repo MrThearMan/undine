@@ -14,6 +14,8 @@ from undine.dataclasses import OrderResults
 from undine.directives import DirectiveList
 from undine.exceptions import (
     GraphQLInvalidOrderDataError,
+    InterfaceTypeFieldNotDeclaredError,
+    InterfaceTypeRequiresMultipleModelsError,
     MismatchingModelError,
     MissingModelGenericError,
     NotCompatibleWithError,
@@ -35,7 +37,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
     from graphql import GraphQLEnumType, GraphQLInputType
 
-    from undine import QueryType, UnionType
+    from undine import InterfaceType, QueryType, UnionType
     from undine.typing import (
         DjangoExpression,
         DjangoRequestProtocol,
@@ -133,12 +135,14 @@ class OrderSetMeta(type):
         >>> @TaskOrderSet
         >>> class TaskType(QueryType[Task]): ...
         """
-        from undine import QueryType, UnionType  # noqa: PLC0415
+        from undine import InterfaceType, QueryType, UnionType  # noqa: PLC0415
 
         if is_subclass(ref, QueryType):
             cls.__add_to_query_type__(ref)
         elif is_subclass(ref, UnionType):
             cls.__add_to_union_type__(ref)
+        elif is_subclass(ref, InterfaceType):
+            cls.__add_to_interface_type__(ref)
         else:
             raise NotCompatibleWithError(obj=cls, other=ref)
 
@@ -228,6 +232,25 @@ class OrderSetMeta(type):
             raise UnionTypeModelsDifferentError(kind="OrderSet")
 
         union_type.__orderset__ = cls  # type: ignore[assignment]
+
+    def __add_to_interface_type__(cls, interface_type: type[InterfaceType]) -> None:
+        models = cls.__models__
+        if len(models) == 1:
+            raise InterfaceTypeRequiresMultipleModelsError(kind="OrderSet")
+
+        interface_field_names = {field.field_name for field in interface_type.__field_map__.values()}
+        for order in cls.__order_map__.values():
+            if order.field_name not in interface_field_names:
+                raise InterfaceTypeFieldNotDeclaredError(
+                    kind="Order",
+                    name=order.name,
+                    field_name=order.field_name,
+                    interface=interface_type,
+                )
+
+        # Note: model-set matching against the interface's concrete implementations is deferred to
+        # schema-build time because implementations register lazily after the OrderSet is attached.
+        interface_type.__orderset__ = cls  # type: ignore[assignment]
 
 
 class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):

@@ -8,16 +8,20 @@ from graphql import DirectiveLocation, GraphQLArgument, GraphQLList, GraphQLNonN
 
 from example_project.app.models import Person, Project, Task
 from tests.helpers import mock_gql_info
-from undine import Directive, DirectiveArgument, Field, Order, OrderSet, QueryType, UnionType
+from undine import Directive, DirectiveArgument, Field, InterfaceType, Order, OrderSet, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map
 from undine.exceptions import (
     DirectiveLocationError,
+    InterfaceTypeFieldNotDeclaredError,
+    InterfaceTypeModelsDifferentError,
+    InterfaceTypeRequiresMultipleModelsError,
     MissingModelGenericError,
     NotCompatibleWithError,
     QueryTypeRequiresSingleModelError,
     UnionTypeModelsDifferentError,
     UnionTypeRequiresMultipleModelsError,
 )
+from undine.interface import InterfaceField
 from undine.utils.graphql.utils import get_underlying_type
 
 
@@ -353,3 +357,70 @@ def test_orderset__add_to_union_type__models_different_error() -> None:
     with pytest.raises(UnionTypeModelsDifferentError):
 
         class Commentable(UnionType[TaskType, ProjectType], orderset=MyOrderSet): ...
+
+
+def test_orderset__add_to_interface_type__single_model_error() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False): ...
+
+    with pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+
+        class Named(InterfaceType, orderset=MyOrderSet):
+            name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_orderset__add_to_interface_type__single_model_error__decorator() -> None:
+    class MyOrderSet(OrderSet[Task], auto=False): ...
+
+    with pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+
+        @MyOrderSet
+        class Named(InterfaceType):
+            name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_orderset__add_to_interface_type__models_different_error() -> None:
+    class MyOrderSet(OrderSet[Task, Person], auto=False): ...
+
+    class Named(InterfaceType, orderset=MyOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    # Validation is deferred to schema-build time.
+    with pytest.raises(InterfaceTypeModelsDifferentError):
+        convert_to_graphql_argument_map(Named, many=True)
+
+
+def test_orderset__add_to_interface_type__no_implementations_error() -> None:
+    class MyOrderSet(OrderSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, orderset=MyOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    with pytest.raises(InterfaceTypeModelsDifferentError):
+        convert_to_graphql_argument_map(Named, many=True)
+
+
+def test_orderset__add_to_interface_type__order_field_not_on_interface_error() -> None:
+    class MyOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    with pytest.raises(InterfaceTypeFieldNotDeclaredError):
+
+        class Named(InterfaceType, orderset=MyOrderSet):
+            description = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_orderset__add_to_interface_type__order_field_matches_interface() -> None:
+    class MyOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    class Named(InterfaceType, orderset=MyOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__orderset__ == MyOrderSet
+

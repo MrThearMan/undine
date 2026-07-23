@@ -559,6 +559,31 @@ class UnionTypeRequiresMultipleModelsError(UndineError):
     msg = "Cannot add a {kind} with a single model to a UnionType"
 
 
+class InterfaceTypeModelsDifferentError(UndineError):
+    """Error raised when a FilterSet or OrderSet is added to an InterfaceType with different models."""
+
+    msg = "Cannot add a {kind} to an InterfaceType with different models"
+
+
+class InterfaceTypeRequiresMultipleModelsError(UndineError):
+    """Error raised when a FilterSet or OrderSet with a single model is added to an InterfaceType."""
+
+    msg = "Cannot add a {kind} with a single model to an InterfaceType"
+
+
+class InterfaceTypeFieldNotDeclaredError(UndineError):
+    """
+    Error raised when a `Filter` or `Order` on an `InterfaceType`-level `FilterSet` / `OrderSet`
+    references a field that is not declared as an `InterfaceField` on the `InterfaceType`.
+    Only fields declared on the interface are guaranteed to exist on all implementing `QueryTypes`.
+    """
+
+    msg = (
+        "{kind} '{name}' references field '{field_name}' which is not declared as an `InterfaceField` "
+        "on `InterfaceType` '{interface:name}'"
+    )
+
+
 class UnsupportedFederationVersionError(UndineError):
     """Error raised if `FEDERATION_VERSION` is not in `SUPPORTED_FEDERATION_VERSIONS`."""
 

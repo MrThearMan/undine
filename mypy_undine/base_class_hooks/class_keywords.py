@@ -199,6 +199,14 @@ KEYWORD_CHECKS: Mapping[str, Mapping[str, KeywordData]] = {
             type_checker=is_interface_list,
             expected_type="list[type[InterfaceType]]",
         ),
+        "filterset": KeywordData(
+            type_checker=is_filterset,
+            expected_type="type[FilterSet]",
+        ),
+        "orderset": KeywordData(
+            type_checker=is_orderset,
+            expected_type="type[OrderSet]",
+        ),
         "cache_time": KeywordData(
             type_checker=is_integer_or_none,
             expected_type="int | None",

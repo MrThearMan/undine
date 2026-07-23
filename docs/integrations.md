@@ -125,22 +125,29 @@ The plugin adds the following additional type checks:
 - [x] Check that `QueryTypes`, `MutationTypes`, `FilterSets`, `OrderSets`, and `UnionTypes`
       contain correct generic parameters
 - [x] Check that `RootTypes`, `QueryTypes`, `MutationTypes`, `FilterSets`, `OrderSets`, `InterfaceTypes`,
-      `UnionTypes` and `FederationTypes` are created using the correct class definition keyword arguments
-- [x] Check that `Entrypoints`, `Fields`, `FederationFields`, `Inputs` and `Filters` are applied to a method with
-      the correct signature when used as decorators
-- [x] Check that `Entrypoints`, `Fields`, `FederationFields`, `Inputs`, `Filters` and `Orders` decorator methods
-      (e.g. `@Field.permissions` or `@Input.validate`) are applied to a method with the correct signature
+      `UnionTypes`, `FederationTypes`, and `Directives` are created using the correct
+      class definition keyword arguments
+- [x] Check that `Entrypoints`, `Fields`, `Inputs`, `Filters`, `InterfaceFields`, and `FederationFields`
+      are applied to a method with the correct signature when used as decorators
+- [x] Check that decorator methods on `RootTypes`, `QueryTypes`, `MutationTypes`, `FilterSets`,
+      `OrderSets`, `InterfaceTypes`, `Directives`, and `FederationTypes`
+      (e.g. `.resolve`, `.permissions`, `.optimize`, `.validate`, `.convert`, `.aliases`, `.visible`)
+      are applied to a method with the correct signature
 - [x] Check that the return type of a resolver method for an `Entrypoint`, `Field` or `FederationField`
       is compatible with the field's ref type (honouring `many=True`, `nullable=True` and `@ExternalDirective`)
 - [x] Check that `FilterSets` and `OrderSets` are applied to `QueryTypes` or `UnionTypes` that are
       defined for the same Django Models
 - [x] Check that `FilterSets`, `OrderSets`, and `InterfaceTypes` are applied to `QueryTypes`
       when using their decorator interface
-- [x] Check that `Directives` are applied to objects that support them
+- [x] Check that `Directives` are applied to objects that support them, whether applied as class
+      decorators, via the `directives=[...]` keyword argument, or with the `@` operator on a field
 - [x] Check that `Directives` are applied to objects that match their allowed locations
 - [x] Check that `Directives` that are not repeatable are only applied once
 - [x] Type `DirectiveArgument` and `FederationField` class attributes as their declared ref type
       so that accessing them (e.g. `self.my_arg`) resolves to the underlying value type
+- [x] Set the `self` argument type of decorator methods to the appropriate Django Model
+      (for `QueryTypes` and `MutationTypes`) or descriptor type
+      (e.g. `Filter` inside `@Filter.aliases`) so that attribute access is correctly typed
 - [x] Create `Directive.__init__` for typing purposes based on `DirectiveArguments` if one does not exist
 - [x] Create `FederationType.__init__` for typing purposes based on `FederationFields` if one does not exist
 

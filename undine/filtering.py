@@ -23,6 +23,8 @@ from undine.dataclasses import FilterResults, LookupRef, MaybeManyOrNonNull
 from undine.directives import DirectiveList
 from undine.exceptions import (
     EmptyFilterResult,
+    InterfaceTypeFieldNotDeclaredError,
+    InterfaceTypeRequiresMultipleModelsError,
     MismatchingModelError,
     MissingModelGenericError,
     NotCompatibleWithError,
@@ -50,7 +52,7 @@ if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
     from graphql import GraphQLFieldResolver, GraphQLInputObjectType, GraphQLInputType
 
-    from undine import QueryType, UnionType
+    from undine import InterfaceType, QueryType, UnionType
     from undine.typing import (
         DjangoExpression,
         DjangoRequestProtocol,
@@ -149,12 +151,14 @@ class FilterSetMeta(type):
         >>> @TaskFilterSet
         >>> class TaskType(QueryType[Task]): ...
         """
-        from undine import QueryType, UnionType  # noqa: PLC0415
+        from undine import InterfaceType, QueryType, UnionType  # noqa: PLC0415
 
         if is_subclass(ref, QueryType):
             cls.__add_to_query_type__(ref)
         elif is_subclass(ref, UnionType):
             cls.__add_to_union_type__(ref)
+        elif is_subclass(ref, InterfaceType):
+            cls.__add_to_interface_type__(ref)
         else:
             raise NotCompatibleWithError(obj=cls, other=ref)
 
@@ -279,6 +283,25 @@ class FilterSetMeta(type):
             raise UnionTypeModelsDifferentError(kind="FilterSet")
 
         union_type.__filterset__ = cls  # type: ignore[assignment]
+
+    def __add_to_interface_type__(cls, interface_type: type[InterfaceType]) -> None:
+        models = cls.__models__
+        if len(models) == 1:
+            raise InterfaceTypeRequiresMultipleModelsError(kind="FilterSet")
+
+        interface_field_names = {field.field_name for field in interface_type.__field_map__.values()}
+        for filter_ in cls.__filter_map__.values():
+            if filter_.field_name not in interface_field_names:
+                raise InterfaceTypeFieldNotDeclaredError(
+                    kind="Filter",
+                    name=filter_.name,
+                    field_name=filter_.field_name,
+                    interface=interface_type,
+                )
+
+        # Note: model-set matching against the interface's concrete implementations is deferred to
+        # schema-build time because implementations register lazily after the FilterSet is attached.
+        interface_type.__filterset__ = cls  # type: ignore[assignment]
 
 
 class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):

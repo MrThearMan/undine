@@ -1158,21 +1158,23 @@ class UnionTypeConnectionResolver(Generic[TModel]):
         Use a union query to filter, order, and paginate the results together before fetching them.
         Then fetch the instances per-model and sort them in the same order as in the union query.
         """
-        arg_values = get_arguments(info)
         queryset_map = result.queryset_map
         pagination = result.pagination
 
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
-        if self.union_type.__filterset__:
-            filter_results = self.filter_union(arg_values, info, queryset_map)
-            if filter_results.none:
-                return []
+        if self.union_type.__filterset__ or self.union_type.__orderset__:
+            arg_values = get_arguments(info)
 
-        if self.union_type.__orderset__:
-            order_results = self.order_union(arg_values, info, queryset_map)
-            union_qs = union_qs.order_by(*order_results.order_by)
+            if self.union_type.__filterset__:
+                filter_results = self.filter_union(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.union_type.__orderset__:
+                order_results = self.order_union(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
         union_qs = pagination.paginate_queryset(union_qs, info)
@@ -1204,22 +1206,23 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
     async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
         """Async version of `fetch_instances`."""
-        arg_values = get_arguments(info)
-
         queryset_map = result.queryset_map
         pagination = result.pagination
 
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")
 
-        if self.union_type.__filterset__:
-            filter_results = self.filter_union(arg_values, info, queryset_map)
-            if filter_results.none:
-                return []
+        if self.union_type.__filterset__ or self.union_type.__orderset__:
+            arg_values = get_arguments(info)
 
-        if self.union_type.__orderset__:
-            order_results = self.order_union(arg_values, info, queryset_map)
-            union_qs = union_qs.order_by(*order_results.order_by)
+            if self.union_type.__filterset__:
+                filter_results = self.filter_union(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.union_type.__orderset__:
+                order_results = self.order_union(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
         # May call 'queryset.count()'.
@@ -1422,7 +1425,17 @@ class InterfaceTypeResolver(Generic[TModel]):
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
-        # TODO: Filtering and ordering
+        if self.interface.__filterset__ or self.interface.__orderset__:
+            arg_values = get_arguments(info)
+
+            if self.interface.__filterset__:
+                filter_results = self.filter_interface(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.interface.__orderset__:
+                order_results = self.order_interface(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
 
@@ -1458,7 +1471,17 @@ class InterfaceTypeResolver(Generic[TModel]):
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
-        # TODO: Filtering and ordering
+        if self.interface.__filterset__ or self.interface.__orderset__:
+            arg_values = get_arguments(info)
+
+            if self.interface.__filterset__:
+                filter_results = self.filter_interface(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.interface.__orderset__:
+                order_results = self.order_interface(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
 
@@ -1523,6 +1546,48 @@ class InterfaceTypeResolver(Generic[TModel]):
 
             else:
                 query_type.__permissions__(instance, info)
+
+    def filter_interface(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> FilterResults:
+        filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
+        filter_results = self.interface.__filterset__.__build__(filter_data, info)  # type: ignore[union-attr]
+        if filter_results.none:
+            return filter_results
+
+        for query_type, queryset in queryset_map.items():
+            if filter_results.aliases:
+                queryset = queryset.alias(**filter_results.aliases)  # noqa: PLW2901
+            if filter_results.distinct:
+                queryset = queryset.distinct()  # noqa: PLW2901
+            if filter_results.filters:
+                queryset = queryset.filter(Q(*filter_results.filters))  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return filter_results
+
+    def order_interface(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> OrderResults:
+        order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
+        order_results = self.interface.__orderset__.__build__(order_data, info)  # type: ignore[union-attr]
+
+        for query_type, queryset in queryset_map.items():
+            if order_results.aliases:
+                queryset = queryset.alias(**order_results.aliases)  # noqa: PLW2901
+            if order_results.order_by:
+                queryset = queryset.order_by(*order_results.order_by, *queryset.query.order_by)  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return order_results
 
     def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
         queryset_map: QuerySetMap = {}
@@ -1604,7 +1669,17 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
-        # TODO: Filtering and ordering
+        if self.interface_type.__filterset__ or self.interface_type.__orderset__:
+            arg_values = get_arguments(info)
+
+            if self.interface_type.__filterset__:
+                filter_results = self.filter_interface(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.interface_type.__orderset__:
+                order_results = self.order_interface(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
         union_qs = pagination.paginate_queryset(union_qs, info)
@@ -1642,7 +1717,17 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")
 
-        # TODO: Filtering and ordering
+        if self.interface_type.__filterset__ or self.interface_type.__orderset__:
+            arg_values = get_arguments(info)
+
+            if self.interface_type.__filterset__:
+                filter_results = self.filter_interface(arg_values, info, queryset_map)
+                if filter_results.none:
+                    return []
+
+            if self.interface_type.__orderset__:
+                order_results = self.order_interface(arg_values, info, queryset_map)
+                union_qs = union_qs.order_by(*order_results.order_by)
 
         union_qs = union_qs.values("__typename", "pk")
         # May call 'queryset.count()'.
@@ -1706,6 +1791,48 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
 
             else:
                 query_type.__permissions__(instance, info)
+
+    def filter_interface(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> FilterResults:
+        filter_data = arg_values.get(undine_settings.QUERY_TYPE_FILTER_INPUT_KEY, {})
+        filter_results = self.interface_type.__filterset__.__build__(filter_data, info)  # type: ignore[union-attr]
+        if filter_results.none:
+            return filter_results
+
+        for query_type, queryset in queryset_map.items():
+            if filter_results.aliases:
+                queryset = queryset.alias(**filter_results.aliases)  # noqa: PLW2901
+            if filter_results.distinct:
+                queryset = queryset.distinct()  # noqa: PLW2901
+            if filter_results.filters:
+                queryset = queryset.filter(Q(*filter_results.filters))  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return filter_results
+
+    def order_interface(
+        self,
+        arg_values: dict[str, Any],
+        info: GQLInfo,
+        queryset_map: dict[type[QueryType], QuerySet[Any, Any]],
+    ) -> OrderResults:
+        order_data = arg_values.get(undine_settings.QUERY_TYPE_ORDER_INPUT_KEY, [])
+        order_results = self.interface_type.__orderset__.__build__(order_data, info)  # type: ignore[union-attr]
+
+        for query_type, queryset in queryset_map.items():
+            if order_results.aliases:
+                queryset = queryset.alias(**order_results.aliases)  # noqa: PLW2901
+            if order_results.order_by:
+                queryset = queryset.order_by(*order_results.order_by, *queryset.query.order_by)  # noqa: PLW2901
+
+            queryset_map[query_type] = queryset
+
+        return order_results
 
     def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination:
         queryset_map: QuerySetMap = {}

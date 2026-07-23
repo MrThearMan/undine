@@ -8,10 +8,13 @@ from graphql import DirectiveLocation, GraphQLArgument, GraphQLInputField, Graph
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.helpers import mock_gql_info
-from undine import Directive, DirectiveArgument, Field, QueryType, UnionType
+from undine import Directive, DirectiveArgument, Field, InterfaceType, QueryType, UnionType
 from undine.converters import convert_to_graphql_argument_map
 from undine.exceptions import (
     DirectiveLocationError,
+    InterfaceTypeFieldNotDeclaredError,
+    InterfaceTypeModelsDifferentError,
+    InterfaceTypeRequiresMultipleModelsError,
     MissingModelGenericError,
     NotCompatibleWithError,
     QueryTypeRequiresSingleModelError,
@@ -19,6 +22,7 @@ from undine.exceptions import (
     UnionTypeRequiresMultipleModelsError,
 )
 from undine.filtering import Filter, FilterSet
+from undine.interface import InterfaceField
 
 CREATED_AT_FIELDS = (
     "createdAt",
@@ -573,3 +577,70 @@ def test_filterset__add_to_union_type__models_different_error() -> None:
     with pytest.raises(UnionTypeModelsDifferentError):
 
         class Commentable(UnionType[TaskType, ProjectType], filterset=MyFilterSet): ...
+
+
+def test_filterset__add_to_interface_type__single_model_error() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False): ...
+
+    with pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+
+        class Named(InterfaceType, filterset=MyFilterSet):
+            name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_filterset__add_to_interface_type__single_model_error__decorator() -> None:
+    class MyFilterSet(FilterSet[Task], auto=False): ...
+
+    with pytest.raises(InterfaceTypeRequiresMultipleModelsError):
+
+        @MyFilterSet
+        class Named(InterfaceType):
+            name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_filterset__add_to_interface_type__models_different_error() -> None:
+    class MyFilterSet(FilterSet[Task, Person], auto=False): ...
+
+    class Named(InterfaceType, filterset=MyFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    # Validation is deferred to schema-build time.
+    with pytest.raises(InterfaceTypeModelsDifferentError):
+        convert_to_graphql_argument_map(Named, many=True)
+
+
+def test_filterset__add_to_interface_type__no_implementations_error() -> None:
+    class MyFilterSet(FilterSet[Task, Project], auto=False): ...
+
+    class Named(InterfaceType, filterset=MyFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    with pytest.raises(InterfaceTypeModelsDifferentError):
+        convert_to_graphql_argument_map(Named, many=True)
+
+
+def test_filterset__add_to_interface_type__filter_field_not_on_interface_error() -> None:
+    class MyFilterSet(FilterSet[Task, Project], auto=False):
+        name = Filter("name")
+
+    with pytest.raises(InterfaceTypeFieldNotDeclaredError):
+
+        class Named(InterfaceType, filterset=MyFilterSet):
+            description = InterfaceField(GraphQLNonNull(GraphQLString))
+
+
+def test_filterset__add_to_interface_type__filter_field_matches_interface() -> None:
+    class MyFilterSet(FilterSet[Task, Project], auto=False):
+        name_contains = Filter("name", lookup="icontains")
+
+    class Named(InterfaceType, filterset=MyFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__filterset__ == MyFilterSet
+

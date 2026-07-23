@@ -5,8 +5,20 @@ from inspect import cleandoc
 import pytest
 from graphql import DirectiveLocation, GraphQLField, GraphQLNonNull, GraphQLString, Undefined
 
-from example_project.app.models import Task
-from undine import Directive, DirectiveArgument, Field, InterfaceType, QueryType
+from example_project.app.models import Project, Task
+from undine import (
+    Directive,
+    DirectiveArgument,
+    Entrypoint,
+    Field,
+    Filter,
+    FilterSet,
+    InterfaceType,
+    Order,
+    OrderSet,
+    QueryType,
+    RootType,
+)
 from undine.directives import ComplexityDirective
 from undine.exceptions import DirectiveLocationError
 from undine.interface import InterfaceField, get_with_inherited_interfaces
@@ -361,3 +373,69 @@ def test_interface_type__get_with_inherited_interfaces__duplicate_in_list() -> N
 
     result = get_with_inherited_interfaces([A, A])
     assert result.count(A) == 1
+
+
+def test_interface__filterset() -> None:
+    class NamedFilterSet(FilterSet[Task, Project], auto=False):
+        name = Filter("name")
+
+    class Named(InterfaceType, filterset=NamedFilterSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__filterset__ == NamedFilterSet
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    args = Query.named.get_field_arguments()
+    assert list(args) == ["filter"]
+
+
+def test_interface__filterset__decorator() -> None:
+    class NamedFilterSet(FilterSet[Task, Project], auto=False):
+        name = Filter("name")
+
+    @NamedFilterSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__filterset__ == NamedFilterSet
+
+
+def test_interface__orderset() -> None:
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    class Named(InterfaceType, orderset=NamedOrderSet):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__orderset__ == NamedOrderSet
+
+    class TaskType(QueryType[Task], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False, interfaces=[Named]):
+        name = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+
+    args = Query.named.get_field_arguments()
+    assert list(args) == ["orderBy"]
+
+
+def test_interface__orderset__decorator() -> None:
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    @NamedOrderSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    assert Named.__orderset__ == NamedOrderSet

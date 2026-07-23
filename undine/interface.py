@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     from graphql import GraphQLArgumentMap, GraphQLInterfaceType, GraphQLOutputType
 
+    from undine import FilterSet, OrderSet
     from undine.query import Field
     from undine.typing import (
         DjangoRequestProtocol,
@@ -42,6 +43,8 @@ class InterfaceTypeMeta(type):
     # Set in '__new__'
     __field_map__: dict[str, InterfaceField]
     __schema_name__: str
+    __filterset__: type[FilterSet] | None
+    __orderset__: type[OrderSet] | None
     __cache_time__: int | None
     __cache_per_user__: bool
     __interfaces__: list[type[InterfaceType]]
@@ -89,6 +92,16 @@ class InterfaceTypeMeta(type):
 
         for directive in interface_type.__directives__:
             directive.__connected__(interface_type)
+
+        # Added after fields are connected so that we can check if the filter is declared on the interface.
+        interface_type.__filterset__ = kwargs.get("filterset")
+        if interface_type.__filterset__ is not None:
+            interface_type.__filterset__.__add_to_interface_type__(interface_type)  # type: ignore[arg-type]
+
+        # Added after fields are connected so that we can check if the order is declared on the interface.
+        interface_type.__orderset__ = kwargs.get("orderset")
+        if interface_type.__orderset__ is not None:
+            interface_type.__orderset__.__add_to_interface_type__(interface_type)  # type: ignore[arg-type]
 
         return interface_type
 
@@ -172,6 +185,12 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
      `interfaces: list[type[InterfaceType]] = []`
         Interfaces this `InterfaceType` should implement.
 
+     `filterset: type[FilterSet] = None`
+        `FilterSet` class this `InterfaceType` uses for filtering across its implementations.
+
+     `orderset: type[OrderSet] = None`
+        `OrderSet` class this `InterfaceType` uses for ordering across its implementations.
+
      `cache_time: int | None = None`
         How many seconds this `InterfaceType` can be cached for.
 
@@ -194,6 +213,8 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
     # Set in metaclass
     __field_map__: ClassVar[dict[str, InterfaceField]]
     __schema_name__: ClassVar[str]
+    __filterset__: ClassVar[type[FilterSet] | None]
+    __orderset__: ClassVar[type[OrderSet] | None]
     __cache_time__: ClassVar[int | None]
     __cache_per_user__: ClassVar[bool]
     __interfaces__: ClassVar[list[type[InterfaceType]]]

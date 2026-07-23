@@ -1051,6 +1051,8 @@ class InterfaceTypeParams(TypedDict, total=False):
     """Arguments for an Undine `InterfaceType`."""
 
     interfaces: list[type[InterfaceType]]
+    filterset: type[FilterSet]
+    orderset: type[OrderSet]
     cache_time: int
     cache_per_user: bool
     schema_name: str

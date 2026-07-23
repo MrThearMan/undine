@@ -83,7 +83,33 @@ type Query {
 }
 ```
 
-This allows filtering the different types of models in the `InterfaceType` separately.
+This allows filtering and ordering the different types of models in the `InterfaceType` separately.
+
+To filter and order _across_ the different Models that implement the `InterfaceType`, you can implement
+a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
+for the same Models as the `QueryTypes` implementing the `InterfaceType` and add it to the `InterfaceType`.
+
+```python
+-8<- "interfaces/interface_type_entrypoint_interface_type_filtersets_and_ordersets.py"
+```
+
+This creates the following `Entrypoint`:
+
+```graphql
+type Query {
+  named(
+    filter: NamedFilterSet
+    orderBy: [NamedOrderSet!]
+  ): [Named!]!
+}
+```
+
+Note that a `FilterSet` or `OrderSet` created for multiple Models like this
+should only contain `Filters` and `Orders` which will work on all Models that
+implement the `InterfaceType`. For this reason, each `Filter` and `Order`
+attached to the `InterfaceType` must reference a field declared as an
+`InterfaceField` on the `InterfaceType` since those are the only fields guaranteed
+to exist on all implementing `QueryTypes`.
 
 #### Pagination
 

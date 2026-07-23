@@ -6,9 +6,12 @@ import django
 import pytest
 from django.db.models.functions import Reverse
 
+from graphql import GraphQLNonNull, GraphQLString
+
 from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
-from undine import Entrypoint, Field, Order, OrderSet, QueryType, RootType, UnionType, create_schema
+from undine import Entrypoint, Field, InterfaceType, Order, OrderSet, QueryType, RootType, UnionType, create_schema
+from undine.interface import InterfaceField
 from undine.relay import Connection
 
 
@@ -647,4 +650,215 @@ def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(
                 "pk": task_2.pk,
             },
         },
+    ]
+
+
+@pytest.mark.django_db
+def test_end_to_end__ordering__interface_type(graphql, undine_settings) -> None:
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    @NamedOrderSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    @Named
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        project = Entrypoint(ProjectType)
+        named = Entrypoint(Named, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          named(
+            orderBy: nameAsc
+          ) {
+            __typename
+            ... on TaskType {
+              name
+            }
+            ... on ProjectType {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "named": [
+            {"__typename": "ProjectType", "name": "bar"},
+            {"__typename": "TaskType", "name": "bar"},
+            {"__typename": "ProjectType", "name": "baz"},
+            {"__typename": "TaskType", "name": "baz"},
+            {"__typename": "ProjectType", "name": "foo"},
+            {"__typename": "TaskType", "name": "foo"},
+        ],
+    }
+
+
+@pytest.mark.skipif(
+    django.VERSION < (5, 2),
+    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
+)
+@pytest.mark.django_db
+def test_end_to_end__ordering__interface_type__with_query_type_ordering(graphql, undine_settings) -> None:
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        type = Order("type")
+
+    class ProjectOrderSet(OrderSet[Project], auto=False):
+        team_name = Order("team__name")
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    @NamedOrderSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False, orderset=TaskOrderSet):
+        pk = Field()
+        name = Field()
+
+    @Named
+    class ProjectType(QueryType[Project], auto=False, orderset=ProjectOrderSet):
+        pk = Field()
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        project = Entrypoint(ProjectType)
+        named = Entrypoint(Named, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task_1 = TaskFactory.create(name="foo", type=TaskTypeChoices.TASK)
+    task_2 = TaskFactory.create(name="foo", type=TaskTypeChoices.BUG_FIX)
+    task_3 = TaskFactory.create(name="bar", type=TaskTypeChoices.TASK)
+
+    project_1 = ProjectFactory.create(name="foo", team__name="c")
+    project_2 = ProjectFactory.create(name="foo", team__name="b")
+    project_3 = ProjectFactory.create(name="bar", team__name="a")
+
+    query = """
+        query {
+          named(
+            orderBy: nameAsc
+            orderByTask: typeAsc
+            orderByProject: teamNameAsc
+          ) {
+            __typename
+            ... on TaskType {
+              pk
+              name
+            }
+            ... on ProjectType {
+              pk
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "named": [
+            {"__typename": "ProjectType", "pk": project_3.pk, "name": "bar"},
+            {"__typename": "TaskType", "pk": task_3.pk, "name": "bar"},
+            {"__typename": "ProjectType", "pk": project_1.pk, "name": "foo"},
+            {"__typename": "ProjectType", "pk": project_2.pk, "name": "foo"},
+            {"__typename": "TaskType", "pk": task_1.pk, "name": "foo"},
+            {"__typename": "TaskType", "pk": task_2.pk, "name": "foo"},
+        ],
+    }
+
+
+@pytest.mark.skipif(
+    django.VERSION < (5, 2),
+    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
+)
+@pytest.mark.django_db
+def test_end_to_end__ordering__interface_type__connection(graphql, undine_settings) -> None:
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    @NamedOrderSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    @Named
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        project = Entrypoint(ProjectType)
+        named = Entrypoint(Connection(Named))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="foo")
+    TaskFactory.create(name="bar")
+    TaskFactory.create(name="baz")
+
+    ProjectFactory.create(name="foo")
+    ProjectFactory.create(name="bar")
+    ProjectFactory.create(name="baz")
+
+    query = """
+        query {
+          named(
+            orderBy: nameAsc
+          ) {
+            edges {
+              node {
+                __typename
+                ... on TaskType {
+                  name
+                }
+                ... on ProjectType {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.edges == [
+        {"node": {"__typename": "ProjectType", "name": "bar"}},
+        {"node": {"__typename": "TaskType", "name": "bar"}},
+        {"node": {"__typename": "ProjectType", "name": "baz"}},
+        {"node": {"__typename": "TaskType", "name": "baz"}},
+        {"node": {"__typename": "ProjectType", "name": "foo"}},
+        {"node": {"__typename": "TaskType", "name": "foo"}},
     ]
