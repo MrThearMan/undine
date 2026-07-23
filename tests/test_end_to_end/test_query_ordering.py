@@ -653,6 +653,10 @@ def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(
     ]
 
 
+@pytest.mark.skipif(
+    django.VERSION < (5, 2),
+    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
+)
 @pytest.mark.django_db
 def test_end_to_end__ordering__interface_type(graphql, undine_settings) -> None:
     class NamedOrderSet(OrderSet[Task, Project], auto=False):
