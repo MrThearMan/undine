@@ -57,6 +57,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - File uploads based on GraphQL multipart request specification
 - Support for asynchronous execution and DataLoaders
 - Subscriptions with WebSockets, Server-Sent Events, or Multipart HTTP
+- Apollo Federation v2 support
 - Server-side query caching
 - Optional persisted documents support
 - Lifecycle hooks for customizing the GraphQL request cycle
