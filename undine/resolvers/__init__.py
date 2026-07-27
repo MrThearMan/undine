@@ -46,7 +46,6 @@ __all__ = [
     "CreateResolver",
     "DeleteResolver",
     "EntrypointFunctionResolver",
-    "EntrypointFunctionResolver",
     "FieldFunctionResolver",
     "FilterFunctionResolver",
     "FilterModelFieldResolver",

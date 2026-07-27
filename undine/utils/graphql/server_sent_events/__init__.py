@@ -20,8 +20,6 @@ __all__ = [
     "SSERequest",
     "SSESessionStore",
     "execute_graphql_sse_dc",
-    "execute_graphql_sse_dc",
-    "execute_graphql_sse_sc",
     "execute_graphql_sse_sc",
     "get_sse_operation_claim_key",
     "get_sse_operation_key",
