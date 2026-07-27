@@ -145,7 +145,7 @@ class EntitiesResolver:
         query_type: type[QueryType],
         representation: dict[str, Any],
         info: GQLInfo,
-    ) -> Model | None | Exception:
+    ) -> Model | Exception | None:
         default = partial(self._default_query_type_reference_resolver, query_type)
         resolve_reference: Callable[[dict, GQLInfo], Any] = getattr(query_type, "__resolve_reference__", default)
 
@@ -166,7 +166,7 @@ class EntitiesResolver:
         query_type: type[QueryType],
         representation: dict[str, Any],
         info: GQLInfo,
-    ) -> Model | None | Exception:
+    ) -> Model | Exception | None:
         default = partial(self._default_query_type_reference_resolver_async, query_type)
         resolve_reference: Callable[[dict, GQLInfo], Any] = getattr(query_type, "__resolve_reference__", default)
 
@@ -194,7 +194,7 @@ class EntitiesResolver:
         federation_type: type[FederationType],
         representation: dict[str, Any],
         info: GQLInfo,
-    ) -> FederationType | None | Exception:
+    ) -> FederationType | Exception | None:
         default = partial(self._default_federation_type_reference_resolver, federation_type)
         resolve_reference: Callable[[dict, GQLInfo], Any] = getattr(federation_type, "__resolve_reference__", default)
 
@@ -215,7 +215,7 @@ class EntitiesResolver:
         federation_type: type[FederationType],
         representation: dict[str, Any],
         info: GQLInfo,
-    ) -> FederationType | None | Exception:
+    ) -> FederationType | Exception | None:
         default = partial(self._default_federation_type_reference_resolver, federation_type)
         resolve_reference: Callable[[dict, GQLInfo], Any] = getattr(federation_type, "__resolve_reference__", default)
 
