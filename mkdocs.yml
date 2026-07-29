@@ -20,6 +20,7 @@ nav:
   - Scalars: scalars.md
   - Directives: directives.md
   - Federation: federation.md
+  - Visibility: visibility.md
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
   - Async Support: async.md

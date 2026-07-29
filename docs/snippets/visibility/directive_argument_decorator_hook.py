@@ -9,4 +9,4 @@ class VersionDirective(Directive, locations=[DirectiveLocation.FIELD_DEFINITION]
 
     @value.visible
     def value_visible(self, request: DjangoRequestProtocol) -> bool:
-        return request.user.is_superuser
+        return request.user.is_authenticated

@@ -50,31 +50,13 @@ since `oneOf` input object support was added in that version.
 
 ### `VisibilityRule`
 
-When [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) are enabled,
-this validation rule checks that users cannot use parts of the schema that are not visible to them,
-as defined by visibility checks. See how to enable visibility checks for the different objects in Undine:
+Installed automatically on schemas that use [visibility](visibility.md). This
+validation rule ensures that users cannot use parts of the schema that are
+hidden from them, blocking the operation with an error that looks identical
+to the entity not existing at all.
 
-- [`Entrypoint` visibility](schema.md#visibility)
-- [`QueryType` visibility](queries.md#visibility)
-- [`Field` visibility](queries.md#visibility_1)
-- [`MutationType` visibility](mutations.md#visibility)
-- [`Input` visibility](mutations.md#visibility_1)
-- [`FilterSet` visibility](filtering.md#visibility)
-- [`Filter` visibility](filtering.md#visibility_1)
-- [`OrderSet` visibility](ordering.md#visibility)
-- [`Order` visibility](ordering.md#visibility_1)
-- [`InterfaceType` visibility](interfaces.md#visibility)
-- [`InterfaceField` visibility](interfaces.md#visibility_1)
-- [`UnionType` visibility](unions.md#visibility)
-- [`FederationType` visibility](federation.md#visibility)
-- [`FederationField` visibility](federation.md#visibility)
-- [`Directive` visibility](directives.md#visibility)
-- [`DirectiveArgument` visibility](directives.md#visibility_1)
-- [`CalculationArgument` visibility](queries.md#calculation-references)
-
-> In a federation schema, visibility does not update the composed supergraph SDL.
-> Visibility still blocks router traffic and surfaces as supergraph errors.
-> See [Federation visibility](federation.md#visibility) for details.
+See the [Visibility](visibility.md) page for the full list of supported
+entities and how to configure them.
 
 ## Custom validation rules
 

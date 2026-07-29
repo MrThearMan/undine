@@ -15,30 +15,6 @@ def get_undine_config() -> UndineConfig:
     return apps.get_app_config("undine")  # type: ignore[return-value]
 
 
-def test_apps__patch_introspection_types__experimental_visibility_enabled(undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
-
-    config = get_undine_config()
-
-    path = "undine.utils.graphql.introspection.patch_introspection_schema"
-    with patch(path) as mock_patch:
-        config.patch_introspection_types()
-
-    mock_patch.assert_called_once()
-
-
-def test_apps__patch_introspection_types__experimental_visibility_disabled(undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = False
-
-    config = get_undine_config()
-
-    path = "undine.utils.graphql.introspection.patch_introspection_schema"
-    with patch(path) as mock_patch:
-        config.patch_introspection_types()
-
-    mock_patch.assert_not_called()
-
-
 def test_apps__maybe_disable_did_you_mean__disabled(undine_settings) -> None:
     undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS = False
 

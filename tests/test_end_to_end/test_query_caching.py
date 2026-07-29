@@ -36,9 +36,12 @@ from undine.utils.graphql.caching import RequestCacheCalculator
 @pytest.fixture(autouse=True)
 def _clear_sse_cache(undine_settings):
     """Handle clearing the cache between runs so that cache data is not shared between tests."""
-    yield
     cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
     cache.clear()
+    try:
+        yield
+    finally:
+        cache.clear()
 
 
 def get_cache_key(

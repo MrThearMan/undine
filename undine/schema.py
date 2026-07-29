@@ -21,6 +21,7 @@ from undine.utils.graphql.type_registry import get_registered_directives
 from undine.utils.graphql.utils import check_directives
 from undine.utils.logging import logger
 from undine.utils.reflection import get_signature
+from undine.utils.visibility import apply_visibility
 
 if TYPE_CHECKING:
     from graphql import GraphQLNamedType
@@ -95,6 +96,10 @@ def create_schema(
     if schema_validation_errors:
         msg = "Schema validation failed"
         raise UndineErrorGroup(schema_validation_errors, msg=msg)
+
+    logger.debug("Applying visibility...")
+
+    apply_visibility(schema)
 
     elapsed = time.perf_counter() - started
     logger.debug(f"GraphQL schema created successfully in {elapsed}s!")

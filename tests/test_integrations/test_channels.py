@@ -77,9 +77,12 @@ pytestmark = [
 @pytest.fixture(autouse=True)
 def _clear_sse_cache():
     """Handle clearing the session cache between runs so that cache data is not shared between tests."""
-    yield
     cache = caches[django_settings.SESSION_CACHE_ALIAS]
     cache.clear()
+    try:
+        yield
+    finally:
+        cache.clear()
 
 
 # WebSocket

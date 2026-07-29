@@ -227,10 +227,7 @@ class InterfaceType(metaclass=InterfaceTypeMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `InterfaceType` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `InterfaceType` is visible in the schema."""
         return True
 
 
@@ -335,7 +332,7 @@ class InterfaceField:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the InterfaceField's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> class Named(InterfaceType):
         ...     name = InterfaceField(GraphQLNonNull(GraphQLString))

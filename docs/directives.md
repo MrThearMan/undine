@@ -467,24 +467,6 @@ you can do so by setting the `schema_name` argument:
 -8<- "directives/directive_schema_name.py"
 ```
 
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide a `Directive` from certain users by using the `__is_visible__` method.
-Hiding the `Directive` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `Directive` didn't exist in the first place.
-
-```python
--8<- "directives/directive_visible.py"
-```
-
-> When using visibility checks, you should also disable "did you mean" suggestions
-> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
-> Otherwise, a hidden field might show up in them.
-
 ### Extensions
 
 You can provide custom extensions for the `Directive` by providing a
@@ -571,38 +553,6 @@ You can also add them using the `@` operator (which kind of looks like GraphQL s
 ```python
 -8<- "directives/directive_argument_directives_matmul.py"
 ```
-
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide a `DirectiveArgument` from certain users by decorating a method with the
-`<arg_name>.visible` decorator. Hiding a `DirectiveArgument` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `DirectiveArgument` didn't exist in the first place.
-
-```python
--8<- "directives/directive_argument_visible.py"
-```
-
-/// details | About method signature
-
-The decorated method is treated as a static method by the `DirectiveArgument`.
-
-The `self` argument is not an instance of the `Directive`,
-but the instance of the `DirectiveArgument` that is being used.
-
-Since visibility checks occur in the validation phase of the GraphQL request,
-GraphQL resolver info is not yet available. However, you can access the
-Django request object using the `request` argument.
-From this, you can, e.g., access the request user for permission checks.
-
-///
-
-> When using visibility checks, you should also disable "did you mean" suggestions
-> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
-> Otherwise, a hidden field might show up in them.
 
 ### Extensions
 

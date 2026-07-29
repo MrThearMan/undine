@@ -78,9 +78,6 @@ class UndineDefaultSettings(NamedTuple):
     MUTATION_FULL_CLEAN: bool = True
     """Whether to run `model.full_clean()` when mutating a model."""
 
-    EXPERIMENTAL_VISIBILITY_CHECKS: bool = False  # Experimental, may not work as expected
-    """Whether to enable experimental visibility checks."""
-
     # Limits
 
     LIST_ENTRYPOINT_LIMIT: int | None = None
@@ -122,6 +119,7 @@ class UndineDefaultSettings(NamedTuple):
 
     LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [
         "undine.hooks.RequestCacheHook",  # type: ignore[list-item]
+        "undine.hooks.VisibilityCacheHook",  # type: ignore[list-item]
         "undine.hooks.AtomicMutationHook",  # type: ignore[list-item]
     ]
     """Lifecycle hooks to use during GraphQL operations."""
@@ -315,6 +313,23 @@ class UndineDefaultSettings(NamedTuple):
     REQUEST_CACHE_PREFIX: str = "undine-cache"
     """The prefix to use for the cache keys of requests."""
 
+    # Visibility
+
+    VISIBILITY_ACTIVE_EXTENSIONS_KEY: str = "undine_visibility_active"
+    """The key set to `True` on `schema.extensions` when the schema uses visibility checks."""
+
+    VISIBILITY_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
+    """The cache alias to use for visibility caching."""
+
+    VISIBILITY_CACHE_TIMEOUT: int = 0
+    """How many seconds to cache the filtered introspection payload per user. `0` disables the cross-request cache."""
+
+    VISIBILITY_CACHE_PREFIX: str = "undine_visibility"
+    """The prefix to use for cross-request visibility cache keys."""
+
+    VISIBILITY_CACHE_EXTRA_CONTEXT: Callable[[Any], Any] = "undine.utils.visibility.default_visibility_extra_context"  # type: ignore[assignment]
+    """Function that returns extra context added to the visibility cache key."""
+
     # Argument & parameter names
 
     MUTATION_INPUT_DATA_KEY: str = "input"
@@ -423,6 +438,7 @@ IMPORT_STRINGS: set[str | bytes] = {
     "REQUEST_CACHE_WRITE_PREDICATE",
     "SCHEMA",
     "SDL_PRINTER",
+    "VISIBILITY_CACHE_EXTRA_CONTEXT",
     "WEBSOCKET_CONNECTION_INIT_HOOK",
     "WEBSOCKET_PING_HOOK",
     "WEBSOCKET_PONG_HOOK",
@@ -442,6 +458,7 @@ REMOVED_SETTINGS: dict[str, Any] = {
     "EXECUTION_HOOKS": "LIFECYCLE_HOOKS",
     "MIDDLEWARE": "LIFECYCLE_HOOKS",
     "EXECUTION_CONTEXT_CLASS": "EXECUTOR_CLASS",
+    "EXPERIMENTAL_VISIBILITY_CHECKS": None,
 }
 
 undine_settings: UndineDefaultSettings = SettingsHolder(  # type: ignore[assignment]

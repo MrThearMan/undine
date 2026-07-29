@@ -17,7 +17,7 @@ from graphql import ExecutionResult, GraphQLError, OperationType
 from undine.exceptions import GraphQLAPQHashInvalidError, GraphQLAsyncAtomicMutationNotSupportedError
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import CacheKeyData, ResultCacheData
+from undine.typing import CacheKeyData, ResultCacheData, VisibilityCacheData
 from undine.utils.graphql.caching import RequestCacheCalculator
 from undine.utils.graphql.utils import (
     get_error_execution_result,
@@ -30,7 +30,7 @@ from undine.utils.reflection import delegate_to_subgenerator
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
-    from django.contrib.auth.models import AnonymousUser, User
+    from django.contrib.auth.models import AbstractUser, AnonymousUser
     from django.core.cache import BaseCache
     from graphql import DocumentNode, GraphQLFieldResolver
     from graphql.pyutils import AwaitableOrValue
@@ -321,7 +321,7 @@ class RequestCacheHook(LifecycleHook):
         self.context.request.response_headers["Cache-Control"] = cache_results.to_cache_control_header()
         self.context.request.response_headers["Age"] = "0"
 
-    def get_cache_key(self, user: User | AnonymousUser, *, cache_per_user: bool) -> str:
+    def get_cache_key(self, user: AbstractUser | AnonymousUser, *, cache_per_user: bool) -> str:
         key_data = CacheKeyData(
             source=self.context.source,
             variables=json.dumps(self.context.variables, separators=(",", ":"), sort_keys=True),
@@ -339,6 +339,84 @@ class RequestCacheHook(LifecycleHook):
 
         key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
         return f"{undine_settings.REQUEST_CACHE_PREFIX}:{key}"
+
+
+class VisibilityCacheHook(LifecycleHook):
+    """Hook for caching the filtered introspection payload per user context."""
+
+    @property
+    def cache(self) -> BaseCache:
+        return ConnectionProxy(caches, undine_settings.VISIBILITY_CACHE_ALIAS)  # type: ignore[return-value]
+
+    def on_execution(self) -> Generator[None, None, None]:
+        if not self._should_cache():
+            yield
+            return
+
+        user = self.context.request.user
+        key = self.get_cache_key(user)
+
+        cached: ExecutionResult | None = self.cache.get(key)
+        if cached is not None:
+            self.context.result = cached
+            yield
+            return
+
+        yield
+
+        result = self.context.result
+        if not isinstance(result, ExecutionResult) or result.errors:
+            return
+
+        self.cache.set(key, result, undine_settings.VISIBILITY_CACHE_TIMEOUT)
+
+    async def on_execution_async(self) -> AsyncGenerator[None, None]:
+        # We need a separate async version for caching and fetching the request user.
+        # Unfortunately, there is a lot of repetition here.
+        if not self._should_cache():
+            yield
+            return
+
+        user = await self.context.request.auser()
+        key = self.get_cache_key(user)
+
+        cached: ExecutionResult | None = await self.cache.aget(key)
+        if cached is not None:
+            self.context.result = cached
+            yield
+            return
+
+        yield
+
+        result = self.context.result
+        if not isinstance(result, ExecutionResult) or result.errors:
+            return
+
+        await self.cache.aset(key, result, undine_settings.VISIBILITY_CACHE_TIMEOUT)
+
+    def _should_cache(self) -> bool:
+        if undine_settings.VISIBILITY_CACHE_TIMEOUT <= 0:
+            return False
+
+        schema = undine_settings.SCHEMA
+        if not schema.extensions.get(undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY, False):
+            return False
+
+        operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
+        if operation.operation != OperationType.QUERY:
+            return False
+
+        return self.context.operation_name == "IntrospectionQuery"
+
+    def get_cache_key(self, user: AbstractUser | AnonymousUser) -> str:
+        key_data: dict[str, Any] = VisibilityCacheData(user_pk=user.pk if user.is_authenticated else None)
+
+        extra_context = undine_settings.VISIBILITY_CACHE_EXTRA_CONTEXT(self.context.request)
+        if extra_context is not None:
+            key_data["extra"] = extra_context
+
+        key = hashlib.sha256(json.dumps(key_data, separators=(",", ":")).encode()).hexdigest()
+        return f"{undine_settings.VISIBILITY_CACHE_PREFIX}:{key}"
 
 
 class AutomaticPersistedQueriesHook(LifecycleHook):

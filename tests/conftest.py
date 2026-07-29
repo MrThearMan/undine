@@ -12,7 +12,9 @@ from undine.directives import AtomicDirective, CacheRulesDirective, ComplexityDi
 from undine.federation.directives import USED_FEDERATION_DIRECTIVES
 from undine.federation.federation_type import FEDERATION_TYPE_REGISTRY
 from undine.query import QUERY_TYPE_REGISTRY
+from undine.relay import Node
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
+from undine.utils.graphql.utils import enable_did_you_mean_suggestions
 
 if TYPE_CHECKING:
     from tests.helpers import AccessLog
@@ -31,6 +33,10 @@ def _clear_registries() -> None:
     DIRECTIVE_REGISTRY.clear()
     USED_FEDERATION_DIRECTIVES.clear()
     FEDERATION_TYPE_REGISTRY.clear()
+
+    Node.__implementations__.clear()
+
+    enable_did_you_mean_suggestions()
 
     DIRECTIVE_REGISTRY[AtomicDirective.__schema_name__] = AtomicDirective
     DIRECTIVE_REGISTRY[CacheRulesDirective.__schema_name__] = CacheRulesDirective

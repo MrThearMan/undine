@@ -298,10 +298,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `MutationType` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `MutationType` is visible in the schema."""
         return True
 
 
@@ -470,7 +467,7 @@ class Input:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the Input's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> class TaskCreateMutation(MutationType[Task]):
         ...     name = Input()

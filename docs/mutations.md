@@ -470,24 +470,6 @@ You can also add them using the decorator syntax.
 
 See the [Directives](directives.md) section for more details on directives.
 
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide a `MutationType` from certain users using the `__is_visible__` method.
-Hiding an `MutationType` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `Entrypoint` or `Input` using the `MutationType` didn't exist in the first place.
-
-```python
--8<- "mutations/mutation_type_visible.py"
-```
-
-> When using visibility checks, you should also disable "did you mean" suggestions
-> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
-> Otherwise, a hidden field might show up in them.
-
 ### GraphQL extensions
 
 You can provide custom extensions for the `MutationType` by providing a
@@ -795,38 +777,6 @@ You can also add them using the `@` operator (which kind of looks like GraphQL s
 ```
 
 See the [Directives](directives.md) section for more details on directives.
-
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide an `Input` from certain users by decorating a method with the
-`<input_name>.visible` decorator. Hiding an `Input` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `Input` didn't exist in the first place.
-
-```python
--8<- "mutations/input_visible.py"
-```
-
-/// details | About method signature
-
-The decorated method is treated as a static method by the `Input`.
-
-The `self` argument is not an instance of the `MutationType`,
-but the instance of the `Input` that is being used.
-
-Since visibility checks occur in the validation phase of the GraphQL request,
-GraphQL resolver info is not yet available. However, you can access the
-Django request object using the `request` argument.
-From this, you can, e.g., access the request user for permission checks.
-
-///
-
-> When using visibility checks, you should also disable "did you mean" suggestions
-> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
-> Otherwise, a hidden field might show up in them.
 
 ### GraphQL extensions
 

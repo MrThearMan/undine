@@ -175,10 +175,7 @@ class Directive(metaclass=DirectiveMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `Directive` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `Directive` is visible in the schema."""
         return True
 
     def __repr__(self) -> str:

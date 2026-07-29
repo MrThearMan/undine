@@ -75,9 +75,9 @@ class Connection:
         :param pagination_handler: Handler to use for pagination.
         :param description: Description for the created GraphQL type.
         """
-        self.query_type = ref if is_subclass(ref, QueryType) else None
-        self.union_type = ref if is_subclass(ref, UnionType) else None
-        self.interface_type = ref if is_subclass(ref, InterfaceType) else None
+        self.query_type: type[QueryType] | None = ref if is_subclass(ref, QueryType) else None
+        self.union_type: type[UnionType] | None = ref if is_subclass(ref, UnionType) else None
+        self.interface_type: type[InterfaceType] | None = ref if is_subclass(ref, InterfaceType) else None
 
         self.page_size = page_size
         self.pagination_handler = pagination_handler

@@ -34,8 +34,7 @@ Disabled by default so that information on the schema structure cannot
 be gained from error messages when trying to find schema entrypoints through
 trial and error (a form of security through obscurity).
 
-This should be left disabled when using
-[`EXPERIMENTAL_VISIBILITY_CHECKS`](#experimental_visibility_checks).
+Automatically forced to `False` when a schema uses [visibility](visibility.md).
 
 ///
 
@@ -246,27 +245,6 @@ Should be given as the dotted path to the execution context class.
 Type: `bool` | Default: `False`
 
 Whether to enable experimental support for incremental delivery over HTTP.
-
-///
-
-/// details | `EXPERIMENTAL_VISIBILITY_CHECKS`
-    attrs: {id: experimental_visibility_checks}
-
-Type: `bool` | Default: `False`
-
-Whether to enable experimental visibility checks.
-
-When enabled, parts of the schema can be hidden from certain users according to
-specified visibility checks. When a field is not visible to a user, it will not be
-included in introspection queries and it cannot be used in operations.
-
-Note that visibility does not affect "did you mean" suggestions, so it's advised to disable
-these using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](#allow_did_you_mean_suggestions) setting
-when using this feature.
-
-> In a federation schema, visibility does not update the composed supergraph SDL.
-> Visibility still blocks router traffic and surfaces as supergraph errors.
-> See [Federation visibility](federation.md#visibility) for details.
 
 ///
 
@@ -1027,6 +1005,58 @@ Whether Server-Sent Events should use distinct connections mode even with a HTTP
 Note that when using HTTP/1.1, the maximum number of open connections is limited to 6 per domain
 and browser. That means you will likely hit the limit in a real production environment
 with multiple requests and browser tabs.
+
+///
+
+/// details | `VISIBILITY_ACTIVE_EXTENSIONS_KEY`
+    attrs: {id: visibility_active_extensions_key}
+
+Type: `str` | Default: `"undine_visibility_active"`
+
+The key on `schema.extensions` set to `True` when [visibility](visibility.md) is
+detected in the schema. Used internally to install the visibility validation
+rule per schema; you rarely need to read it yourself.
+
+///
+
+/// details | `VISIBILITY_CACHE_ALIAS`
+    attrs: {id: visibility_cache_alias}
+
+Type: `str` | Default: `"default"`
+
+The cache alias to use for visibility caching.
+
+///
+
+/// details | `VISIBILITY_CACHE_EXTRA_CONTEXT`
+    attrs: {id: visibility_cache_extra_context}
+
+Type: `Callable[[DjangoRequestProtocol], Any]` | Default: `"undine.utils.visibility.default_visibility_extra_context"`
+
+Function returning any JSON-serialisable extra context added to the cross-request
+[visibility cache](visibility.md#caching-visibility-checks) key. Use this when
+per-user visibility depends on more than the user primary key (for example a
+tenant identifier or group membership).
+
+///
+
+/// details | `VISIBILITY_CACHE_PREFIX`
+    attrs: {id: visibility_cache_prefix}
+
+Type: `str` | Default: `"undine_visibility"`
+
+Prefix used for the cross-request [visibility cache](visibility.md#caching-visibility-checks) keys.
+
+///
+
+/// details | `VISIBILITY_CACHE_TIMEOUT`
+    attrs: {id: visibility_cache_timeout}
+
+Type: `int` | Default: `0`
+
+How many seconds to cache the filtered introspection payload per user context.
+Set to `0` (default) to disable cross-request caching; the per-request visibility
+memoization still runs.
 
 ///
 

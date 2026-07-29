@@ -1,33 +1,13 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from typing import Any
+from typing import AsyncGenerator
 
 import pytest
 from django.db.models import Value
-from graphql import (
-    DirectiveLocation,
-    GraphQLArgument,
-    GraphQLDirective,
-    GraphQLEnumType,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLInputObjectType,
-    GraphQLInterfaceType,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLScalarType,
-    GraphQLSchema,
-    GraphQLString,
-    GraphQLUnionType,
-    TypeMetaFieldDef,
-    get_introspection_query,
-    version_info,
-)
+from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, get_introspection_query, version_info
 
 from example_project.app.models import Project, Task
-from pytest_undine.client import GraphQLClientHTTPResponse
+from tests.test_utils.test_graphql.test_introspection.helpers import enable_visibility_patch, get_directives, get_types
 from undine import (
     Calculation,
     CalculationArgument,
@@ -48,97 +28,12 @@ from undine import (
     UnionType,
     create_schema,
 )
-from undine.federation import (
-    ExternalDirective,
-    FederationField,
-    FederationType,
-    KeyDirective,
-    create_federation_schema,
-)
+from undine.federation import ExternalDirective, FederationField, FederationType, KeyDirective, create_federation_schema
 from undine.relay import Connection
-from undine.settings import undine_settings as _undine_settings
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
-from undine.utils.graphql.introspection import (
-    directive_introspection_type,
-    field_introspection_type,
-    get_directive_fields,
-    get_field_fields,
-    get_schema_fields,
-    get_type_fields,
-    is_visible,
-    patch_introspection_schema,
-    resolve_directive_args,
-    resolve_directive_description,
-    resolve_directive_is_repeatable,
-    resolve_field_args,
-    resolve_field_description,
-    resolve_schema_description,
-    resolve_type_description,
-    resolve_type_enum_values,
-    resolve_type_fields,
-    resolve_type_input_fields,
-    resolve_type_is_one_of,
-    resolve_type_meta_field_def,
-    resolve_type_specified_by_url,
-    schema_introspection_type,
-    type_introspection_type,
-)
 
 
-@contextmanager
-def enable_visibility_patch():
-    """Mirror `undine.utils.graphql.introspection.patch_introspection_schema`."""
-    type_meta_field_def_resolver = TypeMetaFieldDef.resolve
-    schema_fields = schema_introspection_type._fields
-    directive_fields = directive_introspection_type._fields
-    type_fields = type_introspection_type._fields
-    field_fields = field_introspection_type._fields
-
-    TypeMetaFieldDef.resolve = resolve_type_meta_field_def
-    schema_introspection_type._fields = get_schema_fields
-    directive_introspection_type._fields = get_directive_fields
-    type_introspection_type._fields = get_type_fields
-    field_introspection_type._fields = get_field_fields
-
-    _re_evaluate_introspection_type_fields()
-
-    try:
-        yield
-    finally:
-        TypeMetaFieldDef.resolve = type_meta_field_def_resolver
-        schema_introspection_type._fields = schema_fields
-        directive_introspection_type._fields = directive_fields
-        type_introspection_type._fields = type_fields
-        field_introspection_type._fields = field_fields
-
-        _re_evaluate_introspection_type_fields()
-
-
-def _re_evaluate_introspection_type_fields():
-    if "fields" in schema_introspection_type.__dict__:
-        del schema_introspection_type.__dict__["fields"]
-
-    if "fields" in directive_introspection_type.__dict__:
-        del directive_introspection_type.__dict__["fields"]
-
-    if "fields" in type_introspection_type.__dict__:
-        del type_introspection_type.__dict__["fields"]
-
-    if "fields" in field_introspection_type.__dict__:
-        del field_introspection_type.__dict__["fields"]
-
-
-def get_directives(response: GraphQLClientHTTPResponse) -> dict[str, dict[str, Any]]:
-    schema = response.data["__schema"]
-    return {directive["name"]: directive for directive in schema["directives"]}
-
-
-def get_types(response: GraphQLClientHTTPResponse) -> dict[str, dict[str, Any]]:
-    schema = response.data["__schema"]
-    return {directive["name"]: directive for directive in schema["types"]}
-
-
-def test_introspection(graphql, undine_settings):
+def test_introspection__general(graphql, undine_settings):
     class Query(RootType):
         @Entrypoint
         def example(self) -> str:
@@ -195,6 +90,10 @@ def test_introspection__visibility__entrypoint(graphql, undine_settings, is_visi
         def example_visible(self, request: DjangoRequestProtocol) -> bool:
             return is_visible
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "filler"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -206,7 +105,7 @@ def test_introspection__visibility__entrypoint(graphql, undine_settings, is_visi
 
     types = get_types(response)
 
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -224,8 +123,16 @@ def test_introspection__visibility__query_type(graphql, undine_settings, is_visi
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     class Mutation(RootType):
         create_task = Entrypoint(TaskCreateMutation)
+
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
 
     undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
@@ -241,15 +148,16 @@ def test_introspection__visibility__query_type(graphql, undine_settings, is_visi
     assert ("TaskType" in types) is is_visible
 
     # 'tasks' Entrypoint is hidden, since its return type is the query type.
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
     # 'create_task' Entrypoint is hidden, since its return type is the query type.
-    assert len(types["Mutation"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Mutation"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__query_type__field(graphql, undine_settings, is_visible) -> None:
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         name = Field()
 
         @name.visible
@@ -270,7 +178,7 @@ def test_introspection__visibility__query_type__field(graphql, undine_settings, 
 
     types = get_types(response)
 
-    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["TaskType"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -283,6 +191,7 @@ def test_introspection__visibility__query_type__related(graphql, undine_settings
             return is_visible
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         project = Field(ProjectType)
 
     class Query(RootType):
@@ -302,7 +211,7 @@ def test_introspection__visibility__query_type__related(graphql, undine_settings
     assert ("ProjectType" in types) is is_visible
 
     # TaskType field hidden since related QueryType is hidden
-    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["TaskType"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -317,6 +226,10 @@ def test_introspection__visibility__query_type__connection(graphql, undine_setti
     class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -329,7 +242,7 @@ def test_introspection__visibility__query_type__connection(graphql, undine_setti
     types = get_types(response)
 
     # 'tasks' Connection Entrypoint is hidden, since its node type is the query type.
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
     assert ("TaskTypeConnection" in types) is is_visible
     assert ("TaskTypeEdge" in types) is is_visible
@@ -439,7 +352,9 @@ def test_introspection__visibility__mutation_type__input(graphql, undine_setting
         name = Field()
 
     class TaskCreateMutation(MutationType[Task], auto=False):
+        pk = Input()
         name = Input()
+        filler = Input(str, hidden=True, default_value="filler")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -462,7 +377,7 @@ def test_introspection__visibility__mutation_type__input(graphql, undine_setting
 
     types = get_types(response)
 
-    assert len(types["TaskCreateMutation"]["inputFields"]) == (1 if is_visible else 0)
+    assert len(types["TaskCreateMutation"]["inputFields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -478,6 +393,7 @@ def test_introspection__visibility__mutation_type__related(graphql, undine_setti
             return is_visible
 
     class TaskCreateMutation(MutationType[Task], auto=False):
+        pk = Input()
         project = Input(ProjectInput)
 
     class Query(RootType):
@@ -500,7 +416,7 @@ def test_introspection__visibility__mutation_type__related(graphql, undine_setti
     assert ("ProjectInput" in types) is is_visible
 
     # TaskCreateMutation field hidden since related MutationType is hidden
-    assert len(types["TaskCreateMutation"]["inputFields"]) == (1 if is_visible else 0)
+    assert len(types["TaskCreateMutation"]["inputFields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -540,6 +456,7 @@ def test_introspection__visibility__filterset(graphql, undine_settings, is_visib
 def test_introspection__visibility__filterset__filter(graphql, undine_settings, is_visible) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -564,7 +481,7 @@ def test_introspection__visibility__filterset__filter(graphql, undine_settings, 
     types = get_types(response)
 
     # Still contains the logical input methods
-    assert len(types["TaskFilterSet"]["inputFields"]) == (5 if is_visible else 4)
+    assert len(types["TaskFilterSet"]["inputFields"]) == (6 if is_visible else 5)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -604,6 +521,7 @@ def test_introspection__visibility__orderset(graphql, undine_settings, is_visibl
 def test_introspection__visibility__orderset__order(graphql, undine_settings, is_visible) -> None:
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -628,7 +546,7 @@ def test_introspection__visibility__orderset__order(graphql, undine_settings, is
     types = get_types(response)
 
     # Contains both ascending and descending orders
-    assert len(types["TaskOrderSet"]["enumValues"]) == (2 if is_visible else 0)
+    assert len(types["TaskOrderSet"]["enumValues"]) == (4 if is_visible else 2)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -641,7 +559,8 @@ def test_introspection__visibility__interface(graphql, undine_settings, is_visib
             return is_visible
 
     @Named
-    class TaskType(QueryType[Task], auto=False): ...
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -660,13 +579,18 @@ def test_introspection__visibility__interface(graphql, undine_settings, is_visib
     assert ("Named" in types) is is_visible
 
     # Inherited fields should be hidden
-    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["TaskType"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_introspection__visibility__interface__field(graphql, undine_settings, is_visible) -> None:
     class Named(InterfaceType):
+        pk = InterfaceField(GraphQLNonNull(GraphQLString))
         name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -689,8 +613,8 @@ def test_introspection__visibility__interface__field(graphql, undine_settings, i
 
     types = get_types(response)
 
-    assert len(types["Named"]["fields"]) == (1 if is_visible else 0)
-    assert len(types["TaskType"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Named"]["fields"]) == (2 if is_visible else 1)
+    assert len(types["TaskType"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -705,6 +629,10 @@ def test_introspection__visibility__interface__entrypoint(graphql, undine_settin
     class Query(RootType):
         named = Entrypoint(Named, many=True)
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -716,7 +644,7 @@ def test_introspection__visibility__interface__entrypoint(graphql, undine_settin
 
     types = get_types(response)
 
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -731,6 +659,10 @@ def test_introspection__visibility__interface__entrypoint__connection(graphql, u
     class Query(RootType):
         named = Entrypoint(Connection(Named))
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -743,7 +675,7 @@ def test_introspection__visibility__interface__entrypoint__connection(graphql, u
     types = get_types(response)
 
     # Connection Entrypoint hidden since its node type is the InterfaceType.
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -762,6 +694,10 @@ def test_introspection__visibility__union(graphql, undine_settings, is_visible) 
     class Query(RootType):
         commentable = Entrypoint(Commentable, many=True)
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -776,7 +712,7 @@ def test_introspection__visibility__union(graphql, undine_settings, is_visible) 
     assert ("Commentable" in types) is is_visible
 
     # Entrypoint hidden since its type is the UnionType.
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -795,6 +731,10 @@ def test_introspection__visibility__union__connection(graphql, undine_settings, 
     class Query(RootType):
         commentable = Entrypoint(Connection(Commentable))
 
+        @Entrypoint
+        def filler(self) -> str:
+            return "foo"
+
     undine_settings.SCHEMA = create_schema(query=Query)
 
     query = get_introspection_query(descriptions=False)
@@ -807,7 +747,7 @@ def test_introspection__visibility__union__connection(graphql, undine_settings, 
     types = get_types(response)
 
     # Connection Entrypoint hidden since its node type is the UnionType.
-    assert len(types["Query"]["fields"]) == (1 if is_visible else 0)
+    assert len(types["Query"]["fields"]) == (2 if is_visible else 1)
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
@@ -932,225 +872,114 @@ def test_introspection__visibility__federation_field(graphql, undine_settings, i
     assert len(types["Book"]["fields"]) == (2 if is_visible else 1)
 
 
-def test_is_visible__plain_input_object_type() -> None:
-    gql_type = GraphQLInputObjectType("PlainInput", fields={"x": GraphQLInputField(GraphQLString)})
-    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
+@pytest.mark.django_db
+def test_introspection__visibility__query_root__is_visible_false__hidden(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
 
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
 
-def test_is_visible__plain_interface_type() -> None:
-    gql_type = GraphQLInterfaceType("PlainIface", fields={"x": GraphQLField(GraphQLString)})
-    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return False
 
+    undine_settings.SCHEMA = create_schema(query=Query)
 
-def test_is_visible__plain_union_type() -> None:
-    member = GraphQLObjectType("PlainUnionMember", fields={"x": GraphQLField(GraphQLString)})
-    gql_type = GraphQLUnionType("PlainUnion", types=[member])
-    assert is_visible(gql_type, None) is True  # type: ignore[arg-type]
-
-
-def test_is_visible__calculation_argument_no_visible_func() -> None:
-    calc_arg = CalculationArgument(GraphQLString)
-    assert calc_arg.visible_func is None
-
-    gql_arg = GraphQLArgument(
-        GraphQLString,
-        extensions={_undine_settings.CALCULATION_ARGUMENT_EXTENSIONS_KEY: calc_arg},
-    )
-
-    class _FakeInfo:
-        context = None
-
-    assert is_visible(gql_arg, _FakeInfo()) is True  # type: ignore[arg-type]
-
-
-def test_patch_introspection_schema__fields_cached() -> None:
     with enable_visibility_patch():
-        # Access .fields inside the patch context to populate the cache,
-        # then call patch_introspection_schema which will delete those cached entries.
-        _ = schema_introspection_type.fields
-        _ = directive_introspection_type.fields
-        _ = type_introspection_type.fields
-        _ = field_introspection_type.fields
-        patch_introspection_schema()
+        response = graphql(get_introspection_query(descriptions=False))
 
-
-def test_patch_introspection_schema__fields_not_cached() -> None:
-    with enable_visibility_patch():
-        # enable_visibility_patch already cleared the cache; calling
-        # patch_introspection_schema without re-accessing .fields exercises
-        # the 'if "fields" in __dict__' → False branches.
-        patch_introspection_schema()
+    assert response.has_errors is False, response.errors
+    assert response.data["__schema"]["queryType"] is None
 
 
 @pytest.mark.django_db
-def test_resolve_type_meta_field_def__type_not_found(undine_settings) -> None:
+def test_introspection__visibility__mutation_root__is_visible_false__hidden(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        pk = Input()
 
     class Query(RootType):
-        @Entrypoint
-        def example(self) -> str:
-            return "foo"
+        tasks = Entrypoint(TaskType, many=True)
 
-    undine_settings.SCHEMA = create_schema(query=Query)
-    schema = undine_settings.SCHEMA
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
 
-    class _FakeInfo:
-        context = None
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return False
 
-    info = _FakeInfo()
-    info.schema = schema  # type: ignore[attr-defined]
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
 
-    result = resolve_type_meta_field_def(None, info, name="NonExistentType")  # type: ignore[arg-type]
-    assert result is None
+    with enable_visibility_patch():
+        response = graphql(get_introspection_query(descriptions=False))
 
-
-def test_resolve_schema_description() -> None:
-    schema = GraphQLSchema(
-        query=GraphQLObjectType("Query", fields={"x": GraphQLField(GraphQLString)}),
-        description="My schema",
-    )
-    assert resolve_schema_description(schema, None) == "My schema"  # type: ignore[arg-type]
+    assert response.has_errors is False, response.errors
+    assert response.data["__schema"]["mutationType"] is None
 
 
-def test_resolve_directive_description() -> None:
-    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], description="desc")
-    assert resolve_directive_description(directive, None) == "desc"  # type: ignore[arg-type]
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_introspection__visibility__subscription_entrypoint(graphql, undine_settings, is_visible) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+    async def task_stream() -> AsyncGenerator[int, None]:  # noqa: RUF029  # pragma: no cover
+        yield 1
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Subscription(RootType):
+        stream = Entrypoint(task_stream)
+        filler = Entrypoint(task_stream)
+
+        @stream.visible
+        def stream_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
+
+    with enable_visibility_patch():
+        response = graphql(get_introspection_query(descriptions=False))
+
+    assert response.has_errors is False, response.errors
+
+    subscription_type_name = response.data["__schema"]["subscriptionType"]["name"]
+    types = get_types(response)
+    subscription_fields = {field["name"] for field in types[subscription_type_name]["fields"]}
+
+    if is_visible:
+        assert "stream" in subscription_fields
+    else:
+        assert "stream" not in subscription_fields
+        assert "filler" in subscription_fields
 
 
-def test_resolve_directive_is_repeatable() -> None:
-    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], is_repeatable=True)
-    assert resolve_directive_is_repeatable(directive, None) is True  # type: ignore[arg-type]
+@pytest.mark.django_db
+def test_introspection__visibility__subscription_root__is_visible_false__hidden(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
 
+    async def task_stream() -> AsyncGenerator[int, None]:  # noqa: RUF029  # pragma: no cover
+        yield 1
 
-def test_resolve_directive_args__include_deprecated() -> None:
-    arg = GraphQLArgument(GraphQLString, deprecation_reason="old")
-    directive = GraphQLDirective("foo", [DirectiveLocation.FIELD], args={"x": arg})
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
 
-    class _FakeInfo:
-        context = None
+    class Subscription(RootType):
+        stream = Entrypoint(task_stream)
 
-    result = resolve_directive_args(directive, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
-    assert len(result) == 1
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return False
 
+    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
 
-def test_resolve_type_description() -> None:
-    gql_type = GraphQLObjectType("Foo", fields={"x": GraphQLField(GraphQLString)}, description="bar")
-    assert resolve_type_description(gql_type, None) == "bar"  # type: ignore[arg-type]
+    with enable_visibility_patch():
+        response = graphql(get_introspection_query(descriptions=False))
 
-
-def test_resolve_type_specified_by_url() -> None:
-    scalar = GraphQLScalarType("MyScalar", specified_by_url="https://example.com/")
-    assert resolve_type_specified_by_url(scalar, None) == "https://example.com/"  # type: ignore[arg-type]
-
-
-def test_resolve_type_fields__include_deprecated() -> None:
-    gql_type = GraphQLObjectType(
-        "FooWithDeprecated",
-        fields={
-            "active": GraphQLField(GraphQLString),
-            "old": GraphQLField(GraphQLString, deprecation_reason="use active"),
-        },
-    )
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_type_fields(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
-    assert result is not None
-    assert len(result) == 2
-
-
-def test_resolve_type_fields__exclude_deprecated() -> None:
-    gql_type = GraphQLObjectType(
-        "FooExcludeDeprecated",
-        fields={
-            "active": GraphQLField(GraphQLString),
-            "old": GraphQLField(GraphQLString, deprecation_reason="use active"),
-        },
-    )
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_type_fields(gql_type, _FakeInfo(), includeDeprecated=False)  # type: ignore[arg-type]
-    assert result is not None
-    assert len(result) == 1
-    assert result[0][0] == "active"
-
-
-def test_resolve_type_enum_values__include_deprecated() -> None:
-    gql_type = GraphQLEnumType(
-        "MyEnumAll",
-        values={
-            "A": GraphQLEnumValue("A"),
-            "B": GraphQLEnumValue("B", deprecation_reason="old"),
-        },
-    )
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_type_enum_values(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
-    assert result is not None
-    assert len(result) == 2
-
-
-def test_resolve_type_enum_values__exclude_deprecated() -> None:
-    gql_type = GraphQLEnumType(
-        "MyEnumFiltered",
-        values={
-            "A": GraphQLEnumValue("A"),
-            "B": GraphQLEnumValue("B", deprecation_reason="old"),
-        },
-    )
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_type_enum_values(gql_type, _FakeInfo(), includeDeprecated=False)  # type: ignore[arg-type]
-    assert result is not None
-    assert len(result) == 1
-    assert result[0][0] == "A"
-
-
-def test_resolve_type_input_fields__include_deprecated() -> None:
-    gql_type = GraphQLInputObjectType(
-        "MyInput",
-        fields={
-            "active": GraphQLInputField(GraphQLString),
-            "old": GraphQLInputField(GraphQLString, deprecation_reason="use active"),
-        },
-    )
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_type_input_fields(gql_type, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
-    assert result is not None
-    assert len(result) == 2
-
-
-def test_resolve_type_is_one_of__input_type() -> None:
-    gql_type = GraphQLInputObjectType("MyInput", fields={"x": GraphQLInputField(GraphQLString)}, is_one_of=True)
-    assert resolve_type_is_one_of(gql_type, None) is True  # type: ignore[arg-type]
-
-
-def test_resolve_type_is_one_of__non_input_type() -> None:
-    gql_type = GraphQLObjectType("Foo", fields={"x": GraphQLField(GraphQLString)})
-    assert resolve_type_is_one_of(gql_type, None) is None  # type: ignore[arg-type]
-
-
-def test_resolve_field_description() -> None:
-    item = ("myField", GraphQLField(GraphQLString, description="a field"))
-    assert resolve_field_description(item, None) == "a field"  # type: ignore[arg-type]
-
-
-def test_resolve_field_args__include_deprecated() -> None:
-    arg = GraphQLArgument(GraphQLString, deprecation_reason="old")
-    field = GraphQLField(GraphQLString, args={"x": arg})
-    item = ("myField", field)
-
-    class _FakeInfo:
-        context = None
-
-    result = resolve_field_args(item, _FakeInfo(), includeDeprecated=True)  # type: ignore[arg-type]
-    assert len(result) == 1
+    assert response.has_errors is False, response.errors
+    assert response.data["__schema"]["subscriptionType"] is None

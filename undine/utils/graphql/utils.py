@@ -378,3 +378,17 @@ def located_validation_error(
             errors.append(graphql_error)
 
     return GraphQLErrorGroup(errors=errors)
+
+
+def enable_did_you_mean_suggestions() -> None:
+    # See: https://github.com/graphql-python/graphql-core/issues/97#issuecomment-642967670
+    from graphql.pyutils import did_you_mean  # noqa: PLC0415
+
+    did_you_mean.__globals__["MAX_LENGTH"] = 5
+
+
+def disable_did_you_mean_suggestions() -> None:
+    # See: https://github.com/graphql-python/graphql-core/issues/97#issuecomment-642967670
+    from graphql.pyutils import did_you_mean  # noqa: PLC0415
+
+    did_you_mean.__globals__["MAX_LENGTH"] = 0

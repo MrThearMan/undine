@@ -157,6 +157,8 @@ from undine.exceptions import (
     NoFunctionParametersError,
     NotCompatibleWithError,
     QueryTypeRequiresSingleModelError,
+    QueryRootCannotBeHiddenError,
+    QueryRootRequiresAlwaysVisibleEntrypointError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
     UndineError,
@@ -592,6 +594,22 @@ class UndineErrorParams(NamedTuple):
             cls=QueryTypeRequiresSingleModelError,
             args={"kind": "FilterSet"},
             message="Cannot add a FilterSet with multiple models to a QueryType",
+        ),
+        QueryRootCannotBeHiddenError.__name__: UndineErrorParams(
+            cls=QueryRootCannotBeHiddenError,
+            args={"query_root": MyClass},
+            message=(
+                "Query root type 'MyClass' cannot override '__is_visible__'. "
+                "The Query root must always be visible."
+            ),
+        ),
+        QueryRootRequiresAlwaysVisibleEntrypointError.__name__: UndineErrorParams(
+            cls=QueryRootRequiresAlwaysVisibleEntrypointError,
+            args={"query_root": MyClass},
+            message=(
+                "Query root type 'MyClass' must have at least one entrypoint "
+                "without a '@visible' hook so that the schema is never fully hidden."
+            ),
         ),
         RegistryDuplicateError.__name__: UndineErrorParams(
             cls=RegistryDuplicateError,

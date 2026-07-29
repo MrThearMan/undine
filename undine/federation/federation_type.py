@@ -166,10 +166,7 @@ class FederationType(metaclass=FederationTypeMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `FederationType` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `FederationType` is visible in the schema."""
         return True
 
 
@@ -308,7 +305,7 @@ class FederationField:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the FederationField's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> @KeyDirective(fields="isbn")
         >>> class BookType(FederationType):

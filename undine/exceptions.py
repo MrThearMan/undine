@@ -534,6 +534,25 @@ class RegistryMissingTypeError(UndineError):
     msg = "'{registry_name}' doesn't contain an entry for '{key}'"
 
 
+class SchemaVisibilityInvariantError(UndineError):
+    """Base class for errors raised when a schema violates a visibility compile-time invariant."""
+
+
+class QueryRootCannotBeHiddenError(SchemaVisibilityInvariantError):
+    """Raised when a `RootType` used as the Query root overrides `__is_visible__`."""
+
+    msg = "Query root type '{query_root:name}' cannot override '__is_visible__'. The Query root must always be visible."
+
+
+class QueryRootRequiresAlwaysVisibleEntrypointError(SchemaVisibilityInvariantError):
+    """Raised when every entrypoint on the Query root has a `@visible` hook."""
+
+    msg = (
+        "Query root type '{query_root:name}' must have at least one entrypoint "
+        "without a '@visible' hook so that the schema is never fully hidden."
+    )
+
+
 class UnexpectedDirectiveArgumentError(UndineError):
     """Error raised if a directive argument is unexpected."""
 

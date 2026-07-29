@@ -295,10 +295,7 @@ class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `OrderSet` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `OrderSet` is visible in the schema."""
         return True
 
 
@@ -406,7 +403,7 @@ class Order:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the Order's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> class TaskOrderSet(OrderSet[Task]):
         ...     name = Order()

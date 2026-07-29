@@ -9,4 +9,4 @@ class TaskFilterSet(FilterSet[Task]):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        return request.user.is_superuser
+        return request.user.is_authenticated

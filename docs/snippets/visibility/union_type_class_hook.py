@@ -13,4 +13,4 @@ class ProjectType(QueryType[Project]): ...
 class SearchObjects(UnionType[TaskType, ProjectType]):
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        return request.user.is_superuser
+        return request.user.is_authenticated

@@ -1,12 +1,12 @@
-from undine import Field, QueryType
+from undine import Input, MutationType
 from undine.typing import DjangoRequestProtocol
 
 from .models import Task
 
 
-class TaskType(QueryType[Task]):
-    name = Field()
+class TaskCreateMutation(MutationType[Task]):
+    name = Input()
 
     @name.visible
     def name_visible(self, request: DjangoRequestProtocol) -> bool:
-        return request.user.is_superuser
+        return request.user.is_authenticated

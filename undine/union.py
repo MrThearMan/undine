@@ -173,8 +173,5 @@ class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
 
     @classmethod
     def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
-        """
-        Determine if the given `UnionType` is visible in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
-        """
+        """Determine if the given `UnionType` is visible in the schema."""
         return True

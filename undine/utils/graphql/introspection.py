@@ -5,11 +5,8 @@ from typing import TYPE_CHECKING, Any
 from graphql import (
     GraphQLArgument,
     GraphQLBoolean,
-    GraphQLDirective,
     GraphQLEnumType,
-    GraphQLEnumValue,
     GraphQLField,
-    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLList,
@@ -24,38 +21,26 @@ from graphql import (
 )
 from graphql.pyutils import inspect
 
-from undine import InterfaceField
+from undine.utils.visibility import is_visible
 
-from .undine_extensions import (
-    get_undine_calculation_argument,
-    get_undine_connection,
-    get_undine_directive,
-    get_undine_directive_argument,
-    get_undine_entrypoint,
-    get_undine_federation_field,
-    get_undine_federation_type,
-    get_undine_field,
-    get_undine_filter,
-    get_undine_filterset,
-    get_undine_input,
-    get_undine_interface_field,
-    get_undine_interface_type,
-    get_undine_mutation_type,
-    get_undine_order,
-    get_undine_orderset,
-    get_undine_query_type,
-    get_undine_union_type,
-)
+from .undine_extensions import get_undine_root_type
 from .utils import get_underlying_type
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from graphql import DirectiveLocation, GraphQLNamedType, GraphQLOutputType, GraphQLSchema, GraphQLType
+    from graphql import (
+        DirectiveLocation,
+        GraphQLDirective,
+        GraphQLEnumValue,
+        GraphQLInputField,
+        GraphQLNamedType,
+        GraphQLOutputType,
+        GraphQLSchema,
+        GraphQLType,
+    )
 
     from undine import GQLInfo
-    from undine.typing import HasGraphQLExtensions
-
 
 __all__ = [
     "patch_introspection_schema",
@@ -70,131 +55,6 @@ field_introspection_type: GraphQLObjectType = introspection_types["__Field"]  # 
 input_value_introspection_type: GraphQLObjectType = introspection_types["__InputValue"]  # type: ignore[assignment]
 enum_value_introspection_type: GraphQLObjectType = introspection_types["__EnumValue"]  # type: ignore[assignment]
 type_kind_introspection_type: GraphQLEnumType = introspection_types["__TypeKind"]  # type: ignore[assignment]
-
-
-def is_visible(obj: HasGraphQLExtensions, info: GQLInfo) -> bool:  # noqa: PLR0911, PLR0912, PLR0914, PLR0915, C901
-    match obj:
-        case GraphQLObjectType():
-            query_type = get_undine_query_type(obj)
-            if query_type is not None:
-                return query_type.__is_visible__(info.context)
-
-            connection = get_undine_connection(obj)
-            if connection is not None:
-                if connection.query_type is not None:
-                    return connection.query_type.__is_visible__(info.context)  # type: ignore[attr-defined]
-                if connection.union_type is not None:
-                    return connection.union_type.__is_visible__(info.context)  # type: ignore[attr-defined]
-                if connection.interface_type is not None:
-                    return connection.interface_type.__is_visible__(info.context)  # type: ignore[attr-defined]
-                return True  # Should never happen  # pragma: no cover
-
-            federation_type = get_undine_federation_type(obj)
-            if federation_type is not None:
-                return federation_type.__is_visible__(info.context)
-
-        case GraphQLInputObjectType():
-            mutation_type = get_undine_mutation_type(obj)
-            if mutation_type is not None:
-                return mutation_type.__is_visible__(info.context)
-
-            filterset = get_undine_filterset(obj)
-            if filterset is not None:
-                return filterset.__is_visible__(info.context)
-
-        case GraphQLInterfaceType():
-            interface_type = get_undine_interface_type(obj)
-            if interface_type is not None:
-                return interface_type.__is_visible__(info.context)
-
-        case GraphQLUnionType():
-            union_type = get_undine_union_type(obj)
-            if union_type is not None:
-                return union_type.__is_visible__(info.context)
-
-        case GraphQLEnumType():
-            orderset = get_undine_orderset(obj)
-            if orderset is not None:
-                return orderset.__is_visible__(info.context)
-
-        case GraphQLDirective():
-            directive = get_undine_directive(obj)
-            if directive is not None:
-                return directive.__is_visible__(info.context)
-
-        case GraphQLField():
-            entrypoint = get_undine_entrypoint(obj)
-            if entrypoint is not None:
-                if entrypoint.visible_func is not None:
-                    return entrypoint.visible_func(entrypoint, info.context)
-                return True
-
-            field = get_undine_field(obj)
-            if field is not None:
-                if field.visible_func is not None:
-                    return field.visible_func(field, info.context)
-                if isinstance(field.ref, InterfaceField):
-                    if not field.ref.interface_type.__is_visible__(info.context):
-                        return False
-                    if field.ref.visible_func is not None:
-                        return field.ref.visible_func(field.ref, info.context)
-                return True
-
-            interface_field = get_undine_interface_field(obj)
-            if interface_field is not None:
-                if interface_field.visible_func is not None:
-                    return interface_field.visible_func(interface_field, info.context)
-                return True
-
-            federation_field = get_undine_federation_field(obj)
-            if federation_field is not None:
-                if federation_field.visible_func is not None:
-                    return federation_field.visible_func(federation_field, info.context)
-                return True
-
-            field_type = get_underlying_type(obj.type)
-            return is_visible(field_type, info)
-
-        case GraphQLInputField():
-            inpt = get_undine_input(obj)
-            if inpt is not None:
-                if inpt.visible_func is not None:
-                    return inpt.visible_func(inpt, info.context)
-                return True
-
-            ftr = get_undine_filter(obj)
-            if ftr is not None:
-                if ftr.visible_func is not None:
-                    return ftr.visible_func(ftr, info.context)
-                return True
-
-            input_field_type = get_underlying_type(obj.type)
-            return is_visible(input_field_type, info)
-
-        case GraphQLArgument():
-            directive_arg = get_undine_directive_argument(obj)
-            if directive_arg is not None:
-                if directive_arg.visible_func is not None:
-                    return directive_arg.visible_func(directive_arg, info.context)
-                return True
-
-            calculation_arg = get_undine_calculation_argument(obj)
-            if calculation_arg is not None:
-                if calculation_arg.visible_func is not None:
-                    return calculation_arg.visible_func(calculation_arg, info.context)
-                return True
-
-            arg_type = get_underlying_type(obj.type)
-            return is_visible(arg_type, info)
-
-        case GraphQLEnumValue():
-            order = get_undine_order(obj)
-            if order is not None:
-                if order.visible_func is not None:
-                    return order.visible_func(order, info.context)
-                return True
-
-    return True
 
 
 def patch_introspection_schema() -> None:
@@ -224,7 +84,7 @@ def resolve_type_meta_field_def(root: Any, info: GQLInfo, *, name: str) -> Graph
     if gql_type is None:
         return None
 
-    if not is_visible(gql_type, info):
+    if not is_visible(gql_type, info.context):
         return None
 
     return gql_type
@@ -245,7 +105,7 @@ def get_schema_fields() -> dict[str, GraphQLField]:
             description="A list of all types supported by this server.",
         ),
         "queryType": GraphQLField(
-            GraphQLNonNull(type_introspection_type),
+            type_introspection_type,
             resolve=resolve_schema_query_type,
             description="The type that query operations will be rooted at.",
         ),
@@ -272,23 +132,45 @@ def resolve_schema_description(root: GraphQLSchema, info: GQLInfo) -> str | None
 
 
 def resolve_schema_types(root: GraphQLSchema, info: GQLInfo) -> Iterable[GraphQLNamedType]:
-    return [gql_type for gql_type in root.type_map.values() if is_visible(gql_type, info)]
+    return [gql_type for gql_type in root.type_map.values() if is_visible(gql_type, info.context)]
 
 
-def resolve_schema_query_type(root: GraphQLSchema, info: GQLInfo) -> GraphQLObjectType:
-    return root.query_type  # type: ignore[return-value]
+def resolve_schema_query_type(root: GraphQLSchema, info: GQLInfo) -> GraphQLObjectType | None:
+    query_type = root.query_type
+    if query_type is None:
+        return None
+    if not _root_type_visible(query_type, info):
+        return None
+    return query_type
 
 
 def resolve_schema_mutation_type(root: GraphQLSchema, info: GQLInfo) -> GraphQLObjectType | None:
-    return root.mutation_type
+    mutation_type = root.mutation_type
+    if mutation_type is None:
+        return None
+    if not _root_type_visible(mutation_type, info):
+        return None
+    return mutation_type
 
 
 def resolve_schema_subscription_type(root: GraphQLSchema, info: GQLInfo) -> GraphQLObjectType | None:
-    return root.subscription_type
+    subscription_type = root.subscription_type
+    if subscription_type is None:
+        return None
+    if not _root_type_visible(subscription_type, info):
+        return None
+    return subscription_type
+
+
+def _root_type_visible(object_type: GraphQLObjectType, info: GQLInfo) -> bool:
+    root_type = get_undine_root_type(object_type)
+    if root_type is None:
+        return True
+    return is_visible(object_type, info.context)
 
 
 def resolve_schema_directives(root: GraphQLSchema, info: GQLInfo) -> Iterable[GraphQLDirective]:
-    return [directive for directive in root.directives if is_visible(directive, info)]
+    return [directive for directive in root.directives if is_visible(directive, info.context)]
 
 
 # Directive
@@ -339,7 +221,7 @@ def resolve_directive_locations(root: GraphQLDirective, info: GQLInfo) -> Iterab
 
 
 def resolve_directive_args(root: GraphQLDirective, info: GQLInfo, **kwargs: Any) -> list[tuple[str, GraphQLArgument]]:
-    args = ((key, arg) for key, arg in root.args.items() if is_visible(arg, info))
+    args = ((key, arg) for key, arg in root.args.items() if is_visible(arg, info.context))
 
     if kwargs["includeDeprecated"]:
         return list(args)
@@ -445,11 +327,7 @@ def resolve_type_specified_by_url(gql_type: GraphQLType, info: GQLInfo) -> str |
 
 def resolve_type_fields(gql_type: GraphQLType, info: GQLInfo, **kwargs: Any) -> list[tuple[str, GraphQLField]] | None:
     if isinstance(gql_type, (GraphQLObjectType, GraphQLInterfaceType)):
-        fields = (
-            (key, field)
-            for key, field in gql_type.fields.items()
-            if is_visible(field, info) and is_visible(get_underlying_type(field.type), info)
-        )
+        fields = ((key, field) for key, field in gql_type.fields.items() if is_visible(field, info.context))
 
         if kwargs["includeDeprecated"]:
             return list(fields)
@@ -461,7 +339,7 @@ def resolve_type_fields(gql_type: GraphQLType, info: GQLInfo, **kwargs: Any) -> 
 
 def resolve_type_interfaces(gql_type: GraphQLType, info: GQLInfo) -> Iterable[GraphQLInterfaceType] | None:
     if isinstance(gql_type, (GraphQLObjectType, GraphQLInterfaceType)):
-        return [interface for interface in gql_type.interfaces if is_visible(interface, info)]
+        return [interface for interface in gql_type.interfaces if is_visible(interface, info.context)]
 
     return None
 
@@ -469,7 +347,7 @@ def resolve_type_interfaces(gql_type: GraphQLType, info: GQLInfo) -> Iterable[Gr
 def resolve_type_possible_types(gql_type: GraphQLType, info: GQLInfo) -> Iterable[GraphQLObjectType] | None:
     if isinstance(gql_type, (GraphQLInterfaceType, GraphQLUnionType)):
         object_types = info.schema.get_possible_types(gql_type)
-        return [object_type for object_type in object_types if is_visible(object_type, info)]
+        return [object_type for object_type in object_types if is_visible(object_type, info.context)]
 
     return None
 
@@ -480,7 +358,7 @@ def resolve_type_enum_values(
     **kwargs: Any,
 ) -> list[tuple[str, GraphQLEnumValue]] | None:
     if isinstance(gql_type, GraphQLEnumType):
-        values = ((key, field) for key, field in gql_type.values.items() if is_visible(field, info))
+        values = ((key, field) for key, field in gql_type.values.items() if is_visible(field, info.context))
 
         if kwargs["includeDeprecated"]:
             return list(values)
@@ -499,7 +377,7 @@ def resolve_type_input_fields(
         fields = (
             (key, field)
             for key, field in gql_type.fields.items()
-            if is_visible(field, info) and is_visible(get_underlying_type(field.type), info)
+            if is_visible(field, info.context) and is_visible(get_underlying_type(field.type), info.context)
         )
 
         if kwargs["includeDeprecated"]:
@@ -568,7 +446,7 @@ def resolve_field_args(
     info: GQLInfo,
     **kwargs: Any,
 ) -> list[tuple[str, GraphQLArgument]]:
-    args = ((key, arg) for key, arg in item[1].args.items() if is_visible(arg, info))
+    args = ((key, arg) for key, arg in item[1].args.items() if is_visible(arg, info.context))
 
     if kwargs["includeDeprecated"]:
         return list(args)

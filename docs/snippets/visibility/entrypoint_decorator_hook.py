@@ -9,4 +9,4 @@ class Query(RootType):
 
     @testing.visible
     def testing_visible(self, request: DjangoRequestProtocol) -> bool:
-        return request.user.is_superuser
+        return request.user.is_authenticated

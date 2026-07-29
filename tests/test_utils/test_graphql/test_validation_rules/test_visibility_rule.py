@@ -26,20 +26,14 @@ from undine import (
     UnionType,
     create_schema,
 )
-from undine.federation import (
-    ExternalDirective,
-    FederationField,
-    FederationType,
-    KeyDirective,
-    create_federation_schema,
-)
-from undine.relay import Connection
+from undine.federation import ExternalDirective, FederationField, FederationType, KeyDirective, create_federation_schema
+from undine.pagination import OffsetPagination
+from undine.relay import Connection, Node, to_global_id
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
 def test_validation_rules__visibility_rule__entrypoint(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Query(RootType):
         @Entrypoint
@@ -49,6 +43,10 @@ def test_validation_rules__visibility_rule__entrypoint(graphql, undine_settings,
         @example.visible
         def example_visible(self, request: DjangoRequestProtocol) -> bool:
             return is_visible
+
+        @Entrypoint
+        def filler(self) -> str:
+            return "filler"
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -75,7 +73,6 @@ def test_validation_rules__visibility_rule__entrypoint(graphql, undine_settings,
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -114,9 +111,9 @@ def test_validation_rules__visibility_rule__query_type(graphql, undine_settings,
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type__field(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         name = Field()
 
         @name.visible
@@ -152,9 +149,9 @@ def test_validation_rules__visibility_rule__query_type__field(graphql, undine_se
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type__field__multiple(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         name = Field()
         type = Field()
 
@@ -194,7 +191,6 @@ def test_validation_rules__visibility_rule__query_type__field__multiple(graphql,
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type__field__related(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class ProjectType(QueryType[Project], auto=False):
         name = Field()
@@ -204,6 +200,7 @@ def test_validation_rules__visibility_rule__query_type__field__related(graphql, 
             return is_visible
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         project = Field(ProjectType)
 
     class Query(RootType):
@@ -238,7 +235,6 @@ def test_validation_rules__visibility_rule__query_type__field__related(graphql, 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type__field__connection(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class PersonType(QueryType[Person], auto=False):
         name = Field()
@@ -248,6 +244,7 @@ def test_validation_rules__visibility_rule__query_type__field__connection(graphq
             return is_visible
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         assignees = Field(Connection(PersonType))
 
     class Query(RootType):
@@ -288,7 +285,6 @@ def test_validation_rules__visibility_rule__query_type__field__connection(graphq
 def test_validation_rules__visibility_rule__query_type__field__connection__union(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class CommentType(QueryType[Comment], auto=False):
         contents = Field()
@@ -302,6 +298,7 @@ def test_validation_rules__visibility_rule__query_type__field__connection__union
             return is_visible
 
     class TaskType(QueryType[Task], auto=False):
+        pk = Field()
         commentable = Field(Connection(Commentable), field_name="related_tasks")
 
     class Query(RootType):
@@ -344,9 +341,8 @@ def test_validation_rules__visibility_rule__query_type__field__connection__union
 def test_validation_rules__visibility_rule__query_type__field__connection__interface(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
-    class Named(InterfaceType, auto=False):
+    class Named(InterfaceType):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
         @classmethod
@@ -357,6 +353,7 @@ def test_validation_rules__visibility_rule__query_type__field__connection__inter
     class TaskType(QueryType[Task], auto=False): ...
 
     class ProjectType(QueryType[Project], auto=False):
+        pk = Field()
         named = Field(Connection(Named), field_name="tasks")
 
     class Query(RootType):
@@ -395,7 +392,6 @@ def test_validation_rules__visibility_rule__query_type__field__connection__inter
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__query_type__connection(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -438,7 +434,6 @@ def test_validation_rules__visibility_rule__query_type__connection(graphql, undi
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__calculation_argument(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Calc(Calculation[int]):
         value = CalculationArgument(int)
@@ -483,7 +478,6 @@ def test_validation_rules__visibility_rule__calculation_argument(graphql, undine
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -529,7 +523,6 @@ def test_validation_rules__visibility_rule__mutation_type(graphql, undine_settin
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__input(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -575,7 +568,6 @@ def test_validation_rules__visibility_rule__mutation_type__input(graphql, undine
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__input__nested(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -635,7 +627,6 @@ def test_validation_rules__visibility_rule__mutation_type__input__nested(graphql
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__input__as_variable(graphql, undine_settings):
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task]): ...
 
@@ -678,7 +669,6 @@ def test_validation_rules__visibility_rule__mutation_type__input__as_variable(gr
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__related(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -728,7 +718,6 @@ def test_validation_rules__visibility_rule__mutation_type__related(graphql, undi
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__query_type(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -774,7 +763,6 @@ def test_validation_rules__visibility_rule__mutation_type__query_type(graphql, u
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__filterset(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
@@ -816,11 +804,53 @@ def test_validation_rules__visibility_rule__filterset(graphql, undine_settings, 
 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
-def test_validation_rules__visibility_rule__filterset__filter(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+def test_validation_rules__visibility_rule__filterset__offset_pagination(graphql, undine_settings, is_visible) -> None:
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks(filter: {name: "foo"}) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown argument 'filter' on field 'Query.tasks'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__filterset__filter(graphql, undine_settings, is_visible) -> None:
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -859,11 +889,11 @@ def test_validation_rules__visibility_rule__filterset__filter(graphql, undine_se
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__filterset__filter__multiple(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
         done = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -904,10 +934,10 @@ def test_validation_rules__visibility_rule__filterset__filter__multiple(graphql,
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__filterset__filter__variable(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -947,7 +977,6 @@ def test_validation_rules__visibility_rule__filterset__filter__variable(graphql,
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__orderset(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
@@ -989,11 +1018,53 @@ def test_validation_rules__visibility_rule__orderset(graphql, undine_settings, i
 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
-def test_validation_rules__visibility_rule__orderset__order(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
+def test_validation_rules__visibility_rule__orderset__offset_pagination(graphql, undine_settings, is_visible) -> None:
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @TaskOrderSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(OffsetPagination(TaskType))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks(orderBy: [nameAsc]) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown argument 'orderBy' on field 'Query.tasks'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__orderset__order(graphql, undine_settings, is_visible) -> None:
+
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -1032,11 +1103,11 @@ def test_validation_rules__visibility_rule__orderset__order(graphql, undine_sett
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__orderset__order__multiple(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
         done = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -1084,10 +1155,10 @@ def test_validation_rules__visibility_rule__orderset__order__multiple(graphql, u
 def test_validation_rules__visibility_rule__orderset__order__variable(
     graphql, undine_settings, is_visible, ordering
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -1132,10 +1203,10 @@ def test_validation_rules__visibility_rule__orderset__order__variable(
 def test_validation_rules__visibility_rule__orderset__order__variable__partial(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -1178,7 +1249,6 @@ def test_validation_rules__visibility_rule__orderset__order__variable__partial(
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__interface(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -1225,10 +1295,14 @@ def test_validation_rules__visibility_rule__interface(graphql, undine_settings, 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__interface__field(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
+        pk = InterfaceField(GraphQLNonNull(GraphQLString))
         name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -1269,10 +1343,64 @@ def test_validation_rules__visibility_rule__interface__field(graphql, undine_set
         ]
 
 
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__interface__field__shadowed_by_query_type(graphql, undine_settings) -> None:
+
+    class Named(InterfaceType, auto=False):
+        pk = InterfaceField(GraphQLNonNull(GraphQLString))
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    @Named
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        type = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+        named = Entrypoint(Named, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task_type_query = """
+        query {
+            tasks {
+                name
+                type
+            }
+        }
+    """
+
+    response = graphql(task_type_query)
+    assert response.has_errors is False, response.errors
+
+    interface_query = """
+        query {
+            named {
+                name
+            }
+        }
+    """
+
+    response = graphql(interface_query)
+    assert response.errors == [
+        {
+            "message": "Cannot query field 'name' on type 'Named'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__interface__connection(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -1323,7 +1451,6 @@ def test_validation_rules__visibility_rule__interface__connection(graphql, undin
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__interface__inline_fragment(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -1374,7 +1501,6 @@ def test_validation_rules__visibility_rule__interface__inline_fragment(graphql, 
 def test_validation_rules__visibility_rule__interface__fragment_definition(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -1424,7 +1550,6 @@ def test_validation_rules__visibility_rule__interface__fragment_definition(
 def test_validation_rules__visibility_rule__interface__implementation_hidden(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Named(InterfaceType, auto=False):
         name = InterfaceField(GraphQLNonNull(GraphQLString))
@@ -1470,7 +1595,6 @@ def test_validation_rules__visibility_rule__interface__implementation_hidden(
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__union(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class ProjectType(QueryType[Project], auto=False):
         name = Field()
@@ -1519,7 +1643,6 @@ def test_validation_rules__visibility_rule__union(graphql, undine_settings, is_v
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__union__connection(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class ProjectType(QueryType[Project], auto=False):
         name = Field()
@@ -1572,7 +1695,6 @@ def test_validation_rules__visibility_rule__union__connection(graphql, undine_se
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__union__fragment_definition(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -1619,7 +1741,6 @@ def test_validation_rules__visibility_rule__union__fragment_definition(graphql, 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__union__member_hidden(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -1667,8 +1788,57 @@ def test_validation_rules__visibility_rule__union__member_hidden(graphql, undine
 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
+def test_validation_rules__visibility_rule__union__member_hidden__fragment_definition(
+    graphql, undine_settings, is_visible
+) -> None:
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        commentable = Entrypoint(Commentable, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskData on TaskType {
+            name
+        }
+
+        query {
+            commentable {
+                ...TaskData
+                ... on ProjectType {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert {
+            "message": "Unknown type 'TaskType'.",
+            "extensions": {"status_code": 400},
+        } in response.errors
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
 def test_validation_rules__visibility_rule__directive(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Version(Directive, locations=[DirectiveLocation.FIELD]):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
@@ -1710,7 +1880,6 @@ def test_validation_rules__visibility_rule__directive(graphql, undine_settings, 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__directive__argument(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Version(Directive, locations=[DirectiveLocation.FIELD]):
         value = DirectiveArgument(GraphQLNonNull(GraphQLString))
@@ -1751,10 +1920,13 @@ def test_validation_rules__visibility_rule__directive__argument(graphql, undine_
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_field__no_parent_type(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -1777,10 +1949,13 @@ def test_validation_rules__visibility_rule__enter_field__no_parent_type(graphql,
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_field__no_graphql_field(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -1801,10 +1976,13 @@ def test_validation_rules__visibility_rule__enter_field__no_graphql_field(graphq
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_argument__no_parent_type(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -1827,10 +2005,13 @@ def test_validation_rules__visibility_rule__enter_argument__no_parent_type(graph
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_argument__no_graphql_argument(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -1851,10 +2032,13 @@ def test_validation_rules__visibility_rule__enter_argument__no_graphql_argument(
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_argument__variable_node__none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     @TaskFilterSet
     class TaskType(QueryType[Task], auto=False):
@@ -1879,7 +2063,6 @@ def test_validation_rules__visibility_rule__enter_argument__variable_node__none(
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__mutation_type__argument__hidden(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -1914,7 +2097,7 @@ def test_validation_rules__visibility_rule__mutation_type__argument__hidden(grap
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Unknown argument 'input' on field 'Mutation.createTask'.",
+            "message": "Cannot query field 'createTask' on type 'Mutation'.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -1922,7 +2105,6 @@ def test_validation_rules__visibility_rule__mutation_type__argument__hidden(grap
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__calculation_argument__no_visible_func(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Calc(Calculation[int]):
         value = CalculationArgument(int)
@@ -1932,6 +2114,10 @@ def test_validation_rules__visibility_rule__calculation_argument__no_visible_fun
 
     class TaskType(QueryType[Task], auto=False):
         custom = Field(Calc)
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -1952,10 +2138,13 @@ def test_validation_rules__visibility_rule__calculation_argument__no_visible_fun
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_argument__relay_arg(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(Connection(TaskType))
@@ -1980,10 +2169,13 @@ def test_validation_rules__visibility_rule__enter_argument__relay_arg(graphql, u
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_named_type__unknown_type(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -2006,11 +2198,15 @@ def test_validation_rules__visibility_rule__enter_named_type__unknown_type(graph
     assert response.has_errors is True
 
 
+@pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_directive__unknown_directive(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -2031,10 +2227,13 @@ def test_validation_rules__visibility_rule__enter_directive__unknown_directive(g
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__enter_directive__builtin_directive(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -2052,13 +2251,17 @@ def test_validation_rules__visibility_rule__enter_directive__builtin_directive(g
     assert response.has_errors is False
 
 
+@pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_entrypoint__plain_return_type(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class Query(RootType):
         @Entrypoint
         def example(self) -> str:
             return "foo"
+
+        @example.visible
+        def example_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
@@ -2073,10 +2276,13 @@ def test_validation_rules__visibility_rule__handle_entrypoint__plain_return_type
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_filters__field_node_none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     @TaskFilterSet
     class TaskType(QueryType[Task], auto=False):
@@ -2100,10 +2306,13 @@ def test_validation_rules__visibility_rule__handle_filters__field_node_none(grap
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_filters__input_field_none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     @TaskFilterSet
     class TaskType(QueryType[Task], auto=False):
@@ -2127,10 +2336,13 @@ def test_validation_rules__visibility_rule__handle_filters__input_field_none(gra
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_filters__no_undine_filter(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     @TaskFilterSet
     class TaskType(QueryType[Task], auto=False):
@@ -2154,10 +2366,10 @@ def test_validation_rules__visibility_rule__handle_filters__no_undine_filter(gra
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_orders__variable_not_enum(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -2184,10 +2396,10 @@ def test_validation_rules__visibility_rule__handle_orders__variable_not_enum(gra
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_orders__enum_value_none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskOrderSet(OrderSet[Task], auto=False):
         name = Order()
+        filler = Order("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -2215,7 +2427,6 @@ def test_validation_rules__visibility_rule__handle_orders__enum_value_none(graph
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_inputs__variable_none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -2223,6 +2434,10 @@ def test_validation_rules__visibility_rule__handle_inputs__variable_none(graphql
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
         type = Input()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -2244,7 +2459,6 @@ def test_validation_rules__visibility_rule__handle_inputs__variable_none(graphql
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__handle_inputs__input_field_none(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -2252,6 +2466,10 @@ def test_validation_rules__visibility_rule__handle_inputs__input_field_none(grap
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
         type = Input()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -2274,10 +2492,10 @@ def test_validation_rules__visibility_rule__handle_inputs__input_field_none(grap
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__flatten_filters__and_branch(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -2305,10 +2523,10 @@ def test_validation_rules__visibility_rule__flatten_filters__and_branch(graphql,
 
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__flatten_filters__variable_node(graphql, undine_settings) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class TaskFilterSet(FilterSet[Task], auto=False):
         name = Filter()
+        filler = Filter("pk")
 
         @name.visible
         def name_visible(self, request: DjangoRequestProtocol) -> bool:
@@ -2334,13 +2552,83 @@ def test_validation_rules__visibility_rule__flatten_filters__variable_node(graph
     assert response.has_errors is False
 
 
-# Federation
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__flatten_filters__variable_node__not_provided(
+    graphql,
+    undine_settings,
+) -> None:
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+        filler = Filter("pk")
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    # Nullable variable not provided → iter_filters' inner variable_as_ast returns None,
+    # exercising the "value_node is None" branch that yields nothing.
+    query = """
+        query($name: String) {
+            tasks(filter: {name: $name}) {
+                name
+            }
+        }
+    """
+    response = graphql(query)
+    assert response.has_errors is False
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__handle_inputs__variable_node__provided(
+    graphql,
+    undine_settings,
+) -> None:
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        type = Input()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Mutation(RootType):
+        bulk_create_task = Entrypoint(TaskCreateMutation, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    # `$input` provided as an ObjectValue → iter_inputs' variable resolves to an ObjectValueNode,
+    # exercising the "item is ObjectValueNode" branch of the iter_inputs helper.
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            bulkCreateTask(input: [$input]) {
+                name
+            }
+        }
+    """
+    response = graphql(query, variables={"input": {"name": "Foo", "type": "STORY"}})
+    assert response.has_errors is False
 
 
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__federation_type(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     @KeyDirective(fields="isbn")
     class BookExt(FederationType, schema_name="Book"):
@@ -2382,7 +2670,6 @@ def test_validation_rules__visibility_rule__federation_type(graphql, undine_sett
 @pytest.mark.parametrize("is_visible", [True, False])
 @pytest.mark.django_db
 def test_validation_rules__visibility_rule__federation_field(graphql, undine_settings, is_visible) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     @KeyDirective(fields="isbn")
     class BookExt(FederationType, schema_name="Book"):
@@ -2427,7 +2714,6 @@ def test_validation_rules__visibility_rule__federation_field(graphql, undine_set
 def test_validation_rules__visibility_rule__federation_field__federation_type_ref(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     @KeyDirective(fields="id", resolvable=False)
     class AuthorRef(FederationType, schema_name="Author"):
@@ -2480,7 +2766,6 @@ def test_validation_rules__visibility_rule__federation_field__federation_type_re
 def test_validation_rules__visibility_rule__federation_field__query_type_ref(
     graphql, undine_settings, is_visible
 ) -> None:
-    undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS = True
 
     class ProjectType(QueryType[Project]):
         pk = Field()
@@ -2525,3 +2810,458 @@ def test_validation_rules__visibility_rule__federation_field__query_type_ref(
                 "extensions": {"status_code": 400},
             }
         ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__query_type__cascade_all_fields_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+        name = Field()
+
+        @pk.visible
+        def pk_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'tasks' on type 'Query'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__filterset__cascade_all_filters_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+        done = Filter()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+        @done.visible
+        def done_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks(filter: {name: "foo"}) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown argument 'filter' on field 'Query.tasks'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__orderset__cascade_all_orders_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        name = Order()
+        done = Order()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+        @done.visible
+        def done_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @TaskOrderSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks(orderBy: [nameAsc]) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown argument 'orderBy' on field 'Query.tasks'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__mutation_type__cascade_all_inputs_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=False):
+        name = Input()
+        type = Input()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+        @type.visible  # noqa: A003
+        def type_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    query = """
+        mutation {
+            createTask(input: {name: "Test Task", type: STORY}) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'createTask' on type 'Mutation'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__interface__cascade_all_fields_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class Named(InterfaceType, auto=False):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+        pk = InterfaceField(GraphQLNonNull(GraphQLString))
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+        @pk.visible
+        def pk_visible(self, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    @Named
+    class TaskType(QueryType[Task], auto=False):
+        done = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+        named = Entrypoint(Named, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            named {
+                name
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'named' on type 'Query'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__union__cascade_all_members_hidden(
+    graphql, undine_settings, is_visible
+) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class ProjectType(QueryType[Project], auto=False):
+        pk = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class TaskOrProject(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        combined = Entrypoint(TaskOrProject, many=True)
+        filler = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            combined {
+                ... on TaskType { pk }
+                ... on ProjectType { pk }
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+
+    else:
+        assert response.errors == [
+            {
+                "message": "Cannot query field 'combined' on type 'Query'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__query_root__all_entrypoints_hidden(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(TaskType, many=True)
+
+        @tasks.visible
+        def tasks_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+        @projects.visible
+        def projects_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    response = graphql("query { tasks { pk } }")
+    assert response.errors == [
+        {
+            "message": "Cannot query field 'tasks' on type 'Query'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+    response = graphql("query { projects { pk } }")
+    assert response.errors == [
+        {
+            "message": "Cannot query field 'projects' on type 'Query'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__node_interface__hidden_target(graphql, undine_settings, is_visible) -> None:
+    @Node
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class Query(RootType):
+        node = Entrypoint(Node)
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create()
+
+    query = """
+        query($id: ID!) {
+            node(id: $id) {
+                id
+                ... on TaskType {
+                    name
+                }
+            }
+        }
+    """
+    response = graphql(query, variables={"id": to_global_id("TaskType", task.pk)})
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown type 'TaskType'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.parametrize("is_visible", [True, False])
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__federation__entities__hidden_target(
+    graphql, undine_settings, is_visible
+) -> None:
+    @KeyDirective(fields="pk", resolvable=True)
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return is_visible
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_federation_schema(query=Query)
+
+    task = TaskFactory.create()
+
+    query = """
+        query ($pk: Int!) {
+            _entities(representations: [{__typename: "TaskType", pk: $pk}]) {
+                ... on TaskType {
+                    name
+                }
+            }
+        }
+    """
+    response = graphql(query, variables={"pk": task.pk})
+
+    if is_visible:
+        assert response.has_errors is False, response.errors
+    else:
+        assert response.errors == [
+            {
+                "message": "Unknown type 'TaskType'.",
+                "extensions": {"status_code": 400},
+            }
+        ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__visibility_rule__field_visible_true__hidden_target(graphql, undine_settings) -> None:
+    # Even when a Field's own visible-hook says True, if the referenced type is hidden
+    # the field is blocked at validation time.
+    class ProjectType(QueryType[Project], auto=False):
+        pk = Field()
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+        project = Field(ProjectType)
+
+        @project.visible
+        def project_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+            tasks {
+                project {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query)
+    assert response.errors == [
+        {
+            "message": "Cannot query field 'project' on type 'TaskType'.",
+            "extensions": {"status_code": 400},
+        }
+    ]

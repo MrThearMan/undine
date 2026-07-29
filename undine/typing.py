@@ -283,6 +283,7 @@ __all__ = [
     "PreSaveParams",
     "ProtocolType",
     "QueryTypeParams",
+    "R",
     "RelatedField",
     "RequestMethod",
     "ResultCacheData",
@@ -315,6 +316,7 @@ __all__ = [
 # Common TypeVars
 
 T = TypeVar("T")
+R = TypeVar("R")
 P = ParamSpec("P")
 T_co = TypeVar("T_co", covariant=True)
 T_contra = TypeVar("T_contra", contravariant=True)
@@ -1363,6 +1365,13 @@ class ResultCacheData(TypedDict):
 
     result: ExecutionResult
     created_at: int
+
+
+class VisibilityCacheData(TypedDict):
+    """Cache data for caching the result of visibility checks."""
+
+    user_pk: int | None
+    extra: NotRequired[str]
 
 
 class ErrorUnionFieldValueDict(TypedDict):

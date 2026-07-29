@@ -30,7 +30,13 @@ from undine.utils.text import dotpath, get_docstring, to_pascal_case, to_schema_
 if TYPE_CHECKING:
     from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLObjectType, GraphQLOutputType
 
-    from undine.typing import EntrypointParams, EntrypointPermFunc, RootTypeParams, VisibilityFunc
+    from undine.typing import (
+        DjangoRequestProtocol,
+        EntrypointParams,
+        EntrypointPermFunc,
+        RootTypeParams,
+        VisibilityFunc,
+    )
 
 __all__ = [
     "Entrypoint",
@@ -131,6 +137,11 @@ class RootType(metaclass=RootTypeMeta):
     __directives__: ClassVar[DirectiveList]
     __extensions__: ClassVar[dict[str, Any]]
     __attribute_docstrings__: ClassVar[dict[str, str]]
+
+    @classmethod
+    def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+        """Determine if the given `RootType` is visible in the schema. Note: Query `RootType` cannot be hidden."""
+        return True
 
 
 class Entrypoint:
@@ -289,7 +300,7 @@ class Entrypoint:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the Entrypoint's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> class Query(RootType):
         ...     task = Entrypoint(TaskType, many=True)

@@ -15,7 +15,6 @@ class UndineConfig(AppConfig):
     def ready(self) -> None:
         self.patch_graphql_wrapping_object()
         self.register_additional_types()
-        self.patch_introspection_types()
         self.register_converters()
         self.maybe_disable_did_you_mean()
         self.patch_debug_toolbar_if_installed()
@@ -35,16 +34,6 @@ class UndineConfig(AppConfig):
 
         register_builtins()
 
-    def patch_introspection_types(self) -> None:
-        from undine.settings import undine_settings  # noqa: PLC0415
-
-        if not undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS:
-            return
-
-        from undine.utils.graphql.introspection import patch_introspection_schema  # noqa: PLC0415
-
-        patch_introspection_schema()
-
     def register_converters(self) -> None:
         """Import all converter implementation modules to register the implementations to the converters."""
         import undine.converters  # noqa: PLC0415
@@ -58,13 +47,12 @@ class UndineConfig(AppConfig):
 
     def maybe_disable_did_you_mean(self) -> None:
         """Disable the 'did you mean' suggestions on error messages if `DISABLE_DID_YOU_MEAN` is True."""
-        from graphql.pyutils import did_you_mean  # noqa: PLC0415
-
         from undine.settings import undine_settings  # noqa: PLC0415
 
-        # See: https://github.com/graphql-python/graphql-core/issues/97#issuecomment-642967670
         if not undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS:
-            did_you_mean.__globals__["MAX_LENGTH"] = 0
+            from undine.utils.graphql.utils import disable_did_you_mean_suggestions  # noqa: PLC0415
+
+            disable_did_you_mean_suggestions()
 
     def patch_debug_toolbar_if_installed(self) -> None:
         """Patch `django-debug-toolbar` to work with Undine if it's installed."""

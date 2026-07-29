@@ -166,7 +166,7 @@ class CalculationArgument:
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
         """
         Decorate a function to change the CalculationArgument's visibility in the schema.
-        Experimental, requires `EXPERIMENTAL_VISIBILITY_CHECKS` to be enabled.
+        See the Visibility docs page for details.
 
         >>> class MyCalc(Calculation[int]):
         ...     value = CalculationArgument(int)

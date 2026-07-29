@@ -25,7 +25,9 @@ __all__ = [
 
 def get_validation_rules(*, inside_request: bool = False) -> tuple[type[ASTValidationRule], ...]:
     """Get the GraphQL validation rules based on project current settings."""
-    visibility_enabled = inside_request and undine_settings.EXPERIMENTAL_VISIBILITY_CHECKS
+    schema = undine_settings.SCHEMA
+    visibility_active = bool(schema.extensions.get(undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY, False))
+    visibility_enabled = inside_request and visibility_active
     return tuple(
         itertools.chain(
             specified_rules,

@@ -103,24 +103,6 @@ You can also add directives using decorator syntax.
 
 See the [Directives](directives.md) section for more details on directives.
 
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide an `OrderSet` from certain users by using the `__is_visible__` method.
-Hiding the `OrderSet` means that it will not be included in introspection queries for that user,
-and trying to use it in operations will result in an error that looks exactly like
-the argument for the `OrderSet` didn't exist in the first place.
-
-```python
--8<- "ordering/orderset_visible.py"
-```
-
-> When using visibility checks, you should also disable "did you mean" suggestions
-> using the [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) setting.
-> Otherwise, a hidden field might show up in them.
-
 ### GraphQL extensions
 
 You can provide custom extensions for the `OrderSet` by providing a
@@ -279,20 +261,6 @@ You can also add them using the `@` operator (which kind of looks like GraphQL s
 ```
 
 See the [Directives](directives.md) section for more details on directives.
-
-### Visibility
-
-> This is an experimental feature that needs to be enabled using the
-> [`EXPERIMENTAL_VISIBILITY_CHECKS`](settings.md#experimental_visibility_checks) setting.
-
-You can hide an `Order` from certain users by decorating a method with the
-`<order_name>.visible` decorator. Hiding an `Order` means that it will not be included in introspection queries,
-and trying to use it in operations will result in an error that looks exactly like
-the `Order` didn't exist in the first place.
-
-```python
--8<- "ordering/order_visible.py"
-```
 
 ### GraphQL extensions
 

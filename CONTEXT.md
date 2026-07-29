@@ -64,6 +64,10 @@ _Avoid_: Ref (in prose), backing, source type
 The name of a type or field in the generated GraphQL schema, which may differ from the Python attribute name.
 _Avoid_: GraphQL name, field name (ambiguous with Python)
 
+**GraphQL Element**:
+Any named element in the GraphQL schema: scalar, type, interface, union, enum, input or directive.
+_Avoid_: GraphQL type (too narrow), named type (doesn't cover directives)
+
 ### Federation
 
 **Federation schema**:
