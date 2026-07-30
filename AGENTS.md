@@ -1,11 +1,13 @@
 # Instructions for Agents
 
-Undine is a batteries-included GraphQL library for Django. See [CONTEXT.md](CONTEXT.md) for the domain language.
+A batteries-included GraphQL library for Django that maps Django models to schema types through declarative Python classes,
+with automatic query optimization, composable filtering and ordering, mutations, Relay pagination, subscriptions, and lifecycle hooks.
 
 ## Before you start any task
 
-- Read the `justfile` to see the available commands and use them when applicable.
-- If something is unclear, ambiguous, conflicting, or you feel like you're going down a rabbit hole,
+- Always read the [`justfile`](justfile) to see the available commands.
+- Always read the domain language index: [`CONTEXT.md`](./CONTEXT.md).
+- Remember: if something is unclear, ambiguous, conflicting, or you feel like you're going down a rabbit hole,
   ask the user before burning context. You may suggest an approach, but ask first.
 
 ## Boundaries
