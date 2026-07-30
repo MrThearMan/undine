@@ -28,6 +28,10 @@ _Avoid_: Paginated entrypoint (ambiguous with offset pagination)
 The source Undine uses to derive a resolver, GraphQL type, and arguments for an entrypoint, field, input, or filter. Common kinds include functions, Django model fields, ORM expressions, query types, mutation types, interface types, union types, connections, calculations, and scalars.
 _Avoid_: Ref (in prose), backing, source type
 
+**Converter**:
+A single-dispatch function that derives one aspect of schema behavior (GraphQL type, resolver, argument map, nullability, description, ...) from a reference. Extension seam: users register new implementations rather than subclassing library types. See ADR-0001.
+_Avoid_: Handler, resolver (that means something else), transformer
+
 **Schema name**:
 The name of a type or field in the generated GraphQL schema, which may differ from the Python attribute name.
 _Avoid_: GraphQL name, field name (ambiguous with Python)

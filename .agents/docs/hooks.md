@@ -33,7 +33,7 @@ A class-level check on a mutation type that runs before the mutation executes.
 _Avoid_: __permissions__ (implementation name)
 
 **Mutation type validation check**:
-A class-level check on a mutation type that validates input before the write.
+A class-level check on a mutation type that validates input data before the write.
 _Avoid_: __validate__ (implementation name)
 
 **Validation rule**:

@@ -1,11 +1,13 @@
 # Topic index
 
-Undine's ubiquitous language is split across topical guides in `.agents/docs/`. Load the guide that matches what you're working on:
+Undine's ubiquitous language is split across topical guides in `.agents/docs/`.
+This index follows **progressive disclosure** — read only the guide that matches what you're working on,
+and drill down only when a term forces it. Load the guide that matches what you're working on:
 
 - [Django foundation](.agents/docs/django-foundation.md) — Model, model instance, queryset, lookup, manager, primary key
 - [Schema assembly](.agents/docs/schema-assembly.md) — Schema, root type, entrypoint kinds, reference, schema name, GraphQL Element
 - [Read model](.agents/docs/read-model.md) — Query type, field, query type registry, calculation, autogeneration
-- [Write model](.agents/docs/write-model.md) — Output type, mutation type, input, mutation kind, related mutation, atomic mutation
+- [Write model](.agents/docs/write-model.md) — Output type, mutation type, input, input data, mutation kind, related mutation, atomic mutation
 - [Filtering and ordering](.agents/docs/filtering-and-ordering.md) — Filter set, filter, order set, order
 - [Abstract types and pagination](.agents/docs/abstract-types-and-pagination.md) — Interface type, union type, Relay Node, connection, page info, offset pagination
 - [Execution and infrastructure](.agents/docs/execution-and-infrastructure.md) — Operation, root value, GQL info, query optimizer, data loader, directives, caching, complexity, subscriptions
@@ -16,7 +18,8 @@ Undine's ubiquitous language is split across topical guides in `.agents/docs/`. 
 ## Adding new terms
 
 If you introduce a genuinely new concept, add its entry to the topic file it best fits and (if it's a new area) add a bullet here.
-Keep this index a one-sentence-per-topic pointer; details live in the topic files.
+Keep this index a one-sentence-per-topic pointer; details live in the topic files. Preserve progressive disclosure:
+this index stays skimmable, each topic file stays focused on its own concepts, and any cross-topic detail belongs in Relationships.
 
 ## Flagged ambiguities
 

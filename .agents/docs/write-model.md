@@ -12,6 +12,10 @@ _Avoid_: MutationType (in prose), input type (without qualifier)
 A single mutation argument declared on a mutation type.
 _Avoid_: Argument (GraphQL term alone), parameter
 
+**Input data**:
+The runtime dict passed to mutation type hooks. By the time a hook sees it, model foreign-key inputs have been resolved to instances, hidden inputs and function inputs have been populated, and input-only inputs are still present. Input-only inputs are stripped before the mutation type after hook runs; hidden and function inputs remain.
+_Avoid_: Input dict (unqualified), payload, kwargs
+
 **Mutation kind**:
 The operation a mutation type performs — create, update, delete, related, or custom.
 _Avoid_: Kind (unqualified), mutation type (when meaning the kind)
@@ -25,11 +29,11 @@ What happens to existing related objects not mentioned in a related mutation inp
 _Avoid_: Orphan handling, cascade policy
 
 **Input-only input**:
-A mutation input present in the schema but stripped before the database write.
+A mutation input present in the schema but stripped from input data before the mutation type after hook and the database write. Visible in permission and validation checks; absent in the after hook.
 _Avoid_: Write-only, passthrough
 
 **Hidden input**:
-A mutation input not exposed in the schema; its value is injected before the mutation runs.
+A mutation input not exposed in the schema; its value is injected into input data before permission checks and remains visible through every mutation type hook including the after hook.
 _Avoid_: Internal input, server-side input
 
 **Atomic mutation**:
