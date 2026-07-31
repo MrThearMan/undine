@@ -317,6 +317,62 @@ Usually this is not needed and should be left for Undine to handle, since
 its likely you want an error to be raised by a converter for an unsupported
 type.
 
+## When registrations run
+
+Registering an implementation is a side effect of importing the module that
+contains the `@<converter>.register` call. This means the module must be
+imported *before* any Undine class that relies on it is instantiated. Otherwise,
+dispatch will fail to find the implementation.
+
+Undine's own implementations live in `undine/converters/impl/` and are
+imported automatically when it's Django app is ready, so you never need to
+manage them. For your own registrations there are two supported patterns.
+
+1. Co-locate the reference and its converters
+
+If you own the reference type, put the reference definition and all of its
+`@<converter>.register` calls in the same module. Any code that uses the
+reference has to import the module that defines it, which triggers the
+registrations as a side effect. This is the recommended pattern where it fits.
+
+```python
+# myapp/refs.py
+class MyRef: ...
+
+@convert_to_graphql_type.register
+def _(ref: type[MyRef], **kwargs: Any) -> GraphQLOutputType: ...
+
+@convert_to_field_ref.register
+def _(ref: type[MyRef], **kwargs: Any) -> Any: ...
+```
+
+2. Dedicated registrations module
+
+If the reference is a type you don't own (e.g. a third-party library's class),
+or if you're overriding an implementation Undine already ships with, put your
+`@<converter>.register` calls in a dedicated module and import it from your
+Django `AppConfig.ready()`. This is the same pattern Django recommends for
+signal handlers, so it should feel familiar.
+
+```python
+# myapp/apps.py
+from django.apps import AppConfig
+
+class MyAppConfig(AppConfig):
+    name = "myapp"
+
+    def ready(self) -> None:
+        # Imported for side effects
+        from myapp import converters  # noqa: F401
+```
+
+Registering the same key twice is not an error — the last registration wins.
+This is deliberate: it is the sanctioned way to override Undine's own behavior
+for a given reference type without subclassing or monkey-patching. Two
+third-party packages that both register for the same reference will clash
+silently in whichever order their `AppConfig.ready()` runs; Undine does not
+arbitrate between them.
+
 ## Supporting new references
 
 Using the converters described above, we can extend the functionality of Undine objects
