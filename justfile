@@ -118,6 +118,10 @@ nox-one name:
 profile pid:
     @poetry run py-spy --threads --subprocesses --output profile.svg --pid "{{pid}}"
 
+# Find all converter implementations for a given ref
+ref-find name:
+    @rg -UP '\.register.*\ndef .*\([^)]*(?<!\w)\Q{{name}}\E(?!\w)' undine/converters/impl/
+
 # Run a command in python with django setup
 [positional-arguments]
 run-python cmd:
