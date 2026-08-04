@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from graphql import GraphQLNonNull, GraphQLString, parse
+from graphql import GraphQLInterfaceType, GraphQLNonNull, GraphQLString, parse
 
 from example_project.app.models import Project, Task
-from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, UnionType, create_schema
+from undine.typing import DjangoRequestProtocol
 from undine.utils.graphql.caching import RequestCacheCalculator
 from undine.utils.graphql.utils import get_fragment_definitions, get_operation_definition
 
@@ -211,3 +212,172 @@ def test_request_cache_calculator__typename(undine_settings) -> None:
     calc = make_calculator(source)
     result = calc.run()
     assert result.cache_time == 10
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__field_visibility_marks_cache_per_user(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(cache_time=5)
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query($pk: Int!) { task(pk: $pk) { name } }"
+    calc = make_calculator(source)
+    result = calc.run()
+    assert result.cache_time == 5
+    assert result.cache_per_user is True
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__interface_field_visibility_marks_cache_per_user(undine_settings) -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString), cache_time=5)
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @Named
+    class TaskType(QueryType[Task], auto=False): ...
+
+    class Query(RootType):
+        named = Entrypoint(Named, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query($pk: Int!) { named(pk: $pk) { name } }"
+    calc = make_calculator(source)
+    result = calc.run()
+    assert result.cache_time == 5
+    assert result.cache_per_user is True
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__interface_type_without_undine_registration(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { task(pk: 1) { name } }"
+    calc = make_calculator(source)
+    calc.cache_time = 10
+
+    plain_interface = GraphQLInterfaceType(name="Plain", fields={})
+    calc.parse_cache_time_from_type(plain_interface)
+
+    assert calc.cache_time == 10
+    assert calc.cache_per_user is False
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__interface_type_with_cache_time_from_field(undine_settings) -> None:
+    class Named(InterfaceType, cache_time=5):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { task(pk: 1) { name } }"
+    calc = make_calculator(source)
+    calc.cache_time = 10
+
+    named_type = undine_settings.SCHEMA.get_type("Named")
+    calc.parse_cache_time_from_type(named_type)
+
+    assert calc.cache_time == 5
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__interface_type_with_visibility_marks_cache_per_user(undine_settings) -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    @Named
+    class TaskType(QueryType[Task], auto=False): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { task(pk: 1) { name } }"
+    calc = make_calculator(source)
+    calc.cache_time = 10
+
+    named_type = undine_settings.SCHEMA.get_type("Named")
+    calc.parse_cache_time_from_type(named_type)
+
+    assert calc.cache_per_user is True
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__union_type_with_cache_time_from_field(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType], cache_time=5): ...
+
+    class Query(RootType):
+        thing = Entrypoint(Commentable, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { task(pk: 1) { name } }"
+    calc = make_calculator(source)
+    calc.cache_time = 10
+
+    union_type = undine_settings.SCHEMA.get_type("Commentable")
+    calc.parse_cache_time_from_type(union_type)
+
+    assert calc.cache_time == 5
+
+
+@pytest.mark.django_db
+def test_request_cache_calculator__union_type_with_visibility_marks_cache_per_user(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]):
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        thing = Entrypoint(Commentable, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { task(pk: 1) { name } }"
+    calc = make_calculator(source)
+    calc.cache_time = 10
+
+    union_type = undine_settings.SCHEMA.get_type("Commentable")
+    calc.parse_cache_time_from_type(union_type)
+
+    assert calc.cache_per_user is True

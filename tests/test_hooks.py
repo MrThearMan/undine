@@ -25,10 +25,13 @@ from undine.hooks import (
     ParseLifecycleHookManager,
     RequestCacheHook,
     ValidationLifecycleHookManager,
+    VisibilityCacheHook,
 )
 from undine.persisted_documents.models import PersistedDocument
 from undine.persisted_documents.utils import to_document_id
+from undine.typing import DjangoRequestProtocol
 from undine.utils.graphql.caching import RequestCacheCalculator
+from undine.utils.visibility import apply_visibility
 
 
 def make_hook_context(*, source: str = "query { hello }", extensions: dict | None = None) -> LifecycleHookContext:
@@ -777,3 +780,195 @@ async def test_apq_hook__async_invalid_persisted_query_format(undine_settings) -
 
     assert isinstance(context.result, ExecutionResult)
     assert context.result.errors
+
+
+# VisibilityCacheHook
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__should_cache__disabled_by_timeout(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
+
+    context = make_hook_context(source="query IntrospectionQuery { __schema { types { name } } }")
+    context.operation_name = "IntrospectionQuery"
+    hook = VisibilityCacheHook(context=context)
+
+    assert hook.should_cache() is False
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__should_cache__disabled_when_schema_visibility_inactive(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    context = make_hook_context(source="query IntrospectionQuery { __schema { types { name } } }")
+    context.operation_name = "IntrospectionQuery"
+    hook = VisibilityCacheHook(context=context)
+
+    assert hook.should_cache() is False
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__should_cache__disabled_for_non_query_operation(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+    apply_visibility(undine_settings.SCHEMA)
+
+    context = make_hook_context(source="mutation IntrospectionQuery { dummy }")
+    context.operation_name = "IntrospectionQuery"
+    hook = VisibilityCacheHook(context=context)
+
+    assert hook.should_cache() is False
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__sync_no_cache__early_yield(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
+
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+    gen = hook.on_execution()
+
+    next(gen)  # should_cache=False → yield and return
+
+    with contextlib.suppress(StopIteration):
+        next(gen)
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__sync_result_not_execution_result(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    with patch.object(VisibilityCacheHook, "should_cache", return_value=True):
+        gen = hook.on_execution()
+        next(gen)  # cache miss → yields at line 365
+
+        context.result = "not_an_execution_result"  # will hit `not isinstance` branch (line 368-369)
+
+        with contextlib.suppress(StopIteration):
+            next(gen)
+
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__sync_result_has_errors(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    with patch.object(VisibilityCacheHook, "should_cache", return_value=True):
+        gen = hook.on_execution()
+        next(gen)  # cache miss → yields
+
+        context.result = ExecutionResult(data=None, errors=[GraphQLError("boom")])
+
+        with contextlib.suppress(StopIteration):
+            next(gen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_visibility_cache_hook__async_no_cache__early_yield(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
+
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    gen = hook.on_execution_async()
+    await anext(gen)  # should_cache=False → yields and returns
+
+    with contextlib.suppress(StopAsyncIteration):
+        await anext(gen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_visibility_cache_hook__async_cache_miss_writes_result(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    with patch.object(VisibilityCacheHook, "should_cache", return_value=True):
+        # Ensure cache is empty
+        hook.cache.clear()
+
+        gen = hook.on_execution_async()
+        await anext(gen)  # cache miss → yields
+
+        context.result = ExecutionResult(data={"field": "value"}, errors=None)
+
+        with contextlib.suppress(StopAsyncIteration):
+            await anext(gen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_visibility_cache_hook__async_cache_hit_returns_cached(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    cached = ExecutionResult(data={"field": "cached_value"}, errors=None)
+
+    with (
+        patch.object(VisibilityCacheHook, "should_cache", return_value=True),
+        patch("django.core.cache.backends.locmem.LocMemCache.aget", return_value=cached),
+    ):
+        gen = hook.on_execution_async()
+        await anext(gen)  # cache hit → sets context.result and yields
+
+        assert context.result is cached
+
+        with contextlib.suppress(StopAsyncIteration):
+            await anext(gen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_visibility_cache_hook__async_result_not_execution_result(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    with patch.object(VisibilityCacheHook, "should_cache", return_value=True):
+        hook.cache.clear()
+
+        gen = hook.on_execution_async()
+        await anext(gen)  # cache miss → yields
+
+        context.result = "not_an_execution_result"
+
+        with contextlib.suppress(StopAsyncIteration):
+            await anext(gen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_visibility_cache_hook__async_result_has_errors(undine_settings) -> None:
+    context = make_hook_context(source="query { field }")
+    hook = VisibilityCacheHook(context=context)
+
+    with patch.object(VisibilityCacheHook, "should_cache", return_value=True):
+        hook.cache.clear()
+
+        gen = hook.on_execution_async()
+        await anext(gen)  # cache miss → yields
+
+        context.result = ExecutionResult(data=None, errors=[GraphQLError("boom")])
+
+        with contextlib.suppress(StopAsyncIteration):
+            await anext(gen)

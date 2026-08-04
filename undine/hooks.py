@@ -349,7 +349,7 @@ class VisibilityCacheHook(LifecycleHook):
         return ConnectionProxy(caches, undine_settings.VISIBILITY_CACHE_ALIAS)  # type: ignore[return-value]
 
     def on_execution(self) -> Generator[None, None, None]:
-        if not self._should_cache():
+        if not self.should_cache():
             yield
             return
 
@@ -373,7 +373,7 @@ class VisibilityCacheHook(LifecycleHook):
     async def on_execution_async(self) -> AsyncGenerator[None, None]:
         # We need a separate async version for caching and fetching the request user.
         # Unfortunately, there is a lot of repetition here.
-        if not self._should_cache():
+        if not self.should_cache():
             yield
             return
 
@@ -394,7 +394,7 @@ class VisibilityCacheHook(LifecycleHook):
 
         await self.cache.aset(key, result, undine_settings.VISIBILITY_CACHE_TIMEOUT)
 
-    def _should_cache(self) -> bool:
+    def should_cache(self) -> bool:
         if undine_settings.VISIBILITY_CACHE_TIMEOUT <= 0:
             return False
 
@@ -409,7 +409,7 @@ class VisibilityCacheHook(LifecycleHook):
         return self.context.operation_name == "IntrospectionQuery"
 
     def get_cache_key(self, user: AbstractUser | AnonymousUser) -> str:
-        key_data: dict[str, Any] = VisibilityCacheData(user_pk=user.pk if user.is_authenticated else None)
+        key_data = VisibilityCacheData(user_pk=user.pk if user.is_authenticated else None)
 
         extra_context = undine_settings.VISIBILITY_CACHE_EXTRA_CONTEXT(self.context.request)
         if extra_context is not None:
