@@ -3,16 +3,17 @@ from __future__ import annotations
 import dataclasses
 import decimal
 import types
+from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, Union, get_origin
+from typing import TYPE_CHECKING, Any, ForwardRef, NamedTuple, Union, get_origin
 
 from django.core.management import BaseCommand, CommandError
 from django.db.models import Model
-from graphql import GraphQLInputObjectType, Undefined
+from graphql import GraphQLInputObjectType, GraphQLType, Undefined
 
 from undine import MutationType
-from undine.converters import convert_model_field_to_python_type
+from undine.converters import convert_graphql_type_to_python_type, convert_model_field_to_python_type
 from undine.dataclasses import LazyLambda, TypeRef
 from undine.exceptions import (
     MutationInputDataTypesModuleImportError,
@@ -24,8 +25,9 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_return_annotation
 from undine.settings import undine_settings
+from undine.typing import TypedDictType
 from undine.utils.graphql.undine_extensions import get_undine_mutation_type
-from undine.utils.reflection import get_flattened_generic_params
+from undine.utils.reflection import get_flattened_generic_params, is_subclass
 
 if TYPE_CHECKING:
     from graphql import GraphQLSchema
@@ -75,16 +77,16 @@ def generate_mutation_input_data_types() -> str:
     if not mutation_types:
         raise MutationTypeInputDataTypesNoMutationTypesError
 
-    imports = ImportCollector()
+    collector = TypeCollector()
     class_blocks: list[str] = []
 
     for mutation_type in mutation_types:
         class_blocks.extend((
-            _render_typed_dict(mutation_type, imports=imports),
-            _render_typed_dict(mutation_type, include_input_only=False, imports=imports),
+            _render_typed_dict(mutation_type, collector=collector),
+            _render_typed_dict(mutation_type, include_input_only=False, collector=collector),
         ))
 
-    return _assemble_file(class_blocks, imports)
+    return _assemble_file(class_blocks, collector)
 
 
 def find_mutation_input_data_typing_file() -> Path:
@@ -148,7 +150,7 @@ def _render_typed_dict(
     mutation_type: type[MutationType],
     *,
     include_input_only: bool = True,
-    imports: ImportCollector,
+    collector: TypeCollector,
 ) -> str:
     suffix = "FullInputData" if include_input_only else "InputData"
     class_name = f"{mutation_type.__schema_name__}{suffix}"
@@ -160,7 +162,7 @@ def _render_typed_dict(
         if not include_input_only and input_field.input_only:
             continue
 
-        field_line = _render_field(input_field, include_input_only=include_input_only, imports=imports)
+        field_line = _render_field(input_field, include_input_only=include_input_only, collector=collector)
         field_lines.append(field_line)
 
     if not field_lines:
@@ -171,9 +173,9 @@ def _render_typed_dict(
     return "\n".join(lines)
 
 
-def _render_field(input_field: Input, *, include_input_only: bool, imports: ImportCollector) -> str:
+def _render_field(input_field: Input, *, include_input_only: bool, collector: TypeCollector) -> str:
     key = input_field.name
-    value_type = _render_value_type(input_field, include_input_only=include_input_only, imports=imports)
+    value_type = _render_value_type(input_field, include_input_only=include_input_only, collector=collector)
 
     if input_field.many:
         value_type = f"list[{value_type}]"
@@ -183,13 +185,13 @@ def _render_field(input_field: Input, *, include_input_only: bool, imports: Impo
         value_type = f"{value_type} | None"
 
     if not required:
-        imports.add_from("typing", "NotRequired")
+        collector.add_from("typing", "NotRequired")
         value_type = f"NotRequired[{value_type}]"
 
     return f"{key}: {value_type}"
 
 
-def _render_value_type(input_field: Input, *, include_input_only: bool, imports: ImportCollector) -> str:
+def _render_value_type(input_field: Input, *, include_input_only: bool, collector: TypeCollector) -> str:
     ref = input_field.ref
 
     if isinstance(ref, LazyLambda):
@@ -200,20 +202,24 @@ def _render_value_type(input_field: Input, *, include_input_only: bool, imports:
         return f"{ref.__schema_name__}{suffix}"
 
     if isinstance(ref, type) and issubclass(ref, Model):
-        return imports.add_class(ref)
+        return collector.add_class(ref)
 
     if isinstance(ref, types.FunctionType):
         py_type = parse_return_annotation(ref)
-        return _format_python_type(py_type, imports=imports)
+        return _format_python_type(py_type, collector=collector)
+
+    if isinstance(ref, GraphQLType):
+        converted_ref = convert_graphql_type_to_python_type(ref)
+        return _format_python_type(converted_ref, collector=collector, define=True)
 
     if input_field.hidden and input_field.default_value is not Undefined and input_field.default_value is not None:
-        return _format_python_type(type(input_field.default_value), imports=imports)
+        return _format_python_type(type(input_field.default_value), collector=collector)
 
     if isinstance(ref, TypeRef):
-        return _format_python_type(ref.value, imports=imports)
+        return _format_python_type(ref.value, collector=collector)
 
     py_type = convert_model_field_to_python_type(ref)
-    return _format_python_type(py_type, imports=imports)
+    return _format_python_type(py_type, collector=collector)
 
 
 class RequiredAndNullable(NamedTuple):
@@ -245,57 +251,71 @@ def _calculate_required_and_nullable(input_field: Input) -> RequiredAndNullable:
 # --- Python type formatting ---------------------------------------------------------------------
 
 
-def _format_python_type(py_type: Any, *, imports: ImportCollector) -> str:  # noqa: PLR0911
+def _format_python_type(py_type: Any, *, collector: TypeCollector, define: bool = False) -> str:  # noqa: PLR0911,C901
+    if isinstance(py_type, ForwardRef):  # pragma: no cover
+        py_type = py_type.evaluate()
+
     if py_type is None or py_type is types.NoneType:
         return "None"
 
     if py_type is Any:
-        imports.add_from("typing", "Any")
+        collector.add_from("typing", "Any")
         return "Any"
 
     origin = get_origin(py_type)
     if origin is types.UnionType or origin is Union:
         args = get_flattened_generic_params(py_type)
-        rendered = [_format_python_type(a, imports=imports) for a in args]
+        rendered = [_format_python_type(a, collector=collector, define=define) for a in args]
         return " | ".join(rendered)
 
     if origin is not None:
-        origin_str = _format_python_type(origin, imports=imports)
+        origin_str = _format_python_type(origin, collector=collector, define=define)
         args = get_flattened_generic_params(py_type)
-        rendered_args = ", ".join(_format_python_type(a, imports=imports) for a in args)
+        rendered_args = ", ".join(_format_python_type(a, collector=collector, define=define) for a in args)
         return f"{origin_str}[{rendered_args}]"
 
     if not isinstance(py_type, type):
-        imports.add_from("typing", "Any")
+        collector.add_from("typing", "Any")
         return "Any"
 
     if py_type.__module__ == "builtins":
         return py_type.__name__
 
     if py_type is decimal.Decimal:
-        imports.add_from("decimal", "Decimal")
+        collector.add_from("decimal", "Decimal")
         return "Decimal"
 
     if py_type.__module__ == "datetime":
-        imports.add_module("datetime")
+        collector.add_module("datetime")
         return f"datetime.{py_type.__name__}"
 
     if py_type.__module__ == "uuid":
-        imports.add_module("uuid")
+        collector.add_module("uuid")
         return f"uuid.{py_type.__name__}"
 
-    return imports.add_class(py_type)
+    if define and isinstance(py_type, TypedDictType):  # type: ignore[misc]
+        collector.add_definition_from_typed_dict(py_type)
+        return py_type.__name__
+
+    if define and is_subclass(py_type, Enum):
+        collector.add_definition_from_enum(py_type)
+        return py_type.__name__
+
+    return collector.add_class(py_type)
 
 
 # --- Imports ------------------------------------------------------------------------------------
 
 
 @dataclasses.dataclass
-class ImportCollector:
-    """Collects TYPE_CHECKING imports for the generated file."""
+class TypeCollector:
+    """Collects types to be imported and types to be defined for the generated file."""
 
     modules: set[str] = dataclasses.field(default_factory=set)
     from_imports: dict[str, set[str]] = dataclasses.field(default_factory=dict)
+    type_definitions: set[str] = dataclasses.field(default_factory=set)
+    require_enum: bool = False
+    max_line_length: int = 120
 
     def add_module(self, module: str) -> None:
         self.modules.add(module)
@@ -310,14 +330,40 @@ class ImportCollector:
         self.add_from(module, top)
         return qualname
 
-    def render(self, *, max_line_length: int = 120) -> list[str]:
+    def add_definition_from_typed_dict(self, typed_dict: TypedDictType) -> None:
+        definition = "class " + typed_dict.__name__ + "(TypedDict):"
+        for key, value in typed_dict.__annotations__.items():
+            definition += f"\n    {key}: {_format_python_type(value, collector=self)}"
+        self.type_definitions.add(definition)
+
+    def add_definition_from_enum(self, enum_type: type[Enum]) -> None:
+        self.require_enum = True
+        definition = "class " + enum_type.__name__ + "(Enum):"
+        for member in enum_type.__members__.values():
+            definition += f"\n    {member.name} = {member.value}"
+        self.type_definitions.add(definition)
+
+    def render_header(self) -> str:
+        header = MARKER + "\nfrom __future__ import annotations\n\n"
+
+        if self.require_enum:
+            header += "from enum import Enum\n"
+
+        if self.from_imports or self.modules:
+            header += "from typing import TYPE_CHECKING, TypedDict\n\nif TYPE_CHECKING:\n" + self.render_imports()
+        else:
+            header += "from typing import TypedDict"
+
+        return header
+
+    def render_imports(self) -> str:
         indent: str = "    "
 
         lines: list[str] = [f"{indent}import {module}" for module in sorted(self.modules)]
         for module in sorted(self.from_imports):
             names = sorted(self.from_imports[module])
             single = f"{indent}from {module} import {', '.join(names)}"
-            if len(single) <= max_line_length:
+            if len(single) <= self.max_line_length:
                 lines.append(single)
                 continue
 
@@ -325,22 +371,15 @@ class ImportCollector:
             lines.extend(f"{indent}    {name}," for name in names)
             lines.append(f"{indent})")
 
-        return lines
+        return "\n".join(lines)
 
 
 # --- Assembly -----------------------------------------------------------------------------------
 
 
-def _assemble_file(class_blocks: list[str], imports: ImportCollector) -> str:
-    header = MARKER + "\nfrom __future__ import annotations\n\n"
-
-    type_checking_lines = imports.render()
-    if type_checking_lines:
-        header += "from typing import TYPE_CHECKING, TypedDict\n\nif TYPE_CHECKING:\n" + "\n".join(type_checking_lines)
-    else:
-        header += "from typing import TypedDict"
-
-    parts = [header, *class_blocks]
+def _assemble_file(class_blocks: list[str], collector: TypeCollector) -> str:
+    header = collector.render_header()
+    parts = [header, *sorted(collector.type_definitions), *class_blocks]
 
     body = "\n\n\n".join(parts)
     return body + "\n"

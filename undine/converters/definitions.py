@@ -8,7 +8,7 @@ from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import TruncDate, TruncTime
 from graphql import GraphQLArgumentMap, GraphQLFieldResolver, GraphQLInputType, GraphQLOutputType
 
-from undine.typing import DjangoExpression, GraphQLFilterResolver, SupportsLookup
+from undine.typing import DjangoExpression, GraphQLFilterResolver, SupportsLookup, TypeHint
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.reflection import has_callable_attribute, is_subclass
 
@@ -63,6 +63,15 @@ Convert the given Model field to a python type.
 Arguments:
 
 `ref: Any`: The Model field to convert.
+"""
+
+convert_graphql_type_to_python_type: FunctionDispatcher[TypeHint | None] = FunctionDispatcher()
+"""
+Convert the given GraphQL type to a python type.
+
+Arguments:
+
+`ref: GraphQLType`: The GraphQL type to convert.
 """
 
 convert_to_bad_lookups: FunctionDispatcher[set[str]] = FunctionDispatcher()

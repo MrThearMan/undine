@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .definitions import (
+    convert_graphql_type_to_python_type,
     convert_lookup_to_graphql_type,
     convert_model_field_to_python_type,
     convert_to_default_value,
@@ -29,6 +30,7 @@ from .definitions import (
 )
 
 __all__ = [
+    "convert_graphql_type_to_python_type",
     "convert_lookup_to_graphql_type",
     "convert_model_field_to_python_type",
     "convert_to_default_value",

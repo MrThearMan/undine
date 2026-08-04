@@ -5,6 +5,7 @@ from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Model
+from graphql import GraphQLType
 
 from undine import Input, MutationType
 from undine.converters import is_input_hidden
@@ -22,6 +23,11 @@ def _(ref: ModelField, **kwargs: Any) -> bool:
 
 @is_input_hidden.register
 def _(_: TypeRef, **kwargs: Any) -> bool:
+    return False
+
+
+@is_input_hidden.register
+def _(_: GraphQLType, **kwargs: Any) -> bool:
     return False
 
 

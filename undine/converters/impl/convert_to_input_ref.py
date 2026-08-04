@@ -16,6 +16,7 @@ from django.db.models.fields.related_descriptors import (
     ReverseOneToOneDescriptor,
 )
 from django.db.models.query_utils import DeferredAttribute
+from graphql import GraphQLEnumType, GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLScalarType
 
 from undine import Input, MutationType
 from undine.converters import convert_to_input_ref
@@ -158,6 +159,14 @@ def _(ref: type[dict], **kwargs: Any) -> Any:
 
 @convert_to_input_ref.register
 def _(ref: FunctionType, **kwargs: Any) -> Any:
+    return ref
+
+
+@convert_to_input_ref.register
+def _(
+    ref: GraphQLScalarType | GraphQLEnumType | GraphQLInputObjectType | GraphQLNonNull | GraphQLList,
+    **kwargs: Any,
+) -> Any:
     return ref
 
 

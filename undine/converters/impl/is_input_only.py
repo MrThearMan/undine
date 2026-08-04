@@ -5,6 +5,7 @@ from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import Model
+from graphql import GraphQLType
 
 from undine import Input, MutationType
 from undine.converters import is_input_only
@@ -20,7 +21,7 @@ def _(_: ModelField, **kwargs: Any) -> bool:
 
 
 @is_input_only.register
-def _(_: TypeRef | FunctionType, **kwargs: Any) -> bool:
+def _(_: TypeRef | FunctionType | GraphQLType, **kwargs: Any) -> bool:
     caller: Input = kwargs["caller"]
 
     try:

@@ -5,7 +5,7 @@ from typing import Any
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import Field, ForeignKey, Model, OneToOneField, OneToOneRel
-from graphql import Undefined
+from graphql import GraphQLType, Undefined
 
 from undine import Input, MutationType
 from undine.converters import convert_to_default_value, convert_to_description
@@ -51,6 +51,11 @@ def _(_: GenericForeignKey, **kwargs: Any) -> Any:
 
 @convert_to_default_value.register
 def _(_: TypeRef, **kwargs: Any) -> Any:
+    return Undefined
+
+
+@convert_to_default_value.register
+def _(_: GraphQLType, **kwargs: Any) -> Any:
     return Undefined
 
 

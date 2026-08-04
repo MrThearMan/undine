@@ -793,7 +793,6 @@ after the schema is created. The `Input` itself is found in the GraphQL input fi
 under a key defined by the [`INPUT_EXTENSIONS_KEY`](settings.md#input_extensions_key)
 setting.
 
-
 ## Atomic mutations
 
 If you want to execute multiple mutations in a single operation atomically,
