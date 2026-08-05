@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from types import FunctionType, NoneType, UnionType
-from typing import Any, Union, get_origin
+from types import FunctionType, NoneType
+from typing import Any, get_origin
 
 from graphql import GraphQLNonNull, GraphQLType
 
 from undine.typing import ParametrizedType
-from undine.utils.reflection import get_flattened_generic_params, is_not_required_type, is_required_type
+from undine.utils.reflection import (
+    get_flattened_generic_params,
+    is_not_required_type,
+    is_required_type,
+    is_union_origin,
+)
 
 from .parse_annotations import parse_first_param_type, parse_return_annotation
 
@@ -44,7 +49,7 @@ def parse_is_nullable(ref: Any, *, is_input: bool = False, total: bool = True) -
         ref = parse_first_param_type(ref) if is_input else parse_return_annotation(ref)
 
     origin = get_origin(ref)
-    if origin not in {UnionType, Union, ParametrizedType}:
+    if not is_union_origin(origin) and origin is not ParametrizedType:
         return False
 
     args = get_flattened_generic_params(ref)

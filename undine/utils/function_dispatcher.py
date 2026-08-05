@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Hashable
-from types import FunctionType, UnionType
-from typing import TYPE_CHECKING, Any, Generic, Literal, Union, get_origin
+from types import FunctionType
+from typing import TYPE_CHECKING, Any, Generic, Literal, get_origin
 
 from graphql import Undefined
 
@@ -26,6 +26,7 @@ from .reflection import (
     get_origin_or_noop,
     get_signature,
     is_lambda,
+    is_union_origin,
 )
 
 if TYPE_CHECKING:
@@ -161,7 +162,7 @@ class FunctionDispatcher(Generic[T]):
             arg_origin = get_origin(arg)
 
             # Example: "str | int" or "Union[str, int]"
-            if origin in {UnionType, Union}:
+            if is_union_origin(origin):
                 if arg_origin is not None:
                     yield from self._iter_args(arg)
                 else:

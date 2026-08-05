@@ -10,7 +10,7 @@ from decimal import Decimal
 from enum import Enum, IntEnum, StrEnum
 from importlib import import_module
 from types import FunctionType
-from typing import Any, Union, get_origin, is_typeddict
+from typing import Any, get_origin, is_typeddict
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
 from django.db.models import (
@@ -126,7 +126,13 @@ from undine.utils.graphql.type_registry import (
 )
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
-from undine.utils.reflection import FunctionEqualityWrapper, get_flattened_generic_params, is_annotated, is_namedtuple
+from undine.utils.reflection import (
+    FunctionEqualityWrapper,
+    get_flattened_generic_params,
+    is_annotated,
+    is_namedtuple,
+    is_union_origin,
+)
 from undine.utils.text import to_camel_case, to_pascal_case, to_schema_name
 
 # --- Python types -------------------------------------------------------------------------------------------------
@@ -463,7 +469,7 @@ def _(ref: type[AsyncGenerator | AsyncIterator | AsyncIterable], **kwargs: Any) 
     return_type = ref.__args__[0]  # type: ignore[attr-defined]
 
     origin = get_origin(return_type)
-    if origin not in {types.UnionType, Union}:
+    if not is_union_origin(origin):
         graphql_type = convert_to_graphql_type(TypeRef(return_type), **kwargs)
         return maybe_list(graphql_type)
 
@@ -492,7 +498,7 @@ def _(ref: type[asyncio.Future | asyncio.Task], **kwargs: Any) -> GraphQLInputTy
     return_type = ref.__args__[0]  # type: ignore[attr-defined]
 
     origin = get_origin(return_type)
-    if origin not in {types.UnionType, Union}:
+    if not is_union_origin(origin):
         return convert_to_graphql_type(TypeRef(return_type), **kwargs)
 
     args = get_flattened_generic_params(return_type)

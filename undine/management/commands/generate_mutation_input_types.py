@@ -6,7 +6,7 @@ import types
 from enum import Enum
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ForwardRef, NamedTuple, Union, get_origin
+from typing import TYPE_CHECKING, Any, ForwardRef, NamedTuple, get_origin
 
 from django.core.management import BaseCommand, CommandError
 from django.db.models import Model
@@ -27,7 +27,7 @@ from undine.parsers import parse_return_annotation
 from undine.settings import undine_settings
 from undine.typing import TypedDictType
 from undine.utils.graphql.undine_extensions import get_undine_mutation_type
-from undine.utils.reflection import get_flattened_generic_params, is_subclass
+from undine.utils.reflection import get_flattened_generic_params, is_subclass, is_union_origin
 
 if TYPE_CHECKING:
     from graphql import GraphQLSchema
@@ -263,7 +263,7 @@ def _format_python_type(py_type: Any, *, collector: TypeCollector, define: bool 
         return "Any"
 
     origin = get_origin(py_type)
-    if origin is types.UnionType or origin is Union:
+    if is_union_origin(origin):
         args = get_flattened_generic_params(py_type)
         rendered = [_format_python_type(a, collector=collector, define=define) for a in args]
         return " | ".join(rendered)

@@ -9,7 +9,6 @@ from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Genera
 from enum import Enum
 from functools import partial
 from traceback import format_tb
-from types import FunctionType, GenericAlias, LambdaType, UnionType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -70,6 +69,7 @@ __all__ = [
     "is_required_type",
     "is_same_func",
     "is_subclass",
+    "is_union_origin",
     "reverse_enumerate",
     "sort_by_mro",
 ]
@@ -130,7 +130,7 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     Get all generic parameters of the given type.
     Flattens any union types.
     """
-    return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, UnionType) else (arg,)))
+    return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, types.UnionType) else (arg,)))
 
 
 def get_all_subclasses(cls: TType) -> list[TType]:
@@ -166,7 +166,7 @@ def get_non_null_type(type_: type) -> Any:
         bare_type = type_.__args__[0]
 
     origin = get_origin(bare_type)
-    if origin not in {UnionType, Union}:
+    if not is_union_origin(origin):
         return bare_type
 
     args = get_flattened_generic_params(bare_type)
@@ -189,7 +189,7 @@ def cache_signature_if_function(value: Callable[..., Any], *, depth: int = 0) ->
     :returns: The "unwrapped" function, if it was a know function type, otherwise the value as is.
     """
     value = get_wrapped_func(value)
-    if isinstance(value, FunctionType):
+    if isinstance(value, types.FunctionType):
         get_signature(value, depth=depth + 1)
     return value
 
@@ -203,9 +203,9 @@ class _SignatureParser:
     """
 
     def __init__(self) -> None:
-        self.cache: dict[FunctionType | Callable[..., Any], inspect.Signature] = {}
+        self.cache: dict[types.FunctionType | Callable[..., Any], inspect.Signature] = {}
 
-    def __call__(self, func: FunctionType | Callable[..., Any], /, *, depth: int = 0) -> inspect.Signature:
+    def __call__(self, func: types.FunctionType | Callable[..., Any], /, *, depth: int = 0) -> inspect.Signature:
         """
         Parse the signature
 
@@ -271,14 +271,24 @@ def is_list_of(value: Any, cls: type[T], *, allow_empty: bool = False) -> TypeGu
     return isinstance(value, list) and len(value) >= max_length and all(isinstance(item, cls) for item in value)  # type: ignore[arg-type]
 
 
-def is_generic_list(type_: type) -> TypeGuard[GenericAlias]:
+def is_generic_list(type_: type) -> TypeGuard[types.GenericAlias]:
     """Check if the given type is a generic list, i.e., `list[str]`."""
-    return isinstance(type_, GenericAlias) and issubclass(type_.__origin__, list)  # type: ignore[arg-type]
+    return isinstance(type_, types.GenericAlias) and issubclass(type_.__origin__, list)  # type: ignore[arg-type]
 
 
 def is_lambda(func: Callable[..., Any]) -> TypeGuard[Lambda]:
     """Check if the given function is a lambda function."""
-    return isinstance(func, LambdaType) and func.__name__ == "<lambda>"
+    return isinstance(func, types.LambdaType) and func.__name__ == "<lambda>"
+
+
+def is_union_origin(type_: Any) -> TypeGuard[types.UnionType]:
+    """
+    Check if the given type is the origin of a union.
+
+    Required for backwards compatibility before Python 3.14,
+    where origin of `Union[str, int]` and `str | int` are not the same.
+    """
+    return type_ is types.UnionType or type_ is Union
 
 
 def is_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
@@ -293,7 +303,7 @@ def is_not_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
 
 def is_namedtuple(obj: Any) -> TypeGuard[type[NamedTuple]]:
     """Check if the given object is a namedtuple class or not."""
-    return (
+    return (  # type: ignore[return-value]
         is_subclass(obj, tuple)
         and getattr(obj, "_fields", None) is not None
         and getattr(obj, "_field_defaults", None) is not None
@@ -306,7 +316,11 @@ def is_annotated(obj: Any) -> TypeGuard[Annotated]:
     return get_origin_or_noop(obj) is Annotated
 
 
-def is_same_func(func_1: FunctionType | Callable[..., Any], func_2: FunctionType | Callable[..., Any], /) -> bool:
+def is_same_func(
+    func_1: types.FunctionType | Callable[..., Any],
+    func_2: types.FunctionType | Callable[..., Any],
+    /,
+) -> bool:
     """
     Check if the given functions are the same function.
     Handles partial functions and functions wrapped with `functools.wraps`.
@@ -357,7 +371,7 @@ class FunctionEqualityWrapper(Generic[T]):
         return self.func()
 
 
-def get_root_and_info_params(func: FunctionType | Callable[..., Any], *, depth: int = 0) -> RootAndInfoParams:
+def get_root_and_info_params(func: types.FunctionType | Callable[..., Any], *, depth: int = 0) -> RootAndInfoParams:
     """
     Inspect the function signature to figure out which parameters are
     the root and info parameters of a GraphQL resolver function, if any.

@@ -5,7 +5,7 @@ import types
 import uuid
 from decimal import Decimal
 from enum import Enum
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple
 
 import pytest
 from django.core.files.uploadedfile import UploadedFile
@@ -52,7 +52,7 @@ from undine.scalars import (
     GraphQLUUID,
 )
 from undine.typing import TypedDictType, TypeHint
-from undine.utils.reflection import get_flattened_generic_params, get_origin_or_noop, is_subclass
+from undine.utils.reflection import get_flattened_generic_params, get_origin_or_noop, is_subclass, is_union_origin
 
 
 class Params(NamedTuple):
@@ -195,7 +195,7 @@ def test_convert_graphql_type_to_python_type__graphql_interface() -> None:
     origin = get_origin_or_noop(typ)
     args = get_flattened_generic_params(typ)
 
-    assert origin is Union
+    assert is_union_origin(origin)
     assert len(args) == 2
 
     assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
@@ -215,7 +215,7 @@ def test_convert_graphql_type_to_python_type__graphql_union() -> None:
     origin = get_origin_or_noop(typ)
     args = get_flattened_generic_params(typ)
 
-    assert origin is Union
+    assert is_union_origin(origin)
     assert len(args) == 3
 
     assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
@@ -236,7 +236,7 @@ def test_convert_graphql_type_to_python_type__graphql_enum() -> None:
     origin = get_origin_or_noop(typ)
     args = get_flattened_generic_params(typ)
 
-    assert origin is Union
+    assert is_union_origin(origin)
     assert len(args) == 2
 
     assert is_subclass(args[0], Enum)
@@ -253,7 +253,7 @@ def test_convert_graphql_type_to_python_type__graphql_object() -> None:
     origin = get_origin_or_noop(typ)
     args = get_flattened_generic_params(typ)
 
-    assert origin is Union
+    assert is_union_origin(origin)
     assert len(args) == 2
 
     assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
@@ -270,7 +270,7 @@ def test_convert_graphql_type_to_python_type__graphql_input_object() -> None:
     origin = get_origin_or_noop(typ)
     args = get_flattened_generic_params(typ)
 
-    assert origin is Union
+    assert is_union_origin(origin)
     assert len(args) == 2
 
     assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
