@@ -11,8 +11,15 @@ from graphql import GraphQLError, version_info
 from example_project.app.models import Task
 from tests.factories import TaskFactory
 from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.dataclasses import IncrementalDeliveryResponse
 from undine.exceptions import GraphQLPermissionError
 from undine.optimizer import OptimizationData
+
+if version_info >= (3, 3, 0):
+    from graphql import (  # type: ignore[attr-defined]
+        InitialIncrementalExecutionResult,
+        SubsequentIncrementalExecutionResult,
+    )
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -55,11 +62,16 @@ async def test_end_to_end__defer(graphql_async, undine_settings) -> None:
         }
     """
 
-    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+    responses = [response async for response in graphql_async.incremental_delivery(query)]
 
     assert len(responses) == 2
 
-    assert responses[0] == {
+    # The response payload is kept as a dataclass wrapping the graphql-core execution results.
+    assert isinstance(responses[0].result, IncrementalDeliveryResponse)
+    assert isinstance(responses[0].result.result, InitialIncrementalExecutionResult)
+    assert isinstance(responses[1].result.result, SubsequentIncrementalExecutionResult)
+
+    assert responses[0].json == {
         "hasNext": True,
         "data": {
             "tasks": [
@@ -75,7 +87,7 @@ async def test_end_to_end__defer(graphql_async, undine_settings) -> None:
         ],
     }
 
-    assert responses[1] == {
+    assert responses[1].json == {
         "hasNext": False,
         "incremental": [
             {"id": "0", "data": {"slow": "slow"}},
@@ -220,7 +232,6 @@ async def test_end_to_end__defer__errors_in_initial_responses(graphql_async, und
             }
         ],
         "hasNext": False,
-        "pending": [],
     }
 
 
@@ -332,7 +343,7 @@ async def test_end_to_end__defer__errors_in_subsequent_responses(graphql_async, 
     }
 
 
-# Stram directive
+# Stream directive
 
 
 async def test_end_to_end__stream(graphql_async, undine_settings) -> None:
@@ -526,7 +537,6 @@ async def test_end_to_end__stream__errors_in_initial_response(graphql_async, und
                 "extensions": {"error_code": "PERMISSION_DENIED", "status_code": 403},
             }
         ],
-        "pending": [],
     }
 
 
@@ -635,5 +645,54 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
         "incremental": [
             {"id": "1", "items": ["slow"]},
             {"id": "2", "items": ["slow"]},
+        ],
+    }
+
+
+# Incremental delivery not requested
+
+
+async def test_end_to_end__defer__wrong_requested_content_type(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @Field
+        async def slow(self: Task) -> str:
+            return "slow"
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo", points=1)
+
+    query = """
+        query {
+          tasks {
+            name
+            ... @defer {
+              slow
+            }
+          }
+        }
+    """
+
+    response = await graphql_async(query)
+
+    assert response.json == {
+        "data": None,
+        "errors": [
+            {
+                "message": (
+                    "Executing this GraphQL operation would produce multiple payloads (due to @defer or @stream "
+                    "directive), but the client did not request incremental delivery. Set the 'Accept' header of "
+                    "the request to 'multipart/mixed' to receive an incremental response over HTTP."
+                ),
+                "extensions": {"error_code": "INCREMENTAL_DELIVERY_NOT_REQUESTED", "status_code": 400},
+            }
         ],
     }

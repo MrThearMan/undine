@@ -27,6 +27,8 @@ from undine.utils.graphql.utils import get_error_execution_result
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable
 
+    from django.http.response import ResponseHeaders
+
     from undine.typing import DjangoRequestProtocol, DjangoResponseProtocol
 
 __all__ = [
@@ -94,10 +96,7 @@ async def _handle_event_stream(request: DjangoRequestProtocol) -> DjangoResponse
     stream: AsyncIterable[str] = (event.encode() async for event in with_keep_alive_dc(event_stream))
 
     headers = request.response_headers.copy()
-    headers["Connection"] = "keep-alive"
-    headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    headers["Content-Type"] = str(request.response_content_type)
-    headers.pop("Content-Length", None)
+    _set_streaming_headers(request, headers)
 
     return StreamingHttpResponse(stream, headers=headers)
 
@@ -114,10 +113,7 @@ async def _handle_multipart_mixed(request: DjangoRequestProtocol) -> DjangoRespo
     stream: AsyncIterable[str] = (event.encode() async for event in with_multipart_mixed_heartbeat(event_stream))
 
     headers = request.response_headers.copy()
-    headers["Connection"] = "keep-alive"
-    headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    headers["Content-Type"] = str(request.response_content_type)
-    headers.pop("Content-Length", None)
+    _set_streaming_headers(request, headers)
 
     return StreamingHttpResponse(stream, headers=headers)
 
@@ -140,9 +136,18 @@ async def _handle_incremental(request: DjangoRequestProtocol) -> DjangoResponseP
     stream: AsyncIterable[str] = (event.encode() async for event in with_incremental_stream_heartbeat(event_stream))
 
     headers = request.response_headers.copy()
-    headers["Connection"] = "keep-alive"
+    _set_streaming_headers(request, headers)
+
+    return StreamingHttpResponse(stream, headers=headers)
+
+
+def _set_streaming_headers(request: DjangoRequestProtocol, headers: ResponseHeaders) -> None:
+    """Set the common response headers for a streaming GraphQL response."""
+    # 'Connection' is a hop-by-hop header, which is prohibited in HTTP/2 and later.
+    # See: https://datatracker.ietf.org/doc/html/rfc9113#section-8.2.2
+    if get_http_version(request) < (2, 0):
+        headers["Connection"] = "keep-alive"
+
     headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     headers["Content-Type"] = str(request.response_content_type)
     headers.pop("Content-Length", None)
-
-    return StreamingHttpResponse(stream, headers=headers)

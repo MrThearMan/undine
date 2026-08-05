@@ -407,9 +407,12 @@ Useful for debugging.
 /// details | `INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL`
     attrs: {id: incremental_delivery_heartbeat_interval}
 
-Type: `int` | Default: `12`
+Type: `int` | Default: `0`
 
 Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable.
+
+Heartbeats are disabled by default, since they are not part of the incremental delivery over HTTP
+specification, and clients are not required to handle them.
 
 ///
 

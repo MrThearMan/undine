@@ -988,6 +988,18 @@ class GraphQLFilePlacingError(GraphQLStatusError):
     code = UndineErrorCodes.FILE_NOT_FOUND
 
 
+class GraphQLIncrementalDeliveryNotRequestedError(GraphQLStatusError):
+    """Error raised when an operation requires incremental delivery, but the client didn't request it."""
+
+    msg = (
+        "Executing this GraphQL operation would produce multiple payloads (due to @defer or @stream "
+        "directive), but the client did not request incremental delivery. Set the 'Accept' header of "
+        "the request to 'multipart/mixed' to receive an incremental response over HTTP."
+    )
+    status = HTTPStatus.BAD_REQUEST
+    code = UndineErrorCodes.INCREMENTAL_DELIVERY_NOT_REQUESTED
+
+
 class GraphQLIncrementalDeliveryNotSupportedError(GraphQLStatusError):
     """Error raised when a incremental delivery is not supported by the server."""
 

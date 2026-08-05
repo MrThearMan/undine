@@ -62,6 +62,7 @@ from undine.exceptions import (
     GraphQLFieldNotNullableError,
     GraphQLFileNotFoundError,
     GraphQLFilePlacingError,
+    GraphQLIncrementalDeliveryNotRequestedError,
     GraphQLIncrementalDeliveryNotSupportedError,
     GraphQLInvalidInputDataError,
     GraphQLInvalidOrderDataError,
@@ -912,6 +913,16 @@ class GQLErrorParams(NamedTuple):
             args={"value": {"map": {"foo": ["bar"]}}},
             message="Value '{'map': {'foo': ['bar']}}' in file map does not lead to a null value.",
             extensions={"error_code": "FILE_NOT_FOUND", "status_code": 400},
+        ),
+        GraphQLIncrementalDeliveryNotRequestedError.__name__: GQLErrorParams(
+            cls=GraphQLIncrementalDeliveryNotRequestedError,
+            args={},
+            message=(
+                "Executing this GraphQL operation would produce multiple payloads (due to @defer or @stream "
+                "directive), but the client did not request incremental delivery. Set the 'Accept' header of "
+                "the request to 'multipart/mixed' to receive an incremental response over HTTP."
+            ),
+            extensions={"error_code": "INCREMENTAL_DELIVERY_NOT_REQUESTED", "status_code": 400},
         ),
         GraphQLIncrementalDeliveryNotSupportedError.__name__: GQLErrorParams(
             cls=GraphQLIncrementalDeliveryNotSupportedError,

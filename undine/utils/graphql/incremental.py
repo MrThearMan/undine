@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from graphql import ExecutionResult, InitialIncrementalExecutionResult  # type: ignore[attr-defined]
+from graphql import ExecutionResult
 
 from undine.dataclasses import IncrementalDeliveryComplete, IncrementalDeliveryHeartbeat, IncrementalDeliveryResponse
 from undine.execution import execute_graphql_http_async
@@ -31,8 +31,8 @@ async def execute_graphql_incremental(
     result = await execute_graphql_http_async(params, request)
 
     if isinstance(result, ExecutionResult):
-        initial_result = execution_result_to_initial_incremental_response(result)
-        yield IncrementalDeliveryResponse(result=initial_result)
+        graphql_errors_hook(result.errors)
+        yield IncrementalDeliveryResponse(result=result)
         yield IncrementalDeliveryComplete()
         return
 
@@ -55,8 +55,8 @@ async def result_to_incremental_response(  # noqa: RUF029
     result: ExecutionResult,
 ) -> AsyncIterator[IncrementalDeliveryResponse | IncrementalDeliveryComplete]:
     """Get iterator for a single result received from an incremental HTTP request."""
-    initial_result = execution_result_to_initial_incremental_response(result)
-    yield IncrementalDeliveryResponse(result=initial_result)
+    graphql_errors_hook(result.errors)
+    yield IncrementalDeliveryResponse(result=result)
     yield IncrementalDeliveryComplete()
 
 
@@ -70,7 +70,9 @@ async def with_incremental_stream_heartbeat(
             yield event
         return
 
-    yield IncrementalDeliveryHeartbeat()
+    # Heartbeats are not part of the incremental delivery over HTTP spec, so they must never be sent
+    # before the initial payload, which clients expect to be the first part of the response.
+    initial_payload_sent = False
 
     events = aiter(event_stream)
     next_event = asyncio.ensure_future(anext(events))
@@ -78,7 +80,8 @@ async def with_incremental_stream_heartbeat(
         while True:
             done, _ = await asyncio.wait({next_event}, timeout=interval)
             if not done:
-                yield IncrementalDeliveryHeartbeat()
+                if initial_payload_sent:
+                    yield IncrementalDeliveryHeartbeat()
                 continue
 
             try:
@@ -86,18 +89,9 @@ async def with_incremental_stream_heartbeat(
             except StopAsyncIteration:
                 return
 
+            initial_payload_sent = True
             next_event = asyncio.ensure_future(anext(events))
 
     finally:
         if not next_event.done():
             next_event.cancel()
-
-
-def execution_result_to_initial_incremental_response(result: ExecutionResult) -> InitialIncrementalExecutionResult:
-    return InitialIncrementalExecutionResult(
-        data=result.data,
-        errors=graphql_errors_hook(result.errors),
-        pending=[],
-        has_next=False,
-        extensions=result.extensions,
-    )

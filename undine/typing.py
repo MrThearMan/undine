@@ -249,6 +249,7 @@ __all__ = [
     "FilterParams",
     "FilterSetParams",
     "FormattedMultipartMixedHttpResult",
+    "FormattedSingleIncrementalDeliveryResult",
     "ForwardField",
     "GQLInfo",
     "GraphQLFilterResolver",
@@ -792,6 +793,7 @@ class UndineErrorCodes(StrEnum):
     FIELD_NOT_NULLABLE = auto()
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()
+    INCREMENTAL_DELIVERY_NOT_REQUESTED = auto()
     INCREMENTAL_DELIVERY_NOT_SUPPORTED = auto()
     INVALID_INPUT_DATA = auto()
     INVALID_ORDER_DATA = auto()
@@ -1751,3 +1753,18 @@ class FormattedMultipartMixedHttpResult(TypedDict):
 
     payload: FormattedExecutionResult | None
     errors: NotRequired[list[GraphQLFormattedError]]
+
+
+# Incremental delivery over HTTP
+
+
+class FormattedSingleIncrementalDeliveryResult(TypedDict):
+    """
+    Formatted execution result for an operation that didn't produce any incremental data,
+    but was still delivered using incremental delivery over HTTP.
+    """
+
+    data: NotRequired[dict[str, Any] | None]
+    errors: NotRequired[list[GraphQLFormattedError]]
+    extensions: NotRequired[dict[str, Any]]
+    hasNext: bool

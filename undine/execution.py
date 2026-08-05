@@ -36,6 +36,7 @@ from undine.exceptions import (
     GraphQLCannotUseWebSocketsForMutationsError,
     GraphQLCannotUseWebSocketsForQueriesError,
     GraphQLErrorGroup,
+    GraphQLIncrementalDeliveryNotRequestedError,
     GraphQLIncrementalDeliveryNotSupportedError,
     GraphQLNoExecutionResultError,
     GraphQLSubscriptionNoEventStreamError,
@@ -359,6 +360,16 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
 
     if exec_context.is_awaitable(result):
         result = await result  # type: ignore[misc]
+
+    if version_info >= (3, 3, 0) and not _is_incremental_request(context.request):  # pragma: no cover
+        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
+
+        # Only the incremental delivery over HTTP transport can deliver multiple payloads
+        # for a single query or mutation, so other transports must reject the operation.
+        if isinstance(result, ExperimentalIncrementalExecutionResults):
+            await result.subsequent_results.aclose()
+            context.result = get_error_execution_result(GraphQLIncrementalDeliveryNotRequestedError())
+            return context.result
 
     context.result = result
     return context.result

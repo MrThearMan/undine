@@ -5,9 +5,9 @@ import json
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Generic, Literal
 
-from graphql import Undefined
+from graphql import ExecutionResult, Undefined
 
-from undine.typing import FormattedMultipartMixedHttpResult, T, TModel
+from undine.typing import FormattedMultipartMixedHttpResult, FormattedSingleIncrementalDeliveryResult, T, TModel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -16,8 +16,9 @@ if TYPE_CHECKING:
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q, QuerySet
     from graphql import (  # type: ignore[attr-defined]
-        ExecutionResult,
         FieldNode,
+        FormattedInitialIncrementalExecutionResult,
+        FormattedSubsequentIncrementalExecutionResult,
         GraphQLError,
         InitialIncrementalExecutionResult,
         InlineFragmentNode,
@@ -437,11 +438,27 @@ class MultipartMixedHttpHeartbeat:
 class IncrementalDeliveryResponse:
     """Incremental delivery over HTTP response."""
 
-    result: InitialIncrementalExecutionResult | SubsequentIncrementalExecutionResult
+    result: ExecutionResult | InitialIncrementalExecutionResult | SubsequentIncrementalExecutionResult
+
+    @property
+    def formatted(
+        self,
+    ) -> (
+        FormattedSingleIncrementalDeliveryResult
+        | FormattedInitialIncrementalExecutionResult
+        | FormattedSubsequentIncrementalExecutionResult
+    ):
+        """Get the response payload formatted according to the incremental delivery over HTTP spec."""
+        # A plain 'ExecutionResult' means the operation didn't produce any incremental data,
+        # so this response is both the first and the last part of the multipart response.
+        if isinstance(self.result, ExecutionResult):
+            return FormattedSingleIncrementalDeliveryResult(**self.result.formatted, hasNext=False)
+
+        return self.result.formatted
 
     def encode(self) -> str:
-        formatted = json.dumps(self.result.formatted, separators=(",", ":"))
-        return f"\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{formatted}"
+        payload = json.dumps(self.formatted, separators=(",", ":"))
+        return f"\r\n--graphql\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{payload}"
 
 
 @dataclasses.dataclass(kw_only=True, slots=True, frozen=True)
@@ -457,4 +474,6 @@ class IncrementalDeliveryHeartbeat:
     """Incremental delivery over HTTP heartbeat response."""
 
     def encode(self) -> str:
-        return '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}'
+        # An empty object is the only payload clients are known to filter out reliably.
+        # See: https://www.apollographql.com/docs/graphos/routing/operations/subscriptions/multipart-protocol#heartbeats
+        return "\r\n--graphql\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{}"

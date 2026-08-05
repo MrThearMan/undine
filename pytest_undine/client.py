@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     )
     from graphql.execution import CompletedResult, PendingResult  # type: ignore[attr-defined]
 
-    from undine.typing import DjangoTestClientResponseProtocol
+    from undine.typing import DjangoTestClientResponseProtocol, FormattedSingleIncrementalDeliveryResult
 
     from .query_logging import DBQueryData
     from .websocket import TestWebSocket
@@ -844,9 +844,15 @@ class GraphQLClientIncrementalDeliveryResponse(BaseGraphQLClientResponse):
         super().__init__(database_queries=database_queries)
 
     @property
-    def json(self) -> FormattedInitialIncrementalExecutionResult | FormattedSubsequentIncrementalExecutionResult:
+    def json(
+        self,
+    ) -> (
+        FormattedSingleIncrementalDeliveryResult
+        | FormattedInitialIncrementalExecutionResult
+        | FormattedSubsequentIncrementalExecutionResult
+    ):
         """Return the JSON content of the response."""
-        return self.result.result.formatted
+        return self.result.formatted
 
 
 # Helpers
@@ -1028,7 +1034,7 @@ def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDelivery
         msg = "Invalid incremental delivery event"
         raise ValueError(msg)
 
-    if event_parts[:-1] != ["", "--graphql", "Content-Type: application/json", ""]:
+    if event_parts[:-1] != ["", "--graphql", "Content-Type: application/json; charset=utf-8", ""]:
         msg = "Invalid incremental delivery event"
         raise ValueError(msg)
 
@@ -1046,6 +1052,11 @@ def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDelivery
         errors: list[GraphQLError] | None = None
         if "errors" in data:
             errors = _decode_formatted_errors(data["errors"])
+
+        # Only results that contain incremental data have a 'pending' key.
+        if pending is None:
+            result = ExecutionResult(data=data["data"], errors=errors, extensions=data.get("extensions"))
+            return IncrementalDeliveryResponse(result=result)
 
         initial_result = InitialIncrementalExecutionResult(
             data=data["data"],
@@ -1078,7 +1089,7 @@ def _decode_incremental_delivery_heartbeat(event_data: bytes | str) -> Increment
     if isinstance(event_data, bytes):
         event_data = event_data.decode()
 
-    if event_data == '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}':
+    if event_data == "\r\n--graphql\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{}":
         return IncrementalDeliveryHeartbeat()
 
     msg = "Not an incremental delivery heartbeat event"

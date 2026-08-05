@@ -520,6 +520,32 @@ def test_graphql_view__incremental__success(undine_settings) -> None:
     assert response["Cache-Control"] == "no-cache, no-store, must-revalidate"
 
 
+def test_graphql_view__incremental__http_2__no_connection_header(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    response_content_type = MediaType("multipart/mixed")
+    add_media_type_param(response_content_type, name="boundary", value="graphql")
+
+    request = MockRequest(
+        method="POST",
+        accepted_types=[MediaType("multipart/mixed")],
+        body=b'{"query": "query { hello }"}',
+        response_content_type=response_content_type,
+        META={"SERVER_PROTOCOL": "HTTP/2"},
+    )
+
+    with _make_incremental_mocks():
+        coro = _handle_incremental(request)  # type: ignore[arg-type]
+        assert iscoroutine(coro)
+        response = asyncio.run(coro)
+
+    assert isinstance(response, StreamingHttpResponse)
+    assert response.status_code == 200
+
+    # 'Connection' is a hop-by-hop header, which is prohibited in HTTP/2 and later.
+    assert "Connection" not in response
+
+
 def test_graphql_view__incremental__parse_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 

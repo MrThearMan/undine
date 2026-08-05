@@ -251,8 +251,12 @@ class UndineDefaultSettings(NamedTuple):
     EXPERIMENTAL_INCREMENTAL_DELIVERY: bool = False
     """Whether to enable experimental support for incremental delivery over HTTP."""
 
-    INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL: int = 12
-    """Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable."""
+    INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL: int = 0
+    """
+    Interval in seconds for incremental delivery over HTTP heartbeats. Set to 0 to disable.
+    Disabled by default, since heartbeats are not part of the incremental delivery over HTTP spec,
+    and clients might not handle them correctly.
+    """
 
     # Federation
 

@@ -232,7 +232,22 @@ def test_incremental_http_response__initial__encode() -> None:
     encoded = response.encode()
 
     assert encoded == (
-        '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"data":{"count":1},"pending":[],"hasNext":false}'
+        "\r\n"
+        "--graphql\r\n"
+        "Content-Type: application/json; charset=utf-8\r\n"
+        "\r\n"
+        '{"data":{"count":1},"pending":[],"hasNext":false}'
+    )
+
+
+def test_incremental_http_response__execution_result__encode() -> None:
+    response = IncrementalDeliveryResponse(result=ExecutionResult(data={"count": 1}))
+    encoded = response.encode()
+
+    # A non-incremental result is both the first and the last part of the response,
+    # so 'hasNext' is added to it, but no empty 'pending' key.
+    assert encoded == (
+        '\r\n--graphql\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{"data":{"count":1},"hasNext":false}'
     )
 
 
@@ -245,7 +260,7 @@ def test_incremental_http_response__subsequent__encode() -> None:
     assert encoded == (
         "\r\n"
         "--graphql\r\n"
-        "Content-Type: application/json\r\n"
+        "Content-Type: application/json; charset=utf-8\r\n"
         "\r\n"
         '{"hasNext":false,"incremental":[{"data":{"count":1},"id":"1"}]}'
     )
@@ -262,7 +277,7 @@ def test_incremental_http_heartbeat__encode() -> None:
     response = IncrementalDeliveryHeartbeat()
     encoded = response.encode()
 
-    assert encoded == '\r\n--graphql\r\nContent-Type: application/json\r\n\r\n{"hasNext": true}'
+    assert encoded == "\r\n--graphql\r\nContent-Type: application/json; charset=utf-8\r\n\r\n{}"
 
 
 # BulkCreateKwargs
