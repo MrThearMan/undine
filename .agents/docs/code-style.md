@@ -10,6 +10,6 @@
   For example, use `urllib.parse.urlencode` to build query strings.
 - Assign class instances and function return values to variables before passing them
   as arguments or using them in comparisons.
-- Prefer specific converters (`convert_graphql_type_to_python_type`) over generic
+- Prefer specific converters (`convert_model_field_to_python_type`) over generic
   ones (`convert_to_python_type`). Generic converters accrete unrelated behaviors under
   one dispatch and become hard to reason about; specific ones stay narrow.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, NamedTuple
 
 import pytest
@@ -153,12 +154,18 @@ from undine.exceptions import (
     ModelFieldNotARelationError,
     ModelFieldNotARelationOfModelError,
     MutateNeedsImplementationError,
+    MutationInputDataTypesModuleImportError,
+    MutationInputDataTypesModuleNoParentError,
+    MutationInputDataTypesModuleNotOverridableError,
+    MutationInputDataTypesModuleNotSetError,
+    MutationInputDataTypesModuleParentNotPackageError,
+    MutationTypeInputDataTypesNoMutationTypesError,
     MutationTypeKindCannotBeDeterminedError,
     NoFunctionParametersError,
     NotCompatibleWithError,
-    QueryTypeRequiresSingleModelError,
     QueryRootCannotBeHiddenError,
     QueryRootRequiresAlwaysVisibleEntrypointError,
+    QueryTypeRequiresSingleModelError,
     RegistryDuplicateError,
     RegistryMissingTypeError,
     UndineError,
@@ -548,8 +555,7 @@ class UndineErrorParams(NamedTuple):
             cls=MissingUnionQueryTypeGenericError,
             args={"name": "Searchable"},
             message=(
-                "'Searchable' is missing its generic types: "
-                "`class Searchable(UnionType[QueryType1, QueryType2])`."
+                "'Searchable' is missing its generic types: `class Searchable(UnionType[QueryType1, QueryType2])`."
             ),
         ),
         ModelFieldDoesNotExistError.__name__: UndineErrorParams(
@@ -575,6 +581,57 @@ class UndineErrorParams(NamedTuple):
             args={"mutation_type": "TaskMutation"},
             message="Must implement 'TaskMutation.__mutate__' to handle related inputs",
         ),
+        MutationInputDataTypesModuleNotSetError.__name__: UndineErrorParams(
+            cls=MutationInputDataTypesModuleNotSetError,
+            args={},
+            message=(
+                "The `MUTATION_INPUT_DATA_TYPES_MODULE` setting must be set to "
+                "a dotted module path before running this command."
+            ),
+        ),
+        MutationInputDataTypesModuleNoParentError.__name__: UndineErrorParams(
+            cls=MutationInputDataTypesModuleNoParentError,
+            args={"module_path": "myproj"},
+            message=("Cannot resolve target file for module 'myproj': path must include at least one package."),
+        ),
+        MutationInputDataTypesModuleImportError.__name__: UndineErrorParams(
+            cls=MutationInputDataTypesModuleImportError,
+            args={
+                "parent_path": "myproj",
+                "module_path": "myproj.gql_input_types",
+                "error": "ModuleNotFoundError: No module named 'myproj'",
+            },
+            message=(
+                "Cannot resolve parent package 'myproj' for module 'myproj.gql_input_types': "
+                "ModuleNotFoundError: No module named 'myproj'"
+            ),
+        ),
+        MutationInputDataTypesModuleParentNotPackageError.__name__: UndineErrorParams(
+            cls=MutationInputDataTypesModuleParentNotPackageError,
+            args={
+                "parent_path": "myproj",
+                "module_path": "myproj.gql_input_types",
+            },
+            message="Parent package 'myproj' for module 'myproj.gql_input_types' is not a package.",
+        ),
+        MutationInputDataTypesModuleNotOverridableError.__name__: UndineErrorParams(
+            cls=MutationInputDataTypesModuleNotOverridableError,
+            args={
+                "target_path": Path("myproj/gql_input_types.py"),
+                "marker": "# FOO",
+            },
+            message=(
+                "Refusing to overwrite 'myproj/gql_input_types.py': "
+                "its first line does not match the generator marker. "
+                "Expected first line: '# FOO'. "
+                "Delete the file manually if you are sure it is safe to regenerate."
+            ),
+        ),
+        MutationTypeInputDataTypesNoMutationTypesError.__name__: UndineErrorParams(
+            cls=MutationTypeInputDataTypesNoMutationTypesError,
+            args={},
+            message="No mutation types found in schema",
+        ),
         MutationTypeKindCannotBeDeterminedError.__name__: UndineErrorParams(
             cls=MutationTypeKindCannotBeDeterminedError,
             args={"name": "TaskMutation"},
@@ -599,8 +656,7 @@ class UndineErrorParams(NamedTuple):
             cls=QueryRootCannotBeHiddenError,
             args={"query_root": MyClass},
             message=(
-                "Query root type 'MyClass' cannot override '__is_visible__'. "
-                "The Query root must always be visible."
+                "Query root type 'MyClass' cannot override '__is_visible__'. The Query root must always be visible."
             ),
         ),
         QueryRootRequiresAlwaysVisibleEntrypointError.__name__: UndineErrorParams(

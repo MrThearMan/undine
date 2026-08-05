@@ -78,7 +78,7 @@ def test_persisted_documents__not_found(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 def test_persisted_documents__not_supported(graphql, undine_settings) -> None:
     document = "query { hello }"
 
@@ -129,7 +129,7 @@ def test_persisted_documents__only__cannot_use_query(graphql, undine_settings) -
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 def test_persisted_documents__only__not_installed(graphql, undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
 

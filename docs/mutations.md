@@ -824,3 +824,44 @@ of the mutation will be rolled back. Specifically, a rollback will be triggered
 if any errors are thrown from top-level resolvers of a mutation operation.
 
 > Note that atomic mutations are not supported when [async mode](async.md) is enabled.
+
+
+## Generating input data types
+
+The `input_data` dictionary passed to `__mutate__`, `__bulk_mutate__`, `__permissions__`,
+`__validate__`, and `__after__` is typed as `dict[str, Any]` by default.
+Undine can generate `TypedDict` definitions for the actual shape of that
+dictionary for every `MutationType` in your schema.
+
+Set the [`MUTATION_INPUT_DATA_TYPES_MODULE`](settings.md#mutation_input_data_types_module)
+setting to the dotted module path where the generated file should be written:
+
+```python
+UNDINE = {
+    "SCHEMA": "myproj.schema.schema",
+    "MUTATION_INPUT_DATA_TYPES_MODULE": "myproj.gql_input_types",
+}
+```
+
+Then run the management command to generate the file:
+
+```shell
+python manage.py generate_mutation_input_types
+```
+
+Two `TypedDicts` are emitted per `MutationType`:
+
+- `<SchemaName>FullInputData` — the view seen by `__permissions__` and `__validate__`.
+- `<SchemaName>InputData` — the view seen by `__mutate__`, `__bulk_mutate__` and `__after__`
+  ([input only inputs](#input-only-inputs) have been removed).
+
+Import them under a `TYPE_CHECKING` guard and annotate the hooks accordingly:
+
+```python hl_lines="12 23 31 39 47 55"
+-8<- "mutations/generate_mutation_input_types_hooks.py"
+```
+
+Rerun the management command whenever the schema changes.
+
+> The first line of the generated file is a marker comment. The command refuses to overwrite
+> a target file whose first line does not match this marker.

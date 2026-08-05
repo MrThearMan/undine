@@ -278,7 +278,7 @@ def test_parse_graphql_params__unsupported_content() -> None:
         GraphQLRequestParamsParser.run(request)
 
 
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 def test_parse_graphql_params__mising_query() -> None:
     request = MockRequest(
         method="POST",
@@ -290,7 +290,7 @@ def test_parse_graphql_params__mising_query() -> None:
         GraphQLRequestParamsParser.run(request)
 
 
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 def test_parse_graphql_params__null_query() -> None:
     request = MockRequest(
         method="POST",
@@ -555,7 +555,7 @@ def test_parse_graphql_params__unsupported_application_content_type() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 async def test_parse_graphql_params__async__no_query__persisted_docs_not_installed() -> None:
     request = MockRequest(
         method="POST",
@@ -569,7 +569,7 @@ async def test_parse_graphql_params__async__no_query__persisted_docs_not_install
 
 @pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.usefixtures("_no_persisted_documents")
+@pytest.mark.usefixtures(_no_persisted_documents.__name__)
 async def test_parse_graphql_params__async__persisted_docs_only__not_installed(undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
 

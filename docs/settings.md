@@ -599,6 +599,20 @@ when said `MutationType` is used in `Entrypoints`.
 
 ///
 
+/// details | `MUTATION_INPUT_DATA_TYPES_MODULE`
+    attrs: {id: mutation_input_data_types_module}
+
+Type: `str | None` | Default: `None`
+
+Dotted module path where the [`test_generate_mutation_input_types`](mutations.md#typing-input_data)
+management command writes the generated `TypedDicts` for each `MutationType.__input_map__`.
+For example, `"myproj.gql_input_types"` writes to `myproj/gql_input_types.py`.
+
+The setting is a write target only; it is not imported at runtime. Set it to a module path
+under one of your Python packages before running the management command.
+
+///
+
 /// details | `MUTATION_TYPE_EXTENSIONS_KEY`
     attrs: {id: mutation_type_extensions_key}
 

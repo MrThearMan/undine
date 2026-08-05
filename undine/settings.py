@@ -335,6 +335,13 @@ class UndineDefaultSettings(NamedTuple):
     MUTATION_INPUT_DATA_KEY: str = "input"
     """The key used for the input argument of a MutationType."""
 
+    MUTATION_INPUT_DATA_TYPES_MODULE: str | None = None
+    """
+    Dotted module path where the `generate_mutation_input_types` management command writes
+    the generated `TypedDicts` for each `MutationType.__input_map__`. Not imported at runtime,
+    only used as a write target for the code generator.
+    """
+
     QUERY_TYPE_FILTER_INPUT_KEY: str = "filter"
     """The key used for the filter argument of QueryType."""
 

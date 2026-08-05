@@ -15,6 +15,7 @@ from undine.query import QUERY_TYPE_REGISTRY
 from undine.relay import Node
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
 from undine.utils.graphql.utils import enable_did_you_mean_suggestions
+from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
     from tests.helpers import AccessLog
@@ -35,6 +36,8 @@ def _clear_registries() -> None:
     FEDERATION_TYPE_REGISTRY.clear()
 
     Node.__implementations__.clear()
+
+    get_signature.cache.clear()
 
     enable_did_you_mean_suggestions()
 

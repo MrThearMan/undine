@@ -20,7 +20,6 @@ from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_registered_directives
 from undine.utils.graphql.utils import check_directives
 from undine.utils.logging import logger
-from undine.utils.reflection import get_signature
 from undine.utils.visibility import apply_visibility
 
 if TYPE_CHECKING:
@@ -104,8 +103,6 @@ def create_schema(
     elapsed = time.perf_counter() - started
     logger.debug(f"GraphQL schema created successfully in {elapsed}s!")
 
-    # Clear cached signatures for functions to reduce memory usage.
-    get_signature.cache.clear()
     return schema
 
 

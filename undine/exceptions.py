@@ -498,6 +498,49 @@ class MutateNeedsImplementationError(UndineError):
     msg = "Must implement '{mutation_type}.__mutate__' to handle related inputs"
 
 
+class MutationInputDataTypesModuleNotSetError(UndineError):
+    """Error raised if the generate_mutation_input_types is run without setting `MUTATION_INPUT_DATA_TYPES_MODULE`."""
+
+    msg = (
+        "The `MUTATION_INPUT_DATA_TYPES_MODULE` setting must be set to "
+        "a dotted module path before running this command."
+    )
+
+
+class MutationInputDataTypesModuleNoParentError(UndineError):
+    """Error raised if module set by `MUTATION_INPUT_DATA_TYPES_MODULE` is not withing a package."""
+
+    msg = "Cannot resolve target file for module '{module_path}': path must include at least one package."
+
+
+class MutationInputDataTypesModuleImportError(UndineError):
+    """Error raised if module set by `MUTATION_INPUT_DATA_TYPES_MODULE` cannot be imported."""
+
+    msg = "Cannot resolve parent package '{parent_path}' for module '{module_path}': {error}"
+
+
+class MutationInputDataTypesModuleParentNotPackageError(UndineError):
+    """Error raised if the parent of module set by `MUTATION_INPUT_DATA_TYPES_MODULE` is not a package."""
+
+    msg = "Parent package '{parent_path}' for module '{module_path}' is not a package."
+
+
+class MutationInputDataTypesModuleNotOverridableError(UndineError):
+    """Error raised if the module set by `MUTATION_INPUT_DATA_TYPES_MODULE` is not code-generated."""
+
+    msg = (
+        "Refusing to overwrite '{target_path}': its first line does not match the generator marker. "
+        "Expected first line: '{marker}'. "
+        "Delete the file manually if you are sure it is safe to regenerate."
+    )
+
+
+class MutationTypeInputDataTypesNoMutationTypesError(UndineError):
+    """Error raised if mutation type input data generation could not find any mutation types."""
+
+    msg = "No mutation types found in schema"
+
+
 class MutationTypeKindCannotBeDeterminedError(UndineError):
     """Error raised if mutation type cannot determine its kind automatically."""
 
