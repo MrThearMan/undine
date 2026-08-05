@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from http import HTTPStatus
+from pathlib import PurePath
 from string import Formatter
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
@@ -21,6 +22,10 @@ class ErrorMessageFormatter(Formatter):
 
     def format_field(self, value: Any, format_spec: str) -> str:
         from undine.utils.text import comma_sep_str, dotpath  # noqa: PLC0415
+
+        # Render paths consistently across platforms.
+        if isinstance(value, PurePath):
+            value = value.as_posix()
 
         if format_spec == "dotpath":
             return dotpath(value)
