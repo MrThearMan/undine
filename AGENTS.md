@@ -36,3 +36,5 @@ Load the guide that matches what you're doing:
 - [Mypy plugin development](.agents/docs/mypy-plugin-development.md) — working on the Undine mypy plugin
 - [Documentation style](.agents/docs/documentation.md) — writing pages under `docs/`
 - [Library settings](.agents/docs/library-settings.md) — editing `undine/settings.py`
+- [Writing plan documents](.agents/docs/writing-plans.md) — how to write a plan file in `.agents/plans/`
+- [Implementing plan documents](.agents/docs/implementing-plans.md) — how to work from a plan file in `.agents/plans/`
