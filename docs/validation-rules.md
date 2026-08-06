@@ -40,6 +40,22 @@ as set by the [`MAX_ALLOWED_DIRECTIVES`](settings.md#max_allowed_directives) set
 This is used to prevent denial-of-service attacks, heap overflow or server overloading from "directive overloading"
 that could arise from having to parse, validate, and process too many directives.
 
+### `MaxListNestingDepthRule`
+
+This validation rule checks that to-many relations in a GraphQL operation are not nested inside one another
+more deeply than allowed, as set by the [`MAX_LIST_NESTING_DEPTH`](settings.md#max_list_nesting_depth) setting.
+
+Only fields returning a list of another schema type count towards the nesting depth. To-one relations
+(foreign keys and one-to-one relations) and scalar fields don't, since those are joined into the same
+database query and thus don't multiply the number of rows returned. Each nested to-many relation, however,
+adds another prefetch query whose results are multiplied by the number of rows in the relations above it.
+The depth is calculated per selection path, so to-many relations selected side by side don't add up.
+
+This complements the [`MaxComplexityRule`](#maxcomplexityrule): complexity bounds how many database
+queries an operation runs, while list nesting depth bounds how many rows those queries can return.
+A query selecting four levels of nested to-many relations only has a complexity of `4`, but can easily
+return hundreds of thousands of rows.
+
 ### `OneOfInputObjectTypeRule`
 
 This validation rule checks that a one-of input object is used correctly.

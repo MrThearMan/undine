@@ -461,6 +461,10 @@ If you want to configure this manually, you can do so by adding the `complexity`
 -8<- "queries/field_complexity.py"
 ```
 
+> Note that complexity tracks how many database queries an operation runs, not how many rows it returns.
+> Nested to-many relations are bounded separately by the
+> [`MaxListNestingDepthRule`](validation-rules.md#maxlistnestingdepthrule).
+
 ### Caching
 
 You can set custom caching rules for `Fields` using the `cache_time`

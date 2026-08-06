@@ -26,6 +26,9 @@ from graphql import (
     Undefined,
     get_argument_values,
     get_directive_values,
+    get_nullable_type,
+    is_composite_type,
+    is_list_type,
     version_info,
 )
 
@@ -78,6 +81,7 @@ __all__ = [
     "is_atomic_mutation",
     "is_connection",
     "is_edge",
+    "is_list_of_composite_type",
     "is_node_interface",
     "is_page_info",
     "is_relation_id",
@@ -208,6 +212,16 @@ def is_edge(field_type: GraphQLOutputType) -> TypeGuard[GraphQLObjectType]:
         and "cursor" in field_type.fields
         and "node" in field_type.fields
     )
+
+
+def is_list_of_composite_type(field_type: GraphQLOutputType) -> bool:
+    """Does the given type contain a list of object, interface, or union types?"""
+    nullable_type = get_nullable_type(field_type)  # type: ignore[arg-type]
+    if not is_list_type(nullable_type):
+        return False
+
+    underlying_type = get_underlying_type(nullable_type)
+    return is_composite_type(underlying_type)
 
 
 def is_node_interface(field_type: GraphQLOutputType) -> TypeGuard[GraphQLInterfaceType]:

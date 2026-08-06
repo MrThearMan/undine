@@ -133,6 +133,9 @@ class UndineDefaultSettings(NamedTuple):
     MAX_ERRORS: int = 100
     """The maximum number of validation errors allowed in a GraphQL request before it is rejected."""
 
+    MAX_LIST_NESTING_DEPTH: int = 5
+    """The maximum number of to-many relations that can be nested inside one another in a single operation."""
+
     MAX_QUERY_COMPLEXITY: int = 10
     """Maximum query complexity that is allowed to be queried in a single operation."""
 

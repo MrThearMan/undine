@@ -512,6 +512,18 @@ The maximum number of filters allowed to be used for filtering a single `QueryTy
 
 ///
 
+/// details | `MAX_LIST_NESTING_DEPTH`
+    attrs: {id: max_list_nesting_depth}
+
+Type: `int` | Default: `5`
+
+The maximum number of to-many relations that can be nested inside one another in a single operation.
+Only to-many relations count towards this limit, since to-one relations don't multiply the number
+of rows returned by the operation.
+See the [`MaxListNestingDepthRule`](validation-rules.md#maxlistnestingdepthrule) documentation for more information.
+
+///
+
 /// details | `MAX_ORDERS_PER_TYPE`
     attrs: {id: max_orders_per_type}
 
