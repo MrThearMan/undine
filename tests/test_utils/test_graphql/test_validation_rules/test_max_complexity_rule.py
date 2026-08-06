@@ -247,6 +247,210 @@ def test_validation_rules__max_complexity_rule__fragment_spread__already_visited
     assert response.has_errors is False, response.errors
 
 
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__root(graphql, undine_settings) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 1
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment QueryFrag on Query {
+            tasks {
+                name
+            }
+        }
+        query {
+            ...QueryFrag
+            ...QueryFrag
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__inline_fragment(
+    graphql,
+    undine_settings,
+) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 1
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskFrag on TaskType {
+            name
+        }
+        query {
+            tasks {
+                ...TaskFrag
+                ... on TaskType {
+                    ...TaskFrag
+                }
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__nested_fragment(
+    graphql,
+    undine_settings,
+) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 1
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskFrag on TaskType {
+            name
+        }
+        fragment OuterFrag on TaskType {
+            ...TaskFrag
+        }
+        query {
+            tasks {
+                ...TaskFrag
+                ...OuterFrag
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__different_selection_sets(
+    graphql,
+    undine_settings,
+) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 1
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+        related_tasks = Field(complexity=0)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskFrag on TaskType {
+            name
+        }
+        query {
+            tasks {
+                ...TaskFrag
+                relatedTasks {
+                    ...TaskFrag
+                }
+            }
+        }
+    """
+
+    response = graphql(query)
+    assert response.errors == [
+        {
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 1.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__different_selection_sets__at_limit(
+    graphql,
+    undine_settings,
+) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 2
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+        related_tasks = Field(complexity=0)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskFrag on TaskType {
+            name
+        }
+        query {
+            tasks {
+                ...TaskFrag
+                relatedTasks {
+                    ...TaskFrag
+                }
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+
+
+@pytest.mark.django_db
+def test_validation_rules__max_complexity_rule__fragment_spread__cycle(graphql, undine_settings) -> None:
+    undine_settings.MAX_QUERY_COMPLEXITY = 100
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(complexity=1)
+        related_tasks = Field(complexity=0)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        fragment TaskFrag on TaskType {
+            name
+            relatedTasks {
+                ...TaskFrag
+            }
+        }
+        query {
+            tasks {
+                ...TaskFrag
+            }
+        }
+    """
+
+    response = graphql(query)
+
+    assert response.has_errors is True
+
+
 def test_validation_rules__max_complexity_rule__inline_fragment(graphql, undine_settings) -> None:
     undine_settings.MAX_QUERY_COMPLEXITY = 0
 

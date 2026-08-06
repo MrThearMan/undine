@@ -30,16 +30,16 @@ class MaxComplexityRule(ValidationRule):
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self.complexity: int = 0
-        self.visited_fragments: set[str] = set()
+        self.fragments_in_progress: set[str] = set()
 
     def enter_operation_definition(self, node: OperationDefinitionNode, *_args: Any) -> VisitorAction:
         root_type = self.context.get_type()
         if not isinstance(root_type, GraphQLObjectType):
             return self.IDLE
 
+        visited_fragments: set[str] = set()
         for selection in node.selection_set.selections:
-            self.visited_fragments = set()
-            self.handle_selection(root_type, selection)
+            self.handle_selection(root_type, selection, visited_fragments=visited_fragments)
 
         if self.complexity > undine_settings.MAX_QUERY_COMPLEXITY:
             msg = (
@@ -52,16 +52,22 @@ class MaxComplexityRule(ValidationRule):
 
         return self.IDLE
 
-    def handle_selection(self, parent_type: GraphQLCompositeType, selection: SelectionNode) -> None:
+    def handle_selection(
+        self,
+        parent_type: GraphQLCompositeType,
+        selection: SelectionNode,
+        *,
+        visited_fragments: set[str],
+    ) -> None:
         match selection:
             case FieldNode():
                 self.handle_field(parent_type, selection)
 
             case FragmentSpreadNode():
-                self.handle_fragment_spread(parent_type, selection)
+                self.handle_fragment_spread(parent_type, selection, visited_fragments=visited_fragments)
 
             case InlineFragmentNode():  # pragma: no branch
-                self.handle_inline_fragment(parent_type, selection)  # type: ignore[arg-type]
+                self.handle_inline_fragment(parent_type, selection, visited_fragments=visited_fragments)  # type: ignore[arg-type]
 
     def handle_field(self, parent_type: GraphQLCompositeType, field_node: FieldNode) -> None:
         # Ignore fields on interfaces, as well as union '__typename'.
@@ -82,33 +88,48 @@ class MaxComplexityRule(ValidationRule):
 
         if field_node.selection_set is not None:
             field_type: GraphQLObjectType = get_underlying_type(graphql_field.type)
-
+            visited_fragments: set[str] = set()
             for selection in field_node.selection_set.selections:
-                self.handle_selection(field_type, selection)
+                self.handle_selection(field_type, selection, visited_fragments=visited_fragments)
 
-    def handle_fragment_spread(self, parent_type: GraphQLCompositeType, fragment_spread: FragmentSpreadNode) -> None:
+    def handle_fragment_spread(
+        self,
+        parent_type: GraphQLCompositeType,
+        fragment_spread: FragmentSpreadNode,
+        *,
+        visited_fragments: set[str],
+    ) -> None:
         fragment_name = fragment_spread.name.value
-        if fragment_name in self.visited_fragments:
+        if fragment_name in visited_fragments | self.fragments_in_progress:
             return
-
-        self.visited_fragments.add(fragment_name)
 
         fragment = self.context.get_fragment(fragment_name)
         if fragment is None:
             return
 
-        for selection in fragment.selection_set.selections:
-            self.handle_selection(parent_type, selection)
+        visited_fragments.add(fragment_name)
+        self.fragments_in_progress.add(fragment_name)
 
-    def handle_inline_fragment(self, parent_type: GraphQLAbstractType, inline_fragment: InlineFragmentNode) -> None:
+        for selection in fragment.selection_set.selections:
+            self.handle_selection(parent_type, selection, visited_fragments=visited_fragments)
+
+        self.fragments_in_progress.discard(fragment_name)
+
+    def handle_inline_fragment(
+        self,
+        parent_type: GraphQLAbstractType,
+        inline_fragment: InlineFragmentNode,
+        *,
+        visited_fragments: set[str],
+    ) -> None:
         type_condition = inline_fragment.type_condition
         if type_condition is None:
             for selection in inline_fragment.selection_set.selections:
-                self.handle_selection(parent_type, selection)
+                self.handle_selection(parent_type, selection, visited_fragments=visited_fragments)
             return
 
         fragment_type_name = type_condition.name.value
         fragment_type: GraphQLObjectType = self.context.schema.get_type(fragment_type_name)  # type: ignore[assignment]
 
         for selection in inline_fragment.selection_set.selections:
-            self.handle_selection(fragment_type, selection)
+            self.handle_selection(fragment_type, selection, visited_fragments=visited_fragments)
