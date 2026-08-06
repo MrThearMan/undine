@@ -49,7 +49,7 @@ The subgraph schema string returned by `Query._service.sdl`. The router fetches 
 _Avoid_: Schema SDL (unqualified), service SDL
 
 **Compatibility subgraph**:
-The runnable Django project under `tests/test_federation/compatibility/` that implements Apollo's `products` reference schema as an Undine subgraph. Packaged as a Docker deliverable for Apollo's compliance harness.
+The runnable Django project under `../../tests/test_federation/compatibility` that implements Apollo's `products` reference schema as an Undine subgraph. Packaged as a Docker deliverable for Apollo's compliance harness.
 _Avoid_: Compat harness, compliance project
 
 **Apollo compliance runner**:

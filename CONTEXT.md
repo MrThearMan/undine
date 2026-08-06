@@ -4,16 +4,16 @@ Undine's ubiquitous language is split across topical guides in `.agents/docs/`.
 This index follows **progressive disclosure** — read only the guide that matches what you're working on,
 and drill down only when a term forces it. Load the guide that matches what you're working on:
 
-- [Django foundation](.agents/docs/django-foundation.md) — Model, model instance, queryset, lookup, manager, primary key
-- [Schema assembly](.agents/docs/schema-assembly.md) — Schema, root type, entrypoint kinds, reference, schema name, GraphQL Element
-- [Read model](.agents/docs/read-model.md) — Query type, field, query type registry, calculation, autogeneration
-- [Write model](.agents/docs/write-model.md) — Output type, mutation type, input, input data, mutation kind, related mutation, atomic mutation
-- [Filtering and ordering](.agents/docs/filtering-and-ordering.md) — Filter set, filter, order set, order
-- [Abstract types and pagination](.agents/docs/abstract-types-and-pagination.md) — Interface type, union type, Relay Node, connection, page info, offset pagination
-- [Execution and infrastructure](.agents/docs/execution-and-infrastructure.md) — Operation, root value, GQL info, query optimizer, data loader, directives, caching, complexity, subscriptions
-- [Hooks](.agents/docs/hooks.md) — Query type / mutation type / field / input / entrypoint permission checks, resolvers, visibility, errors as data
-- [Federation](.agents/docs/federation.md) — Federation schema, subgraph, entity kinds, reference resolver, compatibility harness
-- [Relationships](.agents/docs/relationships.md) — How the pieces fit together, plus an example dialogue
+- [Django foundation](.agents/domain/django-foundation.md) — Model, model instance, queryset, lookup, manager, primary key
+- [Schema assembly](.agents/domain/schema-assembly.md) — Schema, root type, entrypoint kinds, reference, schema name, GraphQL Element
+- [Read model](.agents/domain/read-model.md) — Query type, field, query type registry, calculation, autogeneration
+- [Write model](.agents/domain/write-model.md) — Output type, mutation type, input, input data, mutation kind, related mutation, atomic mutation
+- [Filtering and ordering](.agents/domain/filtering-and-ordering.md) — Filter set, filter, order set, order
+- [Abstract types and pagination](.agents/domain/abstract-types-and-pagination.md) — Interface type, union type, Relay Node, connection, page info, offset pagination
+- [Execution and infrastructure](.agents/domain/execution-and-infrastructure.md) — Operation, root value, GQL info, query optimizer, data loader, directives, caching, complexity, subscriptions
+- [Hooks](.agents/domain/hooks.md) — Query type / mutation type / field / input / entrypoint permission checks, resolvers, visibility, errors as data
+- [Federation](.agents/domain/federation.md) — Federation schema, subgraph, entity kinds, reference resolver, compatibility harness
+- [Relationships](.agents/domain/relationships.md) — How the pieces fit together, plus an example dialogue
 
 ## Adding new terms
 
