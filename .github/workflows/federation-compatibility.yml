@@ -58,7 +58,7 @@ jobs:
           poetry run python manage.py export
 
       - name: "Run Apollo subgraph compatibility harness"
-        uses: apollographql/federation-subgraph-compatibility@v2
+        uses: apollographql/federation-subgraph-compatibility@v3
         with:
           workingDirectory: tests/test_federation/compatibility
           compose: docker-compose.yaml
