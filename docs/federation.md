@@ -25,6 +25,9 @@ Compared with `create_schema`, `create_federation_schema` additionally:
 3. Injects `Query._service` which returns the subgraph SDL for the router.
 4. Injects `Query._entities` which fetches entities by their representations.
 
+To publish the subgraph SDL to a router or a schema registry, export it with
+`python manage.py print_schema`. See [Schema export](schema.md#schema-export) for details.
+
 ## Directives
 
 ### `LinkDirective`
