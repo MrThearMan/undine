@@ -540,3 +540,36 @@ It prints the schema to `STDOUT`, which can be redirected to a file like so:
 ```bash
 python manage.py print_schema > schema.graphql
 ```
+
+The command builds the schema before printing it, so it also exits with a non-zero status
+if the schema fails to build. That makes it useful as a standalone smoke test in CI.
+
+### Federated subgraphs
+
+For a schema built with `create_federation_schema`, `print_schema` prints
+the subgraph SDL as served by `Query._service`, which leaves out the
+federation machinery (`_Any`, `_Entity`, `_Service`, `_entities`, `_service`), leaves out the
+directive and scalar definitions that the `@link` directive provides, and uses `extend schema`
+instead of `schema`. See the [Federation](federation.md) section for more details.
+
+### Visibility
+
+Exported SDL is **not** affected by [visibility](visibility.md). `print_schema` always emits the
+full schema, even for elements that are hidden from every user. This matches the behavior of
+`_service { sdl }`, and it is what you want for an export: a schema registry needs a stable,
+request-independent view of the schema.
+
+### Checking for schema drift
+
+If you commit the exported SDL to your repository, the `--check` option verifies that the file
+still matches the current schema. It exits with a non-zero status if they differ.
+
+```bash
+python manage.py print_schema --check
+```
+
+The option takes an optional path, defaulting to `schema.graphql` in the current directory.
+
+```bash
+python manage.py print_schema --check path/to/schema.graphql
+```
