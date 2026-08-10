@@ -77,6 +77,11 @@ Recommendation: automatic, since there is no case where a federated subgraph wan
 schema published, and mention it in the release notes. Confirm the extension key is only set by
 `create_federation_schema` before relying on it as the discriminator.
 
+**Corrected during implementation.** Implemented as automatic detection. `FEDERATION_SDL_EXTENSIONS_KEY`
+is only ever written by `create_federation_schema` (`undine/federation/schema.py:100`) and only ever
+read by `_service_resolver`, so it is a safe discriminator. The lookup lives in a module-level
+`get_schema_sdl(schema)` in `undine/management/commands/print_schema.py`.
+
 ### 2. Consider a schema-check command
 
 Breaking-change detection itself belongs to the registry vendor, but the cheapest useful thing
@@ -90,6 +95,16 @@ A `--check`-style flag on `print_schema` that diffs against a committed `schema.
 non-zero on drift is also plausible — it catches "someone changed the schema and forgot to
 regenerate the file" without any vendor involvement. Treat as optional; the registry does the
 harder version of this job.
+
+**Corrected during implementation.** `manage.py check undine` does *not* cover this. It runs Django's
+system checks for the `undine` app label and never touches `undine_settings.SCHEMA`, so a schema that
+fails to build passes it. `print_schema` does build the schema, so it already fails non-zero on a
+broken schema — that is the documented smoke test, and no new command was added.
+
+The `--check` flag was added at the user's request, taking an optional path argument that defaults to
+`schema.graphql` relative to the current directory (`--check` alone, or `--check path/to/schema.graphql`).
+It compares stripped contents, so a trailing newline difference from shell redirection does not count
+as drift, and raises `CommandError` when the file is missing or stale.
 
 ### 3. Documentation — the main deliverable
 
@@ -109,6 +124,9 @@ covering:
 - Deprecation: `@deprecated` is standard GraphQL and already flows into the SDL, so usage-based
   removal workflows work through the registry with nothing extra from Undine. Confirm before
   claiming it.
+
+**Confirmed during implementation.** A `Field(deprecation_reason=...)` prints as
+`name: String! @deprecated(reason: "...")`, verified by experiment.
 
 ## Done when
 
