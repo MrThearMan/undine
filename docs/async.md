@@ -43,7 +43,7 @@ when an operation resolves using that resolver. Existing resolvers e.g. for
 `QueryTypes` and `MutationTypes` will automatically adapt to work in an async context
 based on the `ASYNC` setting.
 
-Another small detail that is worth noting when `ASYNC` is enabled is that `info.context.user`
+Another small detail that is worth noting when `ASYNC` is enabled is that request user
 is always fetched eagerly, even if it's not used in the operation. This allows using
 the request user in synchronous parts of the code without causing an
 error due to using the Django ORM directly in an async context.
