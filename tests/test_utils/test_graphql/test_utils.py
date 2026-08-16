@@ -37,6 +37,7 @@ from undine.exceptions import (
     GraphQLRequestNoOperationError,
     GraphQLRequestOperationNotFoundError,
 )
+from undine.typing import GQLContext
 from undine.utils.graphql.utils import (
     check_directives,
     get_arguments,
@@ -409,13 +410,13 @@ async def test_pre_evaluate_request_user() -> None:
     class MockUser:
         pass
 
-    class MockContext:
+    class MockRequest:
         async def auser(self) -> MockUser:
             return MockUser()
 
-    info = mock_gql_info(context=MockContext())
+    info = mock_gql_info(context=GQLContext(request=MockRequest()))  # type: ignore[arg-type]
     await pre_evaluate_request_user(info)
-    assert hasattr(info.context, "_cached_user")
+    assert hasattr(info.context.request, "_cached_user")
 
 
 def test_get_arguments() -> None:

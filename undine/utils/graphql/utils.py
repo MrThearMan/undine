@@ -285,7 +285,7 @@ async def pre_evaluate_request_user(info: GQLInfo) -> None:
     but the function itself is not async.
     """
     # '_current_user' would be set by 'django.contrib.auth.middleware.get_user' when calling 'request.user'
-    info.context._cached_user = await info.context.auser()  # type: ignore[attr-defined]  # noqa: SLF001
+    info.context.request._cached_user = await info.context.request.auser()  # type: ignore[attr-defined]  # noqa: SLF001
 
 
 @contextmanager

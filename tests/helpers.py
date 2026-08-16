@@ -44,7 +44,7 @@ from example_project.app.models import Comment, Project, Report, Task
 from undine.exceptions import UndineError
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
 from undine.settings import example_schema, undine_settings
-from undine.typing import GQLInfo
+from undine.typing import GQLContext, GQLInfo
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -242,7 +242,7 @@ def mock_gql_info(  # noqa: PLR0913
     root_value: Any | None = None,
     operation: OperationDefinitionNode | None = None,
     variable_values: dict[str, Any] | None = None,
-    context: Any | None = None,
+    context: GQLContext | None = None,
     is_awaitable: Callable[[Any], bool] | None = None,
     abort_signal: AbortSignal | None = None,
 ) -> GQLInfo:
@@ -273,7 +273,7 @@ def mock_gql_info(  # noqa: PLR0913
             else operation
         ),
         variable_values={} if variable_values is None else variable_values,
-        context=MockRequest() if context is None else context,
+        context=GQLContext(request=MockRequest()) if context is None else context,
         is_awaitable=(lambda _: False) if is_awaitable is None else is_awaitable,
         **({"abort_signal": abort_signal, "async_helpers": None} if version_info >= (3, 3, 0) else {}),
     )

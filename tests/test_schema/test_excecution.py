@@ -1757,7 +1757,7 @@ def test_get_execution_context__success(undine_settings) -> None:
     context = _get_executor(
         document=document,
         root_value=None,
-        context_value=MockRequest(method="POST"),
+        request=MockRequest(method="POST"),
         variable_values={},
         operation_name=None,
         middleware=None,
@@ -2212,7 +2212,7 @@ def test_get_execution_context__invalid_variable_values(undine_settings) -> None
         _get_executor(
             document=document,
             root_value=None,
-            context_value=MockRequest(method="POST"),
+            request=MockRequest(method="POST"),
             variable_values={"name": 123},  # Wrong type - should be String
             operation_name=None,
             middleware=None,

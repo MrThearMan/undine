@@ -61,6 +61,7 @@ from undine.hooks import (
 from undine.http.content_negotiation import media_type_match
 from undine.http.utils import get_graphql_event_stream_token
 from undine.settings import undine_settings
+from undine.typing import GQLContext
 from undine.utils.graphql.undine_extensions import get_undine_orderset
 from undine.utils.graphql.utils import (
     get_error_execution_result,
@@ -203,10 +204,10 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         return context.result  # type: ignore[return-value]
 
     try:
-        exec_context = _get_executor(
+        executor = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
-            context_value=context.request,
+            request=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
@@ -215,9 +216,9 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(error)
         return context.result
 
-    result = _execute(exec_context)
+    result = _execute(executor)
 
-    if exec_context.is_awaitable(result):
+    if executor.is_awaitable(result):
         cancel_awaitable(result)  # type: ignore[arg-type]
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
@@ -340,10 +341,10 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
         return context.result  # type: ignore[return-value]
 
     try:
-        exec_context = _get_executor(
+        executor = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
-            context_value=context.request,
+            request=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
@@ -352,13 +353,13 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
         context.result = get_error_execution_result(error)
         return context.result
 
-    result = _execute(exec_context)
+    result = _execute(executor)
 
     if result is None:  # pragma: no cover
         context.result = get_error_execution_result(GraphQLNoExecutionResultError())
         return context.result
 
-    if exec_context.is_awaitable(result):
+    if executor.is_awaitable(result):
         result = await result  # type: ignore[misc]
 
     if version_info >= (3, 3, 0) and not _is_incremental_request(context.request):  # pragma: no cover
@@ -450,7 +451,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
         exec_context = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
-            context_value=context.request,
+            request=context.request,
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
@@ -508,18 +509,18 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
                     yield context.result
                     continue
 
-                exec_context = _get_executor(
+                executor = _get_executor(
                     document=context.document,  # type: ignore[arg-type]
                     root_value=payload,
-                    context_value=context.request,
+                    request=context.request,
                     variable_values=context.variables,
                     operation_name=context.operation_name,
                     middleware=_get_middleware_manager(context.lifecycle_hooks),
                 )
                 # Result cannot be incremental for a subscription
-                result: AwaitableOrValue[ExecutionResult] = _execute(exec_context)
+                result: AwaitableOrValue[ExecutionResult] = _execute(executor)
 
-                context.result = await result if exec_context.is_awaitable(result) else result  # type: ignore[misc]
+                context.result = await result if executor.is_awaitable(result) else result  # type: ignore[misc]
                 yield context.result  # type: ignore[misc]
 
 
@@ -636,7 +637,7 @@ def _get_executor(
     *,
     document: DocumentNode,
     root_value: Any,
-    context_value: Any,
+    request: DjangoRequestProtocol,
     variable_values: dict[str, Any],
     operation_name: str | None,
     middleware: MiddlewareManager | None,
@@ -645,7 +646,7 @@ def _get_executor(
         schema=undine_settings.SCHEMA,
         document=document,
         root_value=root_value,
-        context_value=context_value,
+        context_value=GQLContext(request=request),
         raw_variable_values=variable_values,
         operation_name=operation_name,
         middleware=middleware,
@@ -695,81 +696,81 @@ def _validate(
     return errors
 
 
-def _execute(context: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
+def _execute(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     if version_info < (3, 3, 0):
-        return _execute_old(context)
-    return _execute_new(context)
+        return _execute_old(executor)
+    return _execute_new(executor)
 
 
-def _execute_old(context: UndineExecutor) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
+def _execute_old(executor: UndineExecutor) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
     """Execution for graphql-core < 3.3.0."""
     try:
-        data_or_awaitable = context.execute_operation(context.operation, context.root_value)
+        data_or_awaitable = executor.execute_operation(executor.operation, executor.root_value)
 
     except GraphQLError as error:
-        context.errors.append(error)
-        return get_error_execution_result(context.errors)
+        executor.errors.append(error)
+        return get_error_execution_result(executor.errors)
 
     except GraphQLErrorGroup as error:
-        context.errors.extend(error.flatten())
-        return get_error_execution_result(context.errors)
+        executor.errors.extend(error.flatten())
+        return get_error_execution_result(executor.errors)
 
-    if context.is_awaitable(data_or_awaitable):
+    if executor.is_awaitable(data_or_awaitable):
 
         async def await_result() -> ExecutionResult:
             try:
                 data = await data_or_awaitable  # type: ignore[misc]
 
             except GraphQLError as err:
-                context.errors.append(err)
-                return get_error_execution_result(context.errors)
+                executor.errors.append(err)
+                return get_error_execution_result(executor.errors)
 
             except GraphQLErrorGroup as err:
-                context.errors.extend(err.flatten())
-                return get_error_execution_result(context.errors)
+                executor.errors.extend(err.flatten())
+                return get_error_execution_result(executor.errors)
 
             else:
-                graphql_errors_hook(context.errors)
-                return ExecutionResult(data=data, errors=context.errors or None)
+                graphql_errors_hook(executor.errors)
+                return ExecutionResult(data=data, errors=executor.errors or None)
 
         return await_result()
 
-    graphql_errors_hook(context.errors)
-    return ExecutionResult(data=data_or_awaitable, errors=context.errors or None)  # type: ignore[arg-type]
+    graphql_errors_hook(executor.errors)
+    return ExecutionResult(data=data_or_awaitable, errors=executor.errors or None)  # type: ignore[arg-type]
 
 
-def _execute_new(context: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
+def _execute_new(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
     """Execution for graphql-core >= 3.3.0."""
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
 
     try:
-        data = context.execute_operation()  # type: ignore[call-arg]
+        data = executor.execute_operation()  # type: ignore[call-arg]
 
     except GraphQLError as error:
-        context.errors = context.errors or []
-        context.errors.append(error)
-        return get_error_execution_result(context.errors)
+        executor.errors = executor.errors or []
+        executor.errors.append(error)
+        return get_error_execution_result(executor.errors)
 
     except GraphQLErrorGroup as err:
-        context.errors = context.errors or []
-        context.errors.extend(err.flatten())
-        return get_error_execution_result(context.errors)
+        executor.errors = executor.errors or []
+        executor.errors.extend(err.flatten())
+        return get_error_execution_result(executor.errors)
 
-    if context.is_awaitable(data):
+    if executor.is_awaitable(data):
 
         async def await_result() -> GraphQLResult:
             try:
                 awaited_data = await data  # type: ignore[misc]
 
             except GraphQLError as error:
-                context.errors = context.errors or []
-                context.errors.append(error)
-                return get_error_execution_result(context.errors)
+                executor.errors = executor.errors or []
+                executor.errors.append(error)
+                return get_error_execution_result(executor.errors)
 
             except GraphQLErrorGroup as err:
-                context.errors = context.errors or []
-                context.errors.extend(err.flatten())
-                return get_error_execution_result(context.errors)
+                executor.errors = executor.errors or []
+                executor.errors.extend(err.flatten())
+                return get_error_execution_result(executor.errors)
 
             if isinstance(awaited_data, ExecutionResult) and awaited_data.errors is not None:
                 graphql_errors_hook(awaited_data.errors)

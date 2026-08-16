@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import enum
 import operator as op
 import types
@@ -880,6 +881,30 @@ AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 # GraphQL specific
 
 
+@dataclasses.dataclass(slots=True, kw_only=True)
+class UndineInternalContext:
+    """Undine internal implementation context."""
+
+
+@dataclasses.dataclass(kw_only=True, eq=False)
+class GQLContext(Generic[TUser]):
+    """GraphQL execution context."""
+
+    request: DjangoRequestProtocol[TUser]
+    """Django request that initiated the GraphQL execution."""
+
+    undine_internal: UndineInternalContext = dataclasses.field(default_factory=UndineInternalContext)
+    """Undine internal implementation context. Users should not modify this."""
+
+    extensions: dict[str, Any] = dataclasses.field(default_factory=dict)
+    """Extension place for the user. Lasts for the lifetime of the graphql operation."""
+
+    @property
+    def user(self) -> TUser | AnonymousUser:
+        """The user associated with the request."""
+        return self.request.user
+
+
 class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     """GraphQL execution information given to a GraphQL field resolver."""
 
@@ -919,7 +944,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     variable_values: VariableValues
     """The variables passed to the GraphQL operation."""
 
-    context: DjangoRequestProtocol[TUser]
+    context: GQLContext[TUser]
     """The context passed to the GraphQL operation. This is always the Django request object."""
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
