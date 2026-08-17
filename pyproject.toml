@@ -60,29 +60,29 @@ serviceWorkerUrls = "docs.plugins.generate_urls:GenerateServiceWorkerUrlsPlugin"
 metaDescriptions = "docs.plugins.meta_description:MetaDescriptionPlugin"
 
 [tool.poetry.dependencies]
-django = ">=5.2.14"
+django = ">=5.2.17"
 graphql-core = ">=3.2.11"
 django-settings-holder = ">=0.3.0"
-sqlparse = ">=0.5.3"
+sqlparse = ">=0.6.0"
 pillow = { version = ">=12.3.0", optional = true }
-django-debug-toolbar = { version = ">=5.2.0", optional = true }
+django-debug-toolbar = { version = ">=7.1.0", optional = true }
 channels = { version = ">=4.2.2", optional = true }
 protobuf = { version = ">=7.35.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.1.1"
-pytest-django = "4.12.0"
+pytest-django = "4.14.0"
 pytest-asyncio = "1.4.0"
 pytest-mypy-plugins = "4.0.3"
-coverage = "7.15.2"
-hypothesis = "6.164.0"
+coverage = "7.15.4"
+hypothesis = "6.165.7"
 freezegun = "1.5.5"
 factory-boy = "3.3.3"
-nox = "2026.7.11"
+nox = "2026.8.10"
 urllib3 = "2.7.0"
 django-modeltranslation = "0.20.3"
 psycopg = { version = "3.3.4", extras = ["binary", "pool"] }
-granian = { version = "2.7.9", extras = ["pname", "uvloop", "reload"] }
+granian = { version = "2.8.1", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
@@ -92,7 +92,7 @@ mkdocs-mermaid2-plugin = "1.2.3"
 beautifulsoup4 = "4.15.0"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.6.1"
+pre-commit = "4.6.2"
 py-spy = "0.4.2"
 httpx = "0.28.1"
 mypy = "2.3.0"
