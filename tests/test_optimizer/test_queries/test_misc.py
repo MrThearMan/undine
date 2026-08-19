@@ -73,7 +73,6 @@ def test_optimizer__optimize_sync__with_limit(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_optimizer__optimize_async__with_kwargs(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -99,7 +98,6 @@ async def test_optimizer__optimize_async__with_kwargs(graphql_async, undine_sett
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_optimizer__optimize_async__with_limit(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"

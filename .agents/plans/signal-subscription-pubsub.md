@@ -38,14 +38,18 @@ so the getter can block indefinitely.
 ```python
 import asyncio, threading, time
 
+
 async def main():
     q: asyncio.Queue = asyncio.Queue()
+
     def fire_from_other_thread():
         time.sleep(0.2)
         q.put_nowait(time.monotonic())
+
     threading.Thread(target=fire_from_other_thread, daemon=True).start()
     sent = await q.get()
     print(f"latency: {(time.monotonic() - sent) * 1000:.1f} ms")
+
 
 asyncio.run(main())
 ```

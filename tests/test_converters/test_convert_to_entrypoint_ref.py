@@ -161,4 +161,3 @@ def test_convert_to_entrypoint_ref__graphql_type_without_resolver_raises() -> No
 
         class Query(RootType):
             example = Entrypoint(GraphQLNonNull(GraphQLString))
-

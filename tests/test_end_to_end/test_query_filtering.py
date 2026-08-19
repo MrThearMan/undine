@@ -69,7 +69,6 @@ def test_end_to_end__filtering(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_end_to_end__filtering__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -851,7 +850,6 @@ def test_end_to_end__filtering__custom_resolver(graphql, undine_settings) -> Non
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_end_to_end__filtering__custom_resolver__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"

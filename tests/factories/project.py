@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from factory import SubFactory
 
 from example_project.app.models import Project

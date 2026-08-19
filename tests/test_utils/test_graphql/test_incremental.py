@@ -26,7 +26,6 @@ if version_info >= (3, 3, 0):
 
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),
     pytest.mark.skipif(version_info < (3, 3, 0), reason="requires graphql-core>=3.3.0"),
 ]

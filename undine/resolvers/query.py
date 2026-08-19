@@ -13,7 +13,6 @@ from django.db.models.manager import BaseManager
 from graphql import GraphQLID, GraphQLObjectType
 
 from undine import QueryType
-from undine.dataclasses import OptimizationWithPagination, QuerySetMapWithPagination
 from undine.exceptions import (
     GraphQLFieldNotNullableError,
     GraphQLModelNotFoundError,
@@ -27,12 +26,13 @@ from undine.exceptions import (
 )
 from undine.optimizer.optimizer import optimize_async, optimize_sync
 from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack_async, evaluate_with_prefetch_hack_sync
-from undine.relay import Node, from_global_id, offset_to_cursor, to_global_id
+from undine.relay import Node, from_global_id, to_global_id
 from undine.settings import undine_settings
 from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
 from undine.utils.graphql.undine_extensions import get_undine_query_type
 from undine.utils.graphql.utils import (
     get_arguments,
+    get_field_path_identifier,
     get_queried_field_name,
     get_underlying_type,
     pre_evaluate_request_user,
@@ -50,8 +50,7 @@ if TYPE_CHECKING:
     from undine import Entrypoint, Field, InterfaceType, UnionType
     from undine.dataclasses import FilterResults, OrderResults
     from undine.optimizer.optimizer import QueryOptimizer
-    from undine.pagination import PaginationHandler
-    from undine.relay import Connection
+    from undine.relay import Connection, CursorPaginationHandler
     from undine.typing import GQLInfo, QuerySetMap
 
 __all__ = [
@@ -713,43 +712,41 @@ class ConnectionResolver(Generic[TModel]):
         return self.run_sync(root, info)
 
     def run_sync(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
-        results = self.run_optimizer(info)
-        instances = evaluate_with_prefetch_hack_sync(results.queryset)
+        queryset = self.run_optimizer(info)
+        instances = evaluate_with_prefetch_hack_sync(queryset)
         self.check_permissions(root, info, instances)
-        return self.to_connection(instances, pagination=results.pagination)
+
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
+        return self.to_connection(instances, pagination=pagination)
 
     async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
         # Fetch user eagerly so that its available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
-        results = await self.run_optimizer_async(info)
-        instances = await evaluate_with_prefetch_hack_async(results.queryset)
+        queryset = await self.run_optimizer_async(info)
+        instances = await evaluate_with_prefetch_hack_async(queryset)
         await self.check_permissions_async(root, info, instances)
-        return self.to_connection(instances, pagination=results.pagination)
+
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
+        return self.to_connection(instances, pagination=pagination)
 
     def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
         return self.query_type.__get_queryset__(info)
 
-    def run_optimizer(self, info: GQLInfo) -> OptimizationWithPagination[TModel]:
+    def run_optimizer(self, info: GQLInfo) -> QuerySet[TModel]:
         queryset = self.get_queryset(info)
         optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
         optimizations = optimizer.compile()
-        optimized_queryset = optimizations.apply(queryset, info)
-        return OptimizationWithPagination(
-            queryset=optimized_queryset,
-            pagination=optimizations.pagination,  # type: ignore[arg-type]
-        )
+        return optimizations.apply(queryset, info)
 
-    async def run_optimizer_async(self, info: GQLInfo) -> OptimizationWithPagination[TModel]:
+    async def run_optimizer_async(self, info: GQLInfo) -> QuerySet[TModel]:
         queryset = self.get_queryset(info)
         optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
         optimizations = optimizer.compile()
         # Applying may call 'queryset.count()'.
-        optimized_queryset = await sync_to_async(optimizations.apply)(queryset, info)
-        return OptimizationWithPagination(
-            queryset=optimized_queryset,
-            pagination=optimizations.pagination,  # type: ignore[arg-type]
-        )
+        return await sync_to_async(optimizations.apply)(queryset, info)
 
     def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
         for instance in instances:
@@ -772,26 +769,17 @@ class ConnectionResolver(Generic[TModel]):
             else:
                 self.query_type.__permissions__(instance, info)
 
-    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
-        typename = self.query_type.__schema_name__
+    def to_connection(self, instances: list[TModel], pagination: CursorPaginationHandler) -> ConnectionDict[TModel]:
+        page = pagination.get_page(instances)
         edges = [
-            NodeDict(
-                cursor=offset_to_cursor(typename, pagination.start + index),
-                node=instance,
-            )
-            for index, instance in enumerate(instances)
+            NodeDict(cursor=cursor, node=instance)
+            for cursor, instance in zip(page.cursors, page.instances, strict=True)
         ]
         return ConnectionDict(
-            totalCount=pagination.total_count or 0,
+            totalCount=page.total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=(
-                    False
-                    if pagination.stop is None
-                    else True
-                    if pagination.total_count is None
-                    else pagination.stop < pagination.total_count
-                ),
-                hasPreviousPage=pagination.start > 0,
+                hasNextPage=page.has_next_page,
+                hasPreviousPage=page.has_previous_page,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
             ),
@@ -819,13 +807,19 @@ class NestedConnectionResolver(Generic[TModel]):
         field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         self.check_permissions(root, info, instances)
-        return self.to_connection(instances)
+
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
+        return self.to_connection(instances, pagination)
 
     async def run_async(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
         field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         await self.check_permissions_async(root, info, instances)
-        return self.to_connection(instances)
+
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
+        return self.to_connection(instances, pagination)
 
     def get_instances(self, root: Model, field_name: str) -> list[TModel]:
         instances: list[TModel] = getattr(root, field_name)
@@ -854,35 +848,17 @@ class NestedConnectionResolver(Generic[TModel]):
             else:
                 self.query_type.__permissions__(instance, info)
 
-    def get_pagination_params(self, instances: list[TModel]) -> tuple[int, int | None, int | None]:
-        total_count: int | None = None
-        start: int = 0
-        stop: int | None = None
-
-        # Not optimal, as we don't know the actual pagination params if there are no results.
-        if instances:
-            total_count = getattr(instances[0], undine_settings.PAGINATION_TOTAL_COUNT_KEY, None)
-            start = getattr(instances[0], undine_settings.PAGINATION_START_INDEX_KEY, 0)
-            stop = getattr(instances[0], undine_settings.PAGINATION_STOP_INDEX_KEY, None)
-
-        return start, stop, total_count
-
-    def to_connection(self, instances: list[TModel]) -> ConnectionDict[TModel]:
-        start, stop, total_count = self.get_pagination_params(instances)
-
-        typename = self.query_type.__schema_name__
+    def to_connection(self, instances: list[TModel], pagination: CursorPaginationHandler) -> ConnectionDict[TModel]:
+        page = pagination.get_prefetch_page(instances)
         edges = [
-            NodeDict(
-                cursor=offset_to_cursor(typename, start + index),
-                node=instance,
-            )
-            for index, instance in enumerate(instances)
+            NodeDict(cursor=cursor, node=instance)
+            for cursor, instance in zip(page.cursors, page.instances, strict=True)
         ]
         return ConnectionDict(
-            totalCount=total_count or 0,
+            totalCount=page.total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=(False if stop is None else True if total_count is None else stop < total_count),
-                hasPreviousPage=start > 0,
+                hasNextPage=page.has_next_page,
+                hasPreviousPage=page.has_previous_page,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
             ),
@@ -894,26 +870,26 @@ class NestedConnectionResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class UnionTypeResolver(Generic[TModel]):
+class UnionTypeResolver:
     """Top-level resolver for fetching a set of model objects from a `UnionType`."""
 
     union_type: type[UnionType]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[Model]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[Model]:
         queryset_map = self.optimize(info, **kwargs)
         return self.fetch_instances(root, info, queryset_map)
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[Model]:
         queryset_map = self.optimize(info, **kwargs)
         return await self.fetch_instances_async(root, info, queryset_map)
 
-    def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
+    def fetch_instances(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[Model]:
         """
         Fetch all instances from the querysets.
 
@@ -946,7 +922,7 @@ class UnionTypeResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = index
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -964,7 +940,7 @@ class UnionTypeResolver(Generic[TModel]):
 
         return [instance for _, instance in sorted(all_instances.items())]
 
-    async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[TModel]:
+    async def fetch_instances_async(self, root: Any, info: GQLInfo, queryset_map: QuerySetMap) -> list[Model]:
         arg_values = get_arguments(info)
 
         union_qs = create_union_queryset(queryset_map.values())
@@ -992,7 +968,7 @@ class UnionTypeResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = next(counter)
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1120,7 +1096,7 @@ class UnionTypeResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class UnionTypeConnectionResolver(Generic[TModel]):
+class UnionTypeConnectionResolver:
     """Resolves a connection of union type items."""
 
     connection: Connection
@@ -1130,37 +1106,46 @@ class UnionTypeConnectionResolver(Generic[TModel]):
     def union_type(self) -> type[UnionType]:
         return self.connection.union_type  # type: ignore[return-value]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[Model]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        result = self.optimize(info, **kwargs)
-        if not result.queryset_map:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
+        queryset_map = self.optimize(info, **kwargs)
+        if not queryset_map:
             return self.empty_connection()
 
-        all_instances = self.fetch_instances(root, info, result)
-        return self.to_connection(all_instances, pagination=result.pagination)
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        result = self.optimize(info, **kwargs)
-        if not result.queryset_map:
+        all_instances = self.fetch_instances(root, info, queryset_map, pagination)
+        return self.to_connection(all_instances, pagination=pagination)
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
+        queryset_map = self.optimize(info, **kwargs)
+        if not queryset_map:
             return self.empty_connection()
 
-        all_instances = await self.fetch_instances_async(root, info, result)
-        return self.to_connection(all_instances, pagination=result.pagination)
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
 
-    def fetch_instances(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        all_instances = await self.fetch_instances_async(root, info, queryset_map, pagination)
+        return self.to_connection(all_instances, pagination=pagination)
+
+    def fetch_instances(
+        self,
+        root: Any,
+        info: GQLInfo,
+        queryset_map: QuerySetMap,
+        pagination: CursorPaginationHandler,
+    ) -> list[Model]:
         """
         Fetch paginated instances from the querysets.
 
         Use a union query to filter, order, and paginate the results together before fetching them.
         Then fetch the instances per-model and sort them in the same order as in the union query.
         """
-        queryset_map = result.queryset_map
-        pagination = result.pagination
-
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
@@ -1186,7 +1171,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = index
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1204,11 +1189,14 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
         return [instance for _, instance in sorted(all_instances.items())]
 
-    async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+    async def fetch_instances_async(
+        self,
+        root: Any,
+        info: GQLInfo,
+        queryset_map: QuerySetMap,
+        pagination: CursorPaginationHandler,
+    ) -> list[Model]:
         """Async version of `fetch_instances`."""
-        queryset_map = result.queryset_map
-        pagination = result.pagination
-
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")
 
@@ -1236,7 +1224,7 @@ class UnionTypeConnectionResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = next(counter)
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1329,9 +1317,8 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
         return order_results
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination[TModel]:
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
         queryset_map: QuerySetMap = {}
-        pagination: PaginationHandler | None = None
 
         for model, query_type in self.union_type.__query_types_by_model__.items():
             optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=model, info=info)
@@ -1354,42 +1341,32 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
             optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
 
-            # Save pagination (should be the same for all query types)
-            pagination = optimizations.pagination
+            # Pagination is applied to the whole queryset, not to each query type.
             optimizations.pagination = None
 
             queryset = query_type.__get_queryset__(info)
             queryset_map[query_type] = optimizations.apply(queryset, info)
 
-        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)  # type: ignore[arg-type]
+        return queryset_map
 
-    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
-        typename = self.union_type.__schema_name__
+    def to_connection(self, instances: list[Model], pagination: CursorPaginationHandler) -> ConnectionDict[Model]:
+        page = pagination.get_page(instances)
         edges = [
-            NodeDict(
-                cursor=offset_to_cursor(typename, pagination.start + index),
-                node=instance,
-            )
-            for index, instance in enumerate(instances)
+            NodeDict(cursor=cursor, node=instance)
+            for cursor, instance in zip(page.cursors, page.instances, strict=True)
         ]
         return ConnectionDict(
-            totalCount=pagination.total_count or 0,
+            totalCount=page.total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=(
-                    False
-                    if pagination.stop is None
-                    else True
-                    if pagination.total_count is None
-                    else pagination.stop < pagination.total_count
-                ),
-                hasPreviousPage=pagination.start > 0,
+                hasNextPage=page.has_next_page,
+                hasPreviousPage=page.has_previous_page,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
             ),
             edges=edges,
         )
 
-    def empty_connection(self) -> ConnectionDict[TModel]:
+    def empty_connection(self) -> ConnectionDict[Model]:
         page_info = PageInfoDict(hasNextPage=False, hasPreviousPage=False, startCursor=None, endCursor=None)
         return ConnectionDict(totalCount=0, pageInfo=page_info, edges=[])
 
@@ -1402,26 +1379,26 @@ class UnionTypeConnectionResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class InterfaceTypeResolver(Generic[TModel]):
+class InterfaceTypeResolver:
     """Resolves an interface type to all of its implementations."""
 
     interface: type[InterfaceType]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[Model]]:
         if undine_settings.ASYNC:
             return self.run_sync_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[Model]:
         queryset_map = self.optimize(info, **kwargs)
         return self.fetch_instances(info, root, queryset_map)
 
-    async def run_sync_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    async def run_sync_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[Model]:
         queryset_map = self.optimize(info, **kwargs)
         return await self.fetch_instances_async(info, root, queryset_map)
 
-    def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
+    def fetch_instances(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[Model]:
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
@@ -1449,7 +1426,7 @@ class InterfaceTypeResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = index
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1467,7 +1444,7 @@ class InterfaceTypeResolver(Generic[TModel]):
 
         return [instance for _, instance in sorted(all_instances.items())]
 
-    async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[TModel]:
+    async def fetch_instances_async(self, info: GQLInfo, root: Any, queryset_map: QuerySetMap) -> list[Model]:
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
@@ -1496,7 +1473,7 @@ class InterfaceTypeResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = next(counter)
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1625,7 +1602,7 @@ class InterfaceTypeResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class InterfaceTypeConnectionResolver(Generic[TModel]):
+class InterfaceTypeConnectionResolver:
     """Resolves a connection of interface type items."""
 
     connection: Connection
@@ -1635,37 +1612,46 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
     def interface_type(self) -> type[InterfaceType]:
         return self.connection.interface_type  # type: ignore[return-value]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[Model]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        result = self.optimize(info, **kwargs)
-        if not result.queryset_map:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
+        queryset_map = self.optimize(info, **kwargs)
+        if not queryset_map:
             return self.empty_connection()
 
-        all_instances = self.fetch_instances(root, info, result)
-        return self.to_connection(all_instances, pagination=result.pagination)
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
-        result = self.optimize(info, **kwargs)
-        if not result.queryset_map:
+        all_instances = self.fetch_instances(root, info, queryset_map, pagination)
+        return self.to_connection(all_instances, pagination=pagination)
+
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
+        queryset_map = self.optimize(info, **kwargs)
+        if not queryset_map:
             return self.empty_connection()
 
-        all_instances = await self.fetch_instances_async(root, info, result)
-        return self.to_connection(all_instances, pagination=result.pagination)
+        key = get_field_path_identifier(info.path)
+        pagination = info.context.undine_internal.connection_handler_storage[key]
 
-    def fetch_instances(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+        all_instances = await self.fetch_instances_async(root, info, queryset_map, pagination)
+        return self.to_connection(all_instances, pagination=pagination)
+
+    def fetch_instances(
+        self,
+        root: Any,
+        info: GQLInfo,
+        queryset_map: QuerySetMap,
+        pagination: CursorPaginationHandler,
+    ) -> list[Model]:
         """
         Fetch paginated instances from the querysets.
 
         Use a union query to filter, order, and paginate the results together before fetching them.
         Then fetch the instances per-model and sort them in the same order as in the union query.
         """
-        queryset_map = result.queryset_map
-        pagination = result.pagination
-
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")  # Default ordering
 
@@ -1691,7 +1677,7 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = index
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1709,11 +1695,14 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
 
         return [instance for _, instance in sorted(all_instances.items())]
 
-    async def fetch_instances_async(self, root: Any, info: GQLInfo, result: QuerySetMapWithPagination) -> list[TModel]:
+    async def fetch_instances_async(
+        self,
+        root: Any,
+        info: GQLInfo,
+        queryset_map: QuerySetMap,
+        pagination: CursorPaginationHandler,
+    ) -> list[Model]:
         """Async version of `fetch_instances`."""
-        queryset_map = result.queryset_map
-        pagination = result.pagination
-
         union_qs = create_union_queryset(queryset_map.values())
         union_qs = union_qs.order_by("pk")
 
@@ -1741,7 +1730,7 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
             pk = self.coalesce_pk(item["pk"])
             pks_by_typename[item["__typename"]][pk] = next(counter)
 
-        all_instances: dict[int, TModel] = {}
+        all_instances: dict[int, Model] = {}
         query_type_by_name = {query_type.__schema_name__: query_type for query_type in queryset_map}
 
         # Fetch all instances for each model, if some primary keys for it were returned in the union queryset.
@@ -1834,9 +1823,8 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
 
         return order_results
 
-    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMapWithPagination:
+    def optimize(self, info: GQLInfo, **kwargs: Any) -> QuerySetMap:
         queryset_map: QuerySetMap = {}
-        pagination: PaginationHandler | None = None
 
         for query_type in self.interface_type.__concrete_implementations__():
             model = query_type.__model__
@@ -1860,42 +1848,32 @@ class InterfaceTypeConnectionResolver(Generic[TModel]):
 
             optimizations.annotations["__typename"] = Value(query_type.__schema_name__)
 
-            # Save pagination (should be the same for all query types)
-            pagination = optimizations.pagination
+            # Pagination is applied to the whole queryset, not to each query type.
             optimizations.pagination = None
 
             queryset = query_type.__get_queryset__(info)
             queryset_map[query_type] = optimizations.apply(queryset, info)
 
-        return QuerySetMapWithPagination(queryset_map=queryset_map, pagination=pagination)  # type: ignore[arg-type]
+        return queryset_map
 
-    def to_connection(self, instances: list[TModel], pagination: PaginationHandler) -> ConnectionDict[TModel]:
-        typename = self.interface_type.__schema_name__
+    def to_connection(self, instances: list[Model], pagination: CursorPaginationHandler) -> ConnectionDict[Model]:
+        page = pagination.get_page(instances)
         edges = [
-            NodeDict(
-                cursor=offset_to_cursor(typename, pagination.start + index),
-                node=instance,
-            )
-            for index, instance in enumerate(instances)
+            NodeDict(cursor=cursor, node=instance)
+            for cursor, instance in zip(page.cursors, page.instances, strict=True)
         ]
         return ConnectionDict(
-            totalCount=pagination.total_count or 0,
+            totalCount=page.total_count,
             pageInfo=PageInfoDict(
-                hasNextPage=(
-                    False
-                    if pagination.stop is None
-                    else True
-                    if pagination.total_count is None
-                    else pagination.stop < pagination.total_count
-                ),
-                hasPreviousPage=pagination.start > 0,
+                hasNextPage=page.has_next_page,
+                hasPreviousPage=page.has_previous_page,
                 startCursor=None if not edges else edges[0]["cursor"],
                 endCursor=None if not edges else edges[-1]["cursor"],
             ),
             edges=edges,
         )
 
-    def empty_connection(self) -> ConnectionDict[TModel]:
+    def empty_connection(self) -> ConnectionDict[Model]:
         page_info = PageInfoDict(hasNextPage=False, hasPreviousPage=False, startCursor=None, endCursor=None)
         return ConnectionDict(totalCount=0, pageInfo=page_info, edges=[])
 

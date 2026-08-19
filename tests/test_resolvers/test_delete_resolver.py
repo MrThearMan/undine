@@ -124,7 +124,6 @@ def test_delete_resolver__mutation_hooks(undine_settings) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_delete_resolver__async(undine_settings) -> None:
     undine_settings.ASYNC = True
 
@@ -148,7 +147,6 @@ async def test_delete_resolver__async(undine_settings) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_delete_resolver__async__lookup_field_not_found(undine_settings) -> None:
     undine_settings.ASYNC = True
 

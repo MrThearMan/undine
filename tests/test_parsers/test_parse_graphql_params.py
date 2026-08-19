@@ -68,7 +68,6 @@ def test_parse_graphql_params() -> None:
     assert params.extensions == {}
 
 
-@pytest.mark.asyncio
 async def test_parse_graphql_params__async() -> None:
     request = MockRequest(
         method="POST",
@@ -400,7 +399,6 @@ def test_parse_graphql_params__persisted_documents__only__query_ignored__no_docu
         GraphQLRequestParamsParser.run(request)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_parse_graphql_params__persisted_document__async() -> None:
     await sync_to_async(PersistedDocumentFactory.create)(document_id="1", document="query MyQuery { hello }")
@@ -553,7 +551,6 @@ def test_parse_graphql_params__unsupported_application_content_type() -> None:
         GraphQLRequestParamsParser.run(request)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.usefixtures(_no_persisted_documents.__name__)
 async def test_parse_graphql_params__async__no_query__persisted_docs_not_installed() -> None:
@@ -567,7 +564,6 @@ async def test_parse_graphql_params__async__no_query__persisted_docs_not_install
         await GraphQLRequestParamsParser.run_async(request)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.usefixtures(_no_persisted_documents.__name__)
 async def test_parse_graphql_params__async__persisted_docs_only__not_installed(undine_settings) -> None:
@@ -583,7 +579,6 @@ async def test_parse_graphql_params__async__persisted_docs_only__not_installed(u
         await GraphQLRequestParamsParser.run_async(request)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_parse_graphql_params__async__persisted_documents_only__no_document_id(undine_settings) -> None:
     undine_settings.PERSISTED_DOCUMENTS_ONLY = True
@@ -600,7 +595,6 @@ async def test_parse_graphql_params__async__persisted_documents_only__no_documen
         await GraphQLRequestParamsParser.run_async(request)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_parse_graphql_params__async__persisted_document__not_found() -> None:
     request = MockRequest(

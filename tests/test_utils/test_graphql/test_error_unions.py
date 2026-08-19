@@ -132,7 +132,6 @@ def test_error_union_resolver_wrapper__unknown_error_reraises() -> None:
         wrapped(None, mock_gql_info())
 
 
-@pytest.mark.asyncio
 async def test_error_union_resolver_wrapper__async_success() -> None:
     async def async_resolver(root: Any, info: Any, **kwargs: Any) -> str:  # noqa: RUF029
         return "async_result"
@@ -143,7 +142,6 @@ async def test_error_union_resolver_wrapper__async_success() -> None:
     assert result["value"] == "async_result"
 
 
-@pytest.mark.asyncio
 async def test_error_union_resolver_wrapper__async_known_error() -> None:
     async def async_resolver(root: Any, info: Any, **kwargs: Any) -> str:  # noqa: RUF029
         msg = "async error"
@@ -156,7 +154,6 @@ async def test_error_union_resolver_wrapper__async_known_error() -> None:
     assert result["message"] == "async error"
 
 
-@pytest.mark.asyncio
 async def test_error_union_resolver_wrapper__async_unknown_error_reraises() -> None:
     async def async_resolver(root: Any, info: Any, **kwargs: Any) -> str:  # noqa: RUF029
         msg = "async unexpected"

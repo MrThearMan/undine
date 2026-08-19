@@ -692,6 +692,16 @@ The key to which a nested pagination indexes are annotated to.
 
 ///
 
+/// details | `PAGINATION_ORDERING_KEY`
+    attrs: {id: pagination_ordering_key}
+
+Type: `str` | Default: `"_undine_pagination_ordering"`
+
+The key prefix to which cursor pagination annotates the ordering values that are not plain columns,
+so that they are available for building cursors.
+
+///
+
 /// details | `PAGINATION_PAGE_SIZE`
     attrs: {id: pagination_page_size}
 

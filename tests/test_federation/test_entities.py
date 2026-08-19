@@ -428,7 +428,6 @@ def test_entities__custom_resolve_reference_takes_precedence(graphql, undine_set
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__custom_resolve_reference_takes_precedence__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -761,7 +760,6 @@ def test_entities__field_permissions_allows_returns_value(graphql, undine_settin
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_permissions_dispatch(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -798,7 +796,6 @@ async def test_entities__async_permissions_dispatch(graphql_async, undine_settin
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_field_permissions_dispatch(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -836,7 +833,6 @@ async def test_entities__async_field_permissions_dispatch(graphql_async, undine_
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_custom_resolve_reference(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -966,7 +962,6 @@ def test_entities__repeated_key_directives_produce_one_union_member() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_missing_typename_yields_null_slot(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -994,7 +989,6 @@ async def test_entities__async_missing_typename_yields_null_slot(graphql_async, 
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_resolve_reference_returning_none_yields_null(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1026,7 +1020,6 @@ async def test_entities__async_resolve_reference_returning_none_yields_null(grap
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_exception_in_permissions_becomes_graphql_error(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1065,7 +1058,6 @@ async def test_entities__async_exception_in_permissions_becomes_graphql_error(gr
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_uses_sync_custom_resolve_reference(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1514,7 +1506,6 @@ def test_entities__resolves_query_type_and_federation_type_in_one_call(graphql, 
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_federation_type_default_resolver(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1546,7 +1537,6 @@ async def test_entities__async_federation_type_default_resolver(graphql_async, u
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_federation_type_async_custom_resolve_reference(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1582,7 +1572,6 @@ async def test_entities__async_federation_type_async_custom_resolve_reference(gr
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_federation_type_permissions_dispatch(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1620,7 +1609,6 @@ async def test_entities__async_federation_type_permissions_dispatch(graphql_asyn
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_federation_type_resolve_reference_returning_none_yields_null(
     graphql_async, undine_settings
 ) -> None:
@@ -1657,7 +1645,6 @@ async def test_entities__async_federation_type_resolve_reference_returning_none_
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_entities__async_federation_type_exception_in_resolve_reference_becomes_graphql_error(
     graphql_async, undine_settings
 ) -> None:

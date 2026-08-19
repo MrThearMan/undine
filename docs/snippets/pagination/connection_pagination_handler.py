@@ -1,11 +1,10 @@
 from undine import Entrypoint, QueryType, RootType
-from undine.pagination import PaginationHandler
-from undine.relay import Connection
+from undine.relay import Connection, CursorPaginationHandler
 
 from .models import Task
 
 
-class CustomPaginationHandler(PaginationHandler):
+class CustomPaginationHandler(CursorPaginationHandler):
     """Custom pagination logic."""
 
 

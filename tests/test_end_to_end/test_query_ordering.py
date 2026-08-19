@@ -5,7 +5,6 @@ import datetime
 import django
 import pytest
 from django.db.models.functions import Reverse
-
 from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices

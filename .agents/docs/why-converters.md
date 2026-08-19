@@ -103,6 +103,7 @@ A user who wants datetimes handled by a `whenever` writes:
 def _(value: str) -> ZonedDateTime:
     return ZonedDateTime.parse_common_iso(value)
 
+
 @datetime_scalar.serialize.register
 def _(value: Instant | ZonedDateTime | PlainDateTime) -> str:
     return value.format_common_iso()

@@ -780,7 +780,6 @@ def test_convert_integrity_errors() -> None:
         raise IntegrityError(msg)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_or_raise_async() -> None:
     project = await sync_to_async(ProjectFactory.create)()
@@ -789,7 +788,6 @@ async def test_get_instance_or_raise_async() -> None:
     assert instance.pk == project.pk
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_or_raise_async__missing() -> None:
     with pytest.raises(GraphQLModelNotFoundError):
@@ -816,7 +814,6 @@ def test_get_instance_by_field_or_raise__multiple() -> None:
         get_instance_by_field_or_raise(queryset=Project.objects.all(), field_name="name", value="duplicate")
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async() -> None:
     project = await sync_to_async(ProjectFactory.create)(name="async-unique-project")
@@ -827,7 +824,6 @@ async def test_get_instance_by_field_or_raise_async() -> None:
     assert instance.pk == project.pk
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async__missing() -> None:
     with pytest.raises(GraphQLModelFieldNotFoundError):
@@ -836,7 +832,6 @@ async def test_get_instance_by_field_or_raise_async__missing() -> None:
         )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async__multiple() -> None:
     await sync_to_async(ProjectFactory.create)(name="async-duplicate")

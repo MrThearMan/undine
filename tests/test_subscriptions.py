@@ -18,7 +18,6 @@ from undine.subscriptions import (
 )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__save(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -61,7 +60,6 @@ async def test_signal_subscription__save(graphql, undine_settings) -> None:
         )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__create(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -102,7 +100,6 @@ async def test_signal_subscription__create(graphql, undine_settings) -> None:
             await websocket.receive(timeout=TEST_WAIT_TIME)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__update(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -143,7 +140,6 @@ async def test_signal_subscription__update(graphql, undine_settings) -> None:
         )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__delete(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -180,7 +176,6 @@ async def test_signal_subscription__delete(graphql, undine_settings) -> None:
         )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__permissions(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -222,7 +217,6 @@ async def test_signal_subscription__permissions(graphql, undine_settings) -> Non
         ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_signal_subscription__timeout(graphql, undine_settings) -> None:
     undine_settings.ASYNC = True

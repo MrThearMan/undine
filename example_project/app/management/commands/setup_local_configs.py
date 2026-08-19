@@ -70,6 +70,7 @@ class Command(BaseCommand):
             cleandoc(
                 """
                 [pytest]
+                asyncio_mode = auto
                 DJANGO_SETTINGS_MODULE = example_project.project.settings
                 addopts = --no-migrations --reuse-db --disable-warnings
                 # addopts = --reuse-db --disable-warnings

@@ -21,7 +21,6 @@ def test_subscription_value_resolver(value) -> None:
     assert resolver(value, mock_gql_info()) == value
 
 
-@pytest.mark.asyncio
 async def test_entrypoint_function_subscription__async_generator() -> None:
     class Subscription(RootType):
         @Entrypoint
@@ -38,7 +37,6 @@ async def test_entrypoint_function_subscription__async_generator() -> None:
     assert result == [0, 1]
 
 
-@pytest.mark.asyncio
 async def test_entrypoint_function_subscription__async_iterator() -> None:
     class ExampleIterator:
         def __init__(self) -> None:
@@ -69,7 +67,6 @@ async def test_entrypoint_function_subscription__async_iterator() -> None:
     assert result == [0, 1]
 
 
-@pytest.mark.asyncio
 async def test_entrypoint_function_subscription__async_iterable() -> None:
     class ExampleIterable:
         def __aiter__(self) -> AsyncIterator[int]:
@@ -93,7 +90,6 @@ async def test_entrypoint_function_subscription__async_iterable() -> None:
     assert result == [0, 1]
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__no_root_info_params() -> None:
     async def my_func() -> AsyncGenerator[int, None]:  # noqa: RUF029
         yield 42
@@ -109,7 +105,6 @@ async def test_function_subscription_resolver__no_root_info_params() -> None:
     assert result == [42]
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__graphql_error_group_result() -> None:
     error_group = GraphQLErrorGroup(errors=[GraphQLError("inner")])
 
@@ -129,7 +124,6 @@ async def test_function_subscription_resolver__graphql_error_group_result() -> N
     assert isinstance(results[0], GraphQLErrorGroup)
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__graphql_error_result() -> None:
 
     error = GraphQLError("test error")
@@ -149,7 +143,6 @@ async def test_function_subscription_resolver__graphql_error_result() -> None:
     assert isinstance(results[0], GraphQLError)
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__error_group_raised() -> None:
 
     error_group = GraphQLErrorGroup(errors=[GraphQLError("inner")])
@@ -170,7 +163,6 @@ async def test_function_subscription_resolver__error_group_raised() -> None:
             pass
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__exception_raised() -> None:
     async def my_func() -> AsyncGenerator[int, None]:  # noqa: RUF029
         msg = "test error"
@@ -189,7 +181,6 @@ async def test_function_subscription_resolver__exception_raised() -> None:
             pass
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__sync_permissions() -> None:
     permissions_called = []
 
@@ -212,7 +203,6 @@ async def test_function_subscription_resolver__sync_permissions() -> None:
     assert permissions_called == [42]
 
 
-@pytest.mark.asyncio
 async def test_function_subscription_resolver__async_permissions() -> None:
     permissions_called = []
 
@@ -235,7 +225,6 @@ async def test_function_subscription_resolver__async_permissions() -> None:
     assert permissions_called == [42]
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -268,7 +257,6 @@ async def test_model_save_subscription_resolver() -> None:
     assert results == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__instance_not_found() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -301,7 +289,6 @@ async def test_model_save_subscription_resolver__instance_not_found() -> None:
     assert results == []
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__sync_entrypoint_permissions() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -340,7 +327,6 @@ async def test_model_save_subscription_resolver__sync_entrypoint_permissions() -
     assert permissions_called == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__async_entrypoint_permissions() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -379,7 +365,6 @@ async def test_model_save_subscription_resolver__async_entrypoint_permissions() 
     assert permissions_called == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__async_query_type_permissions() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -417,7 +402,6 @@ async def test_model_save_subscription_resolver__async_query_type_permissions() 
     assert permissions_called == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__error_group_raised() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -453,7 +437,6 @@ async def test_model_save_subscription_resolver__error_group_raised() -> None:
                 pass
 
 
-@pytest.mark.asyncio
 async def test_model_save_subscription_resolver__exception_raised() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -489,7 +472,6 @@ async def test_model_save_subscription_resolver__exception_raised() -> None:
                 pass
 
 
-@pytest.mark.asyncio
 async def test_model_delete_subscription_resolver() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -514,7 +496,6 @@ async def test_model_delete_subscription_resolver() -> None:
     assert results == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_delete_subscription_resolver__sync_entrypoint_permissions() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -545,7 +526,6 @@ async def test_model_delete_subscription_resolver__sync_entrypoint_permissions()
     assert permissions_called == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_delete_subscription_resolver__async_entrypoint_permissions() -> None:
 
     task = Task(name="Test task", pk=1)
@@ -576,7 +556,6 @@ async def test_model_delete_subscription_resolver__async_entrypoint_permissions(
     assert permissions_called == [task]
 
 
-@pytest.mark.asyncio
 async def test_model_delete_subscription_resolver__error_group_raised() -> None:
     task = Task(name="Test task", pk=1)
     error_group = GraphQLErrorGroup(errors=[GraphQLError("inner")])
@@ -603,7 +582,6 @@ async def test_model_delete_subscription_resolver__error_group_raised() -> None:
             pass
 
 
-@pytest.mark.asyncio
 async def test_model_delete_subscription_resolver__exception_raised() -> None:
 
     task = Task(name="Test task", pk=1)

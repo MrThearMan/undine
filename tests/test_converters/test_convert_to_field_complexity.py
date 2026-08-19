@@ -5,6 +5,7 @@ from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 from example_project.app.models import Project, Task
 from undine import Field, InterfaceField, InterfaceType, QueryType
 from undine.converters import convert_to_field_complexity
+from undine.federation import FederationField, FederationType, KeyDirective
 from undine.utils.model_utils import get_model_field
 
 
@@ -39,8 +40,6 @@ def test_convert_to_field_complexity__query_type() -> None:
 
 
 def test_convert_to_field_complexity__federation_type() -> None:
-    from undine.federation import FederationField, FederationType, KeyDirective
-
     @KeyDirective(fields="id", resolvable=False)
     class UserStub(FederationType, schema_name="User"):
         id = FederationField(int)
@@ -49,7 +48,7 @@ def test_convert_to_field_complexity__federation_type() -> None:
         assigned_to = Field(UserStub)
 
         @assigned_to.resolve
-        def resolve_assigned_to(root, info):  # noqa: ANN001, ARG001
+        def resolve_assigned_to(root, info):
             return {"id": 1}
 
     result = convert_to_field_complexity(UserStub, caller=TaskType.assigned_to)

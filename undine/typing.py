@@ -91,6 +91,8 @@ if TYPE_CHECKING:
         VariableValues,
     )
 
+    from undine.relay import CursorPaginationHandler
+
 
 if version_info >= (3, 3, 0):  # pragma: no cover
     from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
@@ -398,10 +400,10 @@ class DjangoExpression(Protocol):
     def resolve_expression(
         self,
         query: Query,
-        allow_joins: bool,  # noqa: FBT001
-        reuse: set[str] | None,
-        summarize: bool,  # noqa: FBT001
-        for_save: bool,  # noqa: FBT001
+        allow_joins: bool = True,  # noqa: FBT001,FBT002
+        reuse: set[str] | None = None,
+        summarize: bool = False,  # noqa: FBT001,FBT002
+        for_save: bool = False,  # noqa: FBT001,FBT002
     ) -> DjangoExpression: ...
 
 
@@ -884,6 +886,9 @@ AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 @dataclasses.dataclass(slots=True, kw_only=True)
 class UndineInternalContext:
     """Undine internal implementation context."""
+
+    connection_handler_storage: dict[str, CursorPaginationHandler] = dataclasses.field(default_factory=dict)
+    """Index of pagination handlers for access after prefetch has been done."""
 
 
 @dataclasses.dataclass(kw_only=True, eq=False)

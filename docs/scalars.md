@@ -142,7 +142,7 @@ implementation for the `parse` function of the `DateTime` scalar.
 [whenever]: https://github.com/ariebovenberg/whenever
 
 ```python
--8<- "scalars/scalar_modify.py"
+-8 < -"scalars/scalar_modify.py"
 ```
 
 ## Custom scalars
@@ -152,7 +152,7 @@ by any of Undine's built-in scalars. Let's create a new scalar named `Vector3`
 that represents a 3D vector using a tuple of three integers.
 
 ```python
--8<- "scalars/custom_scalar.py"
+-8 < -"scalars/custom_scalar.py"
 ```
 
 If `Vector3` corresponds to a Django Model field, you could also let Undine know

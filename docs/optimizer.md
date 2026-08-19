@@ -17,7 +17,7 @@ that arise when using GraphQL to fetch data from a relational database.
 Let's say you have a collection of Models like this:
 
 ```python
--8<- "optimizer/models_1.py"
+-8 < -"optimizer/models_1.py"
 ```
 
 And a schema like this:
@@ -128,14 +128,14 @@ or `Field` using the given `QueryType` is included in the query.
 See [optimization data](#optimization-data) on how to add the optimizations.
 
 ```python
--8<- "optimizer/querytype_optimizations.py"
+-8 < -"optimizer/querytype_optimizations.py"
 ```
 
 The `<field_name>.optimize` method is called by the optimizer when the given `Field`
 is included in the query. See [optimization data](#optimization-data) on how to add the optimizations.
 
 ```python
--8<- "optimizer/field_optimize.py"
+-8 < -"optimizer/field_optimize.py"
 ```
 
 ### Optimization data
@@ -234,7 +234,7 @@ will result in an empty `QuerySet` regardless of other optimizations.
 Normally, this is only applied if a `FilterSet` `Filter` raises an
 `EmptyFilterResult` exception.
 
-#### `pagination`
+#### `connection_handler_storage`
 
 Contains the pagination information for the `QuerySet` in the form of a
 `PaginationHandler` object. Normally, this is set by the optimizer automatically
@@ -360,6 +360,6 @@ This can happen for one of the following reasons:
 10. If `field_calculations` are not empty, run them and annotate their results to the `QuerySet`.
 11. If `filters` is not empty, apply them using `QuerySet.filter()`
 12. If `post_filter_callback` exists, call it.
-13. If `pagination` data exists, run either `pagination.paginate_queryset()`
+13. If `connection_handler_storage` data exists, run either `pagination.paginate_queryset()`
     or `pagination.paginate_prefetch_queryset()` depending on whether a `related_field` exists or not.
 14. Return the optimized `QuerySet`.

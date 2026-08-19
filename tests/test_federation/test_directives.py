@@ -1109,9 +1109,7 @@ def test_directive_version_gate__accepts_at_supported_version(
 @pytest.mark.parametrize(
     **parametrize_helper({name: params for name, params in _GATES.items() if params.min_version is not None})
 )
-def test_directive_version_gate__rejects_below_min_version(
-    undine_settings, directive_cls, apply, min_version
-) -> None:
+def test_directive_version_gate__rejects_below_min_version(undine_settings, directive_cls, apply, min_version) -> None:
     undine_settings.FEDERATION_VERSION = _PREVIOUS_VERSION[min_version]
 
     with pytest.raises(DirectiveVersionError):

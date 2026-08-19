@@ -16,7 +16,6 @@ from undine.utils.graphql.multipart_mixed import (
 )
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),
 ]
 

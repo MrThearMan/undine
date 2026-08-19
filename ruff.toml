@@ -4,7 +4,8 @@ fix = true
 unsafe-fixes = true
 line-length = 120
 extend-exclude = [
-    "tests/*",
+    "tests/test_federation/_proto/reports_pb2.py",
+    "tests/test_federation/_proto/reports_pb2.piy",
 ]
 
 [format]

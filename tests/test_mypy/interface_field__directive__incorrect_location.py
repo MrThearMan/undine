@@ -20,4 +20,3 @@ class TestDirective(Directive, locations=[DirectiveLocation.OBJECT]): ...
 
 class Named(InterfaceType):
     name = InterfaceField(str) @ TestDirective()
-

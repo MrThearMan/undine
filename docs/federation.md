@@ -15,7 +15,7 @@ You can build a Federation 2 subgraph-compliant schema by importing `create_fede
 `create_schema`.
 
 ```python hl_lines="2 16"
--8<- "federation/create_federation_schema.py"
+-8 < -"federation/create_federation_schema.py"
 ```
 
 Compared with `create_schema`, `create_federation_schema` additionally:
@@ -59,7 +59,7 @@ To use the directive, you must define a set of `fields` that a subgraph can use 
 any instance of the entity. These fields must be defined on the `QueryType`.
 
 ```python hl_lines="2 7"
--8<- "federation/key_directive.py"
+-8 < -"federation/key_directive.py"
 ```
 
 ```graphql
@@ -73,7 +73,7 @@ Set `resolvable=False` when this subgraph only references the entity but does no
 router uses the declaration to stitch results together, but never routes resolution requests here.
 
 ```python hl_lines="2 7"
--8<- "federation/key_directive_resolvable.py"
+-8 < -"federation/key_directive_resolvable.py"
 ```
 
 ```graphql
@@ -90,7 +90,7 @@ are allowed to be resolved by multiple subgraphs.
 [shareable directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#shareable
 
 ```python hl_lines="2 9"
--8<- "federation/shareable_directive.py"
+-8 < -"federation/shareable_directive.py"
 ```
 
 ```graphql
@@ -112,7 +112,7 @@ not resolve it.
 [external directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#external
 
 ```python hl_lines="2 10"
--8<- "federation/external_directive.py"
+-8 < -"federation/external_directive.py"
 ```
 
 ```graphql
@@ -130,7 +130,7 @@ subgraph requires additional [`@external`](#externaldirective) fields from the e
 [requires directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#requires
 
 ```python hl_lines="2 11"
--8<- "federation/requires_directive.py"
+-8 < -"federation/requires_directive.py"
 ```
 
 ```graphql
@@ -149,7 +149,7 @@ resolve the listed fields of a referenced entity, avoiding an extra round-trip t
 [provides directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#provides
 
 ```python hl_lines="2 10"
--8<- "federation/provides_directive.py"
+-8 < -"federation/provides_directive.py"
 ```
 
 ```graphql
@@ -172,7 +172,7 @@ configurable fraction of traffic to this subgraph rather than switching over all
 [override directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#override
 
 ```python hl_lines="2 10"
--8<- "federation/override_directive.py"
+-8 < -"federation/override_directive.py"
 ```
 
 ```graphql
@@ -190,7 +190,7 @@ supergraph. The element remains defined in the subgraph but the router never exp
 [inaccessible directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#inaccessible
 
 ```python hl_lines="2 10"
--8<- "federation/inaccessible_directive.py"
+-8 < -"federation/inaccessible_directive.py"
 ```
 
 ```graphql
@@ -208,7 +208,7 @@ elements. Contract composition and other Apollo tooling read the tags for filter
 [tag directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#tag
 
 ```python hl_lines="2 10"
--8<- "federation/tag_directive.py"
+-8 < -"federation/tag_directive.py"
 ```
 
 ```graphql
@@ -229,7 +229,7 @@ custom directive from this subgraph in the supergraph schema. Apply it at the sc
 [compose directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#composedirective
 
 ```python hl_lines="2 17"
--8<- "federation/compose_directive_directive.py"
+-8 < -"federation/compose_directive_directive.py"
 ```
 
 ```graphql
@@ -247,7 +247,7 @@ fields to an entity that is declared as an interface in another subgraph. Apply 
 [interface object directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#interfaceobject
 
 ```python hl_lines="2 7"
--8<- "federation/interface_object_directive.py"
+-8 < -"federation/interface_object_directive.py"
 ```
 
 ```graphql
@@ -266,7 +266,7 @@ requiring an authenticated request. Enforcement happens at the router.
 [authenticated directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#authenticated
 
 ```python hl_lines="2 10"
--8<- "federation/authenticated_directive.py"
+-8 < -"federation/authenticated_directive.py"
 ```
 
 ```graphql
@@ -287,7 +287,7 @@ list is "any-of".
 [requires scopes directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#requiresscopes
 
 ```python hl_lines="2 10"
--8<- "federation/requires_scopes_directive.py"
+-8 < -"federation/requires_scopes_directive.py"
 ```
 
 ```graphql
@@ -307,7 +307,7 @@ authorization policies. The list-of-lists shape matches [`@requiresScopes`](#req
 [policy directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#policy
 
 ```python hl_lines="2 10"
--8<- "federation/policy_directive.py"
+-8 < -"federation/policy_directive.py"
 ```
 
 ```graphql
@@ -328,7 +328,7 @@ contributes to. Arguments elsewhere resolve their value from that context via
 [context directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#context
 
 ```python hl_lines="2 7"
--8<- "federation/context_directive.py"
+-8 < -"federation/context_directive.py"
 ```
 
 ```graphql
@@ -347,7 +347,7 @@ a named context declared via [`@context`](#contextdirective).
 [from context directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#fromcontext
 
 ```python hl_lines="4 14"
--8<- "federation/from_context_directive.py"
+-8 < -"federation/from_context_directive.py"
 ```
 
 ### `CostDirective`
@@ -360,7 +360,7 @@ element. The router's cost analyzer sums these to estimate the total cost of a q
 [cost directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#cost
 
 ```python hl_lines="2 10"
--8<- "federation/cost_directive.py"
+-8 < -"federation/cost_directive.py"
 ```
 
 ```graphql
@@ -381,7 +381,7 @@ how large a list-returning field can grow. `assumed_size` is a fixed upper bound
 [list size directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#listsize
 
 ```python hl_lines="2 10-14"
--8<- "federation/list_size_directive.py"
+-8 < -"federation/list_size_directive.py"
 ```
 
 ```graphql
@@ -406,7 +406,7 @@ to both object types and individual fields.
 [cache tag directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#cachetag
 
 ```python hl_lines="2 7 11"
--8<- "federation/cache_tag_directive.py"
+-8 < -"federation/cache_tag_directive.py"
 ```
 
 ```graphql
@@ -435,7 +435,7 @@ Undine builds one for you, but the default resolver only supports a `QueryType` 
 you need define a custom `__resolve_reference__` on the `QueryType`.
 
 ```python hl_lines="2 12"
--8<- "federation/resolve_reference.py"
+-8 < -"federation/resolve_reference.py"
 ```
 
 Returning `None` from `__resolve_reference__` yields `null` for that entry. Raising propagates as a
@@ -448,7 +448,7 @@ and is not backed by a Django model. You still mark it with [`@KeyDirective`](#k
 so the router knows how to identify entities of this type.
 
 ```python
--8<- "federation/federation_type.py"
+-8 < -"federation/federation_type.py"
 ```
 
 ```graphql
@@ -480,7 +480,7 @@ error and raises an exception when the schema is built.
 The following declares a computed `overdue_task_count` that depends on `timezone` from another subgraph:
 
 ```python
--8<- "federation/federation_field_external.py"
+-8 < -"federation/federation_field_external.py"
 ```
 
 ```graphql
@@ -503,7 +503,7 @@ and leave the rest of the type empty. You can then use the stub as a `Field` ref
 entity from the owning subgraph:
 
 ```python
--8<- "federation/federation_type_stub.py"
+-8 < -"federation/federation_type_stub.py"
 ```
 
 ```graphql
@@ -535,14 +535,14 @@ For a `FederationType`, define `__permissions__` on the class; the `_entities` r
 after `__resolve_reference__` builds the instance:
 
 ```python
--8<- "federation/federation_type_permissions.py"
+-8 < -"federation/federation_type_permissions.py"
 ```
 
 To gate an individual `FederationField`, decorate a method with `@<field>.permissions`. Sibling fields
 keep resolving independently:
 
 ```python
--8<- "federation/federation_field_permissions.py"
+-8 < -"federation/federation_field_permissions.py"
 ```
 
 Both hooks may also be defined `async`. If a permission check fails, the failing entity slot or field

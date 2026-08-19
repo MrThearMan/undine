@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from example_project.app.models import Person
 
 from ._base import GenericDjangoModelFactory, ManyToManyFactory, ReverseForeignKeyFactory, UndineFaker

@@ -62,6 +62,7 @@ if TYPE_CHECKING:
         SelectionNode,
     )
     from graphql.execution.values import NodeWithDirective, VariableValues  # type: ignore[attr-defined]
+    from graphql.pyutils import Path
 
     from undine import Directive, Field, GQLInfo
     from undine.typing import ModelField
@@ -71,6 +72,7 @@ __all__ = [
     "check_directives",
     "get_arguments",
     "get_error_execution_result",
+    "get_field_path_identifier",
     "get_fragment_definitions",
     "get_operation_definition",
     "get_operation_type",
@@ -131,6 +133,11 @@ def get_arguments(info: GQLInfo) -> dict[str, Any]:
 def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
     """Get the name of a field in the current query."""
     return original_name if info.path.key == info.field_name else info.path.key  # type: ignore[return-value]
+
+
+def get_field_path_identifier(path: Path) -> str:
+    """Get the field path of the current field."""
+    return ".".join(key for key in path.as_list() if isinstance(key, str))
 
 
 def get_field_def(schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode) -> GraphQLField:

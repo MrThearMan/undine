@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from factory import fuzzy
 
 from example_project.app.models import TaskStep

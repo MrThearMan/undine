@@ -248,7 +248,9 @@ def test_validation_rules__max_complexity_rule__fragment_spread__already_visited
 
 
 @pytest.mark.django_db
-def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__root(graphql, undine_settings) -> None:
+def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__root(
+    graphql, undine_settings
+) -> None:
     undine_settings.MAX_QUERY_COMPLEXITY = 1
 
     class TaskType(QueryType[Task], auto=False):

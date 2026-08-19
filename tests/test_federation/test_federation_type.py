@@ -575,7 +575,6 @@ def test_federation_type__resolver_runs_permissions_func(graphql, undine_setting
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_resolver_returns_none_for_nullable_missing_value(
     graphql_async, undine_settings
 ) -> None:
@@ -609,7 +608,6 @@ async def test_federation_type__async_resolver_returns_none_for_nullable_missing
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_resolver_raises_for_non_nullable_missing_value(
     graphql_async, undine_settings
 ) -> None:
@@ -648,7 +646,6 @@ async def test_federation_type__async_resolver_raises_for_non_nullable_missing_v
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_resolver_runs_sync_permissions_func(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -686,7 +683,6 @@ async def test_federation_type__async_resolver_runs_sync_permissions_func(graphq
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_resolver_runs_async_permissions_func(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -795,7 +791,6 @@ def test_federation_type__function_resolver_runs_permissions(graphql, undine_set
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_function_resolver_runs(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -830,7 +825,6 @@ async def test_federation_type__async_function_resolver_runs(graphql_async, undi
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_function_resolver_runs_sync_permissions(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -871,7 +865,6 @@ async def test_federation_type__async_function_resolver_runs_sync_permissions(gr
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_federation_type__async_function_resolver_runs_async_permissions(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"

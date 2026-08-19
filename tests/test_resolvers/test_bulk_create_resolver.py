@@ -714,8 +714,30 @@ def test_bulk_create_resolver__mutation_hooks(undine_settings) -> None:
     assert after_called == 4
 
 
+@pytest.mark.django_db
+def test_bulk_create_resolver__instance_limit_exceeded(undine_settings) -> None:
+    undine_settings.ASYNC = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        bulk_create_tasks = Entrypoint(TaskCreateMutation)
+
+    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.bulk_create_tasks)
+
+    data = [
+        {"name": "Task 1", "type": TaskTypeChoices.STORY.value},
+        {"name": "Task 2", "type": TaskTypeChoices.BUG_FIX.value},
+    ]
+
+    with pytest.raises(GraphQLMutationInstanceLimitError):
+        resolver(root=None, info=mock_gql_info(), input=data)
+
+
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_bulk_create_resolver__async(undine_settings) -> None:
     undine_settings.ASYNC = True
 
@@ -757,31 +779,7 @@ async def test_bulk_create_resolver__async(undine_settings) -> None:
     assert results[1].type == TaskTypeChoices.BUG_FIX
 
 
-@pytest.mark.django_db
-def test_bulk_create_resolver__instance_limit_exceeded(undine_settings) -> None:
-    undine_settings.ASYNC = False
-    undine_settings.MUTATION_INSTANCE_LIMIT = 1
-
-    class TaskType(QueryType[Task]): ...
-
-    class TaskCreateMutation(MutationType[Task]): ...
-
-    class Query(RootType):
-        bulk_create_tasks = Entrypoint(TaskCreateMutation)
-
-    resolver = BulkCreateResolver(mutation_type=TaskCreateMutation, entrypoint=Query.bulk_create_tasks)
-
-    data = [
-        {"name": "Task 1", "type": TaskTypeChoices.STORY.value},
-        {"name": "Task 2", "type": TaskTypeChoices.BUG_FIX.value},
-    ]
-
-    with pytest.raises(GraphQLMutationInstanceLimitError):
-        resolver(root=None, info=mock_gql_info(), input=data)
-
-
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_bulk_create_resolver__async__instance_limit_exceeded(undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.MUTATION_INSTANCE_LIMIT = 1

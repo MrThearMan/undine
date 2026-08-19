@@ -219,7 +219,6 @@ def test_raised_exceptions_as_execution_results_sync__generic_exception() -> Non
     assert "unexpected!" in result.errors[0].message
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_async__graphql_error() -> None:
     error = GraphQLError("async test error")
 
@@ -234,7 +233,6 @@ async def test_raised_exceptions_as_execution_results_async__graphql_error() -> 
     assert result.errors[0] is error
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_async__graphql_error_group() -> None:
     error1 = GraphQLError("error 1")
     error2 = GraphQLError("error 2")
@@ -251,7 +249,6 @@ async def test_raised_exceptions_as_execution_results_async__graphql_error_group
     assert len(result.errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_async__generic_exception() -> None:
     @raised_exceptions_as_execution_results_async
     async def raises_generic() -> ExecutionResult:  # noqa: RUF029
@@ -265,7 +262,6 @@ async def test_raised_exceptions_as_execution_results_async__generic_exception()
     assert "unexpected async!" in result.errors[0].message
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_with_subscriptions__graphql_error() -> None:
     error = GraphQLError("subscription test error")
 
@@ -280,7 +276,6 @@ async def test_raised_exceptions_as_execution_results_with_subscriptions__graphq
     assert result.errors[0] is error
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_with_subscriptions__graphql_error_group() -> None:
     error1 = GraphQLError("error 1")
     error2 = GraphQLError("error 2")
@@ -297,7 +292,6 @@ async def test_raised_exceptions_as_execution_results_with_subscriptions__graphq
     assert len(result.errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_raised_exceptions_as_execution_results_with_subscriptions__generic_exception() -> None:
     @raised_exceptions_as_execution_results_with_subscriptions
     async def raises_generic() -> ExecutionResult:  # noqa: RUF029
@@ -311,7 +305,6 @@ async def test_raised_exceptions_as_execution_results_with_subscriptions__generi
     assert "unexpected sub!" in result.errors[0].message
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__basic(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -336,7 +329,6 @@ async def test_execute_graphql_http_async__basic(undine_settings) -> None:
     assert result == ExecutionResult(data={"hello": "Hello, World!"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__parse_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -353,7 +345,6 @@ async def test_execute_graphql_http_async__parse_error(undine_settings) -> None:
     assert "Syntax Error" in result.errors[0].message
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__validation_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -370,7 +361,6 @@ async def test_execute_graphql_http_async__validation_error(undine_settings) -> 
     assert result.errors[0].message == "This anonymous operation must be the only defined operation."
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__mutation_non_post(undine_settings) -> None:
     class Query(RootType):
         @Entrypoint
@@ -397,7 +387,6 @@ async def test_execute_graphql_http_async__mutation_non_post(undine_settings) ->
     assert result.errors[0].message == "Cannot use HTTP for mutations if not sent as a POST request."
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__subscription_not_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -421,7 +410,6 @@ async def test_execute_graphql_http_async__subscription_not_allowed(undine_setti
     )
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__result_pre_set_as_awaitable(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -448,7 +436,6 @@ async def test_execute_graphql_http_async__result_pre_set_as_awaitable(undine_se
     assert result == ExecutionResult(data={"pre": "set"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__result_pre_set_as_async_iterator(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -501,7 +488,6 @@ def test_execute_graphql_http_sync__result_pre_set_as_awaitable(undine_settings)
     assert result.errors[0].extensions.get("error_code") == "ASYNC_NOT_SUPPORTED"
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__result_pre_set_in_parse(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -523,7 +509,6 @@ async def test_execute_graphql_http_async__result_pre_set_in_parse(undine_settin
     assert result == ExecutionResult(data={"preparse": "result"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__document_pre_set(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -557,7 +542,6 @@ async def test_execute_graphql_http_async__document_pre_set(undine_settings) -> 
     assert result == ExecutionResult(data={"hello": "World"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__validate_result_pre_set(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -579,7 +563,6 @@ async def test_execute_graphql_http_async__validate_result_pre_set(undine_settin
     assert result == ExecutionResult(data={"prevalidation": "result"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__execute_context_error_group(undine_settings) -> None:
     error1 = GraphQLError("context error 1")
     error2 = GraphQLError("context error 2")
@@ -814,7 +797,6 @@ def test_validate__max_errors_reached(undine_settings) -> None:
     assert len(result.errors) >= 1
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__basic_query(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -839,7 +821,6 @@ async def test_execute_graphql_with_subscription__basic_query(undine_settings) -
     assert result == ExecutionResult(data={"hello": "Hello!"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__result_pre_set_as_awaitable(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -864,7 +845,6 @@ async def test_execute_graphql_with_subscription__result_pre_set_as_awaitable(un
     assert result == ExecutionResult(data={"pre": "set"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__parse_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -881,7 +861,6 @@ async def test_execute_graphql_with_subscription__parse_error(undine_settings) -
     assert "Syntax Error" in result.errors[0].message
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__subscription_execution_result(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -915,7 +894,6 @@ async def test_execute_graphql_with_subscription__subscription_execution_result(
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__graphql_error_group_in_execution_context(undine_settings) -> None:
     error1 = GraphQLError("sub error 1")
     error2 = GraphQLError("sub error 2")
@@ -949,7 +927,6 @@ async def test_create_source_event_stream__graphql_error_group_in_execution_cont
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__graphql_error_from_execute_subscription(undine_settings) -> None:
     error = GraphQLError("subscription stream error")
 
@@ -981,7 +958,6 @@ async def test_create_source_event_stream__graphql_error_from_execute_subscripti
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__graphql_error_group_from_execute_subscription(undine_settings) -> None:
     error1 = GraphQLError("stream error 1")
     error2 = GraphQLError("stream error 2")
@@ -1015,7 +991,6 @@ async def test_create_source_event_stream__graphql_error_group_from_execute_subs
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__not_async_iterable(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -1047,7 +1022,6 @@ async def test_create_source_event_stream__not_async_iterable(undine_settings) -
     assert result.errors[0].extensions.get("error_code") == "NO_EVENT_STREAM"
 
 
-@pytest.mark.asyncio
 async def test_map_source_to_response__pre_existing_result(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -1087,7 +1061,6 @@ async def test_map_source_to_response__pre_existing_result(undine_settings) -> N
     assert results[0] == preset_result
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__sse_mutation_non_post(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_MUTATIONS_WITH_SSE = True
@@ -1120,7 +1093,6 @@ async def test_execute_graphql_http_async__sse_mutation_non_post(undine_settings
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__websocket_query_not_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = False
@@ -1141,7 +1113,6 @@ async def test_execute_graphql_http_async__websocket_query_not_allowed(undine_se
     assert result.errors[0].extensions.get("error_code") == "CANNOT_USE_WEBSOCKETS_FOR_QUERIES"
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__sse_query_not_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_QUERIES_WITH_SSE = False
@@ -1165,7 +1136,6 @@ async def test_execute_graphql_http_async__sse_query_not_allowed(undine_settings
     assert result.errors[0].extensions.get("error_code") == "CANNOT_USE_SSE_FOR_QUERIES"
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__multipart_mixed_query_not_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_QUERIES_WITH_MULTIPART_MIXED = False
@@ -1189,7 +1159,6 @@ async def test_execute_graphql_http_async__multipart_mixed_query_not_allowed(und
     assert result.errors[0].extensions.get("error_code") == "CANNOT_USE_MULTIPART_MIXED_FOR_QUERIES"
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__incremental_disabled(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY = False
@@ -1515,7 +1484,6 @@ def test_execute_graphql_http_sync__async_resolver_in_sync_mode(undine_settings)
     assert result.errors[0].extensions.get("error_code") == "ASYNC_NOT_SUPPORTED"
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__execute_result_pre_set(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -1537,7 +1505,6 @@ async def test_execute_graphql_http_async__execute_result_pre_set(undine_setting
     assert result == ExecutionResult(data={"preexecution": "async"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__async_resolver(undine_settings) -> None:
     async def async_resolver(obj: Any, info: Any) -> str:  # noqa: RUF029
         return "async result"
@@ -1565,7 +1532,6 @@ async def test_execute_graphql_http_async__async_resolver(undine_settings) -> No
     assert result == ExecutionResult(data={"hello": "async result"})
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__subscription_stream(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -1766,7 +1732,6 @@ def test_get_execution_context__success(undine_settings) -> None:
     assert context is not None
 
 
-@pytest.mark.asyncio
 async def test_map_source_to_response__full_loop(undine_settings) -> None:
     payloads = ["event_payload_1", "event_payload_2"]
 
@@ -1809,7 +1774,6 @@ async def test_map_source_to_response__full_loop(undine_settings) -> None:
     assert len(results) == 2
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__sse_mutation_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_MUTATIONS_WITH_SSE = True
@@ -1837,7 +1801,6 @@ async def test_execute_graphql_http_async__sse_mutation_allowed(undine_settings)
         }
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__multipart_mixed_mutation_allowed(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_MUTATIONS_WITH_MULTIPART_MIXED = True
@@ -1864,7 +1827,6 @@ async def test_execute_graphql_http_async__multipart_mixed_mutation_allowed(undi
         }
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_http_async__websocket_mutation_not_allowed(undine_settings) -> None:
     undine_settings.ALLOW_MUTATIONS_WITH_WEBSOCKETS = False
 
@@ -1954,7 +1916,6 @@ def test_validate_sse__query_allowed_fall_through(undine_settings) -> None:
     assert context.result is None
 
 
-@pytest.mark.asyncio
 async def test_execute_graphql_with_subscription__validation_error(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
     undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
@@ -1975,7 +1936,6 @@ async def test_execute_graphql_with_subscription__validation_error(undine_settin
     assert result.errors is not None
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__awaitable_event_stream(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -2018,7 +1978,6 @@ async def test_create_source_event_stream__awaitable_event_stream(undine_setting
     assert hasattr(result, "__aiter__")
 
 
-@pytest.mark.asyncio
 async def test_create_source_event_stream__non_awaitable_event_stream(undine_settings) -> None:
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
@@ -2058,7 +2017,6 @@ async def test_create_source_event_stream__non_awaitable_event_stream(undine_set
     assert hasattr(result, "__aiter__")
 
 
-@pytest.mark.asyncio
 async def test_map_source_to_response__graphql_error_payload(undine_settings) -> None:
     error = GraphQLError("event error")
 
@@ -2098,7 +2056,6 @@ async def test_map_source_to_response__graphql_error_payload(undine_settings) ->
     assert results[0].errors[0] is error
 
 
-@pytest.mark.asyncio
 async def test_map_source_to_response__graphql_error_group_payload(undine_settings) -> None:
     error1 = GraphQLError("event error 1")
     error2 = GraphQLError("event error 2")
@@ -2139,7 +2096,6 @@ async def test_map_source_to_response__graphql_error_group_payload(undine_settin
     assert results[0].errors is not None
 
 
-@pytest.mark.asyncio
 async def test_map_source_to_response__pre_existing_result_via_execution_hook(undine_settings) -> None:
     preset_result = ExecutionResult(data={"preset": "hook"})
 

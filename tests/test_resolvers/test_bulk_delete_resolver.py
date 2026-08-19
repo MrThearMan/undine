@@ -88,8 +88,28 @@ def test_bulk_delete_resolver__mutation_hooks(undine_settings) -> None:
     assert after_called == 2
 
 
+@pytest.mark.django_db
+def test_bulk_delete_resolver__instance_limit_exceeded(undine_settings) -> None:
+    undine_settings.ASYNC = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    class TaskDeleteMutation(MutationType[Task]): ...
+
+    class Mutation(RootType):
+        delete_task = Entrypoint(TaskDeleteMutation)
+
+    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
+        mutation_type=TaskDeleteMutation,
+        entrypoint=Mutation.delete_task,
+    )
+
+    data = [{"pk": 1}, {"pk": 2}]
+
+    with pytest.raises(GraphQLMutationInstanceLimitError):
+        resolver(root=None, info=mock_gql_info(), input=data)
+
+
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_bulk_delete_resolver__async(undine_settings) -> None:
     undine_settings.ASYNC = True
 
@@ -118,24 +138,3 @@ async def test_bulk_delete_resolver__async(undine_settings) -> None:
     assert results == [SimpleNamespace(pk=task_1.pk), SimpleNamespace(pk=task_2.pk)]
 
     assert (await Task.objects.all().acount()) == 0
-
-
-@pytest.mark.django_db
-def test_bulk_delete_resolver__instance_limit_exceeded(undine_settings) -> None:
-    undine_settings.ASYNC = False
-    undine_settings.MUTATION_INSTANCE_LIMIT = 1
-
-    class TaskDeleteMutation(MutationType[Task]): ...
-
-    class Mutation(RootType):
-        delete_task = Entrypoint(TaskDeleteMutation)
-
-    resolver: BulkDeleteResolver[Task] = BulkDeleteResolver(
-        mutation_type=TaskDeleteMutation,
-        entrypoint=Mutation.delete_task,
-    )
-
-    data = [{"pk": 1}, {"pk": 2}]
-
-    with pytest.raises(GraphQLMutationInstanceLimitError):
-        resolver(root=None, info=mock_gql_info(), input=data)

@@ -47,7 +47,6 @@ __all__ = [
     "NestedExampleROTOFactory",
     "PersistedDocumentFactory",
     "PersonFactory",
-    "PersonFactory",
     "ProjectFactory",
     "ReportFactory",
     "ServiceRequestFactory",

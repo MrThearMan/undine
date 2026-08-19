@@ -69,7 +69,6 @@ from undine.utils.graphql.server_sent_events import (
 )
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),
 ]
 

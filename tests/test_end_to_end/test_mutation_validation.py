@@ -302,7 +302,7 @@ def test_end_to_end__mutation__single__validation_error__field__multiple(graphql
         def name_validation(self, info: GQLInfo, value: str) -> None:
             raise GraphQLValidationError
 
-        @type.validate
+        @type.validate  # noqa: A003
         def type_validation(self, info: GQLInfo, value: str) -> None:
             raise GraphQLValidationError
 
@@ -879,7 +879,7 @@ def test_end_to_end__mutation__many__validation_error__field__multiple(graphql, 
         def name_permissions(self, info: GQLInfo, value: str) -> None:
             raise GraphQLValidationError
 
-        @type.permissions
+        @type.permissions  # noqa: A003
         def type_permissions(self, info: GQLInfo, value: str) -> None:
             raise GraphQLValidationError
 

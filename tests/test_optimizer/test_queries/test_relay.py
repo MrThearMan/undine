@@ -4,10 +4,10 @@ import pytest
 
 from example_project.app.models import Comment, Person, Project, Report, Task, TaskStep, Team
 from tests.factories import CommentFactory, PersonFactory, ReportFactory, TaskFactory, TaskStepFactory, TeamFactory
-from tests.helpers import cache_content_types
+from tests.helpers import cache_content_types, keyset_cursor
 from undine import Entrypoint, Field, OrderSet, QueryType, RootType, create_schema
 from undine.pagination import OffsetPagination
-from undine.relay import Connection, Node, offset_to_cursor, to_global_id
+from undine.relay import Connection, Node, to_global_id
 
 # Relay Node interface
 
@@ -265,7 +265,7 @@ def test_optimizer__relay__connection__last(graphql, undine_settings) -> None:
         },
     }
 
-    response.assert_query_count(2)
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -278,7 +278,7 @@ def test_optimizer__relay__connection__after(graphql, undine_settings) -> None:
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1")
+    task_1 = TaskFactory.create(name="Task 1")
     TaskFactory.create(name="Task 2")
     TaskFactory.create(name="Task 3")
 
@@ -295,7 +295,7 @@ def test_optimizer__relay__connection__after(graphql, undine_settings) -> None:
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
+    response = graphql(query, variables={"after": keyset_cursor(typename, task_1.pk)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -322,7 +322,7 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
 
     TaskFactory.create(name="Task 1")
     TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
+    task_3 = TaskFactory.create(name="Task 3")
 
     query = """
         query ($before: String!) {
@@ -337,7 +337,7 @@ def test_optimizer__relay__connection__before(graphql, undine_settings) -> None:
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)}, count_queries=True)
+    response = graphql(query, variables={"before": keyset_cursor(typename, task_3.pk)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -362,9 +362,9 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
+    task_1 = TaskFactory.create(name="Task 1")
+    task_2 = TaskFactory.create(name="Task 2")
+    task_3 = TaskFactory.create(name="Task 3")
 
     query = """
         query {
@@ -396,24 +396,24 @@ def test_optimizer__relay__connection__connection_info(graphql, undine_settings)
             "pageInfo": {
                 "hasNextPage": False,
                 "hasPreviousPage": False,
-                "startCursor": offset_to_cursor(typename, 0),
-                "endCursor": offset_to_cursor(typename, 2),
+                "startCursor": keyset_cursor(typename, task_1.pk),
+                "endCursor": keyset_cursor(typename, task_3.pk),
             },
             "edges": [
                 {
-                    "cursor": offset_to_cursor(typename, 0),
+                    "cursor": keyset_cursor(typename, task_1.pk),
                     "node": {
                         "name": "Task 1",
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 1),
+                    "cursor": keyset_cursor(typename, task_2.pk),
                     "node": {
                         "name": "Task 2",
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 2),
+                    "cursor": keyset_cursor(typename, task_3.pk),
                     "node": {
                         "name": "Task 3",
                     },
@@ -545,7 +545,7 @@ def test_optimizer__relay__connection__no_page_size__last(graphql, undine_settin
         },
     }
 
-    response.assert_query_count(2)
+    response.assert_query_count(1)
 
 
 @pytest.mark.django_db
@@ -558,8 +558,8 @@ def test_optimizer__relay__connection__page_size__has_next_page(graphql, undine_
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
+    task_1 = TaskFactory.create(name="Task 1")
+    task_2 = TaskFactory.create(name="Task 2")
     TaskFactory.create(name="Task 3")
 
     query = """
@@ -592,18 +592,18 @@ def test_optimizer__relay__connection__page_size__has_next_page(graphql, undine_
             "pageInfo": {
                 "hasNextPage": True,
                 "hasPreviousPage": False,
-                "startCursor": offset_to_cursor(typename, 0),
-                "endCursor": offset_to_cursor(typename, 1),
+                "startCursor": keyset_cursor(typename, task_1.pk),
+                "endCursor": keyset_cursor(typename, task_2.pk),
             },
             "edges": [
                 {
-                    "cursor": offset_to_cursor(typename, 0),
+                    "cursor": keyset_cursor(typename, task_1.pk),
                     "node": {
                         "name": "Task 1",
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 1),
+                    "cursor": keyset_cursor(typename, task_2.pk),
                     "node": {
                         "name": "Task 2",
                     },
@@ -625,9 +625,9 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
+    task_1 = TaskFactory.create(name="Task 1")
+    task_2 = TaskFactory.create(name="Task 2")
+    task_3 = TaskFactory.create(name="Task 3")
 
     query = """
         query ($after: String!) {
@@ -650,7 +650,7 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
     """
 
     typename = TaskType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
+    response = graphql(query, variables={"after": keyset_cursor(typename, task_1.pk)}, count_queries=True)
 
     assert response.has_errors is False, response.errors
     assert response.data == {
@@ -659,18 +659,18 @@ def test_optimizer__relay__connection__page_size__has_previous_page(graphql, und
             "pageInfo": {
                 "hasNextPage": False,
                 "hasPreviousPage": True,
-                "startCursor": offset_to_cursor(typename, 1),
-                "endCursor": offset_to_cursor(typename, 2),
+                "startCursor": keyset_cursor(typename, task_2.pk),
+                "endCursor": keyset_cursor(typename, task_3.pk),
             },
             "edges": [
                 {
-                    "cursor": offset_to_cursor(typename, 1),
+                    "cursor": keyset_cursor(typename, task_2.pk),
                     "node": {
                         "name": "Task 2",
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 2),
+                    "cursor": keyset_cursor(typename, task_3.pk),
                     "node": {
                         "name": "Task 3",
                     },
@@ -774,9 +774,9 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1", project__name="Project 1", assignees__name="Assignee 1")
-    TaskFactory.create(name="Task 2", project__name="Project 2", assignees__name="Assignee 2")
-    TaskFactory.create(name="Task 3", project__name="Project 3", assignees__name="Assignee 3")
+    task_1 = TaskFactory.create(name="Task 1", project__name="Project 1", assignees__name="Assignee 1")
+    task_2 = TaskFactory.create(name="Task 2", project__name="Project 2", assignees__name="Assignee 2")
+    task_3 = TaskFactory.create(name="Task 3", project__name="Project 3", assignees__name="Assignee 3")
 
     query = """
         query {
@@ -814,12 +814,12 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
             "pageInfo": {
                 "hasNextPage": False,
                 "hasPreviousPage": False,
-                "startCursor": offset_to_cursor(typename, 0),
-                "endCursor": offset_to_cursor(typename, 2),
+                "startCursor": keyset_cursor(typename, task_1.pk),
+                "endCursor": keyset_cursor(typename, task_3.pk),
             },
             "edges": [
                 {
-                    "cursor": offset_to_cursor(typename, 0),
+                    "cursor": keyset_cursor(typename, task_1.pk),
                     "node": {
                         "name": "Task 1",
                         "project": {"name": "Project 1"},
@@ -827,7 +827,7 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 1),
+                    "cursor": keyset_cursor(typename, task_2.pk),
                     "node": {
                         "name": "Task 2",
                         "project": {"name": "Project 2"},
@@ -835,7 +835,7 @@ def test_optimizer__relay__connection__joins__connection_info(graphql, undine_se
                     },
                 },
                 {
-                    "cursor": offset_to_cursor(typename, 2),
+                    "cursor": keyset_cursor(typename, task_3.pk),
                     "node": {
                         "name": "Task 3",
                         "project": {"name": "Project 3"},
@@ -984,9 +984,9 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings) -> 
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="Task 1")
-    TaskFactory.create(name="Task 2")
-    TaskFactory.create(name="Task 3")
+    task_1 = TaskFactory.create(name="Task 1")
+    task_2 = TaskFactory.create(name="Task 2")
+    task_3 = TaskFactory.create(name="Task 3")
 
     query = """
         query {
@@ -1005,9 +1005,9 @@ def test_optimizer__relay__connection__only_cursor(graphql, undine_settings) -> 
     assert response.data == {
         "tasks": {
             "edges": [
-                {"cursor": offset_to_cursor(typename, 0)},
-                {"cursor": offset_to_cursor(typename, 1)},
-                {"cursor": offset_to_cursor(typename, 2)},
+                {"cursor": keyset_cursor(typename, task_1.pk)},
+                {"cursor": keyset_cursor(typename, task_2.pk)},
+                {"cursor": keyset_cursor(typename, task_3.pk)},
             ],
         },
     }
@@ -1264,6 +1264,11 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
 
     response = graphql(query, count_queries=True)
 
+    # Without an `OrderSet`, results are ordered by primary key, which is a random UUID for `Report`.
+    def expected_reports(*reports: Report) -> dict:
+        names = [report.name for report in sorted(reports, key=lambda report: report.pk)]
+        return {"edges": [{"node": {"name": name}} for name in names]}
+
     assert response.has_errors is False, response.errors
     assert response.data == {
         "tasks": {
@@ -1271,34 +1276,19 @@ def test_optimizer__relay__nested_connection__many_to_many__reverse(graphql, und
                 {
                     "node": {
                         "name": "Task 1",
-                        "reports": {
-                            "edges": [
-                                {"node": {"name": "Report 1"}},
-                                {"node": {"name": "Report 2"}},
-                                {"node": {"name": "Report 3"}},
-                            ],
-                        },
+                        "reports": expected_reports(report_1, report_2, report_3),
                     },
                 },
                 {
                     "node": {
                         "name": "Task 2",
-                        "reports": {
-                            "edges": [
-                                {"node": {"name": "Report 3"}},
-                                {"node": {"name": "Report 4"}},
-                            ],
-                        },
+                        "reports": expected_reports(report_3, report_4),
                     },
                 },
                 {
                     "node": {
                         "name": "Task 3",
-                        "reports": {
-                            "edges": [
-                                {"node": {"name": "Report 5"}},
-                            ],
-                        },
+                        "reports": expected_reports(report_5),
                     },
                 },
             ],
@@ -1524,8 +1514,10 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
+    response = graphql(query, variables={"after": keyset_cursor(typename, person_1.pk)}, count_queries=True)
 
+    # A cursor points to a row rather than an index, so each parent's list starts
+    # from the first row ordered after that row instead of from the same offset.
     assert response.has_errors is False, response.errors
     assert response.data == {
         "tasks": {
@@ -1546,6 +1538,7 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
                         "name": "Task 2",
                         "assignees": {
                             "edges": [
+                                {"node": {"name": "Assignee 3"}},
                                 {"node": {"name": "Assignee 4"}},
                             ],
                         },
@@ -1555,7 +1548,9 @@ def test_optimizer__relay__nested_connection__after(graphql, undine_settings) ->
                     "node": {
                         "name": "Task 3",
                         "assignees": {
-                            "edges": [],
+                            "edges": [
+                                {"node": {"name": "Assignee 5"}},
+                            ],
                         },
                     },
                 },
@@ -1610,8 +1605,10 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"before": offset_to_cursor(typename, 2)}, count_queries=True)
+    response = graphql(query, variables={"before": keyset_cursor(typename, person_3.pk)}, count_queries=True)
 
+    # A cursor points to a row rather than an index, so each parent's list stops
+    # at the last row ordered before that row instead of at the same offset.
     assert response.has_errors is False, response.errors
     assert response.data == {
         "tasks": {
@@ -1631,10 +1628,7 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
                     "node": {
                         "name": "Task 2",
                         "assignees": {
-                            "edges": [
-                                {"node": {"name": "Assignee 3"}},
-                                {"node": {"name": "Assignee 4"}},
-                            ],
+                            "edges": [],
                         },
                     },
                 },
@@ -1642,9 +1636,7 @@ def test_optimizer__relay__nested_connection__before(graphql, undine_settings) -
                     "node": {
                         "name": "Task 3",
                         "assignees": {
-                            "edges": [
-                                {"node": {"name": "Assignee 5"}},
-                            ],
+                            "edges": [],
                         },
                     },
                 },
@@ -1721,20 +1713,20 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 2),
+                                "startCursor": keyset_cursor(typename, person_1.pk),
+                                "endCursor": keyset_cursor(typename, person_3.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_1.pk),
                                     "node": {"name": "Assignee 1"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_2.pk),
                                     "node": {"name": "Assignee 2"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 2),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {"name": "Assignee 3"},
                                 },
                             ],
@@ -1749,16 +1741,16 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 1),
+                                "startCursor": keyset_cursor(typename, person_3.pk),
+                                "endCursor": keyset_cursor(typename, person_4.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {"name": "Assignee 3"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_4.pk),
                                     "node": {"name": "Assignee 4"},
                                 },
                             ],
@@ -1773,12 +1765,12 @@ def test_optimizer__relay__nested_connection__connection_info(graphql, undine_se
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 0),
+                                "startCursor": keyset_cursor(typename, person_5.pk),
+                                "endCursor": keyset_cursor(typename, person_5.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_5.pk),
                                     "node": {"name": "Assignee 5"},
                                 },
                             ],
@@ -2119,16 +2111,16 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
                             "pageInfo": {
                                 "hasNextPage": True,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 1),
+                                "startCursor": keyset_cursor(typename, person_1.pk),
+                                "endCursor": keyset_cursor(typename, person_2.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_1.pk),
                                     "node": {"name": "Assignee 1"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_2.pk),
                                     "node": {"name": "Assignee 2"},
                                 },
                             ],
@@ -2143,16 +2135,16 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 1),
+                                "startCursor": keyset_cursor(typename, person_3.pk),
+                                "endCursor": keyset_cursor(typename, person_4.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {"name": "Assignee 3"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_4.pk),
                                     "node": {"name": "Assignee 4"},
                                 },
                             ],
@@ -2167,12 +2159,12 @@ def test_optimizer__relay__nested_connection__page_size__has_next_page(graphql, 
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 0),
+                                "startCursor": keyset_cursor(typename, person_5.pk),
+                                "endCursor": keyset_cursor(typename, person_5.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_5.pk),
                                     "node": {"name": "Assignee 5"},
                                 },
                             ],
@@ -2238,8 +2230,10 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
     """
 
     typename = PersonType.__schema_name__
-    response = graphql(query, variables={"after": offset_to_cursor(typename, 0)}, count_queries=True)
+    response = graphql(query, variables={"after": keyset_cursor(typename, person_1.pk)}, count_queries=True)
 
+    # A cursor points to a row rather than an index, so each parent's list starts
+    # from the first row ordered after that row instead of from the same offset.
     assert response.has_errors is False, response.errors
     assert response.data == {
         "tasks": {
@@ -2252,16 +2246,16 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": True,
-                                "startCursor": offset_to_cursor(typename, 1),
-                                "endCursor": offset_to_cursor(typename, 2),
+                                "startCursor": keyset_cursor(typename, person_2.pk),
+                                "endCursor": keyset_cursor(typename, person_3.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_2.pk),
                                     "node": {"name": "Assignee 2"},
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 2),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {"name": "Assignee 3"},
                                 },
                             ],
@@ -2276,12 +2270,16 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": True,
-                                "startCursor": offset_to_cursor(typename, 1),
-                                "endCursor": offset_to_cursor(typename, 1),
+                                "startCursor": keyset_cursor(typename, person_3.pk),
+                                "endCursor": keyset_cursor(typename, person_4.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
+                                    "node": {"name": "Assignee 3"},
+                                },
+                                {
+                                    "cursor": keyset_cursor(typename, person_4.pk),
                                     "node": {"name": "Assignee 4"},
                                 },
                             ],
@@ -2292,15 +2290,19 @@ def test_optimizer__relay__nested_connection__page_size__has_previous_page(graph
                     "node": {
                         "name": "Task 3",
                         "assignees": {
-                            # Details are wrong because we didn't get any items and couldn't read the annotations
-                            "totalCount": 0,
+                            "totalCount": 1,
                             "pageInfo": {
                                 "hasNextPage": False,
-                                "hasPreviousPage": False,
-                                "startCursor": None,
-                                "endCursor": None,
+                                "hasPreviousPage": True,
+                                "startCursor": keyset_cursor(typename, person_5.pk),
+                                "endCursor": keyset_cursor(typename, person_5.pk),
                             },
-                            "edges": [],
+                            "edges": [
+                                {
+                                    "cursor": keyset_cursor(typename, person_5.pk),
+                                    "node": {"name": "Assignee 5"},
+                                },
+                            ],
                         },
                     },
                 },
@@ -2516,26 +2518,26 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 2),
+                                "startCursor": keyset_cursor(typename, person_1.pk),
+                                "endCursor": keyset_cursor(typename, person_3.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_1.pk),
                                     "node": {
                                         "name": "Assignee 1",
                                         "teams": [{"name": "Team 1"}],
                                     },
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_2.pk),
                                     "node": {
                                         "name": "Assignee 2",
                                         "teams": [{"name": "Team 1"}],
                                     },
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 2),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {
                                         "name": "Assignee 3",
                                         "teams": [{"name": "Team 2"}],
@@ -2553,19 +2555,19 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 1),
+                                "startCursor": keyset_cursor(typename, person_3.pk),
+                                "endCursor": keyset_cursor(typename, person_4.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_3.pk),
                                     "node": {
                                         "name": "Assignee 3",
                                         "teams": [{"name": "Team 2"}],
                                     },
                                 },
                                 {
-                                    "cursor": offset_to_cursor(typename, 1),
+                                    "cursor": keyset_cursor(typename, person_4.pk),
                                     "node": {
                                         "name": "Assignee 4",
                                         "teams": [{"name": "Team 2"}],
@@ -2583,12 +2585,12 @@ def test_optimizer__relay__nested_connection__joins__connection_info(graphql, un
                             "pageInfo": {
                                 "hasNextPage": False,
                                 "hasPreviousPage": False,
-                                "startCursor": offset_to_cursor(typename, 0),
-                                "endCursor": offset_to_cursor(typename, 0),
+                                "startCursor": keyset_cursor(typename, person_5.pk),
+                                "endCursor": keyset_cursor(typename, person_5.pk),
                             },
                             "edges": [
                                 {
-                                    "cursor": offset_to_cursor(typename, 0),
+                                    "cursor": keyset_cursor(typename, person_5.pk),
                                     "node": {
                                         "name": "Assignee 5",
                                         "teams": [{"name": "Team 1"}, {"name": "Team 2"}],
@@ -3101,9 +3103,9 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
                         "name": "Task 1",
                         "assignees": {
                             "edges": [
-                                {"cursor": offset_to_cursor(typename, 0)},
-                                {"cursor": offset_to_cursor(typename, 1)},
-                                {"cursor": offset_to_cursor(typename, 2)},
+                                {"cursor": keyset_cursor(typename, person_1.pk)},
+                                {"cursor": keyset_cursor(typename, person_2.pk)},
+                                {"cursor": keyset_cursor(typename, person_3.pk)},
                             ],
                         },
                     },
@@ -3113,8 +3115,8 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
                         "name": "Task 2",
                         "assignees": {
                             "edges": [
-                                {"cursor": offset_to_cursor(typename, 0)},
-                                {"cursor": offset_to_cursor(typename, 1)},
+                                {"cursor": keyset_cursor(typename, person_3.pk)},
+                                {"cursor": keyset_cursor(typename, person_4.pk)},
                             ],
                         },
                     },
@@ -3124,7 +3126,7 @@ def test_optimizer__relay__nested_connection__only_cursor(graphql, undine_settin
                         "name": "Task 3",
                         "assignees": {
                             "edges": [
-                                {"cursor": offset_to_cursor(typename, 0)},
+                                {"cursor": keyset_cursor(typename, person_5.pk)},
                             ],
                         },
                     },

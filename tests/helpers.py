@@ -43,6 +43,7 @@ from urllib3.fields import RequestField
 from example_project.app.models import Comment, Project, Report, Task
 from undine.exceptions import UndineError
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
+from undine.relay import values_to_cursor
 from undine.settings import example_schema, undine_settings
 from undine.typing import GQLContext, GQLInfo
 
@@ -60,6 +61,7 @@ __all__ = [
     "MockRequest",
     "create_graphql_multipart_spec_request",
     "exact",
+    "keyset_cursor",
     "mock_gql_info",
     "parametrize_helper",
 ]
@@ -93,6 +95,11 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
     except AttributeError as error:
         msg = "Improper configuration. Did you use a NamedTuple for TNamedTuple?"
         raise UndineError(msg) from error
+
+
+def keyset_cursor(typename: str, *values: Any) -> str:
+    """Build a keyset cursor pointing to a row with the given ordering values."""
+    return values_to_cursor(typename, [None if value is None else str(value) for value in values])
 
 
 def exact(msg: str, *, from_start: bool = False) -> str:

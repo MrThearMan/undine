@@ -20,7 +20,7 @@ To add offset pagination to a `QueryType` `Entrypoint`, you need to wrap with th
 class.
 
 ```python hl_lines="11"
--8<- "pagination/offset_entrypoint.py"
+-8 < -"pagination/offset_entrypoint.py"
 ```
 
 This creates the following GraphQL types.
@@ -44,7 +44,7 @@ type Query {
 Offset pagination can also be used with many-related `Fields`.
 
 ```python hl_lines="11"
--8<- "pagination/offset_field.py"
+-8 < -"pagination/offset_field.py"
 ```
 
 This creates the following GraphQL types.
@@ -80,8 +80,21 @@ type Query {
 
 Cursor based pagination works by assigning items an opaque unique identifier called a "cursor".
 Pages can then be defined as starting before or after a given cursor.
-This makes cursor based pagination more resilient to changes in the paginated list,
-since the cursors themselves do not change when items are added or removed.
+
+A cursor identifies a *row* rather than a position in the list: it encodes the values the list is
+ordered by for the item it points to. Paginating "after" a cursor therefore means "give me the items
+that sort after this item", which makes cursor pagination resilient to items being added to or removed
+from the parts of the list that have already been read. Items are never skipped or delivered twice
+because of a change earlier in the list, which is what makes it a good fit for infinite scrolling
+and for lists that change while they are being read.
+
+Two things follow from cursors being tied to the ordering:
+
+- A cursor is only valid for the ordering it was issued under. Replaying a cursor after changing the
+  [`OrderSet`](ordering.md#orderset) arguments may return a `Bad Request` error, since no pagination
+  scheme can say what comes "after" an item under an ordering that item was never sorted by.
+- The primary key is always appended to the ordering, so that no two items compare equal.
+  If no ordering is requested, items are ordered by their primary key.
 
 Additionally, cursor based pagination wraps the paginated items as `Edge` objects inside a `Connection` object.
 These objects contain additional information about the pagination state, such as the total count of items,
@@ -94,7 +107,7 @@ To add cursor pagination to a `QueryType` `Entrypoint`, you need to wrap with th
 class.
 
 ```python hl_lines="11"
--8<- "pagination/connection_entrypoint.py"
+-8 < -"pagination/connection_entrypoint.py"
 ```
 
 This creates the following GraphQL types.
@@ -144,8 +157,12 @@ Querying this `Entrypoint` will return a response like this:
 Similarly, cursor pagination can also be used with many-related `Fields`.
 
 ```python hl_lines="11"
--8<- "pagination/connection_field.py"
+-8 < -"pagination/connection_field.py"
 ```
+
+Note that for nested `Connections`, a single `after` or `before` cursor is shared by every parent item.
+Since a cursor points to a row and not to an index, each parent's list begins at the first item that
+sorts after that cursor, which can be a different position in each parent's list.
 
 > For Relay-compliant clients, see the [Global Object IDs](global-object-ids.md#node-interface) section
 > for adding support for the `Node` interface.
@@ -177,7 +194,7 @@ The default page size for all pagination methods is set by the
 You can also use a different page size by using the `page_size` argument.
 
 ```python
--8<- "pagination/connection_page_size.py"
+-8 < -"pagination/connection_page_size.py"
 ```
 
 Setting page size to `None` will return all items in a single page.
@@ -188,8 +205,14 @@ The default pagination strategies are accurate and performant for both top-level
 (although calculating `totalCount` for nested `Connections` can be slow,
 since it requires a subquery for each parent item).
 Still, if you need to modify the pagination behavior,
-you can do so by providing a custom `PaginationHandler` class.
+you can do so by providing a custom pagination handler class.
+
+`Connections` for a `QueryType` use the `CursorPaginationHandler`, which implements the cursor
+pagination described above. `OffsetPagination`, and `Connections` for a `UnionType` or an
+`InterfaceType`, use the index based `PaginationHandler` instead. Cursors for those `Connections`
+encode a position in the list rather than the ordering values of a row, since the items come from
+several models that have no ordering values in common.
 
 ```python
--8<- "pagination/connection_pagination_handler.py"
+-8 < -"pagination/connection_pagination_handler.py"
 ```

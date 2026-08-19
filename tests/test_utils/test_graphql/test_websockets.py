@@ -33,7 +33,6 @@ from undine.typing import (
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler, WebSocketRequest
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),  # For sessions
 ]
 

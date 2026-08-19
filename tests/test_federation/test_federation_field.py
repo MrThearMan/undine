@@ -283,7 +283,6 @@ def test_federation_field__key_field_uses_attribute_lookup_default(undine_settin
     assert resolver(FakeRoot(), None) == "abc"
 
 
-@pytest.mark.asyncio
 async def test_federation_field__key_field_uses_attribute_lookup_default__async(undine_settings) -> None:
     undine_settings.ASYNC = True
 
@@ -354,7 +353,6 @@ def test_federation_field__external_field_uses_attribute_lookup_default() -> Non
     assert resolver(FakeRoot(), None) == 42
 
 
-@pytest.mark.asyncio
 async def test_federation_field__external_field_uses_attribute_lookup_default__async(undine_settings) -> None:
     undine_settings.ASYNC = True
 
@@ -564,7 +562,6 @@ def test_federation_field__non_key_directive_on_federation_type_is_skipped_for_r
     assert resolver(FakeRoot(), None) == "abc"
 
 
-@pytest.mark.asyncio
 async def test_federation_field__non_key_directive_on_federation_type_is_skipped_for_resolver_dispatch__async(
     undine_settings,
 ) -> None:

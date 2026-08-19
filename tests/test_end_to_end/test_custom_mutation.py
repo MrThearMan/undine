@@ -55,7 +55,6 @@ def test_custom_mutation(graphql, undine_settings):
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_custom_mutation__async(graphql_async, undine_settings):
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -154,7 +153,6 @@ def test_custom_mutation__related(graphql, undine_settings):
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_custom_mutation__related__async(graphql_async, undine_settings):
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -250,7 +248,6 @@ def test_custom_mutation__related_id(graphql, undine_settings):
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_custom_mutation__related_id__async(graphql_async, undine_settings):
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -635,7 +632,6 @@ def test_custom_mutation__hidden_input(graphql, undine_settings):
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_custom_mutation__hidden_input__async(graphql_async, undine_settings):
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -748,7 +744,6 @@ def test_custom_mutation__input_only_input(graphql, undine_settings):
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_custom_mutation__input_only_input__async(graphql_async, undine_settings):
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
