@@ -69,12 +69,12 @@ def test_optimizer__interfaces(graphql, undine_settings) -> None:
                 "name": "Project 1",
             },
             {
-                "name": "Task 1",
-                "type": "TASK",
-            },
-            {
                 "pk": project_2.pk,
                 "name": "Project 2",
+            },
+            {
+                "name": "Task 1",
+                "type": "TASK",
             },
             {
                 "name": "Task 2",
@@ -131,11 +131,11 @@ def test_optimizer__interfaces__only_one_fragment(graphql, undine_settings) -> N
                 "name": "Project 1",
             },
             {
-                "name": "Task 1",
-                "type": "TASK",
+                "name": "Project 2",
             },
             {
-                "name": "Project 2",
+                "name": "Task 1",
+                "type": "TASK",
             },
             {
                 "name": "Task 2",
@@ -189,10 +189,10 @@ def test_optimizer__interfaces__only_interface_fields(graphql, undine_settings) 
                 "name": "Project 1",
             },
             {
-                "name": "Task 1",
+                "name": "Project 2",
             },
             {
-                "name": "Project 2",
+                "name": "Task 1",
             },
             {
                 "name": "Task 2",
@@ -250,10 +250,10 @@ def test_optimizer__interfaces__only_fragment_fields(graphql, undine_settings) -
                 "pk": project_1.pk,
             },
             {
-                "type": "TASK",
+                "pk": project_2.pk,
             },
             {
-                "pk": project_2.pk,
+                "type": "TASK",
             },
             {
                 "type": "STORY",
@@ -423,14 +423,14 @@ def test_optimizer__interfaces__multiple_interface_fields(graphql, undine_settin
                 "name": "Project 1",
             },
             {
-                "id": task_1.pk,
-                "name": "Task 1",
-                "type": "TASK",
-            },
-            {
                 "id": project_2.pk,
                 "pk": project_2.pk,
                 "name": "Project 2",
+            },
+            {
+                "id": task_1.pk,
+                "name": "Task 1",
+                "type": "TASK",
             },
             {
                 "id": task_2.pk,
@@ -494,14 +494,14 @@ def test_optimizer__interfaces__typename(graphql, undine_settings) -> None:
                 "pk": project_1.pk,
             },
             {
-                "__typename": "TaskType",
-                "name": "Task 1",
-                "type": "TASK",
-            },
-            {
                 "__typename": "ProjectType",
                 "name": "Project 2",
                 "pk": project_2.pk,
+            },
+            {
+                "__typename": "TaskType",
+                "name": "Task 1",
+                "type": "TASK",
             },
             {
                 "__typename": "TaskType",
@@ -635,11 +635,11 @@ def test_optimizer__interfaces__ordering(graphql, undine_settings) -> None:
     assert response.data == {
         "named": [
             {"name": "Project 1"},
-            {"name": "Task 3"},
+            {"name": "Project 2"},
             {"name": "Project 3"},
             {"name": "Task 1"},
-            {"name": "Project 2"},
             {"name": "Task 2"},
+            {"name": "Task 3"},
         ]
     }
 

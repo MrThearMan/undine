@@ -370,7 +370,7 @@ def test_end_to_end__mutation__single__permission_error__field__multiple(graphql
         def name_permissions(self, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
-        @type.permissions
+        @type.permissions  # noqa: A003
         def type_permissions(self, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
@@ -947,7 +947,7 @@ def test_end_to_end__mutation__many__permission_error__field__multiple(graphql, 
         def name_permission(self, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 
-        @type.permissions
+        @type.permissions  # noqa: A003
         def type_permission(self, info: GQLInfo, value: str) -> None:
             raise GraphQLPermissionError
 

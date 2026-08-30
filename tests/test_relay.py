@@ -6,16 +6,7 @@ from graphql import GraphQLNonNull, GraphQLString
 from example_project.app.models import Project, Task
 from undine import InterfaceField, InterfaceType, QueryType, UnionType
 from undine.exceptions import InterfaceFieldNodeIDError
-from undine.relay import (
-    Connection,
-    NodeIDField,
-    cursor_to_offset,
-    decode_base64,
-    encode_base64,
-    from_global_id,
-    offset_to_cursor,
-    to_global_id,
-)
+from undine.relay import Connection, NodeIDField, decode_base64, encode_base64, from_global_id, to_global_id
 
 
 def test_encode_base64() -> None:
@@ -24,14 +15,6 @@ def test_encode_base64() -> None:
 
 def test_decode_base64() -> None:
     assert decode_base64("Zm9v") == "foo"
-
-
-def test_offset_to_cursor() -> None:
-    assert offset_to_cursor("Test", 1) == "Y29ubmVjdGlvbjpUZXN0OjE="
-
-
-def test_cursor_to_offset() -> None:
-    assert cursor_to_offset("Test", "Y29ubmVjdGlvbjpUZXN0OjE=") == 1
 
 
 def test_to_global_id() -> None:

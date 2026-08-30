@@ -1,15 +1,37 @@
 from __future__ import annotations
 
+import datetime
 from copy import deepcopy
+from itertools import count
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
+from graphql import GraphQLField, GraphQLInt, GraphQLNonNull, GraphQLObjectType
 
-from example_project.app.models import Comment, Person, Project, Task, TaskStep, TaskTypeChoices
-from tests.factories import PersonFactory, ProjectFactory
+from example_project.app.models import (
+    Comment,
+    Person,
+    Project,
+    Report,
+    ServiceRequest,
+    Task,
+    TaskResult,
+    TaskStep,
+    TaskTypeChoices,
+)
+from tests.factories import (
+    PersonFactory,
+    ProjectFactory,
+    ReportFactory,
+    ServiceRequestFactory,
+    TaskResultFactory,
+    TaskStepFactory,
+)
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
 from undine.hooks import AtomicMutationHook
+from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 
 
 @pytest.mark.django_db
@@ -852,3 +874,720 @@ def test_create_mutation__atomic_mutation(graphql, undine_settings):
     # Since project creation fails, task creation is rolled back with atomic.
     assert Task.objects.count() == 0
     assert Project.objects.count() == 0
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_create_mutation__async(graphql_async, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.STORY,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                name
+                type
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = await sync_to_async(Task.objects.get)(name="Test Task")
+
+    assert task.type == TaskTypeChoices.STORY
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "name": "Test Task",
+            "type": "STORY",
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__forward_one_to_one(graphql, undine_settings):
+    class ServiceRequestType(QueryType[ServiceRequest]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedRequest(MutationType[ServiceRequest], kind="related"):
+        details = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        request = Input(RelatedRequest)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "request": {
+            "details": "Test Request",
+        },
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                request {
+                    details
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+    request = ServiceRequest.objects.get(details="Test Request")
+
+    assert task.request == request
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "request": {
+                "details": "Test Request",
+            },
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__forward_one_to_one__pk(graphql, undine_settings):
+    class ServiceRequestType(QueryType[ServiceRequest]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    request = ServiceRequestFactory.create(details="Test Request")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "request": request.pk,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                request {
+                    details
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+
+    assert task.request == request
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "request": {
+                "details": "Test Request",
+            },
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__many_to_one__pk(graphql, undine_settings):
+    class ProjectType(QueryType[Project]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    project = ProjectFactory.create(name="Test Project")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "project": project.pk,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                project {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+
+    assert task.project == project
+    assert list(project.tasks.all()) == [task]
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "project": {
+                "name": "Test Project",
+            },
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__many_to_many__pk(graphql, undine_settings):
+    class PersonType(QueryType[Person]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    person = PersonFactory.create(name="Test Person")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "assignees": [person.pk],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                assignees {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+
+    assert list(task.assignees.all()) == [person]
+    assert list(person.tasks.all()) == [task]
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "assignees": [
+                {
+                    "name": "Test Person",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__reverse_one_to_one(graphql, undine_settings):
+    class TaskResultType(QueryType[TaskResult]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedResult(MutationType[TaskResult], kind="related"):
+        details = Input()
+        time_used = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        result = Input(RelatedResult)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "result": {
+            "details": "Test Result",
+            "timeUsed": 10,
+        },
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                result {
+                    details
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+    result = TaskResult.objects.get(details="Test Result")
+
+    assert task.result == result
+    assert result.task == task
+    assert result.time_used == datetime.timedelta(seconds=10)
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "result": {
+                "details": "Test Result",
+            },
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__reverse_one_to_one__pk(graphql, undine_settings):
+    class TaskResultType(QueryType[TaskResult]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    result = TaskResultFactory.create(details="Test Result")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "result": result.pk,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                result {
+                    details
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+    result.refresh_from_db()
+
+    assert task.result == result
+    assert result.task == task
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "result": {
+                "details": "Test Result",
+            },
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__reverse_one_to_many__pk(graphql, undine_settings):
+    class TaskStepType(QueryType[TaskStep]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    step = TaskStepFactory.create(name="Test Step")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [step.pk],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                steps {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+    step.refresh_from_db()
+
+    assert list(task.steps.all()) == [step]
+    assert step.task == task
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "steps": [
+                {
+                    "name": "Test Step",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__reverse_many_to_many(graphql, undine_settings):
+    class ReportType(QueryType[Report]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class RelatedReport(MutationType[Report], kind="related"):
+        name = Input()
+        content = Input()
+
+    class TaskCreateMutation(MutationType[Task]):
+        reports = Input(RelatedReport, many=True)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "reports": [
+            {
+                "name": "Test Report",
+                "content": "Test Report Content",
+            },
+        ],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                reports {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+    report = Report.objects.get(name="Test Report")
+
+    assert list(task.reports.all()) == [report]
+    assert list(report.tasks.all()) == [task]
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "reports": [
+                {
+                    "name": "Test Report",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__relations__reverse_many_to_many__pk(graphql, undine_settings):
+    class ReportType(QueryType[Report]): ...
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    report = ReportFactory.create(name="Test Report")
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "reports": [str(report.pk)],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+                reports {
+                    name
+                }
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+
+    assert list(task.reports.all()) == [report]
+    assert list(report.tasks.all()) == [task]
+
+    assert response.data == {
+        "createTask": {
+            "pk": task.pk,
+            "reports": [
+                {
+                    "name": "Test Report",
+                },
+            ],
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_create_mutation__hooks__call_order(graphql, undine_settings):
+    counter = count()
+
+    input_validate_called: int = -1
+    input_permission_called: int = -1
+    validate_called: int = -1
+    permission_called: int = -1
+    after_called: int = -1
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        name = Input()
+
+        @name.validate
+        def _(self: Task, info: GQLInfo, value: str) -> None:
+            nonlocal input_validate_called
+            input_validate_called = next(counter)
+
+        @name.permissions
+        def _(self: Task, info: GQLInfo, value: str) -> None:
+            nonlocal input_permission_called
+            input_permission_called = next(counter)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal validate_called
+            validate_called = next(counter)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal permission_called
+            permission_called = next(counter)
+
+        @classmethod
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal after_called
+            after_called = next(counter)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.STORY,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                pk
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    task = Task.objects.get(name="Test Task")
+
+    assert response.data == {"createTask": {"pk": task.pk}}
+
+    assert permission_called == 0
+    assert input_permission_called == 1
+    assert input_validate_called == 2
+    assert validate_called == 3
+    assert after_called == 4
+
+
+@pytest.mark.django_db
+def test_create_mutation__non_model_return(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+            return {"foo": 1}
+
+        @classmethod
+        def __output_type__(cls) -> GraphQLObjectType:
+            fields = {"foo": GraphQLField(GraphQLNonNull(GraphQLInt))}
+            return get_or_create_graphql_object_type(name="TaskCreateMutationOutput", fields=fields)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.STORY,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                foo
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"createTask": {"foo": 1}}
+
+    assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_create_mutation__non_model_return__async(graphql_async, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+            return {"foo": 1}
+
+        @classmethod
+        def __output_type__(cls) -> GraphQLObjectType:
+            fields = {"foo": GraphQLField(GraphQLNonNull(GraphQLInt))}
+            return get_or_create_graphql_object_type(name="TaskCreateMutationOutput", fields=fields)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.STORY,
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                foo
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"createTask": {"foo": 1}}
+
+    assert await sync_to_async(Task.objects.count)() == 0

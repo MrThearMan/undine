@@ -18,6 +18,7 @@ __all__ = [
 
 def create_list_nesting_schema() -> GraphQLSchema:
     """Create a schema with both to-one and to-many relations for testing list nesting depth."""
+
     class PersonType(QueryType[Person], auto=False):
         name = Field()
 
@@ -53,6 +54,7 @@ def create_list_nesting_schema() -> GraphQLSchema:
 
 def create_list_nesting_connection_schema() -> GraphQLSchema:
     """Create a schema where the to-many relations are Relay connections."""
+
     class PersonType(QueryType[Person], auto=False):
         name = Field()
 

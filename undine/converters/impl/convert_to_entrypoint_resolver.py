@@ -120,7 +120,7 @@ def _(ref: OffsetPagination, **kwargs: Any) -> GraphQLFieldResolver:
         return UnionTypeResolver(union_type=ref.union_type, entrypoint=caller)  # type: ignore[arg-type]
 
     if ref.interface_type is not None:
-        return InterfaceTypeResolver(interface=ref.interface_type, entrypoint=caller)
+        return InterfaceTypeResolver(interface_type=ref.interface_type, entrypoint=caller)
 
     return QueryTypeManyResolver(query_type=ref.query_type, entrypoint=caller)  # type: ignore[arg-type]
 
@@ -134,7 +134,7 @@ def _(_: type[Node], **kwargs: Any) -> GraphQLFieldResolver:
 @convert_to_entrypoint_resolver.register
 def _(ref: type[InterfaceType], **kwargs: Any) -> GraphQLFieldResolver:
     caller: Entrypoint = kwargs["caller"]
-    return InterfaceTypeResolver(interface=ref, entrypoint=caller)
+    return InterfaceTypeResolver(interface_type=ref, entrypoint=caller)
 
 
 @convert_to_entrypoint_resolver.register

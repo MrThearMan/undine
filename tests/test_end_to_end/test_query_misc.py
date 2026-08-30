@@ -12,7 +12,6 @@ from undine.optimizer import OptimizationData
 from undine.typing import GQLInfo
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_end_to_end__async_iterator_field(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True

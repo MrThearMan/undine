@@ -246,10 +246,10 @@ def test_modeltranslation__orderset_orders__only_translations(undine_settings) -
 
 def test_modeltranslation__is_translation_field__not_installed() -> None:
     field = TestModel._meta.get_field("name")
-    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", False):
+    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", new=False):
         assert modeltranslation_module.is_translation_field(field) is False
 
 
 def test_modeltranslation__get_translatable_fields__not_installed() -> None:
-    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", False):
+    with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", new=False):
         assert modeltranslation_module.get_translatable_fields(TestModel) == set()

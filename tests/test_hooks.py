@@ -316,7 +316,6 @@ def test_lifecycle_hook__request(graphql, undine_settings) -> None:
     ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_lifecycle_hook__request__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -381,7 +380,6 @@ async def test_lifecycle_hook__request__async(graphql_async, undine_settings) ->
     ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_lifecycle_hook__request__async__using_sync_methods(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -498,7 +496,6 @@ def test_atomic_mutation_hook__resolver_error_captured(undine_settings) -> None:
     assert hook.error is None  # finally block clears it
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_atomic_mutation_hook__async_raises(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -533,7 +530,6 @@ def test_request_cache_hook__result_not_execution_result(undine_settings) -> Non
         next(gen)  # runs: if not isinstance → return
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_non_query(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -548,7 +544,6 @@ async def test_request_cache_hook__async_non_query(undine_settings) -> None:
         await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_write_and_read_from_cache(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -580,7 +575,6 @@ async def test_request_cache_hook__async_write_and_read_from_cache(graphql_async
     assert result2.data == {"task": {"name": "Cached Task"}}
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_read_predicate_false(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -601,7 +595,6 @@ async def test_request_cache_hook__async_read_predicate_false(undine_settings) -
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_result_not_execution_result(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -621,7 +614,6 @@ async def test_request_cache_hook__async_result_not_execution_result(undine_sett
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_result_has_errors(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -641,7 +633,6 @@ async def test_request_cache_hook__async_result_has_errors(undine_settings) -> N
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_write_predicate_false(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = []
@@ -683,7 +674,6 @@ def test_apq_hook__non_query_operation(undine_settings) -> None:
         next(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_no_persisted_query(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
@@ -698,7 +688,6 @@ async def test_apq_hook__async_no_persisted_query(undine_settings) -> None:
         await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_non_query_operation(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
@@ -717,7 +706,6 @@ async def test_apq_hook__async_non_query_operation(undine_settings) -> None:
         await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_saves_document(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
@@ -739,7 +727,6 @@ async def test_apq_hook__async_saves_document(undine_settings) -> None:
     assert await PersistedDocument.objects.filter(document_id=document_id).aexists()
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_hash_mismatch(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
@@ -760,7 +747,6 @@ async def test_apq_hook__async_hash_mismatch(undine_settings) -> None:
     assert context.result.errors
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_invalid_persisted_query_format(undine_settings) -> None:
     undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
@@ -883,7 +869,6 @@ def test_visibility_cache_hook__sync_result_has_errors(undine_settings) -> None:
             next(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_no_cache__early_yield(undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
@@ -898,7 +883,6 @@ async def test_visibility_cache_hook__async_no_cache__early_yield(undine_setting
         await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_cache_miss_writes_result(undine_settings) -> None:
     context = make_hook_context(source="query { field }")
@@ -917,7 +901,6 @@ async def test_visibility_cache_hook__async_cache_miss_writes_result(undine_sett
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_cache_hit_returns_cached(undine_settings) -> None:
     context = make_hook_context(source="query { field }")
@@ -938,7 +921,6 @@ async def test_visibility_cache_hook__async_cache_hit_returns_cached(undine_sett
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_result_not_execution_result(undine_settings) -> None:
     context = make_hook_context(source="query { field }")
@@ -956,7 +938,6 @@ async def test_visibility_cache_hook__async_result_not_execution_result(undine_s
             await anext(gen)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_result_has_errors(undine_settings) -> None:
     context = make_hook_context(source="query { field }")

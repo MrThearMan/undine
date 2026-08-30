@@ -78,7 +78,7 @@ class Arguments(TypedDict):
         ),
         "lazy query type union": Params(
             value=LazyGenericForeignKey(field=Comment._meta.get_field("target")),
-            expected=False,
+            expected=True,
         ),
         "generic relation": Params(
             value=Task._meta.get_field("comments"),
@@ -86,7 +86,7 @@ class Arguments(TypedDict):
         ),
         "generic foreign key": Params(
             value=Comment._meta.get_field("target"),
-            expected=False,
+            expected=True,
         ),
     }),
 )

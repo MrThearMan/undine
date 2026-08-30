@@ -84,7 +84,7 @@ def resolve_type_meta_field_def(root: Any, info: GQLInfo, *, name: str) -> Graph
     if gql_type is None:
         return None
 
-    if not is_visible(gql_type, info.context):
+    if not is_visible(gql_type, info.context.request):
         return None
 
     return gql_type
@@ -132,7 +132,7 @@ def resolve_schema_description(root: GraphQLSchema, info: GQLInfo) -> str | None
 
 
 def resolve_schema_types(root: GraphQLSchema, info: GQLInfo) -> Iterable[GraphQLNamedType]:
-    return [gql_type for gql_type in root.type_map.values() if is_visible(gql_type, info.context)]
+    return [gql_type for gql_type in root.type_map.values() if is_visible(gql_type, info.context.request)]
 
 
 def resolve_schema_query_type(root: GraphQLSchema, info: GQLInfo) -> GraphQLObjectType | None:
@@ -166,11 +166,11 @@ def _root_type_visible(object_type: GraphQLObjectType, info: GQLInfo) -> bool:
     root_type = get_undine_root_type(object_type)
     if root_type is None:
         return True
-    return is_visible(object_type, info.context)
+    return is_visible(object_type, info.context.request)
 
 
 def resolve_schema_directives(root: GraphQLSchema, info: GQLInfo) -> Iterable[GraphQLDirective]:
-    return [directive for directive in root.directives if is_visible(directive, info.context)]
+    return [directive for directive in root.directives if is_visible(directive, info.context.request)]
 
 
 # Directive
@@ -221,7 +221,7 @@ def resolve_directive_locations(root: GraphQLDirective, info: GQLInfo) -> Iterab
 
 
 def resolve_directive_args(root: GraphQLDirective, info: GQLInfo, **kwargs: Any) -> list[tuple[str, GraphQLArgument]]:
-    args = ((key, arg) for key, arg in root.args.items() if is_visible(arg, info.context))
+    args = ((key, arg) for key, arg in root.args.items() if is_visible(arg, info.context.request))
 
     if kwargs["includeDeprecated"]:
         return list(args)
@@ -327,7 +327,7 @@ def resolve_type_specified_by_url(gql_type: GraphQLType, info: GQLInfo) -> str |
 
 def resolve_type_fields(gql_type: GraphQLType, info: GQLInfo, **kwargs: Any) -> list[tuple[str, GraphQLField]] | None:
     if isinstance(gql_type, (GraphQLObjectType, GraphQLInterfaceType)):
-        fields = ((key, field) for key, field in gql_type.fields.items() if is_visible(field, info.context))
+        fields = ((key, field) for key, field in gql_type.fields.items() if is_visible(field, info.context.request))
 
         if kwargs["includeDeprecated"]:
             return list(fields)
@@ -339,7 +339,7 @@ def resolve_type_fields(gql_type: GraphQLType, info: GQLInfo, **kwargs: Any) -> 
 
 def resolve_type_interfaces(gql_type: GraphQLType, info: GQLInfo) -> Iterable[GraphQLInterfaceType] | None:
     if isinstance(gql_type, (GraphQLObjectType, GraphQLInterfaceType)):
-        return [interface for interface in gql_type.interfaces if is_visible(interface, info.context)]
+        return [interface for interface in gql_type.interfaces if is_visible(interface, info.context.request)]
 
     return None
 
@@ -347,7 +347,7 @@ def resolve_type_interfaces(gql_type: GraphQLType, info: GQLInfo) -> Iterable[Gr
 def resolve_type_possible_types(gql_type: GraphQLType, info: GQLInfo) -> Iterable[GraphQLObjectType] | None:
     if isinstance(gql_type, (GraphQLInterfaceType, GraphQLUnionType)):
         object_types = info.schema.get_possible_types(gql_type)
-        return [object_type for object_type in object_types if is_visible(object_type, info.context)]
+        return [object_type for object_type in object_types if is_visible(object_type, info.context.request)]
 
     return None
 
@@ -358,7 +358,7 @@ def resolve_type_enum_values(
     **kwargs: Any,
 ) -> list[tuple[str, GraphQLEnumValue]] | None:
     if isinstance(gql_type, GraphQLEnumType):
-        values = ((key, field) for key, field in gql_type.values.items() if is_visible(field, info.context))
+        values = ((key, field) for key, field in gql_type.values.items() if is_visible(field, info.context.request))
 
         if kwargs["includeDeprecated"]:
             return list(values)
@@ -377,7 +377,8 @@ def resolve_type_input_fields(
         fields = (
             (key, field)
             for key, field in gql_type.fields.items()
-            if is_visible(field, info.context) and is_visible(get_underlying_type(field.type), info.context)
+            if is_visible(field, info.context.request)
+            and is_visible(get_underlying_type(field.type), info.context.request)
         )
 
         if kwargs["includeDeprecated"]:
@@ -446,7 +447,7 @@ def resolve_field_args(
     info: GQLInfo,
     **kwargs: Any,
 ) -> list[tuple[str, GraphQLArgument]]:
-    args = ((key, arg) for key, arg in item[1].args.items() if is_visible(arg, info.context))
+    args = ((key, arg) for key, arg in item[1].args.items() if is_visible(arg, info.context.request))
 
     if kwargs["includeDeprecated"]:
         return list(args)

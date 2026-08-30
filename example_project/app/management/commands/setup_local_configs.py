@@ -16,7 +16,7 @@ class Command(BaseCommand):
     help = "Set up local config files (mypy.ini, pyrightconfig.json, pytest.ini)."
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument("--claude-", action="store_true", default=False, help="Create symlinks for Claude")
+        parser.add_argument("--claude", action="store_true", default=False, help="Create symlinks for Claude")
 
     def handle(self, *args: Any, **options: Any) -> None:
         root = Path(__file__).resolve().parents[4]
@@ -70,6 +70,7 @@ class Command(BaseCommand):
             cleandoc(
                 """
                 [pytest]
+                asyncio_mode = auto
                 DJANGO_SETTINGS_MODULE = example_project.project.settings
                 addopts = --no-migrations --reuse-db --disable-warnings
                 # addopts = --reuse-db --disable-warnings

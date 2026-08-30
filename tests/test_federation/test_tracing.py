@@ -6,7 +6,6 @@ from textwrap import dedent
 from typing import Any, AsyncGenerator, Generator
 
 import freezegun
-import pytest
 from django.http.request import HttpHeaders
 from graphql import (
     ExecutionResult,
@@ -357,7 +356,6 @@ def test_federated_tracing__does_not_check_protobuf_when_header_absent(undine_se
     assert not (result.extensions or {}).get(TRACING_EXTENSION_KEY)
 
 
-@pytest.mark.asyncio
 async def test_federated_tracing__async_execution(undine_settings) -> None:
     async def resolve_async(obj: Any, info: Any) -> str:  # noqa: RUF029
         return "async-hello"
@@ -607,7 +605,6 @@ def test_federated_tracing__error_location_line_and_column_encoded(undine_settin
     """)
 
 
-@pytest.mark.asyncio
 async def test_federated_tracing__async_captures_errors(undine_settings) -> None:
     async def _raise(obj: Any, info: Any) -> Any:  # noqa: RUF029
         msg = "async boom"
@@ -652,7 +649,6 @@ async def test_federated_tracing__async_captures_errors(undine_settings) -> None
     """)
 
 
-@pytest.mark.asyncio
 async def test_federated_tracing__async_on_operation__disabled_yields_without_attaching(undine_settings) -> None:
     """When the trigger header is absent, the async operation hook must yield without producing extensions."""
 
@@ -675,7 +671,6 @@ async def test_federated_tracing__async_on_operation__disabled_yields_without_at
     assert not (result.extensions or {}).get(TRACING_EXTENSION_KEY)
 
 
-@pytest.mark.asyncio
 async def test_federated_tracing__subscription_stream__skips_extension_attachment(undine_settings) -> None:
     """
     Subscriptions produce a `GraphQLStream` rather than an `ExecutionResult`, so `_attach_trace`

@@ -376,6 +376,8 @@ class BulkUpdateResolver(Generic[TModel]):
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = get_instances_or_raise(model=self.model, pks=pks)
+        instance_map = {instance.pk: instance for instance in instances}
+        instances = [instance_map[pk] for pk in pks]
 
         pre_mutation_many(
             instances=instances,  # type: ignore[arg-type]
@@ -409,6 +411,8 @@ class BulkUpdateResolver(Generic[TModel]):
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = await sync_to_async(get_instances_or_raise)(model=self.model, pks=pks)
+        instance_map = {instance.pk: instance for instance in instances}
+        instances = [instance_map[pk] for pk in pks]
 
         await pre_mutation_many_async(
             instances=instances,  # type: ignore[arg-type]
@@ -460,6 +464,8 @@ class BulkDeleteResolver(Generic[TModel]):
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = get_instances_or_raise(model=self.model, pks=pks)
+        instance_map = {instance.pk: instance for instance in instances}
+        instances = [instance_map[pk] for pk in pks]
 
         pre_mutation_many(
             instances=instances,  # type: ignore[arg-type]
@@ -482,8 +488,14 @@ class BulkDeleteResolver(Generic[TModel]):
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
+        count = len(input_data)
+        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
+            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+
         pks = get_pks_from_list_of_dicts(input_data)
         instances = await sync_to_async(get_instances_or_raise)(model=self.model, pks=pks)
+        instance_map = {instance.pk: instance for instance in instances}
+        instances = [instance_map[pk] for pk in pks]
 
         await pre_mutation_many_async(
             instances=instances,  # type: ignore[arg-type]

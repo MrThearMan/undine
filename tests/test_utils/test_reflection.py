@@ -516,7 +516,6 @@ def test_cancel_awaitable__coroutine() -> None:
     cancel_awaitable(coro)  # should close without error
 
 
-@pytest.mark.asyncio
 async def test_cancel_awaitable__future() -> None:  # noqa: RUF029
     future = asyncio.Future()
     cancel_awaitable(future)
@@ -527,7 +526,6 @@ def test_cancel_awaitable__other() -> None:
     cancel_awaitable(None)  # should not error
 
 
-@pytest.mark.asyncio
 async def test_async_enumerate() -> None:
     async def gen():  # noqa: RUF029
         yield "a"
@@ -570,7 +568,7 @@ def test_delegate_to_subgenerator__exception_suppressed() -> None:
         with delegate_to_subgenerator(sub()) as s:
             for _ in s:
                 yield
-                raise StopIteration
+                raise StopIteration  # noqa: PLR1708
 
     # If StopIteration is thrown into subgen and subgen handles it
     with contextlib.suppress(Exception):
@@ -592,7 +590,6 @@ def test_delegate_to_subgenerator__exception_propagated() -> None:
     list(gen())  # should not raise
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_normal() -> None:
     async def sub():  # noqa: RUF029
         yield
@@ -607,7 +604,6 @@ async def test_delegate_to_subgenerator__async_normal() -> None:
     assert len(results) == 2  # yields None twice
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_wrong_type() -> None:
     def sync_gen():
         yield
@@ -678,7 +674,7 @@ def test_delegate_to_subgenerator__runtime_error_same_as_exc() -> None:
     def sub():
         try:
             yield
-        except RuntimeError:
+        except RuntimeError:  # noqa: TRY203
             raise
 
     def gen():
@@ -731,7 +727,6 @@ def test_delegate_to_subgenerator__generator_no_stop_after_throw() -> None:
         list(gen())
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_exit_wrong_type() -> None:
     # __aexit__ called on sync generator raises TypeError
     def sync_gen():
@@ -742,7 +737,6 @@ async def test_delegate_to_subgenerator__async_exit_wrong_type() -> None:
         await ctx.__aexit__(None, None, None)
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_exc_type_no_value() -> None:
     # async exc_value is None: __aexit__ constructs exc_value from exc_type
     async def sub():  # noqa: RUF029
@@ -759,7 +753,6 @@ async def test_delegate_to_subgenerator__async_exc_type_no_value() -> None:
     assert len(results) == 1
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_exception_reraises() -> None:
     # Async exception different from exc_value is re-raised
     class MyError(Exception): ...
@@ -781,13 +774,12 @@ async def test_delegate_to_subgenerator__async_exception_reraises() -> None:
         _ = [x async for x in gen()]
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_runtime_error_same_as_exc() -> None:
     # When async gen athrow raises RuntimeError that is the same as exc_value
     async def sub():  # noqa: RUF029
         try:
             yield
-        except RuntimeError:
+        except RuntimeError:  # noqa: TRY203
             raise
 
     async def gen():
@@ -801,7 +793,6 @@ async def test_delegate_to_subgenerator__async_runtime_error_same_as_exc() -> No
         _ = [x async for x in gen()]
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_stop_async_iteration_suppressed() -> None:
     # StopAsyncIteration that is the exc_value is suppressed (returns True)
     async def sub():  # noqa: RUF029
@@ -820,7 +811,6 @@ async def test_delegate_to_subgenerator__async_stop_async_iteration_suppressed()
         _ = [x async for x in gen()]
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_runtime_error_stop_async_iteration_cause() -> None:
     # RuntimeError whose cause is a StopAsyncIteration
     stop = StopAsyncIteration()
@@ -841,7 +831,6 @@ async def test_delegate_to_subgenerator__async_runtime_error_stop_async_iteratio
         _ = [x async for x in gen()]
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__async_generator_no_stop_after_throw() -> None:
     # Async generator doesn't stop after athrow - raises RuntimeError
     async def sub():  # noqa: RUF029
@@ -868,7 +857,7 @@ def test_delegate_to_subgenerator__exit_exc_value_none() -> None:
 
     gen_obj = sub()
     ctx = delegate_to_subgenerator(gen_obj)
-    ctx.__enter__()
+    ctx.__enter__()  # noqa: PLC2801
     # Start the generator so it's at the yield point
     next(gen_obj)
     # Call __exit__ with exc_type set but exc_value=None (exc_value constructed from exc_type)
@@ -897,7 +886,6 @@ def test_delegate_to_subgenerator__exit_different_runtime_error_reraises() -> No
         list(gen())
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__aexit_exc_value_none() -> None:
     async def sub():  # noqa: RUF029
         with contextlib.suppress(ValueError):
@@ -905,7 +893,7 @@ async def test_delegate_to_subgenerator__aexit_exc_value_none() -> None:
 
     gen_obj = sub()
     ctx = delegate_to_subgenerator(gen_obj)
-    await ctx.__aenter__()
+    await ctx.__aenter__()  # noqa: PLC2801
     # Start the async generator so it's at the yield point
     await anext(gen_obj)
     result = await ctx.__aexit__(ValueError, None, None)
@@ -918,7 +906,7 @@ def test_delegate_to_subgenerator__exit_base_exception_same_object() -> None:
     def sub():
         try:
             yield
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # noqa: TRY203
             raise  # re-raise exactly the same object
 
     def gen():
@@ -931,14 +919,13 @@ def test_delegate_to_subgenerator__exit_base_exception_same_object() -> None:
         list(gen())
 
 
-@pytest.mark.asyncio
 async def test_delegate_to_subgenerator__aexit_base_exception_same_object() -> None:
     exc = KeyboardInterrupt("test")
 
-    async def sub():
+    async def sub():  # noqa: RUF029
         try:
             yield
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:  # noqa: TRY203
             raise  # re-raise exactly the same object
 
     async def gen():

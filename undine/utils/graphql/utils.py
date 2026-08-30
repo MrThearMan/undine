@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Hashable
 from contextlib import contextmanager
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar, Unpack
 
 from django.db.models import ForeignKey
 from graphql import (
@@ -62,15 +62,17 @@ if TYPE_CHECKING:
         SelectionNode,
     )
     from graphql.execution.values import NodeWithDirective, VariableValues  # type: ignore[attr-defined]
+    from graphql.pyutils import Path
 
     from undine import Directive, Field, GQLInfo
-    from undine.typing import ModelField
-
+    from undine.typing import GQLInfoDict, ModelField
 
 __all__ = [
     "check_directives",
+    "copy_info",
     "get_arguments",
     "get_error_execution_result",
+    "get_field_path_identifier",
     "get_fragment_definitions",
     "get_operation_definition",
     "get_operation_type",
@@ -131,6 +133,11 @@ def get_arguments(info: GQLInfo) -> dict[str, Any]:
 def get_queried_field_name(original_name: str, info: GQLInfo) -> str:
     """Get the name of a field in the current query."""
     return original_name if info.path.key == info.field_name else info.path.key  # type: ignore[return-value]
+
+
+def get_field_path_identifier(path: Path) -> str:
+    """Get the field path of the current field."""
+    return ".".join(key for key in path.as_list() if isinstance(key, str))
 
 
 def get_field_def(schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode) -> GraphQLField:
@@ -292,26 +299,7 @@ async def pre_evaluate_request_user(info: GQLInfo) -> None:
 def graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Generator[GQLInfo, None, None]:
     """Context manager that sets the path of all GraphQL errors raised during its context."""
     if key is not None:
-        info = GraphQLResolveInfo(  # type: ignore[assignment]
-            field_name=info.field_name,
-            field_nodes=info.field_nodes,
-            return_type=info.return_type,
-            parent_type=info.parent_type,
-            path=info.path.add_key(key),
-            schema=info.schema,
-            fragments=info.fragments,
-            root_value=info.root_value,
-            operation=info.operation,
-            variable_values=info.variable_values,
-            context=info.context,
-            is_awaitable=info.is_awaitable,
-            **(
-                {"abort_signal": info.abort_signal, "async_helpers": info.async_helpers}
-                if version_info >= (3, 3, 0)
-                else {}
-            ),
-        )
-
+        info = copy_info(info, path=info.path.add_key(key))
     try:
         yield info
 
@@ -325,6 +313,31 @@ def graphql_error_path(info: GQLInfo, *, key: str | int | None = None) -> Genera
             if err.path is None:
                 err.path = info.path.as_list()
         raise
+
+
+def copy_info(info: GQLInfo, **kwargs: Unpack[GQLInfoDict]) -> GQLInfo:
+    return GraphQLResolveInfo(  # type: ignore[return-value]
+        field_name=kwargs.get("field_name", info.field_name),
+        field_nodes=kwargs.get("field_nodes", info.field_nodes),
+        return_type=kwargs.get("return_type", info.return_type),
+        parent_type=kwargs.get("parent_type", info.parent_type),
+        path=kwargs.get("path", info.path),
+        schema=kwargs.get("schema", info.schema),
+        fragments=kwargs.get("fragments", info.fragments),
+        root_value=kwargs.get("root_value", info.root_value),
+        operation=kwargs.get("operation", info.operation),
+        variable_values=kwargs.get("variable_values", info.variable_values),
+        context=kwargs.get("context", info.context),
+        is_awaitable=kwargs.get("is_awaitable", info.is_awaitable),
+        **(  # type: ignore[arg-type]
+            {
+                "abort_signal": kwargs.get("abort_signal", info.abort_signal),
+                "async_helpers": kwargs.get("async_helpers", info.async_helpers),
+            }
+            if version_info >= (3, 3, 0)
+            else {}
+        ),
+    )
 
 
 def check_directives(directives: Iterable[Directive] | None, *, location: DirectiveLocation) -> None:

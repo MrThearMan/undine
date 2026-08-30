@@ -247,7 +247,7 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
         """Check permissions for accessing an instance through this `QueryType`."""
 
     @classmethod
-    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:  # TODO: Rename to __optimize__
         """
         Hook for modifying the optimization data outside the GraphQL resolver context.
         Can be used to e.g. optimize data for permissions checks.

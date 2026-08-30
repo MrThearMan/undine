@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from types import UnionType
 
     from django.contrib.contenttypes.fields import GenericForeignKey
-    from django.db.models import Model, OrderBy, Q, QuerySet
+    from django.db.models import Model, OrderBy, Q
     from graphql import (  # type: ignore[attr-defined]
         FieldNode,
         FormattedInitialIncrementalExecutionResult,
@@ -26,16 +26,7 @@ if TYPE_CHECKING:
     )
 
     from undine import QueryType
-    from undine.pagination import PaginationHandler
-    from undine.typing import (
-        DispatchProtocol,
-        DjangoExpression,
-        LiteralArg,
-        QuerySetMap,
-        RelatedField,
-        RelationType,
-        TypeHint,
-    )
+    from undine.typing import DispatchProtocol, DjangoExpression, LiteralArg, RelatedField, RelationType, TypeHint
 
 __all__ = [
     "AbstractSelections",
@@ -61,8 +52,9 @@ __all__ = [
     "NextEventDC",
     "NextEventDataSC",
     "NextEventSC",
-    "OptimizationWithPagination",
     "OrderResults",
+    "PaginationCut",
+    "PaginationPage",
     "Parameter",
     "RelInfo",
     "RootAndInfoParams",
@@ -149,29 +141,23 @@ class UnionFilterRef:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ValidatedPaginationArgs:
-    """Pagination arguments that have been validated."""
+class PaginationCut(Generic[TModel]):
+    """The items that make up a single page, and whether more items exist on either side of it."""
 
-    after: int | None
-    before: int | None
-    first: int | None
-    last: int | None
-
-
-@dataclasses.dataclass(slots=True)
-class OptimizationWithPagination(Generic[TModel]):
-    """Pagination arguments that have been validated."""
-
-    queryset: QuerySet[TModel]
-    pagination: PaginationHandler
+    instances: list[TModel]
+    has_next_page: bool
+    has_previous_page: bool
 
 
-@dataclasses.dataclass(slots=True)
-class QuerySetMapWithPagination(Generic[TModel]):
-    """Pagination arguments that have been validated."""
+@dataclasses.dataclass(frozen=True, slots=True)
+class PaginationPage(Generic[TModel]):
+    """A single page of paginated items together with the information needed to describe it."""
 
-    queryset_map: QuerySetMap
-    pagination: PaginationHandler
+    instances: list[TModel]
+    cursors: list[str]
+    total_count: int
+    has_next_page: bool
+    has_previous_page: bool
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

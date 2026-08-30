@@ -56,6 +56,7 @@ from undine.utils.model_utils import (
     get_validation_error_messages,
     has_default,
     is_generic_foreign_key,
+    is_generic_foreign_key_nullable,
     is_to_many,
     is_to_one,
     lookup_to_display_name,
@@ -168,6 +169,37 @@ def test_generic_foreign_key_for_generic_relation() -> None:
     generic = generic_foreign_key_for_generic_relation(field)
 
     assert generic == Comment._meta.get_field("target")
+
+
+def test_is_generic_foreign_key_nullable() -> None:
+    # `Comment.content_type` and `Comment.object_id` are both nullable.
+    field = Comment._meta.get_field("target")
+    assert is_generic_foreign_key_nullable(field) is True
+
+
+def test_is_generic_foreign_key_nullable__neither_nullable() -> None:
+    field = Comment._meta.get_field("target")
+    ct_field = Comment._meta.get_field("content_type")
+    fk_field = Comment._meta.get_field("object_id")
+
+    with patch.object(ct_field, "null", new=False), patch.object(fk_field, "null", new=False):
+        assert is_generic_foreign_key_nullable(field) is False
+
+
+def test_is_generic_foreign_key_nullable__only_content_type_nullable() -> None:
+    field = Comment._meta.get_field("target")
+    fk_field = Comment._meta.get_field("object_id")
+
+    with patch.object(fk_field, "null", new=False):
+        assert is_generic_foreign_key_nullable(field) is True
+
+
+def test_is_generic_foreign_key_nullable__only_object_id_nullable() -> None:
+    field = Comment._meta.get_field("target")
+    ct_field = Comment._meta.get_field("content_type")
+
+    with patch.object(ct_field, "null", new=False):
+        assert is_generic_foreign_key_nullable(field) is True
 
 
 def test_get_model() -> None:
@@ -780,7 +812,6 @@ def test_convert_integrity_errors() -> None:
         raise IntegrityError(msg)
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_or_raise_async() -> None:
     project = await sync_to_async(ProjectFactory.create)()
@@ -789,7 +820,6 @@ async def test_get_instance_or_raise_async() -> None:
     assert instance.pk == project.pk
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_or_raise_async__missing() -> None:
     with pytest.raises(GraphQLModelNotFoundError):
@@ -816,7 +846,6 @@ def test_get_instance_by_field_or_raise__multiple() -> None:
         get_instance_by_field_or_raise(queryset=Project.objects.all(), field_name="name", value="duplicate")
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async() -> None:
     project = await sync_to_async(ProjectFactory.create)(name="async-unique-project")
@@ -827,7 +856,6 @@ async def test_get_instance_by_field_or_raise_async() -> None:
     assert instance.pk == project.pk
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async__missing() -> None:
     with pytest.raises(GraphQLModelFieldNotFoundError):
@@ -836,7 +864,6 @@ async def test_get_instance_by_field_or_raise_async__missing() -> None:
         )
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_get_instance_by_field_or_raise_async__multiple() -> None:
     await sync_to_async(ProjectFactory.create)(name="async-duplicate")

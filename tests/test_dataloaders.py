@@ -16,7 +16,6 @@ from undine.exceptions import GraphQLDataLoaderPrimingError, GraphQLModelNotFoun
 from undine.utils.text import dotpath
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__success(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -76,7 +75,6 @@ async def test_dataloader__success(graphql_async, undine_settings) -> None:
     assert loader.reusable_loads == {}
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__errors(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -131,7 +129,6 @@ async def test_dataloader__errors(graphql_async, undine_settings) -> None:
     }
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__loader_error__did_not_return_sorted_sequence(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -190,7 +187,6 @@ async def test_dataloader__loader_error__did_not_return_sorted_sequence(graphql_
     ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__loader_error__returned_wrong_length(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -250,7 +246,6 @@ async def test_dataloader__loader_error__returned_wrong_length(graphql_async, un
     ]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__multiple_batches(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -311,7 +306,6 @@ async def test_dataloader__multiple_batches(graphql_async, undine_settings) -> N
     assert loader.reusable_loads == {}
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__reuse_loaded(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -361,7 +355,6 @@ async def test_dataloader__reuse_loaded(graphql_async, undine_settings) -> None:
     assert loaded == [task_1.pk]
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime_another_dataloader(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -434,7 +427,6 @@ async def test_dataloader__prime_another_dataloader(graphql_async, undine_settin
     assert loaded_by_name ^ loaded_by_id
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__cancelled__task_group(django_db_blocker: DjangoDbBlocker) -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -472,7 +464,6 @@ async def test_dataloader__cancelled__task_group(django_db_blocker: DjangoDbBloc
     assert log.count == 0
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__cancelled__gather(django_db_blocker: DjangoDbBlocker) -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -514,7 +505,6 @@ async def test_dataloader__cancelled__gather(django_db_blocker: DjangoDbBlocker)
     assert log.count == 1
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__load() -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -542,7 +532,6 @@ async def test_dataloader__load() -> None:
     future_2.cancel()
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__load_many() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -574,7 +563,6 @@ async def test_dataloader__load_many() -> None:
     future_2.cancel()
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__load_many__exception() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -600,7 +588,6 @@ async def test_dataloader__load_many__exception() -> None:
     assert results[1] == error
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime() -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -624,7 +611,6 @@ async def test_dataloader__prime() -> None:
     assert ts.pk not in loader_2.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__clear_then_prime_also_updates_current_batch() -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -655,7 +641,6 @@ async def test_dataloader__prime__clear_then_prime_also_updates_current_batch() 
     assert load.future.result() == ts
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__key_exists__cannot_prime_pending() -> None:  # noqa: RUF029
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -670,7 +655,6 @@ async def test_dataloader__prime__key_exists__cannot_prime_pending() -> None:  #
     assert future.result() == 10
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__pending_already_done() -> None:  # noqa: RUF029
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -685,7 +669,6 @@ async def test_dataloader__prime__pending_already_done() -> None:  # noqa: RUF02
     assert future.result() == 10
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__pending_exception() -> None:
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -705,7 +688,6 @@ async def test_dataloader__prime__pending_exception() -> None:
         await future
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__new_load_exception() -> None:  # noqa: RUF029
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -723,7 +705,6 @@ async def test_dataloader__prime__new_load_exception() -> None:  # noqa: RUF029
     assert future.exception() is error
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__exception_value() -> None:
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -755,7 +736,6 @@ async def test_dataloader__prime__exception_value() -> None:
         await new_future
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime__multiple_prime_calls() -> None:  # noqa: RUF029
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -770,7 +750,6 @@ async def test_dataloader__prime__multiple_prime_calls() -> None:  # noqa: RUF02
     assert 5 in loader.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime_many() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -799,7 +778,6 @@ async def test_dataloader__prime_many() -> None:
     assert ts_2.pk not in loader_2.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime_many__different_lengths() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -817,7 +795,6 @@ async def test_dataloader__prime_many__different_lengths() -> None:
         loader.prime_many(keys=[ts_1.pk], values=[ts_1, ts_2])
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__prime_batch__different_lengths() -> None:  # noqa: RUF029
     async def load_fn(keys: list[int]) -> list[int]:  # noqa: RUF029
@@ -830,7 +807,6 @@ async def test_dataloader__prime_batch__different_lengths() -> None:  # noqa: RU
         loader._prime_batch(keys=[1, 2], values=[10])
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__clear() -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -858,7 +834,6 @@ async def test_dataloader__clear() -> None:
     assert ts.pk in loader_2.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__clear_many() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -892,7 +867,6 @@ async def test_dataloader__clear_many() -> None:
     assert ts_2.pk in loader_2.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__clear_all() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -923,7 +897,6 @@ async def test_dataloader__clear_all() -> None:
     assert ts_2.pk in loader_2.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__key_hash_fn() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -958,7 +931,6 @@ async def test_dataloader__key_hash_fn() -> None:
     assert ts_2.pk not in loader.reusable_loads
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__future_cancelled_during_load_fn() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -984,7 +956,6 @@ async def test_dataloader__future_cancelled_during_load_fn() -> None:
     assert f2.result() == ts_2
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__future_cancelled_before_exception_handling() -> None:
     ts_1 = await sync_to_async(TaskFactory.create)(name="Task 1")
@@ -1011,7 +982,6 @@ async def test_dataloader__future_cancelled_before_exception_handling() -> None:
     assert f2.exception() is load_error
 
 
-@pytest.mark.asyncio
 @pytest.mark.django_db(transaction=True)
 async def test_dataloader__load_function_task_cancelled_when_all_futures_done(django_db_blocker) -> None:
     ts = await sync_to_async(TaskFactory.create)(name="Task 1")

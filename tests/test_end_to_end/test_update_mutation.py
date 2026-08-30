@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from itertools import count
 from typing import Any
 
 import pytest
+from asgiref.sync import sync_to_async
 from django.db.models import QuerySet
+from graphql import GraphQLField, GraphQLInt, GraphQLNonNull, GraphQLObjectType
 
 from example_project.app.models import AcceptanceCriteria, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import AcceptanceCriteriaFactory, PersonFactory, ProjectFactory, TaskFactory, TaskStepFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.typing import RelatedAction, TModel
+from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 
 
 @pytest.mark.django_db
@@ -52,6 +56,72 @@ def test_update_mutation(graphql, undine_settings):
             "name": "Test Task",
         },
     }
+
+    task.refresh_from_db()
+    assert task.name == "Test Task"
+    assert task.type == TaskTypeChoices.TASK
+
+
+@pytest.mark.django_db
+def test_update_mutation__partial(graphql, undine_settings):
+    """Fields and relations that are not part of the input data are left untouched."""
+
+    class TaskType(QueryType[Task]): ...
+
+    class ProjectType(QueryType[Project]): ...
+
+    class PersonType(QueryType[Person]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    project = ProjectFactory.create(name="Original Project")
+    person = PersonFactory.create(name="Original Person")
+    task = TaskFactory.create(name="Original Task", type=TaskTypeChoices.STORY, project=project)
+    task.assignees.add(person)
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+            "name": "Test Task",
+        },
+    }
+
+    task.refresh_from_db()
+    assert task.name == "Test Task"
+    assert task.type == TaskTypeChoices.STORY
+    assert task.project == project
+    assert list(task.assignees.all()) == [person]
+
+    project.refresh_from_db()
+    assert project.name == "Original Project"
+
+    person.refresh_from_db()
+    assert person.name == "Original Person"
 
 
 @pytest.mark.django_db
@@ -108,6 +178,10 @@ def test_update_mutation__relations__many_to_one(graphql, undine_settings):
             },
         },
     }
+
+    task.refresh_from_db()
+    assert task.project is not None
+    assert task.project.name == "Test Project"
 
 
 @pytest.mark.django_db
@@ -531,6 +605,9 @@ def test_update_mutation__relations__many_to_many__existing(graphql, undine_sett
             ],
         },
     }
+
+    task.refresh_from_db()
+    assert list(task.assignees.all()) == [person]
 
 
 @pytest.mark.django_db
@@ -982,3 +1059,324 @@ def test_update_mutation__update_causes_query_type_to_not_return_instance(graphq
     assert task.name == "temp"
 
     assert not_run is True
+
+
+@pytest.mark.django_db
+def test_update_mutation__instance_not_found(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    data = {
+        "pk": 1,
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.errors == [
+        {
+            "message": "Primary key 1 on model 'example_project.app.models.Task' did not match any row.",
+            "path": ["updateTask"],
+            "extensions": {
+                "status_code": 404,
+                "error_code": "MODEL_INSTANCE_NOT_FOUND",
+            },
+        }
+    ]
+
+    assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_update_mutation__missing_lookup_field(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        pk = Input(required=False)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Original Task")
+
+    data = {
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.errors == [
+        {
+            "message": (
+                "Input data is missing value for the mutation lookup field 'pk'. "
+                "Cannot fetch 'example_project.app.models.Task' object for mutation."
+            ),
+            "path": ["updateTask"],
+            "extensions": {
+                "status_code": 400,
+                "error_code": "LOOKUP_VALUE_MISSING",
+            },
+        }
+    ]
+
+    task.refresh_from_db()
+    assert task.name == "Original Task"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_update_mutation__missing_lookup_field__async(graphql_async, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        pk = Input(required=False)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Original Task")
+
+    data = {
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.errors == [
+        {
+            "message": (
+                "Input data is missing value for the mutation lookup field 'pk'. "
+                "Cannot fetch 'example_project.app.models.Task' object for mutation."
+            ),
+            "path": ["updateTask"],
+            "extensions": {
+                "status_code": 400,
+                "error_code": "LOOKUP_VALUE_MISSING",
+            },
+        }
+    ]
+
+    await sync_to_async(task.refresh_from_db)()
+    assert task.name == "Original Task"
+
+
+@pytest.mark.django_db
+def test_update_mutation__hooks__call_order(graphql, undine_settings):
+    counter = count()
+
+    input_validate_called: int = -1
+    input_permission_called: int = -1
+    validate_called: int = -1
+    permission_called: int = -1
+    after_called: int = -1
+
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        name = Input()
+
+        @name.validate
+        def _(self: Task, info: GQLInfo, value: str) -> None:
+            nonlocal input_validate_called
+            input_validate_called = next(counter)
+
+        @name.permissions
+        def _(self: Task, info: GQLInfo, value: str) -> None:
+            nonlocal input_permission_called
+            input_permission_called = next(counter)
+
+        @classmethod
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal validate_called
+            validate_called = next(counter)
+
+        @classmethod
+        def __permissions__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal permission_called
+            permission_called = next(counter)
+
+        @classmethod
+        def __after__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
+            nonlocal after_called
+            after_called = next(counter)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Original Task")
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                pk
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "updateTask": {
+            "pk": task.pk,
+            "name": "Test Task",
+        },
+    }
+
+    task.refresh_from_db()
+    assert task.name == "Test Task"
+
+    assert permission_called == 0
+    assert input_permission_called == 1
+    assert input_validate_called == 2
+    assert validate_called == 3
+    assert after_called == 4
+
+
+@pytest.mark.django_db
+def test_update_mutation__non_model_return(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+            return {"foo": 1}
+
+        @classmethod
+        def __output_type__(cls) -> GraphQLObjectType:
+            fields = {"foo": GraphQLField(GraphQLNonNull(GraphQLInt))}
+            return get_or_create_graphql_object_type(name="TaskUpdateMutationOutput", fields=fields)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = TaskFactory.create(name="Original Task")
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                foo
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"updateTask": {"foo": 1}}
+
+    task.refresh_from_db()
+    assert task.name == "Original Task"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_update_mutation__non_model_return__async(graphql_async, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskUpdateMutation(MutationType[Task]):
+        @classmethod
+        def __mutate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> dict[str, Any]:
+            return {"foo": 1}
+
+        @classmethod
+        def __output_type__(cls) -> GraphQLObjectType:
+            fields = {"foo": GraphQLField(GraphQLNonNull(GraphQLInt))}
+            return get_or_create_graphql_object_type(name="TaskUpdateMutationOutput", fields=fields)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        update_task = Entrypoint(TaskUpdateMutation)
+
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    task = await sync_to_async(TaskFactory.create)(name="Original Task")
+
+    data = {
+        "pk": task.pk,
+        "name": "Test Task",
+    }
+    query = """
+        mutation($input: TaskUpdateMutation!) {
+            updateTask(input: $input) {
+                foo
+            }
+        }
+    """
+
+    response = await graphql_async(query, variables={"input": data})
+
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"updateTask": {"foo": 1}}
+
+    await sync_to_async(task.refresh_from_db)()
+    assert task.name == "Original Task"

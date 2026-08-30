@@ -16,7 +16,7 @@ from undine.pagination import OffsetPagination
 from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression
-from undine.utils.model_utils import get_model_field
+from undine.utils.model_utils import get_model_field, is_generic_foreign_key_nullable
 from undine.utils.reflection import get_flattened_generic_params
 
 
@@ -58,8 +58,8 @@ def _(ref: LazyRelation, **kwargs: Any) -> bool:
 
 
 @is_field_nullable.register
-def _(_: LazyGenericForeignKey, **kwargs: Any) -> bool:
-    return False
+def _(ref: LazyGenericForeignKey, **kwargs: Any) -> bool:
+    return is_generic_foreign_key_nullable(ref.field)
 
 
 @is_field_nullable.register
@@ -106,8 +106,8 @@ def _(_: type[FederationType], **kwargs: Any) -> bool:
 
 
 @is_field_nullable.register  # Required for Django<5.1
-def _(_: GenericForeignKey, **kwargs: Any) -> bool:
-    return False
+def _(ref: GenericForeignKey, **kwargs: Any) -> bool:
+    return is_generic_foreign_key_nullable(ref)
 
 
 @is_field_nullable.register

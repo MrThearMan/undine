@@ -38,10 +38,16 @@ from undine.utils.graphql.introspection import (
 )
 
 
+class _FakeContext:
+    """Stand-in for `GQLContext` outside a request, where visibility checks have no request to consult."""
+
+    request = None
+
+
 class _FakeInfo:
     """Bare stand-in for `GraphQLResolveInfo` usable by the introspection resolvers."""
 
-    context = None
+    context = _FakeContext()
     schema: GraphQLSchema | None = None
 
 

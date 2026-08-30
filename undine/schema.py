@@ -18,6 +18,7 @@ from graphql import (
 from undine.exceptions import UndineErrorGroup
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import get_registered_directives
+from undine.utils.graphql.undine_extensions import get_undine_interface_type
 from undine.utils.graphql.utils import check_directives
 from undine.utils.logging import logger
 from undine.utils.visibility import apply_visibility
@@ -87,6 +88,8 @@ def create_schema(
     for directive in schema_definition_directives:
         directive.__connected__(schema)
 
+    schema = add_missing_interface_implementations(schema)
+
     sort_schema_types(schema)
 
     logger.debug("Validating GraphQL schema...")
@@ -104,6 +107,42 @@ def create_schema(
     logger.debug(f"GraphQL schema created successfully in {elapsed}s!")
 
     return schema
+
+
+def add_missing_interface_implementations(schema: GraphQLSchema) -> GraphQLSchema:
+    """
+    Force every concrete implementation of an `InterfaceType` used in the schema to be included
+    in the schema, even if it isn't otherwise reachable from a root type.
+
+    By default, `GraphQLSchema` only includes types reachable by traversing the root types, so an
+    `InterfaceType` entrypoint whose implementing `QueryType`s have no `Entrypoint` of their own
+    would otherwise end up referencing implementations that were never added to the schema.
+    """
+    # Looped rather than done in one pass: a freshly force-added implementation can itself
+    # bring in fields of a new interface that then needs its own implementations force-added,
+    # so keep reconstructing the schema until a pass finds nothing left to add.
+    while True:
+        missing_types: list[GraphQLObjectType] = []
+
+        for named_type in schema.type_map.values():
+            if not isinstance(named_type, GraphQLInterfaceType):
+                continue
+
+            interface_type = get_undine_interface_type(named_type)
+            if interface_type is None:
+                continue
+
+            for implementation in interface_type.__concrete_implementations__():
+                object_type = implementation.__output_type__()
+                if object_type.name not in schema.type_map:
+                    missing_types.append(object_type)
+
+        if not missing_types:
+            return schema
+
+        kwargs = schema.to_kwargs()
+        kwargs["types"] = (*(kwargs["types"] or ()), *missing_types)
+        schema = GraphQLSchema(**kwargs)
 
 
 def sort_schema_types(schema: GraphQLSchema) -> None:

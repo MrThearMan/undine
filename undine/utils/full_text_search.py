@@ -53,7 +53,7 @@ class PostgresFTS:  # pragma: no cover
         }
 
     def get_search_language(self, info: GQLInfo) -> SearchLanguage:
-        lang = get_request_search_language(info.context)
+        lang = get_request_search_language(info.context.request)
         if lang not in self.vectors:
             return TextSearchLang.ENGLISH
         return lang

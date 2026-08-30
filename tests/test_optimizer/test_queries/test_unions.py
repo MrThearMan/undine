@@ -48,8 +48,8 @@ def test_optimizer__union(graphql, undine_settings) -> None:
     assert response.data == {
         "commentable": [
             {"name": "Project 1"},
-            {"type": "TASK"},
             {"name": "Project 2"},
+            {"type": "TASK"},
             {"type": "STORY"},
         ]
     }
@@ -209,11 +209,11 @@ def test_optimizer__union__ordering(graphql, undine_settings) -> None:
     assert response.data == {
         "commentable": [
             {"name": "Project 1"},
-            {"name": "Task 3"},
+            {"name": "Project 2"},
             {"name": "Project 3"},
             {"name": "Task 1"},
-            {"name": "Project 2"},
             {"name": "Task 2"},
+            {"name": "Task 3"},
         ]
     }
 
@@ -260,8 +260,8 @@ def test_optimizer__union__typename(graphql, undine_settings) -> None:
     assert response.data == {
         "commentable": [
             {"__typename": "ProjectType", "name": "Project 1"},
-            {"__typename": "TaskType", "name": "Task 1"},
             {"__typename": "ProjectType", "name": "Project 2"},
+            {"__typename": "TaskType", "name": "Task 1"},
             {"__typename": "TaskType", "name": "Task 2"},
         ]
     }
@@ -317,12 +317,12 @@ def test_optimizer__union__connection(graphql, undine_settings) -> None:
         },
         {
             "node": {
-                "type": "TASK",
+                "name": "Project 2",
             },
         },
         {
             "node": {
-                "name": "Project 2",
+                "type": "TASK",
             },
         },
         {
@@ -389,12 +389,12 @@ def test_optimizer__union__connection__total_count(graphql, undine_settings) -> 
         },
         {
             "node": {
-                "type": "TASK",
+                "name": "Project 2",
             },
         },
         {
             "node": {
-                "name": "Project 2",
+                "type": "TASK",
             },
         },
         {

@@ -263,6 +263,8 @@ The `limit` argument is used by `Entrypoints` based on either [`QueryTypes`](que
 [`UnionTypes`](unions.md#uniontype), or [`InterfaceTypes`](interfaces.md#interfacetype) that return
 a list of items (i.e. `many=True`) to limit the number of objects that are fetched.
 By default, this is set by the [`LIST_ENTRYPOINT_LIMIT`](settings.md#list_entrypoint_limit) setting.
+A [paginated](pagination.md) `Entrypoint` returns the page its own arguments ask for,
+so the `limit` argument does not apply to it.
 
 ```python
 -8<- "schema/entrypoint_limit.py"

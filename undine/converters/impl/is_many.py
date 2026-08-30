@@ -17,7 +17,7 @@ from undine.parsers import parse_return_annotation
 from undine.relay import Connection
 from undine.typing import CombinableExpression, ModelField
 from undine.utils.model_utils import get_model_field
-from undine.utils.reflection import get_non_null_type, get_origin_or_noop
+from undine.utils.reflection import get_non_null_type, get_origin_or_noop, is_namedtuple
 
 
 @is_many.register
@@ -42,7 +42,11 @@ def _(ref: type[Model], **kwargs: Any) -> bool:
 def _(ref: TypeRef, **kwargs: Any) -> bool:
     ann = get_non_null_type(ref.value)  # type: ignore[arg-type]
     annotation = get_origin_or_noop(ann)
-    return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
+    return (
+        isinstance(annotation, type)
+        and issubclass(annotation, list | set | tuple | QuerySet)
+        and not is_namedtuple(annotation)
+    )
 
 
 @is_many.register
@@ -84,7 +88,11 @@ def _(ref: GraphQLType, **kwargs: Any) -> bool:
 def _(ref: FunctionType, **kwargs: Any) -> bool:
     ann = get_non_null_type(parse_return_annotation(ref))
     annotation = get_origin_or_noop(ann)
-    return isinstance(annotation, type) and issubclass(annotation, list | set | tuple | QuerySet)
+    return (
+        isinstance(annotation, type)
+        and issubclass(annotation, list | set | tuple | QuerySet)
+        and not is_namedtuple(annotation)
+    )
 
 
 @is_many.register

@@ -69,7 +69,6 @@ def test_end_to_end__filtering(graphql, undine_settings) -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_end_to_end__filtering__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -851,7 +850,6 @@ def test_end_to_end__filtering__custom_resolver(graphql, undine_settings) -> Non
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_end_to_end__filtering__custom_resolver__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
@@ -1085,12 +1083,12 @@ def test_end_to_end__filtering__union_type(graphql, undine_settings) -> None:
                 "name": "bar",
             },
             {
-                "__typename": "TaskType",
-                "name": "bar",
-            },
-            {
                 "__typename": "ProjectType",
                 "name": "baz",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "bar",
             },
             {
                 "__typename": "TaskType",
@@ -1165,12 +1163,12 @@ def test_end_to_end__filtering__union_type__with_query_type_filtering(graphql, u
     assert response.data == {
         "comments": [
             {
-                "__typename": "TaskType",
-                "name": "bar",
-            },
-            {
                 "__typename": "ProjectType",
                 "name": "baz",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "bar",
             },
         ],
     }
@@ -1237,14 +1235,14 @@ def test_end_to_end__filtering__union_type__connection(graphql, undine_settings)
         },
         {
             "node": {
-                "__typename": "TaskType",
-                "name": "bar",
+                "__typename": "ProjectType",
+                "name": "baz",
             },
         },
         {
             "node": {
-                "__typename": "ProjectType",
-                "name": "baz",
+                "__typename": "TaskType",
+                "name": "bar",
             },
         },
         {
@@ -1325,14 +1323,14 @@ def test_end_to_end__filtering__union_type__connection__with_query_type_filterin
     assert response.edges == [
         {
             "node": {
-                "__typename": "TaskType",
-                "name": "bar",
+                "__typename": "ProjectType",
+                "name": "baz",
             },
         },
         {
             "node": {
-                "__typename": "ProjectType",
-                "name": "baz",
+                "__typename": "TaskType",
+                "name": "bar",
             },
         },
     ]
@@ -1398,12 +1396,12 @@ def test_end_to_end__filtering__interface_type(graphql, undine_settings) -> None
                 "name": "bar",
             },
             {
-                "__typename": "TaskType",
-                "name": "bar",
-            },
-            {
                 "__typename": "ProjectType",
                 "name": "baz",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "bar",
             },
             {
                 "__typename": "TaskType",
@@ -1481,12 +1479,12 @@ def test_end_to_end__filtering__interface_type__with_query_type_filtering(graphq
     assert response.data == {
         "named": [
             {
-                "__typename": "TaskType",
-                "name": "bar",
-            },
-            {
                 "__typename": "ProjectType",
                 "name": "baz",
+            },
+            {
+                "__typename": "TaskType",
+                "name": "bar",
             },
         ],
     }
@@ -1558,14 +1556,14 @@ def test_end_to_end__filtering__interface_type__connection(graphql, undine_setti
         },
         {
             "node": {
-                "__typename": "TaskType",
-                "name": "bar",
+                "__typename": "ProjectType",
+                "name": "baz",
             },
         },
         {
             "node": {
-                "__typename": "ProjectType",
-                "name": "baz",
+                "__typename": "TaskType",
+                "name": "bar",
             },
         },
         {
@@ -1649,14 +1647,14 @@ def test_end_to_end__filtering__interface_type__connection__with_query_type_filt
     assert response.edges == [
         {
             "node": {
-                "__typename": "TaskType",
-                "name": "bar",
+                "__typename": "ProjectType",
+                "name": "baz",
             },
         },
         {
             "node": {
-                "__typename": "ProjectType",
-                "name": "baz",
+                "__typename": "TaskType",
+                "name": "bar",
             },
         },
     ]

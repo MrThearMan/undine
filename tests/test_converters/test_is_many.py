@@ -32,12 +32,15 @@ class Params(NamedTuple):
     expected: bool
 
 
+class Coords(NamedTuple):
+    x: int
+
+
 def func_1() -> list: ...
 def func_2() -> list[str]: ...
 def func_3() -> str: ...
 def func_4() -> set: ...
 def func_5() -> tuple: ...
-def func_6() -> QuerySet: ...
 
 
 class Arguments(TypedDict):
@@ -64,10 +67,6 @@ class Arguments(TypedDict):
         ),
         "func tuple": Params(
             value=func_5,
-            expected=True,
-        ),
-        "func queryset": Params(
-            value=func_6,
             expected=True,
         ),
         "model field": Params(
@@ -141,6 +140,10 @@ class Arguments(TypedDict):
         "type ref queryset": Params(
             value=TypeRef(QuerySet),
             expected=True,
+        ),
+        "type ref named tuple": Params(
+            value=TypeRef(Coords),
+            expected=False,
         ),
     }),
 )

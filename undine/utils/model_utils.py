@@ -83,6 +83,7 @@ __all__ = [
     "get_related_name",
     "get_save_update_fields",
     "get_validation_error_messages",
+    "is_generic_foreign_key_nullable",
     "is_to_many",
     "is_to_one",
     "lookup_to_display_name",
@@ -188,6 +189,18 @@ def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generato
     from django.contrib.contenttypes.fields import GenericRelation  # noqa: PLC0415
 
     return (field for field in fk.model._meta._relation_tree if isinstance(field, GenericRelation))
+
+
+def is_generic_foreign_key_nullable(fk: GenericForeignKey) -> bool:
+    """
+    Whether the given GenericForeignKey can resolve to None.
+
+    This is the case if either its content type or object id field is nullable,
+    since either one being null is enough for `GenericForeignKey.__get__` to return None.
+    """
+    ct_field = fk.model._meta.get_field(fk.ct_field)
+    fk_field = fk.model._meta.get_field(fk.fk_field)
+    return ct_field.null or fk_field.null
 
 
 def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> GenericForeignKey:

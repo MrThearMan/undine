@@ -9,7 +9,6 @@ from undine import Entrypoint, GQLInfo, RootType, create_schema
 from undine.exceptions import GraphQLErrorGroup, GraphQLPermissionError
 
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.django_db(transaction=True),  # For sessions
 ]
 

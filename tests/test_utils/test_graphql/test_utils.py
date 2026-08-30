@@ -404,7 +404,6 @@ def test_is_relation_id__false__not_fk() -> None:
     assert is_relation_id(field, field_node) is False
 
 
-@pytest.mark.asyncio
 async def test_pre_evaluate_request_user() -> None:
 
     class MockUser:

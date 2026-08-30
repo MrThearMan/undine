@@ -15,6 +15,7 @@ from typing import (
     Any,
     Generic,
     Literal,
+    NamedTuple,
     NewType,
     NotRequired,
     ParamSpec,
@@ -76,24 +77,61 @@ from graphql import (
     GraphQLScalarType,
     GraphQLUnionType,
     SelectionNode,
+    Undefined,
     UndefinedType,
     version_info,
 )
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import AsyncGenerator, Container, Sequence
+    from http.cookies import SimpleCookie
 
-    from graphql import (  # type: ignore[attr-defined]
-        AbortSignal,
-        GraphQLError,
-        GraphQLResolveInfoHelpers,
-        VariableValues,
+    from asgiref.typing import (
+        WebSocketAcceptEvent,
+        WebSocketCloseEvent,
+        WebSocketResponseBodyEvent,
+        WebSocketResponseStartEvent,
+        WebSocketSendEvent,
     )
+    from django.contrib.auth.models import AbstractUser, AnonymousUser, User
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
+    from django.contrib.sessions.backends.base import SessionBase
+    from django.core.files.uploadedfile import UploadedFile
+    from django.db.models.sql import Query
+    from django.http import QueryDict
+    from django.http.request import HttpHeaders, MediaType
+    from django.http.response import ResponseHeaders
+    from django.test.client import Client
+    from django.utils.datastructures import MultiValueDict
+    from graphql import (
+        ConstValueNode,
+        DirectiveLocation,
+        FormattedExecutionResult,
+        FragmentDefinitionNode,
+        GraphQLError,
+        GraphQLFormattedError,
+        GraphQLInputType,
+        GraphQLOutputType,
+        GraphQLSchema,
+        OperationDefinitionNode,
+    )
+    from graphql.pyutils import Path
+
+    from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
+    from undine.optimizer.optimizer import OptimizationData
+    from undine.relay import CursorPaginationHandler
+    from undine.utils.graphql.websocket import WebSocketRequest
 
 
 if version_info >= (3, 3, 0):  # pragma: no cover
-    from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined]
+    from graphql import (
+        AbortSignal,  # type: ignore[attr-defined]
+        ExperimentalIncrementalExecutionResults,  # type: ignore[attr-defined]
+        GraphQLResolveInfoHelpers,  # type: ignore[attr-defined]
+        VariableValues,  # type: ignore[attr-defined]
+    )
+
 else:  # pragma: no cover
 
     class _FormattedCompletedResult(TypedDict):
@@ -181,42 +219,32 @@ else:  # pragma: no cover
         initial_result: _InitialIncrementalExecutionResult
         subsequent_results: AsyncGenerator[_SubsequentIncrementalExecutionResult, None]
 
+    class AbortSignal:  # type: ignore[no-redef]
+        aborted: bool
+        reason: Any
 
-if TYPE_CHECKING:
-    from collections.abc import Container
-    from http.cookies import SimpleCookie
+    class GraphQLResolveInfoHelpers(NamedTuple):  # type: ignore[no-redef]
+        gather: Callable[[Sequence[Awaitable[Any]]], Awaitable[list[Any]]]
+        track: Callable[[Sequence[Any]], None]
 
-    from asgiref.typing import (
-        WebSocketAcceptEvent,
-        WebSocketCloseEvent,
-        WebSocketResponseBodyEvent,
-        WebSocketResponseStartEvent,
-        WebSocketSendEvent,
-    )
-    from django.contrib.auth.models import AbstractUser, AnonymousUser, User
-    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel, GenericRelation
-    from django.contrib.sessions.backends.base import SessionBase
-    from django.core.files.uploadedfile import UploadedFile
-    from django.db.models.sql import Query
-    from django.http import QueryDict
-    from django.http.request import HttpHeaders, MediaType
-    from django.http.response import ResponseHeaders
-    from django.test.client import Client
-    from django.utils.datastructures import MultiValueDict
-    from graphql import (
-        DirectiveLocation,
-        FormattedExecutionResult,
-        FragmentDefinitionNode,
-        GraphQLFormattedError,
-        GraphQLOutputType,
-        GraphQLSchema,
-        OperationDefinitionNode,
-    )
-    from graphql.pyutils import Path
+    class GraphQLDefaultInput:
+        value: Any
+        literal: ConstValueNode | None
 
-    from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
-    from undine.optimizer.optimizer import OptimizationData
-    from undine.utils.graphql.websocket import WebSocketRequest
+    class GraphQLVariableSignature(NamedTuple):
+        name: str
+        type: GraphQLInputType
+        default: GraphQLDefaultInput | None
+        default_value: Any = Undefined
+
+    class VariableValueSource(NamedTuple):
+        signature: GraphQLVariableSignature
+        value: Any = Undefined
+
+    class VariableValues(NamedTuple):  # type: ignore[no-redef]
+        sources: dict[str, VariableValueSource]
+        coerced: dict[str, Any]
+
 
 __all__ = [
     "ID",
@@ -342,7 +370,7 @@ SortedSequenceWithErrors: TypeAlias = SortedSequence[T] | SortedSequence[T | Bas
 # Bound TypeVars
 
 TModel = TypeVar("TModel", bound=Model)
-TUser = TypeVar("TUser", bound="AbstractUser", covariant=True)  # noqa: PLC0105
+TUser = TypeVar("TUser", bound="AbstractUser")
 TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
 GNT = TypeVar("GNT", bound=GraphQLNullableType)
 TTypeHint = TypeVar("TTypeHint", bound=TypeHint)
@@ -398,10 +426,10 @@ class DjangoExpression(Protocol):
     def resolve_expression(
         self,
         query: Query,
-        allow_joins: bool,  # noqa: FBT001
-        reuse: set[str] | None,
-        summarize: bool,  # noqa: FBT001
-        for_save: bool,  # noqa: FBT001
+        allow_joins: bool = True,  # noqa: FBT001,FBT002
+        reuse: set[str] | None = None,
+        summarize: bool = False,  # noqa: FBT001,FBT002
+        for_save: bool = False,  # noqa: FBT001,FBT002
     ) -> DjangoExpression: ...
 
 
@@ -872,7 +900,6 @@ ModelField: TypeAlias = Field | ForeignObjectRel
 CombinableExpression: TypeAlias = Expression | Subquery
 Annotatable: TypeAlias = CombinableExpression | F | Q
 SupportsLookup: TypeAlias = RegisterLookupMixin | type[RegisterLookupMixin]
-QuerySetMap: TypeAlias = dict[type["QueryType"], QuerySet]
 SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
 AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
 SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
@@ -884,6 +911,9 @@ AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 @dataclasses.dataclass(slots=True, kw_only=True)
 class UndineInternalContext:
     """Undine internal implementation context."""
+
+    connection_handler_storage: dict[str, CursorPaginationHandler] = dataclasses.field(default_factory=dict)
+    """Index of pagination handlers for access after prefetch has been done."""
 
 
 @dataclasses.dataclass(kw_only=True, eq=False)
@@ -903,6 +933,10 @@ class GQLContext(Generic[TUser]):
     def user(self) -> TUser | AnonymousUser:
         """The user associated with the request."""
         return self.request.user
+
+    async def auser(self) -> TUser | AnonymousUser:
+        """The user associated with the request."""
+        return await self.request.auser()
 
 
 class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
@@ -941,14 +975,22 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     operation: OperationDefinitionNode
     """The GraphQL AST Operation Definition Node currently being executed."""
 
-    variable_values: VariableValues
-    """The variables passed to the GraphQL operation."""
+    if version_info >= (3, 3, 0):  # pragma: no cover
+        variable_values: VariableValues
+        """The variables passed to the GraphQL operation."""
+    else:  # pragma: no cover
+        variable_values: dict[str, Any]  # type: ignore[no-redef]
+        """The variables passed to the GraphQL operation."""
 
     context: GQLContext[TUser]
     """The context passed to the GraphQL operation. This is always the Django request object."""
 
-    is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
-    """Function for testing whether the GraphQL resolver is awaitable or not."""
+    if version_info >= (3, 3, 0):  # pragma: no cover
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
+        """Function for testing whether the GraphQL resolver is awaitable or not."""
+    else:  # pragma: no cover
+        is_awaitable: Callable[[Any], bool]  # type: ignore[no-redef]
+        """Function for testing whether the GraphQL resolver is awaitable or not."""
 
     if version_info >= (3, 3, 0):  # pragma: no cover
         abort_signal: AbortSignal | None
@@ -956,6 +998,41 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
 
         async_helpers: GraphQLResolveInfoHelpers
         """The async helpers passed to the GraphQL operation."""
+
+
+if version_info >= (3, 3, 0):  # pragma: no cover
+
+    class GQLInfoDict(TypedDict, Generic[TUser], total=False):
+        field_name: str
+        field_nodes: list[FieldNode]
+        return_type: GraphQLOutputType
+        parent_type: GraphQLObjectType
+        path: Path
+        schema: GraphQLSchema
+        fragments: dict[str, FragmentDefinitionNode]
+        root_value: Any
+        operation: OperationDefinitionNode
+        variable_values: VariableValues
+        context: GQLContext[TUser]
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
+        abort_signal: AbortSignal | None
+        async_helpers: GraphQLResolveInfoHelpers | None
+
+else:  # pragma: no cover
+
+    class GQLInfoDict(TypedDict, Generic[TUser], total=False):
+        field_name: str
+        field_nodes: list[FieldNode]
+        return_type: GraphQLOutputType
+        parent_type: GraphQLObjectType
+        path: Path
+        schema: GraphQLSchema
+        fragments: dict[str, FragmentDefinitionNode]
+        root_value: Any
+        operation: OperationDefinitionNode
+        variable_values: dict[str, Any]
+        context: GQLContext[TUser]
+        is_awaitable: Callable[[Any], bool]
 
 
 UniquelyNamedGraphQLElement: TypeAlias = (

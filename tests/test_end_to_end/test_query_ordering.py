@@ -5,7 +5,6 @@ import datetime
 import django
 import pytest
 from django.db.models.functions import Reverse
-
 from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices
@@ -423,22 +422,22 @@ def test_end_to_end__ordering__union_type__with_query_type_ordering(graphql, und
             },
             {
                 "__typename": "ProjectType",
-                "pk": project_1.pk,
-                "name": "foo",
-            },
-            {
-                "__typename": "ProjectType",
                 "pk": project_2.pk,
                 "name": "foo",
             },
             {
-                "__typename": "TaskType",
-                "pk": task_1.pk,
+                "__typename": "ProjectType",
+                "pk": project_1.pk,
                 "name": "foo",
             },
             {
                 "__typename": "TaskType",
                 "pk": task_2.pk,
+                "name": "foo",
+            },
+            {
+                "__typename": "TaskType",
+                "pk": task_1.pk,
                 "name": "foo",
             },
         ]
@@ -626,21 +625,14 @@ def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(
             "node": {
                 "__typename": "ProjectType",
                 "name": "foo",
-                "pk": project_1.pk,
+                "pk": project_2.pk,
             },
         },
         {
             "node": {
                 "__typename": "ProjectType",
                 "name": "foo",
-                "pk": project_2.pk,
-            },
-        },
-        {
-            "node": {
-                "__typename": "TaskType",
-                "name": "foo",
-                "pk": task_1.pk,
+                "pk": project_1.pk,
             },
         },
         {
@@ -648,6 +640,13 @@ def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(
                 "__typename": "TaskType",
                 "name": "foo",
                 "pk": task_2.pk,
+            },
+        },
+        {
+            "node": {
+                "__typename": "TaskType",
+                "name": "foo",
+                "pk": task_1.pk,
             },
         },
     ]
@@ -791,12 +790,93 @@ def test_end_to_end__ordering__interface_type__with_query_type_ordering(graphql,
         "named": [
             {"__typename": "ProjectType", "pk": project_3.pk, "name": "bar"},
             {"__typename": "TaskType", "pk": task_3.pk, "name": "bar"},
-            {"__typename": "ProjectType", "pk": project_1.pk, "name": "foo"},
             {"__typename": "ProjectType", "pk": project_2.pk, "name": "foo"},
-            {"__typename": "TaskType", "pk": task_1.pk, "name": "foo"},
+            {"__typename": "ProjectType", "pk": project_1.pk, "name": "foo"},
             {"__typename": "TaskType", "pk": task_2.pk, "name": "foo"},
+            {"__typename": "TaskType", "pk": task_1.pk, "name": "foo"},
         ],
     }
+
+
+@pytest.mark.skipif(
+    django.VERSION < (5, 2),
+    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
+)
+@pytest.mark.django_db
+def test_end_to_end__ordering__interface_type__connection__with_query_type_ordering(graphql, undine_settings) -> None:
+    class TaskOrderSet(OrderSet[Task], auto=False):
+        type = Order("type")
+
+    class ProjectOrderSet(OrderSet[Project], auto=False):
+        team_name = Order("team__name")
+
+    class NamedOrderSet(OrderSet[Task, Project], auto=False):
+        name = Order("name")
+
+    @NamedOrderSet
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task], auto=False, orderset=TaskOrderSet):
+        pk = Field()
+        name = Field()
+
+    @Named
+    class ProjectType(QueryType[Project], auto=False, orderset=ProjectOrderSet):
+        pk = Field()
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+        project = Entrypoint(ProjectType)
+        named = Entrypoint(Connection(Named))
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task_1 = TaskFactory.create(name="foo", type=TaskTypeChoices.TASK)
+    task_2 = TaskFactory.create(name="foo", type=TaskTypeChoices.BUG_FIX)
+    task_3 = TaskFactory.create(name="bar", type=TaskTypeChoices.TASK)
+
+    project_1 = ProjectFactory.create(name="foo", team__name="c")
+    project_2 = ProjectFactory.create(name="foo", team__name="b")
+    project_3 = ProjectFactory.create(name="bar", team__name="a")
+
+    query = """
+        query {
+          named(
+            orderBy: nameAsc
+            orderByTask: typeAsc
+            orderByProject: teamNameAsc
+          ) {
+            edges {
+              node {
+                __typename
+                ... on TaskType {
+                  pk
+                  name
+                }
+                ... on ProjectType {
+                  pk
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.edges == [
+        {"node": {"__typename": "ProjectType", "name": "bar", "pk": project_3.pk}},
+        {"node": {"__typename": "TaskType", "name": "bar", "pk": task_3.pk}},
+        {"node": {"__typename": "ProjectType", "name": "foo", "pk": project_2.pk}},
+        {"node": {"__typename": "ProjectType", "name": "foo", "pk": project_1.pk}},
+        {"node": {"__typename": "TaskType", "name": "foo", "pk": task_2.pk}},
+        {"node": {"__typename": "TaskType", "name": "foo", "pk": task_1.pk}},
+    ]
 
 
 @pytest.mark.skipif(

@@ -372,14 +372,13 @@ class VisibilityRule(ValidationRule):
         if isinstance(node, ast.EnumValueNode):
             node = ast.ListValueNode(values=[node])
 
-        value_node: ast.EnumValueNode | ast.VariableNode
         for value_node in node.values:
             if isinstance(value_node, ast.VariableNode):
-                value_node = self.context.variable_as_ast(value_node.name.value, graphql_enum_type)  # type: ignore[assignment]  # noqa: PLW2901
-                if not isinstance(value_node, ast.EnumValueNode):
-                    continue
-
-            yield value_node
+                resolved = self.context.variable_as_ast(value_node.name.value, graphql_enum_type)
+                if isinstance(resolved, ast.EnumValueNode):
+                    yield resolved
+            else:
+                yield value_node  # type: ignore[misc]
 
     def iter_inputs(
         self,
@@ -389,11 +388,10 @@ class VisibilityRule(ValidationRule):
         if isinstance(node, ast.ObjectValueNode):
             node = ast.ListValueNode(values=[node])
 
-        item: ast.ObjectValueNode | ast.VariableNode
         for item in node.values:
             if isinstance(item, ast.VariableNode):
-                item = self.context.variable_as_ast(item.name.value, graphql_input_type)  # type: ignore[assignment]  # noqa: PLW2901
-                if not isinstance(item, ast.ObjectValueNode):
-                    continue
-
-            yield from item.fields
+                resolved = self.context.variable_as_ast(item.name.value, graphql_input_type)
+                if isinstance(resolved, ast.ObjectValueNode):
+                    yield from resolved.fields
+            else:
+                yield from item.fields  # type: ignore[attr-defined]

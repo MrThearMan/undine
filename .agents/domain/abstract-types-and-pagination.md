@@ -31,3 +31,15 @@ _Avoid_: Pagination info, cursor info
 **Offset pagination**:
 Simpler pagination using offset and limit instead of Relay cursors.
 _Avoid_: Limit/offset, basic pagination
+
+**Cursor**:
+The opaque identifier of a single row in a connection. It encodes the row's ordering values, so
+that rows added or removed between two pages cannot move the page boundaries (keyset pagination).
+For a union type or interface type connection it encodes the shared ordering values, the row's type
+name, and then the ordering values of the query type the row came from.
+_Avoid_: Keyset cursor (in prose), row cursor
+
+**Ordering descriptor**:
+The resolved description of one value a connection is ordered by, used to serialize that value into
+a cursor and to build the row-value comparison that a cursor is applied with.
+_Avoid_: Order descriptor, sort key

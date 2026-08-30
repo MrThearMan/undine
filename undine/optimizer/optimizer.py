@@ -19,7 +19,12 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_offset_pagination,
     get_undine_query_type,
 )
-from undine.utils.graphql.utils import get_underlying_type, is_typename_metafield, should_skip_node
+from undine.utils.graphql.utils import (
+    get_field_path_identifier,
+    get_underlying_type,
+    is_typename_metafield,
+    should_skip_node,
+)
 from undine.utils.model_utils import get_default_manager, get_field_name, get_related_name
 from undine.utils.reflection import is_same_func
 
@@ -185,7 +190,7 @@ class QueryOptimizer(GraphQLASTWalker):
             edge_type: GraphQLObjectType = get_underlying_type(object_type.fields["edges"].type)  # type: ignore[assignment]
             object_type = get_underlying_type(edge_type.fields["node"].type)  # type: ignore[assignment]
 
-            self.optimization_data.pagination = undine_connection.pagination_handler(
+            cursor_handler = undine_connection.pagination_handler(
                 typename=object_type.name,
                 first=arg_values.get("first"),
                 last=arg_values.get("last"),
@@ -193,15 +198,19 @@ class QueryOptimizer(GraphQLASTWalker):
                 before=arg_values.get("before"),
                 page_size=undine_connection.page_size,
             )
+            self.optimization_data.pagination = cursor_handler
+
+            key = get_field_path_identifier(self.info.path)
+            self.info.context.undine_internal.connection_handler_storage[key] = cursor_handler
 
         undine_offset_pagination = get_undine_offset_pagination(graphql_field)
         if undine_offset_pagination is not None:
-            self.optimization_data.pagination = undine_offset_pagination.pagination_handler(
-                typename=object_type.name,
+            offset_handler = undine_offset_pagination.pagination_handler(
                 offset=arg_values.get("offset"),
                 limit=arg_values.get("limit"),
                 page_size=undine_offset_pagination.page_size,
             )
+            self.optimization_data.pagination = offset_handler
 
         # Check MutationType first so that it can override QueryType optimizations
         if parent_type == self.info.schema.mutation_type:
@@ -215,6 +224,9 @@ class QueryOptimizer(GraphQLASTWalker):
         query_type = get_undine_query_type(object_type)
         if query_type is not None:
             self.handle_undine_query_type(query_type, arg_values)
+
+        if self.optimization_data.pagination is not None:
+            self.optimization_data.pagination.optimize(self.optimization_data, self.info)
 
     def handle_undine_mutation_type(self, mutation_type: type[MutationType], arg_values: dict[str, Any]) -> None:
         self.optimization_data.fill_from_mutation_type(mutation_type=mutation_type)
@@ -264,17 +276,14 @@ class QueryOptimizer(GraphQLASTWalker):
         if undine_field.optimizer_func is not None:
             undine_field.optimizer_func(undine_field, self.optimization_data, self.info)
 
-    def handle_query_class(self, field_type: GraphQLObjectType, field_node: FieldNode) -> None:
-        self.parse_filter_info(field_type, field_node)
-        super().handle_query_class(field_type, field_node)
+    def handle_query_class(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:
+        self.parse_filter_info(parent_type, field_node)
+        super().handle_query_class(parent_type, field_node)
 
     def handle_total_count(self, scalar: GraphQLScalarType, field_node: FieldNode) -> None:
-        if self.optimization_data.pagination is not None:  # pragma: no branch
-            self.optimization_data.pagination.requires_total_count = True
+        from undine.relay import CursorPaginationHandler  # noqa: PLC0415
 
-    def handle_page_info_field(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:
-        # To know if there is a next page, we must get total count.
-        if self.optimization_data.pagination is not None and field_node.name.value != "hasNextPage":
+        if isinstance(self.optimization_data.pagination, CursorPaginationHandler):  # pragma: no branch
             self.optimization_data.pagination.requires_total_count = True
 
     def handle_normal_field(self, parent_type: GraphQLObjectType, field_node: FieldNode, field: Field) -> None:
@@ -371,7 +380,7 @@ class QueryOptimizer(GraphQLASTWalker):
             fragment_type: GraphQLObjectType = self.info.schema.get_type(fragment_name)  # type: ignore[assignment]
             fragment_model = self.get_model(fragment_type)
 
-            # Only optimize union types that are query typ
+            # Only optimize union types that use query types
             if fragment_model is None:  # pragma: no cover
                 continue
 
@@ -744,5 +753,6 @@ class OptimizationResults:
 
         return self
 
-    def __bool__(self) -> bool:
-        return bool(self.only_fields or self.annotations or self.select_related or self.prefetch_related)
+    @property
+    def nothing_selected(self) -> bool:
+        return not bool(self.only_fields or self.annotations or self.select_related or self.prefetch_related)

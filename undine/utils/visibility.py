@@ -67,7 +67,7 @@ if TYPE_CHECKING:
     )
     from undine.federation import FederationField, FederationType
     from undine.relay import Connection
-    from undine.typing import DjangoRequestProtocol, HasGraphQLExtensions, R, T
+    from undine.typing import DjangoRequestProtocol, HasGraphQLExtensions, T
 
     VisibilityMember: TypeAlias = (
         CalculationArgument
@@ -200,10 +200,12 @@ def apply_visibility(schema: GraphQLSchema) -> bool:
 # Caching
 
 
-def with_visibility_cache(func: Callable[[T, DjangoRequestProtocol], R]) -> Callable[[T, DjangoRequestProtocol], R]:
+def with_visibility_cache(
+    func: Callable[[T, DjangoRequestProtocol], bool],
+) -> Callable[[T, DjangoRequestProtocol | None], bool]:
 
     @wraps(func)
-    def wrapper(item: T, request: DjangoRequestProtocol | None) -> T:
+    def wrapper(item: T, request: DjangoRequestProtocol | None) -> bool:
         # Ignore visibility checks if not in a request context
         if request is None:  # pragma: no cover
             return True

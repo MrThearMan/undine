@@ -106,6 +106,12 @@ class UndineDefaultSettings(NamedTuple):
     PAGINATION_INDEX_KEY: str = "_undine_pagination_index"
     """The key to which nested connection node's pagination index is annotated to the queryset."""
 
+    PAGINATION_ORDERING_KEY: str = "_undine_pagination_ordering"
+    """The key prefix to which cursor pagination annotates ordering values that are not plain columns."""
+
+    PAGINATION_MEMBER_RANK_KEY: str = "_undine_pagination_member_rank"
+    """The key to which a union/interface member's own per-implementation order is annotated as a rank."""
+
     PAGINATION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
     """The key to which the connection's total count annotated to or added to in the queryset hints."""
 

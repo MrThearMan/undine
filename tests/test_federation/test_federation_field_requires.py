@@ -4,10 +4,7 @@ import pytest
 
 from example_project.app.models import Task
 from undine import Entrypoint, Field, QueryType, RootType
-from undine.exceptions import (
-    FederationRequiresNonExternalFieldError,
-    FederationRequiresUnknownFieldError,
-)
+from undine.exceptions import FederationRequiresNonExternalFieldError, FederationRequiresUnknownFieldError
 from undine.federation import (
     ExternalDirective,
     FederationField,
@@ -26,7 +23,7 @@ def test_federation_field_requires__valid_external_reference_passes_and_renders_
         shipping = FederationField(int) @ RequiresDirective(fields="weight")
 
         @shipping.resolve
-        def resolve_shipping(self, info):  # noqa: ARG002
+        def resolve_shipping(self, info):
             return 0
 
     class TaskType(QueryType[Task]):
@@ -50,7 +47,7 @@ def test_federation_field_requires__unknown_token_raises_at_class_definition_tim
             shipping = FederationField(int) @ RequiresDirective(fields="nonexistent")
 
             @shipping.resolve
-            def resolve_shipping(self, info):  # noqa: ARG002
+            def resolve_shipping(self, info):
                 return 0
 
 
@@ -63,13 +60,13 @@ def test_federation_field_requires__non_external_token_raises_at_class_definitio
             weight = FederationField(int)
 
             @weight.resolve
-            def resolve_weight(self, info):  # noqa: ARG002
+            def resolve_weight(self, info):
                 return 0
 
             shipping = FederationField(int) @ RequiresDirective(fields="weight")
 
             @shipping.resolve
-            def resolve_shipping(self, info):  # noqa: ARG002
+            def resolve_shipping(self, info):
                 return 0
 
 
@@ -82,7 +79,7 @@ def test_federation_field_requires__multi_token_all_valid_passes() -> None:
         shipping = FederationField(int) @ RequiresDirective(fields="weight height")
 
         @shipping.resolve
-        def resolve_shipping(self, info):  # noqa: ARG002
+        def resolve_shipping(self, info):
             return 0
 
     class TaskType(QueryType[Task]):
@@ -107,7 +104,7 @@ def test_federation_field_requires__multi_token_with_invalid_raises_on_first_bad
             shipping = FederationField(int) @ RequiresDirective(fields="weight bogus")
 
             @shipping.resolve
-            def resolve_shipping(self, info):  # noqa: ARG002
+            def resolve_shipping(self, info):
                 return 0
 
 

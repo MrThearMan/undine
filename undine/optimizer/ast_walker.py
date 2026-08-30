@@ -4,15 +4,7 @@ import itertools
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
-from graphql import (
-    FieldNode,
-    FragmentSpreadNode,
-    GraphQLInterfaceType,
-    GraphQLResolveInfo,
-    GraphQLUnionType,
-    InlineFragmentNode,
-    version_info,
-)
+from graphql import FieldNode, FragmentSpreadNode, GraphQLInterfaceType, GraphQLUnionType, InlineFragmentNode
 from graphql.execution.collect_fields import get_field_entry_key
 
 from undine.dataclasses import AbstractSelections
@@ -20,6 +12,7 @@ from undine.exceptions import GraphQLOptimizerError, ModelFieldError
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_interface_type, get_undine_query_type
 from undine.utils.graphql.utils import (
+    copy_info,
     get_field_def,
     get_underlying_type,
     is_connection,
@@ -333,24 +326,13 @@ class GraphQLASTWalker:  # noqa: PLR0904
         key = get_field_entry_key(field_node)
         path = self.info.path.add_key(key, parent_type.name)
 
-        info = GraphQLResolveInfo(
+        info = copy_info(
+            self.info,
             field_name=field_name,
             field_nodes=[field_node],
             return_type=field_def.type,
             parent_type=parent_type,
             path=path,
-            schema=self.info.schema,
-            fragments=self.info.fragments,
-            root_value=self.info.root_value,
-            operation=self.info.operation,
-            variable_values=self.info.variable_values,
-            context=self.info.context,
-            is_awaitable=self.info.is_awaitable,
-            **(
-                {"abort_signal": self.info.abort_signal, "async_helpers": self.info.async_helpers}
-                if version_info >= (3, 3, 0)
-                else {}
-            ),
         )
 
         try:

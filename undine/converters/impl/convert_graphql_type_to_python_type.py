@@ -192,14 +192,14 @@ def _(ref: GraphQLList, **kwargs: Any) -> TypeHint | None:
 @convert_graphql_type_to_python_type.register
 def _(ref: GraphQLEnumType, **kwargs: Any) -> TypeHint | None:
     members: dict[str, Any] = {name: member.value for name, member in ref.values.items()}
-    return Enum(ref.name, members) | None
+    return Enum(ref.name, members) | None  # type: ignore[operator]
 
 
 @convert_graphql_type_to_python_type.register
 def _(ref: GraphQLUnionType, **kwargs: Any) -> TypeHint | None:
     args = (convert_graphql_type_to_python_type(arg, **kwargs) for arg in ref.types)
     args = (get_flattened_generic_params(arg)[0] for arg in args)
-    return functools.reduce(operator.or_, args) | None
+    return functools.reduce(operator.or_, args) | None  # type: ignore[operator]
 
 
 @convert_graphql_type_to_python_type.register
@@ -207,7 +207,7 @@ def _(ref: GraphQLInterfaceType, **kwargs: Any) -> TypeHint | None:
     fields: dict[str, Any] = {
         name: convert_graphql_type_to_python_type(field.type, **kwargs) for name, field in ref.fields.items()
     }
-    return TypedDict(ref.name, fields) | None
+    return TypedDict(ref.name, fields) | None  # type: ignore[operator]
 
 
 @convert_graphql_type_to_python_type.register
@@ -215,7 +215,7 @@ def _(ref: GraphQLObjectType, **kwargs: Any) -> TypeHint | None:
     fields: dict[str, Any] = {
         name: convert_graphql_type_to_python_type(field.type, **kwargs) for name, field in ref.fields.items()
     }
-    return TypedDict(ref.name, fields) | None
+    return TypedDict(ref.name, fields) | None  # type: ignore[operator]
 
 
 @convert_graphql_type_to_python_type.register
@@ -223,4 +223,4 @@ def _(ref: GraphQLInputObjectType, **kwargs: Any) -> TypeHint | None:
     fields: dict[str, Any] = {
         name: convert_graphql_type_to_python_type(field.type, **kwargs) for name, field in ref.fields.items()
     }
-    return TypedDict(ref.name, fields) | None
+    return TypedDict(ref.name, fields) | None  # type: ignore[operator]

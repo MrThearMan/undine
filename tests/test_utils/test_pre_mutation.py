@@ -788,7 +788,6 @@ def test_pre_mutation_many__graphql_error_group() -> None:
 # Async
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -805,7 +804,6 @@ async def test_pre_mutation_async() -> None:
     )
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_many_async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -823,7 +821,6 @@ async def test_pre_mutation_many_async() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_pre_mutation_async__model_input() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -846,7 +843,6 @@ async def test_pre_mutation_async__model_input() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_pre_mutation_async__model_input__many() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -868,7 +864,6 @@ async def test_pre_mutation_async__model_input__many() -> None:
     assert input_data["assignees"] == [person]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__model_input__null() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -889,7 +884,6 @@ async def test_pre_mutation_async__model_input__null() -> None:
 
 
 @pytest.mark.django_db(transaction=True)
-@pytest.mark.asyncio
 async def test_pre_mutation_async__model_input__not_found() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -910,7 +904,6 @@ async def test_pre_mutation_async__model_input__not_found() -> None:
     assert exc_info.value.path == ["task", "project"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__hidden_input() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -933,7 +926,6 @@ async def test_pre_mutation_async__hidden_input() -> None:
     assert input_data["done"] is False
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__hidden_input__async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -956,7 +948,6 @@ async def test_pre_mutation_async__hidden_input__async() -> None:
     assert input_data["done"] is False
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__hidden_input__default_value() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -976,7 +967,6 @@ async def test_pre_mutation_async__hidden_input__default_value() -> None:
     assert input_data["done"] is False
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__function_input() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         @Input
@@ -997,7 +987,6 @@ async def test_pre_mutation_async__function_input() -> None:
     assert input_data["name"] == "TEST TASK"
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__function_input__coroutine() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         @Input
@@ -1018,7 +1007,6 @@ async def test_pre_mutation_async__function_input__coroutine() -> None:
     assert input_data["name"] == "TEST TASK"
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1042,7 +1030,6 @@ async def test_pre_mutation_async__permissions() -> None:
     assert exc_info.value.path == ["task"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1066,7 +1053,6 @@ async def test_pre_mutation_async__permissions__async() -> None:
     assert exc_info.value.path == ["task"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__field__single() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1094,7 +1080,6 @@ async def test_pre_mutation_async__permissions__field__single() -> None:
     assert errors[0].path == ["task", "name"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__field__multiple() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1130,7 +1115,6 @@ async def test_pre_mutation_async__permissions__field__multiple() -> None:
     assert errors[1].path == ["task", "type"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__field__async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1158,7 +1142,6 @@ async def test_pre_mutation_async__permissions__field__async() -> None:
     assert errors[0].path == ["task", "name"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1182,7 +1165,6 @@ async def test_pre_mutation_async__validate() -> None:
     assert exc_info.value.path == ["task"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1206,7 +1188,6 @@ async def test_pre_mutation_async__validate__async() -> None:
     assert exc_info.value.path == ["task"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__field__single() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1234,7 +1215,6 @@ async def test_pre_mutation_async__validate__field__single() -> None:
     assert errors[0].path == ["task", "name"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__field__multiple() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1270,7 +1250,6 @@ async def test_pre_mutation_async__validate__field__multiple() -> None:
     assert errors[1].path == ["task", "type"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__field__async() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1298,7 +1277,6 @@ async def test_pre_mutation_async__validate__field__async() -> None:
     assert errors[0].path == ["task", "name"]
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__input_only_inputs() -> None:
     input_only_data = None
 
@@ -1326,7 +1304,6 @@ async def test_pre_mutation_async__input_only_inputs() -> None:
     assert input_only_data == {"name": "Test task", "foo": "bar"}
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__hidden_input__no_default_value_no_func() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1346,7 +1323,6 @@ async def test_pre_mutation_async__hidden_input__no_default_value_no_func() -> N
     assert "done" not in input_data
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__function_input__not_in_input_data() -> None:
     called = False
 
@@ -1372,7 +1348,6 @@ async def test_pre_mutation_async__function_input__not_in_input_data() -> None:
     assert "name" not in input_data
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__field__default_value_skipped() -> None:
     called = False
 
@@ -1398,7 +1373,6 @@ async def test_pre_mutation_async__permissions__field__default_value_skipped() -
     assert not called
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__permissions__field__error_group() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1423,7 +1397,6 @@ async def test_pre_mutation_async__permissions__field__error_group() -> None:
     assert len(errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__field__default_value_skipped() -> None:
     called = False
 
@@ -1449,7 +1422,6 @@ async def test_pre_mutation_async__validate__field__default_value_skipped() -> N
     assert not called
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__validate__field__error_group() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1477,7 +1449,6 @@ async def test_pre_mutation_async__validate__field__error_group() -> None:
 # Async - related
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1498,7 +1469,6 @@ async def test_pre_mutation_async__related_mutation_type() -> None:
     )
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type__null_field_data() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1521,7 +1491,6 @@ async def test_pre_mutation_async__related_mutation_type__null_field_data() -> N
     assert data["project"] is None
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type__permissions__error_group() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1550,7 +1519,6 @@ async def test_pre_mutation_async__related_mutation_type__permissions__error_gro
     assert len(errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type__many__permissions() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1582,7 +1550,6 @@ async def test_pre_mutation_async__related_mutation_type__many__permissions() ->
     assert len(errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type__many__error_group() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1614,7 +1581,6 @@ async def test_pre_mutation_async__related_mutation_type__many__error_group() ->
     assert len(errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_many_async__graphql_error() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()
@@ -1639,7 +1605,6 @@ async def test_pre_mutation_many_async__graphql_error() -> None:
     assert len(errors) == 2
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_async__related_mutation_type__single__graphql_error() -> None:
     class RelatedProject(MutationType[Project], kind="related", auto=False):
         name = Input()
@@ -1670,7 +1635,6 @@ async def test_pre_mutation_async__related_mutation_type__single__graphql_error(
     assert isinstance(errors[0], GraphQLPermissionError)
 
 
-@pytest.mark.asyncio
 async def test_pre_mutation_many_async__graphql_error_group() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input()

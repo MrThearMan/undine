@@ -6,7 +6,9 @@ import pytest
 from django.db.models.fields.related import RelatedField
 
 from example_project.app.models import Task
-from undine.typing import ErrorUnionFieldErrorDict, ManyMatch, MutationKind, RelationType
+from tests.factories import UserFactory
+from tests.helpers import MockRequest
+from undine.typing import ErrorUnionFieldErrorDict, GQLContext, ManyMatch, MutationKind, RelationType
 
 
 def test_relation_type__is_single() -> None:
@@ -110,3 +112,17 @@ def test_error_union_field_error_dict() -> None:
     d = ErrorUnionFieldErrorDict({"key": "value"}, error=err)
     assert d.error is err
     assert d["key"] == "value"
+
+
+def test_gql_context__user() -> None:
+    user = UserFactory.build(username="test-user")
+    context = GQLContext(request=MockRequest(user=user))
+
+    assert context.user is user
+
+
+async def test_gql_context__auser() -> None:
+    user = UserFactory.build(username="test-user")
+    context = GQLContext(request=MockRequest(user=user))
+
+    assert await context.auser() is user

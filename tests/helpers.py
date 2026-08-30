@@ -43,6 +43,7 @@ from urllib3.fields import RequestField
 from example_project.app.models import Comment, Project, Report, Task
 from undine.exceptions import UndineError
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
+from undine.relay import encode_base64
 from undine.settings import example_schema, undine_settings
 from undine.typing import GQLContext, GQLInfo
 
@@ -60,8 +61,10 @@ __all__ = [
     "MockRequest",
     "create_graphql_multipart_spec_request",
     "exact",
+    "keyset_cursor",
     "mock_gql_info",
     "parametrize_helper",
+    "walk_connection_forward_and_backward",
 ]
 
 
@@ -82,7 +85,7 @@ class ParametrizeArgs(TypedDict):
 
 def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
     """Construct parametrize input while setting test IDs."""
-    assert __tests, "I need some tests, please!"  # noqa: S101
+    assert __tests, "I need some tests, please!"
     values = list(__tests.values())
     try:
         return ParametrizeArgs(
@@ -93,6 +96,90 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
     except AttributeError as error:
         msg = "Improper configuration. Did you use a NamedTuple for TNamedTuple?"
         raise UndineError(msg) from error
+
+
+def keyset_cursor(typename: str, pk: Any = None, **other: Any) -> str:
+    """
+    Build a keyset cursor pointing to a row with the given ordering values, keyed by attname.
+
+    `pk` is the sole ordering value for most cursors, so it's a dedicated, positional
+    convenience argument. It's still always the final tiebreaker in the ordering though, so
+    when `other` values are also given (e.g. `__typename`, or a union/interface member's own
+    ordering fields), `pk` is placed after them to match the actual key order in a real cursor.
+    """
+    values: dict[str, str | None] = {}
+    for key, value in other.items():
+        values[key] = None if value is None else str(value)
+    if pk is not None:
+        values["pk"] = str(pk)
+
+    payload = json.dumps(values, separators=(",", ":"))
+    return encode_base64(f"connection:{typename}:{payload}")
+
+
+def walk_connection_forward_and_backward(
+    *,
+    fetch_page: Callable[[dict[str, Any]], tuple[list[dict[str, Any]], dict[str, Any]]],
+    edge_key: Callable[[dict[str, Any]], Any],
+    full_edges: list[Any],
+    page_size: int,
+) -> None:
+    """
+    Page through a connection forwards with 'first'/'after' and backwards with 'last'/'before',
+    asserting that both directions reproduce 'full_edges' (the unpaginated order) exactly, with
+    no skipped or duplicated row, and that 'pageInfo' is fully consistent on every page.
+
+    Each direction is bounded to 'len(full_edges) + 1' requests, so a 'hasNextPage'/
+    'hasPreviousPage' that never flips to 'False' fails the walk instead of looping forever.
+
+    'fetch_page' takes GraphQL variables and returns '(edges, page_info)' for one page, where
+    each edge is a dict with a 'cursor' key. 'edge_key' extracts the value to compare from an edge.
+    """
+    forward: list[Any] = []
+    cursor: str | None = None
+    for _ in range(len(full_edges) + 1):
+        variables = {"first": page_size, **({"after": cursor} if cursor else {})}
+        edges, page_info = fetch_page(variables)
+
+        assert page_info["hasPreviousPage"] is bool(forward)
+        forward.extend(edge_key(edge) for edge in edges)
+        assert page_info["hasNextPage"] is (len(forward) < len(full_edges))
+
+        if edges:
+            assert page_info["startCursor"] == edges[0]["cursor"]
+            assert page_info["endCursor"] == edges[-1]["cursor"]
+        else:
+            assert page_info["startCursor"] is None
+            assert page_info["endCursor"] is None
+
+        if not page_info["hasNextPage"]:
+            break
+        cursor = page_info["endCursor"]
+
+    assert forward == full_edges
+
+    backward: list[Any] = []
+    cursor = None
+    for _ in range(len(full_edges) + 1):
+        variables = {"last": page_size, **({"before": cursor} if cursor else {})}
+        edges, page_info = fetch_page(variables)
+
+        assert page_info["hasNextPage"] is bool(backward)
+        backward = [edge_key(edge) for edge in edges] + backward
+        assert page_info["hasPreviousPage"] is (len(backward) < len(full_edges))
+
+        if edges:
+            assert page_info["startCursor"] == edges[0]["cursor"]
+            assert page_info["endCursor"] == edges[-1]["cursor"]
+        else:
+            assert page_info["startCursor"] is None
+            assert page_info["endCursor"] is None
+
+        if not page_info["hasPreviousPage"]:
+            break
+        cursor = page_info["startCursor"]
+
+    assert backward == full_edges
 
 
 def exact(msg: str, *, from_start: bool = False) -> str:

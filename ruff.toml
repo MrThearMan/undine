@@ -4,7 +4,9 @@ fix = true
 unsafe-fixes = true
 line-length = 120
 extend-exclude = [
-    "tests/*",
+    "tests/test_federation/_proto/reports_pb2.py",
+    "tests/test_federation/_proto/reports_pb2.pyi",
+    "tests/test_federation/compatibility/",
     "docs/*.md",
     ".agents/docs/documentation.md",
 ]
@@ -199,6 +201,9 @@ ignore = [
     "TCH003",   # No typing-only imports
     "DJ008",    # No need for __str__ in models
 
+]
+"**/*/helpers.py" = [
+    "S101",     # Assert is fine
 ]
 "**/*/conftest.py" = [
     "ARG",      # Fixtures can be unused

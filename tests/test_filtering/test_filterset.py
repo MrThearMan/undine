@@ -643,4 +643,3 @@ def test_filterset__add_to_interface_type__filter_field_matches_interface() -> N
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
     assert Named.__filterset__ == MyFilterSet
-

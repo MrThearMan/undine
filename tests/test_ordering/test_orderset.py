@@ -423,4 +423,3 @@ def test_orderset__add_to_interface_type__order_field_matches_interface() -> Non
         name = InterfaceField(GraphQLNonNull(GraphQLString))
 
     assert Named.__orderset__ == MyOrderSet
-
