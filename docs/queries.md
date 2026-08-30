@@ -17,7 +17,7 @@ and adding a Django Model to it as a generic type parameter. You must also add a
 [`Field`](#fields) to the class body of the `QueryType`.
 
 ```python
--8 < -"queries/query_type_basic.py"
+-8<- "queries/query_type_basic.py"
 ```
 
 ### Auto-generation
@@ -26,7 +26,7 @@ A `QueryType` can automatically introspect its Django Model and convert the Mode
 to `Fields` on the `QueryType`. For example, if the `Task` model has the following fields:
 
 ```python
--8 < -"queries/models_1.py"
+-8<- "queries/models_1.py"
 ```
 
 Then the GraphQL `ObjectType` for the `QueryType` using auto-generation would be:
@@ -46,13 +46,13 @@ With this, you can leave the `QueryType` class body empty, as fields will be aut
 based on the Django Model.
 
 ```python
--8 < -"queries/query_type_auto.py"
+-8<- "queries/query_type_auto.py"
 ```
 
 You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
--8 < -"queries/query_type_exclude.py"
+-8<- "queries/query_type_exclude.py"
 ```
 
 ### Filtering
@@ -67,7 +67,7 @@ or a many-related [`Field`](#fields), its results can be filtered in one of two 
    never be returned by the `QueryType`, e.g. archived items.
 
 ```python
--8 < -"queries/query_type_filter.py"
+-8<- "queries/query_type_filter.py"
 ```
 
 ### Ordering
@@ -84,7 +84,7 @@ or a many-related [`Field`](#fields), its results can be ordered in one of two w
    any ordering is applied using an `OrderSet`.
 
 ```python
--8 < -"queries/query_type_order.py"
+-8<- "queries/query_type_order.py"
 ```
 
 ### Permissions
@@ -93,7 +93,7 @@ You can add a permission check for querying data from a `QueryType` by
 adding a `__permissions__` classmethod it.
 
 ```python
--8 < -"queries/query_type_permissions.py"
+-8<- "queries/query_type_permissions.py"
 ```
 
 This method will be called for each instance of `Task` that is returned
@@ -107,7 +107,7 @@ doesn't have permission to access. You can do this using the `__filter_queryset_
 classmethod.
 
 ```python
--8 < -"queries/query_type_permissions_filter_queryset.py"
+-8<- "queries/query_type_permissions_filter_queryset.py"
 ```
 
 Now, when the `QueryType` is used in a list `Entrypoint` or many related `Field`,
@@ -136,7 +136,7 @@ register a `QueryType` in the registry by setting the `register` argument to `Fa
 `QueryType` class definition.
 
 ```python
--8 < -"queries/query_type_no_register.py"
+-8<- "queries/query_type_no_register.py"
 ```
 
 You'll then need to use this `QueryType` explicitly when required.
@@ -146,10 +146,10 @@ You'll then need to use this `QueryType` explicitly when required.
 > The optimizer is covered more thoroughly in the [Optimizer](optimizer.md) section.
 
 Usually adding `QueryType` optimizations is not necessary, but if required,
-you can override the `__optimizations__` classmethod on the `QueryType` to do so.
+you can override the `__optimize__` classmethod on the `QueryType` to do so.
 
 ```python
--8 < -"queries/query_type_optimizations.py"
+-8<- "queries/query_type_optimize.py"
 ```
 
 This hook can be helpful when you require data from outside the GraphQL execution context
@@ -162,7 +162,7 @@ is the name of the `QueryType` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"queries/query_type_schema_name.py"
+-8<- "queries/query_type_schema_name.py"
 ```
 
 ### Description
@@ -170,7 +170,7 @@ you can do so by setting the `schema_name` argument:
 You can provide a description for the `QueryType` by adding a docstring to the class.
 
 ```python
--8 < -"queries/query_type_description.py"
+-8<- "queries/query_type_description.py"
 ```
 
 ### Caching
@@ -179,7 +179,7 @@ You can set custom caching rules for `QueryTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
--8 < -"queries/query_type_cache.py"
+-8<- "queries/query_type_cache.py"
 ```
 
 See the [Entrypoint caching](schema.md#caching) section for more details.
@@ -189,13 +189,13 @@ See the [Entrypoint caching](schema.md#caching) section for more details.
 You can add interfaces to the `QueryType` by providing them using the `interfaces` argument.
 
 ```python
--8 < -"queries/query_type_interfaces.py"
+-8<- "queries/query_type_interfaces.py"
 ```
 
 You can also add interfaces using decorator syntax.
 
 ```python
--8 < -"queries/query_type_interfaces_decorator.py"
+-8<- "queries/query_type_interfaces_decorator.py"
 ```
 
 See the [Interfaces](interfaces.md) section for more details on interfaces.
@@ -206,13 +206,13 @@ You can add directives to the `QueryType` by providing them using the `directive
 The directive must be usable in the `OBJECT` location.
 
 ```python
--8 < -"queries/query_type_directives.py"
+-8<- "queries/query_type_directives.py"
 ```
 
 You can also add directives using decorator syntax.
 
 ```python
--8 < -"queries/query_type_directives_decorator.py"
+-8<- "queries/query_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -224,7 +224,7 @@ You can provide custom extensions for the `QueryType` by providing a
 however you wish to extend the functionality of the `QueryType`.
 
 ```python
--8 < -"queries/query_type_extensions.py"
+-8<- "queries/query_type_extensions.py"
 ```
 
 `QueryType` extensions are made available in the GraphQL `ObjectType` extensions
@@ -248,26 +248,26 @@ as its attribute name in the `QueryType` class body can be used to identify
 the corresponding Model field.
 
 ```python
--8 < -"queries/field.py"
+-8<- "queries/field.py"
 ```
 
 To be a bit more explicit, you could use a string referencing the Model field:
 
 ```python
--8 < -"queries/field_string.py"
+-8<- "queries/field_string.py"
 ```
 
 For better type safety, you can also use the Model field itself:
 
 ```python
--8 < -"queries/field_field.py"
+-8<- "queries/field_field.py"
 ```
 
 Being explicit like this is only required if the name of the field in the GraphQL schema
 is different from the Model field name.
 
 ```python
--8 < -"queries/field_alias.py"
+-8<- "queries/field_alias.py"
 ```
 
 ### Expression references
@@ -276,13 +276,13 @@ Django ORM expressions can also be used as references.
 These create an annotation on the Model instances when fetched.
 
 ```python
--8 < -"queries/field_expression.py"
+-8<- "queries/field_expression.py"
 ```
 
 Remember that subqueries are also counted as expressions.
 
 ```python
--8 < -"queries/field_subquery.py"
+-8<- "queries/field_subquery.py"
 ```
 
 ### Function references
@@ -291,7 +291,7 @@ Functions (or methods) can also be used to create `Fields`.
 This can be done by decorating a method with the `Field` class.
 
 ```python
--8 < -"queries/field_decorator.py"
+-8<- "queries/field_decorator.py"
 ```
 
 The `Field` will use the decorated method as its GraphQL resolver.
@@ -319,7 +319,7 @@ Arguments added to the function signatures will be added as `Field` arguments in
 Typing these arguments is required to determine their input type.
 
 ```python
--8 < -"queries/field_decorator_arguments.py"
+-8<- "queries/field_decorator_arguments.py"
 ```
 
 > If the method requires fields from the `root` instance, you should add custom optimization
@@ -336,7 +336,7 @@ like an expression reference. A `Calculation` references can be created by subcl
 the `Calculation` class and adding the required `CalculationArguments` to its class body.
 
 ```python
--8 < -"queries/field_calculation.py"
+-8<- "queries/field_calculation.py"
 ```
 
 `Calculation` objects always require the generic type argument to be set,
@@ -372,13 +372,13 @@ when the expression requires input data from the request.
 Let's say there is a `Task` model with a `ForeignKey` to a `Project` model:
 
 ```python hl_lines="4 5 13"
--8 < -"queries/models_2.py"
+-8<- "queries/models_2.py"
 ```
 
 You can then create `QueryTypes` for both models and add `Fields` for the related fields.
 
 ```python hl_lines="9 17"
--8 < -"queries/query_type_relations.py"
+-8<- "queries/query_type_relations.py"
 ```
 
 The `QueryTypes` will be linked together in the GraphQL schema by their relations:
@@ -407,14 +407,14 @@ You can add a permission check for querying any data from an individual `Field` 
 decorating a method with `@<field_name>.permissions`.
 
 ```python
--8 < -"queries/field_permissions.py"
+-8<- "queries/field_permissions.py"
 ```
 
 If `Field` permissions are defined for a related field, the related `QueryType` permissions
 are overridden by the `Field` permissions.
 
 ```python
--8 < -"queries/field_permissions_related_field.py"
+-8<- "queries/field_permissions_related_field.py"
 ```
 
 Instead of raising an exception, you might want a failed permission check to
@@ -424,7 +424,7 @@ returning `None` when permission is denied. Note that you'll need to manually se
 `Field` as [nullable](#nullable) if it would otherwise not be.
 
 ```python
--8 < -"queries/field_permissions_resolver.py"
+-8<- "queries/field_permissions_resolver.py"
 ```
 
 ### Many
@@ -434,7 +434,7 @@ For example, for a Model field, a `ManyToManyField` will return a list of items.
 If you want to configure this manually, you can do so by adding the `many` argument to the `Field`.
 
 ```python
--8 < -"queries/field_many.py"
+-8<- "queries/field_many.py"
 ```
 
 ### Nullable
@@ -444,7 +444,7 @@ For example, for a Model field, nullability is determined from its `null` attrib
 If you want to configure this manually, you can do so by adding the `nullable` argument to the `Field`.
 
 ```python
--8 < -"queries/field_nullable.py"
+-8<- "queries/field_nullable.py"
 ```
 
 ### Complexity
@@ -458,7 +458,7 @@ For example, a related Model field has a complexity of 1, and a regular Model fi
 If you want to configure this manually, you can do so by adding the `complexity` argument to the `Field`.
 
 ```python
--8 < -"queries/field_complexity.py"
+-8<- "queries/field_complexity.py"
 ```
 
 > Note that complexity tracks how many database queries an operation runs, not how many rows it returns.
@@ -471,7 +471,7 @@ You can set custom caching rules for `Fields` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
--8 < -"queries/field_cache.py"
+-8<- "queries/field_cache.py"
 ```
 
 See the [Entrypoint caching](schema.md#caching) section for more details.
@@ -482,7 +482,7 @@ A `field_name` can be provided to explicitly set the Django Model field
 that the `Field` corresponds to.
 
 ```python
--8 < -"queries/field_field_name.py"
+-8<- "queries/field_field_name.py"
 ```
 
 This can be useful when the `Field` has a different name and type in the GraphQL schema than in the Model.
@@ -496,7 +496,7 @@ If you want to change the name of the `ObjectType` field separately,
 you can do so by setting the `schema_name` argument:
 
 ```python hl_lines="13"
--8 < -"queries/field_schema_name.py"
+-8<- "queries/field_schema_name.py"
 ```
 
 This can be useful when the desired name of the `ObjectType` field is a Python keyword
@@ -512,20 +512,20 @@ you can provide a description in one of two ways:
 1) By setting the `description` argument.
 
 ```python
--8 < -"queries/field_description.py"
+-8<- "queries/field_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8 < -"queries/field_description_class.py"
+-8<- "queries/field_description_class.py"
 ```
 
 When using [function references](#function-references), instead of a class attribute docstring,
 you add a docstring to the function/method used as the reference instead.
 
 ```python
--8 < -"queries/field_decorator_docstring.py"
+-8<- "queries/field_decorator_docstring.py"
 ```
 
 ### Deprecation reason
@@ -534,7 +534,7 @@ A `deprecation_reason` can be provided to mark the `Field` as deprecated.
 This is for documentation purposes only, and does not affect the use of the `Field`.
 
 ```python hl_lines="13"
--8 < -"queries/field_deprecation_reason.py"
+-8<- "queries/field_deprecation_reason.py"
 ```
 
 ### Custom resolvers
@@ -547,7 +547,7 @@ You can override the resolver for a `Field` by adding a method to the class body
 and decorating it with the `@<field_name>.resolve` decorator.
 
 ```python
--8 < -"queries/field_resolver.py"
+-8<- "queries/field_resolver.py"
 ```
 
 /// details | About method signature
@@ -576,7 +576,7 @@ you can do so by adding a method to the class body of the `QueryType` and
 decorating it with the `@<field_name>.optimize` decorator.
 
 ```python
--8 < -"queries/field_optimize.py"
+-8<- "queries/field_optimize.py"
 ```
 
 This hook can be helpful when you require data from outside the GraphQL execution context
@@ -604,7 +604,7 @@ a field can raise to the `errors` argument of the `Field`.
 ["Error as Data"]: https://www.apollographql.com/docs/graphos/schema-design/guides/errors-as-data-explained
 
 ```python
--8 < -"queries/field_errors_as_data.py"
+-8<- "queries/field_errors_as_data.py"
 ```
 
 This creates the following schema:
@@ -680,7 +680,7 @@ If you raise custom exceptions, you can add two static methods to your Exception
 to customize the GraphQL fields available from the error type: `graphql_fields` and `graphql_resolve`.
 
 ```python
--8 < -"queries/field_errors_as_data_custom_exception.py"
+-8<- "queries/field_errors_as_data_custom_exception.py"
 ```
 
 This will result in the following schema:
@@ -708,13 +708,13 @@ You can add directives to the `Field` by providing them using the `directives` a
 The directive must be usable in the `FIELD_DEFINITION` location.
 
 ```python
--8 < -"queries/field_directives.py"
+-8<- "queries/field_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"queries/field_directives_matmul.py"
+-8<- "queries/field_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -726,7 +726,7 @@ You can provide custom extensions for the `Field` by providing a
 however you wish to extend the functionality of the `Field`.
 
 ```python
--8 < -"queries/field_extensions.py"
+-8<- "queries/field_extensions.py"
 ```
 
 `Field` extensions are made available in the GraphQL `ObjectType` field extensions

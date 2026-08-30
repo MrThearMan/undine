@@ -1679,3 +1679,26 @@ class WebSocketUnknownMessageTypeError(WebSocketError):
 class WebSocketUnsupportedSubProtocolError(WebSocketError):
     reason = "Subprotocol not acceptable"
     code = GraphQLWebSocketCloseCode.SUBPROTOCOL_NOT_ACCEPTABLE
+
+
+# Undine Warnings
+
+
+class UndineDeprecationWarning(DeprecationWarning):
+    """Base class for all undine deprecation warnings."""
+
+    msg: ClassVar[str] = ""
+    error_formatter = ErrorMessageFormatter()
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(self.error_formatter.format(self.msg, **kwargs))
+
+
+class QueryTypeOptimizationsRenamedWarning(UndineDeprecationWarning):
+    """Warning raised if a QueryType overrides the renamed 'QueryType.__optimizations__' method."""
+
+    msg = (
+        "'QueryType.__optimizations__' has been renamed to 'QueryType.__optimize__'. "
+        "Rename the method in '{query_type:dotpath}'. "
+        "Support for '__optimizations__' will be removed in a future release."
+    )

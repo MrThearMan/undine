@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
@@ -16,7 +17,7 @@ from undine.converters import (
 )
 from undine.dataclasses import MaybeManyOrNonNull
 from undine.directives import CacheRulesDirective, ComplexityDirective, DirectiveList
-from undine.exceptions import MissingModelGenericError
+from undine.exceptions import MissingModelGenericError, QueryTypeOptimizationsRenamedWarning
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.typing import TModel
@@ -97,6 +98,12 @@ class QueryTypeMeta(type):
         interfaces = kwargs.get("interfaces", [])
 
         query_type = super().__new__(cls, _name, _bases, _attrs)
+
+        renamed_optimizations = _attrs.get("__optimizations__")
+        if renamed_optimizations is not None:
+            warnings.warn(QueryTypeOptimizationsRenamedWarning(query_type=query_type), stacklevel=2)
+            if "__optimize__" not in _attrs:
+                query_type.__optimize__ = renamed_optimizations  # type: ignore[attr-defined]
 
         # Members should use `__dunder__` names to avoid name collisions with possible `Field` names.
         query_type.__model__ = model
@@ -247,7 +254,7 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
         """Check permissions for accessing an instance through this `QueryType`."""
 
     @classmethod
-    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:  # TODO: Rename to __optimize__
+    def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
         """
         Hook for modifying the optimization data outside the GraphQL resolver context.
         Can be used to e.g. optimize data for permissions checks.

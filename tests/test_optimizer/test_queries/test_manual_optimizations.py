@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from example_project.app.models import Comment, Person, Project, Task, TaskTypeChoices
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory, TeamFactory, UserFactory
 from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.exceptions import QueryTypeOptimizationsRenamedWarning
 from undine.optimizer import OptimizationData
 
 
@@ -17,7 +18,7 @@ def test_optimizer__manual_optimization__query_type(graphql, undine_settings) ->
         name = Field()
 
         @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
             project_data = data.add_select_related("project")
             team_data = project_data.add_select_related("team")
             member_data = team_data.add_prefetch_related("members")
@@ -162,8 +163,37 @@ def test_optimizer__manual_optimization__add_select_related(graphql, undine_sett
         name = Field()
 
         @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_select_related("project", query_type=ProjectType)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="Proj")
+    TaskFactory.create(name="T1", project=Project.objects.first())
+
+    query = "query { tasks { name } }"
+    response = graphql(query, count_queries=True)
+    assert response.has_errors is False, response.errors
+
+    response.assert_query_count(1)
+
+
+@pytest.mark.django_db
+def test_optimizer__manual_optimization__deprecated_name(graphql, undine_settings) -> None:
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    with pytest.warns(QueryTypeOptimizationsRenamedWarning):
+
+        class TaskType(QueryType[Task], auto=False):
+            name = Field()
+
+            @classmethod
+            def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+                data.add_select_related("project", query_type=ProjectType)
 
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
@@ -189,7 +219,7 @@ def test_optimizer__manual_optimization__add_prefetch_related(graphql, undine_se
         name = Field()
 
         @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_prefetch_related("assignees", query_type=PersonType)
 
     class Query(RootType):
@@ -216,7 +246,7 @@ def test_optimizer__manual_optimization__add_generic_prefetch_related(graphql, u
         target = Field()
 
         @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_generic_prefetch_related("target", Task, query_type=TaskType)
 
     class Query(RootType):

@@ -10,7 +10,7 @@ _Avoid_: __filter_queryset__ (implementation name), base filter
 
 **Query type optimization**:
 Class-level hints that tell the query optimizer what related data to prefetch for a query type.
-_Avoid_: __optimizations__ (implementation name)
+_Avoid_: __optimize__ (implementation name)
 
 **Field permission check**:
 A per-field check that runs before resolving that field on a model instance.

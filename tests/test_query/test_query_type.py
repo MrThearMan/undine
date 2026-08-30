@@ -7,9 +7,14 @@ from graphql import DirectiveLocation, GraphQLEnumType, GraphQLField, GraphQLNon
 
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
-from tests.helpers import mock_gql_info
-from undine import Directive, DirectiveArgument, Field, FilterSet, OrderSet, QueryType
-from undine.exceptions import DirectiveLocationError, MismatchingModelError, MissingModelGenericError
+from tests.helpers import exact, mock_gql_info
+from undine import Directive, DirectiveArgument, Field, FilterSet, GQLInfo, OrderSet, QueryType
+from undine.exceptions import (
+    DirectiveLocationError,
+    MismatchingModelError,
+    MissingModelGenericError,
+    QueryTypeOptimizationsRenamedWarning,
+)
 from undine.optimizer.optimizer import OptimizationData
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.scalars import GraphQLDateTime
@@ -270,13 +275,56 @@ def test_query_type__permission() -> None:
     MyQueryType.__permissions__(instance=task, info=mock_gql_info())
 
 
-def test_query_type__optimizations() -> None:
+def test_query_type__optimize() -> None:
     class MyQueryType(QueryType[Task]): ...
 
     info = mock_gql_info()
     data = OptimizationData(model=Task, info=info)
 
-    MyQueryType.__optimizations__(data=data, info=info)
+    MyQueryType.__optimize__(data=data, info=info)
+
+
+def test_query_type__optimize__deprecated_name() -> None:
+    msg = (
+        "'QueryType.__optimizations__' has been renamed to 'QueryType.__optimize__'. "
+        "Rename the method in 'tests.test_query.test_query_type."
+        "test_query_type__optimize__deprecated_name.<locals>.MyQueryType'. "
+        "Support for '__optimizations__' will be removed in a future release."
+    )
+
+    with pytest.warns(QueryTypeOptimizationsRenamedWarning, match=exact(msg)):
+
+        class MyQueryType(QueryType[Task]):
+            @classmethod
+            def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+                data.only_fields.add("name")
+
+    info = mock_gql_info()
+    data = OptimizationData(model=Task, info=info)
+
+    MyQueryType.__optimize__(data=data, info=info)
+
+    assert data.only_fields == {"name"}
+
+
+def test_query_type__optimize__deprecated_name__both_defined() -> None:
+    with pytest.warns(QueryTypeOptimizationsRenamedWarning):
+
+        class MyQueryType(QueryType[Task]):
+            @classmethod
+            def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+                data.only_fields.add("name")
+
+            @classmethod
+            def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
+                data.only_fields.add("done")
+
+    info = mock_gql_info()
+    data = OptimizationData(model=Task, info=info)
+
+    MyQueryType.__optimize__(data=data, info=info)
+
+    assert data.only_fields == {"done"}
 
 
 def test_query_type__output_type_field() -> None:

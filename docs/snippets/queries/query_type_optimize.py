@@ -8,5 +8,5 @@ class TaskType(QueryType[Task]):
     name = Field()
 
     @classmethod
-    def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+    def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
         pass  # Some optimization here

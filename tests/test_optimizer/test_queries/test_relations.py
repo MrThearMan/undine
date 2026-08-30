@@ -1635,7 +1635,7 @@ def test_optimizer__relations__generic_foreign_key__custom_to_attr(graphql, undi
         target = Field()
 
         @classmethod
-        def __optimizations__(cls, data: OptimizationData, info: GQLInfo) -> None:
+        def __optimize__(cls, data: OptimizationData, info: GQLInfo) -> None:
             data.add_generic_prefetch_related("target", Task, query_type=TaskType, to_attr="task_target")
             data.add_generic_prefetch_related("target", Project, query_type=ProjectType, to_attr="task_target")
 

@@ -264,7 +264,7 @@ class QueryOptimizer(GraphQLASTWalker):
             self.optimization_data.order_by.extend(order_results.order_by)
             self.optimization_data.aliases |= order_results.aliases
 
-        query_type.__optimizations__(self.optimization_data, self.info)
+        query_type.__optimize__(self.optimization_data, self.info)
 
     def handle_undine_field(self, parent_type: GraphQLObjectType, field_node: FieldNode) -> None:
         """Handle any special operations for undine Fields."""
