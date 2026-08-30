@@ -872,6 +872,7 @@ class UndineErrorCodes(StrEnum):
     SSE_STREAM_NOT_FOUND = auto()
     SSE_STREAM_NOT_OPEN = auto()
     SSE_STREAM_TOKEN_MISSING = auto()
+    SUBSCRIPTION_BACKLOG_FULL = auto()
     SUBSCRIPTION_TIMEOUT = auto()
     TOO_MANY_FILTERS = auto()
     TOO_MANY_ORDERS = auto()

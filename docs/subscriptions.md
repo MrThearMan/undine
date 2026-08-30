@@ -215,6 +215,17 @@ so queries to them are optimized just like any other query.
 > However, a copy of the instance is made just before deletion so that you can query
 > its details, but not its relations since those have not been prefetched.
 
+Each subscriber buffers the events it has not processed yet. `max_backlog` sets how many events
+a subscriber may fall behind by, and defaults to 100.
+
+When the buffer overflows, events are lost. A client cannot detect that gap on its own, so the
+subscription ends with an error instead and the client can resubscribe and refetch its state.
+Set `max_backlog=0` for an unbounded buffer, which trades that error for unbounded memory use
+when a subscriber cannot keep up.
+
+> Signal subscriptions are delivered within a single process. A write handled by one worker
+> does not reach subscribers attached to another worker.
+
 For other signals, you can create custom subscriptions by subclassing `undine.subscriptions.SignalSubscription`
 and adding the appropriate converters in order to use it in your schema.
 See the ["Hacking Undine"](hacking-undine.md#entrypoints) section for more information on how to do this.

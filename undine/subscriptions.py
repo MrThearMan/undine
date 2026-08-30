@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, Generic
 
 from django.db.models.signals import post_save, pre_delete
 
-from undine.exceptions import GraphQLSubscriptionTimeoutError
+from undine.exceptions import GraphQLSubscriptionBacklogFullError, GraphQLSubscriptionTimeoutError
 from undine.typing import T, TModel
+from undine.utils.logging import logger
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -39,6 +40,7 @@ class SignalSubscription(ABC, Generic[T]):
         dispatch_uid: str | None = None,
         description: str | None = None,
         timeout: float | None = None,
+        max_backlog: int = 100,
     ) -> None:
         """
         Create a new subscription.
@@ -47,11 +49,14 @@ class SignalSubscription(ABC, Generic[T]):
         :param dispatch_uid: The dispatch uid for the signal.
         :param description: The description for the subscription.
         :param timeout: How long to wait between signals before timing out.
+        :param max_backlog: How many events a subscriber may fall behind by before
+                            its subscription ends. Set to 0 for no limit.
         """
         self.sender = sender
         self.dispatch_uid = dispatch_uid
         self.description = description
         self.timeout = timeout
+        self.max_backlog = max_backlog
 
         self.subscribers: dict[uuid.UUID, SignalSubscriber] = {}
 
@@ -85,11 +90,13 @@ class SignalSubscription(ABC, Generic[T]):
 
         data = self.process(kwargs)
         for subscriber in self.subscribers.values():
-            subscriber.events.put_nowait(data)
+            subscriber.put(data)
 
 
 class SignalSubscriber(Generic[T]):
     """Subscriber that receives events from a signal subscription."""
+
+    loop: asyncio.AbstractEventLoop
 
     def __init__(self, subscription: SignalSubscription) -> None:
         """
@@ -98,14 +105,43 @@ class SignalSubscriber(Generic[T]):
         :param subscription: The subscription this subscriber is for.
         """
         self.subscription = subscription
-        self.events: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self.events: asyncio.Queue[dict[str, Any]] = asyncio.Queue(maxsize=subscription.max_backlog)
+        self.backlog_full = False
+
+    def put(self, data: dict[str, Any]) -> None:
+        """
+        Add an event for this subscriber to receive.
+
+        Django dispatches a signal on whichever thread made the change, and mutations run their
+        ORM work in a thread executor, so this is usually not the event loop's thread.
+        `asyncio.Queue` is not thread-safe: adding to it from another thread marks the waiting
+        subscriber as ready but does not wake the event loop, which then stays asleep until
+        something else happens to wake it.
+        """
+        try:
+            self.loop.call_soon_threadsafe(self._put, data)
+        except RuntimeError:
+            logger.debug("Event loop is closed, dropping event for subscriber.")
+
+    def _put(self, data: dict[str, Any]) -> None:
+        # Runs on the event loop's thread, so the queue and the flag are safe to touch here.
+        try:
+            self.events.put_nowait(data)
+        except asyncio.QueueFull:
+            self.backlog_full = True
 
     async def subscribe(self) -> AsyncGenerator[T, None]:
         """Begin receiving events from the subscription."""
+        self.loop = asyncio.get_running_loop()
         key = uuid.uuid4()
         self.subscription.subscribers[key] = self
         try:
             while True:
+                # Events have been lost, so the stream has a gap in it. Clients cannot detect
+                # that themselves, so end the subscription and let them resubscribe.
+                if self.backlog_full:
+                    raise GraphQLSubscriptionBacklogFullError
+
                 try:
                     event = await asyncio.wait_for(self.events.get(), timeout=self.subscription.timeout)
                 except TimeoutError as error:
@@ -130,6 +166,7 @@ class QueryTypeSignalSubscription(SignalSubscription[TModel], ABC):
         dispatch_uid: str | None = None,
         description: str | None = None,
         timeout: float | None = None,
+        max_backlog: int = 100,
     ) -> None:
         """
         Create a new signal subscription that resolves using a QueryType.
@@ -138,6 +175,8 @@ class QueryTypeSignalSubscription(SignalSubscription[TModel], ABC):
         :param dispatch_uid: The dispatch uid for the signal.
         :param description: The description for the subscription.
         :param timeout: How long to wait between signals before timing out.
+        :param max_backlog: How many events a subscriber may fall behind by before
+                            its subscription ends. Set to 0 for no limit.
         """
         self.query_type = query_type
         super().__init__(
@@ -145,6 +184,7 @@ class QueryTypeSignalSubscription(SignalSubscription[TModel], ABC):
             dispatch_uid=dispatch_uid,
             description=description,
             timeout=timeout,
+            max_backlog=max_backlog,
         )
 
 

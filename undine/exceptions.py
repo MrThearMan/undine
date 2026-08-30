@@ -1439,6 +1439,14 @@ class GraphQLSubscriptionNoEventStreamError(GraphQLStatusError):
     code = UndineErrorCodes.NO_EVENT_STREAM
 
 
+class GraphQLSubscriptionBacklogFullError(GraphQLStatusError):
+    """Error raised when a subscriber cannot keep up with the rate of incoming events."""
+
+    msg = "Subscriber cannot keep up with the rate of incoming events"
+    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = UndineErrorCodes.SUBSCRIPTION_BACKLOG_FULL
+
+
 class GraphQLSubscriptionTimeoutError(GraphQLStatusError):
     """Error raised when a subscription times out."""
 

@@ -1,17 +1,20 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import suppress
 from typing import AsyncGenerator, AsyncIterable, AsyncIterator, Self
 
 import pytest
 from asgiref.sync import sync_to_async
 from django.db.models import QuerySet
+from django.db.models.signals import post_save
 from graphql import FormattedExecutionResult, GraphQLError, GraphQLFormattedError
 
 from example_project.app.models import Task, TaskTypeChoices
-from tests.helpers import TEST_WAIT_TIME
+from tests.factories.task import TaskFactory
+from tests.helpers import TEST_WAIT_TIME, cancel_from_thread_after, exact, saving_in_separate_thread
 from undine import Entrypoint, GQLInfo, QueryType, RootType, create_schema
-from undine.exceptions import GraphQLErrorGroup, GraphQLPermissionError
+from undine.exceptions import GraphQLErrorGroup, GraphQLPermissionError, GraphQLSubscriptionBacklogFullError
 from undine.subscriptions import (
     ModelCreateSubscription,
     ModelDeleteSubscription,
@@ -60,6 +63,97 @@ async def test_signal_subscription__save(graphql, undine_settings) -> None:
         assert result["payload"] == FormattedExecutionResult(
             data={"savedTasks": {"pk": task.pk, "name": "Updated task"}},
         )
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_signal_subscription__save__signal_from_non_loop_thread() -> None:
+    class TaskType(QueryType[Task], auto=True): ...
+
+    subscription = ModelSaveSubscription(TaskType)
+    subscriber = subscription.create_subscriber()
+
+    task = await sync_to_async(TaskFactory.create)(name="Task")
+
+    events = subscriber.subscribe()
+    receive_task = asyncio.create_task(anext(events))
+
+    # Let the subscriber register itself and start waiting for an event.
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+    task.name = "Updated task"
+
+    with (
+        cancel_from_thread_after(receive_task, timeout=TEST_WAIT_TIME * 20) as watchdog,
+        saving_in_separate_thread(task, delay=TEST_WAIT_TIME),
+    ):
+        try:
+            event = await receive_task
+        except asyncio.CancelledError:
+            event = None
+
+    await events.aclose()
+
+    assert not watchdog.is_set(), "The event loop was not woken by the signal, so nothing was delivered."
+    assert event == task
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_signal_subscription__save__backlog_full() -> None:
+    class TaskType(QueryType[Task], auto=True): ...
+
+    subscription = ModelSaveSubscription(TaskType, max_backlog=1)
+    subscriber = subscription.create_subscriber()
+
+    first_task = await sync_to_async(TaskFactory.create)(name="Task 1")
+    second_task = await sync_to_async(TaskFactory.create)(name="Task 2")
+
+    events = subscriber.subscribe()
+    receive_task = asyncio.create_task(anext(events))
+
+    # Let the subscriber register itself and start waiting for an event.
+    await asyncio.sleep(TEST_WAIT_TIME)
+
+    # Sent directly rather than by saving, so that both events are queued in the same pass
+    # of the event loop. A real save yields to the loop, which lets the subscriber drain the
+    # first event before the second one arrives, and then the backlog never fills.
+    signal_params = {"sender": Task, "created": False, "raw": False, "using": None, "update_fields": None}
+    post_save.send(instance=first_task, **signal_params)
+    post_save.send(instance=second_task, **signal_params)
+
+    assert await receive_task == first_task
+
+    message = "Subscriber cannot keep up with the rate of incoming events"
+    with pytest.raises(GraphQLSubscriptionBacklogFullError, match=exact(message)):
+        await anext(events)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_signal_subscription__save__event_loop_closed() -> None:
+    class TaskType(QueryType[Task], auto=True): ...
+
+    subscription = ModelSaveSubscription(TaskType)
+
+    loop = asyncio.new_event_loop()
+
+    async def start_subscribing() -> None:
+        subscriber = subscription.create_subscriber()
+        events = subscriber.subscribe()
+        receive_task = loop.create_task(anext(events))
+
+        # Let the subscriber register itself and start waiting for an event.
+        await asyncio.sleep(TEST_WAIT_TIME)
+
+        assert not receive_task.done()
+
+    loop.run_until_complete(start_subscribing())
+    loop.close()
+
+    # The subscriber is still registered, since closing the loop skipped the generator's cleanup.
+    subscriber = next(iter(subscription.subscribers.values()))
+
+    TaskFactory.create(name="Task")
+
+    assert subscriber.events.empty()
 
 
 @pytest.mark.django_db(transaction=True)

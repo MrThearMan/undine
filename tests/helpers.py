@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import copy
 import dataclasses
 import json
 import os
 import re
+import threading
+import time
 from collections import UserDict
 from contextlib import contextmanager
 from io import BytesIO
@@ -19,6 +22,7 @@ from django.contrib.sessions.backends.cache import SessionStore as CacheSessionS
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files.uploadhandler import MemoryFileUploadHandler
+from django.db import connection  # noqa: ICN003
 from django.http import HttpHeaders, QueryDict
 from django.http.multipartparser import MultiPartParser
 from django.http.request import MediaType
@@ -52,6 +56,7 @@ if TYPE_CHECKING:
 
     from django.contrib.auth.models import User
     from django.core.files.uploadedfile import UploadedFile
+    from django.db.models import Model
     from graphql import AbortSignal, FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
     from pytest_django import DjangoDbBlocker
 
@@ -59,11 +64,13 @@ if TYPE_CHECKING:
 
 __all__ = [
     "MockRequest",
+    "cancel_from_thread_after",
     "create_graphql_multipart_spec_request",
     "exact",
     "keyset_cursor",
     "mock_gql_info",
     "parametrize_helper",
+    "saving_in_separate_thread",
     "walk_connection_forward_and_backward",
 ]
 
@@ -96,6 +103,62 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
     except AttributeError as error:
         msg = "Improper configuration. Did you use a NamedTuple for TNamedTuple?"
         raise UndineError(msg) from error
+
+
+@contextmanager
+def cancel_from_thread_after(task: asyncio.Task, *, timeout: float) -> Generator[threading.Event, None, None]:
+    """
+    Cancel the task from a separate thread if the context has not exited within the timeout.
+
+    Cancelling goes through `loop.call_soon_threadsafe`, which also wakes the event loop.
+    A task that is pending only because nothing woke the loop therefore finishes as a side
+    effect of the watchdog firing. The yielded event tells the caller whether that happened,
+    so the delivery can be distinguished from the rescue.
+    """
+    loop = asyncio.get_running_loop()
+    fired = threading.Event()
+    finished = threading.Event()
+
+    def watch() -> None:
+        if not finished.wait(timeout=timeout):
+            fired.set()
+            loop.call_soon_threadsafe(task.cancel)
+
+    thread = threading.Thread(target=watch)
+    thread.start()
+    try:
+        yield fired
+    finally:
+        finished.set()
+        thread.join()
+
+
+@contextmanager
+def saving_in_separate_thread(instance: Model, *, delay: float) -> Generator[None, None, None]:
+    """
+    Save the instance from a thread that is not running the event loop.
+
+    This is the shape mutations have in production, since their ORM work runs under
+    `sync_to_async`, so model signals are dispatched off the event loop's thread.
+
+    The save waits for the delay first, so that the caller can park the event loop on an
+    `await` before the signal fires. Saving while the loop is between iterations would let
+    the loop pick up the result on its next pass and hide whether it was woken at all.
+    """
+
+    def save() -> None:
+        try:
+            time.sleep(delay)
+            instance.save()
+        finally:
+            connection.close()
+
+    thread = threading.Thread(target=save)
+    thread.start()
+    try:
+        yield
+    finally:
+        thread.join()
 
 
 def keyset_cursor(typename: str, pk: Any = None, **other: Any) -> str:
