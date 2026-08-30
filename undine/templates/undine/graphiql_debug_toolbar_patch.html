@@ -1,19 +1,35 @@
 <script>
   (function (JSON, Response) {
-    const djDebug = document.getElementById("djDebug");
+    // Mirrors 'getDebugElement' in the debug toolbar's own 'utils.js'.
+    // Since debug toolbar 7.0.0 the toolbar renders inside a shadow DOM, so it cannot be
+    // reached from 'document'. The toolbar DOM can also be replaced between requests,
+    // so the lookup must be done again on each update instead of being kept in a variable.
+    function getToolbarRoot() {
+      const root = document.getElementById("djDebugRoot");
+      // Debug toolbar < 7.0.0 renders the toolbar directly into the document.
+      if (root === null) return document;
+      return root.shadowRoot === null ? root : root.shadowRoot;
+    }
 
     // If the response contains 'debugToolbar' data, update it to the toolbar
     function update(data) {
       if (data === null || !data.hasOwnProperty("debugToolbar")) return data;
 
+      const root = getToolbarRoot();
+
+      const djDebug = root.querySelector("#djDebug");
+      if (djDebug === null) return data;
+
       // 'debugToolbar' data defined by `undine.integrations.debug_toolbar.add_debug_toolbar_data`
-      Object.entries(data.debugToolbar.panels).map(([id, panel]) => {
+      Object.entries(data.debugToolbar.panels).forEach(([id, panel]) => {
         if (panel.toolbarTitle) {
-          document.getElementById(`djdt-${id}`).querySelector("small").textContent = panel.toolbarTitle;
+          const title = root.querySelector(`#djdt-${id} small`);
+          if (title !== null) title.textContent = panel.toolbarTitle;
         }
 
         if (panel.panelTitle) {
           const content = djDebug.querySelector(`#${id}`);
+          if (content === null) return;
 
           content.querySelector(".djDebugPanelTitle").querySelector("h3").textContent = panel.panelTitle;
           content.querySelector(".djdt-scroll").innerHTML = "";
