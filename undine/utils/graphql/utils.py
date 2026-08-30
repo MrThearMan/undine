@@ -41,7 +41,7 @@ from undine.exceptions import (
     GraphQLRequestOperationNotFoundError,
 )
 from undine.settings import undine_settings
-from undine.utils.logging import log_traceback
+from undine.utils.logging import log_traceback, logger
 from undine.utils.model_utils import get_validation_error_messages
 from undine.utils.reflection import get_traceback
 from undine.utils.text import to_snake_case
@@ -87,6 +87,9 @@ __all__ = [
     "is_node_interface",
     "is_page_info",
     "is_relation_id",
+    "mask_error",
+    "never_mask_error",
+    "should_mask_error",
     "should_skip_node",
 ]
 
@@ -282,6 +285,16 @@ def is_atomic_mutation(operation: OperationDefinitionNode) -> bool:
     return "atomic" in {directive.name.value for directive in operation.directives or ()}
 
 
+def should_mask_error(error: GraphQLError) -> bool:
+    """Should the given error be masked before it's sent to the client?"""
+    return error.original_error is not None and not isinstance(error.original_error, GraphQLError)
+
+
+def never_mask_error(error: GraphQLError) -> bool:
+    """Set as the `ERROR_MASKING_PREDICATE` setting to turn off error masking."""
+    return False
+
+
 # Misc.
 
 
@@ -373,12 +386,26 @@ def graphql_errors_hook(errors: list[GraphQLError] | None) -> list[GraphQLError]
         if error.__traceback__ is not None:
             log_traceback(error.__traceback__)
 
-            if undine_settings.INCLUDE_ERROR_TRACEBACK:
-                extensions["traceback"] = get_traceback(error.__traceback__)
+        if undine_settings.ERROR_MASKING_PREDICATE(error):
+            logger.error("Masked error: %s", error.original_error or error.message)
+            mask_error(error)
+
+        elif error.__traceback__ is not None and undine_settings.INCLUDE_ERROR_TRACEBACK:
+            extensions["traceback"] = get_traceback(error.__traceback__)
 
     # Sort the error list in order to make it deterministic
     errors.sort(key=lambda err: (err.locations or [], err.path or [], err.message))
     return errors
+
+
+def mask_error(error: GraphQLError) -> None:
+    """Replace the contents of the given error that could leak internal details with a generic message."""
+    status_code = error.extensions.get("status_code", HTTPStatus.INTERNAL_SERVER_ERROR)  # type: ignore[union-attr]
+
+    error.message = undine_settings.ERROR_MASKING_MESSAGE
+    error.args = (error.message,)
+    error.extensions = {"status_code": status_code}
+    error.original_error = None
 
 
 def located_validation_error(

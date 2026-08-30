@@ -156,6 +156,7 @@ UNDINE = {
     # "INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL": 1,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,
+    # "ERROR_MASKING_PREDICATE": "undine.utils.graphql.utils.never_mask_error",
     "LIFECYCLE_HOOKS": [
         "example_project.app.hooks.ErrorLoggingMiddleware",
         "example_project.app.hooks.ExampleHook",

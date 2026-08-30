@@ -54,7 +54,7 @@ async def execute_graphql_multipart_mixed(
         yield MultipartMixedHttpResponse(payload=payload)
 
     except Exception as error:  # noqa: BLE001
-        payload = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        payload = get_error_execution_result(GraphQLUnexpectedError(original_error=error))
         yield MultipartMixedHttpResponse(payload=payload)
 
     yield MultipartMixedHttpComplete()

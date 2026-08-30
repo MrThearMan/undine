@@ -19,6 +19,7 @@ from undine.exceptions import (
 )
 from undine.federation import ExternalDirective, FederationField, FederationType, KeyDirective, create_federation_schema
 from undine.federation.schema import find_resolvable_entities, find_resolvable_federation_types
+from undine.utils.graphql.utils import never_mask_error
 
 # _Entity union presence / absence
 
@@ -491,6 +492,8 @@ def test_entities__resolve_reference_returning_none_yields_null(graphql, undine_
 
 @pytest.mark.django_db
 def test_entities__exception_in_resolve_reference_becomes_graphql_error(graphql, undine_settings) -> None:
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
+
     @KeyDirective(fields="pk")
     class TaskType(QueryType[Task]):
         pk = Field()
@@ -1347,6 +1350,8 @@ def test_entities__federation_type_resolve_reference_returning_none_yields_null(
 def test_entities__federation_type_exception_in_resolve_reference_becomes_graphql_error(
     graphql, undine_settings
 ) -> None:
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
+
     @KeyDirective(fields="isbn")
     class BookExt(FederationType, schema_name="Book"):
         isbn = FederationField(str)
@@ -1648,6 +1653,7 @@ async def test_entities__async_federation_type_resolve_reference_returning_none_
 async def test_entities__async_federation_type_exception_in_resolve_reference_becomes_graphql_error(
     graphql_async, undine_settings
 ) -> None:
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from http import HTTPStatus
 from typing import NamedTuple
 
 import pytest
@@ -32,10 +34,12 @@ from undine import Directive
 from undine.exceptions import (
     DirectiveLocationError,
     DirectiveRepeatedError,
+    GraphQLAsyncNotSupportedError,
     GraphQLErrorGroup,
     GraphQLRequestMultipleOperationsNoOperationNameError,
     GraphQLRequestNoOperationError,
     GraphQLRequestOperationNotFoundError,
+    GraphQLUnexpectedError,
 )
 from undine.typing import GQLContext
 from undine.utils.graphql.utils import (
@@ -58,6 +62,7 @@ from undine.utils.graphql.utils import (
     is_relation_id,
     is_typename_metafield,
     located_validation_error,
+    never_mask_error,
     pre_evaluate_request_user,
     should_skip_node,
 )
@@ -185,6 +190,113 @@ def test_graphql_errors_hook__non_graphql_original_error() -> None:
     outer = GraphQLError("outer", original_error=inner)
     result = graphql_errors_hook([outer])
     assert result[0].extensions["status_code"] == 500
+
+
+def test_graphql_errors_hook__masks_server_errors() -> None:
+    inner = ValueError("DB password is hunter2")
+    outer = GraphQLError("DB password is hunter2", path=["field"], original_error=inner)
+
+    result = graphql_errors_hook([outer])
+
+    assert result[0].formatted == {
+        "message": "Unexpected error.",
+        "path": ["field"],
+        "extensions": {"status_code": 500},
+    }
+    assert result[0].original_error is None
+
+
+def test_graphql_errors_hook__masking_drops_other_extensions() -> None:
+    inner = ValueError("DB password is hunter2")
+    outer = GraphQLError("outer", original_error=inner, extensions={"error_code": "hunter2"})
+
+    result = graphql_errors_hook([outer])
+
+    assert result[0].extensions == {"status_code": 500}
+
+
+def test_graphql_errors_hook__does_not_mask_client_errors() -> None:
+    error = GraphQLError("Task name is too long", extensions={"error_code": "VALIDATION_ERROR"})
+
+    result = graphql_errors_hook([error])
+
+    assert result[0].formatted == {
+        "message": "Task name is too long",
+        "extensions": {"error_code": "VALIDATION_ERROR", "status_code": 400},
+    }
+
+
+def test_graphql_errors_hook__does_not_mask_deliberate_server_errors() -> None:
+    error = GraphQLAsyncNotSupportedError()
+
+    result = graphql_errors_hook([error])
+
+    assert result[0].formatted == {
+        "message": "GraphQL execution failed to complete synchronously.",
+        "extensions": {"status_code": 500, "error_code": "ASYNC_NOT_SUPPORTED"},
+    }
+
+
+def test_graphql_errors_hook__masking_logs_the_wrapped_exception(caplog) -> None:
+    try:
+        msg = "DB password is hunter2"
+        raise ValueError(msg)  # noqa: TRY301
+    except ValueError as exc:
+        error = GraphQLUnexpectedError(original_error=exc)
+
+    with caplog.at_level(logging.ERROR, logger="undine"):
+        result = graphql_errors_hook([error])
+
+    assert result[0].message == "Unexpected error."
+
+    messages = [record.message for record in caplog.records]
+    assert messages == ["Masked error: DB password is hunter2"]
+
+
+def test_graphql_errors_hook__masking_message(undine_settings) -> None:
+    undine_settings.ERROR_MASKING_MESSAGE = "Something went wrong."
+
+    error = GraphQLError("outer", original_error=ValueError("inner"))
+
+    result = graphql_errors_hook([error])
+
+    assert result[0].message == "Something went wrong."
+
+
+def test_graphql_errors_hook__masking_predicate(undine_settings) -> None:
+    def mask_client_errors(error: GraphQLError) -> bool:
+        return error.extensions["status_code"] == HTTPStatus.BAD_REQUEST
+
+    undine_settings.ERROR_MASKING_PREDICATE = mask_client_errors
+
+    client_error = GraphQLError("client error")
+    server_error = GraphQLError("server error", original_error=ValueError("inner"))
+
+    result = graphql_errors_hook([client_error, server_error])
+
+    assert [error.message for error in result] == ["Unexpected error.", "server error"]
+
+
+def test_graphql_errors_hook__masking_logs_error_and_traceback(undine_settings, caplog) -> None:
+    undine_settings.INCLUDE_ERROR_TRACEBACK = True
+
+    try:
+        msg = "DB password is hunter2"
+        raise ValueError(msg)  # noqa: TRY301
+    except ValueError as exc:
+        error = GraphQLError(str(exc), original_error=exc)
+
+    with caplog.at_level(logging.DEBUG, logger="undine"):
+        result = graphql_errors_hook([error])
+
+    assert result[0].formatted == {
+        "message": "Unexpected error.",
+        "extensions": {"status_code": 500},
+    }
+
+    messages = [record.message for record in caplog.records]
+    assert "Masked error: DB password is hunter2" in messages
+    assert any("raise ValueError(msg)" in message for message in messages)
 
 
 def test_located_validation_error__simple() -> None:
@@ -348,6 +460,7 @@ def test_should_skip_node__no_directives() -> None:
 
 def test_graphql_errors_hook__with_traceback(undine_settings) -> None:
     undine_settings.INCLUDE_ERROR_TRACEBACK = True
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
 
     try:
         msg = "inner"
@@ -379,6 +492,7 @@ def test_graphql_error_path__error_group_already_has_path() -> None:
 
 def test_graphql_errors_hook__traceback_no_include(undine_settings) -> None:
     undine_settings.INCLUDE_ERROR_TRACEBACK = False
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
 
     try:
         msg = "inner"

@@ -317,7 +317,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
             await self.send_graphql_error_response(error=error)
 
         except Exception as error:  # noqa: BLE001
-            await self.send_graphql_error_response(error=GraphQLUnexpectedError(message=str(error)))
+            await self.send_graphql_error_response(error=GraphQLUnexpectedError(original_error=error))
 
         with suppress(Exception):
             await self.disconnect()

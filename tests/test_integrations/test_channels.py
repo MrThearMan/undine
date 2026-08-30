@@ -2541,7 +2541,7 @@ async def test_channels__sse_consumer__unexpected_exception_in_handler() -> None
         response = await sse_get_response(communicator)
 
     assert response["status"] == HTTPStatus.INTERNAL_SERVER_ERROR
-    assert "boom" in response["json"]["errors"][0]["message"]
+    assert response["json"]["errors"] == [{"message": "Unexpected error.", "extensions": {"status_code": 500}}]
 
 
 async def test_channels__sse_consumer__graphql_error_group_response() -> None:

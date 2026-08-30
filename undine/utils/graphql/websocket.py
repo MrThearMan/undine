@@ -418,7 +418,7 @@ class WebSocketOperation:
             await self.send_errors(errors=list(error.flatten()))
 
         except Exception as error:  # noqa: BLE001
-            await self.send_errors(errors=[GraphQLUnexpectedError(message=str(error))])
+            await self.send_errors(errors=[GraphQLUnexpectedError(original_error=error)])
 
         else:
             await self.send_complete()

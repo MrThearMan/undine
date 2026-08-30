@@ -89,7 +89,7 @@ async def execute_graphql_sse_sc(
         yield NextEventSC(operation_id=operation_id, payload=payload)
 
     except Exception as error:  # noqa: BLE001
-        payload = get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+        payload = get_error_execution_result(GraphQLUnexpectedError(original_error=error))
         yield NextEventSC(operation_id=operation_id, payload=payload)
 
     yield CompletedEventSC(operation_id=operation_id)

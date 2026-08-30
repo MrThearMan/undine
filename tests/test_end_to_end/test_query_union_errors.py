@@ -339,6 +339,59 @@ def test_end_to_end__union_errors__entrypoint__query(graphql, undine_settings) -
     }
 
 
+def test_end_to_end__union_errors__entrypoint__unlisted_exception_is_masked(graphql, undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint(errors=[MyError])
+        def say_hello(self, info: GQLInfo, name: str) -> str:
+            if not name:
+                msg = "No name provided"
+                raise MyError(msg, custom="Custom message")
+            msg = "DB password is hunter2"
+            raise RuntimeError(msg)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query ($name: String!) {
+          sayHello(name: $name) {
+            __typename
+            ... on QuerySayHelloValue {
+              value
+            }
+            ... on MyError {
+              message
+              custom
+            }
+          }
+        }
+    """
+
+    listed = graphql(query, variables={"name": ""})
+
+    assert listed.json == {
+        "data": {
+            "sayHello": {
+                "__typename": "MyError",
+                "message": "No name provided",
+                "custom": "Custom message",
+            },
+        },
+    }
+
+    unlisted = graphql(query, variables={"name": "Ada"})
+
+    assert unlisted.json == {
+        "data": None,
+        "errors": [
+            {
+                "message": "Unexpected error.",
+                "path": ["sayHello"],
+                "extensions": {"status_code": 500},
+            },
+        ],
+    }
+
+
 @pytest.mark.django_db
 def test_end_to_end__union_errors__entrypoint__mutation(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):

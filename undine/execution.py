@@ -119,7 +119,7 @@ def raised_exceptions_as_execution_results_sync(
             return get_error_execution_result(error)
 
         except Exception as error:  # noqa: BLE001
-            return get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+            return get_error_execution_result(GraphQLUnexpectedError(original_error=error))
 
     return wrapper
 
@@ -254,7 +254,7 @@ def raised_exceptions_as_execution_results_async(
             return get_error_execution_result(error)
 
         except Exception as error:  # noqa: BLE001
-            return get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+            return get_error_execution_result(GraphQLUnexpectedError(original_error=error))
 
     return wrapper
 
@@ -394,7 +394,7 @@ def raised_exceptions_as_execution_results_with_subscriptions(
             return get_error_execution_result(error)
 
         except Exception as error:  # noqa: BLE001
-            return get_error_execution_result(GraphQLUnexpectedError(message=str(error)))
+            return get_error_execution_result(GraphQLUnexpectedError(original_error=error))
 
     return wrapper
 

@@ -44,7 +44,7 @@ from undine.execution import (
 )
 from undine.hooks import LifecycleHook, LifecycleHookContext
 from undine.settings import example_schema
-from undine.utils.graphql.utils import get_error_execution_result
+from undine.utils.graphql.utils import get_error_execution_result, never_mask_error
 
 
 def test_execute_graphql(undine_settings) -> None:
@@ -142,6 +142,8 @@ def test_execute_graphql__validation_error(undine_settings) -> None:
 
 
 def test_execute_graphql__error_raised(undine_settings) -> None:
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
+
     def _raise_value_error(*args: Any, **kwargs: Any) -> Any:
         msg = "Error!"
         raise ValueError(msg)
@@ -216,7 +218,10 @@ def test_raised_exceptions_as_execution_results_sync__generic_exception() -> Non
 
     assert result.data is None
     assert result.errors is not None
-    assert "unexpected!" in result.errors[0].message
+    assert result.errors[0].formatted == {
+        "message": "Unexpected error.",
+        "extensions": {"status_code": 500},
+    }
 
 
 async def test_raised_exceptions_as_execution_results_async__graphql_error() -> None:
@@ -259,7 +264,10 @@ async def test_raised_exceptions_as_execution_results_async__generic_exception()
 
     assert result.data is None
     assert result.errors is not None
-    assert "unexpected async!" in result.errors[0].message
+    assert result.errors[0].formatted == {
+        "message": "Unexpected error.",
+        "extensions": {"status_code": 500},
+    }
 
 
 async def test_raised_exceptions_as_execution_results_with_subscriptions__graphql_error() -> None:
@@ -302,7 +310,10 @@ async def test_raised_exceptions_as_execution_results_with_subscriptions__generi
 
     assert result.data is None
     assert result.errors is not None
-    assert "unexpected sub!" in result.errors[0].message
+    assert result.errors[0].formatted == {
+        "message": "Unexpected error.",
+        "extensions": {"status_code": 500},
+    }
 
 
 async def test_execute_graphql_http_async__basic(undine_settings) -> None:

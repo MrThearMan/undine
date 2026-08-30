@@ -30,6 +30,7 @@ from undine.federation.tracing import (
     FederatedTracingHook,
 )
 from undine.hooks import LifecycleHook
+from undine.utils.graphql.utils import never_mask_error
 
 
 def _headers(mapping: dict[str, str]) -> HttpHeaders:
@@ -328,13 +329,15 @@ def test_federated_tracing__errors_when_protobuf_missing(undine_settings, monkey
 
     monkeypatch.setattr(tracing_module, "_require_protobuf", _fake_require)
 
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = _build_schema()
     undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 
     assert result.errors is not None
-    assert any("protobuf missing" in (err.message or "") for err in result.errors)
+    assert [error.message for error in result.errors] == ["Unexpected error in GraphQL execution"]
+    assert str(result.errors[0].original_error) == "protobuf missing"
     assert not (result.extensions or {}).get(TRACING_EXTENSION_KEY)
 
 
@@ -729,6 +732,7 @@ def test_federated_tracing__error_on_null_list_item_bubbles_to_parent_node(undin
         "Person",
         fields={"name": GraphQLField(GraphQLNonNull(GraphQLString))},
     )
+    undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = GraphQLSchema(
         query=GraphQLObjectType(
             "Query",

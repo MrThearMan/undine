@@ -12,7 +12,7 @@ from settings_holder import SettingsHolder, reload_settings
 if TYPE_CHECKING:
     from collections.abc import Callable, Container
 
-    from graphql import ASTValidationRule
+    from graphql import ASTValidationRule, GraphQLError
 
     from undine.execution import UndineExecutor
     from undine.hooks import LifecycleHook, LifecycleHookContext
@@ -156,6 +156,14 @@ class UndineDefaultSettings(NamedTuple):
 
     ROOT_VALUE: Any = None
     """The root value for the GraphQL execution."""
+
+    # Error handling
+
+    ERROR_MASKING_MESSAGE: str = "Unexpected error."
+    """The message sent to the client in place of a masked error's own message."""
+
+    ERROR_MASKING_PREDICATE: Callable[[GraphQLError], bool] = "undine.utils.graphql.utils.should_mask_error"  # type: ignore[assignment]
+    """Function to use for checking whether an error should be masked before it's sent to the client."""
 
     # Testing client
 
@@ -449,6 +457,7 @@ DEFAULTS: dict[str, Any] = UndineDefaultSettings()._asdict()
 IMPORT_STRINGS: set[str | bytes] = {
     "ADDITIONAL_VALIDATION_RULES.0",
     "DOCSTRING_PARSER",
+    "ERROR_MASKING_PREDICATE",
     "EXECUTOR_CLASS",
     "LIFECYCLE_HOOKS.0",
     "OPTIMIZER_CLASS",

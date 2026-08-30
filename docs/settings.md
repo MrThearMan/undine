@@ -229,6 +229,45 @@ The key used to store an `Entrypoint` in the `extensions` of its `GraphQLField`.
 
 ///
 
+/// details | `ERROR_MASKING_MESSAGE`
+    attrs: {id: error_masking_message}
+
+Type: `str` | Default: `"Unexpected error."`
+
+The message sent to the client in place of a masked error's own message.
+See [`ERROR_MASKING_PREDICATE`](#error_masking_predicate) for which errors are masked.
+
+///
+
+/// details | `ERROR_MASKING_PREDICATE`
+    attrs: {id: error_masking_predicate}
+
+Type: `Callable[[GraphQLError], bool]` | Default: `"undine.utils.graphql.utils.should_mask_error"`
+
+Function for checking whether an error should be masked before it's sent to the client.
+Value should be given as the dotted path to the function.
+
+By default, only genuinely unexpected errors are masked. An error is unexpected when it comes from
+an exception that nobody raised for the client to see, like a `RuntimeError` from a resolver or a
+database error from a Django call.
+
+Deliberate errors reach the client unchanged. An error is deliberate when it's a `GraphQLError`,
+whether you raised it yourself or Undine raised it for a server problem.
+
+A masked error keeps its `path`, `locations` and `status_code`.
+Its message is replaced with [`ERROR_MASKING_MESSAGE`](#error_masking_message),
+and all of its other `extensions`, like `error_code`, are removed.
+
+A masked error never includes a traceback in the response,
+even if [`INCLUDE_ERROR_TRACEBACK`](#include_error_traceback) is enabled.
+
+Masking only affects the response. The original message and traceback are always logged
+to the `undine` logger.
+
+To turn masking off, set this to `"undine.utils.graphql.utils.never_mask_error"`.
+
+///
+
 /// details | `EXECUTION_CONTEXT_CLASS`
     attrs: {id: execution_context_class}
 
@@ -401,6 +440,10 @@ When a GraphQL request returns an error response,
 and the error is based on a non-GraphQL exception,
 if this setting is enabled, the error traceback will be included in the response.
 Useful for debugging.
+
+Masked errors never include a traceback in the response.
+Turn masking off with [`ERROR_MASKING_PREDICATE`](#error_masking_predicate)
+to see tracebacks for server errors.
 
 ///
 

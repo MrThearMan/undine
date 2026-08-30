@@ -749,6 +749,45 @@ async def test_websocket_handler__receive__subscribe__error(undine_settings) -> 
     assert operation.is_completed is True
 
 
+async def test_websocket_handler__receive__subscribe__unexpected_error_is_masked(undine_settings) -> None:
+    undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
+
+    class Query(RootType):
+        @Entrypoint
+        async def test(self) -> str:
+            msg = "DB password is hunter2"
+            raise RuntimeError(msg)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    websocket = MockWebSocket()
+    handler = GraphQLOverWebSocketHandler(websocket=websocket)
+
+    handler.connection_acknowledged = True
+
+    message = SubscribeMessage(type="subscribe", id="1", payload={"query": "query { test }"})
+    await handler.receive(data=json.dumps(message))
+
+    operation = handler.operations.get("1")
+    assert operation is not None
+
+    await operation.task
+
+    assert websocket.messages == [
+        ErrorMessage(
+            type="error",
+            id="1",
+            payload=[
+                GraphQLFormattedError(
+                    message="Unexpected error.",
+                    path=["test"],
+                    extensions={"status_code": HTTPStatus.INTERNAL_SERVER_ERROR},
+                ),
+            ],
+        ),
+    ]
+
+
 async def test_websocket_handler__receive__subscribe__already_completed(undine_settings) -> None:
     class Query(RootType):
         @Entrypoint
