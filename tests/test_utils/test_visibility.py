@@ -187,6 +187,53 @@ def test_check_member_visibility__fail_closed_on_exception(caplog: pytest.LogCap
     ]
 
 
+def test_check_visibility__memo_attribute_can_be_changed(undine_settings) -> None:
+    undine_settings.VISIBILITY_MEMO_ATTRIBUTE = "_custom_visibility_memo"
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+    request = MockRequest()
+    assert is_type_visible(TaskType, request) is True
+
+    assert request._custom_visibility_memo.results == {id(TaskType): True}
+    assert not hasattr(request, "_undine_visibility_memo")
+
+
+def test_check_visibility__cyclic_type_graph(caplog: pytest.LogCaptureFixture) -> None:
+    """Types can refer back to themselves through their fields, e.g. 'Task.project.tasks'."""
+
+    # The hidden fields are what force the check into the relations,
+    # since a type is visible as soon as any one of its fields is.
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+        tasks = Field()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        project = Field()
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    schema = create_schema(query=Query)
+    task_object_type = schema.get_type("TaskType")
+
+    req = MockRequest()
+    with caplog.at_level(logging.ERROR, logger="undine"):
+        assert is_visible(task_object_type, req) is True
+
+    assert [record.message for record in caplog.records] == []
+
+
 def test_is_default_root_type_is_visible__detects_default() -> None:
     class Query(RootType):
         @Entrypoint

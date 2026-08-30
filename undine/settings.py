@@ -351,6 +351,9 @@ class UndineDefaultSettings(NamedTuple):
     VISIBILITY_CACHE_EXTRA_CONTEXT: Callable[[Any], Any] = "undine.utils.visibility.default_visibility_extra_context"  # type: ignore[assignment]
     """Function that returns extra context added to the visibility cache key."""
 
+    VISIBILITY_MEMO_ATTRIBUTE: str = "_undine_visibility_memo"
+    """The attribute on the request where visibility check results are memoized for the duration of the request."""
+
     # Argument & parameter names
 
     MUTATION_INPUT_DATA_KEY: str = "input"

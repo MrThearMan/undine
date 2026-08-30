@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from functools import wraps
 from typing import TYPE_CHECKING, Any, TypeAlias
 
@@ -197,10 +198,34 @@ def apply_visibility(schema: GraphQLSchema) -> bool:
     return True
 
 
-# Caching
+# Memoization
 
 
-def with_visibility_cache(
+@dataclasses.dataclass(kw_only=True, slots=True)
+class VisibilityMemo:
+    """Visibility check results for a single request."""
+
+    results: dict[int, bool] = dataclasses.field(default_factory=dict)
+    checks_in_progress: set[int] = dataclasses.field(default_factory=set)
+
+
+def get_visibility_memo(request: DjangoRequestProtocol) -> VisibilityMemo | None:
+    attribute = undine_settings.VISIBILITY_MEMO_ATTRIBUTE
+
+    memo: VisibilityMemo | None = getattr(request, attribute, None)
+    if memo is not None:
+        return memo
+
+    memo = VisibilityMemo()
+    try:
+        setattr(request, attribute, memo)
+    except (AttributeError, TypeError):  # pragma: no cover
+        return None
+
+    return memo
+
+
+def with_visibility_memo(
     func: Callable[[T, DjangoRequestProtocol], bool],
 ) -> Callable[[T, DjangoRequestProtocol | None], bool]:
 
@@ -210,42 +235,43 @@ def with_visibility_cache(
         if request is None:  # pragma: no cover
             return True
 
-        request_cache_attr = "_undine_visibility_cache"
+        memo = get_visibility_memo(request)
+        key = id(item)
 
-        cache: dict[int, bool] | None = getattr(request, request_cache_attr, None)
-        if cache is None:
-            cache = {}
-            try:
-                setattr(request, request_cache_attr, cache)
-            except (AttributeError, TypeError):  # pragma: no cover
-                cache = None
+        if memo is not None:  # pragma: no branch
+            memoized = memo.results.get(key)
+            if memoized is not None:
+                return memoized
 
-        cache_key = id(item)
+            # The type graph can contain cycles, e.g. 'Task.project.tasks'. An item whose check
+            # is still running is treated as visible, so that the check that started it can finish.
+            if key in memo.checks_in_progress:
+                return True
 
-        if cache is not None:  # pragma: no branch
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return cached
+            memo.checks_in_progress.add(key)
 
         try:
             result = func(item, request)
         except Exception:  # noqa: BLE001
             logger.exception("Visibility check for %r failed; treating as hidden.", item)
             return False
+        finally:
+            if memo is not None:  # pragma: no branch
+                memo.checks_in_progress.discard(key)
 
-        if cache is not None:  # pragma: no branch
-            cache[cache_key] = result
+        if memo is not None:  # pragma: no branch
+            memo.results[key] = result
         return result
 
     return wrapper
 
 
-@with_visibility_cache
+@with_visibility_memo
 def is_type_visible(cls: VisibilityClass, request: DjangoRequestProtocol) -> bool:
     return bool(cls.__is_visible__(request))
 
 
-@with_visibility_cache
+@with_visibility_memo
 def is_member_visible(member: VisibilityMember, request: DjangoRequestProtocol) -> bool:
     visible_func = member.visible_func
     if visible_func is None:
@@ -254,7 +280,7 @@ def is_member_visible(member: VisibilityMember, request: DjangoRequestProtocol) 
     return bool(visible_func(member, request))
 
 
-@with_visibility_cache
+@with_visibility_memo
 def is_named_type_visible(named_type: GraphQLNamedType, request: DjangoRequestProtocol) -> bool:  # noqa: C901,PLR0911,PLR0912
     match named_type:
         case GraphQLObjectType():

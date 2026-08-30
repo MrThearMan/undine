@@ -1142,6 +1142,16 @@ memoization still runs.
 
 ///
 
+/// details | `VISIBILITY_MEMO_ATTRIBUTE`
+    attrs: {id: visibility_memo_attribute}
+
+Type: `str` | Default: `"_undine_visibility_memo"`
+
+The attribute on the request where visibility check results are memoized for the duration
+of the request. This is separate from the cross-request visibility cache.
+
+///
+
 /// details | `WEBSOCKET_CONNECTION_INIT_HOOK`
     attrs: {id: websocket_connection_init_hook}
 
