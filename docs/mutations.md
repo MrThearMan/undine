@@ -16,7 +16,7 @@ and adding a Django Model to it as a generic type parameter. You must also add a
 [`Input`](#inputs) to the class body of the `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_basic.py"
+-8 < -"mutations/mutation_type_basic.py"
 ```
 
 ### Mutation kind
@@ -28,7 +28,7 @@ There are also two special mutation kinds: `custom` and `related`, which are cov
 in [custom mutations](#custom-mutations) and [related mutations](#related-mutations) respectively.
 
 ```python
--8<- "mutations/mutation_type_kind.py"
+-8 < -"mutations/mutation_type_kind.py"
 ```
 
 `kind` can also be omitted, in which case the `MutationType`
@@ -42,7 +42,7 @@ will determine the mutation `kind` using these rules:
 5. Otherwise, an error will be raised.
 
 ```python
--8<- "mutations/mutation_type_create.py"
+-8 < -"mutations/mutation_type_create.py"
 ```
 
 ### Auto-generation
@@ -51,7 +51,7 @@ A `MutationType` can automatically introspect its Django Model and convert the M
 to `Inputs` on the `MutationType`. For example, if the `Task` model has the following fields:
 
 ```python
--8<- "mutations/models_1.py"
+-8 < -"mutations/models_1.py"
 ```
 
 Then the GraphQL `InputObjectType` for a `MutationType` for a `create` mutation using auto-generation would be:
@@ -90,13 +90,13 @@ to enable it globally, or set the `auto` argument to `True` in the `MutationType
 With this, you can leave the `MutationType` class body empty.
 
 ```python
--8<- "mutations/mutation_type_auto.py"
+-8 < -"mutations/mutation_type_auto.py"
 ```
 
 You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
--8<- "mutations/mutation_type_exclude.py"
+-8 < -"mutations/mutation_type_exclude.py"
 ```
 
 ### Output type
@@ -108,7 +108,7 @@ since the `MutationType` will automatically look up the `QueryType`
 from the [`QueryType` registry](queries.md#querytype-registry).
 
 ```python
--8<- "mutations/mutation_type_output_type.py"
+-8 < -"mutations/mutation_type_output_type.py"
 ```
 
 This would create the following mutation in the GraphQL schema:
@@ -135,13 +135,13 @@ If you wanted to link the `QueryType` explicitly, you could do so by overriding 
 `__query_type__` classmethod.
 
 ```python
--8<- "mutations/mutation_type_query_type.py"
+-8 < -"mutations/mutation_type_query_type.py"
 ```
 
 If you wanted a fully custom output type, you can override the `__output_type__` classmethod.
 
 ```python
--8<- "mutations/mutation_type_output_type_custom.py"
+-8 < -"mutations/mutation_type_output_type_custom.py"
 ```
 
 ### Permissions
@@ -150,7 +150,7 @@ You can add mutation-level permission checks to mutations executed using a `Muta
 by defining the `__permissions__` classmethod.
 
 ```python
--8<- "mutations/mutation_type_permissions.py"
+-8 < -"mutations/mutation_type_permissions.py"
 ```
 
 /// details | About method signature
@@ -175,7 +175,7 @@ You can add mutation-level validation to mutations executed using a `MutationTyp
 by defining the `__validate__` classmethod.
 
 ```python
--8<- "mutations/mutation_type_validate.py"
+-8 < -"mutations/mutation_type_validate.py"
 ```
 
 /// details | About method signature
@@ -197,7 +197,7 @@ You can add custom handling that happens after the mutation is done by defining 
 classmethod on the `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_after.py"
+-8 < -"mutations/mutation_type_after.py"
 ```
 
 /// details | About method signature
@@ -221,7 +221,7 @@ You can define your own custom logic by defining the `__mutate__` or `__bulk_mut
 the `MutationType` class for single or bulk mutations respectively.
 
 ```python
--8<- "mutations/mutation_type_custom.py"
+-8 < -"mutations/mutation_type_custom.py"
 ```
 
 In the above example, the `MutationType` still a `create` mutation,
@@ -232,7 +232,7 @@ as well as some inference rules for its `Inputs`.
 You can also use a special `custom` mutation `kind` when using custom resolvers.
 
 ```python
--8<- "mutations/mutation_type_custom_kind.py"
+-8 < -"mutations/mutation_type_custom_kind.py"
 ```
 
 This affects the creation of the `MutationType` in the following ways:
@@ -250,7 +250,7 @@ However, if you want to return a different type, you can do so by overriding
 the `__output_type__` classmethod on the `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_output_type_custom.py"
+-8 < -"mutations/mutation_type_output_type_custom.py"
 ```
 
 ### Related mutations
@@ -258,14 +258,14 @@ the `__output_type__` classmethod on the `MutationType`.
 Let's say you have the following models:
 
 ```python
--8<- "mutations/models_2.py"
+-8 < -"mutations/models_2.py"
 ```
 
 If you wanted to create both a `Task` and its related `Project` in a single mutation,
 you could link two mutation types using a special `related` `kind` of `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_related.py"
+-8 < -"mutations/mutation_type_related.py"
 ```
 
 This creates the following `InputObjectTypes`:
@@ -348,7 +348,7 @@ although existing instances are not fetched from the database even if the input 
 (for performance reasons).
 
 ```python
--8<- "mutations/mutation_type_related_permissions.py"
+-8 < -"mutations/mutation_type_related_permissions.py"
 ```
 
 Note that if the `Input` connecting the `related` `MutationType` defines a permission or validation check,
@@ -383,7 +383,7 @@ The actions are as follows:
 - `ignore`: Leave the existing relations as they are. For one-to-one relations, an error is raised.
 
 ```python
--8<- "mutations/mutation_type_related_action.py"
+-8 < -"mutations/mutation_type_related_action.py"
 ```
 
 Note that this action applies to all related mutations executed from the "parent" `MutationType`.
@@ -442,7 +442,7 @@ is the name of the `MutationType` class. If you want to change the name separate
 you can do so by setting the `schema_name` argument:
 
 ```python
--8<- "mutations/mutation_type_schema_name.py"
+-8 < -"mutations/mutation_type_schema_name.py"
 ```
 
 ### Description
@@ -450,7 +450,7 @@ you can do so by setting the `schema_name` argument:
 To provide a description for the `MutationType`, you can add a docstring to the class.
 
 ```python
--8<- "mutations/mutation_type_description.py"
+-8 < -"mutations/mutation_type_description.py"
 ```
 
 ### Directives
@@ -459,13 +459,13 @@ You can add directives to the `MutationType` by providing them using the `direct
 The directive must be usable in the `INPUT_OBJECT` location.
 
 ```python
--8<- "mutations/mutation_type_directives.py"
+-8 < -"mutations/mutation_type_directives.py"
 ```
 
 You can also add them using the decorator syntax.
 
 ```python
--8<- "mutations/mutation_type_directives_decorator.py"
+-8 < -"mutations/mutation_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -477,7 +477,7 @@ You can provide custom extensions for the `MutationType` by providing a
 however you wish to extend the functionality of the `MutationType`.
 
 ```python
--8<- "mutations/mutation_type_extensions.py"
+-8 < -"mutations/mutation_type_extensions.py"
 ```
 
 `MutationType` extensions are made available in the GraphQL `InputObjectType` extensions
@@ -500,19 +500,19 @@ as its attribute name in the `MutationType` class body can be used to identify
 the corresponding model field.
 
 ```python
--8<- "mutations/input.py"
+-8 < -"mutations/input.py"
 ```
 
 To be a bit more explicit, you could use a string referencing the model field:
 
 ```python
--8<- "mutations/input_string.py"
+-8 < -"mutations/input_string.py"
 ```
 
 For better type safety, you can also use the model field itself:
 
 ```python
--8<- "mutations/input_field.py"
+-8 < -"mutations/input_field.py"
 ```
 
 ### Function references
@@ -521,7 +521,7 @@ Functions (or methods) can also be used to create `Inputs`.
 This can be done by decorating a method with the `Input` class.
 
 ```python
--8<- "mutations/input_decorator.py"
+-8 < -"mutations/input_decorator.py"
 ```
 
 /// details | About method signature
@@ -542,7 +542,7 @@ determines the input type of the function input in. The `value` argument can als
 in which case the input will become a [`hidden`](#hidden-inputs) input.
 
 ```python
--8<- "mutations/input_decorator_hidden.py"
+-8 < -"mutations/input_decorator_hidden.py"
 ```
 
 ### Model references
@@ -553,7 +553,7 @@ provided to the `Input` before permission and validation checks (see [order of o
 If an instance is not found, the `Input` will raise an error before any other checks are run.
 
 ```python
--8<- "mutations/input_model_reference.py"
+-8 < -"mutations/input_model_reference.py"
 ```
 
 The Model doesn't necessarily need to be a related Model of the parent `MutationType` Model,
@@ -565,7 +565,7 @@ You can restrict the use of an `Input` by first defining the `Input` in the clas
 of the `MutationType` and then adding a method with the `@<input_name>.permissions` decorator.
 
 ```python
--8<- "mutations/input_permissions.py"
+-8 < -"mutations/input_permissions.py"
 ```
 
 /// details | About method signature
@@ -590,7 +590,7 @@ You can validate the value of an `Input` by first defining the `Input` in the cl
 of the `MutationType` and then adding a method with the `@<input_name>.validate` decorator.
 
 ```python
--8<- "mutations/input_validate.py"
+-8 < -"mutations/input_validate.py"
 ```
 
 /// details | About method signature
@@ -615,7 +615,7 @@ the `Input` in the class body of the `MutationType` and then adding a method wit
 the `@<input_name>.convert` decorator.
 
 ```python
--8<- "mutations/input_convert.py"
+-8 < -"mutations/input_convert.py"
 ```
 
 /// details | About method signature
@@ -640,7 +640,7 @@ If you want to set the default value for an `Input` manually, you can set
 the `default_value` argument on the `Input`.
 
 ```python
--8<- "mutations/input_default_value.py"
+-8 < -"mutations/input_default_value.py"
 ```
 
 Note that the default value needs to be a valid GraphQL default value,
@@ -658,7 +658,7 @@ usually because they are not part of the Model being mutated. They can be used a
 validation and permissions checks, e.g. flags to control the behavior of the mutation.
 
 ```python
--8<- "mutations/input_input_only.py"
+-8 < -"mutations/input_input_only.py"
 ```
 
 Notice that the `Input` reference is `bool`. This is to indicate the input type,
@@ -671,7 +671,7 @@ the mutation is executed (see [order of operations](#order-of-operations)).
 They can be used, for example, to set default values for fields that should not be overridden by users.
 
 ```python
--8<- "mutations/input_hidden.py"
+-8 < -"mutations/input_hidden.py"
 ```
 
 One common use case for hidden inputs is to set the current user
@@ -681,7 +681,7 @@ To assign a new task to the current user during creation,
 you can define a hidden input for the `user` field:
 
 ```python
--8<- "mutations/input_current_user.py"
+-8 < -"mutations/input_current_user.py"
 ```
 
 See [Function References](#function-references) for more details.
@@ -693,7 +693,7 @@ its reference, as well as the `kind` of `MutationType` it's used in. If you want
 set this manually, you can set the `required` argument on the `Input`.
 
 ```python
--8<- "mutations/input_required.py"
+-8 < -"mutations/input_required.py"
 ```
 
 > Note that due to GraphQL implementation details, there is no distinction between
@@ -706,7 +706,7 @@ A `field_name` can be provided to explicitly set the Django Model field
 that the `Input` corresponds to.
 
 ```python
--8<- "mutations/input_field_name.py"
+-8 < -"mutations/input_field_name.py"
 ```
 
 This can be useful when the `Input` has a different name and type in the GraphQL schema than in the Model.
@@ -720,7 +720,7 @@ If you want to change the name of the `InputObjectType` field separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8<- "mutations/input_schema_name.py"
+-8 < -"mutations/input_schema_name.py"
 ```
 
 This can be useful when the desired name of the `InputObjectType` field is a Python keyword
@@ -736,20 +736,20 @@ this can be done in two ways:
 1) By setting the `description` argument.
 
 ```python
--8<- "mutations/input_description.py"
+-8 < -"mutations/input_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8<- "mutations/input_description_class.py"
+-8 < -"mutations/input_description_class.py"
 ```
 
 When using [function references](#function-references), instead of a class attribute docstring,
 you add a docstring to the function/method used as the reference instead.
 
 ```python
--8<- "mutations/input_decorator_docstring.py"
+-8 < -"mutations/input_decorator_docstring.py"
 ```
 
 ### Deprecation reason
@@ -758,7 +758,7 @@ A `deprecation_reason` can be provided to mark the `Input` as deprecated.
 This is for documentation purposes only, and does not affect the use of the `Field`.
 
 ```python hl_lines="13"
--8<- "mutations/input_deprecation_reason.py"
+-8 < -"mutations/input_deprecation_reason.py"
 ```
 
 ### Directives
@@ -767,13 +767,13 @@ You can add directives to the `Input` by providing them using the `directives` a
 The directive must be usable in the `INPUT_FIELD_DEFINITION` location.
 
 ```python
--8<- "mutations/input_directives.py"
+-8 < -"mutations/input_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8<- "mutations/input_directives_matmul.py"
+-8 < -"mutations/input_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -785,7 +785,7 @@ You can provide custom extensions for the `Input` by providing a
 however you wish to extend the functionality of the `Input`.
 
 ```python
--8<- "mutations/input_extensions.py"
+-8 < -"mutations/input_extensions.py"
 ```
 
 `Input` extensions are made available in the GraphQL `InputObjectType` field extensions
@@ -799,7 +799,7 @@ If you want to execute multiple mutations in a single operation atomically,
 you can use the `@atomic` directive on the mutation. Let's say you have the following schema:
 
 ```python
--8<- "mutations/atomic_mutation.py"
+-8 < -"mutations/atomic_mutation.py"
 ```
 
 You can create both a `Task` and a `Project` atomically by adding the `@atomic` directive to the mutation:
@@ -857,7 +857,7 @@ Two `TypedDicts` are emitted per `MutationType`:
 Import them under a `TYPE_CHECKING` guard and annotate the hooks accordingly:
 
 ```python hl_lines="12 23 31 39 47 55"
--8<- "mutations/generate_mutation_input_types_hooks.py"
+-8 < -"mutations/generate_mutation_input_types_hooks.py"
 ```
 
 Rerun the management command whenever the schema changes.

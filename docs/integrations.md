@@ -27,19 +27,19 @@ There are three app wrappers available depending on which protocols you need.
 For WebSocket support only:
 
 ```python
--8<- "integrations/channels.py"
+-8 < -"integrations/channels.py"
 ```
 
 For SSE Single Connection mode only:
 
 ```python
--8<- "integrations/channels_sse.py"
+-8 < -"integrations/channels_sse.py"
 ```
 
 For both WebSocket and SSE Single Connection mode:
 
 ```python
--8<- "integrations/channels_websocket_and_sse.py"
+-8 < -"integrations/channels_websocket_and_sse.py"
 ```
 
 ## GraphiQL
@@ -89,13 +89,13 @@ and [`MODELTRANSLATION_INCLUDE_TRANSLATIONS`](settings.md#modeltranslation_inclu
 Let's say you the following Model (with `MODELTRANSLATION_LANGUAGES = ("en", "fi")`)
 
 ```python
--8<- "integrations/model_translation_models.py"
+-8 < -"integrations/model_translation_models.py"
 ```
 
 ...and the following translation options
 
 ```python
--8<- "integrations/model_translation_translation.py"
+-8 < -"integrations/model_translation_translation.py"
 ```
 
 Based on the Model's translation options, `django-modeltranslation` adds additional fields
@@ -165,7 +165,7 @@ the `graphql` fixture. Here is a simple example:
 [Django's test client]: https://docs.djangoproject.com/en/stable/topics/testing/tools/#the-test-client
 
 ```python
--8<- "integrations/graphql_test_client.py"
+-8 < -"integrations/graphql_test_client.py"
 ```
 
 GraphQL requests can be made by calling the client as shown above.
@@ -177,7 +177,7 @@ include any files, the client will automatically create a GraphQL multipart requ
 instead of a normal GraphQL request.
 
 ```python
--8<- "integrations/graphql_test_client_variables.py"
+-8 < -"integrations/graphql_test_client_variables.py"
 ```
 
 The client returns a custom response object `GraphQLClientResponse`,
@@ -187,26 +187,26 @@ during the request, which can be useful for debugging the performance of your
 GraphQL API.
 
 ```python
--8<- "integrations/graphql_test_client_response.py"
+-8 < -"integrations/graphql_test_client_response.py"
 ```
 
 An async version of the client is also available, which can be accessed from
 the `graphql_async` fixture.
 
 ```python
--8<- "integrations/graphql_test_client_async.py"
+-8 < -"integrations/graphql_test_client_async.py"
 ```
 
 The plugin also includes a `undine_settings` fixture that allows modifying
 Undine's settings during testing more easily.
 
 ```python
--8<- "integrations/undine_settings_fixture.py"
+-8 < -"integrations/undine_settings_fixture.py"
 ```
 
 If the [channels](#channels) integration is installed, the test client can
 also send GraphQL over WebSocket requests using the `over_websocket` method.
 
 ```python
--8<- "integrations/graphql_test_client_over_websocket.py"
+-8 < -"integrations/graphql_test_client_over_websocket.py"
 ```

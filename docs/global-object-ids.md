@@ -15,7 +15,7 @@ for adding support for pagination with `Connections`.
 Your `QueryTypes` can implement the `Node` [interface](interfaces.md) to add support for _Global Object IDs_.
 
 ```python
--8<- "global_object_ids/node_interface.py"
+-8 < -"global_object_ids/node_interface.py"
 ```
 
 This will add an `id` field to the `TaskType` for resolving _Global Object IDs_.
@@ -46,7 +46,7 @@ model `id` field, you can use the `pk` field instead.
 A _Global Object ID_ can be used for refetching objects from a special `Node` `Entrypoint`.
 
 ```python hl_lines="11"
--8<- "global_object_ids/node_entrypoint.py"
+-8 < -"global_object_ids/node_entrypoint.py"
 ```
 
 To use this `Entrypoint`, we must first query the schema in some other way, for example
