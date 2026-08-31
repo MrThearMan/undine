@@ -17,7 +17,7 @@ that arise when using GraphQL to fetch data from a relational database.
 Let's say you have a collection of Models like this:
 
 ```python
--8<- "optimizer/models_1.py"
+-8 < -"optimizer/models_1.py"
 ```
 
 And a schema like this:
@@ -128,14 +128,14 @@ or `Field` using the given `QueryType` is included in the query.
 See [optimization data](#optimization-data) on how to add the optimizations.
 
 ```python
--8<- "optimizer/querytype_optimizations.py"
+-8 < -"optimizer/querytype_optimizations.py"
 ```
 
 The `<field_name>.optimize` method is called by the optimizer when the given `Field`
 is included in the query. See [optimization data](#optimization-data) on how to add the optimizations.
 
 ```python
--8<- "optimizer/field_optimize.py"
+-8 < -"optimizer/field_optimize.py"
 ```
 
 ### Optimization data
