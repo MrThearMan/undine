@@ -61,7 +61,7 @@ metaDescriptions = "docs.plugins.meta_description:MetaDescriptionPlugin"
 
 [tool.poetry.dependencies]
 django = ">=5.2.17"
-graphql-core = ">=3.2.11"
+graphql-core = ">=3.2.12"
 django-settings-holder = ">=0.3.0"
 sqlparse = ">=0.6.0"
 pillow = { version = ">=12.3.0", optional = true }
@@ -82,11 +82,11 @@ nox = "2026.8.17"
 urllib3 = "2.7.0"
 django-modeltranslation = "0.20.3"
 psycopg = { version = "3.3.4", extras = ["binary", "pool"] }
-granian = { version = "2.8.1", extras = ["pname", "uvloop", "reload"] }
+granian = { version = "2.8.2", extras = ["pname", "uvloop", "reload"] }
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "11.0.1"
+pymdown-extensions = "11.0.2"
 pygments = "2.21.0"
 mkdocs-mermaid2-plugin = "1.2.3"
 beautifulsoup4 = "4.15.0"
@@ -98,7 +98,7 @@ httpx = "0.28.1"
 mypy = "2.3.1"
 django-stubs = "5.2.9"
 channels-stubs = "0.1.9"
-types-protobuf = "7.35.1.20260821"
+types-protobuf = "7.35.1.20260827"
 
 [tool.poetry.extras]
 image = ["pillow"]
