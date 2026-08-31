@@ -16,6 +16,7 @@
 /coverage.xml
 /profile.svg
 /.coverage
+/.coverage*
 /example_project/project/testdb
 /example_project/static
 /example_project/media

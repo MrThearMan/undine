@@ -110,6 +110,12 @@ nox:
 nox-list:
     @poetry run nox --list
 
+# Run all nox sessions concurrently using GNU parallel (jobs: number or "N%" of CPU cores)
+nox-parallel jobs="100%":
+    @poetry run nox --list --json 2>/dev/null \
+      | jq -r '.[].session' \
+      | parallel -j{{jobs}} --tag --line-buffer poetry run nox -s {}
+
 # Run a single nox session
 nox-one name:
     @poetry run nox -s "{{name}}"

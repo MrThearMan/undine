@@ -62,7 +62,8 @@ def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     session.install(f"django=={django}")
     session.install(f"graphql-core=={graphql_core}")
 
-    session.run("coverage", "run", "-m", "pytest", external="error")
+    session.run("coverage", "run", "--parallel-mode", "-m", "pytest", external="error")
+    session.run("coverage", "combine", "--append")
 
 
 if __name__ == "__main__":
