@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, AsyncIterator, Generator
 from unittest.mock import patch
 
 import pytest
@@ -13,8 +13,9 @@ from example_project.app.models import Task
 from tests.factories import TaskFactory
 from tests.helpers import MockRequest, mock_gql_info
 from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
-from undine.execution import _get_middleware_manager  # noqa: PLC2701
+from undine.execution import _get_middleware_manager, execute_graphql_with_subscription  # noqa: PLC2701
 from undine.hooks import (
     AtomicMutationHook,
     AutomaticPersistedQueriesHook,
@@ -445,6 +446,60 @@ async def test_lifecycle_hook__request__async__using_sync_methods(graphql_async,
 
 
 # AtomicMutationHook
+
+
+async def test_lifecycle_hook__subscription__execution_hooks_close_before_each_result(undine_settings) -> None:
+    call_stack: list[str] = []
+
+    class MyHook(LifecycleHook):
+        def on_execution(self) -> Generator[None, None]:
+            call_stack.append("before execution")
+            yield
+            call_stack.append("after execution")
+
+    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "Hello World"
+
+    class Subscription(RootType):
+        @Entrypoint
+        async def countdown(self) -> AsyncGenerator[int, None]:
+            for value in range(2, 0, -1):
+                yield value
+
+    undine_settings.SCHEMA = create_schema(query=Query, subscription=Subscription)
+
+    params = GraphQLHttpParams(
+        document="subscription { countdown }",
+        variables={},
+        operation_name=None,
+        extensions={},
+    )
+    stream = await execute_graphql_with_subscription(params, MockRequest(method="WEBSOCKET"))
+    assert isinstance(stream, AsyncIterator), f"{stream=}"
+
+    results: list[dict[str, Any] | None] = []
+
+    async for result in stream:
+        call_stack.append(f"delivered {result.data}")
+        results.append(result.data)
+
+    assert results == [{"countdown": 2}, {"countdown": 1}]
+
+    # Delivering a result to the client is not part of the execution step.
+    assert call_stack == [
+        "before execution",
+        "after execution",
+        "delivered {'countdown': 2}",
+        "before execution",
+        "after execution",
+        "delivered {'countdown': 1}",
+        "before execution",
+        "after execution",
+    ]
 
 
 @pytest.mark.django_db

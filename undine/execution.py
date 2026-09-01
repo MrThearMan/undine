@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
-from contextlib import aclosing, nullcontext, suppress
+from contextlib import AsyncExitStack, aclosing, nullcontext, suppress
 from functools import wraps
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
@@ -49,6 +49,7 @@ from undine.hooks import (
     ExecutionLifecycleHookManager,
     LifecycleHook,
     LifecycleHookContext,
+    OperationLifecycleHookManager,
     with_execution_lifecycle_hooks_manager,
     with_execution_lifecycle_hooks_manager_async,
     with_operation_lifecycle_hooks_manager,
@@ -415,8 +416,20 @@ async def execute_graphql_with_subscription(
     return await _run_operation_with_subscription(context)
 
 
-@with_operation_lifecycle_hooks_manager_async
 async def _run_operation_with_subscription(context: LifecycleHookContext) -> GraphQLResult | GraphQLStream:
+    async with AsyncExitStack() as stack:
+        await stack.enter_async_context(OperationLifecycleHookManager(hooks=context.lifecycle_hooks))
+
+        result = await _run_operation_steps(context)
+        if not isinstance(result, AsyncGenerator):
+            return result
+
+        # A subscription operation is not over until its event stream ends,
+        # so its operation hooks must stay open after this function returns.
+        return _with_operation_hooks(result, stack.pop_all())
+
+
+async def _run_operation_steps(context: LifecycleHookContext) -> GraphQLResult | GraphQLStream:
     if context.result is None:
         await _parse_source_async(context)
         if context.result is None:
@@ -431,6 +444,13 @@ async def _run_operation_with_subscription(context: LifecycleHookContext) -> Gra
         context.result = await context.result
 
     return context.result
+
+
+async def _with_operation_hooks(stream: AsyncGenerator[ExecutionResult], hooks: AsyncExitStack) -> GraphQLStream:
+    """Close the operation lifecycle hooks once the subscription event stream ends."""
+    async with hooks, aclosing(stream):
+        async for result in stream:
+            yield result
 
 
 async def _subscribe(context: LifecycleHookContext) -> ExecutionResult | GraphQLStream:
@@ -489,39 +509,40 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
         while True:
             context.result = None
 
+            # The result is yielded outside of the hooks, since delivering it to the client is not
+            # part of the execution step. Staying inside the hooks would also suspend them until the
+            # client asks for the next result, which can happen in a different asyncio task.
             async with ExecutionLifecycleHookManager(hooks=context.lifecycle_hooks):
-                if context.result is not None:
-                    yield context.result
-                    continue
+                if context.result is None:
+                    try:
+                        payload = await anext(stream)
+                    except StopAsyncIteration:
+                        break
 
-                try:
-                    payload = await anext(stream)
-                except StopAsyncIteration:
-                    break
+                    context.result = await _execute_event(payload=payload, context=context)
 
-                if isinstance(payload, GraphQLError):
-                    context.result = get_error_execution_result(payload)
-                    yield context.result
-                    continue
+            yield context.result  # type: ignore[misc]
 
-                if isinstance(payload, GraphQLErrorGroup):
-                    context.result = get_error_execution_result(payload)
-                    yield context.result
-                    continue
 
-                executor = _get_executor(
-                    document=context.document,  # type: ignore[arg-type]
-                    root_value=payload,
-                    request=context.request,
-                    variable_values=context.variables,
-                    operation_name=context.operation_name,
-                    middleware=_get_middleware_manager(context.lifecycle_hooks),
-                )
-                # Result cannot be incremental for a subscription
-                result: AwaitableOrValue[ExecutionResult] = _execute(executor)
+async def _execute_event(payload: Any, context: LifecycleHookContext) -> ExecutionResult:
+    """Execute the GraphQL operation for a single event from a subscription's event stream."""
+    if isinstance(payload, GraphQLError):
+        return get_error_execution_result(payload)
 
-                context.result = await result if executor.is_awaitable(result) else result  # type: ignore[misc]
-                yield context.result  # type: ignore[misc]
+    if isinstance(payload, GraphQLErrorGroup):
+        return get_error_execution_result(payload)
+
+    executor = _get_executor(
+        document=context.document,  # type: ignore[arg-type]
+        root_value=payload,
+        request=context.request,
+        variable_values=context.variables,
+        operation_name=context.operation_name,
+        middleware=_get_middleware_manager(context.lifecycle_hooks),
+    )
+    # Result cannot be incremental for a subscription
+    result: AwaitableOrValue[ExecutionResult] = _execute(executor)
+    return await result if executor.is_awaitable(result) else result  # type: ignore[misc,return-value]
 
 
 # Helpers
