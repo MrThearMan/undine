@@ -3,7 +3,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from example_project.project.tracing import TRACING_HOOK, setup_tracing, tracing_enabled
+from example_project.project.tracing import (
+    DATADOG_TRACING_HOOK,
+    OTEL_TRACING_HOOK,
+    SERVICE_NAME,
+    datadog_tracing_enabled,
+    otel_tracing_enabled,
+    setup_datadog_tracing,
+    setup_otel_tracing,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -152,10 +160,15 @@ lifecycle_hooks = [
     "undine.hooks.AutomaticPersistedQueriesHook",
 ]
 
-if tracing_enabled():
+if otel_tracing_enabled():
     # First in the list, so that the operation span encompasses the other hooks.
-    lifecycle_hooks.insert(0, TRACING_HOOK)
-    setup_tracing()
+    lifecycle_hooks.insert(0, OTEL_TRACING_HOOK)
+    setup_otel_tracing()
+
+if datadog_tracing_enabled():
+    # First in the list, so that the operation span encompasses the other hooks.
+    lifecycle_hooks.insert(0, DATADOG_TRACING_HOOK)
+    setup_datadog_tracing()
 
 UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
@@ -169,6 +182,7 @@ UNDINE = {
     "USE_SSE_DISTINCT_CONNECTIONS_FOR_HTTP_1": False,
     "NO_ERROR_LOCATION": True,
     "EXPERIMENTAL_INCREMENTAL_DELIVERY": True,
+    "DATADOG_SERVICE_NAME": SERVICE_NAME,
     # "INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL": 1,
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,

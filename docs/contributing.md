@@ -144,14 +144,29 @@ This needs [Docker]{:target="_blank"} and is a debugging tool, not part of the t
 [Docker]: https://docs.docker.com/get-started/get-docker/
 
 ```shell
-just trace-up    # start Jaeger, UI on http://localhost:16686
-just trace-dev   # start the development server with tracing enabled
-just trace-down  # stop Jaeger
+just otel-up    # start Jaeger, UI on http://localhost:16686
+just otel-dev   # start the development server with tracing enabled
+just otel-down  # stop Jaeger
 ```
 
 Run a few operations through [GraphiQL](integrations.md#graphiql), then open the Jaeger UI and
 select the `undine-example-project` service. Each operation is one trace, with child spans for
 parsing, validation, execution and every resolved field.
+
+The example project can also send Datadog traces to a local [Datadog test agent]{:target="_blank"},
+a lightweight stand-in for the real Datadog Agent that accepts the same trace payloads and exposes
+them over a small HTTP API, without needing a Datadog account.
+
+[Datadog test agent]: https://github.com/DataDog/dd-apm-test-agent
+
+```shell
+just dd-up    # start the test agent
+just dd-dev   # start the development server with Datadog tracing enabled
+just dd-down  # stop the test agent
+```
+
+Run a few operations through [GraphiQL](integrations.md#graphiql), then fetch
+`http://localhost:8126/test/session/traces` to see the traces it received.
 
 ## Guidelines for writing code
 

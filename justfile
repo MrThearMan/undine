@@ -166,23 +166,42 @@ test-mypy name="*":
 test-one name:
     @poetry run pytest -k "{{name}}"
 
-# Start the development server with tracing enabled (needs "just trace-up")
-trace-dev port="8000" otlp_port="4318":
-    @TRACING=true OTLP_PORT={{otlp_port}} poetry run python manage.py runserver localhost:{{port}}
+# Start the development server with OpenTelemetry tracing enabled (needs "just otel-trace-up")
+otel-dev port="8000" otlp_port="4318":
+    @OTEL_TRACING=true OTLP_PORT={{otlp_port}} poetry run python manage.py runserver localhost:{{port}}
 
-# Start the async development server with tracing enabled (needs "just trace-up")
-trace-dev-async port="8000" otlp_port="4318":
-    @TRACING=true OTLP_PORT={{otlp_port}} poetry run python async.py --port {{port}}
+# Start the async development server with OpenTelemetry tracing enabled (needs "just otel-trace-up")
+otel-dev-async port="8000" otlp_port="4318":
+    @OTEL_TRACING=true OTLP_PORT={{otlp_port}} poetry run python async.py --port {{port}}
 
-# Stop the local tracing backend
-trace-down:
+# Stop the local OpenTelemetry tracing backend
+otel-down:
     @docker rm --force undine-jaeger
 
 # Start a local Jaeger to receive traces, with its UI on the given port
-trace-up ui_port="16686" otlp_port="4318":
+otel-up ui_port="16686" otlp_port="4318":
     @docker run --detach --rm --name undine-jaeger \
         --env COLLECTOR_OTLP_ENABLED=true \
         --publish {{otlp_port}}:4318 \
         --publish {{ui_port}}:16686 \
         jaegertracing/all-in-one:1.60
     @echo "Jaeger UI: http://localhost:{{ui_port}}"
+
+# Start the development server with Datadog tracing enabled (needs "just dd-trace-up")
+dd-dev port="8000" dd_port="8126":
+    @DATADOG_TRACING=true DD_TRACE_AGENT_PORT={{dd_port}} poetry run python manage.py runserver localhost:{{port}}
+
+# Start the async development server with Datadog tracing enabled (needs "just dd-trace-up")
+dd-dev-async port="8000" dd_port="8126":
+    @DATADOG_TRACING=true DD_TRACE_AGENT_PORT={{dd_port}} poetry run python async.py --port {{port}}
+
+# Stop the local Datadog test agent
+dd-down:
+    @docker rm --force undine-dd-test-agent
+
+# Start a local Datadog test agent to receive traces, its API on the given port
+dd-up dd_port="8126":
+    @docker run --detach --rm --name undine-dd-test-agent \
+        --publish {{dd_port}}:8126 \
+        ghcr.io/datadog/dd-apm-test-agent/ddapm-test-agent:latest
+    @echo "Datadog test agent traces: http://localhost:{{dd_port}}/test/session/traces"

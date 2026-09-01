@@ -51,7 +51,7 @@ def test_datadog__records_spans_for_the_operation_steps(undine_settings) -> None
 
     operation_span = get_datadog_span(spans, "query Greet")
     assert operation_span.span_type == "graphql"
-    assert operation_span.service == "undine"
+    assert operation_span.service == "undine-example-project"
     assert operation_span.resource == f"Greet:{_resource_hash(document)}"
     assert get_datadog_span_tags(operation_span) == {
         "graphql.document": "query Greet {\n  greeting\n}",
