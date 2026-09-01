@@ -637,7 +637,7 @@ parse before it rejects a request. By default, this is set to `None` which means
 Type: `bool` | Default: `False`
 
 Whether to add translatable fields to the GraphQL schema when using `django-modeltranslation`.
-See [the integration description](integrations.md#django-modeltranslation) for more information.
+See [the integration description](integrations.md#django-model-translation) for more information.
 
 ///
 
@@ -647,7 +647,7 @@ See [the integration description](integrations.md#django-modeltranslation) for m
 Type: `bool` | Default: `True`
 
 Whether to add translation fields to the GraphQL schema when using `django-modeltranslation`.
-See [the integration description](integrations.md#django-modeltranslation) for more information.
+See [the integration description](integrations.md#django-model-translation) for more information.
 
 ///
 
@@ -695,7 +695,7 @@ when said `MutationType` is used in `Entrypoints`.
 
 Type: `str | None` | Default: `None`
 
-Dotted module path where the [`test_generate_mutation_input_types`](mutations.md#typing-input_data)
+Dotted module path where the [`test_generate_mutation_input_types`](mutations.md#generating-input-data-types)
 management command writes the generated `TypedDicts` for each `MutationType.__input_map__`.
 For example, `"myproj.gql_input_types"` writes to `myproj/gql_input_types.py`.
 
@@ -1172,7 +1172,7 @@ The cache alias to use for visibility caching.
 Type: `Callable[[DjangoRequestProtocol], Any]` | Default: `"undine.utils.visibility.default_visibility_extra_context"`
 
 Function returning any JSON-serialisable extra context added to the cross-request
-[visibility cache](visibility.md#caching-visibility-checks) key. Use this when
+[visibility cache](visibility.md#caching) key. Use this when
 per-user visibility depends on more than the user primary key (for example a
 tenant identifier or group membership).
 
@@ -1183,7 +1183,7 @@ tenant identifier or group membership).
 
 Type: `str` | Default: `"undine_visibility"`
 
-Prefix used for the cross-request [visibility cache](visibility.md#caching-visibility-checks) keys.
+Prefix used for the cross-request [visibility cache](visibility.md#caching) keys.
 
 ///
 

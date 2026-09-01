@@ -463,7 +463,7 @@ type User @key(fields: "id") {
 ### FederationField
 
 A `FederationField` is used to define a queryable value on a `FederationType`.
-It mirrors [`Field`](queries.md#field) on a `QueryType`.
+It mirrors [`Field`](queries.md#fields) on a `QueryType`.
 
 A `FederationField` resolves via one of three rules:
 
