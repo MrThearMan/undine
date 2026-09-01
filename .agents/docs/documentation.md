@@ -78,3 +78,7 @@ This is a [link]{:target="_blank"}
 
 [link]: https://example.com/
 ```
+
+## Verification
+
+After editing docs, run `mkdocs build --strict` and check for broken links or warnings.
