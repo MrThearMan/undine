@@ -4,7 +4,6 @@ import base64
 import dataclasses
 import json
 import time
-from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
 
 from graphql import ExecutionResult
@@ -101,7 +100,7 @@ class FederatedTracingHook(LifecycleHook):
 
         result = resolver(root, info, **kwargs)
 
-        if isawaitable(result):
+        if info.is_awaitable(result):
 
             async def _await_and_time() -> Any:
                 try:

@@ -4,7 +4,6 @@ import dataclasses
 import inspect
 from collections.abc import AsyncGenerator
 from contextlib import aclosing, nullcontext
-from inspect import isawaitable
 from typing import TYPE_CHECKING, Any, Generic
 
 from graphql import GraphQLError, located_error
@@ -63,7 +62,7 @@ class FunctionSubscriptionResolver:
             kwargs[self.info_param] = info
 
         value = self.func(**kwargs)
-        iterable = await value if isawaitable(value) else value
+        iterable: AsyncIterable[Any] = await value if info.is_awaitable(value) else value  # type: ignore[misc,assignment]
         manager = aclosing(iterable) if isinstance(iterable, AsyncGenerator) else nullcontext(iterable)
 
         async with manager:

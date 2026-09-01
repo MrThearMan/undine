@@ -125,7 +125,7 @@ if TYPE_CHECKING:
 
 
 if version_info >= (3, 3, 0):  # pragma: no cover
-    from graphql import (
+    from graphql import (  # type: ignore[attr-defined]
         AbortSignal,  # type: ignore[attr-defined]
         ExperimentalIncrementalExecutionResults,  # type: ignore[attr-defined]
         GraphQLResolveInfoHelpers,  # type: ignore[attr-defined]
@@ -371,6 +371,7 @@ SortedSequenceWithErrors: TypeAlias = SortedSequence[T] | SortedSequence[T | Bas
 
 TModel = TypeVar("TModel", bound=Model)
 TUser = TypeVar("TUser", bound="AbstractUser")
+TUserCovariant = TypeVar("TUserCovariant", bound="AbstractUser", covariant=True)  # noqa: PLC0105
 TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
 GNT = TypeVar("GNT", bound=GraphQLNullableType)
 TTypeHint = TypeVar("TTypeHint", bound=TypeHint)
@@ -457,7 +458,7 @@ class MutationDataCoroutine(Protocol):
     ) -> None: ...
 
 
-class DjangoRequestProtocol(Protocol[TUser]):  # noqa: PLR0904
+class DjangoRequestProtocol(Protocol[TUserCovariant]):  # noqa: PLR0904
     """Protocol of a Django 'HttpRequest' object. Abbreviated to the most useful properties."""
 
     @property
@@ -933,7 +934,7 @@ class GQLContext(Generic[TUser]):
     @property
     def user(self) -> TUser | AnonymousUser:
         """The user associated with the request."""
-        return self.request.user
+        return self.request.user  # type: ignore[return-value]
 
     async def auser(self) -> TUser | AnonymousUser:
         """The user associated with the request."""
@@ -1021,7 +1022,7 @@ if version_info >= (3, 3, 0):  # pragma: no cover
 
 else:  # pragma: no cover
 
-    class GQLInfoDict(TypedDict, Generic[TUser], total=False):
+    class GQLInfoDict(TypedDict, Generic[TUser], total=False):  # type: ignore[no-redef]
         field_name: str
         field_nodes: list[FieldNode]
         return_type: GraphQLOutputType
