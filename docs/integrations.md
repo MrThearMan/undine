@@ -110,6 +110,107 @@ You can of course always add the translatable fields manually.
 > Note that due to the way that `django-modeltranslation` works,
 > the translation fields are always nullable, even for the default language.
 
+## OpenTelemetry
+
+```
+pip install undine[opentelemetry]
+```
+
+Undine ships `OpenTelemetryHook`, a [lifecycle hook](lifecycle-hooks.md) that records an
+[OpenTelemetry]{:target="_blank"} span for each GraphQL operation, with a child span for the
+parsing, validation and execution steps. Register it in
+[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.opentelemetry.OpenTelemetryHook",
+    ],
+}
+```
+
+[OpenTelemetry]: https://opentelemetry.io/
+
+The operation span is named after the operation, e.g. `query FindTask`, and carries the
+[OpenTelemetry semantic conventions for GraphQL]{:target="_blank"}: `graphql.operation.name`,
+`graphql.operation.type` and `graphql.document`. If the operation results in errors, the span
+status is set to `ERROR` and each error is recorded on the span.
+
+[OpenTelemetry semantic conventions for GraphQL]: https://opentelemetry.io/docs/specs/semconv/registry/attributes/graphql/
+
+For a subscription, the operation span lasts as long as the subscription does. Each result sent
+to the client gets its own execution span inside that same trace.
+
+Undine depends on `opentelemetry-api` only. Your application configures the SDK, which is
+the standard split for instrumented libraries.
+
+### Field spans
+
+`OpenTelemetryFullHook` records everything `OpenTelemetryHook` does, plus a span for each
+resolved field. This is opt-in, since a span per field is expensive on large responses.
+Register it instead of `OpenTelemetryHook` when you need per-field timings:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.opentelemetry.OpenTelemetryFullHook",
+    ],
+}
+```
+
+### Sensitive data
+
+A GraphQL request can carry sensitive data in two places, and both are kept out of the spans
+by default.
+
+Arguments a client hardcodes in the document are redacted before the document is recorded.
+The structure of the document is kept, so traces can still be grouped by operation shape:
+
+```graphql
+query FindUser {
+  user(email: "***") {
+    name
+  }
+}
+```
+
+Variables are not recorded at all. To record some of them, set the
+[`OPENTELEMETRY_VARIABLES_CALLBACK`](settings.md#opentelemetry_variables_callback) setting
+to a function that returns the variables you want to record.
+
+```python
+-8<- "integrations/opentelemetry_variables.py"
+```
+
+### Custom attributes
+
+To add your own attributes to the operation span, set the
+[`OPENTELEMETRY_SPAN_CALLBACK`](settings.md#opentelemetry_span_callback) setting to a function.
+It's called once the operation span is fully described (name, type and document set) and the
+operation has finished executing, so it can also react to the result, e.g. to record a custom
+attribute when the operation failed:
+
+```python
+-8<- "integrations/opentelemetry_span_callback.py"
+```
+
+### Sentry and Datadog
+
+Both vendors accept OpenTelemetry data, but with caveats.
+
+[Sentry's OTLP endpoint]{:target="_blank"} is in open beta and drops span events.
+[Datadog]{:target="_blank"} users on the OpenTelemetry SDK lose Continuous Profiler,
+App & API Protection, Data Streams Monitoring, RUM correlation and Source Code Integration.
+Datadog users who prefer the OpenTelemetry path can set `DD_TRACE_OTEL_ENABLED=true`,
+which makes `ddtrace` serve the OpenTelemetry API this hook is written against.
+
+[Sentry's OTLP endpoint]: https://docs.sentry.io/concepts/otlp/direct/traces/
+[Datadog]: https://docs.datadoghq.com/opentelemetry/compatibility/
+
 ## Mypy
 
 Undine ships a mypy plugin that adds additional static type checking for types defined in Undine.

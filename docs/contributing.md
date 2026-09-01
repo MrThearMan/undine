@@ -134,6 +134,25 @@ install python interpreters for all python version the library supports and then
 Linting can be run on-demand with `just lint` or automatically before commits
 when installed with `just hook`.
 
+## Tracing
+
+The example project can send OpenTelemetry traces to a local [Jaeger]{:target="_blank"},
+which is useful for inspecting the spans Undine records and how long each resolver takes.
+This needs [Docker]{:target="_blank"} and is a debugging tool, not part of the test suite.
+
+[Jaeger]: https://www.jaegertracing.io/
+[Docker]: https://docs.docker.com/get-started/get-docker/
+
+```shell
+just trace-up    # start Jaeger, UI on http://localhost:16686
+just trace-dev   # start the development server with tracing enabled
+just trace-down  # stop Jaeger
+```
+
+Run a few operations through [GraphiQL](integrations.md#graphiql), then open the Jaeger UI and
+select the `undine-example-project` service. Each operation is one trace, with child spans for
+parsing, validation, execution and every resolved field.
+
 ## Guidelines for writing code
 
 ### All code should be tested with 100% coverage

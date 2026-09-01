@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Container
 
     from graphql import ASTValidationRule, GraphQLError
+    from opentelemetry.trace import Span as OpenTelemetrySpan
 
     from undine.execution import UndineExecutor
     from undine.hooks import LifecycleHook, LifecycleHookContext
@@ -303,6 +304,18 @@ class UndineDefaultSettings(NamedTuple):
     MODELTRANSLATION_INCLUDE_TRANSLATIONS: bool = True
     """Whether to add translation fields to the GraphQL schema when using `django-modeltranslation`."""
 
+    # OpenTelemetry
+
+    OPENTELEMETRY_VARIABLES_CALLBACK: Callable[[LifecycleHookContext], dict[str, Any]] = (  # type: ignore[assignment]
+        "undine.integrations.opentelemetry.no_traced_variables"  # type: ignore[assignment]
+    )
+    """Function that returns the GraphQL variables that are attached to OpenTelemetry operation spans."""
+
+    OPENTELEMETRY_SPAN_CALLBACK: Callable[[OpenTelemetrySpan, LifecycleHookContext], None] = (  # type: ignore[assignment]
+        "undine.integrations.opentelemetry.no_op_span_callback"  # type: ignore[assignment]
+    )
+    """Function called with the OpenTelemetry operation span so it can add its own attributes to it."""
+
     # Optimizer
 
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
@@ -463,6 +476,8 @@ IMPORT_STRINGS: set[str | bytes] = {
     "ERROR_MASKING_PREDICATE",
     "EXECUTOR_CLASS",
     "LIFECYCLE_HOOKS.0",
+    "OPENTELEMETRY_SPAN_CALLBACK",
+    "OPENTELEMETRY_VARIABLES_CALLBACK",
     "OPTIMIZER_CLASS",
     "PERSISTED_DOCUMENTS_PERMISSION_CALLBACK",
     "REQUEST_CACHE_EXTRA_CONTEXT",

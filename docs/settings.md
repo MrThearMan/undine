@@ -698,6 +698,29 @@ The key used to store an `OffsetPagination` in the `extensions` of its `GraphQLO
 
 ///
 
+/// details | `OPENTELEMETRY_SPAN_CALLBACK`
+    attrs: {id: opentelemetry_span_callback}
+
+Type: `Callable[[Span, LifecycleHookContext], None]` | Default: `"undine.integrations.opentelemetry.no_op_span_callback"`
+
+Function called with the OpenTelemetry operation span so it can add its own attributes to it.
+By default, no attributes are added. See [OpenTelemetry](integrations.md#opentelemetry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `OPENTELEMETRY_VARIABLES_CALLBACK`
+    attrs: {id: opentelemetry_variables_callback}
+
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.opentelemetry.no_traced_variables"`
+
+Function that returns the GraphQL variables that are attached to OpenTelemetry operation spans.
+By default, no variables are attached, since they can contain sensitive data.
+See [OpenTelemetry](integrations.md#opentelemetry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
 /// details | `OPTIMIZER_CLASS`
     attrs: {id: optimizer_class}
 

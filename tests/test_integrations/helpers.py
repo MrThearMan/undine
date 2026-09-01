@@ -1,8 +1,22 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Iterable, Literal, NotRequired, Protocol, TypedDict, Unpack
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Generator,
+    Iterable,
+    Iterator,
+    Literal,
+    NotRequired,
+    Protocol,
+    TypedDict,
+    Unpack,
+)
 from unittest.mock import AsyncMock
 from urllib.parse import urlencode
 
@@ -12,11 +26,20 @@ from asgiref.typing import ASGIVersions, HTTPRequestEvent, HTTPScope
 from channels.auth import AuthMiddlewareStack
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
-from graphql import FormattedExecutionResult
+from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError, GraphQLSchema
+from opentelemetry import trace
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
+from tests.helpers import MockRequest
+from undine import Entrypoint, RootType, create_schema
+from undine.dataclasses import GraphQLHttpParams
+from undine.execution import execute_graphql_http_async, execute_graphql_http_sync, execute_graphql_with_subscription
+from undine.hooks import LifecycleHook
 from undine.integrations.channels import GraphQLSSEOperationRouter, GraphQLSSERouter
 from undine.settings import undine_settings
-from undine.typing import RequestMethod, SSEState
+from undine.typing import GraphQLResult, RequestMethod, SSEState
 from undine.utils.graphql.server_sent_events import get_sse_stream_state_key, get_sse_stream_token_key
 
 if TYPE_CHECKING:
@@ -330,3 +353,175 @@ def make_sse_get_operation_communicator(
         user=user,
         session=session,
     )
+
+
+# OpenTelemetry
+
+
+span_exporter = InMemorySpanExporter()
+tracer_provider = TracerProvider()
+tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+
+
+@contextmanager
+def collect_spans() -> Iterator[list[ReadableSpan]]:
+    """Collect the OpenTelemetry spans that are recorded inside the block."""
+    # A tracer provider can only be set once per process.
+    if not isinstance(trace.get_tracer_provider(), TracerProvider):
+        trace.set_tracer_provider(tracer_provider)
+
+    span_exporter.clear()
+    spans: list[ReadableSpan] = []
+    try:
+        yield spans
+    finally:
+        spans.extend(span_exporter.get_finished_spans())
+        span_exporter.clear()
+
+
+def get_span(spans: list[ReadableSpan], name: str) -> ReadableSpan:
+    for span in spans:
+        if span.name == name:
+            return span
+
+    msg = f"No span named {name!r}. Recorded spans: {[span.name for span in spans]}"
+    raise KeyError(msg)
+
+
+def get_parent_span_ids(spans: list[ReadableSpan]) -> list[int | None]:
+    """Span id of the parent of each span, in the order the spans finished."""
+    return [span.parent.span_id if span.parent is not None else None for span in spans]
+
+
+def get_span_attributes(spans: list[ReadableSpan], name: str) -> dict[str, Any]:
+    span = get_span(spans, name)
+    return dict(span.attributes or {})
+
+
+def get_exception_events(span: ReadableSpan) -> list[dict[str, Any]]:
+    return [
+        {
+            "name": event.name,
+            "type": (event.attributes or {}).get("exception.type"),
+            "message": (event.attributes or {}).get("exception.message"),
+        }
+        for event in span.events
+    ]
+
+
+class Person(TypedDict):
+    name: str
+
+
+def build_telemetry_schema() -> GraphQLSchema:
+    """Schema with sync, async and failing resolvers for testing telemetry hooks."""
+
+    class Query(RootType):
+        @Entrypoint
+        def greeting(self) -> str:
+            return "hello"
+
+        @Entrypoint
+        async def async_greeting(self) -> str:
+            return "async hello"
+
+        @Entrypoint
+        def boom(self) -> str | None:
+            msg = "kaboom"
+            raise GraphQLError(msg)
+
+        @Entrypoint
+        async def async_boom(self) -> str | None:
+            msg = "async kaboom"
+            raise GraphQLError(msg)
+
+        @Entrypoint
+        def echo(self, value: str) -> str:
+            return value
+
+        @Entrypoint
+        def people(self) -> list[Person] | None:
+            return [Person(name="Ada"), Person(name="Grace")]
+
+    class Mutation(RootType):
+        @Entrypoint
+        def shout(self) -> str:
+            return "HELLO"
+
+    class Subscription(RootType):
+        @Entrypoint
+        async def countdown(self) -> AsyncGenerator[int, None]:
+            for value in range(2, 0, -1):
+                yield value
+
+    return create_schema(query=Query, mutation=Mutation, subscription=Subscription)
+
+
+class StepBoomError(Exception):
+    """Raised by test hooks to simulate an unexpected failure during a lifecycle step."""
+
+
+class ParseStepBoomHook(LifecycleHook):
+    """Test-only hook that fails after parsing succeeds, to exercise other hooks' failure handling."""
+
+    def on_parse(self) -> Generator[None, None, None]:
+        yield
+        raise StepBoomError
+
+
+class ValidationStepBoomHook(LifecycleHook):
+    """Test-only hook that fails after validation succeeds, to exercise other hooks' failure handling."""
+
+    def on_validation(self) -> Generator[None, None, None]:
+        yield
+        raise StepBoomError
+
+
+class ExecutionStepBoomHook(LifecycleHook):
+    """Test-only hook that fails after execution succeeds, to exercise other hooks' failure handling."""
+
+    def on_execution(self) -> Generator[None, None, None]:
+        yield
+        raise StepBoomError
+
+
+def run_telemetry_query_sync(
+    document: str,
+    *,
+    variables: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+) -> ExecutionResult:
+    params = GraphQLHttpParams(
+        document=document,
+        variables=variables or {},
+        operation_name=operation_name,
+        extensions={},
+    )
+    return execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
+
+
+async def run_telemetry_query_async(
+    document: str,
+    *,
+    variables: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+) -> GraphQLResult:
+    params = GraphQLHttpParams(
+        document=document,
+        variables=variables or {},
+        operation_name=operation_name,
+        extensions={},
+    )
+    return await execute_graphql_http_async(params=params, request=MockRequest(method="POST"))
+
+
+async def run_telemetry_subscription(document: str) -> list[ExecutionResult]:
+    params = GraphQLHttpParams(
+        document=document,
+        variables={},
+        operation_name=None,
+        extensions={},
+    )
+    stream = await execute_graphql_with_subscription(params=params, request=MockRequest(method="WEBSOCKET"))
+    assert isinstance(stream, AsyncIterator), f"{stream=}"
+    return [result async for result in stream]

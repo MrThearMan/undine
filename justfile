@@ -165,3 +165,24 @@ test-mypy name="*":
 # Run a specific test(s) by keyword (pytest "-k" option)
 test-one name:
     @poetry run pytest -k "{{name}}"
+
+# Start the development server with tracing enabled (needs "just trace-up")
+trace-dev port="8000" otlp_port="4318":
+    @TRACING=true OTLP_PORT={{otlp_port}} poetry run python manage.py runserver localhost:{{port}}
+
+# Start the async development server with tracing enabled (needs "just trace-up")
+trace-dev-async port="8000" otlp_port="4318":
+    @TRACING=true OTLP_PORT={{otlp_port}} poetry run python async.py --port {{port}}
+
+# Stop the local tracing backend
+trace-down:
+    @docker rm --force undine-jaeger
+
+# Start a local Jaeger to receive traces, with its UI on the given port
+trace-up ui_port="16686" otlp_port="4318":
+    @docker run --detach --rm --name undine-jaeger \
+        --env COLLECTOR_OTLP_ENABLED=true \
+        --publish {{otlp_port}}:4318 \
+        --publish {{ui_port}}:16686 \
+        jaegertracing/all-in-one:1.60
+    @echo "Jaeger UI: http://localhost:{{ui_port}}"

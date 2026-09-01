@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from example_project.project.tracing import TRACING_HOOK, setup_tracing, tracing_enabled
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
@@ -141,6 +143,20 @@ CHANNEL_LAYERS = {
     },
 }
 
+lifecycle_hooks = [
+    "example_project.app.hooks.ErrorLoggingMiddleware",
+    "example_project.app.hooks.ExampleHook",
+    "undine.hooks.RequestCacheHook",
+    "undine.hooks.VisibilityCacheHook",
+    "undine.hooks.AtomicMutationHook",
+    "undine.hooks.AutomaticPersistedQueriesHook",
+]
+
+if tracing_enabled():
+    # First in the list, so that the operation span encompasses the other hooks.
+    lifecycle_hooks.insert(0, TRACING_HOOK)
+    setup_tracing()
+
 UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",
     "AUTOGENERATION": True,
@@ -157,12 +173,5 @@ UNDINE = {
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,
     # "ERROR_MASKING_PREDICATE": "undine.utils.graphql.utils.never_mask_error",
-    "LIFECYCLE_HOOKS": [
-        "example_project.app.hooks.ErrorLoggingMiddleware",
-        "example_project.app.hooks.ExampleHook",
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.VisibilityCacheHook",
-        "undine.hooks.AtomicMutationHook",
-        "undine.hooks.AutomaticPersistedQueriesHook",
-    ],
+    "LIFECYCLE_HOOKS": lifecycle_hooks,
 }
