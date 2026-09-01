@@ -20,7 +20,7 @@ To add offset pagination to a `QueryType` `Entrypoint`, you need to wrap with th
 class.
 
 ```python hl_lines="11"
--8 < -"pagination/offset_entrypoint.py"
+-8<- "pagination/offset_entrypoint.py"
 ```
 
 This creates the following GraphQL types.
@@ -44,7 +44,7 @@ type Query {
 Offset pagination can also be used with many-related `Fields`.
 
 ```python hl_lines="11"
--8 < -"pagination/offset_field.py"
+-8<- "pagination/offset_field.py"
 ```
 
 This creates the following GraphQL types.
@@ -94,7 +94,7 @@ To add cursor pagination to a `QueryType` `Entrypoint`, you need to wrap with th
 class.
 
 ```python hl_lines="11"
--8 < -"pagination/connection_entrypoint.py"
+-8<- "pagination/connection_entrypoint.py"
 ```
 
 This creates the following GraphQL types.
@@ -144,7 +144,7 @@ Querying this `Entrypoint` will return a response like this:
 Similarly, cursor pagination can also be used with many-related `Fields`.
 
 ```python hl_lines="11"
--8 < -"pagination/connection_field.py"
+-8<- "pagination/connection_field.py"
 ```
 
 > For Relay-compliant clients, see the [Global Object IDs](global-object-ids.md#node-interface) section
@@ -177,7 +177,7 @@ The default page size for all pagination methods is set by the
 You can also use a different page size by using the `page_size` argument.
 
 ```python
--8 < -"pagination/connection_page_size.py"
+-8<- "pagination/connection_page_size.py"
 ```
 
 Setting page size to `None` will return all items in a single page.
@@ -191,5 +191,5 @@ Still, if you need to modify the pagination behavior,
 you can do so by providing a custom `PaginationHandler` class.
 
 ```python
--8 < -"pagination/connection_pagination_handler.py"
+-8<- "pagination/connection_pagination_handler.py"
 ```

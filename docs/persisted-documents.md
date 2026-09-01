@@ -24,7 +24,7 @@ INSTALLED_APPS = [
 Then, add the persisted document registration view to your URL conf:
 
 ```python hl_lines="5"
--8 < -"persisted_documents/urls.py"
+-8<- "persisted_documents/urls.py"
 ```
 
 Before running migrations, you should have a look at the `PersistedDocument` Model
@@ -110,7 +110,7 @@ so that only some users can register new persisted documents. This can be done b
 setting to a function that accepts a `request` and a `document_map` as arguments.
 
 ```python
--8 < -"persisted_documents/persisted_documents_permissions.py"
+-8<- "persisted_documents/persisted_documents_permissions.py"
 ```
 
 ## Allow-list mode

@@ -12,7 +12,7 @@ In Undine, a GraphQL `Union` between two or more `QueryTypes` is implemented usi
 The `QueryTypes` in the `Union` should be added as generic type parameters to the `UnionType`.
 
 ```python
--8 < -"unions/union_type.py"
+-8<- "unions/union_type.py"
 ```
 
 ### Usage in Entrypoints
@@ -21,7 +21,7 @@ An `Entrypoint` created using a `UnionType` as the reference will return
 all instances of all `QueryTypes` it contains.
 
 ```python
--8 < -"unions/union_type_entrypoint.py"
+-8<- "unions/union_type_entrypoint.py"
 ```
 
 This `Entrypoint` can be queried like this:
@@ -47,7 +47,7 @@ However, if those `QueryTypes` implement a [`FilterSet`](filtering.md#filterset)
 [`OrderSet`](ordering.md#orderset), those will also be available on the `UnionType` `Entrypoint`.
 
 ```python
--8 < -"unions/union_type_entrypoint_query_type_filtersets_and_ordersets.py"
+-8<- "unions/union_type_entrypoint_query_type_filtersets_and_ordersets.py"
 ```
 
 This creates the following `Entrypoint`:
@@ -70,7 +70,7 @@ a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
 for the same Models as the `QueryTypes` in the `UnionType` and add it to the `UnionType`.
 
 ```python
--8 < -"unions/union_type_entrypoint_union_type_filtersets_and_ordersets.py"
+-8<- "unions/union_type_entrypoint_union_type_filtersets_and_ordersets.py"
 ```
 
 This creates the following `Entrypoint`:
@@ -94,7 +94,7 @@ a "name" field of type `CharField`.
 `UnionTypes` can be paginated just like any `QueryType`.
 
 ```python
--8 < -"unions/union_type_entrypoint_connection.py"
+-8<- "unions/union_type_entrypoint_connection.py"
 ```
 
 See the [Pagination](pagination.md) section for more details on pagination.
@@ -106,7 +106,7 @@ is the name of the `UnionType` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"unions/union_type_schema_name.py"
+-8<- "unions/union_type_schema_name.py"
 ```
 
 ### Description
@@ -114,7 +114,7 @@ you can do so by setting the `schema_name` argument:
 A description for a `UnionType` can be provided as a docstring.
 
 ```python
--8 < -"unions/union_type_description.py"
+-8<- "unions/union_type_description.py"
 ```
 
 ### Caching
@@ -123,7 +123,7 @@ You can set custom caching rules for `UnionTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
--8 < -"unions/union_type_cache.py"
+-8<- "unions/union_type_cache.py"
 ```
 
 See the [Entrypoint caching](schema.md#caching) section for more details.
@@ -134,13 +134,13 @@ You can add directives to the `UnionType` by providing them using the `directive
 The directive must be usable in the `UNION` location.
 
 ```python
--8 < -"unions/union_type_directives.py"
+-8<- "unions/union_type_directives.py"
 ```
 
 You can also add directives using decorator syntax.
 
 ```python
--8 < -"unions/union_type_directives_decorator.py"
+-8<- "unions/union_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -151,7 +151,7 @@ You can provide custom extensions for the `UnionType` by providing an
 `extensions` argument with a dictionary containing them.
 
 ```python
--8 < -"unions/union_type_extensions.py"
+-8<- "unions/union_type_extensions.py"
 ```
 
 `UnionType` extensions are made available in the GraphQL `Union` extensions

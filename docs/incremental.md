@@ -25,7 +25,7 @@ Let's look at an example of incremental delivery using the `@defer` and `@stream
 Given the following schema:
 
 ```python
--8 < -"incremental/schema.py"
+-8<- "incremental/schema.py"
 ```
 
 If we wanted to query the "slow" field, the client would need to wait for

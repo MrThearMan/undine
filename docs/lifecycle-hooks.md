@@ -21,25 +21,25 @@ The points you can hook into are:
 `on_operation` / `on_operation_async`: Encompasses the entire GraphQL **operation**.
 
 ```python
--8 < -"lifecycle_hooks/example_hook_on_operation.py"
+-8<- "lifecycle_hooks/example_hook_on_operation.py"
 ```
 
 `on_parse` / `on_parse_async`: Encompasses the **parsing** step.
 
 ```python
--8 < -"lifecycle_hooks/example_hook_on_parse.py"
+-8<- "lifecycle_hooks/example_hook_on_parse.py"
 ```
 
 `on_validation` / `on_validation_async`: Encompasses the **validation** step.
 
 ```python
--8 < -"lifecycle_hooks/example_hook_on_validation.py"
+-8<- "lifecycle_hooks/example_hook_on_validation.py"
 ```
 
 `on_execution` / `on_execution_async`: Encompasses the **execution** step.
 
 ```python
--8 < -"lifecycle_hooks/example_hook_on_execution.py"
+-8<- "lifecycle_hooks/example_hook_on_execution.py"
 ```
 
 `resolve`: Encompasses each field resolver (see `graphql-core` [custom middleware]{:target="_blank"}).
@@ -47,7 +47,7 @@ The points you can hook into are:
 [custom middleware]: https://graphql-core-3.readthedocs.io/en/latest/diffs.html#custom-middleware
 
 ```python
--8 < -"lifecycle_hooks/example_hook_resolve.py"
+-8<- "lifecycle_hooks/example_hook_resolve.py"
 ```
 
 Created hooks need to be registered using the [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) setting.
@@ -78,9 +78,9 @@ This includes:
 Here's some more complex examples of possible lifecycle hooks.
 
 ```python
--8 < -"lifecycle_hooks/caching_hook.py"
+-8<- "lifecycle_hooks/caching_hook.py"
 ```
 
 ```python
--8 < -"lifecycle_hooks/timing_hook.py"
+-8<- "lifecycle_hooks/timing_hook.py"
 ```

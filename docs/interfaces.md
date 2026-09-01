@@ -12,26 +12,26 @@ In Undine, a GraphQL Interface is implemented using the `InterfaceType` class
 and defining a number of [`InterfaceFields`](#interfacefield) in its class body.
 
 ```python
--8 < -"interfaces/interface_type.py"
+-8<- "interfaces/interface_type.py"
 ```
 
 `QueryTypes` can implement `InterfaceTypes` by adding them to the `QueryType` using
 the `interfaces` argument in their class definition.
 
 ```python
--8 < -"interfaces/interface_type_implement.py"
+-8<- "interfaces/interface_type_implement.py"
 ```
 
 You can also use decorator syntax to add an `InterfaceType` to a `QueryType`.
 
 ```python
--8 < -"interfaces/interface_type_implement_decorator.py"
+-8<- "interfaces/interface_type_implement_decorator.py"
 ```
 
 Note that `InterfaceTypes` can also implement other `InterfaceTypes`.
 
 ```python
--8 < -"interfaces/interface_type_implement_interface.py"
+-8<- "interfaces/interface_type_implement_interface.py"
 ```
 
 ### Usage in Entrypoints
@@ -40,7 +40,7 @@ An `Entrypoint` created using an `InterfaceType` as the reference will return
 all implementations of the `InterfaceType`.
 
 ```python
--8 < -"interfaces/interface_type_entrypoint.py"
+-8<- "interfaces/interface_type_entrypoint.py"
 ```
 
 This `Entrypoint` can be queried like this:
@@ -67,7 +67,7 @@ However, if those `QueryTypes` implement a [`FilterSet`](filtering.md#filterset)
 an [`OrderSet`](ordering.md#orderset), those will also be available on the `InterfaceType` `Entrypoint`.
 
 ```python
--8 < -"interfaces/interface_type_entrypoint_filtersets_and_ordersets.py"
+-8<- "interfaces/interface_type_entrypoint_filtersets_and_ordersets.py"
 ```
 
 This creates the following `Entrypoint`:
@@ -90,7 +90,7 @@ a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
 for the same Models as the `QueryTypes` implementing the `InterfaceType` and add it to the `InterfaceType`.
 
 ```python
--8 < -"interfaces/interface_type_entrypoint_interface_type_filtersets_and_ordersets.py"
+-8<- "interfaces/interface_type_entrypoint_interface_type_filtersets_and_ordersets.py"
 ```
 
 This creates the following `Entrypoint`:
@@ -116,7 +116,7 @@ to exist on all implementing `QueryTypes`.
 `InterfaceTypes` can be paginated just like any `QueryType`.
 
 ```python
--8 < -"interfaces/interface_type_entrypoint_connection.py"
+-8<- "interfaces/interface_type_entrypoint_connection.py"
 ```
 
 See the [Pagination](pagination.md) section for more details on pagination.
@@ -128,7 +128,7 @@ is the name of the `InterfaceType` class. If you want to change the name separat
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"interfaces/interface_type_schema_name.py"
+-8<- "interfaces/interface_type_schema_name.py"
 ```
 
 ### Description
@@ -136,7 +136,7 @@ you can do so by setting the `schema_name` argument:
 You can provide a description for the `InterfaceType` by adding a docstring to the class.
 
 ```python
--8 < -"interfaces/interface_type_description.py"
+-8<- "interfaces/interface_type_description.py"
 ```
 
 ### Caching
@@ -145,7 +145,7 @@ You can set custom caching rules for `InterfaceTypes` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
--8 < -"interfaces/interface_type_cache.py"
+-8<- "interfaces/interface_type_cache.py"
 ```
 
 See the [Entrypoint caching](schema.md#caching) section for more details.
@@ -156,13 +156,13 @@ You can add directives to the `InterfaceType` by providing them using the `direc
 The directive must be usable in the `INTERFACE` location.
 
 ```python
--8 < -"interfaces/interface_type_directives.py"
+-8<- "interfaces/interface_type_directives.py"
 ```
 
 You can also add directives using decorator syntax.
 
 ```python
--8 < -"interfaces/interface_type_directives_decorator.py"
+-8<- "interfaces/interface_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -174,7 +174,7 @@ You can provide custom extensions for the `InterfaceType` by providing an
 however you wish to extend the functionality of the `InterfaceType`.
 
 ```python
--8 < -"interfaces/interface_type_extensions.py"
+-8<- "interfaces/interface_type_extensions.py"
 ```
 
 `InterfaceType` extensions are made available in the GraphQL `Interface` extensions
@@ -193,14 +193,14 @@ must correspond to Model fields when implemented on a `QueryType`.
 An `InterfaceField` always requires its desired GraphQL output type to be defined.
 
 ```python
--8 < -"interfaces/interface_field.py"
+-8<- "interfaces/interface_field.py"
 ```
 
 Optionally, you can define arguments that the `InterfaceField` requires.
 If defined, these must also match the Model field of the implementing `QueryType`.
 
 ```python
--8 < -"interfaces/interface_field_arguments.py"
+-8<- "interfaces/interface_field_arguments.py"
 ```
 
 ### Field name
@@ -210,7 +210,7 @@ If you want to change the name of the field in the Django model separately,
 you can do so by setting the `field_name` argument:
 
 ```python
--8 < -"interfaces/interface_field_field_name.py"
+-8<- "interfaces/interface_field_field_name.py"
 ```
 
 ### Schema name
@@ -222,7 +222,7 @@ If you want to change the name of the `Interface` field separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"interfaces/interface_field_schema_name.py"
+-8<- "interfaces/interface_field_schema_name.py"
 ```
 
 This can be useful when the desired name of the `Interface` field is a Python keyword
@@ -235,13 +235,13 @@ A description for a field can be provided in one of two ways:
 1) By setting the `description` argument.
 
 ```python
--8 < -"interfaces/interface_field_description.py"
+-8<- "interfaces/interface_field_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8 < -"interfaces/interface_field_description_class.py"
+-8<- "interfaces/interface_field_description_class.py"
 ```
 
 ### Deprecation reason
@@ -250,7 +250,7 @@ A `deprecation_reason` can be provided to mark the `InterfaceField` as deprecate
 This is for documentation purposes only, and does not affect the use of the `InterfaceField`.
 
 ```python hl_lines="13"
--8 < -"interfaces/interface_field_deprecation_reason.py"
+-8<- "interfaces/interface_field_deprecation_reason.py"
 ```
 
 ### Caching
@@ -259,7 +259,7 @@ You can set custom caching rules for `InterfaceFields` using the `cache_time`
 and `cache_per_user` arguments.
 
 ```python
--8 < -"interfaces/interface_field_cache.py"
+-8<- "interfaces/interface_field_cache.py"
 ```
 
 See the [Entrypoint caching](schema.md#caching) section for more details.
@@ -270,13 +270,13 @@ You can add directives to the `IntefaceField` by providing them using the `direc
 The directive must be usable in the `FIELD_DEFINITION` location.
 
 ```python
--8 < -"interfaces/interface_field_directives.py"
+-8<- "interfaces/interface_field_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"interfaces/interface_field_directives_matmul.py"
+-8<- "interfaces/interface_field_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -288,7 +288,7 @@ You can provide custom extensions for the `InterfaceField` by providing a
 however you wish to extend the functionality of the `InterfaceField`.
 
 ```python
--8 < -"interfaces/interface_field_extensions.py"
+-8<- "interfaces/interface_field_extensions.py"
 ```
 
 `InterfaceField` extensions are made available in the GraphQL `Interface` field extensions

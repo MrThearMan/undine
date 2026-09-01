@@ -61,5 +61,5 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 - Built-in testing tools
 
 ```python
--8 < -"index/example.py"
+-8<- "index/example.py"
 ```

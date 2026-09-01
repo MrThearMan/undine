@@ -20,13 +20,13 @@ You must also add at least one `Filter` to the class body of the `FilterSet`.
 Then the `FilterSet` can be added to a `QueryType` using the `filterset` argument.
 
 ```python
--8 < -"filtering/filterset_basic.py"
+-8<- "filtering/filterset_basic.py"
 ```
 
 You can also add the `FilterSet` to the `QueryType` using decorator syntax.
 
 ```python
--8 < -"filtering/filterset_decorator.py"
+-8<- "filtering/filterset_decorator.py"
 ```
 
 ### Auto-generation
@@ -35,7 +35,7 @@ A `FilterSet` can automatically introspect its Django Model and convert the Mode
 to `Filters` on the `FilterSet`. For example, if the `Task` model has the following fields:
 
 ```python
--8 < -"filtering/models_1.py"
+-8<- "filtering/models_1.py"
 ```
 
 An auto-generated `FilterSet` will have all of the `Task` Model's fields and those fields'
@@ -229,13 +229,13 @@ to enable it globally, or set the `auto` argument to `True` in the `FilterSet` c
 With this, you can leave the `FilterSet` class body empty.
 
 ```python
--8 < -"filtering/filterset_auto.py"
+-8<- "filtering/filterset_auto.py"
 ```
 
 You can exclude some Model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
--8 < -"filtering/filterset_exclude.py"
+-8<- "filtering/filterset_exclude.py"
 ```
 
 You can also exclude specific model lookups, e.g. `created_at__gte`.
@@ -306,7 +306,7 @@ classmethod, which can be used to add filtering that should always be applied
 when fetching objects through `QueryTypes` using the given `FilterSet`.
 
 ```python
--8 < -"filtering/filterset_filter_queryset.py"
+-8<- "filtering/filterset_filter_queryset.py"
 ```
 
 Note that `QueryTypes` also have a `__filter_queryset__` classmethod, which is run _before_
@@ -320,7 +320,7 @@ is the name of the `FilterSet` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"filtering/filterset_schema_name.py"
+-8<- "filtering/filterset_schema_name.py"
 ```
 
 ### Description
@@ -328,7 +328,7 @@ you can do so by setting the `schema_name` argument:
 You can provide a description for a `FilterSet` by adding a docstring to the class.
 
 ```python
--8 < -"filtering/filterset_description.py"
+-8<- "filtering/filterset_description.py"
 ```
 
 ### Directives
@@ -337,13 +337,13 @@ You can add directives to a `FilterSet` by providing them using the `directives`
 The directive must be usable in the `INPUT_OBJECT` location.
 
 ```python
--8 < -"filtering/filterset_directives.py"
+-8<- "filtering/filterset_directives.py"
 ```
 
 You can also add directives using decorator syntax.
 
 ```python
--8 < -"filtering/filterset_directives_decorator.py"
+-8<- "filtering/filterset_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -355,7 +355,7 @@ You can provide custom extensions for the `FilterSet` by providing a
 however you wish to extend the functionality of the `FilterSet`.
 
 ```python
--8 < -"filtering/filterset_extensions.py"
+-8<- "filtering/filterset_extensions.py"
 ```
 
 `FilterSet` extensions are made available in the GraphQL `InputObjectType` extensions
@@ -382,26 +382,26 @@ as its attribute name on the `FilterSet` class body can be used to identify
 the corresponding Model field.
 
 ```python
--8 < -"filtering/filter.py"
+-8<- "filtering/filter.py"
 ```
 
 To be a bit more explicit, you could use a string referencing the Model field:
 
 ```python
--8 < -"filtering/filter_string.py"
+-8<- "filtering/filter_string.py"
 ```
 
 For better type safety, you can also use the Model field itself:
 
 ```python
--8 < -"filtering/filter_field.py"
+-8<- "filtering/filter_field.py"
 ```
 
 Being explicit like this is only required if the name of the attribute in the GraphQL schema
 is different from the Model field name.
 
 ```python
--8 < -"filtering/filter_alias.py"
+-8<- "filtering/filter_alias.py"
 ```
 
 ### Expression references
@@ -409,13 +409,13 @@ is different from the Model field name.
 Django ORM expressions can also be used as `Filter` references.
 
 ```python
--8 < -"filtering/filter_expression.py"
+-8<- "filtering/filter_expression.py"
 ```
 
 Remember that subqueries are also counted as expressions.
 
 ```python
--8 < -"filtering/filter_subquery.py"
+-8<- "filtering/filter_subquery.py"
 ```
 
 ### Function references
@@ -424,7 +424,7 @@ Functions (or methods) can also be used to create `Filters`.
 This can be done by decorating a method with the `Filter` class.
 
 ```python
--8 < -"filtering/filter_decorator.py"
+-8<- "filtering/filter_decorator.py"
 ```
 
 These types of `Filters` should return a `Q` expression.
@@ -453,7 +453,7 @@ is used. This can be changed by providing the `lookup` argument to the `Filter`.
 [lookup expression]: https://docs.djangoproject.com/en/stable/ref/models/querysets/#field-lookups
 
 ```python
--8 < -"filtering/filter_lookup.py"
+-8<- "filtering/filter_lookup.py"
 ```
 
 ### Many
@@ -463,7 +463,7 @@ a list of values instead of a single value. Then, each of the given values are c
 as defined by the [`match`](#match) argument to form a single filter condition.
 
 ```python
--8 < -"filtering/filter_many.py"
+-8<- "filtering/filter_many.py"
 ```
 
 This would create the following filter input:
@@ -487,7 +487,7 @@ The `match` argument can be set to `all` if all of the values should match,
 or `one_of` if only one of the values should match.
 
 ```python
--8 < -"filtering/filter_match.py"
+-8<- "filtering/filter_match.py"
 ```
 
 ### Distinct
@@ -496,7 +496,7 @@ If using a `Filter` would require a call to `queryset.distinct()` to remove dupl
 (e.g. lookups spanning "to-many" relations), you can set the `distinct` argument to `True`.
 
 ```python
--8 < -"filtering/filter_distinct.py"
+-8<- "filtering/filter_distinct.py"
 ```
 
 ### Required
@@ -505,7 +505,7 @@ By default, all `Filters` are non-required (nullable in GraphQL terms).
 If you want to make a `Filter` required, you can do so by setting the `required` argument to `True`.
 
 ```python
--8 < -"filtering/filter_required.py"
+-8<- "filtering/filter_required.py"
 ```
 
 Making a `Filter` required means that if any filtering is done on an `Entrypoint` of related `Field`
@@ -520,7 +520,7 @@ to the queryset when the `Filter` is used. For this, you can define a function
 that returns a dictionary of expressions and decorate it with the `aliases` decorator.
 
 ```python
--8 < -"filtering/filter_aliases.py"
+-8<- "filtering/filter_aliases.py"
 ```
 
 ### Empty values
@@ -533,7 +533,7 @@ If you wish to change what's considered an empty value for an individual `Filter
 you can do so by setting the `empty_values` argument to a list of values.
 
 ```python
--8 < -"filtering/filter_empty_values.py"
+-8<- "filtering/filter_empty_values.py"
 ```
 
 ### Field name
@@ -542,7 +542,7 @@ A `field_name` can be provided to explicitly set the Django Model field
 that the `Filter` corresponds to.
 
 ```python
--8 < -"filtering/filter_field_name.py"
+-8<- "filtering/filter_field_name.py"
 ```
 
 This can be useful when the Model field corresponding to the `Filter`
@@ -557,7 +557,7 @@ If you want to change the name of the `InputObjectType` field separately,
 you can do so by setting the `schema_name` argument:
 
 ```python hl_lines="13"
--8 < -"filtering/filter_schema_name.py"
+-8<- "filtering/filter_schema_name.py"
 ```
 
 This can be useful when the desired name of the `InputObjectType` field is a Python keyword
@@ -573,20 +573,20 @@ this can be done in two ways:
 1) By setting the `description` argument.
 
 ```python
--8 < -"filtering/filter_description.py"
+-8<- "filtering/filter_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8 < -"filtering/filter_description_class.py"
+-8<- "filtering/filter_description_class.py"
 ```
 
 When using [function references](#function-references), instead of a class attribute docstring,
 you add a docstring to the function/method used as the reference instead.
 
 ```python
--8 < -"filtering/filter_decorator_docstring.py"
+-8<- "filtering/filter_decorator_docstring.py"
 ```
 
 ### Deprecation reason
@@ -595,7 +595,7 @@ A `deprecation_reason` can be provided to mark the `Filter` as deprecated.
 This is for documentation purposes only, and does not affect the use of the `Filter`.
 
 ```python hl_lines="13"
--8 < -"filtering/filter_deprecation_reason.py"
+-8<- "filtering/filter_deprecation_reason.py"
 ```
 
 ### Permissions
@@ -604,14 +604,14 @@ You can add permissions check to individual `Filters` by using `Filter` [functio
 and adding the permission check inline.
 
 ```python
--8 < -"filtering/filter_permissions.py"
+-8<- "filtering/filter_permissions.py"
 ```
 
 A special `EmptyFilterResult` exception can also be raised to indicate that
 an empty queryset should be returned instead of an error.
 
 ```python
--8 < -"filtering/filter_empty_filter_result.py"
+-8<- "filtering/filter_empty_filter_result.py"
 ```
 
 ### Directives
@@ -619,13 +619,13 @@ an empty queryset should be returned instead of an error.
 You can add directives to the `Filter` by providing them using the `directives` argument.
 
 ```python
--8 < -"filtering/filter_directives.py"
+-8<- "filtering/filter_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"filtering/filter_directives_matmul.py"
+-8<- "filtering/filter_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -637,7 +637,7 @@ You can provide custom extensions for the `Filter` by providing a
 however you wish to extend the functionality of the `Filter`.
 
 ```python
--8 < -"filtering/filter_extensions.py"
+-8<- "filtering/filter_extensions.py"
 ```
 
 `Filter` extensions are made available in the GraphQL `InputObjectType` field extensions

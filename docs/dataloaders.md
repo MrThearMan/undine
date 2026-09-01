@@ -21,7 +21,7 @@ This function receives a list of "keys" that identify the data that should be fe
 Let's look at an example which fetches a list of pokemon from an external API by their name.
 
 ```python hl_lines="17 18 19 20 21 22 23 24 25"
--8 < -"dataloaders/dataloader.py"
+-8<- "dataloaders/dataloader.py"
 ```
 
 Here, the `DataLoader` load function `load_pokemon` receives a list of keys (pokemon names in this case)
@@ -67,7 +67,7 @@ If the load for a particular key fails, you can return an exception from the loa
 This exception will be converted into a GraphQL error in the response to the client.
 
 ```python hl_lines="20 21 22"
--8 < -"dataloaders/dataloader_error.py"
+-8<- "dataloaders/dataloader_error.py"
 ```
 
 Note that in this case the `Entrypoint` is made nullable so that only the requests for pokemon that fail to load
@@ -100,7 +100,7 @@ By default, a `DataLoader` will load all keys requested in a GraphQL operation i
 If you want to limit the number of keys that are loaded in a single batch, you can use the `max_batch_size` parameter.
 
 ```python hl_lines="12"
--8 < -"dataloaders/dataloader_max_batch_size.py"
+-8<- "dataloaders/dataloader_max_batch_size.py"
 ```
 
 In this case, limiting the maximum batch size will ensure that we don't send too many
@@ -130,7 +130,7 @@ a [`max_batch_size`](#max-batch-size) has been set.
 If you want to disable reuse, you can set the `reuse_loads` parameter to `False`.
 
 ```python hl_lines="12"
--8 < -"dataloaders/dataloader_reuse_loads.py"
+-8<- "dataloaders/dataloader_reuse_loads.py"
 ```
 
 This will result in the `DataLoader` running the load function `load_pokemon` with keys `["pikachu", "pikachu"]` instead,
@@ -151,7 +151,7 @@ for a primed key, that primed value would be returned immediately. If batch size
 [`max_batch_size`](#max-batch-size), that load would also not contribute to the size of the batch.
 
 ```python hl_lines="30"
--8 < -"dataloaders/dataloader_prime.py"
+-8<- "dataloaders/dataloader_prime.py"
 ```
 
 Priming can also be useful when loads for the same object can happen by different keys,
@@ -162,7 +162,7 @@ the `can_prime_pending_loads` parameter to `True` so that already pending loads 
 other `DataLoaders` can be set.
 
 ```python hl_lines="28 29 30 44 45 46 49 50 51"
--8 < -"dataloaders/dataloader_prime_many.py"
+-8<- "dataloaders/dataloader_prime_many.py"
 ```
 
 ### Clearing loads
@@ -172,7 +172,7 @@ A potential use case for this would be if a mutation on the loaded data would be
 during the GraphQL operation, and the load would therefore need to be re-fetched.
 
 ```python hl_lines="19"
--8 < -"dataloaders/dataloader_clear.py"
+-8<- "dataloaders/dataloader_clear.py"
 ```
 
 ### Custom key hash function
@@ -186,7 +186,7 @@ is also useful when two different objects should be considered equal when loadin
 [asyncio Future]: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
 
 ```python hl_lines="13 14 15 16 17"
--8 < -"dataloaders/dataloader_key_hash_fn.py"
+-8<- "dataloaders/dataloader_key_hash_fn.py"
 ```
 
 ## Technical Details

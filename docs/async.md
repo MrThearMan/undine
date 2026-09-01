@@ -22,18 +22,18 @@ Now your GraphQL endpoint will change from a sync view to an async view.
 This allows you to write your `Entrypoint` resolvers as coroutines.
 
 ```python
--8 < -"async/entrypoint_async.py"
+-8<- "async/entrypoint_async.py"
 ```
 
 Various parts of the `QueryTypes`, `MutationTypes`, and their `Fields` and `Inputs`
 can also be made async.
 
 ```python
--8 < -"async/query_async.py"
+-8<- "async/query_async.py"
 ```
 
 ```python
--8 < -"async/mutation_async.py"
+-8<- "async/mutation_async.py"
 ```
 
 ## Notes

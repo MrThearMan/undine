@@ -51,13 +51,13 @@ The `File` scalar if for general files while the `Image` scalar validates that t
 Now, let's suppose you have the following Model.
 
 ```python
--8 < -"file_uploads/models.py"
+-8<- "file_uploads/models.py"
 ```
 
 If you add a create mutation to the GraphQL schema like this
 
 ```python
--8 < -"file_uploads/mutation_type.py"
+-8<- "file_uploads/mutation_type.py"
 ```
 
 ...the `TaskCreateMutation` mutation `InputObjectType` will look like this:

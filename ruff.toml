@@ -5,6 +5,8 @@ unsafe-fixes = true
 line-length = 120
 extend-exclude = [
     "tests/*",
+    "docs/*.md",
+    ".agents/docs/documentation.md",
 ]
 
 [format]

@@ -85,7 +85,7 @@ visit the node before or after its children.
 These methods have the following signature (example for `NameNode`):
 
 ```python
--8 < -"validation_rules/custom_rule.py"
+-8<- "validation_rules/custom_rule.py"
 ```
 
 When you have created your custom validation rule, you can register it using the

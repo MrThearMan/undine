@@ -82,7 +82,7 @@ and [`channels-redis`][channels-redis]{:target="_blank"} satisfies both requirem
 [channels-redis]: https://github.com/django/channels_redis
 
 ```python
--8 < -"subscriptions/sse_redis_settings.py"
+-8<- "subscriptions/sse_redis_settings.py"
 ```
 
 ### Multipart HTTP
@@ -103,7 +103,7 @@ Let's take a look at a simple example of a subscription that counts down from 10
 [AsyncGenerator]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=__aiter__-,AsyncGenerator,-%5B1%5D
 
 ```python
--8 < -"subscriptions/subscription.py"
+-8<- "subscriptions/subscription.py"
 ```
 
 /// details | About method signature
@@ -151,7 +151,7 @@ To add arguments for the subscription, you can add them to the function signatur
 Typing these arguments is also required to determine their input type.
 
 ```python
--8 < -"subscriptions/subscription_arguments.py"
+-8<- "subscriptions/subscription_arguments.py"
 ```
 
 This will create the following subscription in the GraphQL schema:
@@ -168,7 +168,7 @@ subclassing `GraphQLError` for better error messages, or use the `GraphQLErrorGr
 to raise multiple errors at once.
 
 ```python
--8 < -"subscriptions/subscription_exception.py"
+-8<- "subscriptions/subscription_exception.py"
 ```
 
 You can also yield a `GraphQLError` from the function, which will send
@@ -176,7 +176,7 @@ an error while keeping the subscription open. Furthermore, adding the error to t
 type does not change the return type of the subscription.
 
 ```python
--8 < -"subscriptions/subscription_exception_return.py"
+-8<- "subscriptions/subscription_exception_return.py"
 ```
 
 ## AsyncIterables
@@ -189,7 +189,7 @@ not used as the `Entrypoint` reference itself. Otherwise, they work similarly to
 [AsyncIterable]: https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes:~:text=close-,AsyncIterable,-%5B1%5D
 
 ```python
--8 < -"subscriptions/subscription_async_iterable.py"
+-8<- "subscriptions/subscription_async_iterable.py"
 ```
 
 ## Signal subscriptions
@@ -201,7 +201,7 @@ being created, you could add a `ModelCreateSubscription` for the `Task` Model li
 [Django signals]: https://docs.djangoproject.com/en/stable/ref/signals/
 
 ```python
--8 < -"subscriptions/subscription_signals.py"
+-8<- "subscriptions/subscription_signals.py"
 ```
 
 Similar subscriptions exists for Model updates (`ModelUpdateSubscription`), deletes (`ModelDeleteSubscription`),
@@ -227,7 +227,7 @@ a permission check will close the subscription and send an error message
 to the client.
 
 ```python
--8 < -"subscriptions/subscription_permissions.py"
+-8<- "subscriptions/subscription_permissions.py"
 ```
 
 When using GraphQL over WebSocket, you can also configure permission checks for establishing a websocket connection
@@ -235,5 +235,5 @@ using the [`WEBSOCKET_CONNECTION_INIT_HOOK`](settings.md#websocket_connection_in
 setting.
 
 ```python
--8 < -"subscriptions/subscription_permissions_connection_init.py"
+-8<- "subscriptions/subscription_permissions_connection_init.py"
 ```

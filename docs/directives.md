@@ -11,7 +11,7 @@ which can be accessed during document execution or by clients consuming your sch
 In Undine, a GraphQL directive is implemented by subclassing the `Directive` class.
 
 ```python
--8 < -"directives/directive.py"
+-8<- "directives/directive.py"
 ```
 
 Note that a `Directive` by itself doesn't do anything. It is only used as a way to define
@@ -34,7 +34,7 @@ See the example below on what these locations are.
 The `QUERY` location corresponds to _query_ operation.
 
 ```python
--8 < -"directives/directive_location_query.py"
+-8<- "directives/directive_location_query.py"
 ```
 
 In schema definition:
@@ -54,7 +54,7 @@ query ($pk: Int!) @new {
 The `MUTATION` location corresponds to _mutation_ operation.
 
 ```python
--8 < -"directives/directive_location_mutation.py"
+-8<- "directives/directive_location_mutation.py"
 ```
 
 In schema definition:
@@ -72,7 +72,7 @@ mutation ($input: CreateTaskMutation!) @new {
 The `SUBSCRIPTION` location corresponds to _subscription_ operation.
 
 ```python
--8 < -"directives/directive_location_subscription.py"
+-8<- "directives/directive_location_subscription.py"
 ```
 
 In schema definition:
@@ -91,7 +91,7 @@ subscription @new {
 The `FIELD` location corresponds to a field selection on an operation.
 
 ```python
--8 < -"directives/directive_location_field.py"
+-8<- "directives/directive_location_field.py"
 ```
 
 In schema definition:
@@ -111,7 +111,7 @@ query {
 The `FRAGMENT_DEFINITION` location corresponds to a fragment definition.
 
 ```python
--8 < -"directives/directive_location_fragment_definition.py"
+-8<- "directives/directive_location_fragment_definition.py"
 ```
 
 In schema definition:
@@ -135,7 +135,7 @@ fragment taskFragment on TaskType @new {
 The `FRAGMENT_SPREAD` location corresponds to a fragment spread.
 
 ```python
--8 < -"directives/directive_location_fragment_spread.py"
+-8<- "directives/directive_location_fragment_spread.py"
 ```
 
 In schema definition:
@@ -159,7 +159,7 @@ fragment taskFragment on TaskType {
 The `INLINE_FRAGMENT` location corresponds to an inline fragment.
 
 ```python
--8 < -"directives/directive_location_inline_fragment.py"
+-8<- "directives/directive_location_inline_fragment.py"
 ```
 
 In schema definition:
@@ -180,7 +180,7 @@ query {
 The `VARIABLE_DEFINITION` location corresponds to a variable definition.
 
 ```python
--8 < -"directives/directive_location_variable_fragment.py"
+-8<- "directives/directive_location_variable_fragment.py"
 ```
 
 In schema definition:
@@ -208,7 +208,7 @@ Directives can be added here by using the `schema_definition_directives` argumen
 in the `create_schema` function.
 
 ```python hl_lines="16"
--8 < -"directives/directive_location_schema.py"
+-8<- "directives/directive_location_schema.py"
 ```
 
 In schema definition:
@@ -227,7 +227,7 @@ The `SCALAR` location corresponds to the scalars defined in the schema.
 In Undine, `ScalarType` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_scalar.py"
+-8<- "directives/directive_location_scalar.py"
 ```
 
 In schema definition:
@@ -245,7 +245,7 @@ The `OBJECT` location corresponds to the ObjectTypes defined in the schema.
 In Undine, `QueryTypes` and `RootTypes` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_object.py"
+-8<- "directives/directive_location_object.py"
 ```
 
 In schema definition:
@@ -269,7 +269,7 @@ The `FIELD_DEFINITION` location corresponds to the fields defined in the schema.
 In Undine, `Fields`, `InterfaceFields` and `Entrypoints` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_field_definition.py"
+-8<- "directives/directive_location_field_definition.py"
 ```
 
 In schema definition:
@@ -297,7 +297,7 @@ The `ARGUMENT_DEFINITION` location corresponds to the field arguments defined in
 In Undine, `CalculationArguments` and `DirectiveArguments` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_argument_definition.py"
+-8<- "directives/directive_location_argument_definition.py"
 ```
 
 In schema definition:
@@ -322,7 +322,7 @@ The `INTERFACE` location corresponds to the interfaces defined in the schema.
 In Undine, `InterfaceType` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_interface.py"
+-8<- "directives/directive_location_interface.py"
 ```
 
 In schema definition:
@@ -341,7 +341,7 @@ The `UNION` location corresponds to the unions defined in the schema.
 In Undine, `UnionType` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_union.py"
+-8<- "directives/directive_location_union.py"
 ```
 
 In schema definition:
@@ -358,7 +358,7 @@ The `ENUM` location corresponds to the enums defined in the schema.
 In Undine, `OrderSet` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_enum.py"
+-8<- "directives/directive_location_enum.py"
 ```
 
 In schema definition:
@@ -378,7 +378,7 @@ The `ENUM_VALUE` location corresponds to the enum values defined in the schema.
 In Undine, `Order` accepts `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_enum_value.py"
+-8<- "directives/directive_location_enum_value.py"
 ```
 
 In schema definition:
@@ -398,7 +398,7 @@ The `INPUT_OBJECT` location corresponds to the input objects defined in the sche
 In Undine, `MutationType` and `FilterSet` accept `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_input_object.py"
+-8<- "directives/directive_location_input_object.py"
 ```
 
 In schema definition:
@@ -421,7 +421,7 @@ The `INPUT_FIELD_DEFINITION` location corresponds to the input field definitions
 In Undine, `Input` and `Filter` accept `Directives` declared for this location.
 
 ```python
--8 < -"directives/directive_location_input_field_definition.py"
+-8<- "directives/directive_location_input_field_definition.py"
 ```
 
 In schema definition:
@@ -444,7 +444,7 @@ A directive can be declared as repeatable using the `is_repeatable` argument.
 This means that the directive can be used multiple times in the same location.
 
 ```python
--8 < -"directives/directive_is_repeatable.py"
+-8<- "directives/directive_is_repeatable.py"
 ```
 
 In schema definition:
@@ -464,7 +464,7 @@ is the name of the `Directive` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"directives/directive_schema_name.py"
+-8<- "directives/directive_schema_name.py"
 ```
 
 ### Extensions
@@ -474,7 +474,7 @@ You can provide custom extensions for the `Directive` by providing a
 however you wish to extend the functionality of the `Directive`.
 
 ```python
--8 < -"directives/directive_extensions.py"
+-8<- "directives/directive_extensions.py"
 ```
 
 `Directive` extensions are made available in the GraphQL directive extensions
@@ -489,7 +489,7 @@ defined in the class body. These define the arguments that can or must be used w
 A `DirectiveArgument` always requires _input type_ of the argument, which needs to be a GraphQL input type.
 
 ```python
--8 < -"directives/directive_argument.py"
+-8<- "directives/directive_argument.py"
 ```
 
 ### Schema name
@@ -501,7 +501,7 @@ If you want to change the name of the GraphQL directive argument separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"directives/directive_argument_schema_name.py"
+-8<- "directives/directive_argument_schema_name.py"
 ```
 
 This can be useful when the desired name of the GraphQL directive argument is a Python keyword
@@ -514,13 +514,13 @@ A description for a `DirectiveArgument` can be provided in on of two ways:
 1) By setting the `description` argument.
 
 ```python
--8 < -"directives/directive_argument_description.py"
+-8<- "directives/directive_argument_description.py"
 ```
 
 2) As class attribute docstring, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8 < -"directives/directive_argument_description_class.py"
+-8<- "directives/directive_argument_description_class.py"
 ```
 
 ### Default value
@@ -528,7 +528,7 @@ A description for a `DirectiveArgument` can be provided in on of two ways:
 A `default_value` can be provided to set the default value for the `DirectiveArgument`.
 
 ```python
--8 < -"directives/directive_argument_default_value.py"
+-8<- "directives/directive_argument_default_value.py"
 ```
 
 ### Deprecation reason
@@ -536,7 +536,7 @@ A `default_value` can be provided to set the default value for the `DirectiveArg
 A `deprecation_reason` can be provided to mark the `DirectiveArgument` as deprecated.
 
 ```python
--8 < -"directives/directive_argument_deprecation_reason.py"
+-8<- "directives/directive_argument_deprecation_reason.py"
 ```
 
 ### Directives
@@ -545,13 +545,13 @@ You can add directives to the `DirectiveArgument` by providing them using the `d
 The directive must be usable in the `ARGUMENT_DEFINITION` location.
 
 ```python
--8 < -"directives/directive_argument_directives.py"
+-8<- "directives/directive_argument_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"directives/directive_argument_directives_matmul.py"
+-8<- "directives/directive_argument_directives_matmul.py"
 ```
 
 ### Extensions
@@ -561,7 +561,7 @@ You can provide custom extensions for the `DirectiveArgument` by providing a
 however you wish to extend the functionality of the `DirectiveArgument`.
 
 ```python
--8 < -"directives/directive_argument_extensions.py"
+-8<- "directives/directive_argument_extensions.py"
 ```
 
 `DirectiveArgument` extensions are made available in the GraphQL argument extensions

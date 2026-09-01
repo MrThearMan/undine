@@ -261,7 +261,7 @@ To register new implementations for a converter, you need to decorate a
 function using the `<converter>.register` method.
 
 ```python
--8 < -"hacking_undine/registration_class.py"
+-8<- "hacking_undine/registration_class.py"
 ```
 
 With this implementation registered fo the `convert_to_graphql_type` converter,
@@ -271,7 +271,7 @@ distinguishes between types and instances of types. To register for an instance,
 do this instead:
 
 ```python
--8 < -"hacking_undine/registration_instance.py"
+-8<- "hacking_undine/registration_instance.py"
 ```
 
 A converter implementation should always accept `**kwargs: Any`, since those can
@@ -283,7 +283,7 @@ If an implementation can be used for many different types, you can register it
 using a type union.
 
 ```python
--8 < -"hacking_undine/registration_union.py"
+-8<- "hacking_undine/registration_union.py"
 ```
 
 If the implementation of a superclass is can be used for a child class,
@@ -293,7 +293,7 @@ method resolution order of a class if an implementation is not found for the
 exact type.
 
 ```python
--8 < -"hacking_undine/registration_mro.py"
+-8<- "hacking_undine/registration_mro.py"
 ```
 
 Implementations can be registered for literal values as well,
@@ -302,14 +302,14 @@ When the converter is called with a value which can be a literal value, the conv
 for any implementations for literals before checking for implementations for the type itself.
 
 ```python
--8 < -"hacking_undine/registration_literal.py"
+-8<- "hacking_undine/registration_literal.py"
 ```
 
 If you need a different implementation for lambda functions as opposed to regular
 functions, you can register an implementation for the special `Lambda` type.
 
 ```python
--8 < -"hacking_undine/registration_lambda.py"
+-8<- "hacking_undine/registration_lambda.py"
 ```
 
 You can also register a default implementation for a converter using `Any`.

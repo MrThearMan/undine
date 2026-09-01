@@ -14,7 +14,7 @@ to be the root of the GraphQL Schema.
 Let's take a look at this example from the [Tutorial](tutorial.md#part-2-creating-the-schema).
 
 ```python
--8 < -"schema/creating_schema_query.py"
+-8<- "schema/creating_schema_query.py"
 ```
 
 Here you've created the `Query` `RootType`. In Undine, the `Query` `RootType` is
@@ -25,7 +25,7 @@ As the name implies, the `Query` `RootType` is for querying data.
 For mutating data, you'd create a `Mutation` `RootType`.
 
 ```python hl_lines="3 12 13 14 15 18"
--8 < -"schema/creating_schema_mutation.py"
+-8<- "schema/creating_schema_mutation.py"
 ```
 
 The `Mutation` `RootType` is optional, but if created, it must also include at least
@@ -40,7 +40,7 @@ is the name of the `RootType` class. If you need to change the name separately,
 you can do so by providing the `schema_name` argument.
 
 ```python
--8 < -"schema/root_type_schema_name.py"
+-8<- "schema/root_type_schema_name.py"
 ```
 
 ### Description
@@ -48,7 +48,7 @@ you can do so by providing the `schema_name` argument.
 To provide a description for the `RootType`, you can add a docstring to the class.
 
 ```python
--8 < -"schema/root_type_docstring.py"
+-8<- "schema/root_type_docstring.py"
 ```
 
 ### Directives
@@ -57,13 +57,13 @@ You can add directives to the `RootType` by providing them using the `directives
 The directive must be usable in the `OBJECT` location.
 
 ```python
--8 < -"schema/root_type_directives.py"
+-8<- "schema/root_type_directives.py"
 ```
 
 You can also add them using decorator syntax.
 
 ```python
--8 < -"schema/root_type_directives_decorator.py"
+-8<- "schema/root_type_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -75,7 +75,7 @@ You can provide custom extensions for the `RootType` by providing a
 however you wish to extend the functionality of the `RootType`.
 
 ```python
--8 < -"schema/root_type_extensions.py"
+-8<- "schema/root_type_extensions.py"
 ```
 
 `RootType` extensions are made available in the GraphQL `ObjectType` extensions
@@ -100,7 +100,7 @@ Function references can be used for both query and mutation `Entrypoints`.
 See the example from the [Tutorial](tutorial.md#part-1-setup).
 
 ```python
--8 < -"schema/entrypoint_function_reference.py"
+-8<- "schema/entrypoint_function_reference.py"
 ```
 
 With a function reference, the `Entrypoint` will use the decorated function as its GraphQL resolver.
@@ -130,7 +130,7 @@ You can add arguments to the `Entrypoint` by adding them to the function signatu
 Typing these arguments is required to determine their input type.
 
 ```python
--8 < -"schema/entrypoint_arguments_1.py"
+-8<- "schema/entrypoint_arguments_1.py"
 ```
 
 This will add a non-null `name` string argument to the `Entrypoint`.
@@ -139,7 +139,7 @@ optional, you'd need to make it nullable (in which case it will be `None` by def
 or add a default value ourselves.
 
 ```python
--8 < -"schema/entrypoint_arguments_2.py"
+-8<- "schema/entrypoint_arguments_2.py"
 ```
 
 You can add a description to the `Entrypoint` by adding a docstring to the method.
@@ -149,7 +149,7 @@ If the method has arguments, you can add descriptions to those arguments by usin
 [reStructuredText docstrings format]: https://peps.python.org/pep-0287/
 
 ```python
--8 < -"schema/entrypoint_docstring.py"
+-8<- "schema/entrypoint_docstring.py"
 ```
 
 /// details | What about other docstring formats?
@@ -170,7 +170,7 @@ To create an `Entrypoint` for querying a single Model instance by its primary ke
 simply use the `QueryType` class as the reference for the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_query_type_reference.py"
+-8<- "schema/entrypoint_query_type_reference.py"
 ```
 
 This would create the following field in the `Query` `RootType`:
@@ -185,7 +185,7 @@ To crete an Entrypoint for listing all instances of the Model,
 add the `many` argument to the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_query_type_reference_many.py"
+-8<- "schema/entrypoint_query_type_reference_many.py"
 ```
 
 This would create the following field in the `Query` `RootType`:
@@ -218,7 +218,7 @@ To create an `Entrypoint` for mutating a single Model instance (a create mutatio
 simply use the `MutationType` class as the reference for the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_mutation_type_reference.py"
+-8<- "schema/entrypoint_mutation_type_reference.py"
 ```
 
 This would create the following field in the `Mutation` `RootType`:
@@ -233,7 +233,7 @@ To create an Entrypoint for mutating multiple Model instances in bulk,
 add the `many` argument to the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_mutation_type_reference_many.py"
+-8<- "schema/entrypoint_mutation_type_reference_many.py"
 ```
 
 This would create the following field in the `Mutation` `RootType`:
@@ -254,7 +254,7 @@ which determine nullability from the function's signature). However, you can
 make an `Entrypoint` nullable explicitly by using the `nullable` argument.
 
 ```python hl_lines="10"
--8 < -"schema/entrypoint_nullable.py"
+-8<- "schema/entrypoint_nullable.py"
 ```
 
 ### Limit
@@ -265,7 +265,7 @@ a list of items (i.e. `many=True`) to limit the number of objects that are fetch
 By default, this is set by the [`LIST_ENTRYPOINT_LIMIT`](settings.md#list_entrypoint_limit) setting.
 
 ```python
--8 < -"schema/entrypoint_limit.py"
+-8<- "schema/entrypoint_limit.py"
 ```
 
 ### Permissions
@@ -273,7 +273,7 @@ By default, this is set by the [`LIST_ENTRYPOINT_LIMIT`](settings.md#list_entryp
 To add permission checks to your Entrypoint, use the `@<entrypoint_name>.permissions` decorator.
 
 ```python
--8 < -"schema/entrypoint_permissions.py"
+-8<- "schema/entrypoint_permissions.py"
 ```
 
 Note that permissions for `Entrypoints` based on `QueryTypes` or `MutationTypes`
@@ -287,7 +287,7 @@ a method using the `@<entrypoint_name>.resolve` decorator. This
 can be used, e.g., to add special-case `Entrypoints` for `QueryTypes`.
 
 ```python
--8 < -"schema/entrypoint_resolve.py"
+-8<- "schema/entrypoint_resolve.py"
 ```
 
 /// details | About method signature
@@ -334,7 +334,7 @@ If you want to change the name of the `ObjectType` field separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"schema/entrypoint_schema_name.py"
+-8<- "schema/entrypoint_schema_name.py"
 ```
 
 This can be useful when the desired name of the `ObjectType` field is a Python keyword
@@ -350,13 +350,13 @@ you can provide a description in one of two ways:
 1) By setting the `description` argument.
 
 ```python hl_lines="10"
--8 < -"schema/entrypoint_description.py"
+-8<- "schema/entrypoint_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python hl_lines="11"
--8 < -"schema/entrypoint_variable_docstring.py"
+-8<- "schema/entrypoint_variable_docstring.py"
 ```
 
 When using [function references](#function-references), instead of a class attribute docstring,
@@ -368,7 +368,7 @@ A `deprecation_reason` can be provided to mark the `Entrypoint` as deprecated.
 This is for documentation purposes only and does not affect the use of the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_deprecation_reason.py"
+-8<- "schema/entrypoint_deprecation_reason.py"
 ```
 
 ### Complexity
@@ -388,7 +388,7 @@ Responses from `Entrypoints` connected to the `Query` `RootType` can be cached b
 the `cache_time` argument to the `Entrypoint` constructor.
 
 ```python
--8 < -"schema/entrypoint_cache.py"
+-8<- "schema/entrypoint_cache.py"
 ```
 
 This will cache the response for the specified number of seconds in the cache specified
@@ -397,7 +397,7 @@ by the [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
 You can also cache the response on per-user basis by using the `cache_per_user` argument.
 
 ```python
--8 < -"schema/entrypoint_cache_per_use.py"
+-8<- "schema/entrypoint_cache_per_use.py"
 ```
 
 Note that caching requires the `undine.hooks.RequestCacheHook`
@@ -423,7 +423,7 @@ For example, if a `Field` defines a stricter caching rule than an `Entrypoint`,
 the `Field's` caching rules will be used instead.
 
 ```python
--8 < -"schema/entrypoint_cache_field.py"
+-8<- "schema/entrypoint_cache_field.py"
 ```
 
 If queried like this:
@@ -445,7 +445,7 @@ If a `Field's` reference defines a caching rule, but the `Field` itself does not
 that reference's rule will be used. Note that this only applies for `Fields`, not for `Entrypoints`!
 
 ```python
--8 < -"schema/entrypoint_cache_query_type.py"
+-8<- "schema/entrypoint_cache_query_type.py"
 ```
 
 If queried like this:
@@ -470,7 +470,7 @@ like accepted language, you can use the [`REQUEST_CACHE_EXTRA_CONTEXT`](settings
 setting to add that extra data to the cache key.
 
 ```python
--8 < -"schema/entrypoint_cache_extra_context.py"
+-8<- "schema/entrypoint_cache_extra_context.py"
 ```
 
 You can also use the [`REQUEST_CACHE_READ_PREDICATE`](settings.md#request_cache_read_predicate)
@@ -478,7 +478,7 @@ and [`REQUEST_CACHE_WRITE_PREDICATE`](settings.md#request_cache_write_predicate)
 to control whether the cache should be read from or written to based on a given request.
 
 ```python
--8 < -"schema/entrypoint_cache_should_read_write.py"
+-8<- "schema/entrypoint_cache_should_read_write.py"
 ```
 
 In addition to server-side caching, `Entrypoint` caching also sends the appropriate
@@ -497,7 +497,7 @@ See [`Field` errors as data](queries.md#errors-as-data) section for more details
 [error-spec]: https://spec.graphql.org/September2025/#sec-Handling-Execution-Errors
 
 ```python
--8 < -"schema/entrypoint_errors_as_data.py"
+-8<- "schema/entrypoint_errors_as_data.py"
 ```
 
 ### Directives
@@ -506,13 +506,13 @@ You can add directives to the `Entrypoint` by providing them using the `directiv
 The directive must be usable in the `FIELD_DEFINITION` location.
 
 ```python
--8 < -"schema/entrypoint_directives.py"
+-8<- "schema/entrypoint_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"schema/entrypoint_directives_matmul.py"
+-8<- "schema/entrypoint_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -524,7 +524,7 @@ argument with a dictionary containing them. These can then be used however you w
 extend the functionality of the `Entrypoint`.
 
 ```python
--8 < -"schema/entrypoint_extensions.py"
+-8<- "schema/entrypoint_extensions.py"
 ```
 
 `Entrypoint` extensions are made available in the GraphQL `ObjectType` field extensions

@@ -43,7 +43,7 @@ Undine comes with an example schema that you can try out before
 creating your own. To access it, add the following to your project's `urls.py` file:
 
 ```python
--8 < -"tutorial/urls.py"
+-8<- "tutorial/urls.py"
 ```
 
 Next, configure Undine to enable [GraphiQL](integrations.md#graphiql),
@@ -86,7 +86,7 @@ Next, let's replace the example schema with your own. Create a file called
 `schema.py` in your `service` app directory and add the following to it:
 
 ```python
--8 < -"tutorial/create_schema.py"
+-8<- "tutorial/create_schema.py"
 ```
 
 This creates the same schema as Undine's example schema. To make it your own,
@@ -129,7 +129,7 @@ Now that you have your own schema, let's start exposing Django Models through it
 In your `models.py` file, add the following Model:
 
 ```python
--8 < -"tutorial/models_1.py"
+-8<- "tutorial/models_1.py"
 ```
 
 Create and run migrations for this Model.
@@ -139,7 +139,7 @@ one for fetching a single `Task`, and another for fetching all `Tasks`. Replace 
 current `schema.py` file with the following:
 
 ```python
--8 < -"tutorial/adding_query_type.py"
+-8<- "tutorial/adding_query_type.py"
 ```
 
 A [`QueryType`](queries.md#querytypes) is a class that represents a GraphQL `ObjectType` for
@@ -185,7 +185,7 @@ query {
 Next, let's add a couple more Models to your project.
 
 ```python hl_lines="4 5 13 16 17 18 19 20"
--8 < -"tutorial/models_2.py"
+-8<- "tutorial/models_2.py"
 ```
 
 Create and run migrations for these Models, then create some data for them:
@@ -212,7 +212,7 @@ Then, add these Models to your schema by creating a `QueryType` for each of them
 Your can also link the `QueryTypes` to each other by adding `Fields` for the Model related fields.
 
 ```python hl_lines="6 7 8 9 17 18 21 22 23 24 25"
--8 < -"tutorial/adding_more_query_types.py"
+-8<- "tutorial/adding_more_query_types.py"
 ```
 
 Reboot the Django server once more and make the following request:
@@ -255,7 +255,7 @@ Next, let's add a mutation to your schema for creating `Tasks`.
 Add the following to the `schema.py` file:
 
 ```python hl_lines="1 18 19 20 21 22 23 24 25 26 27"
--8 < -"tutorial/adding_mutation_types.py"
+-8<- "tutorial/adding_mutation_types.py"
 ```
 
 Undine will know that the [`MutationType`](mutations.md#mutationtypes) `TaskCreateMutation`
@@ -267,7 +267,7 @@ Create, update and delete mutations are executed differently
 You could also use the `kind` argument in the `MutationType` class definition to be more explicit.
 
 ```python hl_lines="6"
--8 < -"tutorial/mutation_type_explicit_kind.py"
+-8<- "tutorial/mutation_type_explicit_kind.py"
 ```
 
 The `TaskCreateMutation` `MutationType` will use the `TaskType` `QueryType` as the output type
@@ -296,7 +296,7 @@ You can also mutate related objects by using other `MutationTypes` as `Inputs`.
 Modify the `TaskCreateMutation` by adding a `Project` Input.
 
 ```python hl_lines="24 25 26 32"
--8 < -"tutorial/adding_related_mutation_type.py"
+-8<- "tutorial/adding_related_mutation_type.py"
 ```
 
 Here `TaskProjectInput` is a special _"related"_ `kind` of `MutationType`.
@@ -366,7 +366,7 @@ Undine also supports bulk mutations by using the `many` argument on the `Entrypo
 Let's add a bulk mutation for creating `Tasks` using the `TaskCreateMutation`.
 
 ```python hl_lines="37"
--8 < -"tutorial/adding_bulk_mutation.py"
+-8<- "tutorial/adding_bulk_mutation.py"
 ```
 
 Bulk mutations work just like regular mutations.
@@ -414,7 +414,7 @@ In Undine, you can add permission checks to `QueryTypes` or `MutationTypes`
 as well as individual `Fields` or `Inputs`. First, let's add a permission check for querying `Tasks`.
 
 ```python hl_lines="8 9 10 11 12"
--8 < -"tutorial/query_type_permissions.py"
+-8<- "tutorial/query_type_permissions.py"
 ```
 
 Now all users need to be logged in to access `Tasks` through `TaskType`.
@@ -441,7 +441,7 @@ The permission check will be called for each `Task` instance returned by the `Qu
 For `Field` permissions, decorate a method with `@<field_name>.permissions`.
 
 ```python hl_lines="10 11 12 13 14"
--8 < -"tutorial/query_type_field_permissions.py"
+-8<- "tutorial/query_type_field_permissions.py"
 ```
 
 Now users need to be logged in to be able to query `Task` names.
@@ -449,7 +449,7 @@ Now users need to be logged in to be able to query `Task` names.
 Mutation permissions using `MutationTypes` work similarly to query permissions using `QueryTypes`.
 
 ```python hl_lines="10 11 12 13 14"
--8 < -"tutorial/mutation_type_permissions.py"
+-8<- "tutorial/mutation_type_permissions.py"
 ```
 
 Now users need to be staff members to be able to create new `Tasks` using `TaskCreateMutation`.
@@ -457,7 +457,7 @@ Now users need to be staff members to be able to create new `Tasks` using `TaskC
 You can also restrict the usage of specific `Inputs` by decorating a method with `@<input_name>.permissions`.
 
 ```python hl_lines="10 11 12 13 14"
--8 < -"tutorial/mutation_type_input_permissions.py"
+-8<- "tutorial/mutation_type_input_permissions.py"
 ```
 
 Now only superusers can add `Tasks` that are already done,
@@ -474,7 +474,7 @@ and individual `Input` level.
 To add validation for a `MutationType`, add the `__validate__` classmethod to it.
 
 ```python hl_lines="10 11 12 13 14"
--8 < -"tutorial/mutation_type_validation.py"
+-8<- "tutorial/mutation_type_validation.py"
 ```
 
 Now users cannot create `Tasks` that are already marked as done.
@@ -499,7 +499,7 @@ mutation {
 To add validation for an `Input`, decorate a method with `@<input_name>.validate`.
 
 ```python hl_lines="10 11 12 13 14"
--8 < -"tutorial/mutation_type_input_validate.py"
+-8<- "tutorial/mutation_type_input_validate.py"
 ```
 
 Now users cannot create `Tasks` with names that are less than 3 characters long.
@@ -513,7 +513,7 @@ defined in a [`FilterSet`](filtering.md#filterset). Create a `FilterSet` for the
 and add it to your `TaskType`.
 
 ```python hl_lines="1 6 7 8 11"
--8 < -"tutorial/adding_filters.py"
+-8<- "tutorial/adding_filters.py"
 ```
 
 Now all `Entrypoints` created from this `QueryType` will have a `filter` argument that contains
@@ -584,7 +584,7 @@ defined in an [`OrderSet`](ordering.md#orderset). Create an `OrderSet` for the `
 and add it to your `TaskType`.
 
 ```python hl_lines="1 6 7 8 11"
--8 < -"tutorial/adding_ordering.py"
+-8<- "tutorial/adding_ordering.py"
 ```
 
 Now all `Entrypoints` created from this `QueryType` will have an `orderBy` argument that contains

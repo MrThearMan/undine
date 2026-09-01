@@ -20,13 +20,13 @@ You must also add at least one `Order` to the class body of the `OrderSet`.
 Then, the `OrderSet` can be added to a `QueryType` using the `orderset` argument.
 
 ```python
--8 < -"ordering/orderset_basic.py"
+-8<- "ordering/orderset_basic.py"
 ```
 
 You can also add the `OrderSet` to the `QueryType` using decorator syntax.
 
 ```python
--8 < -"ordering/orderset_decorator.py"
+-8<- "ordering/orderset_decorator.py"
 ```
 
 ### Auto-generation
@@ -35,7 +35,7 @@ An `OrderSet` can automatically introspect its Django Model and convert the Mode
 to `Orders` on the `OrderSet`.  For example, if the `Task` Model has the following fields:
 
 ```python
--8 < -"ordering/models_1.py"
+-8<- "ordering/models_1.py"
 ```
 
 An auto-generated `OrderSet` has all of the `Task` Model's fields translated into GraphQL `Enum` values,
@@ -59,13 +59,13 @@ to enable it globally, or set the `auto` argument to `True` in the `OrderSet` cl
 With this, you can leave the `OrderSet` class body empty.
 
 ```python
--8 < -"ordering/orderset_auto.py"
+-8<- "ordering/orderset_auto.py"
 ```
 
 Your can exclude some model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
--8 < -"ordering/orderset_exclude.py"
+-8<- "ordering/orderset_exclude.py"
 ```
 
 ### Schema name
@@ -75,7 +75,7 @@ is the name of the `OrderSet` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
 ```python
--8 < -"ordering/orderset_schema_name.py"
+-8<- "ordering/orderset_schema_name.py"
 ```
 
 ### Description
@@ -83,7 +83,7 @@ you can do so by setting the `schema_name` argument:
 You can provide a description for the `OrderSet` by adding a docstring to the class.
 
 ```python
--8 < -"ordering/orderset_description.py"
+-8<- "ordering/orderset_description.py"
 ```
 
 ### Directives
@@ -92,13 +92,13 @@ You can add directives to an `OrderSet` by providing them using the `directives`
 The directive must be usable in the `ENUM` location.
 
 ```python
--8 < -"ordering/orderset_directives.py"
+-8<- "ordering/orderset_directives.py"
 ```
 
 You can also add directives using decorator syntax.
 
 ```python
--8 < -"ordering/orderset_directives_decorator.py"
+-8<- "ordering/orderset_directives_decorator.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -110,7 +110,7 @@ You can provide custom extensions for the `OrderSet` by providing a
 however you wish to extend the functionality of the `OrderSet`.
 
 ```python
--8 < -"ordering/orderset_extensions.py"
+-8<- "ordering/orderset_extensions.py"
 ```
 
 `OrderSet` extensions are made available in the GraphQL `Enum` extensions
@@ -136,26 +136,26 @@ as its attribute name in the `OrderSet` class body can be used to identify
 the corresponding model field.
 
 ```python
--8 < -"ordering/order.py"
+-8<- "ordering/order.py"
 ```
 
 To be a bit more explicit, you could use a string referencing the Model field:
 
 ```python
--8 < -"ordering/order_string.py"
+-8<- "ordering/order_string.py"
 ```
 
 For better type safety, you can also use the Model field itself:
 
 ```python
--8 < -"ordering/order_field.py"
+-8<- "ordering/order_field.py"
 ```
 
 Being explicit like this is only required if the name of the attribute in the GraphQL schema
 is different from the Model field name.
 
 ```python
--8 < -"ordering/order_alias.py"
+-8<- "ordering/order_alias.py"
 ```
 
 ### Expression references
@@ -163,13 +163,13 @@ is different from the Model field name.
 Django ORM expressions can also be used as `Filter` references.
 
 ```python
--8 < -"ordering/order_expression.py"
+-8<- "ordering/order_expression.py"
 ```
 
 Remember that subqueries are also counted as expressions.
 
 ```python
--8 < -"ordering/order_subquery.py"
+-8<- "ordering/order_subquery.py"
 ```
 
 ### Null placement
@@ -178,7 +178,7 @@ If the Model field or expression used by the `Order` is nullable,
 the `null_placement` argument can be used to specify the position of null values.
 
 ```python
--8 < -"ordering/order_null_placement.py"
+-8<- "ordering/order_null_placement.py"
 ```
 
 By default, null values are placed according to your database default.
@@ -190,7 +190,7 @@ to the queryset when the `Order` is used. For this, you can define a function
 that returns a dictionary of expressions and decorate it with the `aliases` decorator.
 
 ```python
--8 < -"ordering/order_aliases.py"
+-8<- "ordering/order_aliases.py"
 ```
 
 ### Field name
@@ -199,7 +199,7 @@ A `field_name` can be provided to explicitly set the Django Model field name
 that the `Order` corresponds to.
 
 ```python
--8 < -"ordering/order_field_name.py"
+-8<- "ordering/order_field_name.py"
 ```
 
 This can be useful when the Model field corresponding to the `Order`
@@ -215,7 +215,7 @@ If you want to change the base name of the `Enum` value separately,
 you can do so by setting the `schema_name` argument:
 
 ```python hl_lines="13"
--8 < -"ordering/order_schema_name.py"
+-8<- "ordering/order_schema_name.py"
 ```
 
 ### Description
@@ -228,13 +228,13 @@ this can be done in two ways:
 1) By setting the `description` argument.
 
 ```python
--8 < -"ordering/order_description.py"
+-8<- "ordering/order_description.py"
 ```
 
 2) As class attribute docstrings, if [`ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`](settings.md#enable_class_attribute_docstrings) is enabled.
 
 ```python
--8 < -"ordering/order_description_class.py"
+-8<- "ordering/order_description_class.py"
 ```
 
 ### Deprecation reason
@@ -243,7 +243,7 @@ A `deprecation_reason` can be provided to mark the `Order` as deprecated.
 This is for documentation purposes only, and does not affect the use of the `Order`.
 
 ```python hl_lines="13"
--8 < -"ordering/order_deprecation_reason.py"
+-8<- "ordering/order_deprecation_reason.py"
 ```
 
 ### Directives
@@ -251,13 +251,13 @@ This is for documentation purposes only, and does not affect the use of the `Ord
 You can add directives to the `Order` by providing them using the `directives` argument.
 
 ```python
--8 < -"ordering/order_directives.py"
+-8<- "ordering/order_directives.py"
 ```
 
 You can also add them using the `@` operator (which kind of looks like GraphQL syntax):
 
 ```python
--8 < -"ordering/order_directives_matmul.py"
+-8<- "ordering/order_directives_matmul.py"
 ```
 
 See the [Directives](directives.md) section for more details on directives.
@@ -269,7 +269,7 @@ You can provide custom extensions for the `Order` by providing a
 however you wish to extend the functionality of the `Order`.
 
 ```python
--8 < -"ordering/order_extensions.py"
+-8<- "ordering/order_extensions.py"
 ```
 
 `Order` extensions are made available in the GraphQL `Enum` value extensions

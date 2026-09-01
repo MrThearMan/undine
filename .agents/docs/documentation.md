@@ -34,7 +34,7 @@ description: Documentation on queries in Undine.
 Python code examples must be added with snippets:
 
 ```python
--8 < -"page/example.py"
+-8<- "page/example.py"
 ```
 
 - Snippet directory mirrors the page name with underscores: `docs/file-upload.md` → `docs/snippets/file_uploads/`.

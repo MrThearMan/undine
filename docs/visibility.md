@@ -18,7 +18,7 @@ Hide a `Field` from unauthenticated users by decorating a method with the
 `<field_name>.visible` decorator:
 
 ```python hl_lines="10 11 12"
--8 < -"visibility/field_example.py"
+-8<- "visibility/field_example.py"
 ```
 
 Using the following query:
@@ -46,7 +46,7 @@ An unauthenticated request that queries the `name` field sees:
 Hide an entire `QueryType` by overriding the `__is_visible__` classmethod:
 
 ```python hl_lines="10 11 12"
--8 < -"visibility/query_type_example.py"
+-8<- "visibility/query_type_example.py"
 ```
 
 An unauthenticated request that queries the `tasks` entrypoint sees:
@@ -75,7 +75,7 @@ snippet describes what happens when that entity is hidden.
 ### `RootType`
 
 ```python
--8 < -"visibility/root_type_class_hook.py"
+-8<- "visibility/root_type_class_hook.py"
 ```
 When hidden, the root type resolves to `null` in introspection and
 every `Entrypoint` on that root becomes unreachable.
@@ -83,7 +83,7 @@ every `Entrypoint` on that root becomes unreachable.
 ### `Entrypoint`
 
 ```python
--8 < -"visibility/entrypoint_decorator_hook.py"
+-8<- "visibility/entrypoint_decorator_hook.py"
 ```
 
 Hides the entrypoint from its `RootType`. No further cascade.
@@ -91,7 +91,7 @@ Hides the entrypoint from its `RootType`. No further cascade.
 ### `QueryType`
 
 ```python
--8 < -"visibility/query_type_class_hook.py"
+-8<- "visibility/query_type_class_hook.py"
 ```
 
 Hides every `Entrypoint`, `Field`, `InterfaceField`, and `FederationField` that
@@ -104,7 +104,7 @@ other entrypoint references them.
 ### `Field`
 
 ```python
--8 < -"visibility/field_decorator_hook.py"
+-8<- "visibility/field_decorator_hook.py"
 ```
 
 Hides the field from its `QueryType`. No further cascade.
@@ -112,7 +112,7 @@ Hides the field from its `QueryType`. No further cascade.
 ### `MutationType`
 
 ```python
--8 < -"visibility/mutation_type_class_hook.py"
+-8<- "visibility/mutation_type_class_hook.py"
 ```
 
 Hides the `Entrypoint` that references it. Hiding a [related `MutationType`](mutations.md#related-mutations)
@@ -121,7 +121,7 @@ hides the `Input` that references it instead.
 ### `Input`
 
 ```python
--8 < -"visibility/input_decorator_hook.py"
+-8<- "visibility/input_decorator_hook.py"
 ```
 
 Hides the input from its `MutationType`. No further cascade.
@@ -129,7 +129,7 @@ Hides the input from its `MutationType`. No further cascade.
 ### `FilterSet`
 
 ```python
--8 < -"visibility/filter_set_class_hook.py"
+-8<- "visibility/filter_set_class_hook.py"
 ```
 
 Hides all its `Filter` members and removes the `filter` argument from every
@@ -139,7 +139,7 @@ such as `Connection` or `OffsetPagination`.
 ### `Filter`
 
 ```python
--8 < -"visibility/filter_decorator_hook.py"
+-8<- "visibility/filter_decorator_hook.py"
 ```
 
 Hides the filter from its `FilterSet`. No further cascade.
@@ -147,7 +147,7 @@ Hides the filter from its `FilterSet`. No further cascade.
 ### `OrderSet`
 
 ```python
--8 < -"visibility/order_set_class_hook.py"
+-8<- "visibility/order_set_class_hook.py"
 ```
 
 Hides all its `Order` members and removes the `orderBy` argument from every
@@ -157,7 +157,7 @@ such as `Connection` or `OffsetPagination`.
 ### `Order`
 
 ```python
--8 < -"visibility/order_decorator_hook.py"
+-8<- "visibility/order_decorator_hook.py"
 ```
 
 Hides the order from its `OrderSet`. No further cascade.
@@ -165,7 +165,7 @@ Hides the order from its `OrderSet`. No further cascade.
 ### `InterfaceType`
 
 ```python
--8 < -"visibility/interface_type_class_hook.py"
+-8<- "visibility/interface_type_class_hook.py"
 ```
 
 Hides every `Field`, `Entrypoint`, `InterfaceField`, and `FederationField` that
@@ -178,7 +178,7 @@ stay visible.
 ### `InterfaceField`
 
 ```python
--8 < -"visibility/interface_field_decorator_hook.py"
+-8<- "visibility/interface_field_decorator_hook.py"
 ```
 
 Hides the field from its `InterfaceType`. On every implementing `QueryType`,
@@ -187,7 +187,7 @@ the corresponding inherited `Field` is also hidden.
 ### `UnionType`
 
 ```python
--8 < -"visibility/union_type_class_hook.py"
+-8<- "visibility/union_type_class_hook.py"
 ```
 
 Hides every `Field`, `Entrypoint`, `InterfaceField`, and `FederationField` that
@@ -200,7 +200,7 @@ field or entrypoint that returns it.
 ### `Directive`
 
 ```python
--8 < -"visibility/directive_class_hook.py"
+-8<- "visibility/directive_class_hook.py"
 ```
 
 Removes the directive from `__schema.directives` and from every **type system location**
@@ -210,7 +210,7 @@ where it was applied. Queries that apply it in an **executable location** fail v
 ### `DirectiveArgument`
 
 ```python
--8 < -"visibility/directive_argument_decorator_hook.py"
+-8<- "visibility/directive_argument_decorator_hook.py"
 ```
 
 Hides the argument from its `Directive`. No further cascade.
@@ -218,7 +218,7 @@ Hides the argument from its `Directive`. No further cascade.
 ### `CalculationArgument`
 
 ```python
--8 < -"visibility/calculation_argument_decorator_hook.py"
+-8<- "visibility/calculation_argument_decorator_hook.py"
 ```
 
 Hides the argument from the `Field` whose ref is a `Calculation` using this
@@ -227,7 +227,7 @@ argument. No further cascade.
 ### `FederationType`
 
 ```python
--8 < -"visibility/federation_type_class_hook.py"
+-8<- "visibility/federation_type_class_hook.py"
 ```
 
 Hides every `Entrypoint`, `Field`, `InterfaceField`, and `FederationField`
@@ -236,7 +236,7 @@ that returns it, and its own `FederationField` members hide with it.
 ### `FederationField`
 
 ```python
--8 < -"visibility/federation_field_decorator_hook.py"
+-8<- "visibility/federation_field_decorator_hook.py"
 ```
 
 Hides the field from its `FederationType`. No further cascade.
