@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import django
 import pytest
 
 from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
+from tests.helpers import skip_if_union_queryset_values_broken
 from undine import Entrypoint, Field, Filter, FilterSet, Order, OrderSet, QueryType, RootType, UnionType, create_schema
 from undine.relay import Connection
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
@@ -100,6 +101,7 @@ def test_optimizer__union__only_one(graphql, undine_settings) -> None:
     response.assert_query_count(2)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__filtering(graphql, undine_settings) -> None:
     class ProjectFilterSet(FilterSet[Project], auto=False):
@@ -159,6 +161,7 @@ def test_optimizer__union__filtering(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__ordering(graphql, undine_settings) -> None:
     class ProjectOrderSet(OrderSet[Project], auto=False):
@@ -220,6 +223,7 @@ def test_optimizer__union__ordering(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__typename(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
@@ -269,6 +273,7 @@ def test_optimizer__union__typename(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__connection(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
@@ -335,10 +340,7 @@ def test_optimizer__union__connection(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__connection__total_count(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):

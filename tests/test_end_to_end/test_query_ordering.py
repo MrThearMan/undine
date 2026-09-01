@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import datetime
 
-import django
 import pytest
 from django.db.models.functions import Reverse
 from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
+from tests.helpers import skip_if_union_queryset_values_broken
 from undine import Entrypoint, Field, InterfaceType, Order, OrderSet, QueryType, RootType, UnionType, create_schema
 from undine.interface import InterfaceField
 from undine.relay import Connection
@@ -264,10 +264,7 @@ def test_end_to_end__ordering__max_orders(graphql, undine_settings) -> None:
     ]
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__union_type(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
@@ -344,10 +341,7 @@ def test_end_to_end__ordering__union_type(graphql, undine_settings) -> None:
     }
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__union_type__with_query_type_ordering(graphql, undine_settings) -> None:
     class TaskOrderSet(OrderSet[Task], auto=False):
@@ -444,10 +438,7 @@ def test_end_to_end__ordering__union_type__with_query_type_ordering(graphql, und
     }
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__union_type__connection(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
@@ -538,10 +529,7 @@ def test_end_to_end__ordering__union_type__connection(graphql, undine_settings) 
     ]
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(graphql, undine_settings) -> None:
     class TaskOrderSet(OrderSet[Task], auto=False):
@@ -652,10 +640,7 @@ def test_end_to_end__ordering__union_type__connection__with_query_type_ordering(
     ]
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__interface_type(graphql, undine_settings) -> None:
     class NamedOrderSet(OrderSet[Task, Project], auto=False):
@@ -719,10 +704,7 @@ def test_end_to_end__ordering__interface_type(graphql, undine_settings) -> None:
     }
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__interface_type__with_query_type_ordering(graphql, undine_settings) -> None:
     class TaskOrderSet(OrderSet[Task], auto=False):
@@ -798,10 +780,7 @@ def test_end_to_end__ordering__interface_type__with_query_type_ordering(graphql,
     }
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__interface_type__connection__with_query_type_ordering(graphql, undine_settings) -> None:
     class TaskOrderSet(OrderSet[Task], auto=False):
@@ -879,10 +858,7 @@ def test_end_to_end__ordering__interface_type__connection__with_query_type_order
     ]
 
 
-@pytest.mark.skipif(
-    django.VERSION < (5, 2),
-    reason="Union querysets with `.values()` don't work correctly before Django 5.2",
-)
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__ordering__interface_type__connection(graphql, undine_settings) -> None:
     class NamedOrderSet(OrderSet[Task, Project], auto=False):

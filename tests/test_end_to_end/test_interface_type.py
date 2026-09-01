@@ -11,6 +11,7 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Report, Task
 from tests.factories import ProjectFactory, ReportFactory, TaskFactory
+from tests.helpers import skip_if_union_queryset_values_broken
 from undine import (
     Entrypoint,
     Field,
@@ -138,6 +139,7 @@ def test_interface_type__inline_fragment_on_implementation_not_otherwise_reachab
     assert response.data == {"named": [{"__typename": "TaskType", "done": True}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__implementations_across_models(graphql, undine_settings) -> None:
     """Rows from every implementation of the interface are returned, ordered by primary key."""
@@ -159,6 +161,7 @@ def test_interface_type__implementations_across_models(graphql, undine_settings)
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__implementations_across_models__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -181,6 +184,7 @@ async def test_interface_type__implementations_across_models__async(graphql_asyn
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__inline_fragments(graphql, undine_settings) -> None:
     """Fields outside the interface are selected with an inline fragment on the implementation."""
@@ -232,6 +236,7 @@ def test_interface_type__fields_selected_from_one_implementation_only(graphql, u
     assert response.data == {"named": [{"name": "Task 1"}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__uuid_primary_key(graphql, undine_settings) -> None:
     """An implementation with a UUID primary key is fetched together with integer-keyed ones."""
@@ -262,6 +267,7 @@ def test_interface_type__uuid_primary_key(graphql, undine_settings) -> None:
     ]
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__limit(graphql, undine_settings) -> None:
     """The entrypoint limit caps the number of rows returned across all implementations."""
@@ -282,6 +288,7 @@ def test_interface_type__limit(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__limit__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -329,6 +336,7 @@ def create_offset_paginated_interface_schema(*, limit: int | None = None):
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__offset_pagination(graphql, undine_settings) -> None:
     """'offset' and 'limit' page the combined result, not the rows of each implementation separately."""
@@ -344,6 +352,7 @@ def test_interface_type__offset_pagination(graphql, undine_settings) -> None:
     assert response.data == {"named": [{"__typename": "TaskType", "name": "Task 1"}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__offset_pagination__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -360,6 +369,7 @@ async def test_interface_type__offset_pagination__async(graphql_async, undine_se
     assert response.data == {"named": [{"__typename": "TaskType", "name": "Task 1"}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__offset_pagination__entrypoint_limit_not_applied(graphql, undine_settings) -> None:
     """An offset paginated entrypoint pages with its own arguments, so its limit doesn't cut the page short."""
@@ -383,6 +393,7 @@ def test_interface_type__offset_pagination__entrypoint_limit_not_applied(graphql
 # Filtering
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__filter_per_implementation(graphql, undine_settings) -> None:
     """Each implementation can be filtered separately with its own filterset."""
@@ -460,6 +471,7 @@ def create_filterset_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__filter_across_implementations(graphql, undine_settings) -> None:
     """A filterset on the interface filters every implementation."""
@@ -489,6 +501,7 @@ def test_interface_type__filter_across_implementations(graphql, undine_settings)
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__filter_not_used(graphql, undine_settings) -> None:
     """A filterset on the interface that is not used leaves the implementations untouched."""
@@ -508,6 +521,7 @@ def test_interface_type__filter_not_used(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__filter_with_aliases_and_distinct(graphql, undine_settings) -> None:
     """A filter that requires aliases and 'distinct' applies both to every implementation."""
@@ -578,6 +592,7 @@ async def test_interface_type__filter_matches_nothing__async(graphql_async, undi
     assert response.data == {"named": []}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__filter_across_implementations__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -634,6 +649,7 @@ def create_orderset_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__order_across_implementations(graphql, undine_settings) -> None:
     """An orderset on the interface orders the rows of every implementation together."""
@@ -666,6 +682,7 @@ def test_interface_type__order_across_implementations(graphql, undine_settings) 
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__order_not_used(graphql, undine_settings) -> None:
     """An orderset on the interface that is not used leaves the default ordering in place."""
@@ -685,6 +702,7 @@ def test_interface_type__order_not_used(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__order_across_implementations__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -736,6 +754,7 @@ def create_filterset_orderset_interface_schema(*, limit: int | None = None):
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__filter_order_and_limit_combined(graphql, undine_settings) -> None:
     """
@@ -764,6 +783,7 @@ def test_interface_type__filter_order_and_limit_combined(graphql, undine_setting
     assert response.data == {"named": [{"__typename": "TaskType", "name": "BBB Task 1"}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__filter_order_and_limit_combined__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -789,6 +809,7 @@ async def test_interface_type__filter_order_and_limit_combined__async(graphql_as
     assert response.data == {"named": [{"__typename": "TaskType", "name": "BBB Task 1"}]}
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__order_per_implementation(graphql, undine_settings) -> None:
     """
@@ -839,6 +860,7 @@ def test_interface_type__order_per_implementation(graphql, undine_settings) -> N
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__limit_with_per_implementation_order(graphql, undine_settings) -> None:
     """
@@ -893,6 +915,7 @@ def test_interface_type__limit_with_per_implementation_order(graphql, undine_set
 # Permissions
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__entrypoint_permissions(graphql, undine_settings) -> None:
     """The entrypoint permission check runs for every instance from every implementation."""

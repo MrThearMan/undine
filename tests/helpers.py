@@ -15,6 +15,8 @@ from io import BytesIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
 from unittest.mock import patch
 
+import django
+import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sessions.backends.base import SessionBase
@@ -71,6 +73,7 @@ __all__ = [
     "mock_gql_info",
     "parametrize_helper",
     "saving_in_separate_thread",
+    "skip_if_union_queryset_values_broken",
     "walk_connection_forward_and_backward",
 ]
 
@@ -243,6 +246,11 @@ def walk_connection_forward_and_backward(
         cursor = page_info["startCursor"]
 
     assert backward == full_edges
+
+
+def skip_if_union_queryset_values_broken(func: Callable[..., Any]) -> Any:
+    reason = "Union querysets with `.values()` don't work correctly before Django 5.2"
+    return pytest.mark.skipif(django.VERSION < (5, 2), reason=reason)(func)
 
 
 def exact(msg: str, *, from_start: bool = False) -> str:

@@ -5,6 +5,7 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Person, Project, Task, TaskTypeChoices
 from tests.factories import PersonFactory, ProjectFactory, TaskFactory
+from tests.helpers import skip_if_union_queryset_values_broken
 from undine import Entrypoint, Field, InterfaceField, InterfaceType, QueryType, RootType, create_schema
 
 
@@ -252,6 +253,7 @@ def test_optimizer__fragment_spread__same_relation_in_multiple_fragments(graphql
     response.assert_query_count(2)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_ast_walker__fragment_spread__flatten_abstract_type_selections(graphql, undine_settings) -> None:
     class Named(InterfaceType):

@@ -11,7 +11,7 @@ from graphql import GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Report, Task
 from tests.factories import ProjectFactory, ReportFactory, TaskFactory
-from tests.helpers import keyset_cursor, walk_connection_forward_and_backward
+from tests.helpers import keyset_cursor, skip_if_union_queryset_values_broken, walk_connection_forward_and_backward
 from undine import (
     Entrypoint,
     Field,
@@ -139,6 +139,7 @@ def test_interface_connection__implementations_not_otherwise_reachable(graphql, 
     assert "ProjectType" in undine_settings.SCHEMA.type_map
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__inline_fragment_on_implementation_not_otherwise_reachable(
     graphql, undine_settings
@@ -168,6 +169,7 @@ def test_interface_connection__inline_fragment_on_implementation_not_otherwise_r
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__implementations_across_models(graphql, undine_settings) -> None:
     undine_settings.SCHEMA = create_schema_with_implementations()
@@ -204,6 +206,7 @@ def test_interface_connection__no_rows(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__implementation_with_no_rows(graphql, undine_settings) -> None:
     """An implementation that contributes no rows does not add edges, but the others still resolve."""
@@ -233,6 +236,7 @@ def test_interface_connection__implementation_with_no_rows(graphql, undine_setti
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__first(graphql, undine_settings) -> None:
     """A page taken with 'first' spans all implementations, and 'totalCount' counts rows in all of them."""
@@ -268,6 +272,7 @@ def test_interface_connection__first(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__last(graphql, undine_settings) -> None:
     """A page taken with 'last' returns the end of the connection."""
@@ -299,6 +304,7 @@ def test_interface_connection__last(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__first__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -335,6 +341,7 @@ async def test_interface_connection__first__async(graphql_async, undine_settings
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__first_and_after(graphql, undine_settings) -> None:
     """Paging with 'first' and 'after' across implementations does not crash, and walks the whole connection."""
@@ -371,6 +378,7 @@ def test_interface_connection__first_and_after(graphql, undine_settings) -> None
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__first_and_after__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -408,6 +416,7 @@ async def test_interface_connection__first_and_after__async(graphql_async, undin
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__cursor_disambiguates_implementations_with_the_same_primary_key(
     graphql, undine_settings
@@ -437,6 +446,7 @@ def test_interface_connection__cursor_disambiguates_implementations_with_the_sam
     assert response.data["named"]["edges"][0]["cursor"] != first_cursor
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__inline_fragments(graphql, undine_settings) -> None:
     """Fields outside the interface are selected with an inline fragment on the implementation."""
@@ -472,6 +482,7 @@ def test_interface_connection__inline_fragments(graphql, undine_settings) -> Non
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__uuid_primary_key(graphql, undine_settings) -> None:
     """An implementation with a UUID primary key is paginated together with integer-keyed ones."""
@@ -506,6 +517,7 @@ def test_interface_connection__uuid_primary_key(graphql, undine_settings) -> Non
 # Filtering
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__filter_per_implementation(graphql, undine_settings) -> None:
     """Each implementation can be filtered separately with its own filterset."""
@@ -558,6 +570,7 @@ def test_interface_connection__filter_per_implementation(graphql, undine_setting
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__total_count_one_implementation_all_filtered(graphql, undine_settings) -> None:
     """'totalCount' still reflects the other implementation when a per-implementation filter excludes all of one."""
@@ -635,6 +648,7 @@ def create_filterset_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__filter_across_implementations(graphql, undine_settings) -> None:
     """A filterset on the interface filters every implementation."""
@@ -665,6 +679,7 @@ def test_interface_connection__filter_across_implementations(graphql, undine_set
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__filter_across_implementations__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -696,6 +711,7 @@ async def test_interface_connection__filter_across_implementations__async(graphq
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__filter_not_used(graphql, undine_settings) -> None:
     """A filterset on the interface that is not used leaves the implementations untouched."""
@@ -717,6 +733,7 @@ def test_interface_connection__filter_not_used(graphql, undine_settings) -> None
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__filter_with_aliases_and_distinct(graphql, undine_settings) -> None:
     """A filter that requires aliases and 'distinct' applies both to every implementation."""
@@ -816,6 +833,7 @@ def create_orderset_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__order_across_implementations(graphql, undine_settings) -> None:
     """An orderset on the interface orders the rows of every implementation together."""
@@ -849,6 +867,7 @@ def test_interface_connection__order_across_implementations(graphql, undine_sett
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__order_not_used(graphql, undine_settings) -> None:
     """An orderset on the interface that is not used leaves the default ordering in place."""
@@ -889,6 +908,7 @@ def create_expression_orderset_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__order_across_implementations__expression(graphql, undine_settings) -> None:
     """
@@ -922,6 +942,7 @@ def test_interface_connection__order_across_implementations__expression(graphql,
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__order_across_implementations__expression__async(
     graphql_async,
@@ -955,6 +976,7 @@ async def test_interface_connection__order_across_implementations__expression__a
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__order_across_implementations__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -985,6 +1007,7 @@ async def test_interface_connection__order_across_implementations__async(graphql
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__order_per_implementation(graphql, undine_settings) -> None:
     """
@@ -1056,6 +1079,7 @@ def create_task_points_order_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__last_and_before_with_per_implementation_order(graphql, undine_settings) -> None:
     """
@@ -1094,6 +1118,7 @@ def test_interface_connection__last_and_before_with_per_implementation_order(gra
     assert names == ["P1", "T1"]
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__insert_before_cursor_with_per_implementation_order(graphql, undine_settings) -> None:
     """
@@ -1133,6 +1158,7 @@ def test_interface_connection__insert_before_cursor_with_per_implementation_orde
     assert names == ["D", "E"]
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__delete_cursor_row_itself(graphql, undine_settings) -> None:
     """Deleting the exact row a cursor points to must not break decoding or paging past it."""
@@ -1190,6 +1216,7 @@ def create_shared_and_member_order_interface_schema():
     return create_schema(query=Query)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__full_walk_forward_and_backward(graphql, undine_settings) -> None:
     """
@@ -1246,6 +1273,7 @@ def test_interface_connection__full_walk_forward_and_backward(graphql, undine_se
 # Permissions
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__entrypoint_permissions(graphql, undine_settings) -> None:
     """The entrypoint permission check runs for every instance in the connection, from every implementation."""
@@ -1287,6 +1315,7 @@ def test_interface_connection__entrypoint_permissions(graphql, undine_settings) 
     assert seen == [project, task]
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__entrypoint_permissions__denied(graphql, undine_settings) -> None:
     """A denied entrypoint permission check surfaces as a GraphQL error."""
@@ -1328,6 +1357,7 @@ def test_interface_connection__entrypoint_permissions__denied(graphql, undine_se
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_connection__query_type_permissions__denied(graphql, undine_settings) -> None:
     """A denied query type permission check for a single implementation surfaces as a GraphQL error."""
@@ -1369,6 +1399,7 @@ def test_interface_connection__query_type_permissions__denied(graphql, undine_se
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__entrypoint_permissions__sync_func__async(graphql_async, undine_settings) -> None:
     """A sync entrypoint permission check also runs on the async path."""
@@ -1412,6 +1443,7 @@ async def test_interface_connection__entrypoint_permissions__sync_func__async(gr
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__entrypoint_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async entrypoint permission check is awaited on the async path."""
@@ -1455,6 +1487,7 @@ async def test_interface_connection__entrypoint_permissions__async_func__async(g
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__query_type_permissions__sync_func__async(graphql_async, undine_settings) -> None:
     """A sync query type permission check also runs on the async path."""
@@ -1498,6 +1531,7 @@ async def test_interface_connection__query_type_permissions__sync_func__async(gr
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_connection__query_type_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async query type permission check is awaited on the async path."""
