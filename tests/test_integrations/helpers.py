@@ -24,6 +24,9 @@ from asgiref.sync import sync_to_async
 from asgiref.testing import ApplicationCommunicator
 from asgiref.typing import ASGIVersions, HTTPRequestEvent, HTTPScope
 from channels.auth import AuthMiddlewareStack
+from ddtrace.trace import Span as DatadogSpan
+from ddtrace.trace import TraceFilter as DatadogTraceFilter
+from ddtrace.trace import tracer as datadog_tracer
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.sessions.backends.db import SessionStore
 from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError, GraphQLSchema
@@ -525,3 +528,50 @@ async def run_telemetry_subscription(document: str) -> list[ExecutionResult]:
     stream = await execute_graphql_with_subscription(params=params, request=MockRequest(method="WEBSOCKET"))
     assert isinstance(stream, AsyncIterator), f"{stream=}"
     return [result async for result in stream]
+
+
+# Datadog
+
+
+class _DatadogSpanCollector(DatadogTraceFilter):
+    """Collects finished traces instead of forwarding them to the (non-existent) agent."""
+
+    def __init__(self) -> None:
+        self.traces: list[list[DatadogSpan]] = []
+
+    def process_trace(self, trace: list[DatadogSpan]) -> list[DatadogSpan] | None:
+        self.traces.append(trace)
+        return None  # Drop the trace instead of forwarding it to the writer.
+
+
+_datadog_span_collector = _DatadogSpanCollector()
+datadog_tracer.configure(trace_processors=[_datadog_span_collector])
+
+_DATADOG_NOISE_TAGS = {"runtime-id", "language"}
+
+
+@contextmanager
+def collect_datadog_spans() -> Iterator[list[DatadogSpan]]:
+    """Collect the Datadog spans that are recorded inside the block."""
+    _datadog_span_collector.traces.clear()
+    spans: list[DatadogSpan] = []
+    try:
+        yield spans
+    finally:
+        for trace in _datadog_span_collector.traces:
+            spans.extend(trace)
+        _datadog_span_collector.traces.clear()
+
+
+def get_datadog_span(spans: list[DatadogSpan], name: str) -> DatadogSpan:
+    for span in spans:
+        if span.name == name:
+            return span
+
+    msg = f"No span named {name!r}. Recorded spans: {[span.name for span in spans]}"
+    raise KeyError(msg)
+
+
+def get_datadog_span_tags(span: DatadogSpan) -> dict[str, str]:
+    tags = span.get_tags()
+    return {key: value for key, value in tags.items() if not key.startswith("_dd.") and key not in _DATADOG_NOISE_TAGS}

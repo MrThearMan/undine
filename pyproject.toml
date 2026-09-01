@@ -69,6 +69,7 @@ django-debug-toolbar = { version = ">=7.1.1", optional = true }
 channels = { version = ">=4.2.2", optional = true }
 protobuf = { version = ">=7.36.0", optional = true }
 opentelemetry-api = { version = ">=1.38.0", optional = true }
+ddtrace = { version = ">=3.0.0", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.1.1"
@@ -110,6 +111,7 @@ debug = ["django-debug-toolbar"]
 channels = ["channels"]
 federation-tracing = ["protobuf"]
 opentelemetry = ["opentelemetry-api"]
+datadog = ["ddtrace"]
 
 [tool.coverage.run]
 relative_files = true

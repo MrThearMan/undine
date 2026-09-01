@@ -154,6 +154,39 @@ The key used to store a `Connection` in the `extensions` of its `GraphQLObjectTy
 
 ///
 
+/// details | `DATADOG_SERVICE_NAME`
+    attrs: {id: datadog_service_name}
+
+Type: `str` | Default: `"undine"`
+
+The Datadog service name recorded on spans created by the Datadog lifecycle hooks.
+See [Datadog](integrations.md#datadog) for more information.
+
+///
+
+/// details | `DATADOG_SPAN_CALLBACK`
+    attrs: {id: datadog_span_callback}
+
+Type: `Callable[[Span, LifecycleHookContext], None]` | Default: `"undine.integrations.datadog.no_op_span_callback"`
+
+Function called with the Datadog operation span so it can add its own tags to it.
+By default, no tags are added. See [Datadog](integrations.md#datadog) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `DATADOG_VARIABLES_CALLBACK`
+    attrs: {id: datadog_variables_callback}
+
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.datadog.no_traced_variables"`
+
+Function that returns the GraphQL variables that are attached to Datadog operation spans.
+By default, no variables are attached, since they can contain sensitive data.
+See [Datadog](integrations.md#datadog) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
 /// details | `DIRECTIVE_ARGUMENT_EXTENSIONS_KEY`
     attrs: {id: directive_argument_extensions_key}
 

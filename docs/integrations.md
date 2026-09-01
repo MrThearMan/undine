@@ -206,10 +206,100 @@ Both vendors accept OpenTelemetry data, but with caveats.
 [Datadog]{:target="_blank"} users on the OpenTelemetry SDK lose Continuous Profiler,
 App & API Protection, Data Streams Monitoring, RUM correlation and Source Code Integration.
 Datadog users who prefer the OpenTelemetry path can set `DD_TRACE_OTEL_ENABLED=true`,
-which makes `ddtrace` serve the OpenTelemetry API this hook is written against.
+which makes `ddtrace` serve the OpenTelemetry API this hook is written against. Prefer the
+dedicated [Datadog](#datadog) integration below unless you have a reason to use OpenTelemetry
+directly.
 
 [Sentry's OTLP endpoint]: https://docs.sentry.io/concepts/otlp/direct/traces/
 [Datadog]: https://docs.datadoghq.com/opentelemetry/compatibility/
+
+## Datadog
+
+```
+pip install undine[datadog]
+```
+
+Undine ships `DatadogHook`, a [lifecycle hook](lifecycle-hooks.md) that records a native
+[Datadog]{:target="_blank"} span for each GraphQL operation, with a child span for the parsing,
+validation and execution steps. Prefer this over the [OpenTelemetry](#opentelemetry) hook for
+Datadog: instrumenting natively keeps Continuous Profiler, App & API Protection, Data Streams
+Monitoring, RUM correlation and Source Code Integration working, none of which survive the
+OpenTelemetry SDK path. Register it in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.datadog.DatadogHook",
+    ],
+}
+```
+
+[Datadog]: https://www.datadoghq.com/
+
+Every span has `span_type` set to `"graphql"`. The operation span is named after the operation,
+e.g. `query FindTask`, and its `resource` is `<operation name>:<query hash>` (or just the hash for
+an anonymous operation) — this is Datadog's primary grouping dimension, so getting it right is
+what keeps traces for the same operation grouped together. The operation span also carries the
+`graphql.operation.name` and `graphql.operation.type` tags.
+
+The service name defaults to `"undine"`. Set the
+[`DATADOG_SERVICE_NAME`](settings.md#datadog_service_name) setting to change it, e.g. when several
+services report to the same Datadog account.
+
+### Field spans
+
+`DatadogFullHook` records everything `DatadogHook` does, plus a span for each resolved field,
+tagged with `graphql.field.name`, `graphql.field.parent.type`, `graphql.field.path` and
+`graphql.path`. This is opt-in, since a span per field is expensive on large responses. Register
+it instead of `DatadogHook` when you need per-field timings:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.datadog.DatadogFullHook",
+    ],
+}
+```
+
+### Sensitive data
+
+A GraphQL request can carry sensitive data in two places, and both are kept out of the spans
+by default.
+
+Arguments a client hardcodes in the document are redacted before the document is recorded.
+The structure of the document is kept, so traces can still be grouped by operation shape:
+
+```graphql
+query FindUser {
+  user(email: "***") {
+    name
+  }
+}
+```
+
+Variables are not recorded at all. To record some of them, set the
+[`DATADOG_VARIABLES_CALLBACK`](settings.md#datadog_variables_callback) setting to a function that
+returns the variables you want to record.
+
+```python
+-8<- "integrations/datadog_variables.py"
+```
+
+### Custom attributes
+
+To add your own tags to the operation span, set the
+[`DATADOG_SPAN_CALLBACK`](settings.md#datadog_span_callback) setting to a function. It's called
+once the operation span is fully described (type, name and resource set) and the operation has
+finished executing, so it can also react to the result, e.g. to add a tag when the operation
+failed:
+
+```python
+-8<- "integrations/datadog_span_callback.py"
+```
 
 ## Mypy
 

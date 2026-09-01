@@ -12,6 +12,7 @@ from settings_holder import SettingsHolder, reload_settings
 if TYPE_CHECKING:
     from collections.abc import Callable, Container
 
+    from ddtrace.trace import Span as DatadogSpan
     from graphql import ASTValidationRule, GraphQLError
     from opentelemetry.trace import Span as OpenTelemetrySpan
 
@@ -316,6 +317,21 @@ class UndineDefaultSettings(NamedTuple):
     )
     """Function called with the OpenTelemetry operation span so it can add its own attributes to it."""
 
+    # Datadog
+
+    DATADOG_SERVICE_NAME: str = "undine"
+    """The Datadog service name recorded on spans created by the Datadog lifecycle hooks."""
+
+    DATADOG_SPAN_CALLBACK: Callable[[DatadogSpan, LifecycleHookContext], None] = (  # type: ignore[assignment]
+        "undine.integrations.datadog.no_op_span_callback"  # type: ignore[assignment]
+    )
+    """Function called with the Datadog operation span so it can add its own tags to it."""
+
+    DATADOG_VARIABLES_CALLBACK: Callable[[LifecycleHookContext], dict[str, Any]] = (  # type: ignore[assignment]
+        "undine.integrations.datadog.no_traced_variables"  # type: ignore[assignment]
+    )
+    """Function that returns the GraphQL variables that are attached to Datadog operation spans."""
+
     # Optimizer
 
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
@@ -472,6 +488,8 @@ DEFAULTS: dict[str, Any] = UndineDefaultSettings()._asdict()
 
 IMPORT_STRINGS: set[str | bytes] = {
     "ADDITIONAL_VALIDATION_RULES.0",
+    "DATADOG_SPAN_CALLBACK",
+    "DATADOG_VARIABLES_CALLBACK",
     "DOCSTRING_PARSER",
     "ERROR_MASKING_PREDICATE",
     "EXECUTOR_CLASS",
