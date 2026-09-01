@@ -4,7 +4,7 @@ help:
 
 # Start the development server in async mode
 async port="8000":
-    @poetry run python async.py
+    @poetry run python async.py --port {{port}}
 
 # Check undine is installed correctly
 check:
