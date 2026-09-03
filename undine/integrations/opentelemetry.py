@@ -7,7 +7,7 @@ from graphql import ExecutionResult, GraphQLError
 
 from undine.hooks import LifecycleHook
 from undine.settings import undine_settings
-from undine.utils.graphql.redaction import redact_document
+from undine.utils.graphql.redaction import redact_document, redact_variables
 from undine.utils.graphql.utils import get_operation_definition
 
 try:
@@ -162,7 +162,19 @@ class OpenTelemetryHook(LifecycleHook):
 class OpenTelemetryFullHook(OpenTelemetryHook):
     """Same as `OpenTelemetryHook`, but also records a span for each resolved field."""
 
+    def __init__(self, context: LifecycleHookContext) -> None:
+        super().__init__(context)
+
+        self.skip_field_spans: bool = False
+
+    def on_execution(self) -> Generator[None, None, None]:
+        self.skip_field_spans = undine_settings.OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE(self.context)
+        yield from super().on_execution()
+
     def resolve(self, resolver: GraphQLFieldResolver, root: Any, info: GQLInfo, **kwargs: Any) -> Any:  # type: ignore[override]
+        if self.skip_field_spans:
+            return resolver(root, info, **kwargs)
+
         field_path = _get_field_path(info)
 
         span = self._create_span(field_path, parent=self.execution_span)
@@ -241,9 +253,29 @@ def _get_status_description(error: BaseException) -> str:
 
 
 def no_op_span_callback(span: trace.Span, context: LifecycleHookContext) -> None:
-    """Add no attributes to the operation span."""
+    """Add no attributes to the spans."""
+
+
+def redacted_variables(context: LifecycleHookContext) -> dict[str, Any]:
+    """Attach the name of each variable to traces, with its value redacted."""
+    return redact_variables(context.variables)
 
 
 def no_traced_variables(context: LifecycleHookContext) -> dict[str, Any]:
-    """Attach no variables to traces, since they can contain sensitive data."""
+    """Set as the `OPENTELEMETRY_VARIABLES_CALLBACK` setting to attach no variables at all to traces."""
     return {}
+
+
+def skip_introspection_queries(context: LifecycleHookContext) -> bool:
+    """
+    Record an introspection query without its field spans.
+
+    An introspection query resolves a field for every type and field in the schema, so a span
+    for each one buries the operations that say something about the service.
+    """
+    return context.operation_name == "IntrospectionQuery"
+
+
+def never_skip_field_spans(context: LifecycleHookContext) -> bool:
+    """Record a field span for every operation, however many fields it resolves."""
+    return False

@@ -309,14 +309,19 @@ class UndineDefaultSettings(NamedTuple):
     # OpenTelemetry
 
     OPENTELEMETRY_VARIABLES_CALLBACK: Callable[[LifecycleHookContext], dict[str, Any]] = (  # type: ignore[assignment]
-        "undine.integrations.opentelemetry.no_traced_variables"  # type: ignore[assignment]
+        "undine.integrations.opentelemetry.redacted_variables"  # type: ignore[assignment]
     )
     """Function that returns the GraphQL variables that are attached to OpenTelemetry operation spans."""
 
     OPENTELEMETRY_SPAN_CALLBACK: Callable[[OpenTelemetrySpan, LifecycleHookContext], None] = (  # type: ignore[assignment]
         "undine.integrations.opentelemetry.no_op_span_callback"  # type: ignore[assignment]
     )
-    """Function called with the OpenTelemetry operation span so it can add its own attributes to it."""
+    """Function called with each span the OpenTelemetry lifecycle hook records so it can add attributes to it."""
+
+    OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE: Callable[[LifecycleHookContext], bool] = (  # type: ignore[assignment]
+        "undine.integrations.opentelemetry.skip_introspection_queries"  # type: ignore[assignment]
+    )
+    """Function to use for checking if an operation should be recorded without its field spans."""
 
     # Datadog
 
@@ -326,12 +331,17 @@ class UndineDefaultSettings(NamedTuple):
     DATADOG_SPAN_CALLBACK: Callable[[DatadogSpan, LifecycleHookContext], None] = (  # type: ignore[assignment]
         "undine.integrations.datadog.no_op_span_callback"  # type: ignore[assignment]
     )
-    """Function called with the Datadog operation span so it can add its own tags to it."""
+    """Function called with each span the Datadog lifecycle hook records so it can add tags to it."""
 
     DATADOG_VARIABLES_CALLBACK: Callable[[LifecycleHookContext], dict[str, Any]] = (  # type: ignore[assignment]
-        "undine.integrations.datadog.no_traced_variables"  # type: ignore[assignment]
+        "undine.integrations.datadog.redacted_variables"  # type: ignore[assignment]
     )
     """Function that returns the GraphQL variables that are attached to Datadog operation spans."""
+
+    DATADOG_SKIP_FIELD_SPANS_PREDICATE: Callable[[LifecycleHookContext], bool] = (  # type: ignore[assignment]
+        "undine.integrations.datadog.skip_introspection_queries"  # type: ignore[assignment]
+    )
+    """Function to use for checking if an operation should be recorded without its field spans."""
 
     # Sentry
 
@@ -511,12 +521,14 @@ DEFAULTS: dict[str, Any] = UndineDefaultSettings()._asdict()
 
 IMPORT_STRINGS: set[str | bytes] = {
     "ADDITIONAL_VALIDATION_RULES.0",
+    "DATADOG_SKIP_FIELD_SPANS_PREDICATE",
     "DATADOG_SPAN_CALLBACK",
     "DATADOG_VARIABLES_CALLBACK",
     "DOCSTRING_PARSER",
     "ERROR_MASKING_PREDICATE",
     "EXECUTOR_CLASS",
     "LIFECYCLE_HOOKS.0",
+    "OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE",
     "OPENTELEMETRY_SPAN_CALLBACK",
     "OPENTELEMETRY_VARIABLES_CALLBACK",
     "OPTIMIZER_CLASS",
@@ -526,6 +538,10 @@ IMPORT_STRINGS: set[str | bytes] = {
     "REQUEST_CACHE_WRITE_PREDICATE",
     "SCHEMA",
     "SDL_PRINTER",
+    "SENTRY_REPORT_ERROR_PREDICATE",
+    "SENTRY_SKIP_FIELD_SPANS_PREDICATE",
+    "SENTRY_SPAN_CALLBACK",
+    "SENTRY_VARIABLES_CALLBACK",
     "VISIBILITY_CACHE_EXTRA_CONTEXT",
     "WEBSOCKET_CONNECTION_INIT_HOOK",
     "WEBSOCKET_PING_HOOK",

@@ -25,7 +25,7 @@ from undine.dataclasses import GraphQLHttpParams
 from undine.execution import _get_middleware_manager  # noqa: PLC2701
 from undine.hooks import LifecycleHookContext
 from undine.integrations import datadog as datadog_module
-from undine.integrations.datadog import DatadogFullHook, DatadogHook
+from undine.integrations.datadog import DatadogFullHook, DatadogHook, never_skip_field_spans, no_traced_variables
 
 
 def _resource_hash(document: str) -> str:
@@ -304,7 +304,7 @@ def test_datadog__inline_literals_are_not_recorded(undine_settings) -> None:
     assert "alice@example.com" not in str(get_datadog_span_tags(operation_span))
 
 
-def test_datadog__variables_are_not_recorded(undine_settings) -> None:
+def test_datadog__variable_values_are_not_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
     undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
 
@@ -321,16 +321,17 @@ def test_datadog__variables_are_not_recorded(undine_settings) -> None:
         "graphql.document": "query Echo($value: String!) {\n  echo(value: $value)\n}",
         "graphql.operation.name": "Echo",
         "graphql.operation.type": "query",
+        "graphql.variables": '{"value": "***"}',
     }
 
 
-def test_datadog__variables_are_recorded_when_the_callback_opts_in(undine_settings) -> None:
-    def redacted_variables(context: LifecycleHookContext) -> dict[str, Any]:
-        return dict.fromkeys(context.variables, "***")
+def test_datadog__variable_values_are_recorded_when_the_callback_opts_in(undine_settings) -> None:
+    def traced_variables(context: LifecycleHookContext) -> dict[str, Any]:
+        return context.variables
 
     undine_settings.SCHEMA = build_telemetry_schema()
     undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
-    undine_settings.DATADOG_VARIABLES_CALLBACK = redacted_variables
+    undine_settings.DATADOG_VARIABLES_CALLBACK = traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
     variables = {"value": "alice@example.com"}
@@ -341,7 +342,24 @@ def test_datadog__variables_are_recorded_when_the_callback_opts_in(undine_settin
     assert result.data == {"echo": "alice@example.com"}
 
     operation_span = get_datadog_span(spans, "query Echo")
-    assert get_datadog_span_tags(operation_span)["graphql.variables"] == '{"value": "***"}'
+    assert get_datadog_span_tags(operation_span)["graphql.variables"] == '{"value": "alice@example.com"}'
+
+
+def test_datadog__variables_are_left_out_when_the_callback_opts_out(undine_settings) -> None:
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.DATADOG_VARIABLES_CALLBACK = no_traced_variables
+
+    document = "query Echo($value: String!) { echo(value: $value) }"
+    variables = {"value": "alice@example.com"}
+
+    with collect_datadog_spans() as spans:
+        result = run_telemetry_query_sync(document, variables=variables)
+
+    assert result.data == {"echo": "alice@example.com"}
+
+    operation_span = get_datadog_span(spans, "query Echo")
+    assert "graphql.variables" not in get_datadog_span_tags(operation_span)
 
 
 # Field spans
@@ -408,6 +426,46 @@ async def test_datadog__field_hook_records_async_resolvers(undine_settings) -> N
     assert result.data == {"asyncGreeting": "async hello"}
     field_span = get_datadog_span(spans, "Query.asyncGreeting")
     assert field_span.duration is not None
+
+
+def test_datadog__field_spans_are_skipped_for_an_introspection_query(undine_settings) -> None:
+    """An introspection query resolves a field per type and field in the schema."""
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+
+    document = "query IntrospectionQuery { people { name } }"
+
+    with collect_datadog_spans() as spans:
+        result = run_telemetry_query_sync(document, operation_name="IntrospectionQuery")
+
+    assert result.data == {"people": [{"name": "Ada"}, {"name": "Grace"}]}
+    assert {span.name for span in spans} == {
+        "graphql.parse",
+        "graphql.validate",
+        "graphql.execute",
+        "query IntrospectionQuery",
+    }
+
+
+def test_datadog__field_spans_of_an_introspection_query_when_the_predicate_opts_in(undine_settings) -> None:
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.DATADOG_SKIP_FIELD_SPANS_PREDICATE = never_skip_field_spans
+
+    document = "query IntrospectionQuery { people { name } }"
+
+    with collect_datadog_spans() as spans:
+        result = run_telemetry_query_sync(document, operation_name="IntrospectionQuery")
+
+    assert result.data == {"people": [{"name": "Ada"}, {"name": "Grace"}]}
+    assert {span.name for span in spans} == {
+        "graphql.parse",
+        "graphql.validate",
+        "graphql.execute",
+        "query IntrospectionQuery",
+        "Query.people",
+        "PersonType.name",
+    }
 
 
 def test_datadog__field_hook_finishes_the_span_of_a_failing_field(undine_settings) -> None:

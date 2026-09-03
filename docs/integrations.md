@@ -162,10 +162,20 @@ UNDINE = {
 }
 ```
 
+Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.
+
+To decide yourself, set the
+[`OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE`](settings.md#opentelemetry_skip_field_spans_predicate)
+setting to a function that takes the [lifecycle hook context](lifecycle-hooks.md) and returns
+whether the field spans should be left out. Undine ships
+`undine.integrations.opentelemetry.never_skip_field_spans` for recording every field span.
+
 ### Sensitive data
 
-A GraphQL request can carry sensitive data in two places, and both are kept out of the spans
-by default.
+A GraphQL request can carry sensitive data in two places, the document and the variables.
+The values from both are kept out of the spans by default.
 
 Arguments a client hardcodes in the document are redacted before the document is recorded.
 The structure of the document is kept, so traces can still be grouped by operation shape:
@@ -178,7 +188,14 @@ query FindUser {
 }
 ```
 
-Variables are not recorded at all. To record some of them, set the
+Variables are recorded by name, with each value replaced with `***`:
+
+```json
+{"email": "***", "first": "***"}
+```
+
+Only the top-level keys are kept, since the keys inside a variable can be client data as well,
+e.g. when the variable is typed as a JSON scalar. To record the values of some variables, set the
 [`OPENTELEMETRY_VARIABLES_CALLBACK`](settings.md#opentelemetry_variables_callback) setting
 to a function that returns the variables you want to record.
 
@@ -186,13 +203,16 @@ to a function that returns the variables you want to record.
 -8<- "integrations/opentelemetry_variables.py"
 ```
 
+Undine ships `undine.integrations.opentelemetry.no_traced_variables` for recording no variables at all.
+
 ### Custom attributes
 
-To add your own attributes to the operation span, set the
+To add your own attributes to the spans, set the
 [`OPENTELEMETRY_SPAN_CALLBACK`](settings.md#opentelemetry_span_callback) setting to a function.
-It's called once the operation span is fully described (name, type and document set) and the
-operation has finished executing, so it can also react to the result, e.g. to record a custom
-attribute when the operation failed:
+It's called for every span the hook records: the operation span, the parse, validation and
+execution spans, and each field span. For the operation span it runs once the span is fully
+described (name, type and document set) and the operation has finished executing, so it can also
+react to the result, e.g. to record a custom attribute when the operation failed:
 
 ```python
 -8<- "integrations/opentelemetry_span_callback.py"
@@ -268,10 +288,20 @@ UNDINE = {
 }
 ```
 
+Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.
+
+To decide yourself, set the
+[`DATADOG_SKIP_FIELD_SPANS_PREDICATE`](settings.md#datadog_skip_field_spans_predicate) setting to
+a function that takes the [lifecycle hook context](lifecycle-hooks.md) and returns whether the
+field spans should be left out. Undine ships `undine.integrations.datadog.never_skip_field_spans`
+for recording every field span.
+
 ### Sensitive data
 
-A GraphQL request can carry sensitive data in two places, and both are kept out of the spans
-by default.
+A GraphQL request can carry sensitive data in two places, the document and the variables.
+The values from both are kept out of the spans by default.
 
 Arguments a client hardcodes in the document are redacted before the document is recorded.
 The structure of the document is kept, so traces can still be grouped by operation shape:
@@ -284,7 +314,14 @@ query FindUser {
 }
 ```
 
-Variables are not recorded at all. To record some of them, set the
+Variables are recorded by name, with each value replaced with `***`:
+
+```json
+{"email": "***", "first": "***"}
+```
+
+Only the top-level keys are kept, since the keys inside a variable can be client data as well,
+e.g. when the variable is typed as a JSON scalar. To record the values of some variables, set the
 [`DATADOG_VARIABLES_CALLBACK`](settings.md#datadog_variables_callback) setting to a function that
 returns the variables you want to record.
 
@@ -292,13 +329,16 @@ returns the variables you want to record.
 -8<- "integrations/datadog_variables.py"
 ```
 
+Undine ships `undine.integrations.datadog.no_traced_variables` for recording no variables at all.
+
 ### Custom attributes
 
-To add your own tags to the operation span, set the
+To add your own tags to the spans, set the
 [`DATADOG_SPAN_CALLBACK`](settings.md#datadog_span_callback) setting to a function. It's called
-once the operation span is fully described (type, name and resource set) and the operation has
-finished executing, so it can also react to the result, e.g. to add a tag when the operation
-failed:
+for every span the hook records: the operation span, the parse, validation and execution spans,
+and each field span. For the operation span it runs once the span is fully described (type, name
+and resource set) and the operation has finished executing, so it can also react to the result,
+e.g. to add a tag when the operation failed:
 
 ```python
 -8<- "integrations/datadog_span_callback.py"

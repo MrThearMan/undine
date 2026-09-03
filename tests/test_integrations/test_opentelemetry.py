@@ -27,7 +27,12 @@ from undine.dataclasses import GraphQLHttpParams
 from undine.execution import _get_middleware_manager  # noqa: PLC2701
 from undine.hooks import LifecycleHookContext
 from undine.integrations import opentelemetry as opentelemetry_module
-from undine.integrations.opentelemetry import OpenTelemetryFullHook, OpenTelemetryHook
+from undine.integrations.opentelemetry import (
+    OpenTelemetryFullHook,
+    OpenTelemetryHook,
+    never_skip_field_spans,
+    no_traced_variables,
+)
 from undine.utils.graphql.utils import never_mask_error
 
 
@@ -350,7 +355,7 @@ def test_opentelemetry__inline_literals_are_redacted(undine_settings) -> None:
     assert "alice@example.com" not in str(attributes)
 
 
-def test_opentelemetry__variables_are_not_recorded_by_default(undine_settings) -> None:
+def test_opentelemetry__variable_values_are_not_recorded_by_default(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
     undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
@@ -367,16 +372,17 @@ def test_opentelemetry__variables_are_not_recorded_by_default(undine_settings) -
         "graphql.operation.name": "Echo",
         "graphql.operation.type": "query",
         "graphql.document": "query Echo($value: String!) {\n  echo(value: $value)\n}",
+        "graphql.variables": '{"value": "***"}',
     }
 
 
-def test_opentelemetry__variables_are_recorded_when_the_callback_opts_in(undine_settings) -> None:
-    def redacted_variables(context: LifecycleHookContext) -> dict[str, Any]:
-        return dict.fromkeys(context.variables, "***")
+def test_opentelemetry__variable_values_are_recorded_when_the_callback_opts_in(undine_settings) -> None:
+    def traced_variables(context: LifecycleHookContext) -> dict[str, Any]:
+        return context.variables
 
     undine_settings.SCHEMA = build_telemetry_schema()
     undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
-    undine_settings.OPENTELEMETRY_VARIABLES_CALLBACK = redacted_variables
+    undine_settings.OPENTELEMETRY_VARIABLES_CALLBACK = traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
     variables = {"value": "alice@example.com"}
@@ -387,7 +393,24 @@ def test_opentelemetry__variables_are_recorded_when_the_callback_opts_in(undine_
     assert result.data == {"echo": "alice@example.com"}
 
     attributes = get_span_attributes(spans, "query Echo")
-    assert attributes["graphql.variables"] == '{"value": "***"}'
+    assert attributes["graphql.variables"] == '{"value": "alice@example.com"}'
+
+
+def test_opentelemetry__variables_are_left_out_when_the_callback_opts_out(undine_settings) -> None:
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.OPENTELEMETRY_VARIABLES_CALLBACK = no_traced_variables
+
+    document = "query Echo($value: String!) { echo(value: $value) }"
+    variables = {"value": "alice@example.com"}
+
+    with collect_spans() as spans:
+        result = run_telemetry_query_sync(document, variables=variables)
+
+    assert result.data == {"echo": "alice@example.com"}
+
+    attributes = get_span_attributes(spans, "query Echo")
+    assert "graphql.variables" not in attributes
 
 
 # Extension point
@@ -478,6 +501,47 @@ def test_opentelemetry__field_hook_records_a_span_per_field(undine_settings) -> 
         "people.0.name",
         "people.1.name",
     }
+
+
+def test_opentelemetry__field_spans_are_skipped_for_an_introspection_query(undine_settings) -> None:
+    """An introspection query resolves a field per type and field in the schema."""
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+
+    document = "query IntrospectionQuery { people { name } }"
+
+    with collect_spans() as spans:
+        result = run_telemetry_query_sync(document, operation_name="IntrospectionQuery")
+
+    assert result.data == {"people": [{"name": "Ada"}, {"name": "Grace"}]}
+    assert [span.name for span in spans] == [
+        "graphql.parse",
+        "graphql.validate",
+        "graphql.execute",
+        "query IntrospectionQuery",
+    ]
+
+
+def test_opentelemetry__field_spans_of_an_introspection_query_when_the_predicate_opts_in(undine_settings) -> None:
+    undine_settings.SCHEMA = build_telemetry_schema()
+    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE = never_skip_field_spans
+
+    document = "query IntrospectionQuery { people { name } }"
+
+    with collect_spans() as spans:
+        result = run_telemetry_query_sync(document, operation_name="IntrospectionQuery")
+
+    assert result.data == {"people": [{"name": "Ada"}, {"name": "Grace"}]}
+    assert [span.name for span in spans] == [
+        "graphql.parse",
+        "graphql.validate",
+        "Query.people",
+        "PersonType.name",
+        "PersonType.name",
+        "graphql.execute",
+        "query IntrospectionQuery",
+    ]
 
 
 def test_opentelemetry__field_hook_marks_a_failing_field(undine_settings) -> None:

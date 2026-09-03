@@ -164,13 +164,26 @@ See [Datadog](integrations.md#datadog) for more information.
 
 ///
 
+/// details | `DATADOG_SKIP_FIELD_SPANS_PREDICATE`
+    attrs: {id: datadog_skip_field_spans_predicate}
+
+Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.integrations.datadog.skip_introspection_queries"`
+
+Function to use for checking if an operation should be recorded without its field spans.
+By default, introspection queries are recorded without them, since they resolve a field for
+every type and field in the schema.
+See [Datadog](integrations.md#datadog) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
 /// details | `DATADOG_SPAN_CALLBACK`
     attrs: {id: datadog_span_callback}
 
 Type: `Callable[[Span, LifecycleHookContext], None]` | Default: `"undine.integrations.datadog.no_op_span_callback"`
 
-Function called with the Datadog operation span so it can add its own tags to it.
-By default, no tags are added. See [Datadog](integrations.md#datadog) for more information.
+Function called with each span the Datadog lifecycle hook records so it can add its own
+tags to it. By default, no tags are added. See [Datadog](integrations.md#datadog) for more information.
 Value should be given as the dotted path to the function.
 
 ///
@@ -178,10 +191,11 @@ Value should be given as the dotted path to the function.
 /// details | `DATADOG_VARIABLES_CALLBACK`
     attrs: {id: datadog_variables_callback}
 
-Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.datadog.no_traced_variables"`
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.datadog.redacted_variables"`
 
 Function that returns the GraphQL variables that are attached to Datadog operation spans.
-By default, no variables are attached, since they can contain sensitive data.
+By default, the name of each variable is attached with its value redacted,
+since the values can contain sensitive data.
 See [Datadog](integrations.md#datadog) for more information.
 Value should be given as the dotted path to the function.
 
@@ -731,13 +745,26 @@ The key used to store an `OffsetPagination` in the `extensions` of its `GraphQLO
 
 ///
 
+/// details | `OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE`
+    attrs: {id: opentelemetry_skip_field_spans_predicate}
+
+Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.integrations.opentelemetry.skip_introspection_queries"`
+
+Function to use for checking if an operation should be recorded without its field spans.
+By default, introspection queries are recorded without them, since they resolve a field for
+every type and field in the schema.
+See [OpenTelemetry](integrations.md#opentelemetry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
 /// details | `OPENTELEMETRY_SPAN_CALLBACK`
     attrs: {id: opentelemetry_span_callback}
 
 Type: `Callable[[Span, LifecycleHookContext], None]` | Default: `"undine.integrations.opentelemetry.no_op_span_callback"`
 
-Function called with the OpenTelemetry operation span so it can add its own attributes to it.
-By default, no attributes are added. See [OpenTelemetry](integrations.md#opentelemetry) for more information.
+Function called with each span the OpenTelemetry lifecycle hook records so it can add its own
+attributes to it. By default, no attributes are added. See [OpenTelemetry](integrations.md#opentelemetry) for more information.
 Value should be given as the dotted path to the function.
 
 ///
@@ -745,10 +772,11 @@ Value should be given as the dotted path to the function.
 /// details | `OPENTELEMETRY_VARIABLES_CALLBACK`
     attrs: {id: opentelemetry_variables_callback}
 
-Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.opentelemetry.no_traced_variables"`
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.opentelemetry.redacted_variables"`
 
 Function that returns the GraphQL variables that are attached to OpenTelemetry operation spans.
-By default, no variables are attached, since they can contain sensitive data.
+By default, the name of each variable is attached with its value redacted,
+since the values can contain sensitive data.
 See [OpenTelemetry](integrations.md#opentelemetry) for more information.
 Value should be given as the dotted path to the function.
 
