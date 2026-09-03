@@ -11,6 +11,9 @@ OTEL_TRACING_HOOK = "undine.integrations.opentelemetry.OpenTelemetryFullHook"
 DATADOG_TRACING_HOOK = "undine.integrations.datadog.DatadogFullHook"
 """Hook registered when Datadog tracing is on. The field hook is used to see per-resolver timings."""
 
+SENTRY_TRACING_HOOK = "undine.integrations.sentry.SentryFullHook"
+"""Hook registered when Sentry tracing is on. The field hook is used to see per-resolver timings."""
+
 
 def otel_tracing_enabled() -> bool:
     return os.getenv("OTEL_TRACING", "false").lower() == "true"
@@ -18,6 +21,10 @@ def otel_tracing_enabled() -> bool:
 
 def datadog_tracing_enabled() -> bool:
     return os.getenv("DATADOG_TRACING", "false").lower() == "true"
+
+
+def sentry_tracing_enabled() -> bool:
+    return os.getenv("SENTRY_TRACING", "false").lower() == "true"
 
 
 def setup_otel_tracing() -> None:
@@ -42,3 +49,19 @@ def setup_datadog_tracing() -> None:
     dd_port = os.getenv("DD_TRACE_AGENT_PORT", "8126")
     # Must be set before ddtrace's tracer singleton is first imported, since that is when it reads the agent URL.
     os.environ.setdefault("DD_TRACE_AGENT_URL", f"http://localhost:{dd_port}")
+
+
+def setup_sentry_tracing() -> None:
+    """Send events to the local Spotlight sidecar started by `just sentry-up`."""
+    # The Sentry SDK is an optional dependency, so it must not be imported unless tracing is on.
+    import sentry_sdk  # noqa: PLC0415
+
+    spotlight_port = os.getenv("SPOTLIGHT_PORT", "8969")
+
+    # No DSN is given, so nothing leaves the machine. Spotlight shows the events instead.
+    # Sentry's Django integration is what starts the transaction that the Undine hook renames.
+    sentry_sdk.init(
+        spotlight=f"http://localhost:{spotlight_port}/stream",
+        traces_sample_rate=1.0,
+        server_name=SERVICE_NAME,
+    )

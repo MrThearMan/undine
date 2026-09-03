@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
     from undine.execution import UndineExecutor
     from undine.hooks import LifecycleHook, LifecycleHookContext
+    from undine.integrations.sentry import RecordedSpan as SentryRecordedSpan
     from undine.optimizer.optimizer import QueryOptimizer
     from undine.typing import (
         DocstringParserProtocol,
@@ -331,6 +332,28 @@ class UndineDefaultSettings(NamedTuple):
         "undine.integrations.datadog.no_traced_variables"  # type: ignore[assignment]
     )
     """Function that returns the GraphQL variables that are attached to Datadog operation spans."""
+
+    # Sentry
+
+    SENTRY_REPORT_ERROR_PREDICATE: Callable[[GraphQLError], bool] = (  # type: ignore[assignment]
+        "undine.integrations.sentry.report_server_errors"  # type: ignore[assignment]
+    )
+    """Function to use for checking if a GraphQL error should be reported to Sentry as an issue."""
+
+    SENTRY_SPAN_CALLBACK: Callable[[SentryRecordedSpan, LifecycleHookContext], None] = (  # type: ignore[assignment]
+        "undine.integrations.sentry.no_op_span_callback"  # type: ignore[assignment]
+    )
+    """Function called with each span the Sentry lifecycle hook records so it can add attributes to it."""
+
+    SENTRY_VARIABLES_CALLBACK: Callable[[LifecycleHookContext], dict[str, Any]] = (  # type: ignore[assignment]
+        "undine.integrations.sentry.redacted_variables"  # type: ignore[assignment]
+    )
+    """Function that returns the GraphQL variables that are attached to Sentry operation spans."""
+
+    SENTRY_SKIP_FIELD_SPANS_PREDICATE: Callable[[LifecycleHookContext], bool] = (  # type: ignore[assignment]
+        "undine.integrations.sentry.skip_introspection_queries"  # type: ignore[assignment]
+    )
+    """Function to use for checking if an operation should be recorded without its field spans."""
 
     # Optimizer
 

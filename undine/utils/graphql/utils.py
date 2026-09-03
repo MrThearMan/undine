@@ -78,6 +78,7 @@ __all__ = [
     "get_operation_type",
     "get_queried_field_name",
     "get_underlying_type",
+    "get_unmasked_error",
     "graphql_error_path",
     "graphql_errors_hook",
     "is_atomic_mutation",
@@ -92,6 +93,10 @@ __all__ = [
     "should_mask_error",
     "should_skip_node",
 ]
+
+
+UNMASKED_ERROR_ATTRIBUTE: str = "undine_unmasked_error"
+"""Attribute on a masked `GraphQLError` that holds the original error for server-side error reporting."""
 
 
 TGraphQLType = TypeVar(
@@ -405,7 +410,20 @@ def mask_error(error: GraphQLError) -> None:
     error.message = undine_settings.ERROR_MASKING_MESSAGE
     error.args = (error.message,)
     error.extensions = {"status_code": status_code}
+    setattr(error, UNMASKED_ERROR_ATTRIBUTE, error.original_error)
     error.original_error = None
+
+
+def get_unmasked_error(error: GraphQLError) -> Exception:
+    """
+    The exception behind the given GraphQL error, for reporting it to an error tracker.
+
+    Masking removes the original error from the GraphQL error so that it cannot reach the client.
+    The original error is kept aside so that error trackers can still report the actual failure
+    instead of the generic masking message.
+    """
+    unmasked_error: Exception | None = getattr(error, UNMASKED_ERROR_ATTRIBUTE, None)
+    return unmasked_error or error.original_error or error
 
 
 def located_validation_error(

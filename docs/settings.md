@@ -1033,6 +1033,56 @@ The SDL printer to use. Value should be given as the dotted path to the SDL prin
 
 ///
 
+/// details | `SENTRY_REPORT_ERROR_PREDICATE`
+    attrs: {id: sentry_report_error_predicate}
+
+Type: `Callable[[GraphQLError], bool]` | Default: `"undine.integrations.sentry.report_server_errors"`
+
+Function to use for checking if a GraphQL error should be reported to Sentry as an issue.
+By default, only errors that indicate a fault in the server are reported.
+See [Sentry](integrations.md#sentry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `SENTRY_SKIP_FIELD_SPANS_PREDICATE`
+    attrs: {id: sentry_skip_field_spans_predicate}
+
+Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.integrations.sentry.skip_introspection_queries"`
+
+Function to use for checking if an operation should be recorded without its field spans.
+By default, introspection queries are recorded without them, since they resolve a field for
+every type and field in the schema.
+See [Sentry](integrations.md#sentry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `SENTRY_SPAN_CALLBACK`
+    attrs: {id: sentry_span_callback}
+
+Type: `Callable[[RecordedSpan, LifecycleHookContext], None]` | Default: `"undine.integrations.sentry.no_op_span_callback"`
+
+Function called with each span the Sentry lifecycle hook records so it can add its own
+attributes to it. By default, no attributes are added.
+See [Sentry](integrations.md#sentry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
+/// details | `SENTRY_VARIABLES_CALLBACK`
+    attrs: {id: sentry_variables_callback}
+
+Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.integrations.sentry.redacted_variables"`
+
+Function that returns the GraphQL variables that are attached to Sentry operation spans.
+By default, the name of each variable is attached with its value redacted,
+since the values can contain sensitive data.
+See [Sentry](integrations.md#sentry) for more information.
+Value should be given as the dotted path to the function.
+
+///
+
 /// details | `SSE_KEEP_ALIVE_INTERVAL`
     attrs: {id: sse_keep_alive_interval}
 

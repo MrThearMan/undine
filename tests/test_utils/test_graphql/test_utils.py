@@ -51,6 +51,7 @@ from undine.utils.graphql.utils import (
     get_operation_type,
     get_queried_field_name,
     get_underlying_type,
+    get_unmasked_error,
     graphql_error_path,
     graphql_errors_hook,
     is_atomic_mutation,
@@ -204,6 +205,30 @@ def test_graphql_errors_hook__masks_server_errors() -> None:
         "extensions": {"status_code": 500},
     }
     assert result[0].original_error is None
+
+
+def test_graphql_errors_hook__masking_keeps_the_original_error_for_error_reporting() -> None:
+    """An error tracker must report the actual failure, not the message the client receives."""
+    inner = ValueError("DB password is hunter2")
+    outer = GraphQLError("DB password is hunter2", original_error=inner)
+
+    result = graphql_errors_hook([outer])
+
+    assert result[0].original_error is None
+    assert get_unmasked_error(result[0]) is inner
+
+
+def test_get_unmasked_error__error_was_not_masked() -> None:
+    inner = GraphQLError("inner")
+    outer = GraphQLError("outer", original_error=inner)
+
+    assert get_unmasked_error(outer) is inner
+
+
+def test_get_unmasked_error__error_has_no_original_error() -> None:
+    error = GraphQLError("Task name is too long")
+
+    assert get_unmasked_error(error) is error
 
 
 def test_graphql_errors_hook__masking_drops_other_extensions() -> None:

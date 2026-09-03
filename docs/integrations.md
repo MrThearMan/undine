@@ -202,7 +202,10 @@ attribute when the operation failed:
 
 Both vendors accept OpenTelemetry data, but with caveats.
 
-[Sentry's OTLP endpoint]{:target="_blank"} is in open beta and drops span events.
+[Sentry's OTLP endpoint]{:target="_blank"} is in open beta and drops span events. It also gives
+you traces only, while the dedicated [Sentry](#sentry) integration below turns failing operations
+into issues. Prefer that one.
+
 [Datadog]{:target="_blank"} users on the OpenTelemetry SDK lose Continuous Profiler,
 App & API Protection, Data Streams Monitoring, RUM correlation and Source Code Integration.
 Datadog users who prefer the OpenTelemetry path can set `DD_TRACE_OTEL_ENABLED=true`,
@@ -300,6 +303,153 @@ failed:
 ```python
 -8<- "integrations/datadog_span_callback.py"
 ```
+
+## Sentry
+
+```
+pip install undine[sentry]
+```
+
+Undine ships `SentryHook`, a [lifecycle hook](lifecycle-hooks.md) that instruments GraphQL
+operations for [Sentry]{:target="_blank"}. Prefer this over sending
+[OpenTelemetry](#opentelemetry) data to Sentry's OTLP endpoint, which is in open beta, drops span
+events, and gives you traces only. Register it in
+[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.sentry.SentryHook",
+    ],
+}
+```
+
+[Sentry]: https://sentry.io/
+
+The hook does four things.
+
+**It starts a transaction when nothing else has.** Sentry only records spans that belong to a
+transaction. Its Django integration starts one for an HTTP request, but not for the WebSocket and
+SSE connections that [subscriptions](subscriptions.md) run on, so the hook starts one for those
+itself. Without it, nothing about a subscription reaches Sentry.
+
+**It names the transaction after the GraphQL operation.** Sentry's Django integration names the
+transaction after the HTTP route, so without this every GraphQL request in your service collapses
+into a single `/graphql/` transaction. The hook renames it to the operation name, e.g. `FindTask`,
+and sets the transaction operation to `graphql.query`, `graphql.mutation` or
+`graphql.subscription`. Anonymous operations keep the route name, since they have no name to use.
+
+**It records spans.** One span for the operation, e.g. `query FindTask`, with a child span for the
+parsing, validation and execution steps. The operation span carries the `graphql.operation.name`,
+`graphql.operation.type` and `graphql.document` data.
+
+**It reports failing operations as issues.** Each reported error becomes a Sentry issue with the
+GraphQL context attached, so an exception raised in a resolver is reported with the exception that
+actually failed, not with the generic message the client receives from
+[error masking](settings.md#error_masking_predicate).
+
+Undine's own log records don't become Sentry issues while this hook is installed. Undine logs the
+errors that it masks, and the hook already reports those failures with more detail, so letting
+Sentry's logging integration report them again would only create a second, poorer issue for the
+same failure.
+
+### Which errors are reported
+
+By default, only errors that indicate a fault in the server are reported. A client mistake, like a
+validation error or a denied permission, is not an incident, so reporting those would only add
+noise.
+
+To decide yourself, set the
+[`SENTRY_REPORT_ERROR_PREDICATE`](settings.md#sentry_report_error_predicate) setting to a function.
+Undine ships `undine.integrations.sentry.report_all_errors` for reporting every GraphQL error.
+
+```python
+-8<- "integrations/sentry_error_predicate.py"
+```
+
+### Field spans
+
+`SentryFullHook` records everything `SentryHook` does, plus a span for each resolved field, with
+the `graphql.field.name`, `graphql.field.parent.type`, `graphql.field.path` and `graphql.path`
+data. This is opt-in, since a span per field is expensive on large responses. Register it instead
+of `SentryHook` when you need per-field timings:
+
+```python hl_lines="5"
+UNDINE = {
+    "LIFECYCLE_HOOKS": [
+        "undine.hooks.RequestCacheHook",
+        "undine.hooks.AtomicMutationHook",
+        "undine.integrations.sentry.SentryFullHook",
+    ],
+}
+```
+
+Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.
+
+To decide yourself, set the
+[`SENTRY_SKIP_FIELD_SPANS_PREDICATE`](settings.md#sentry_skip_field_spans_predicate) setting to a
+function that takes the [lifecycle hook context](lifecycle-hooks.md) and returns whether the
+field spans should be left out. Undine ships `undine.integrations.sentry.never_skip_field_spans`
+for recording every field span.
+
+### Span streaming
+
+Sentry has two span APIs, and a client can only use the one its `trace_lifecycle` option selects.
+The hook records through whichever one is in use, so everything above holds in either mode. In
+span streaming mode each span is sent on its own, and the name of the trace is carried by the
+segment instead of a transaction. Sentry's span streaming API is experimental, so treat this the
+same way you treat the option itself.
+
+### Sensitive data
+
+The `graphql.document` span data is always redacted, so a value a client hardcodes in the document
+never reaches a span. The structure of the document is kept, so traces can still be grouped by
+operation shape:
+
+```graphql
+query FindUser {
+  user(email: "***") {
+    name
+  }
+}
+```
+
+The `graphql.variables` span data carries the name of each variable with its value replaced with
+`***`. Only the top-level keys are kept, since the keys inside a variable can be client data as
+well, e.g. when the variable is typed as a JSON scalar. To record the values of some variables,
+set the [`SENTRY_VARIABLES_CALLBACK`](settings.md#sentry_variables_callback) setting to a function
+that returns the variables you want to record. Undine ships
+`undine.integrations.sentry.no_traced_variables` for recording no variables at all.
+
+An issue is a separate payload from the spans, and Sentry doesn't show span data on it, so the
+hook attaches the operation to the issue as well. There it carries the operation name, the
+redacted document and the redacted variables. Enable Sentry's own
+[`send_default_pii`]{:target="_blank"} option to attach the document as the client wrote it, with
+the values of the variables. This is the SDK's own control, so it covers Undine's data the same
+way it covers the rest of your application.
+
+[`send_default_pii`]: https://docs.sentry.io/platforms/python/configuration/options/#send_default_pii
+
+### Custom attributes
+
+To add your own attributes to the spans, set the
+[`SENTRY_SPAN_CALLBACK`](settings.md#sentry_span_callback) setting to a function. It's called for
+every span the hook records: the operation span, the parse, validation and execution spans, and
+each field span. For the operation span it runs once the span is fully described (name, type and
+document set) and the operation has finished executing, so it can also react to the result, e.g.
+to record an attribute when the operation failed:
+
+```python
+-8<- "integrations/sentry_span_callback.py"
+```
+
+The callback receives a `RecordedSpan`, which is Undine's view over the two
+[span APIs](#span-streaming), so `set_data` works in either mode. Reach through
+`span.sentry_span` for the things the two APIs don't share, such as setting a status.
 
 ## Mypy
 

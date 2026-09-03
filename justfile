@@ -205,3 +205,22 @@ dd-up dd_port="8126":
         --publish {{dd_port}}:8126 \
         ghcr.io/datadog/dd-apm-test-agent/ddapm-test-agent:latest
     @echo "Datadog test agent traces: http://localhost:{{dd_port}}/test/session/traces"
+
+# Start the development server with Sentry enabled (needs "just sentry-up")
+sentry-dev port="8000" spotlight_port="8969":
+    @SENTRY_TRACING=true SPOTLIGHT_PORT={{spotlight_port}} poetry run python manage.py runserver localhost:{{port}}
+
+# Start the async development server with Sentry enabled (needs "just sentry-up")
+sentry-dev-async port="8000" spotlight_port="8969":
+    @SENTRY_TRACING=true SPOTLIGHT_PORT={{spotlight_port}} poetry run python async.py --port {{port}}
+
+# Stop the local Sentry Spotlight sidecar
+sentry-down:
+    @docker rm --force undine-spotlight
+
+# Start a local Sentry Spotlight sidecar to receive events, with its UI on the given port
+sentry-up spotlight_port="8969":
+    @docker run --detach --rm --name undine-spotlight \
+        --publish {{spotlight_port}}:8969 \
+        ghcr.io/getsentry/spotlight:latest
+    @echo "Spotlight UI: http://localhost:{{spotlight_port}}"

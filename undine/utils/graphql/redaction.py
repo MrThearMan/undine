@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 __all__ = [
     "REDACTED_VALUE",
     "redact_document",
+    "redact_variables",
 ]
 
 
@@ -27,6 +28,17 @@ def redact_document(document: DocumentNode) -> str:
     """
     redacted_document = visit(document, LiteralRedactionVisitor())
     return print_ast(redacted_document)
+
+
+def redact_variables(variables: dict[str, Any]) -> dict[str, str]:
+    """
+    Replace the value of each variable with `REDACTED_VALUE`.
+
+    Knowing which variables a client sent says something about the operation, while the values
+    are the client's data. Only the top-level keys are kept, since the keys inside a variable
+    can be client data as well, e.g. when the variable is typed as a JSON scalar.
+    """
+    return dict.fromkeys(variables, REDACTED_VALUE)
 
 
 class LiteralRedactionVisitor(Visitor):

@@ -6,11 +6,14 @@ from pathlib import Path
 from example_project.project.tracing import (
     DATADOG_TRACING_HOOK,
     OTEL_TRACING_HOOK,
+    SENTRY_TRACING_HOOK,
     SERVICE_NAME,
     datadog_tracing_enabled,
     otel_tracing_enabled,
+    sentry_tracing_enabled,
     setup_datadog_tracing,
     setup_otel_tracing,
+    setup_sentry_tracing,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -169,6 +172,11 @@ if datadog_tracing_enabled():
     # First in the list, so that the operation span encompasses the other hooks.
     lifecycle_hooks.insert(0, DATADOG_TRACING_HOOK)
     setup_datadog_tracing()
+
+if sentry_tracing_enabled():
+    # First in the list, so that the operation span encompasses the other hooks.
+    lifecycle_hooks.insert(0, SENTRY_TRACING_HOOK)
+    setup_sentry_tracing()
 
 UNDINE = {
     "SCHEMA": "example_project.app.schema.schema",

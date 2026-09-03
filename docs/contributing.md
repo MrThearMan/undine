@@ -168,6 +168,26 @@ just dd-down  # stop the test agent
 Run a few operations through [GraphiQL](integrations.md#graphiql), then fetch
 `http://localhost:8126/test/session/traces` to see the traces it received.
 
+The example project can also send Sentry events to a local [Spotlight]{:target="_blank"} sidecar,
+which is Sentry's development companion. No Sentry account and no DSN are needed, so nothing
+leaves your machine.
+
+[Spotlight]: https://spotlightjs.com/
+
+```shell
+just sentry-up    # start the Spotlight sidecar, UI on http://localhost:8969
+just sentry-dev   # start the development server with Sentry enabled
+just sentry-down  # stop the sidecar
+```
+
+Run a few operations through [GraphiQL](integrations.md#graphiql), then open the Spotlight UI.
+Each operation is one trace named after the GraphQL operation, and a failing operation also shows
+up under errors.
+
+> Spotlight without a DSN is a local development mode, so the Sentry SDK turns `send_default_pii`
+> on for you. The document and the variables are attached to events there, which is not what
+> happens against a real DSN.
+
 ## Guidelines for writing code
 
 ### All code should be tested with 100% coverage

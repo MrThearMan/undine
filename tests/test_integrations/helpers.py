@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 from contextlib import contextmanager
 from http import HTTPStatus
@@ -20,6 +21,7 @@ from typing import (
 from unittest.mock import AsyncMock
 from urllib.parse import urlencode
 
+import sentry_sdk
 from asgiref.sync import sync_to_async
 from asgiref.testing import ApplicationCommunicator
 from asgiref.typing import ASGIVersions, HTTPRequestEvent, HTTPScope
@@ -34,6 +36,11 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from sentry_sdk import traces as sentry_traces
+from sentry_sdk.envelope import Envelope as SentryEnvelope
+from sentry_sdk.traces import SegmentNameSource as SentrySegmentNameSource
+from sentry_sdk.tracing import TransactionSource as SentryTransactionSource
+from sentry_sdk.transport import Transport as SentryTransport
 
 from tests.helpers import MockRequest
 from undine import Entrypoint, RootType, create_schema
@@ -439,6 +446,16 @@ def build_telemetry_schema() -> GraphQLSchema:
             raise GraphQLError(msg)
 
         @Entrypoint
+        def crash(self) -> str | None:
+            msg = "the database is on fire"
+            raise RuntimeError(msg)
+
+        @Entrypoint
+        async def async_crash(self) -> str | None:
+            msg = "the async database is on fire"
+            raise RuntimeError(msg)
+
+        @Entrypoint
         def echo(self, value: str) -> str:
             return value
 
@@ -575,3 +592,191 @@ def get_datadog_span(spans: list[DatadogSpan], name: str) -> DatadogSpan:
 def get_datadog_span_tags(span: DatadogSpan) -> dict[str, str]:
     tags = span.get_tags()
     return {key: value for key, value in tags.items() if not key.startswith("_dd.") and key not in _DATADOG_NOISE_TAGS}
+
+
+# Sentry
+
+
+SENTRY_DSN: str = "https://public@example.com/1"
+"""A syntactically valid DSN. Nothing is sent anywhere, since the tests use a collecting transport."""
+
+SENTRY_HTTP_TRANSACTION_NAME: str = "/graphql/"
+"""Transaction name Sentry's Django integration would give the request before the hook renames it."""
+
+_SENTRY_NOISE_SPAN_DATA = {"thread.id", "thread.name"}
+
+_SENTRY_NOISE_SPAN_ATTRIBUTES = {
+    "process.command_args",
+    "process.runtime.name",
+    "process.runtime.version",
+    "sentry.environment",
+    "sentry.platform",
+    "sentry.release",
+    "sentry.sdk.integrations",
+    "sentry.sdk.name",
+    "sentry.sdk.version",
+    "sentry.segment.id",
+    "sentry.segment.name",
+    "sentry.trace_lifecycle",
+    "server.address",
+    "thread.id",
+    "thread.name",
+}
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SentryPayloads:
+    """The payloads Sentry recorded during a block, split by the kind of payload."""
+
+    events: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+    transactions: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+    streamed_spans: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+
+
+class _SentryPayloadCollector(SentryTransport):
+    """Collects envelopes instead of sending them to Sentry."""
+
+    def __init__(self) -> None:
+        super().__init__({"dsn": SENTRY_DSN})
+        self.payloads = SentryPayloads()
+
+    def capture_envelope(self, envelope: SentryEnvelope) -> None:
+        for item in envelope.items:
+            if item.type == "transaction":
+                self.payloads.transactions.append(item.payload.json)
+            elif item.type == "event":
+                self.payloads.events.append(item.payload.json)
+            elif item.type == "span":
+                self.payloads.streamed_spans.extend(item.payload.json["items"])
+
+
+@contextmanager
+def _sentry_client(**client_options: Any) -> Iterator[SentryPayloads]:
+    transport = _SentryPayloadCollector()
+    client_options.setdefault("default_integrations", False)
+    client_options.setdefault("traces_sample_rate", 1.0)
+
+    with sentry_sdk.isolation_scope() as isolation_scope:
+        client = sentry_sdk.Client(
+            dsn=SENTRY_DSN,
+            transport=transport,
+            **client_options,
+        )
+        isolation_scope.set_client(client)
+        try:
+            yield transport.payloads
+        finally:
+            client.flush()
+
+
+@contextmanager
+def collect_sentry_payloads(**client_options: Any) -> Iterator[SentryPayloads]:
+    """
+    Collect the Sentry payloads that are recorded inside the block.
+
+    A transaction is started for the block, since Sentry's Django integration starts one for
+    the request, and Sentry only records spans that belong to a transaction.
+    """
+    with (
+        _sentry_client(**client_options) as payloads,
+        sentry_sdk.start_transaction(
+            name=SENTRY_HTTP_TRANSACTION_NAME,
+            op="http.server",
+            source=SentryTransactionSource.URL,
+        ),
+    ):
+        yield payloads
+
+
+@contextmanager
+def collect_sentry_payloads_without_a_transaction(**client_options: Any) -> Iterator[SentryPayloads]:
+    """
+    Same as `collect_sentry_payloads`, but with no transaction started for the block.
+
+    Sentry's integrations start a transaction for an HTTP request, but not for the WebSocket and
+    SSE connections that subscriptions run on.
+    """
+    with _sentry_client(**client_options) as payloads:
+        yield payloads
+
+
+@contextmanager
+def collect_sentry_payloads_without_tracing(**client_options: Any) -> Iterator[SentryPayloads]:
+    """Same as `collect_sentry_payloads`, but for an application that only uses Sentry for issues."""
+    with _sentry_client(traces_sample_rate=None, **client_options) as payloads:
+        yield payloads
+
+
+@contextmanager
+def collect_sentry_payloads_with_span_streaming(**client_options: Any) -> Iterator[SentryPayloads]:
+    """
+    Same as `collect_sentry_payloads`, but in Sentry's span streaming mode.
+
+    A segment is started for the block, since that is what Sentry's integrations do for
+    an HTTP request in this mode.
+    """
+    with (
+        _sentry_client(trace_lifecycle="stream", **client_options) as payloads,
+        sentry_traces.start_span(
+            name=SENTRY_HTTP_TRANSACTION_NAME,
+            attributes={
+                "sentry.op": "http.server",
+                "sentry.segment.name.source": SentrySegmentNameSource.URL.value,
+            },
+        ),
+    ):
+        yield payloads
+
+
+@contextmanager
+def collect_sentry_payloads_with_span_streaming_without_a_segment(
+    **client_options: Any,
+) -> Iterator[SentryPayloads]:
+    """Same as `collect_sentry_payloads_with_span_streaming`, but with no segment started."""
+    with _sentry_client(trace_lifecycle="stream", **client_options) as payloads:
+        yield payloads
+
+
+def get_sentry_transaction(payloads: SentryPayloads) -> dict[str, Any]:
+    transactions = payloads.transactions
+    if len(transactions) != 1:
+        msg = f"Expected exactly one transaction, got {[transaction['transaction'] for transaction in transactions]}"
+        raise AssertionError(msg)
+    return transactions[0]
+
+
+def get_sentry_span_names(transaction: dict[str, Any]) -> list[str]:
+    return [span["description"] for span in transaction["spans"]]
+
+
+def get_sentry_span(transaction: dict[str, Any], name: str) -> dict[str, Any]:
+    for span in transaction["spans"]:
+        if span["description"] == name:
+            return span
+
+    msg = f"No span named {name!r}. Recorded spans: {get_sentry_span_names(transaction)}"
+    raise KeyError(msg)
+
+
+def get_sentry_span_data(span: dict[str, Any]) -> dict[str, Any]:
+    data: dict[str, Any] = span.get("data", {})
+    return {key: value for key, value in data.items() if key not in _SENTRY_NOISE_SPAN_DATA}
+
+
+def get_sentry_streamed_span_names(payloads: SentryPayloads) -> list[str]:
+    return [span["name"] for span in payloads.streamed_spans]
+
+
+def get_sentry_streamed_span(payloads: SentryPayloads, name: str) -> dict[str, Any]:
+    for span in payloads.streamed_spans:
+        if span["name"] == name:
+            return span
+
+    msg = f"No span named {name!r}. Recorded spans: {get_sentry_streamed_span_names(payloads)}"
+    raise KeyError(msg)
+
+
+def get_sentry_streamed_span_attributes(span: dict[str, Any]) -> dict[str, Any]:
+    """The attributes the span carries, without the ones the SDK adds to every span."""
+    attributes: dict[str, Any] = span.get("attributes", {})
+    return {key: value["value"] for key, value in attributes.items() if key not in _SENTRY_NOISE_SPAN_ATTRIBUTES}
