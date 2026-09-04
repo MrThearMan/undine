@@ -14,6 +14,18 @@ UNDINE = {
 
 [settings file]: https://github.com/MrThearMan/undine/blob/main/undine/settings.py
 
+/// details | `ADDITIONAL_LIFECYCLE_HOOKS`
+    attrs: {id: additional_lifecycle_hooks}
+
+Type: `list[type[LifecycleHook]]` | Default: `[]`
+
+Lifecycle hooks to use during GraphQL operations in addition to the built-in ones.
+Values should be given as the dotted paths to the lifecycle hooks used.
+Each hook runs at the point set by its `priority`, so the order of this list does not matter.
+See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
+
+///
+
 /// details | `ADDITIONAL_VALIDATION_RULES`
     attrs: {id: additional_validation_rules}
 
@@ -123,6 +135,16 @@ Type `bool` | Default: `False`
 Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `MutationTypes`,
 `Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on an individual
 `QueryType`, `MutationType`, `FilterSet`, and `OrderSet` classes.
+
+///
+
+/// details | `AUTOMATIC_PERSISTED_QUERIES`
+    attrs: {id: automatic_persisted_queries}
+
+Type `bool` | Default: `False`
+
+Whether clients can register persisted documents during the request phase using the APQ protocol.
+See [automatic persisted queries](persisted-documents.md#automatic-persisted-queries) for more information.
 
 ///
 
@@ -263,7 +285,9 @@ Disabled by default to improve performance of the schema creation.
 
 Type `int` | Default: `0`
 
-The default caching time an `Entrypoint` for the `@cache` directive.
+How many seconds each `Entrypoint` of the `Query` root type can be cached for when it doesn't set
+its own `cache_time`. Set to `0` (default) to cache no `Entrypoint` unless it asks for it.
+See [response caching](caching.md#response-caching) for more information.
 
 ///
 
@@ -530,31 +554,6 @@ The key used to store an `InterfaceField` in the `extensions` of its `GraphQLFie
 Type: `str` | Default: `"undine_interface"`
 
 The key used to store a `InterfaceType` in the `extensions` of its `GraphQLInterfaceType`.
-
-///
-
-/// details | `LIFECYCLE_HOOKS`
-    attrs: {id: lifecycle_hooks}
-
-Type: `list[type[LifecycleHook]]`
-
-Default:
-```
-[
-    "undine.hooks.ParseCacheHook",
-    "undine.hooks.ValidationCacheHook",
-    "undine.hooks.RequestCacheHook",
-    "undine.hooks.VisibilityCacheHook",
-    "undine.hooks.AtomicMutationHook",
-]
-```
-
-Hooks to use during the GraphQL request.
-See [Lifecycle Hooks](lifecycle-hooks.md) for more information.
-Values should be given as the dotted paths to the lifecycle hooks used.
-
-> Note that if you change the default value, you must also include the built-in hooks
-> if you which to use them!
 
 ///
 
@@ -959,6 +958,17 @@ Type: `str` | Default: `"orderBy"`
 
 The name of the input argument that is created for an `OrderSet` when a `QueryType`
 using that `OrderSet` is used in a list `Entrypoint` or many-related `Field`.
+
+///
+
+/// details | `REQUEST_CACHE_ACTIVE_EXTENSIONS_KEY`
+    attrs: {id: request_cache_active_extensions_key}
+
+Type: `str` | Default: `"undine_request_cache_active"`
+
+The key on `schema.extensions` set to `True` when the schema has an `Entrypoint` that can be
+cached. Used internally to install the `undine.hooks.RequestCacheHook` only for the schemas
+that need it.
 
 ///
 

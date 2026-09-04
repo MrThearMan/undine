@@ -82,7 +82,7 @@ _FROZEN_TIME: str = "2024-01-15 12:00:00"
 
 def test_federated_tracing__attaches_ftv1_when_header_present(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
@@ -112,7 +112,7 @@ def test_federated_tracing__attaches_ftv1_when_header_present(undine_settings) -
 
 def test_federated_tracing__no_extension_without_header(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={})
 
@@ -122,7 +122,7 @@ def test_federated_tracing__no_extension_without_header(undine_settings) -> None
 
 def test_federated_tracing__no_extension_when_header_value_mismatched(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: "something-else"})
 
@@ -131,7 +131,7 @@ def test_federated_tracing__no_extension_when_header_value_mismatched(undine_set
 
 def test_federated_tracing__not_registered_means_no_tracing(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = []
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 
@@ -141,7 +141,7 @@ def test_federated_tracing__not_registered_means_no_tracing(undine_settings) -> 
 
 def test_federated_tracing__decodable_trace_has_field_timings_and_types(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 
@@ -160,7 +160,7 @@ def test_federated_tracing__decodable_trace_has_field_timings_and_types(undine_s
 
 def test_federated_tracing__captures_errors_on_matching_node(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query("{ boom }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
@@ -199,7 +199,7 @@ def test_federated_tracing__preserves_other_extensions(undine_settings) -> None:
             extensions["other"] = "value"
             result.extensions = extensions
 
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook, ExtraExtensionHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook, ExtraExtensionHook]
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 
@@ -230,7 +230,7 @@ def test_federated_tracing__nested_paths_produce_child_nodes(undine_settings) ->
     )
 
     undine_settings.SCHEMA = nested_schema
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query("{ person { name } }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
@@ -281,7 +281,7 @@ def test_federated_tracing__list_items_emit_index_nodes_including_zero(undine_se
     )
 
     undine_settings.SCHEMA = nested_schema
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query("{ people { name } }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
@@ -331,7 +331,7 @@ def test_federated_tracing__errors_when_protobuf_missing(undine_settings, monkey
 
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 
@@ -351,7 +351,7 @@ def test_federated_tracing__does_not_check_protobuf_when_header_absent(undine_se
     monkeypatch.setattr(tracing_module, "_require_protobuf", _fake_require)
 
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ greeting }", headers={})
 
@@ -371,7 +371,7 @@ async def test_federated_tracing__async_execution(undine_settings) -> None:
             },
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     request = MockRequest(method="POST", headers=_headers({TRACING_HEADER_NAME: TRACING_HEADER_VALUE}))
@@ -386,7 +386,7 @@ async def test_federated_tracing__async_execution(undine_settings) -> None:
 
 def test_federated_tracing__header_matching_is_case_insensitive(undine_settings) -> None:
     undine_settings.SCHEMA = _build_schema()
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query(
         "{ greeting }",
@@ -416,7 +416,7 @@ def test_federated_tracing__captures_multiple_errors_across_fields(undine_settin
         ),
     )
     undine_settings.SCHEMA = schema
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query("{ failingOne failingTwo }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
@@ -479,7 +479,7 @@ def test_federated_tracing__nested_error_attached_to_deep_node(undine_settings) 
             },
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query(
@@ -544,7 +544,7 @@ def test_federated_tracing__error_json_includes_path_and_locations(undine_settin
             },
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query(
         "{\n  person {\n    failingField\n  }\n}",
@@ -574,7 +574,7 @@ def test_federated_tracing__error_location_line_and_column_encoded(undine_settin
             fields={"failing": GraphQLField(GraphQLString, resolve=_raise_here)},
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         result = _run_query(
@@ -619,7 +619,7 @@ async def test_federated_tracing__async_captures_errors(undine_settings) -> None
             fields={"failing": GraphQLField(GraphQLString, resolve=_raise)},
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     with freezegun.freeze_time(_FROZEN_TIME):
         params = GraphQLHttpParams(document="{ failing }", variables={}, operation_name=None, extensions={})
@@ -664,7 +664,7 @@ async def test_federated_tracing__async_on_operation__disabled_yields_without_at
             fields={"greeting": GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_async)},
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     request = MockRequest(method="POST", headers=_headers({}))
@@ -703,7 +703,7 @@ async def test_federated_tracing__subscription_stream__skips_extension_attachmen
             },
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     params = GraphQLHttpParams(
         document="subscription { countdown }",
@@ -744,7 +744,7 @@ def test_federated_tracing__error_on_null_list_item_bubbles_to_parent_node(undin
             },
         ),
     )
-    undine_settings.LIFECYCLE_HOOKS = [FederatedTracingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [FederatedTracingHook]
 
     result = _run_query("{ people { name } }", headers={TRACING_HEADER_NAME: TRACING_HEADER_VALUE})
 

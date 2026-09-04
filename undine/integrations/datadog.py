@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from graphql import ExecutionResult, GraphQLError
 
-from undine.hooks import LifecycleHook
+from undine.hooks import HookPriority, LifecycleHook
 from undine.settings import undine_settings
 from undine.utils.graphql.redaction import redact_document, redact_variables
 from undine.utils.graphql.utils import get_operation_definition
@@ -57,6 +57,8 @@ class DatadogHook(LifecycleHook):
     Lifecycle hook that records a Datadog span for each GraphQL operation,
     with a child span for the parsing, validation and execution steps.
     """
+
+    priority: ClassVar[int] = HookPriority.TRACING
 
     def __init__(self, context: LifecycleHookContext) -> None:
         super().__init__(context)

@@ -420,7 +420,7 @@ async def test_parse_graphql_params__persisted_document__async() -> None:
 
 @pytest.mark.django_db
 def test_parse_graphql_params__aqp__not_enabled(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = False
 
     PersistedDocumentFactory.create(document_id="1", document="query MyQuery { hello }")
     body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": "1"}}}

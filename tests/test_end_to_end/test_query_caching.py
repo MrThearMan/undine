@@ -9,9 +9,10 @@ from unittest.mock import patch
 
 import freezegun
 import pytest
+from asgiref.sync import sync_to_async
 from django.core.cache import caches
 from django.core.cache.backends.locmem import LocMemCache
-from graphql import GraphQLNonNull, GraphQLString, Undefined
+from graphql import GraphQLError, GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Project, Task
 from tests.factories import ProjectFactory, TaskFactory, UserFactory
@@ -30,6 +31,7 @@ from undine import (
 from undine.dataclasses import CacheControlResults
 from undine.exceptions import GraphQLPermissionError
 from undine.hooks import LifecycleHookContext
+from undine.relay import Connection, Node
 from undine.typing import CacheKeyData, GQLInfo
 from undine.utils.graphql.caching import RequestCacheCalculator
 
@@ -525,6 +527,135 @@ def test_end_to_end__caching__entrypoint_cacheable__dont_cache_errors(graphql, u
 
 
 @pytest.mark.django_db
+def test_end_to_end__caching__default_cache_time(graphql, undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = 30
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    with catch_cache_results() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == {"name": "Test task"}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables)
+    assert cache.get(key) is not None
+
+    assert results.cache_time == 30
+    assert results.cache_per_user is False
+
+    assert response.response.headers["Cache-Control"] == "max-age=30"
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__default_cache_time__entrypoint_overrides(graphql, undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = 30
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    with catch_cache_results() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is False, response.errors
+
+    assert results.cache_time == 10
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__default_cache_time__opt_out_with_zero(graphql, undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = 30
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=0)
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    task = TaskFactory.create(name="Test task")
+
+    query = """
+        query($pk: Int!) {
+          task(pk: $pk) {
+            name
+          }
+        }
+    """
+    variables = {"pk": task.pk}
+
+    with catch_cache_results() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is False, response.errors
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables)
+    assert cache.get(key) is None
+
+    assert results.cache_time == 0
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__default_cache_time__mutations_left_alone(graphql, undine_settings) -> None:
+    undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME = 30
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=True): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    create_schema(query=Query, mutation=Mutation)
+
+    assert Query.task.cache_time == 30
+    assert Mutation.create_task.cache_time is None
+
+
+@pytest.mark.django_db
 def test_end_to_end__caching__entrypoint_not_cacheable__field_ignored(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
         name = Field(cache_time=10)
@@ -556,9 +687,9 @@ def test_end_to_end__caching__entrypoint_not_cacheable__field_ignored(graphql, u
     key = get_cache_key(source=query, variables=variables)
     assert cache.get(key) is None
 
-    # Entrypoint is not cacheable, so the field is ignored
-    assert results.cache_time == 0
-    assert results.cache_per_user is False
+    # No `Entrypoint` in the schema is cacheable, so the cache time is never calculated
+    assert results.cache_time is Undefined
+    assert results.cache_per_user is Undefined
 
 
 @pytest.mark.django_db
@@ -591,6 +722,155 @@ def test_end_to_end__caching__entrypoint_not_cacheable__type_ignored(graphql, un
 
     key = get_cache_key(source=query, variables=variables)
     assert cache.get(key) is None
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__entrypoint_not_cacheable__sibling_entrypoint_ignored(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="Test task")
+
+    query = """
+        query {
+          tasks {
+            name
+          }
+        }
+    """
+
+    with catch_cache_results() as results:
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == [{"name": "Test task"}]
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables={})
+    assert cache.get(key) is None
+
+    # A cache time on one `Entrypoint` does not apply to another one
+    assert results.cache_time == 0
+    assert results.cache_per_user is False
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_end_to_end__caching__entrypoint_not_cacheable__async(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="Test task")
+
+    query = """
+        query {
+          tasks {
+            name
+          }
+        }
+    """
+
+    with catch_cache_results() as results:
+        response = await graphql_async(query)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == [{"name": "Test task"}]
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables={})
+    assert cache.get(key) is None
+
+    assert results.cache_time == 0
+    assert results.cache_per_user is False
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__connection_entrypoint_cacheable(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False, interfaces=[Node]):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(Connection(TaskType), cache_time=10)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    TaskFactory.create(name="Test task")
+
+    query = """
+        query {
+          tasks {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with catch_cache_results() as results:
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == {"edges": [{"node": {"name": "Test task"}}]}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables={})
+    assert cache.get(key) is not None
+
+    assert results.cache_time == 10
+    assert results.cache_per_user is False
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__error_union_entrypoint_cacheable(graphql, undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint(errors=[GraphQLError], cache_time=10)
+        def say_hello(self) -> str:
+            return "Hello World"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+          sayHello {
+            ... on QuerySayHelloValue {
+              value
+            }
+          }
+        }
+    """
+
+    with catch_cache_results() as results:
+        response = graphql(query)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == {"value": "Hello World"}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables={})
+    assert cache.get(key) is not None
+
+    assert results.cache_time == 10
+    assert results.cache_per_user is False
 
 
 @pytest.mark.django_db
@@ -851,6 +1131,46 @@ def test_end_to_end__caching__interface_field_not_cacheable__entrypoint(graphql,
     # Use more restrictive cache time from the field through the interface field
     assert results.cache_time == 0
     assert results.cache_per_user is False
+
+
+@pytest.mark.django_db
+def test_end_to_end__caching__mutation_operation_ignored(graphql, undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class TaskCreateMutation(MutationType[Task], auto=True): ...
+
+    class Query(RootType):
+        task = Entrypoint(TaskType, cache_time=10)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    query = """
+        mutation($input: TaskCreateMutation!) {
+          createTask(input: $input) {
+            name
+          }
+        }
+    """
+    variables = {"input": {"name": "Test task", "type": "TASK"}}
+
+    with catch_cache_results() as results:
+        response = graphql(query, variables=variables)
+
+    assert response.has_errors is False, response.errors
+    assert response.results == {"name": "Test task"}
+
+    cache = caches[undine_settings.REQUEST_CACHE_ALIAS]
+
+    key = get_cache_key(source=query, variables=variables)
+    assert cache.get(key) is None
+
+    # Only queries are cached, so the cache time is never calculated for a mutation
+    assert results.cache_time is Undefined
+    assert results.cache_per_user is Undefined
 
 
 @pytest.mark.django_db

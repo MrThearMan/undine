@@ -154,30 +154,21 @@ CHANNEL_LAYERS = {
     },
 }
 
-lifecycle_hooks = [
+additional_lifecycle_hooks = [
     "example_project.app.hooks.ErrorLoggingMiddleware",
     "example_project.app.hooks.ExampleHook",
-    "undine.hooks.ParseCacheHook",
-    "undine.hooks.ValidationCacheHook",
-    "undine.hooks.RequestCacheHook",
-    "undine.hooks.VisibilityCacheHook",
-    "undine.hooks.AtomicMutationHook",
-    "undine.hooks.AutomaticPersistedQueriesHook",
 ]
 
 if otel_tracing_enabled():
-    # First in the list, so that the operation span encompasses the other hooks.
-    lifecycle_hooks.insert(0, OTEL_TRACING_HOOK)
+    additional_lifecycle_hooks.append(OTEL_TRACING_HOOK)
     setup_otel_tracing()
 
 if datadog_tracing_enabled():
-    # First in the list, so that the operation span encompasses the other hooks.
-    lifecycle_hooks.insert(0, DATADOG_TRACING_HOOK)
+    additional_lifecycle_hooks.append(DATADOG_TRACING_HOOK)
     setup_datadog_tracing()
 
 if sentry_tracing_enabled():
-    # First in the list, so that the operation span encompasses the other hooks.
-    lifecycle_hooks.insert(0, SENTRY_TRACING_HOOK)
+    additional_lifecycle_hooks.append(SENTRY_TRACING_HOOK)
     setup_sentry_tracing()
 
 UNDINE = {
@@ -197,5 +188,6 @@ UNDINE = {
     "ASYNC": os.getenv("ASYNC", "false").lower() == "true",
     # "INCLUDE_ERROR_TRACEBACK": True,
     # "ERROR_MASKING_PREDICATE": "undine.utils.graphql.utils.never_mask_error",
-    "LIFECYCLE_HOOKS": lifecycle_hooks,
+    "AUTOMATIC_PERSISTED_QUERIES": True,
+    "ADDITIONAL_LIFECYCLE_HOOKS": additional_lifecycle_hooks,
 }

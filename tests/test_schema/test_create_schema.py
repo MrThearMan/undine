@@ -101,6 +101,7 @@ def test_create_schema__extensions() -> None:
         "foo": "1",
         "undine_schema_directives": [],
         "undine_visibility_active": False,
+        "undine_request_cache_active": False,
     }
     assert schema.query_type.extensions == {"foo": "2", "undine_root_type": Query}
     assert schema.mutation_type.extensions == {"foo": "3", "undine_root_type": Mutation}

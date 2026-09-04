@@ -50,7 +50,6 @@ from undine import (
     create_schema,
 )
 from undine.federation import ExternalDirective, FederationField, FederationType, KeyDirective, create_federation_schema
-from undine.hooks import RequestCacheHook, VisibilityCacheHook
 from undine.relay import Connection
 from undine.typing import DjangoExpression, DjangoRequestProtocol, GQLInfo
 from undine.utils.graphql.caching import RequestCacheCalculator
@@ -1064,7 +1063,6 @@ def test_is_federation_field_visible__hidden_member_returns_false() -> None:
 @pytest.mark.django_db
 def test_visibility_cache_hook__enabled__caches_introspection(graphql, undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
-    undine_settings.LIFECYCLE_HOOKS = [VisibilityCacheHook]
 
     calls: list[int] = []
 
@@ -1100,7 +1098,6 @@ def test_visibility_cache_hook__enabled__caches_introspection(graphql, undine_se
 @pytest.mark.django_db
 def test_visibility_cache_hook__disabled__no_caching(graphql, undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
-    undine_settings.LIFECYCLE_HOOKS = [VisibilityCacheHook]
 
     calls: list[int] = []
 
@@ -1136,7 +1133,6 @@ def test_visibility_cache_hook__disabled__no_caching(graphql, undine_settings) -
 @pytest.mark.django_db
 def test_visibility_cache_hook__ignores_non_introspection_queries(graphql, undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
-    undine_settings.LIFECYCLE_HOOKS = [VisibilityCacheHook]
 
     calls: list[int] = []
 
@@ -1169,7 +1165,6 @@ def test_visibility_cache_hook__ignores_non_introspection_queries(graphql, undin
 @pytest.mark.django_db
 def test_visibility_cache_hook__distinguishes_users(graphql, undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
-    undine_settings.LIFECYCLE_HOOKS = [VisibilityCacheHook]
 
     calls: list[int] = []
 
@@ -1225,7 +1220,6 @@ def test_visibility_cache_hook__extra_context_influences_key(graphql, undine_set
         return request.headers.get("Accept-Language")
 
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
-    undine_settings.LIFECYCLE_HOOKS = [VisibilityCacheHook]
     undine_settings.VISIBILITY_CACHE_EXTRA_CONTEXT = extra
 
     calls: list[int] = []
@@ -1284,9 +1278,34 @@ def test_did_you_mean__auto_disabled_when_schema_uses_visibility(undine_settings
 
 
 @pytest.mark.django_db
-def test_request_cache_hook__auto_per_user_on_visibility_hook(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [RequestCacheHook]
+def test_request_cache_hook__auto_per_user_on_entrypoint_visibility(undine_settings) -> None:
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
 
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True, cache_time=60, cache_per_user=False)
+
+        @tasks.visible
+        def tasks_visible(self, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "{ tasks { pk } }"
+
+    doc = parse(query)
+    operation = get_operation_definition(doc, None)
+    fragments = get_fragment_definitions(doc)
+    calculator = RequestCacheCalculator(operation, fragments)
+
+    results = calculator.run()
+
+    assert results.cache_time == 60
+    assert results.cache_per_user is True
+
+
+@pytest.mark.django_db
+def test_request_cache_hook__auto_per_user_on_visibility_hook(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
         pk = Field()
 

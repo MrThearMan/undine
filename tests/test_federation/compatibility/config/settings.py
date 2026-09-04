@@ -93,9 +93,7 @@ UNDINE = {
     "INCLUDE_ERROR_TRACEBACK": True,
     "ALLOW_DID_YOU_MEAN_SUGGESTIONS": True,
     "ALLOW_INTROSPECTION_QUERIES": True,
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.federation.tracing.FederatedTracingHook",
     ],
 }

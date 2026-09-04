@@ -119,13 +119,11 @@ pip install undine[opentelemetry]
 Undine ships `OpenTelemetryHook`, a [lifecycle hook](lifecycle-hooks.md) that records an
 [OpenTelemetry]{:target="_blank"} span for each GraphQL operation, with a child span for the
 parsing, validation and execution steps. Register it in
-[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+[`ADDITIONAL_LIFECYCLE_HOOKS`](settings.md#additional_lifecycle_hooks) to opt in:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.opentelemetry.OpenTelemetryHook",
     ],
 }
@@ -152,11 +150,9 @@ the standard split for instrumented libraries.
 resolved field. This is opt-in, since a span per field is expensive on large responses.
 Register it instead of `OpenTelemetryHook` when you need per-field timings:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.opentelemetry.OpenTelemetryFullHook",
     ],
 }
@@ -247,13 +243,12 @@ Undine ships `DatadogHook`, a [lifecycle hook](lifecycle-hooks.md) that records 
 validation and execution steps. Prefer this over the [OpenTelemetry](#opentelemetry) hook for
 Datadog: instrumenting natively keeps Continuous Profiler, App & API Protection, Data Streams
 Monitoring, RUM correlation and Source Code Integration working, none of which survive the
-OpenTelemetry SDK path. Register it in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+OpenTelemetry SDK path. Register it in
+[`ADDITIONAL_LIFECYCLE_HOOKS`](settings.md#additional_lifecycle_hooks) to opt in:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.datadog.DatadogHook",
     ],
 }
@@ -278,11 +273,9 @@ tagged with `graphql.field.name`, `graphql.field.parent.type`, `graphql.field.pa
 `graphql.path`. This is opt-in, since a span per field is expensive on large responses. Register
 it instead of `DatadogHook` when you need per-field timings:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.datadog.DatadogFullHook",
     ],
 }
@@ -354,13 +347,11 @@ Undine ships `SentryHook`, a [lifecycle hook](lifecycle-hooks.md) that instrumen
 operations for [Sentry]{:target="_blank"}. Prefer this over sending
 [OpenTelemetry](#opentelemetry) data to Sentry's OTLP endpoint, which is in open beta, drops span
 events, and gives you traces only. Register it in
-[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+[`ADDITIONAL_LIFECYCLE_HOOKS`](settings.md#additional_lifecycle_hooks) to opt in:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.sentry.SentryHook",
     ],
 }
@@ -416,11 +407,9 @@ the `graphql.field.name`, `graphql.field.parent.type`, `graphql.field.path` and 
 data. This is opt-in, since a span per field is expensive on large responses. Register it instead
 of `SentryHook` when you need per-field timings:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.integrations.sentry.SentryFullHook",
     ],
 }

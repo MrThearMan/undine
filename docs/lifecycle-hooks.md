@@ -50,15 +50,44 @@ The points you can hook into are:
 -8<- "lifecycle_hooks/example_hook_resolve.py"
 ```
 
-Created hooks need to be registered using the [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) setting.
-When there are multiple hooks that run logic on the same step, they will be run
-in the order they are added in the `LIFECYCLE_HOOKS` setting list.
-Specifically, the first hook registered will have its "before" portion run first
-and its "after" portion run last. You can think of them as a stack of context managers.
+## Registering hooks
 
-> Undine has built-in hooks that are documented with the features they implement.
-> See [caching](caching.md), [atomic mutations](mutations.md#atomic-mutations) and
-> [automatic persisted queries](persisted-documents.md#automatic-persisted-queries).
+Created hooks need to be registered using the
+[`ADDITIONAL_LIFECYCLE_HOOKS`](settings.md#additional_lifecycle_hooks) setting.
+
+```python
+UNDINE = {
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
+        "myproj.hooks.TimingHook",
+    ],
+}
+```
+
+## Priority
+
+When multiple hooks run logic on the same step, they run in the order set by their **priority**.
+A hook with a lower priority runs its "before" portion first and its "after" portion last,
+so it wraps the hooks with a higher priority. You can think of them as a stack of context managers.
+
+A hook has a priority of `1000` unless it sets one, which places it inside all of the built-in
+hooks. To run a hook somewhere else, set the `priority` class attribute.
+
+```python
+-8<- "lifecycle_hooks/hook_priority.py"
+```
+
+These are the priorities of the built-in hooks, available as `undine.hooks.HookPriority`.
+
+- `TRACING` (`100`): The [OpenTelemetry](integrations.md#opentelemetry),
+  [Datadog](integrations.md#datadog), [Sentry](integrations.md#sentry) and
+  [federated tracing](federation.md#federated-tracing) hooks.
+- `PARSE_CACHE` (`200`): `undine.hooks.ParseCacheHook`.
+- `VALIDATION_CACHE` (`300`): `undine.hooks.ValidationCacheHook`.
+- `RESPONSE_CACHE` (`400`): `undine.hooks.RequestCacheHook`.
+- `VISIBILITY_CACHE` (`500`): `undine.hooks.VisibilityCacheHook`.
+- `ATOMIC_MUTATION` (`600`): `undine.hooks.AtomicMutationHook`.
+- `PERSISTED_QUERIES` (`700`): `undine.hooks.AutomaticPersistedQueriesHook`.
+- `DEFAULT` (`1000`): Every other hook.
 
 ## LifecycleHookContext
 

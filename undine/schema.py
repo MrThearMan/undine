@@ -15,8 +15,10 @@ from graphql import (
     validate_schema,
 )
 
+from undine.entrypoint import apply_default_cache_time
 from undine.exceptions import UndineErrorGroup
 from undine.settings import undine_settings
+from undine.utils.graphql.caching import apply_request_caching
 from undine.utils.graphql.type_registry import get_registered_directives
 from undine.utils.graphql.undine_extensions import get_undine_interface_type
 from undine.utils.graphql.utils import check_directives
@@ -61,6 +63,9 @@ def create_schema(
 
     directives = get_registered_directives()
 
+    logger.debug("Applying default cache time...")
+    apply_default_cache_time(query)
+
     logger.debug("Creating Query type...")
     query_object_type: GraphQLObjectType = query.__output_type__()
 
@@ -100,8 +105,10 @@ def create_schema(
         raise UndineErrorGroup(schema_validation_errors, msg=msg)
 
     logger.debug("Applying visibility...")
-
     apply_visibility(schema)
+
+    logger.debug("Applying request caching hooks...")
+    apply_request_caching(schema)
 
     elapsed = time.perf_counter() - started
     logger.debug(f"GraphQL schema created successfully in {elapsed}s!")

@@ -45,7 +45,7 @@ from undine.integrations.sentry import (
 
 def test_sentry__records_spans_for_the_operation_steps(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -83,7 +83,7 @@ def test_sentry__records_spans_for_the_operation_steps(undine_settings) -> None:
 def test_sentry__names_the_transaction_after_the_operation(undine_settings) -> None:
     """Without this, every GraphQL request collapses into one transaction for the HTTP route."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -98,7 +98,7 @@ def test_sentry__names_the_transaction_after_the_operation(undine_settings) -> N
 
 def test_sentry__mutation_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("mutation Shout { shout }")
@@ -113,7 +113,7 @@ def test_sentry__mutation_operation_type(undine_settings) -> None:
 
 async def test_sentry__subscription_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -129,7 +129,7 @@ async def test_sentry__subscription_operation_type(undine_settings) -> None:
 async def test_sentry__subscription_starts_its_own_transaction(undine_settings) -> None:
     """A subscription arrives on a connection that Sentry doesn't start a transaction for."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_without_a_transaction() as payloads:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -163,7 +163,7 @@ async def test_sentry__subscription_starts_its_own_transaction(undine_settings) 
 def test_sentry__operation_type_survives_a_leading_comment(undine_settings) -> None:
     """A naive `query.strip().startswith("mutation")` check is fooled by a leading comment."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("# a comment\nmutation Shout { shout }")
@@ -178,7 +178,7 @@ def test_sentry__operation_type_survives_a_leading_comment(undine_settings) -> N
 def test_sentry__operation_type_of_non_first_operation_in_a_multi_operation_document(undine_settings) -> None:
     """A naive string check on the whole document would misdetect the type of the executed operation."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     document = "query First { greeting } mutation Second { shout }"
 
@@ -195,7 +195,7 @@ def test_sentry__operation_type_of_non_first_operation_in_a_multi_operation_docu
 
 def test_sentry__anonymous_operation_keeps_the_route_transaction_name(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("{ greeting }")
@@ -212,7 +212,7 @@ def test_sentry__anonymous_operation_keeps_the_route_transaction_name(undine_set
 
 def test_sentry__syntax_error_leaves_the_operation_span_generic(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("{ greeting")
@@ -225,7 +225,7 @@ def test_sentry__syntax_error_leaves_the_operation_span_generic(undine_settings)
 
 def test_sentry__document_without_an_operation_leaves_the_operation_span_generic(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("fragment Greet on Query { greeting }")
@@ -238,7 +238,7 @@ def test_sentry__document_without_an_operation_leaves_the_operation_span_generic
 
 async def test_sentry__async_execution_records_the_same_spans(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = await run_telemetry_query_async("query Greet { asyncGreeting }")
@@ -261,7 +261,7 @@ async def test_sentry__async_execution_records_the_same_spans(undine_settings) -
 
 def test_sentry__unexpected_step_failure_still_finishes_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook, ExecutionStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook, ExecutionStepBoomHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -282,7 +282,7 @@ def test_sentry__unexpected_step_failure_still_finishes_the_operation_span(undin
 
 def test_sentry__failing_resolver_is_reported_as_an_issue(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Crash { crash }")
@@ -307,7 +307,7 @@ def test_sentry__failing_resolver_is_reported_as_an_issue(undine_settings) -> No
 def test_sentry__client_errors_are_not_reported(undine_settings) -> None:
     """Reporting every GraphQL error is how an error tracker turns into noise."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Missing { notAField }")
@@ -318,7 +318,7 @@ def test_sentry__client_errors_are_not_reported(undine_settings) -> None:
 
 def test_sentry__deliberate_graphql_errors_are_not_reported(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("query Boom { boom }")
@@ -329,7 +329,7 @@ def test_sentry__deliberate_graphql_errors_are_not_reported(undine_settings) -> 
 
 def test_sentry__error_predicate_can_report_every_error(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_REPORT_ERROR_PREDICATE = report_all_errors
 
     with collect_sentry_payloads() as payloads:
@@ -345,7 +345,7 @@ def test_sentry__error_predicate_can_report_every_error(undine_settings) -> None
 
 async def test_sentry__failing_async_resolver_is_reported_as_an_issue(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = await run_telemetry_query_async("query Crash { asyncCrash }")
@@ -361,7 +361,7 @@ async def test_sentry__failing_async_resolver_is_reported_as_an_issue(undine_set
 def test_sentry__span_streaming__records_spans_for_the_operation_steps(undine_settings) -> None:
     """Sentry's span streaming mode has a span API of its own, and streams each span separately."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_with_span_streaming() as payloads:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -400,7 +400,7 @@ def test_sentry__span_streaming__records_spans_for_the_operation_steps(undine_se
 
 def test_sentry__span_streaming__names_the_segment_after_the_operation(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_with_span_streaming() as payloads:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -415,7 +415,7 @@ def test_sentry__span_streaming__names_the_segment_after_the_operation(undine_se
 async def test_sentry__span_streaming__subscription_becomes_the_segment(undine_settings) -> None:
     """A subscription arrives on a connection that Sentry doesn't start a segment for."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_with_span_streaming_without_a_segment() as payloads:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -447,7 +447,7 @@ async def test_sentry__span_streaming__subscription_becomes_the_segment(undine_s
 def test_sentry__spans_are_not_recorded_when_sentry_is_instrumented_by_opentelemetry(undine_settings) -> None:
     """With `instrumenter="otel"`, the Sentry SDK leaves the spans to OpenTelemetry."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_without_a_transaction(instrumenter="otel") as payloads:
         result = run_telemetry_query_sync("query Crash { crash }")
@@ -463,7 +463,7 @@ def test_sentry__spans_are_not_recorded_when_sentry_is_instrumented_by_opentelem
 def test_sentry__error_is_reported_without_sentry_tracing(undine_settings) -> None:
     """An application that only uses Sentry for issues still gets the operation name on the issue."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads_without_tracing() as payloads:
         result = run_telemetry_query_sync("query Crash { crash }")
@@ -478,7 +478,7 @@ def test_sentry__error_is_reported_without_sentry_tracing(undine_settings) -> No
 def test_sentry__failure_is_not_reported_twice_through_the_logging_integration(undine_settings) -> None:
     """Undine logs the errors it masks. Sentry's logging integration must not raise a second issue for it."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads(integrations=[LoggingIntegration()]) as payloads:
         result = run_telemetry_query_sync("query Crash { crash }")
@@ -497,7 +497,7 @@ def test_sentry__span_callback_can_add_data_to_every_span(undine_settings) -> No
         span.set_data("graphql.custom", "value")
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_SPAN_CALLBACK = add_custom_data
 
     with collect_sentry_payloads() as payloads:
@@ -517,7 +517,7 @@ def test_sentry__span_callback_can_add_data_to_a_streamed_span(undine_settings) 
         span.set_data("graphql.custom", "value")
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_SPAN_CALLBACK = add_custom_data
 
     with collect_sentry_payloads_with_span_streaming() as payloads:
@@ -537,7 +537,7 @@ def test_sentry__span_callback_can_reach_the_streamed_sentry_span(undine_setting
         sentry_span.set_attribute("graphql.custom", sentry_span.name)
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_SPAN_CALLBACK = tag_with_the_span_name
 
     with collect_sentry_payloads_with_span_streaming() as payloads:
@@ -558,7 +558,7 @@ def test_sentry__span_callback_sees_the_execution_result(undine_settings) -> Non
         span.set_data("graphql.error.count", error_count)
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_SPAN_CALLBACK = tag_with_error_count
 
     with collect_sentry_payloads() as payloads:
@@ -575,7 +575,7 @@ def test_sentry__span_callback_sees_the_execution_result(undine_settings) -> Non
 
 def test_sentry__inline_literals_are_not_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync('query Echo { echo(value: "alice@example.com") crash }')
@@ -598,7 +598,7 @@ def test_sentry__inline_literals_are_not_recorded(undine_settings) -> None:
 
 def test_sentry__variable_values_are_not_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     document = "query Echo($value: String!) { echo(value: $value) crash }"
     variables = {"value": "alice@example.com"}
@@ -634,7 +634,7 @@ def test_sentry__variable_values_are_recorded_when_the_callback_opts_in(undine_s
         return context.variables
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_VARIABLES_CALLBACK = traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
@@ -653,7 +653,7 @@ def test_sentry__variable_values_are_recorded_when_the_callback_opts_in(undine_s
 def test_sentry__variables_are_left_out_of_spans_when_the_callback_opts_out(undine_settings) -> None:
     """The callback only controls the spans. An issue still carries the redacted variables."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_VARIABLES_CALLBACK = no_traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) crash }"
@@ -673,7 +673,7 @@ def test_sentry__variables_are_left_out_of_spans_when_the_callback_opts_out(undi
 
 def test_sentry__document_and_variables_are_recorded_with_pii_enabled(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     document = "query Echo($value: String!) { echo(value: $value) crash }"
     variables = {"value": "alice@example.com"}
@@ -697,7 +697,7 @@ def test_sentry__document_and_variables_are_recorded_with_pii_enabled(undine_set
 def test_sentry__issue_carries_no_query_when_the_document_does_not_parse(undine_settings) -> None:
     """A document is only available once parsing is complete, and the raw source is not safe to send."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
     undine_settings.SENTRY_REPORT_ERROR_PREDICATE = report_all_errors
 
     with collect_sentry_payloads() as payloads:
@@ -712,7 +712,7 @@ def test_sentry__issue_carries_no_query_when_the_document_does_not_parse(undine_
 def test_sentry__span_document_stays_redacted_with_pii_enabled(undine_settings) -> None:
     """The span attribute is always redacted, so traces keep a bounded set of values."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads(send_default_pii=True) as payloads:
         result = run_telemetry_query_sync('query Echo { echo(value: "alice@example.com") }')
@@ -729,7 +729,7 @@ def test_sentry__span_document_stays_redacted_with_pii_enabled(undine_settings) 
 
 def test_sentry__no_field_spans_without_the_field_hook(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -747,7 +747,7 @@ def test_sentry__no_field_spans_without_the_field_hook(undine_settings) -> None:
 
 def test_sentry__field_hook_records_a_span_per_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -769,7 +769,7 @@ def test_sentry__field_hook_records_a_span_per_field(undine_settings) -> None:
 def test_sentry__field_spans_are_skipped_for_an_introspection_query(undine_settings) -> None:
     """An introspection query resolves a field per type and field in the schema."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     document = "query IntrospectionQuery { people { name } }"
 
@@ -789,7 +789,7 @@ def test_sentry__field_spans_are_skipped_for_an_introspection_query(undine_setti
 
 def test_sentry__field_spans_of_an_introspection_query_when_the_predicate_opts_in(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
     undine_settings.SENTRY_SKIP_FIELD_SPANS_PREDICATE = never_skip_field_spans
 
     document = "query IntrospectionQuery { people { name } }"
@@ -827,7 +827,7 @@ def test_sentry__field_spans_of_an_introspection_query_when_the_predicate_opts_i
 
 async def test_sentry__field_hook_records_async_resolvers(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     with collect_sentry_payloads() as payloads:
         result = await run_telemetry_query_async("{ asyncGreeting }")
@@ -841,7 +841,7 @@ async def test_sentry__field_hook_records_async_resolvers(undine_settings) -> No
 
 def test_sentry__field_hook_finishes_the_span_of_a_failing_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     with collect_sentry_payloads() as payloads:
         result = run_telemetry_query_sync("{ boom }")
@@ -855,7 +855,7 @@ def test_sentry__field_hook_finishes_the_span_of_a_failing_field(undine_settings
 
 async def test_sentry__field_hook_finishes_the_span_of_a_failing_async_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     with collect_sentry_payloads() as payloads:
         result = await run_telemetry_query_async("{ asyncBoom }")
@@ -871,16 +871,17 @@ async def test_sentry__field_hook_finishes_the_span_of_a_failing_async_field(und
 
 
 def test_sentry__operation_hook_adds_no_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [SentryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))
 
-    assert _get_middleware_manager(context.lifecycle_hooks) is None
+    hooks = [hook for hook in context.lifecycle_hooks if isinstance(hook, SentryHook)]
+    assert _get_middleware_manager(hooks) is None
 
 
 def test_sentry__field_hook_adds_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [SentryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SentryFullHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))

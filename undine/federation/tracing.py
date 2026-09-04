@@ -4,11 +4,11 @@ import base64
 import dataclasses
 import json
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from graphql import ExecutionResult
 
-from undine.hooks import LifecycleHook
+from undine.hooks import HookPriority, LifecycleHook
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -51,6 +51,8 @@ def _require_protobuf() -> None:
 
 class FederatedTracingHook(LifecycleHook):
     """Lifecycle hook implementing Apollo's Federated Tracing v1 (`ftv1`) protocol."""
+
+    priority: ClassVar[int] = HookPriority.TRACING
 
     def __init__(self, context: LifecycleHookContext) -> None:
         super().__init__(context)

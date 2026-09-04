@@ -41,7 +41,23 @@ if TYPE_CHECKING:
 __all__ = [
     "Entrypoint",
     "RootType",
+    "apply_default_cache_time",
 ]
+
+
+def apply_default_cache_time(root_type: type[RootType]) -> None:
+    """Give each `Entrypoint` in the given `RootType` the default cache time if it doesn't set one."""
+    default_cache_time: int | None = undine_settings.ENTRYPOINT_DEFAULT_CACHE_TIME or None
+    if default_cache_time is None:
+        return
+
+    for entrypoint in root_type.__entrypoint_map__.values():
+        if entrypoint.cache_time is not None:
+            continue
+
+        directive = CacheRulesDirective(cache_time=default_cache_time, cache_per_user=entrypoint.cache_per_user)
+        entrypoint.directives.append(directive)
+        directive.__connected__(entrypoint)
 
 
 class RootTypeMeta(type):

@@ -34,7 +34,7 @@ def _resource_hash(document: str) -> str:
 
 def test_datadog__records_spans_for_the_operation_steps(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query Greet { greeting }"
 
@@ -68,7 +68,7 @@ def test_datadog__records_spans_for_the_operation_steps(undine_settings) -> None
 
 def test_datadog__service_name_is_configurable(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
     undine_settings.DATADOG_SERVICE_NAME = "custom-service"
 
     with collect_datadog_spans() as spans:
@@ -80,7 +80,7 @@ def test_datadog__service_name_is_configurable(undine_settings) -> None:
 
 def test_datadog__anonymous_operation_has_a_stable_resource_name(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "{ greeting }"
 
@@ -104,7 +104,7 @@ def test_datadog__anonymous_operation_has_a_stable_resource_name(undine_settings
 
 def test_datadog__resource_uses_the_requested_operation_in_a_multi_operation_document(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query Greet { greeting } query Shout { greeting }"
 
@@ -124,7 +124,7 @@ def test_datadog__resource_uses_the_requested_operation_in_a_multi_operation_doc
 def test_datadog__resource_uses_the_operations_own_name_even_without_a_client_supplied_one(undine_settings) -> None:
     """A client may omit `operationName` when the document has only one operation; the name is still known."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query Greet { greeting }"
 
@@ -138,7 +138,7 @@ def test_datadog__resource_uses_the_operations_own_name_even_without_a_client_su
 
 def test_datadog__mutation_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("mutation Shout { shout }")
@@ -150,7 +150,7 @@ def test_datadog__mutation_operation_type(undine_settings) -> None:
 def test_datadog__operation_type_survives_a_leading_comment(undine_settings) -> None:
     """A naive `query.strip().startswith("mutation")` check is fooled by a leading comment."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "# a comment\nmutation Shout { shout }"
 
@@ -164,7 +164,7 @@ def test_datadog__operation_type_survives_a_leading_comment(undine_settings) -> 
 def test_datadog__operation_type_of_non_first_operation_in_a_multi_operation_document(undine_settings) -> None:
     """A naive string check on the whole document would misdetect the type of the executed operation."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query First { greeting } mutation Second { shout }"
 
@@ -177,7 +177,7 @@ def test_datadog__operation_type_of_non_first_operation_in_a_multi_operation_doc
 
 def test_datadog__syntax_error_leaves_the_operation_span_generic(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("{ greeting")
@@ -190,7 +190,7 @@ def test_datadog__syntax_error_leaves_the_operation_span_generic(undine_settings
 
 def test_datadog__document_without_an_operation_leaves_the_operation_span_generic(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("fragment Greet on Query { greeting }")
@@ -203,7 +203,7 @@ def test_datadog__document_without_an_operation_leaves_the_operation_span_generi
 
 async def test_datadog__subscription_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     with collect_datadog_spans() as spans:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -216,7 +216,7 @@ async def test_datadog__subscription_operation_type(undine_settings) -> None:
 
 async def test_datadog__async_execution_records_the_same_spans(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query Greet { asyncGreeting }"
 
@@ -243,7 +243,7 @@ async def test_datadog__async_execution_records_the_same_spans(undine_settings) 
 
 def test_datadog__unexpected_parse_failure_still_finishes_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook, ParseStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook, ParseStepBoomHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -258,7 +258,7 @@ def test_datadog__unexpected_parse_failure_still_finishes_the_operation_span(und
 
 def test_datadog__unexpected_validation_failure_still_finishes_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook, ValidationStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook, ValidationStepBoomHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -273,7 +273,7 @@ def test_datadog__unexpected_validation_failure_still_finishes_the_operation_spa
 
 def test_datadog__unexpected_execution_failure_still_finishes_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook, ExecutionStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook, ExecutionStepBoomHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -291,7 +291,7 @@ def test_datadog__unexpected_execution_failure_still_finishes_the_operation_span
 
 def test_datadog__inline_literals_are_not_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = 'query Echo { echo(value: "alice@example.com") }'
 
@@ -306,7 +306,7 @@ def test_datadog__inline_literals_are_not_recorded(undine_settings) -> None:
 
 def test_datadog__variable_values_are_not_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     document = "query Echo($value: String!) { echo(value: $value) }"
     variables = {"value": "alice@example.com"}
@@ -330,7 +330,7 @@ def test_datadog__variable_values_are_recorded_when_the_callback_opts_in(undine_
         return context.variables
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
     undine_settings.DATADOG_VARIABLES_CALLBACK = traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
@@ -347,7 +347,7 @@ def test_datadog__variable_values_are_recorded_when_the_callback_opts_in(undine_
 
 def test_datadog__variables_are_left_out_when_the_callback_opts_out(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
     undine_settings.DATADOG_VARIABLES_CALLBACK = no_traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
@@ -367,7 +367,7 @@ def test_datadog__variables_are_left_out_when_the_callback_opts_out(undine_setti
 
 def test_datadog__no_field_spans_without_the_field_hook(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -383,7 +383,7 @@ def test_datadog__no_field_spans_without_the_field_hook(undine_settings) -> None
 
 def test_datadog__field_hook_records_a_span_per_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -418,7 +418,7 @@ def test_datadog__field_hook_records_a_span_per_field(undine_settings) -> None:
 
 async def test_datadog__field_hook_records_async_resolvers(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     with collect_datadog_spans() as spans:
         result = await run_telemetry_query_async("{ asyncGreeting }")
@@ -431,7 +431,7 @@ async def test_datadog__field_hook_records_async_resolvers(undine_settings) -> N
 def test_datadog__field_spans_are_skipped_for_an_introspection_query(undine_settings) -> None:
     """An introspection query resolves a field per type and field in the schema."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     document = "query IntrospectionQuery { people { name } }"
 
@@ -449,7 +449,7 @@ def test_datadog__field_spans_are_skipped_for_an_introspection_query(undine_sett
 
 def test_datadog__field_spans_of_an_introspection_query_when_the_predicate_opts_in(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
     undine_settings.DATADOG_SKIP_FIELD_SPANS_PREDICATE = never_skip_field_spans
 
     document = "query IntrospectionQuery { people { name } }"
@@ -470,7 +470,7 @@ def test_datadog__field_spans_of_an_introspection_query_when_the_predicate_opts_
 
 def test_datadog__field_hook_finishes_the_span_of_a_failing_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("{ boom }")
@@ -483,7 +483,7 @@ def test_datadog__field_hook_finishes_the_span_of_a_failing_field(undine_setting
 
 async def test_datadog__field_hook_finishes_the_span_of_a_failing_async_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     with collect_datadog_spans() as spans:
         result = await run_telemetry_query_async("{ asyncBoom }")
@@ -498,16 +498,17 @@ async def test_datadog__field_hook_finishes_the_span_of_a_failing_async_field(un
 
 
 def test_datadog__operation_hook_adds_no_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))
 
-    assert _get_middleware_manager(context.lifecycle_hooks) is None
+    hooks = [hook for hook in context.lifecycle_hooks if isinstance(hook, DatadogHook)]
+    assert _get_middleware_manager(hooks) is None
 
 
 def test_datadog__field_hook_adds_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))
@@ -523,7 +524,7 @@ def test_datadog__span_callback_can_add_tags_to_the_operation_span(undine_settin
         span.set_tag("graphql.custom", "value")
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
     undine_settings.DATADOG_SPAN_CALLBACK = add_custom_tag
 
     with collect_datadog_spans() as spans:
@@ -543,7 +544,7 @@ def test_datadog__span_callback_sees_the_execution_result(undine_settings) -> No
         span.set_tag("graphql.error.count", str(error_count))
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogHook]
     undine_settings.DATADOG_SPAN_CALLBACK = tag_with_error_count
 
     with collect_datadog_spans() as spans:
@@ -560,7 +561,7 @@ def test_datadog__span_callback_sees_the_execution_result(undine_settings) -> No
 def test_datadog__module_does_not_require_the_agent(undine_settings, monkeypatch) -> None:
     """Without a reachable Datadog agent, spans must still be created and operations must still run."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [DatadogFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DatadogFullHook]
 
     with collect_datadog_spans() as spans:
         result = run_telemetry_query_sync("{ greeting }")

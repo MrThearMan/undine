@@ -3,11 +3,11 @@ from __future__ import annotations
 import dataclasses
 import json
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Protocol, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, Self
 
 from graphql import ExecutionResult, GraphQLError, OperationType
 
-from undine.hooks import LifecycleHook
+from undine.hooks import HookPriority, LifecycleHook
 from undine.settings import undine_settings
 from undine.utils.graphql.redaction import redact_document, redact_variables
 from undine.utils.graphql.utils import get_operation_definition, get_unmasked_error
@@ -115,6 +115,8 @@ class SentryHook(LifecycleHook):
     parsing, validation and execution steps, names the transaction after the GraphQL operation,
     and reports failing operations as Sentry issues.
     """
+
+    priority: ClassVar[int] = HookPriority.TRACING
 
     def __init__(self, context: LifecycleHookContext) -> None:
         super().__init__(context)

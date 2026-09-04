@@ -567,13 +567,12 @@ how to boot it locally and run Apollo's compliance runner.
 ## Federated tracing
 
 Undine ships `FederatedTracingHook`, a [lifecycle hook](lifecycle-hooks.md) that implements Apollo's
-Federated Tracing v1 (`ftv1`) protocol. Register it in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) to opt in:
+Federated Tracing v1 (`ftv1`) protocol. Register it in
+[`ADDITIONAL_LIFECYCLE_HOOKS`](settings.md#additional_lifecycle_hooks) to opt in:
 
-```python hl_lines="5"
+```python
 UNDINE = {
-    "LIFECYCLE_HOOKS": [
-        "undine.hooks.RequestCacheHook",
-        "undine.hooks.AtomicMutationHook",
+    "ADDITIONAL_LIFECYCLE_HOOKS": [
         "undine.federation.tracing.FederatedTracingHook",
     ],
 }

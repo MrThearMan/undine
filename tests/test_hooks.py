@@ -7,12 +7,13 @@ from unittest.mock import patch
 
 import pytest
 from asgiref.sync import sync_to_async
+from django.test import override_settings
 from graphql import ExecutionResult, GraphQLError, GraphQLFieldResolver, parse
 
 from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
 from tests.helpers import CountingValidationRule, DocumentRecordingHook, MockRequest, mock_gql_info
-from undine import Entrypoint, Field, Filter, FilterSet, GQLInfo, QueryType, RootType, create_schema
+from undine import Entrypoint, Field, Filter, FilterSet, GQLInfo, MutationType, QueryType, RootType, create_schema
 from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.execution import _get_middleware_manager, execute_graphql_with_subscription  # noqa: PLC2701
@@ -20,6 +21,7 @@ from undine.hooks import (
     AtomicMutationHook,
     AutomaticPersistedQueriesHook,
     ExecutionLifecycleHookManager,
+    HookPriority,
     LifecycleHook,
     LifecycleHookContext,
     OperationLifecycleHookManager,
@@ -289,7 +291,7 @@ def test_lifecycle_hook__request(graphql, undine_settings) -> None:
             call_stack.append("after resolver")
             return result
 
-    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [MyHook]
 
     class Query(RootType):
         @Entrypoint
@@ -353,7 +355,7 @@ async def test_lifecycle_hook__request__async(graphql_async, undine_settings) ->
             call_stack.append("after resolver")
             return result
 
-    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [MyHook]
 
     class Query(RootType):
         @Entrypoint
@@ -417,7 +419,7 @@ async def test_lifecycle_hook__request__async__using_sync_methods(graphql_async,
             call_stack.append("after resolver")
             return result
 
-    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [MyHook]
 
     class Query(RootType):
         @Entrypoint
@@ -447,6 +449,93 @@ async def test_lifecycle_hook__request__async__using_sync_methods(graphql_async,
     ]
 
 
+# Hook registration
+
+
+@pytest.mark.django_db
+def test_lifecycle_hooks__registered_in_priority_order(undine_settings) -> None:
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = False
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    class TracingHook(LifecycleHook):
+        priority = HookPriority.TRACING
+
+    class CustomHook(LifecycleHook): ...
+
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [CustomHook, TracingHook]
+
+    context = make_hook_context()
+
+    # The order of the setting doesn't matter, and hooks for unused features are left out.
+    assert [type(hook) for hook in context.lifecycle_hooks] == [TracingHook, ParseCacheHook, CustomHook]
+
+
+@pytest.mark.django_db
+def test_lifecycle_hooks__built_in_hooks_registered_for_the_features_in_use(undine_settings) -> None:
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = []
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class TaskCreateMutation(MutationType[Task], auto=True): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True, cache_time=10)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+
+    context = make_hook_context()
+
+    assert [type(hook) for hook in context.lifecycle_hooks] == [
+        ParseCacheHook,
+        ValidationCacheHook,
+        RequestCacheHook,
+        VisibilityCacheHook,
+        AtomicMutationHook,
+        AutomaticPersistedQueriesHook,
+    ]
+
+
+def test_lifecycle_hooks__registered_hooks_updated_when_django_settings_change(undine_settings) -> None:
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = []
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "Hello World"
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    context = make_hook_context()
+
+    assert [type(hook) for hook in context.lifecycle_hooks] == [AutomaticPersistedQueriesHook]
+
+    with override_settings(UNDINE={"AUTOMATIC_PERSISTED_QUERIES": False}):
+        context = make_hook_context()
+
+        assert [type(hook) for hook in context.lifecycle_hooks] == []
+
+
 # AtomicMutationHook
 
 
@@ -459,7 +548,7 @@ async def test_lifecycle_hook__subscription__execution_hooks_close_before_each_r
             yield
             call_stack.append("after execution")
 
-    undine_settings.LIFECYCLE_HOOKS = [MyHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [MyHook]
 
     class Query(RootType):
         @Entrypoint
@@ -506,7 +595,6 @@ async def test_lifecycle_hook__subscription__execution_hooks_close_before_each_r
 
 @pytest.mark.django_db
 def test_atomic_mutation_hook__no_error(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="mutation @atomic { dummy }")
     hook = AtomicMutationHook(context=context)
@@ -523,7 +611,6 @@ def test_atomic_mutation_hook__no_error(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_atomic_mutation_hook__exception_during_execution(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="mutation @atomic { dummy }")
     hook = AtomicMutationHook(context=context)
@@ -537,7 +624,6 @@ def test_atomic_mutation_hook__exception_during_execution(undine_settings) -> No
 
 @pytest.mark.django_db
 def test_atomic_mutation_hook__resolver_error_captured(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="mutation @atomic { dummy }")
     hook = AtomicMutationHook(context=context)
@@ -555,7 +641,6 @@ def test_atomic_mutation_hook__resolver_error_captured(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_atomic_mutation_hook__async_raises(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="mutation @atomic { dummy }")
     hook = AtomicMutationHook(context=context)
@@ -570,7 +655,6 @@ async def test_atomic_mutation_hook__async_raises(undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_request_cache_hook__result_not_execution_result(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="query { field }")
     hook = RequestCacheHook(context=context)
@@ -589,7 +673,6 @@ def test_request_cache_hook__result_not_execution_result(undine_settings) -> Non
 
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_non_query(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
 
     context = make_hook_context(source="mutation { dummy }")
     hook = RequestCacheHook(context=context)
@@ -605,7 +688,6 @@ async def test_request_cache_hook__async_non_query(undine_settings) -> None:
 async def test_request_cache_hook__async_write_and_read_from_cache(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
-    undine_settings.LIFECYCLE_HOOKS = [RequestCacheHook]
 
     class TaskType(QueryType[Task], auto=False):
         name = Field()
@@ -634,7 +716,6 @@ async def test_request_cache_hook__async_write_and_read_from_cache(graphql_async
 
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_read_predicate_false(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.REQUEST_CACHE_READ_PREDICATE = lambda _: False
     undine_settings.REQUEST_CACHE_WRITE_PREDICATE = lambda _: False
 
@@ -654,7 +735,6 @@ async def test_request_cache_hook__async_read_predicate_false(undine_settings) -
 
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_result_not_execution_result(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.REQUEST_CACHE_READ_PREDICATE = lambda _: False
 
     context = make_hook_context(source="query { field }")
@@ -673,7 +753,6 @@ async def test_request_cache_hook__async_result_not_execution_result(undine_sett
 
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_result_has_errors(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.REQUEST_CACHE_READ_PREDICATE = lambda _: False
 
     context = make_hook_context(source="query { field }")
@@ -692,7 +771,6 @@ async def test_request_cache_hook__async_result_has_errors(undine_settings) -> N
 
 @pytest.mark.django_db(transaction=True)
 async def test_request_cache_hook__async_write_predicate_false(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.REQUEST_CACHE_READ_PREDICATE = lambda _: False
     undine_settings.REQUEST_CACHE_WRITE_PREDICATE = lambda _: False
 
@@ -715,7 +793,7 @@ async def test_request_cache_hook__async_write_predicate_false(undine_settings) 
 
 @pytest.mark.django_db
 def test_apq_hook__non_query_operation(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     source = "mutation { dummy }"
     sha_hash = hashlib.sha256(source.encode()).hexdigest()
@@ -733,7 +811,7 @@ def test_apq_hook__non_query_operation(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_no_persisted_query(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     context = make_hook_context(source="query { field }")  # no persistedQuery in extensions
     hook = AutomaticPersistedQueriesHook(context=context)
@@ -747,7 +825,7 @@ async def test_apq_hook__async_no_persisted_query(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_non_query_operation(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     source = "mutation { dummy }"
     sha_hash = hashlib.sha256(source.encode()).hexdigest()
@@ -765,7 +843,7 @@ async def test_apq_hook__async_non_query_operation(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_saves_document(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     source = "query { field }"
     sha_hash = hashlib.sha256(source.encode()).hexdigest()
@@ -786,7 +864,7 @@ async def test_apq_hook__async_saves_document(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_hash_mismatch(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     source = "query { field }"
     extensions = {"persistedQuery": {"version": 1, "sha256Hash": "wrong_hash"}}
@@ -806,7 +884,7 @@ async def test_apq_hook__async_hash_mismatch(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_apq_hook__async_invalid_persisted_query_format(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [AutomaticPersistedQueriesHook]
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = True
 
     source = "query { field }"
     # Missing "version" key → GraphQLAPQVersionMissingError (a GraphQLError subclass)
@@ -829,18 +907,14 @@ async def test_apq_hook__async_invalid_persisted_query_format(undine_settings) -
 
 
 @pytest.mark.django_db
-def test_visibility_cache_hook__should_cache__disabled_by_timeout(undine_settings) -> None:
+def test_visibility_cache_hook__is_enabled__disabled_by_timeout(undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
 
-    context = make_hook_context(source="query IntrospectionQuery { __schema { types { name } } }")
-    context.operation_name = "IntrospectionQuery"
-    hook = VisibilityCacheHook(context=context)
-
-    assert hook.should_cache() is False
+    assert VisibilityCacheHook.is_enabled() is False
 
 
 @pytest.mark.django_db
-def test_visibility_cache_hook__should_cache__disabled_when_schema_visibility_inactive(undine_settings) -> None:
+def test_visibility_cache_hook__is_enabled__disabled_when_schema_visibility_inactive(undine_settings) -> None:
     undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
 
     class TaskType(QueryType[Task], auto=False):
@@ -851,11 +925,26 @@ def test_visibility_cache_hook__should_cache__disabled_when_schema_visibility_in
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    context = make_hook_context(source="query IntrospectionQuery { __schema { types { name } } }")
-    context.operation_name = "IntrospectionQuery"
-    hook = VisibilityCacheHook(context=context)
+    assert VisibilityCacheHook.is_enabled() is False
 
-    assert hook.should_cache() is False
+
+@pytest.mark.django_db
+def test_visibility_cache_hook__is_enabled__schema_uses_visibility(undine_settings) -> None:
+    undine_settings.VISIBILITY_CACHE_TIMEOUT = 60
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+
+        @classmethod
+        def __is_visible__(cls, request: DjangoRequestProtocol) -> bool:
+            return True
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    assert VisibilityCacheHook.is_enabled() is True
 
 
 @pytest.mark.django_db
@@ -884,8 +973,6 @@ def test_visibility_cache_hook__should_cache__disabled_for_non_query_operation(u
 
 @pytest.mark.django_db
 def test_visibility_cache_hook__sync_no_cache__early_yield(undine_settings) -> None:
-    undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
-
     context = make_hook_context(source="query { field }")
     hook = VisibilityCacheHook(context=context)
     gen = hook.on_execution()
@@ -928,8 +1015,6 @@ def test_visibility_cache_hook__sync_result_has_errors(undine_settings) -> None:
 
 @pytest.mark.django_db(transaction=True)
 async def test_visibility_cache_hook__async_no_cache__early_yield(undine_settings) -> None:
-    undine_settings.VISIBILITY_CACHE_TIMEOUT = 0
-
     context = make_hook_context(source="query { field }")
     hook = VisibilityCacheHook(context=context)
 
@@ -1017,7 +1102,7 @@ async def test_visibility_cache_hook__async_result_has_errors(undine_settings) -
 
 @pytest.mark.django_db
 def test_parse_cache_hook__same_document_is_parsed_once(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DocumentRecordingHook]
     undine_settings.PARSE_CACHE_MAX_SIZE = 10
 
     DocumentRecordingHook.documents.clear()
@@ -1041,7 +1126,7 @@ def test_parse_cache_hook__same_document_is_parsed_once(graphql, undine_settings
 
 @pytest.mark.django_db
 def test_parse_cache_hook__disabled_by_max_size(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DocumentRecordingHook]
     undine_settings.PARSE_CACHE_MAX_SIZE = 0
 
     DocumentRecordingHook.documents.clear()
@@ -1065,7 +1150,7 @@ def test_parse_cache_hook__disabled_by_max_size(graphql, undine_settings) -> Non
 
 @pytest.mark.django_db
 def test_parse_cache_hook__least_recently_used_document_is_discarded(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [DocumentRecordingHook]
     undine_settings.PARSE_CACHE_MAX_SIZE = 1
 
     DocumentRecordingHook.documents.clear()
@@ -1089,7 +1174,6 @@ def test_parse_cache_hook__least_recently_used_document_is_discarded(graphql, un
 
 @pytest.mark.django_db
 def test_parse_cache_hook__max_tokens_is_part_of_the_cache_key(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook]
     undine_settings.PARSE_CACHE_MAX_SIZE = 10
 
     class TaskType(QueryType[Task], auto=False):
@@ -1117,7 +1201,6 @@ def test_parse_cache_hook__max_tokens_is_part_of_the_cache_key(graphql, undine_s
 
 @pytest.mark.django_db
 def test_parse_cache_hook__document_that_cannot_be_parsed_is_not_cached(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook]
     undine_settings.PARSE_CACHE_MAX_SIZE = 10
 
     class TaskType(QueryType[Task], auto=False):
@@ -1140,7 +1223,6 @@ def test_parse_cache_hook__document_that_cannot_be_parsed_is_not_cached(graphql,
 
 
 def test_parse_cache_hook__document_from_another_hook_is_kept(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.PARSE_CACHE_MAX_SIZE = 10
 
     context = make_hook_context()
@@ -1163,7 +1245,6 @@ def test_parse_cache_hook__document_from_another_hook_is_kept(undine_settings) -
 
 @pytest.mark.django_db
 def test_validation_cache_hook__same_document_is_validated_once(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
     CountingValidationRule.runs = 0
@@ -1188,7 +1269,6 @@ def test_validation_cache_hook__same_document_is_validated_once(graphql, undine_
 async def test_validation_cache_hook__async_same_document_is_validated_once(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
@@ -1215,7 +1295,6 @@ async def test_validation_cache_hook__async_same_document_is_validated_once(grap
 
 @pytest.mark.django_db
 def test_validation_cache_hook__disabled_by_max_size(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 0
 
@@ -1239,7 +1318,6 @@ def test_validation_cache_hook__disabled_by_max_size(graphql, undine_settings) -
 
 @pytest.mark.django_db
 def test_validation_cache_hook__document_with_errors_is_not_cached(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
@@ -1270,7 +1348,6 @@ def test_validation_cache_hook__document_with_errors_is_not_cached(graphql, undi
 
 @pytest.mark.django_db
 def test_validation_cache_hook__least_recently_used_document_is_discarded(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 1
 
@@ -1294,7 +1371,6 @@ def test_validation_cache_hook__least_recently_used_document_is_discarded(graphq
 
 @pytest.mark.django_db
 def test_validation_cache_hook__result_for_another_schema_is_not_used(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
     class TaskType(QueryType[Task], auto=False):
@@ -1327,7 +1403,6 @@ def test_validation_cache_hook__result_for_another_schema_is_not_used(graphql, u
 
 @pytest.mark.django_db
 def test_validation_cache_hook__visibility__result_is_not_shared_between_users(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
     class TaskType(QueryType[Task], auto=False):
@@ -1361,7 +1436,6 @@ def test_validation_cache_hook__visibility__result_is_not_shared_between_users(g
 
 @pytest.mark.django_db
 def test_validation_cache_hook__visibility__result_is_not_shared_between_variables(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
     class TaskFilterSet(FilterSet[Task], auto=False):
@@ -1394,7 +1468,6 @@ def test_validation_cache_hook__visibility__result_is_not_shared_between_variabl
 
 
 def test_validation_cache_hook__errors_from_another_hook_are_kept(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
     error = GraphQLError("Cannot query field 'hello' on type 'Query'.")

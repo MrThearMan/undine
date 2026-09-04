@@ -620,7 +620,7 @@ def test_persisted_documents__apq__use__not_found(graphql, undine_settings) -> N
 
 @pytest.mark.django_db
 def test_persisted_documents__apq__use__not_enabled(graphql, undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.AUTOMATIC_PERSISTED_QUERIES = False
 
     document = "query { hello }"
     PersistedDocumentFactory.create(document_id=to_document_id(document), document=document)

@@ -38,7 +38,7 @@ from undine.utils.graphql.utils import never_mask_error
 
 def test_opentelemetry__records_spans_for_the_operation_steps(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -69,7 +69,7 @@ def test_opentelemetry__records_spans_for_the_operation_steps(undine_settings) -
 
 def test_opentelemetry__unnamed_operation_is_named_by_its_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ greeting }")
@@ -83,7 +83,7 @@ def test_opentelemetry__unnamed_operation_is_named_by_its_type(undine_settings) 
 
 def test_opentelemetry__operation_name_from_request_is_recorded(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     document = "query Greet { greeting } query Shout { greeting }"
 
@@ -100,7 +100,7 @@ def test_opentelemetry__operation_name_from_request_is_recorded(undine_settings)
 
 def test_opentelemetry__mutation_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("mutation Shout { shout }")
@@ -118,7 +118,7 @@ def test_opentelemetry__mutation_operation_type(undine_settings) -> None:
 
 async def test_opentelemetry__subscription_operation_type(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -142,7 +142,7 @@ async def test_opentelemetry__subscription_operation_type(undine_settings) -> No
 
 async def test_opentelemetry__subscription_results_stay_in_the_operation_trace(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -167,7 +167,7 @@ async def test_opentelemetry__subscription_results_stay_in_the_operation_trace(u
 
 async def test_opentelemetry__subscription_operation_span_covers_the_event_stream(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         results = await run_telemetry_subscription("subscription Countdown { countdown }")
@@ -186,7 +186,7 @@ async def test_opentelemetry__subscription_operation_span_covers_the_event_strea
 def test_opentelemetry__failing_operation_marks_the_span(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ boom }")
@@ -204,7 +204,7 @@ def test_opentelemetry__failing_operation_marks_the_span(undine_settings) -> Non
 def test_opentelemetry__syntax_error_leaves_the_document_attributes_unset(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ greeting")
@@ -219,7 +219,7 @@ def test_opentelemetry__syntax_error_leaves_the_document_attributes_unset(undine
 def test_opentelemetry__document_without_an_operation_leaves_the_document_attributes_unset(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("fragment Greet on Query { greeting }")
@@ -232,7 +232,7 @@ def test_opentelemetry__document_without_an_operation_leaves_the_document_attrib
 
 async def test_opentelemetry__async_execution_records_the_same_spans(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = await run_telemetry_query_async("query Greet { asyncGreeting }")
@@ -264,7 +264,7 @@ async def test_opentelemetry__async_execution_records_the_same_spans(undine_sett
 async def test_opentelemetry__async_failing_operation_marks_the_span(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = await run_telemetry_query_async("{ asyncBoom }")
@@ -281,7 +281,7 @@ async def test_opentelemetry__async_failing_operation_marks_the_span(undine_sett
 
 def test_opentelemetry__unexpected_parse_failure_still_marks_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook, ParseStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook, ParseStepBoomHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -302,7 +302,7 @@ def test_opentelemetry__unexpected_parse_failure_still_marks_the_operation_span(
 
 def test_opentelemetry__unexpected_validation_failure_still_marks_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook, ValidationStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook, ValidationStepBoomHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -320,7 +320,7 @@ def test_opentelemetry__unexpected_validation_failure_still_marks_the_operation_
 
 def test_opentelemetry__unexpected_execution_failure_still_marks_the_operation_span(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook, ExecutionStepBoomHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook, ExecutionStepBoomHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("query Greet { greeting }")
@@ -341,7 +341,7 @@ def test_opentelemetry__unexpected_execution_failure_still_marks_the_operation_s
 
 def test_opentelemetry__inline_literals_are_redacted(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     document = 'query Echo { echo(value: "alice@example.com") }'
 
@@ -357,7 +357,7 @@ def test_opentelemetry__inline_literals_are_redacted(undine_settings) -> None:
 
 def test_opentelemetry__variable_values_are_not_recorded_by_default(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     document = "query Echo($value: String!) { echo(value: $value) }"
     variables = {"value": "alice@example.com"}
@@ -381,7 +381,7 @@ def test_opentelemetry__variable_values_are_recorded_when_the_callback_opts_in(u
         return context.variables
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
     undine_settings.OPENTELEMETRY_VARIABLES_CALLBACK = traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
@@ -398,7 +398,7 @@ def test_opentelemetry__variable_values_are_recorded_when_the_callback_opts_in(u
 
 def test_opentelemetry__variables_are_left_out_when_the_callback_opts_out(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
     undine_settings.OPENTELEMETRY_VARIABLES_CALLBACK = no_traced_variables
 
     document = "query Echo($value: String!) { echo(value: $value) }"
@@ -421,7 +421,7 @@ def test_opentelemetry__span_callback_can_add_attributes_to_the_operation_span(u
         span.set_attribute("graphql.custom", "value")
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
     undine_settings.OPENTELEMETRY_SPAN_CALLBACK = add_custom_attribute
 
     with collect_spans() as spans:
@@ -441,7 +441,7 @@ def test_opentelemetry__span_callback_sees_the_execution_result(undine_settings)
 
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
     undine_settings.OPENTELEMETRY_SPAN_CALLBACK = tag_with_error_count
 
     with collect_spans() as spans:
@@ -456,7 +456,7 @@ def test_opentelemetry__span_callback_sees_the_execution_result(undine_settings)
 
 def test_opentelemetry__no_field_spans_without_the_field_hook(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -472,7 +472,7 @@ def test_opentelemetry__no_field_spans_without_the_field_hook(undine_settings) -
 
 def test_opentelemetry__field_hook_records_a_span_per_field(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ people { name } }")
@@ -506,7 +506,7 @@ def test_opentelemetry__field_hook_records_a_span_per_field(undine_settings) -> 
 def test_opentelemetry__field_spans_are_skipped_for_an_introspection_query(undine_settings) -> None:
     """An introspection query resolves a field per type and field in the schema."""
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     document = "query IntrospectionQuery { people { name } }"
 
@@ -524,7 +524,7 @@ def test_opentelemetry__field_spans_are_skipped_for_an_introspection_query(undin
 
 def test_opentelemetry__field_spans_of_an_introspection_query_when_the_predicate_opts_in(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
     undine_settings.OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE = never_skip_field_spans
 
     document = "query IntrospectionQuery { people { name } }"
@@ -547,7 +547,7 @@ def test_opentelemetry__field_spans_of_an_introspection_query_when_the_predicate
 def test_opentelemetry__field_hook_marks_a_failing_field(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ boom }")
@@ -563,7 +563,7 @@ def test_opentelemetry__field_hook_marks_a_failing_field(undine_settings) -> Non
 
 async def test_opentelemetry__field_hook_records_async_resolvers(undine_settings) -> None:
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     with collect_spans() as spans:
         result = await run_telemetry_query_async("{ asyncGreeting }")
@@ -607,7 +607,7 @@ async def test_opentelemetry__field_hook_records_async_resolvers(undine_settings
 async def test_opentelemetry__field_hook_marks_a_failing_async_field(undine_settings) -> None:
     undine_settings.ERROR_MASKING_PREDICATE = never_mask_error
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     with collect_spans() as spans:
         result = await run_telemetry_query_async("{ asyncBoom }")
@@ -626,16 +626,17 @@ async def test_opentelemetry__field_hook_marks_a_failing_async_field(undine_sett
 
 
 def test_opentelemetry__operation_hook_adds_no_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))
 
-    assert _get_middleware_manager(context.lifecycle_hooks) is None
+    hooks = [hook for hook in context.lifecycle_hooks if isinstance(hook, OpenTelemetryHook)]
+    assert _get_middleware_manager(hooks) is None
 
 
 def test_opentelemetry__field_hook_adds_field_middleware(undine_settings) -> None:
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     params = GraphQLHttpParams(document="{ greeting }", variables={}, operation_name=None, extensions={})
     context = LifecycleHookContext.from_graphql_params(params=params, request=MockRequest(method="POST"))
@@ -651,7 +652,7 @@ def test_opentelemetry__hooks_work_without_a_configured_sdk(undine_settings, mon
     monkeypatch.setattr(trace, "get_tracer", lambda *args: trace.NoOpTracer())
 
     undine_settings.SCHEMA = build_telemetry_schema()
-    undine_settings.LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [OpenTelemetryFullHook]
 
     with collect_spans() as spans:
         result = run_telemetry_query_sync("{ greeting }")

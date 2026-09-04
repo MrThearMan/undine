@@ -22,17 +22,22 @@ the `cache_time` argument to the `Entrypoint`.
 This caches the response for the given number of seconds in the cache set by the
 [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
 
-Response caching requires the `undine.hooks.RequestCacheHook` to be in
-[`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks), which it is by default. Response caching cannot
-be used for [subscriptions](subscriptions.md) or for requests that use
-[incremental delivery](incremental.md).
+Note that response caching cannot be used for requests that use [incremental delivery](incremental.md).
+Also, only responses without errors are cached, since an error can come from a transient issue such as
+a database connection being down.
 
-Only responses without errors are cached, since an error can come from a transient issue
-such as a database connection being down.
+`Entrypoints` are not cached unless you set the `cache_time` argument.
+To cache every `Entrypoint` of the `Query` root type by default, use the
+[`ENTRYPOINT_DEFAULT_CACHE_TIME`](settings.md#entrypoint_default_cache_time) setting.
 
-`Entrypoints` are not cached unless you set the `cache_time` argument. To cache all `Entrypoints`
-by default, use the [`ENTRYPOINT_DEFAULT_CACHE_TIME`](settings.md#entrypoint_default_cache_time)
-setting.
+```python
+UNDINE = {
+    "ENTRYPOINT_DEFAULT_CACHE_TIME": 30,
+}
+```
+
+An `Entrypoint` that sets its own `cache_time` keeps it. Set `cache_time=0` on an `Entrypoint`
+to leave it out of the default.
 
 ### Per-user caching
 
@@ -147,9 +152,7 @@ between requests.
 - `undine.hooks.ValidationCacheHook` caches the validation outcome. Enable it by setting
   [`VALIDATION_CACHE_MAX_SIZE`](settings.md#validation_cache_max_size) above zero.
 
-Both hooks are in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks) by default, and both stay
-disabled until their setting is above zero. Both keep their results in the memory of the process,
-so each worker fills its own cache. A shared cache would send the document over the network on
+Both keep their results in the memory of the process, so each worker fills its own cache. A shared cache would send the document over the network on
 each request, which costs more than the parsing and the validation that it saves.
 
 The setting is also the size limit. When a cache is full, it discards the document that was used

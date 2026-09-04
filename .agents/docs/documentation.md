@@ -28,6 +28,7 @@ description: Documentation on queries in Undine.
 - Wrap every mention of a code entity (class, method, field, module, path) in backticks, including repeat mentions.
 - Bold a new concept the first time it's introduced. Use backticks (not italics) for anything code-shaped.
 - Follow the pattern: brief prose → code snippet → resulting output.
+- Wrap text at 90 ± 20 characters. Prefer wrapping at the end of sentences. Goal is readability on wide screens.
 
 ## Code examples
 
@@ -82,3 +83,4 @@ This is a [link]{:target="_blank"}
 ## Verification
 
 After editing docs, run `mkdocs build --strict` and check for broken links or warnings.
+Note that this does not exit with a non-zero status code, so you'll need to read the full output.

@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import hashlib
 import json
 import time
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
-from functools import wraps
+from functools import cache, wraps
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
+from django.test.signals import setting_changed
 from django.utils.connection import ConnectionProxy
 from graphql import ExecutionResult, GraphQLError, OperationType
 
@@ -43,12 +45,34 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ExecutionLifecycleHookManager",
+    "HookPriority",
     "LifecycleHook",
     "LifecycleHookContext",
     "OperationLifecycleHookManager",
     "ParseLifecycleHookManager",
     "ValidationLifecycleHookManager",
 ]
+
+
+class HookPriority(enum.IntEnum):
+    """
+    Priorities of the built-in lifecycle hooks.
+
+    A hook with a lower priority runs before a hook with a higher priority,
+    and finishes after it. Think of it as wrapping the hooks with a higher priority.
+
+    Use these values to place a custom hook relative to a built-in one,
+    e.g. `priority = HookPriority.RESPONSE_CACHE - 10`.
+    """
+
+    TRACING = 100
+    PARSE_CACHE = 200
+    VALIDATION_CACHE = 300
+    RESPONSE_CACHE = 400
+    VISIBILITY_CACHE = 500
+    ATOMIC_MUTATION = 600
+    PERSISTED_QUERIES = 700
+    DEFAULT = 1000
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -83,7 +107,7 @@ class LifecycleHookContext:
     """Lifecycle hooks for this operation."""
 
     def __post_init__(self) -> None:
-        self.lifecycle_hooks = [hook(context=self) for hook in undine_settings.LIFECYCLE_HOOKS]
+        self.lifecycle_hooks = [hook_class(context=self) for hook_class in get_enabled_lifecycle_hooks()]
 
     @classmethod
     def from_graphql_params(cls, params: GraphQLHttpParams, request: DjangoRequestProtocol) -> Self:
@@ -105,6 +129,14 @@ class LifecycleHook:
     Override methods to hook into the lifecycle of the GraphQL execution.
     Only overridden methods will be used.
     """
+
+    priority: ClassVar[int] = HookPriority.DEFAULT
+    """Determines when this hook runs relative to the other hooks. See `HookPriority`."""
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        """Should this hook be used for the operations of the current schema?"""
+        return True
 
     def __init__(self, context: LifecycleHookContext) -> None:
         """
@@ -177,6 +209,12 @@ class AtomicMutationHook(LifecycleHook):
     if the `@atomic` directive is used on a mutation.
     """
 
+    priority: ClassVar[int] = HookPriority.ATOMIC_MUTATION
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return undine_settings.SCHEMA.mutation_type is not None
+
     def __init__(self, context: LifecycleHookContext) -> None:
         super().__init__(context)
 
@@ -234,6 +272,13 @@ class AtomicMutationHook(LifecycleHook):
 
 class RequestCacheHook(LifecycleHook):
     """Hook for caching requests based on schema `@cacheRules` directives."""
+
+    priority: ClassVar[int] = HookPriority.RESPONSE_CACHE
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        schema = undine_settings.SCHEMA
+        return bool(schema.extensions.get(undine_settings.REQUEST_CACHE_ACTIVE_EXTENSIONS_KEY, False))
 
     @property
     def cache(self) -> BaseCache:
@@ -350,6 +395,16 @@ class RequestCacheHook(LifecycleHook):
 class VisibilityCacheHook(LifecycleHook):
     """Hook for caching the filtered introspection payload per user context."""
 
+    priority: ClassVar[int] = HookPriority.VISIBILITY_CACHE
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        if undine_settings.VISIBILITY_CACHE_TIMEOUT <= 0:
+            return False
+
+        schema = undine_settings.SCHEMA
+        return bool(schema.extensions.get(undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY, False))
+
     @property
     def cache(self) -> BaseCache:
         return ConnectionProxy(caches, undine_settings.VISIBILITY_CACHE_ALIAS)  # type: ignore[return-value]
@@ -401,13 +456,6 @@ class VisibilityCacheHook(LifecycleHook):
         await self.cache.aset(key, result, undine_settings.VISIBILITY_CACHE_TIMEOUT)
 
     def should_cache(self) -> bool:
-        if undine_settings.VISIBILITY_CACHE_TIMEOUT <= 0:
-            return False
-
-        schema = undine_settings.SCHEMA
-        if not schema.extensions.get(undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY, False):
-            return False
-
         operation = get_operation_definition(self.context.document, self.context.operation_name)  # type: ignore[arg-type]
         if operation.operation != OperationType.QUERY:
             return False
@@ -427,6 +475,12 @@ class VisibilityCacheHook(LifecycleHook):
 
 class AutomaticPersistedQueriesHook(LifecycleHook):
     """Hook for saving automatic persisted queries."""
+
+    priority: ClassVar[int] = HookPriority.PERSISTED_QUERIES
+
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return undine_settings.AUTOMATIC_PERSISTED_QUERIES
 
     def on_execution(self) -> Generator[None, None, None]:
         if "persistedQuery" not in self.context.extensions or "persistedQueryUsed" in self.context.extensions:
@@ -498,12 +552,16 @@ class AutomaticPersistedQueriesHook(LifecycleHook):
 class ParseCacheHook(LifecycleHook):
     """Hook for caching parsed GraphQL documents in the memory of the process."""
 
+    priority: ClassVar[int] = HookPriority.PARSE_CACHE
+
     cache: ClassVar[ParseCache] = ParseCache()
 
-    def on_parse(self) -> Generator[None, None, None]:
-        max_size: int = self.cache.max_size
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return cls.cache.max_size > 0
 
-        if max_size <= 0 or self.context.result is not None or self.context.document is not None:
+    def on_parse(self) -> Generator[None, None, None]:
+        if self.context.result is not None or self.context.document is not None:
             yield
             return
 
@@ -531,12 +589,16 @@ class ParseCacheHook(LifecycleHook):
 class ValidationCacheHook(LifecycleHook):
     """Hook for caching the validation outcome of GraphQL documents in the memory of the process."""
 
+    priority: ClassVar[int] = HookPriority.VALIDATION_CACHE
+
     cache: ClassVar[ValidationCache] = ValidationCache()
 
-    def on_validation(self) -> Generator[None, None, None]:
-        max_size: int = self.cache.max_size
+    @classmethod
+    def is_enabled(cls) -> bool:
+        return cls.cache.max_size > 0
 
-        if max_size <= 0 or self.context.result is not None or self.context.validation_errors is not None:
+    def on_validation(self) -> Generator[None, None, None]:
+        if self.context.result is not None or self.context.validation_errors is not None:
             yield
             return
 
@@ -575,6 +637,31 @@ class ValidationCacheHook(LifecycleHook):
             max_query_complexity=undine_settings.MAX_QUERY_COMPLEXITY,
             max_list_nesting_depth=undine_settings.MAX_LIST_NESTING_DEPTH,
         )
+
+
+BUILTIN_LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [
+    AtomicMutationHook,
+    AutomaticPersistedQueriesHook,
+    ParseCacheHook,
+    RequestCacheHook,
+    ValidationCacheHook,
+    VisibilityCacheHook,
+]
+
+
+@cache
+def get_enabled_lifecycle_hooks() -> tuple[type[LifecycleHook], ...]:
+    hook_classes = [*BUILTIN_LIFECYCLE_HOOKS, *undine_settings.ADDITIONAL_LIFECYCLE_HOOKS]
+    enabled_hook_classes = [hook_class for hook_class in hook_classes if hook_class.is_enabled()]
+    enabled_hook_classes.sort(key=lambda hook_class: hook_class.priority)
+    return tuple(enabled_hook_classes)
+
+
+def clear_enabled_lifecycle_hooks_cache(*args: Any, **kwargs: Any) -> None:
+    get_enabled_lifecycle_hooks.cache_clear()
+
+
+setting_changed.connect(clear_enabled_lifecycle_hooks_cache)
 
 
 # Hook managers

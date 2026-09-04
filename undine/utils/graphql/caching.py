@@ -36,6 +36,7 @@ if TYPE_CHECKING:
         FragmentDefinitionNode,
         GraphQLCompositeType,
         GraphQLField,
+        GraphQLSchema,
         OperationDefinitionNode,
         SelectionNode,
     )
@@ -44,7 +45,30 @@ if TYPE_CHECKING:
 
 __all__ = [
     "RequestCacheCalculator",
+    "apply_request_caching",
 ]
+
+
+def apply_request_caching(schema: GraphQLSchema) -> bool:
+    """Record on the schema whether any operation against it can be cached."""
+    active = schema_uses_request_caching(schema)
+    schema.extensions[undine_settings.REQUEST_CACHE_ACTIVE_EXTENSIONS_KEY] = active
+    return active
+
+
+def schema_uses_request_caching(schema: GraphQLSchema) -> bool:
+    # A response is only cached when the `Entrypoint` it was requested through defines a cache time.
+    # Cache times on fields and types can only shorten that time, never introduce one.
+    query_type = schema.query_type
+    if query_type is None:  # pragma: no cover
+        return False
+
+    for field in query_type.fields.values():
+        entrypoint = get_undine_entrypoint(field)
+        if entrypoint is not None and entrypoint.cache_time is not None and entrypoint.cache_time > 0:
+            return True
+
+    return False
 
 
 class RequestCacheCalculator:

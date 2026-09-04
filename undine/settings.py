@@ -120,20 +120,14 @@ class UndineDefaultSettings(NamedTuple):
 
     # GraphQL execution
 
+    ADDITIONAL_LIFECYCLE_HOOKS: list[type[LifecycleHook]] = []
+    """Lifecycle hooks to use during GraphQL operations in addition to the built-in ones."""
+
     ADDITIONAL_VALIDATION_RULES: list[type[ASTValidationRule]] = []
     """Additional validation rules to use for validating the GraphQL schema."""
 
     EXECUTOR_CLASS: type[UndineExecutor] = "undine.execution.UndineExecutor"  # type: ignore[assignment]
     """GraphQL executor class used by the schema."""
-
-    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [  # type: ignore[list-item]
-        "undine.hooks.ParseCacheHook",  # type: ignore[list-item]
-        "undine.hooks.ValidationCacheHook",  # type: ignore[list-item]
-        "undine.hooks.RequestCacheHook",  # type: ignore[list-item]
-        "undine.hooks.VisibilityCacheHook",  # type: ignore[list-item]
-        "undine.hooks.AtomicMutationHook",  # type: ignore[list-item]
-    ]
-    """Lifecycle hooks to use during GraphQL operations."""
 
     MAX_ALLOWED_ALIASES: int = 15
     """The maximum number of aliases allowed in a single operation."""
@@ -190,6 +184,9 @@ class UndineDefaultSettings(NamedTuple):
     """Controls whether the SSE subscription client uses single connection mode."""
 
     # Persisted documents
+
+    AUTOMATIC_PERSISTED_QUERIES: bool = False
+    """Whether persisted documents can be registered during the request phase using the APQ protocol."""
 
     PERSISTED_DOCUMENTS_ONLY: bool = False
     """Whether to only allow persisted documents to be executed."""
@@ -381,10 +378,13 @@ class UndineDefaultSettings(NamedTuple):
     # Caching
 
     ENTRYPOINT_DEFAULT_CACHE_TIME: int = 0
-    """The default caching time an `Entrypoint` for the @cacheRules directive."""
+    """Cache time given to each Query `Entrypoint` that doesn't set one. `0` disables the default."""
 
     PARSE_CACHE_MAX_SIZE: int = 0
     """How many parsed documents to cache in the memory of the process. `0` disables the cache."""
+
+    REQUEST_CACHE_ACTIVE_EXTENSIONS_KEY: str = "undine_request_cache_active"
+    """The key set to `True` on `schema.extensions` when the schema has an `Entrypoint` that can be cached."""
 
     REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
     """The cache alias to use for caching requests."""
@@ -528,6 +528,7 @@ class UndineDefaultSettings(NamedTuple):
 DEFAULTS: dict[str, Any] = UndineDefaultSettings()._asdict()
 
 IMPORT_STRINGS: set[str | bytes] = {
+    "ADDITIONAL_LIFECYCLE_HOOKS.0",
     "ADDITIONAL_VALIDATION_RULES.0",
     "DATADOG_SKIP_FIELD_SPANS_PREDICATE",
     "DATADOG_SPAN_CALLBACK",
@@ -535,7 +536,6 @@ IMPORT_STRINGS: set[str | bytes] = {
     "DOCSTRING_PARSER",
     "ERROR_MASKING_PREDICATE",
     "EXECUTOR_CLASS",
-    "LIFECYCLE_HOOKS.0",
     "OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE",
     "OPENTELEMETRY_SPAN_CALLBACK",
     "OPENTELEMETRY_VARIABLES_CALLBACK",
@@ -564,11 +564,12 @@ REMOVED_SETTINGS: dict[str, Any] = {
     "CONNECTION_STOP_INDEX_KEY": "PAGINATION_STOP_INDEX_KEY",
     "CONNECTION_INDEX_KEY": "PAGINATION_INDEX_KEY",
     "CONNECTION_TOTAL_COUNT_KEY": "PAGINATION_TOTAL_COUNT_KEY",
-    "OPERATION_HOOKS": "LIFECYCLE_HOOKS",
-    "PARSE_HOOKS": "LIFECYCLE_HOOKS",
-    "VALIDATION_HOOKS": "LIFECYCLE_HOOKS",
-    "EXECUTION_HOOKS": "LIFECYCLE_HOOKS",
-    "MIDDLEWARE": "LIFECYCLE_HOOKS",
+    "OPERATION_HOOKS": "ADDITIONAL_LIFECYCLE_HOOKS",
+    "PARSE_HOOKS": "ADDITIONAL_LIFECYCLE_HOOKS",
+    "VALIDATION_HOOKS": "ADDITIONAL_LIFECYCLE_HOOKS",
+    "EXECUTION_HOOKS": "ADDITIONAL_LIFECYCLE_HOOKS",
+    "MIDDLEWARE": "ADDITIONAL_LIFECYCLE_HOOKS",
+    "LIFECYCLE_HOOKS": "ADDITIONAL_LIFECYCLE_HOOKS",
     "EXECUTION_CONTEXT_CLASS": "EXECUTOR_CLASS",
     "EXPERIMENTAL_VISIBILITY_CHECKS": None,
 }

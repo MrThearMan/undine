@@ -434,7 +434,7 @@ async def test_execute_graphql_http_async__result_pre_set_as_awaitable(undine_se
             self.context.result = _awaitable_result()
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetResultHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetResultHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -458,7 +458,7 @@ async def test_execute_graphql_http_async__result_pre_set_as_async_iterator(undi
             self.context.result = _async_gen()
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetAsyncIteratorHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetAsyncIteratorHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -484,7 +484,7 @@ def test_execute_graphql_http_sync__result_pre_set_as_awaitable(undine_settings)
             self.context.result = _awaitable_result()
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetResultHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetResultHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -507,7 +507,7 @@ async def test_execute_graphql_http_async__result_pre_set_in_parse(undine_settin
             self.context.result = ExecutionResult(data={"preparse": "result"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInParseHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInParseHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -540,7 +540,7 @@ async def test_execute_graphql_http_async__document_pre_set(undine_settings) -> 
             self.context.document = pre_parsed_doc
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetDocumentHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetDocumentHook]
 
     params = GraphQLHttpParams(
         document="query { hello }",
@@ -561,7 +561,7 @@ async def test_execute_graphql_http_async__validate_result_pre_set(undine_settin
             self.context.result = ExecutionResult(data={"prevalidation": "result"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInValidationHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInValidationHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -843,7 +843,7 @@ async def test_execute_graphql_with_subscription__result_pre_set_as_awaitable(un
             self.context.result = _awaitable_result()
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetResultHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetResultHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -1084,7 +1084,7 @@ async def test_execute_graphql_http_async__sse_mutation_non_post(undine_settings
             )
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [SSERequestHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [SSERequestHook]
 
     params = GraphQLHttpParams(
         document="mutation { testing }",
@@ -1358,7 +1358,7 @@ def test_execute_graphql_http_sync__result_pre_set_in_parse_hook(undine_settings
             self.context.result = ExecutionResult(data={"preparse": "sync"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInParseHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInParseHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -1391,7 +1391,7 @@ def test_execute_graphql_http_sync__document_pre_set(undine_settings) -> None:
             self.context.document = pre_parsed_doc
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetDocumentHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetDocumentHook]
 
     params = GraphQLHttpParams(
         document="query { hello }",
@@ -1412,7 +1412,7 @@ def test_execute_graphql_http_sync__validate_result_pre_set(undine_settings) -> 
             self.context.result = ExecutionResult(data={"prevalidation": "sync"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInValidationHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInValidationHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -1433,7 +1433,7 @@ def test_execute_graphql_http_sync__execute_result_pre_set(undine_settings) -> N
             self.context.result = ExecutionResult(data={"preexecution": "sync"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInExecutionHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInExecutionHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -1503,7 +1503,7 @@ async def test_execute_graphql_http_async__execute_result_pre_set(undine_setting
             self.context.result = ExecutionResult(data={"preexecution": "async"})
             yield
 
-    undine_settings.LIFECYCLE_HOOKS = [PreSetInExecutionHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetInExecutionHook]
 
     params = GraphQLHttpParams(
         document="query { testing }",
@@ -2131,7 +2131,7 @@ async def test_map_source_to_response__pre_existing_result_via_execution_hook(un
         ),
     )
     undine_settings.ALLOW_QUERIES_WITH_WEBSOCKETS = True
-    undine_settings.LIFECYCLE_HOOKS = [PreSetExecutionHook]
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetExecutionHook]
 
     async def _empty_stream() -> AsyncGenerator[str, None]:  # noqa: RUF029
         return
