@@ -182,7 +182,7 @@ and `cache_per_user` arguments.
 -8<- "queries/query_type_cache.py"
 ```
 
-See the [Entrypoint caching](schema.md#caching) section for more details.
+See the [Caching](caching.md) section for more details.
 
 ### Interfaces
 
@@ -474,7 +474,7 @@ and `cache_per_user` arguments.
 -8<- "queries/field_cache.py"
 ```
 
-See the [Entrypoint caching](schema.md#caching) section for more details.
+See the [Caching](caching.md) section for more details.
 
 ### Field name
 

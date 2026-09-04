@@ -157,6 +157,8 @@ CHANNEL_LAYERS = {
 lifecycle_hooks = [
     "example_project.app.hooks.ErrorLoggingMiddleware",
     "example_project.app.hooks.ExampleHook",
+    "undine.hooks.ParseCacheHook",
+    "undine.hooks.ValidationCacheHook",
     "undine.hooks.RequestCacheHook",
     "undine.hooks.VisibilityCacheHook",
     "undine.hooks.AtomicMutationHook",

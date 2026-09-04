@@ -148,7 +148,7 @@ and `cache_per_user` arguments.
 -8<- "interfaces/interface_type_cache.py"
 ```
 
-See the [Entrypoint caching](schema.md#caching) section for more details.
+See the [Caching](caching.md) section for more details.
 
 ### Directives
 
@@ -262,7 +262,7 @@ and `cache_per_user` arguments.
 -8<- "interfaces/interface_field_cache.py"
 ```
 
-See the [Entrypoint caching](schema.md#caching) section for more details.
+See the [Caching](caching.md) section for more details.
 
 ### Directives
 

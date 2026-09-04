@@ -126,7 +126,9 @@ class UndineDefaultSettings(NamedTuple):
     EXECUTOR_CLASS: type[UndineExecutor] = "undine.execution.UndineExecutor"  # type: ignore[assignment]
     """GraphQL executor class used by the schema."""
 
-    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [
+    LIFECYCLE_HOOKS: list[type[LifecycleHook]] = [  # type: ignore[list-item]
+        "undine.hooks.ParseCacheHook",  # type: ignore[list-item]
+        "undine.hooks.ValidationCacheHook",  # type: ignore[list-item]
         "undine.hooks.RequestCacheHook",  # type: ignore[list-item]
         "undine.hooks.VisibilityCacheHook",  # type: ignore[list-item]
         "undine.hooks.AtomicMutationHook",  # type: ignore[list-item]
@@ -381,6 +383,9 @@ class UndineDefaultSettings(NamedTuple):
     ENTRYPOINT_DEFAULT_CACHE_TIME: int = 0
     """The default caching time an `Entrypoint` for the @cacheRules directive."""
 
+    PARSE_CACHE_MAX_SIZE: int = 0
+    """How many parsed documents to cache in the memory of the process. `0` disables the cache."""
+
     REQUEST_CACHE_ALIAS: str = DEFAULT_CACHE_ALIAS
     """The cache alias to use for caching requests."""
 
@@ -395,6 +400,9 @@ class UndineDefaultSettings(NamedTuple):
 
     REQUEST_CACHE_PREFIX: str = "undine-cache"
     """The prefix to use for the cache keys of requests."""
+
+    VALIDATION_CACHE_MAX_SIZE: int = 0
+    """How many validated documents to cache in the memory of the process. `0` disables the cache."""
 
     # Visibility
 

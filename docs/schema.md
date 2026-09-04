@@ -386,108 +386,14 @@ this complexity _adds_ to any complexity calculated from the `QueryType's` `Fiel
 
 ### Caching
 
-Responses from `Entrypoints` connected to the `Query` `RootType` can be cached by specifying
-the `cache_time` argument to the `Entrypoint` constructor.
+You can cache the response of an `Entrypoint` using the `cache_time`
+and `cache_per_user` arguments.
 
 ```python
 -8<- "schema/entrypoint_cache.py"
 ```
 
-This will cache the response for the specified number of seconds in the cache specified
-by the [`REQUEST_CACHE_ALIAS`](settings.md#request_cache_alias) setting.
-
-You can also cache the response on per-user basis by using the `cache_per_user` argument.
-
-```python
--8<- "schema/entrypoint_cache_per_use.py"
-```
-
-Note that caching requires the `undine.hooks.RequestCacheHook`
-to be in [`LIFECYCLE_HOOKS`](settings.md#lifecycle_hooks), which it is by default.
-
-Only responses without any errors will be cached, since errors can result
-from transient issues such as a database connection being down. Also, responses for authenticated
-and anonymous users are be cached separately, since its quite common that a schema
-will return slightly different results for unauthenticated users.
-
-By default, `Entrypoints` are not cached unless you explicitly set the `cache_time` argument.
-If you want all `Entrypoints` to be cached by default, you can use the
-[`ENTRYPOINT_DEFAULT_CACHE_TIME`](settings.md#entrypoint_default_cache_time) setting.
-
-Custom caching rules can also be set for individual [`Fields`](queries.md#caching_1),
-[`QueryTypes`](queries.md#caching), [`InterfaceTypes`](interfaces.md#caching),
-[`InterfaceFields`](interfaces.md#caching_1) and [`UnionTypes`](unions.md#caching).
-If no caching rules have been set for these objects, they opt into being cached
-using the `Entrypoint's` caching rules. Otherwise, the caching is done using
-the most restrictive caching rules found from objects included in the query.
-
-For example, if a `Field` defines a stricter caching rule than an `Entrypoint`,
-the `Field's` caching rules will be used instead.
-
-```python
--8<- "schema/entrypoint_cache_field.py"
-```
-
-If queried like this:
-
-```graphql
-query {
-  task(id: 1) {
-    name
-  }
-}
-```
-
-Since the `name` `Field` is included in the query, and has a cache time of 10 seconds,
-while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
-Additionally, since the `name` `Field` is caching is declared to be per-user, the whole operation is cached
-for each user separately.
-
-If a `Field's` reference defines a caching rule, but the `Field` itself does not,
-that reference's rule will be used. Note that this only applies for `Fields`, not for `Entrypoints`!
-
-```python
--8<- "schema/entrypoint_cache_query_type.py"
-```
-
-If queried like this:
-
-```graphql
-query {
-  task(id: 1) {
-    project {
-      name
-    }
-  }
-}
-```
-
-Since the `project` `Field` is included in the query, and it uses `ProjectType`, which is cached for 10 seconds,
-while the `Entrypoint` has a cache time of 60 seconds, the whole query will be cached for only 10 seconds.
-
-By default, queries are cached based on the GraphQL source document, included variables, the operation name,
-GraphQL operation extensions and the users authentication status. Additionally, per-user caching
-will include the user's primary key. If your requests can vary based on additional factors,
-like accepted language, you can use the [`REQUEST_CACHE_EXTRA_CONTEXT`](settings.md#request_cache_extra_context)
-setting to add that extra data to the cache key.
-
-```python
--8<- "schema/entrypoint_cache_extra_context.py"
-```
-
-You can also use the [`REQUEST_CACHE_READ_PREDICATE`](settings.md#request_cache_read_predicate)
-and [`REQUEST_CACHE_WRITE_PREDICATE`](settings.md#request_cache_write_predicate) settings
-to control whether the cache should be read from or written to based on a given request.
-
-```python
--8<- "schema/entrypoint_cache_should_read_write.py"
-```
-
-In addition to server-side caching, `Entrypoint` caching also sends the appropriate
-`Cache-Control` and `Age` headers to the client, so that browser and CDN caching can be used.
-
-Note also that `Entrypoint` caching cannot be used for subscriptions or requests
-using incremental delivery.
+See the [Caching](caching.md) section for more details.
 
 ### Errors as data
 

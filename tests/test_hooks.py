@@ -9,10 +9,10 @@ import pytest
 from asgiref.sync import sync_to_async
 from graphql import ExecutionResult, GraphQLError, GraphQLFieldResolver, parse
 
-from example_project.app.models import Task
+from example_project.app.models import Project, Task
 from tests.factories import TaskFactory
-from tests.helpers import MockRequest, mock_gql_info
-from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
+from tests.helpers import CountingValidationRule, DocumentRecordingHook, MockRequest, mock_gql_info
+from undine import Entrypoint, Field, Filter, FilterSet, GQLInfo, QueryType, RootType, create_schema
 from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import GraphQLAsyncAtomicMutationNotSupportedError
 from undine.execution import _get_middleware_manager, execute_graphql_with_subscription  # noqa: PLC2701
@@ -23,8 +23,10 @@ from undine.hooks import (
     LifecycleHook,
     LifecycleHookContext,
     OperationLifecycleHookManager,
+    ParseCacheHook,
     ParseLifecycleHookManager,
     RequestCacheHook,
+    ValidationCacheHook,
     ValidationLifecycleHookManager,
     VisibilityCacheHook,
 )
@@ -1008,3 +1010,403 @@ async def test_visibility_cache_hook__async_result_has_errors(undine_settings) -
 
         with contextlib.suppress(StopAsyncIteration):
             await anext(gen)
+
+
+# ParseCacheHook
+
+
+@pytest.mark.django_db
+def test_parse_cache_hook__same_document_is_parsed_once(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+
+    DocumentRecordingHook.documents.clear()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    assert graphql(query).has_errors is False
+    assert graphql(query).has_errors is False
+
+    assert len(DocumentRecordingHook.documents) == 2
+    assert DocumentRecordingHook.documents[0] is DocumentRecordingHook.documents[1]
+
+
+@pytest.mark.django_db
+def test_parse_cache_hook__disabled_by_max_size(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.PARSE_CACHE_MAX_SIZE = 0
+
+    DocumentRecordingHook.documents.clear()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    assert graphql(query).has_errors is False
+    assert graphql(query).has_errors is False
+
+    assert len(DocumentRecordingHook.documents) == 2
+    assert DocumentRecordingHook.documents[0] is not DocumentRecordingHook.documents[1]
+
+
+@pytest.mark.django_db
+def test_parse_cache_hook__least_recently_used_document_is_discarded(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook, DocumentRecordingHook]
+    undine_settings.PARSE_CACHE_MAX_SIZE = 1
+
+    DocumentRecordingHook.documents.clear()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        done = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    assert graphql("query { tasks { name } }").has_errors is False
+    assert graphql("query { tasks { done } }").has_errors is False
+    assert graphql("query { tasks { name } }").has_errors is False
+
+    assert len(DocumentRecordingHook.documents) == 3
+    assert DocumentRecordingHook.documents[0] is not DocumentRecordingHook.documents[2]
+
+
+@pytest.mark.django_db
+def test_parse_cache_hook__max_tokens_is_part_of_the_cache_key(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook]
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    assert graphql(query).has_errors is False
+
+    undine_settings.MAX_TOKENS = 2
+
+    assert graphql(query).errors == [
+        {
+            "message": "Syntax Error: Document contains more than 2 tokens. Parsing aborted.",
+            "locations": [{"line": 1, "column": 9}],
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_parse_cache_hook__document_that_cannot_be_parsed_is_not_cached(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ParseCacheHook]
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    source = "query { tasks {"
+
+    assert graphql(source).has_errors is True
+
+    context = make_hook_context(source="query { hello }")
+    context.source = source
+    hook = ParseCacheHook(context=context)
+
+    assert ParseCacheHook.cache.get(hook.get_cache_key()) is None
+
+
+def test_parse_cache_hook__document_from_another_hook_is_kept(undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.PARSE_CACHE_MAX_SIZE = 10
+
+    context = make_hook_context()
+    document = context.document
+    hook = ParseCacheHook(context=context)
+
+    gen = hook.on_parse()
+    next(gen)
+
+    assert context.document is document
+
+    with contextlib.suppress(StopIteration):
+        next(gen)
+
+    assert ParseCacheHook.cache.get(hook.get_cache_key()) is None
+
+
+# ValidationCacheHook
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__same_document_is_validated_once(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+    CountingValidationRule.runs = 0
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    assert graphql(query).has_errors is False
+    assert graphql(query).has_errors is False
+
+    assert CountingValidationRule.runs == 1
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_validation_cache_hook__async_same_document_is_validated_once(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    CountingValidationRule.runs = 0
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    result = await graphql_async(query)
+    assert result.has_errors is False
+
+    result = await graphql_async(query)
+    assert result.has_errors is False
+
+    assert CountingValidationRule.runs == 1
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__disabled_by_max_size(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 0
+
+    CountingValidationRule.runs = 0
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { name } }"
+
+    assert graphql(query).has_errors is False
+    assert graphql(query).has_errors is False
+
+    assert CountingValidationRule.runs == 2
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__document_with_errors_is_not_cached(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    CountingValidationRule.runs = 0
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { missing } }"
+
+    errors = [
+        {
+            "message": "Cannot query field 'missing' on type 'TaskType'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+    assert graphql(query).errors == errors
+    assert graphql(query).errors == errors
+
+    assert CountingValidationRule.runs == 2
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__least_recently_used_document_is_discarded(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.ADDITIONAL_VALIDATION_RULES = [CountingValidationRule]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 1
+
+    CountingValidationRule.runs = 0
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+        done = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    assert graphql("query { tasks { name } }").has_errors is False
+    assert graphql("query { tasks { done } }").has_errors is False
+    assert graphql("query { tasks { name } }").has_errors is False
+
+    assert CountingValidationRule.runs == 3
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__result_for_another_schema_is_not_used(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class QueryWithTasks(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    class QueryWithProjects(RootType):
+        projects = Entrypoint(ProjectType, many=True)
+
+    query = "query { tasks { name } }"
+
+    undine_settings.SCHEMA = create_schema(query=QueryWithTasks)
+
+    assert graphql(query).has_errors is False
+
+    undine_settings.SCHEMA = create_schema(query=QueryWithProjects)
+
+    assert graphql(query).errors == [
+        {
+            "message": "Cannot query field 'tasks' on type 'QueryWithProjects'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__visibility__result_is_not_shared_between_users(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    class TaskType(QueryType[Task], auto=False):
+        pk = Field()
+        secret = Field("name")
+
+        @secret.visible
+        def secret_visible(self, request: DjangoRequestProtocol) -> bool:
+            return request.user.is_superuser
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query { tasks { secret } }"
+
+    graphql.login_with_superuser()
+
+    assert graphql(query).has_errors is False
+
+    graphql.logout()
+
+    assert graphql(query).errors == [
+        {
+            "message": "Cannot query field 'secret' on type 'TaskType'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+@pytest.mark.django_db
+def test_validation_cache_hook__visibility__result_is_not_shared_between_variables(graphql, undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = [ValidationCacheHook]
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    class TaskFilterSet(FilterSet[Task], auto=False):
+        name = Filter()
+        filler = Filter("pk")
+
+        @name.visible
+        def name_visible(self, request: DjangoRequestProtocol) -> bool:
+            return False
+
+    @TaskFilterSet
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = "query($filter: TaskFilterSet!) { tasks(filter: $filter) { name } }"
+
+    assert graphql(query, variables={"filter": {"filler": 1}}).has_errors is False
+
+    assert graphql(query, variables={"filter": {"name": "foo"}}).errors == [
+        {
+            "message": "Field 'name' is not defined by type 'TaskFilterSet'.",
+            "extensions": {"status_code": 400},
+        }
+    ]
+
+
+def test_validation_cache_hook__errors_from_another_hook_are_kept(undine_settings) -> None:
+    undine_settings.LIFECYCLE_HOOKS = []
+    undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
+
+    error = GraphQLError("Cannot query field 'hello' on type 'Query'.")
+
+    context = make_hook_context()
+    context.validation_errors = [error]
+    hook = ValidationCacheHook(context=context)
+
+    gen = hook.on_validation()
+    next(gen)
+
+    assert context.validation_errors == [error]
+
+    with contextlib.suppress(StopIteration):
+        next(gen)

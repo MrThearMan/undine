@@ -541,7 +541,10 @@ Type: `list[type[LifecycleHook]]`
 Default:
 ```
 [
+    "undine.hooks.ParseCacheHook",
+    "undine.hooks.ValidationCacheHook",
     "undine.hooks.RequestCacheHook",
+    "undine.hooks.VisibilityCacheHook",
     "undine.hooks.AtomicMutationHook",
 ]
 ```
@@ -862,6 +865,17 @@ The key to which a nested pagination stop indexes are annotated to.
 Type: `str` | Default: `"_undine_pagination_total_count"`
 
 The key to which a nested pagination total counts are annotated to.
+
+///
+
+/// details | `PARSE_CACHE_MAX_SIZE`
+    attrs: {id: parse_cache_max_size}
+
+Type: `int` | Default: `0`
+
+How many parsed documents the `undine.hooks.ParseCacheHook` keeps in the memory of the process.
+Set to `0` (default) to disable the cache.
+See [document caching](caching.md#document-caching) for more information.
 
 ///
 
@@ -1224,6 +1238,17 @@ with multiple requests and browser tabs.
 
 ///
 
+/// details | `VALIDATION_CACHE_MAX_SIZE`
+    attrs: {id: validation_cache_max_size}
+
+Type: `int` | Default: `0`
+
+How many validated documents the `undine.hooks.ValidationCacheHook` keeps in the memory
+of the process. Set to `0` (default) to disable the cache.
+See [document caching](caching.md#document-caching) for more information.
+
+///
+
 /// details | `VISIBILITY_ACTIVE_EXTENSIONS_KEY`
     attrs: {id: visibility_active_extensions_key}
 
@@ -1250,7 +1275,7 @@ The cache alias to use for visibility caching.
 Type: `Callable[[DjangoRequestProtocol], Any]` | Default: `"undine.utils.visibility.default_visibility_extra_context"`
 
 Function returning any JSON-serialisable extra context added to the cross-request
-[visibility cache](visibility.md#caching) key. Use this when
+[visibility cache](caching.md#visibility-caching) key. Use this when
 per-user visibility depends on more than the user primary key (for example a
 tenant identifier or group membership).
 
@@ -1261,7 +1286,7 @@ tenant identifier or group membership).
 
 Type: `str` | Default: `"undine_visibility"`
 
-Prefix used for the cross-request [visibility cache](visibility.md#caching) keys.
+Prefix used for the cross-request [visibility cache](caching.md#visibility-caching) keys.
 
 ///
 

@@ -105,6 +105,7 @@ if TYPE_CHECKING:
     from django.test.client import Client
     from django.utils.datastructures import MultiValueDict
     from graphql import (
+        ASTValidationRule,
         ConstValueNode,
         DirectiveLocation,
         FormattedExecutionResult,
@@ -1464,6 +1465,26 @@ class CacheKeyData(TypedDict):
     is_authenticated: bool
     user_pk: NotRequired[int | None]
     extra: NotRequired[str]
+
+
+class ParseCacheKey(NamedTuple):
+    """Cache key for a parsed GraphQL document."""
+
+    source: str
+    no_location: bool
+    max_tokens: int | None
+
+
+class ValidationCacheKey(NamedTuple):
+    """Cache key for the validation outcome of a GraphQL document."""
+
+    schema: GraphQLSchema
+    source: str
+    rules: tuple[type[ASTValidationRule], ...]
+    max_allowed_aliases: int
+    max_allowed_directives: int
+    max_query_complexity: int
+    max_list_nesting_depth: int
 
 
 class ResultCacheData(TypedDict):

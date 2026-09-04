@@ -40,6 +40,7 @@ from graphql import (
     OperationType,
     SelectionSetNode,
     Undefined,
+    ValidationRule,
     version_info,
 )
 from graphql.pyutils import Path
@@ -48,6 +49,7 @@ from urllib3.fields import RequestField
 
 from example_project.app.models import Comment, Project, Report, Task
 from undine.exceptions import UndineError
+from undine.hooks import LifecycleHook
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
 from undine.relay import encode_base64
 from undine.settings import example_schema, undine_settings
@@ -59,12 +61,14 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files.uploadedfile import UploadedFile
     from django.db.models import Model
-    from graphql import AbortSignal, FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
+    from graphql import AbortSignal, DocumentNode, FragmentDefinitionNode, GraphQLOutputType, GraphQLSchema
     from pytest_django import DjangoDbBlocker
 
     from undine.typing import RequestMethod
 
 __all__ = [
+    "CountingValidationRule",
+    "DocumentRecordingHook",
     "MockRequest",
     "cancel_from_thread_after",
     "create_graphql_multipart_spec_request",
@@ -85,6 +89,25 @@ TNamedTuple = TypeVar("TNamedTuple", bound=NamedTuple)
 
 PNG = base64.b64decode(b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4AWNgYGAAAAAEAAHklIQGAAAAAElFTkSuQmCC")
 """A single blank pixel PNG image in base64 encoding."""
+
+
+class DocumentRecordingHook(LifecycleHook):
+    """Records the parsed document of each operation it runs for, so that reused documents can be detected."""
+
+    documents: list[DocumentNode] = []
+
+    def on_validation(self) -> Generator[None, None, None]:
+        DocumentRecordingHook.documents.append(self.context.document)  # type: ignore[arg-type]
+        yield
+
+
+class CountingValidationRule(ValidationRule):
+    """Counts how many times the GraphQL validation rules have been run."""
+
+    runs: int = 0
+
+    def enter_document(self, *args: Any) -> None:
+        CountingValidationRule.runs += 1
 
 
 class ParametrizeArgs(TypedDict):

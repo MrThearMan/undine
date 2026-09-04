@@ -11,6 +11,7 @@ from tests.helpers import SessionStore
 from undine.directives import AtomicDirective, CacheRulesDirective, ComplexityDirective
 from undine.federation.directives import USED_FEDERATION_DIRECTIVES
 from undine.federation.federation_type import FEDERATION_TYPE_REGISTRY
+from undine.hooks import ParseCacheHook, ValidationCacheHook
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.relay import Node
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
@@ -34,6 +35,9 @@ def _clear_registries() -> None:
     DIRECTIVE_REGISTRY.clear()
     USED_FEDERATION_DIRECTIVES.clear()
     FEDERATION_TYPE_REGISTRY.clear()
+
+    ParseCacheHook.cache.clear()
+    ValidationCacheHook.cache.clear()
 
     Node.__implementations__.clear()
 

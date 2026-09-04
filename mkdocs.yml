@@ -23,6 +23,7 @@ nav:
   - Visibility: visibility.md
   - Hacking Undine: hacking-undine.md
   - Optimizer: optimizer.md
+  - Caching: caching.md
   - Async Support: async.md
   - DataLoaders: dataloaders.md
   - Incremental Delivery: incremental.md

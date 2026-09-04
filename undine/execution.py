@@ -185,13 +185,15 @@ def _validate_document_sync(context: LifecycleHookContext) -> None:
     if context.result is not None:
         return
 
-    validation_errors = _validate(
-        document=context.document,  # type: ignore[arg-type]
-        variables=context.variables,
-        request=context.request,
-    )
-    if validation_errors:
-        context.result = get_error_execution_result(validation_errors)
+    if context.validation_errors is None:
+        context.validation_errors = _validate(
+            document=context.document,  # type: ignore[arg-type]
+            variables=context.variables,
+            request=context.request,
+        )
+
+    if context.validation_errors:
+        context.result = get_error_execution_result(context.validation_errors)
         return
 
     _validate_http(context)
@@ -315,13 +317,15 @@ async def _validate_document_async(context: LifecycleHookContext) -> None:  # no
     if context.result is not None:
         return
 
-    validation_errors = _validate(
-        document=context.document,  # type: ignore[arg-type]
-        variables=context.variables,
-        request=context.request,
-    )
-    if validation_errors:
-        context.result = get_error_execution_result(validation_errors)
+    if context.validation_errors is None:
+        context.validation_errors = _validate(
+            document=context.document,  # type: ignore[arg-type]
+            variables=context.variables,
+            request=context.request,
+        )
+
+    if context.validation_errors:
+        context.result = get_error_execution_result(context.validation_errors)
         return
 
     if _is_websocket_request(context.request):

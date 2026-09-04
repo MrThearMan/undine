@@ -142,5 +142,5 @@ See the [Apollo documentation]{:target="_blank"} for more information.
 [Apollo documentation]: https://www.apollographql.com/docs/apollo-server/performance/apq
 
 > It's recommended to send requests using GET when using APQs, as this allows the requests
-> to benefit from browser and CDN caching. See Undine can add `Cache-Control` headers to the response
-> using [`Entrypoint` caching](schema.md#caching) to help with this.
+> to benefit from browser and CDN caching. Undine can add `Cache-Control` headers to the response
+> using [response caching](caching.md#response-caching) to help with this.

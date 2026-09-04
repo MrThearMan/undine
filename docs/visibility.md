@@ -260,14 +260,8 @@ remains available within the subgraph.
 
 ## Caching
 
-If using [response caching](schema.md#caching), cached is forced as per-user
-when the traversal encounters any entity that uses visibility.
-This makes sure hidden data cannot leak between users through cached responses.
-
-Additionally, you can cache the user's introspection response by setting
-[`VISIBILITY_CACHE_TIMEOUT`](settings.md#visibility_cache_timeout).
-Cache keys are derived from the user's primary key plus any extra context supplied by
-[`VISIBILITY_CACHE_EXTRA_CONTEXT`](settings.md#visibility_cache_extra_context).
+Visibility forces response caching to be per-user, and a user's introspection response can be
+cached on its own. See [visibility caching](caching.md#visibility-caching) for more details.
 
 ## Caveats
 

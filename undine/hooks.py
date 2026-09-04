@@ -7,7 +7,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, ExitStack, asynccontextmanager, contextmanager
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from django.core.cache import caches
 from django.db import transaction  # noqa: ICN003
@@ -17,7 +17,7 @@ from graphql import ExecutionResult, GraphQLError, OperationType
 from undine.exceptions import GraphQLAPQHashInvalidError, GraphQLAsyncAtomicMutationNotSupportedError
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import CacheKeyData, ResultCacheData, VisibilityCacheData
+from undine.typing import CacheKeyData, ParseCacheKey, ResultCacheData, ValidationCacheKey, VisibilityCacheData
 from undine.utils.graphql.caching import RequestCacheCalculator
 from undine.utils.graphql.utils import (
     get_error_execution_result,
@@ -25,6 +25,9 @@ from undine.utils.graphql.utils import (
     get_operation_definition,
     is_atomic_mutation,
 )
+from undine.utils.graphql.validation_rules import get_validation_rules
+from undine.utils.graphql.validation_rules.visibility_rule import VisibilityRule
+from undine.utils.lru_cache import ParseCache, ValidationCache
 from undine.utils.reflection import delegate_to_subgenerator
 
 if TYPE_CHECKING:
@@ -32,7 +35,7 @@ if TYPE_CHECKING:
 
     from django.contrib.auth.models import AbstractUser, AnonymousUser
     from django.core.cache import BaseCache
-    from graphql import DocumentNode, GraphQLFieldResolver
+    from graphql import ASTValidationRule, DocumentNode, GraphQLFieldResolver
     from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import CacheControlResults, GraphQLHttpParams
@@ -57,6 +60,9 @@ class LifecycleHookContext:
 
     document: DocumentNode | None
     """Parsed GraphQL document AST. Available after parsing is complete."""
+
+    validation_errors: list[GraphQLError] | None = None
+    """Errors found when validating the GraphQL document. Available after validation is complete."""
 
     variables: dict[str, Any]
     """Variables passed to the GraphQL operation."""
@@ -487,6 +493,88 @@ class AutomaticPersistedQueriesHook(LifecycleHook):
         )
 
         yield
+
+
+class ParseCacheHook(LifecycleHook):
+    """Hook for caching parsed GraphQL documents in the memory of the process."""
+
+    cache: ClassVar[ParseCache] = ParseCache()
+
+    def on_parse(self) -> Generator[None, None, None]:
+        max_size: int = self.cache.max_size
+
+        if max_size <= 0 or self.context.result is not None or self.context.document is not None:
+            yield
+            return
+
+        key = self.get_cache_key()
+
+        document = self.cache.get(key)
+        if document is not None:
+            self.context.document = document
+            yield
+            return
+
+        yield
+
+        if self.context.document is not None:
+            self.cache.set(key, self.context.document)
+
+    def get_cache_key(self) -> ParseCacheKey:
+        return ParseCacheKey(
+            source=self.context.source,
+            no_location=undine_settings.NO_ERROR_LOCATION,
+            max_tokens=undine_settings.MAX_TOKENS,
+        )
+
+
+class ValidationCacheHook(LifecycleHook):
+    """Hook for caching the validation outcome of GraphQL documents in the memory of the process."""
+
+    cache: ClassVar[ValidationCache] = ValidationCache()
+
+    def on_validation(self) -> Generator[None, None, None]:
+        max_size: int = self.cache.max_size
+
+        if max_size <= 0 or self.context.result is not None or self.context.validation_errors is not None:
+            yield
+            return
+
+        rules = get_validation_rules(inside_request=True)
+
+        # Visibility is resolved against the user making the request and the values of the variables
+        # they sent, so the outcome is not a function of the document and the schema alone.
+        if VisibilityRule in rules:
+            yield
+            return
+
+        key = self.get_cache_key(rules)
+
+        cached_errors = self.cache.get(key)
+        if cached_errors is not None:
+            self.context.validation_errors = list(cached_errors)
+            yield
+            return
+
+        yield
+
+        # Errors are modified when they are added to a response, so they cannot be shared
+        # between requests. Only documents that validate without errors are cached.
+        validation_errors = self.context.validation_errors
+        if validation_errors is not None and not validation_errors:
+            self.cache.set(key, validation_errors)
+
+    def get_cache_key(self, rules: tuple[type[ASTValidationRule], ...]) -> ValidationCacheKey:
+        # Every setting that can change whether a document is valid must be part of the key.
+        return ValidationCacheKey(
+            schema=undine_settings.SCHEMA,
+            source=self.context.source,
+            rules=rules,
+            max_allowed_aliases=undine_settings.MAX_ALLOWED_ALIASES,
+            max_allowed_directives=undine_settings.MAX_ALLOWED_DIRECTIVES,
+            max_query_complexity=undine_settings.MAX_QUERY_COMPLEXITY,
+            max_list_nesting_depth=undine_settings.MAX_LIST_NESTING_DEPTH,
+        )
 
 
 # Hook managers

@@ -56,6 +56,10 @@ in the order they are added in the `LIFECYCLE_HOOKS` setting list.
 Specifically, the first hook registered will have its "before" portion run first
 and its "after" portion run last. You can think of them as a stack of context managers.
 
+> Undine has built-in hooks that are documented with the features they implement.
+> See [caching](caching.md), [atomic mutations](mutations.md#atomic-mutations) and
+> [automatic persisted queries](persisted-documents.md#automatic-persisted-queries).
+
 ## LifecycleHookContext
 
 Each hook is passed a `LifecycleHookContext` object (`self.context`),
@@ -64,6 +68,9 @@ This includes:
 
 - `source`: Source GraphQL document string.
 - `document`: Parsed GraphQL AST. Available after parsing is complete.
+- `validation_errors`: Errors found when validating the GraphQL document.
+  Available after validation is complete. Adding errors to this in a `LifecycleHook`
+  will skip validation and exit the operation early with those errors.
 - `variables`: Variables passed to the GraphQL operation.
 - `operation_name`: The name of the GraphQL operation to run from the document.
   Can be empty if there is only one operation in the document.
