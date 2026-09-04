@@ -117,9 +117,9 @@ class ModelSaveSubscriptionResolver(Generic[TModel]):
 
         async with aclosing(event_stream):
             try:
-                async for event in event_stream:
+                async for pk in event_stream:
                     queryset = query_type.__get_queryset__(info)
-                    instance = await optimize_async(queryset, info, pk=event.pk)
+                    instance = await optimize_async(queryset, info, pk=pk)
 
                     # Instance was deleted before we got a chance to send it to the subscriber.
                     if instance is None:

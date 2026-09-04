@@ -12,11 +12,13 @@ from functools import cached_property
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from asgiref.sync import async_to_sync
 from asgiref.typing import HTTPResponseBodyEvent, HTTPResponseStartEvent
+from channels import DEFAULT_CHANNEL_LAYER
 from channels.auth import AuthMiddlewareStack
 from channels.consumer import AsyncConsumer
 from channels.db import aclose_old_connections
-from channels.exceptions import InvalidChannelLayerError, StopConsumer
+from channels.exceptions import StopConsumer
 from channels.layers import get_channel_layer
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
@@ -26,7 +28,9 @@ from django.http import HttpResponse
 from django.urls import re_path
 from graphql import GraphQLError
 
+from undine.brokers import SubscriptionBroker, SubscriptionEventBuffer
 from undine.exceptions import (
+    ChannelLayerMissingError,
     ContinueConsumer,
     GraphQLErrorGroup,
     GraphQLSSEOperationIdMissingError,
@@ -39,13 +43,19 @@ from undine.http.responses import HttpMethodNotAllowedResponse, HttpUnsupportedC
 from undine.http.utils import get_graphql_event_stream_token
 from undine.parsers import GraphQLRequestParamsParser
 from undine.settings import undine_settings
-from undine.typing import SSEOperationCancelEvent, SSEOperationResultEvent, SSEStreamCloseEvent, SSEStreamOpenEvent
+from undine.typing import (
+    SignalSubscriptionEvent,
+    SSEOperationCancelEvent,
+    SSEOperationResultEvent,
+    SSEStreamCloseEvent,
+    SSEStreamOpenEvent,
+)
 from undine.utils.graphql.server_sent_events import GraphQLOverSSESCHandler, SSEClaimStore, SSERequest, SSESessionStore
 from undine.utils.graphql.utils import get_error_execution_result
 from undine.utils.graphql.websocket import GraphQLOverWebSocketHandler
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import AsyncGenerator, Awaitable
 
     from asgiref.typing import (
         ASGI3Application,
@@ -64,6 +74,8 @@ if TYPE_CHECKING:
     from undine.typing import DjangoRequestProtocol, HTTPASGIScope
 
 __all__ = [
+    "ChannelLayerSubscriptionBroker",
+    "get_channel_layer_or_raise",
     "get_sse_enabled_app",
     "get_websocket_and_sse_enabled_app",
     "get_websocket_enabled_app",
@@ -142,6 +154,85 @@ def get_websocket_and_sse_enabled_app(django_application: ASGIHandler) -> Any:  
         "http": get_sse_enabled_app(django_application),
         "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),  # type: ignore[arg-type]
     })
+
+
+# Channel layer
+
+
+def get_channel_layer_or_raise(alias: str) -> BaseChannelLayer:
+    """
+    Get the channel layer configured for the given alias.
+
+    :raises ChannelLayerMissingError: No channel layer has been configured for the alias.
+    """
+    channel_layer: BaseChannelLayer | None = get_channel_layer(alias)
+    if channel_layer is None:
+        raise ChannelLayerMissingError(alias=alias)
+    return channel_layer
+
+
+# Signal subscriptions
+
+
+class ChannelLayerSubscriptionBroker(SubscriptionBroker):
+    """
+    Broker that moves signal subscription events between processes using a channel layer.
+
+    Cross-process delivery needs a channel layer that every process shares, such as
+    `channels_redis`. The in-memory channel layer is local to one process, so with it
+    this broker delivers no more widely than the in-memory broker does.
+
+    A channel layer drops events for a channel whose queue is full, and it drops them without
+    telling the publisher. Keep the channel layer's `capacity` at or above the `max_backlog`
+    of each subscription, so that a subscriber that falls behind ends with a
+    `GraphQLSubscriptionBacklogFullError` instead of a gap it cannot detect.
+    """
+
+    channel_layer_alias: ClassVar[str] = DEFAULT_CHANNEL_LAYER
+
+    @property
+    def channel_layer(self) -> BaseChannelLayer:
+        return get_channel_layer_or_raise(self.channel_layer_alias)
+
+    def publish(self, topic: str, payload: dict[str, Any]) -> None:
+        message = SignalSubscriptionEvent(type="undine.signal.event", payload=payload)
+        async_to_sync(self.channel_layer.group_send)(group=topic, message=message)  # type: ignore[arg-type]
+
+    async def subscribe(self, topic: str, *, max_backlog: int) -> AsyncGenerator[dict[str, Any], None]:
+        channel_layer = self.channel_layer
+        channel_name = await channel_layer.new_channel()
+        await channel_layer.group_add(group=topic, channel=channel_name)
+
+        buffer = SubscriptionEventBuffer(max_backlog=max_backlog)
+        receiving = asyncio.create_task(
+            self.receive_into(buffer, channel_layer=channel_layer, channel_name=channel_name),
+        )
+
+        try:
+            async for payload in buffer.stream():
+                yield payload
+        finally:
+            receiving.cancel()
+            with suppress(asyncio.CancelledError):
+                await receiving
+            await channel_layer.group_discard(group=topic, channel=channel_name)
+
+    async def receive_into(
+        self,
+        buffer: SubscriptionEventBuffer,
+        *,
+        channel_layer: BaseChannelLayer,
+        channel_name: str,
+    ) -> None:
+        """
+        Move events from the channel to the buffer as they arrive.
+
+        Draining the channel eagerly keeps the buffer the bound that fills up first,
+        so that a subscriber that falls behind is told about it.
+        """
+        while True:
+            message = await channel_layer.receive(channel_name)
+            buffer.put(message["payload"])
 
 
 # Websockets
@@ -268,10 +359,7 @@ class GraphQLSSESingleConnectionConsumer(ABC, AsyncConsumer):
         self.messages: list[HTTPRequestEvent] = []
 
     async def __call__(self, scope: HTTPASGIScope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:  # type: ignore[override]
-        channel_layer: BaseChannelLayer | None = get_channel_layer(self.channel_layer_alias)
-        if channel_layer is None:
-            msg = f"No channel layer configured for alias '{self.channel_layer_alias}'"
-            raise InvalidChannelLayerError(msg)
+        channel_layer = get_channel_layer_or_raise(self.channel_layer_alias)
 
         self.scope = scope
         self.base_send = send

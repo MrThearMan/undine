@@ -294,7 +294,9 @@ __all__ = [
     "LiteralArg",
     "M2MChangedParams",
     "ManyMatch",
+    "ModelDeleteEvent",
     "ModelField",
+    "ModelSaveEvent",
     "MutationKind",
     "MutationTypeParams",
     "NextMessage",
@@ -326,6 +328,7 @@ __all__ = [
     "Selections",
     "Self",
     "ServerMessage",
+    "SignalSubscriptionEvent",
     "SortedSequenceWithErrors",
     "SubscribeMessage",
     "SupportsLookup",
@@ -1429,6 +1432,30 @@ class M2MChangedParams(TypedDict):
 
     using: str
     """The database alias being used"""
+
+
+class ModelSaveEvent(TypedDict):
+    """Event published when a model instance has been saved."""
+
+    pk: str
+    """The primary key of the instance that was saved"""
+
+    created: bool
+    """Whether the instance was created or updated"""
+
+
+class ModelDeleteEvent(TypedDict):
+    """Event published when a model instance is about to be deleted."""
+
+    snapshot: str
+    """The instance's own columns, serialized before its row was deleted"""
+
+
+class SignalSubscriptionEvent(TypedDict):
+    """A channel layer message carrying a signal subscription event."""
+
+    type: Literal["undine.signal.event"]
+    payload: dict[str, Any]
 
 
 class PostgresFTSLangSpecificFields(TypedDict, total=False):

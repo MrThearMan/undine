@@ -1185,6 +1185,18 @@ The name of the query string parameter to use for the GraphQL over SSE event str
 
 ///
 
+/// details | `SUBSCRIPTION_BROKER_CLASS`
+    attrs: {id: subscription_broker_class}
+
+Type: `type[SubscriptionBroker]` | Default: `"undine.brokers.InMemorySubscriptionBroker"`
+
+The broker that signal subscriptions publish their events to and receive them from.
+Value should be given as the dotted path to the broker class.
+The default broker delivers events within a single process.
+See [Brokers](subscriptions.md#brokers) for the alternatives.
+
+///
+
 /// details | `TESTING_CLIENT_FULL_STACKTRACE`
     attrs: {id: testing_client_full_stacktrace}
 

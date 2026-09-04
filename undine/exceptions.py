@@ -109,6 +109,12 @@ class BulkMutateNeedsImplementationError(UndineError):
     msg = "Must implement '{mutation_type}.__bulk_mutate__' to handle related inputs"
 
 
+class ChannelLayerMissingError(UndineError):
+    """Error raised if a channel layer is needed but none has been configured."""
+
+    msg = "No channel layer has been configured for the alias {alias!r}"
+
+
 class DirectiveLocationError(UndineError):
     """Error raised if Directive is passed to a location it cannot be used in."""
 

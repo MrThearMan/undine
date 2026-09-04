@@ -94,7 +94,7 @@ async def test_signal_subscription__save__signal_from_non_loop_thread() -> None:
     await events.aclose()
 
     assert not watchdog.is_set(), "The event loop was not woken by the signal, so nothing was delivered."
-    assert event == task
+    assert event == str(task.pk)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -120,40 +120,11 @@ async def test_signal_subscription__save__backlog_full() -> None:
     post_save.send(instance=first_task, **signal_params)
     post_save.send(instance=second_task, **signal_params)
 
-    assert await receive_task == first_task
+    assert await receive_task == str(first_task.pk)
 
     message = "Subscriber cannot keep up with the rate of incoming events"
     with pytest.raises(GraphQLSubscriptionBacklogFullError, match=exact(message)):
         await anext(events)
-
-
-@pytest.mark.django_db(transaction=True)
-def test_signal_subscription__save__event_loop_closed() -> None:
-    class TaskType(QueryType[Task], auto=True): ...
-
-    subscription = ModelSaveSubscription(TaskType)
-
-    loop = asyncio.new_event_loop()
-
-    async def start_subscribing() -> None:
-        subscriber = subscription.create_subscriber()
-        events = subscriber.subscribe()
-        receive_task = loop.create_task(anext(events))
-
-        # Let the subscriber register itself and start waiting for an event.
-        await asyncio.sleep(TEST_WAIT_TIME)
-
-        assert not receive_task.done()
-
-    loop.run_until_complete(start_subscribing())
-    loop.close()
-
-    # The subscriber is still registered, since closing the loop skipped the generator's cleanup.
-    subscriber = next(iter(subscription.subscribers.values()))
-
-    TaskFactory.create(name="Task")
-
-    assert subscriber.events.empty()
 
 
 @pytest.mark.django_db(transaction=True)

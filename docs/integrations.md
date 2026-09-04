@@ -42,6 +42,10 @@ For both WebSocket and SSE Single Connection mode:
 -8<- "integrations/channels_websocket_and_sse.py"
 ```
 
+The integration also provides `ChannelLayerSubscriptionBroker`, which delivers
+[signal subscription](subscriptions.md#brokers) events between worker processes
+over a channel layer.
+
 ## GraphiQL
 
 Undine includes a built-in [GraphiQL]{:target="_blank"} interface for exploring and

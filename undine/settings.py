@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from graphql import ASTValidationRule, GraphQLError
     from opentelemetry.trace import Span as OpenTelemetrySpan
 
+    from undine.brokers import SubscriptionBroker
     from undine.execution import UndineExecutor
     from undine.hooks import LifecycleHook, LifecycleHookContext
     from undine.integrations.sentry import RecordedSpan as SentryRecordedSpan
@@ -201,6 +202,11 @@ class UndineDefaultSettings(NamedTuple):
 
     PERSISTED_DOCUMENTS_VIEW_NAME: str = "persisted_documents"
     """The name of given to the persisted documents registration view in the URLconf."""
+
+    # Subscriptions
+
+    SUBSCRIPTION_BROKER_CLASS: type[SubscriptionBroker] = "undine.brokers.InMemorySubscriptionBroker"  # type: ignore[assignment]
+    """The broker that signal subscriptions publish their events to and receive them from."""
 
     # WebSocket
 
@@ -550,6 +556,7 @@ IMPORT_STRINGS: set[str | bytes] = {
     "SENTRY_SKIP_FIELD_SPANS_PREDICATE",
     "SENTRY_SPAN_CALLBACK",
     "SENTRY_VARIABLES_CALLBACK",
+    "SUBSCRIPTION_BROKER_CLASS",
     "VISIBILITY_CACHE_EXTRA_CONTEXT",
     "WEBSOCKET_CONNECTION_INIT_HOOK",
     "WEBSOCKET_PING_HOOK",

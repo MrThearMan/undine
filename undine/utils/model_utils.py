@@ -6,6 +6,7 @@ from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 from django.apps import apps
+from django.core import serializers
 from django.core.exceptions import FieldDoesNotExist
 from django.db import connections, router  # noqa: ICN003
 from django.db.models import (
@@ -64,6 +65,7 @@ __all__ = [
     "SubqueryCount",
     "convert_integrity_errors",
     "create_union_queryset",
+    "deserialize_model_instance",
     "determine_output_field",
     "generic_foreign_key_for_generic_relation",
     "generic_relations_for_generic_foreign_key",
@@ -87,6 +89,8 @@ __all__ = [
     "is_to_many",
     "is_to_one",
     "lookup_to_display_name",
+    "serialize_model_instance",
+    "serialize_model_pk",
     "set_forward_ids",
 ]
 
@@ -182,6 +186,28 @@ def get_pks_from_list_of_dicts(input_data: list[dict[str, Any]]) -> list[Any]:
         raise GraphQLDuplicatePrimaryKeysError(duplicates=duplicates)
 
     return pks
+
+
+def serialize_model_pk(instance: Model) -> str:
+    """Serialize a model instance's primary key to a string that another process can look the instance up with."""
+    return instance._meta.pk.value_to_string(instance)  # type: ignore[union-attr]
+
+
+def serialize_model_instance(instance: Model) -> str:
+    """
+    Serialize a model instance to a string that another process can rebuild the instance from.
+
+    Only the instance's own columns are included. Many-to-many relations are left out,
+    since reading them queries the database for rows that may already be gone.
+    """
+    field_names = [field.name for field in instance._meta.local_concrete_fields]
+    return serializers.serialize("json", [instance], fields=field_names)
+
+
+def deserialize_model_instance(data: str) -> Model:
+    """Rebuild a model instance from the string given by `serialize_model_instance`."""
+    deserialized_object = next(serializers.deserialize("json", data))
+    return deserialized_object.object
 
 
 def generic_relations_for_generic_foreign_key(fk: GenericForeignKey) -> Generator[GenericRelation, None, None]:

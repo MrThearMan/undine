@@ -48,6 +48,7 @@ from urllib3 import encode_multipart_formdata
 from urllib3.fields import RequestField
 
 from example_project.app.models import Comment, Project, Report, Task
+from undine.brokers import InMemorySubscriptionBroker
 from undine.exceptions import UndineError
 from undine.hooks import LifecycleHook
 from undine.optimizer.optimizer import OptimizationResults, QueryOptimizer
@@ -69,6 +70,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CountingValidationRule",
     "DocumentRecordingHook",
+    "ExampleSubscriptionBroker",
     "MockRequest",
     "cancel_from_thread_after",
     "create_graphql_multipart_spec_request",
@@ -99,6 +101,10 @@ class DocumentRecordingHook(LifecycleHook):
     def on_validation(self) -> Generator[None, None, None]:
         DocumentRecordingHook.documents.append(self.context.document)  # type: ignore[arg-type]
         yield
+
+
+class ExampleSubscriptionBroker(InMemorySubscriptionBroker):
+    """Broker used for checking that the `SUBSCRIPTION_BROKER_CLASS` setting selects the broker."""
 
 
 class CountingValidationRule(ValidationRule):

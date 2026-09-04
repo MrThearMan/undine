@@ -215,6 +215,34 @@ so queries to them are optimized just like any other query.
 > However, a copy of the instance is made just before deletion so that you can query
 > its details, but not its relations since those have not been prefetched.
 
+### Brokers
+
+A signal subscription publishes each event to a **broker**, and every subscriber reads its events
+from that broker. Which broker is used is set with the
+[`SUBSCRIPTION_BROKER_CLASS`](settings.md#subscription_broker_class) setting.
+
+Delivery is at-most-once fan-out. Every subscriber receives every event that is published while
+it is subscribed. Events are not stored, so an event published while nobody is subscribed is lost,
+and a client that reconnects does not receive the events it missed.
+
+By default, Undine uses `InMemorySubscriptionBroker`. It keeps each event in the memory of the
+process that published it, so a write handled by one worker does not reach subscribers attached
+to another worker. Use it when a single process serves your whole deployment.
+
+For more than one worker, use `ChannelLayerSubscriptionBroker` from the
+[`channels` integration](integrations.md#channels) together with a channel layer that every
+process shares, such as [`channels-redis`][channels-redis]{:target="_blank"}.
+
+```python
+-8<- "subscriptions/signals_redis_settings.py"
+```
+
+Since only primitive values can travel between processes, a save event carries the primary key
+of the saved instance, and the process that receives it reads the instance through the `QueryType`.
+A delete event carries the instance's own columns instead, because its row is already gone.
+
+### Backlog
+
 Each subscriber buffers the events it has not processed yet. `max_backlog` sets how many events
 a subscriber may fall behind by, and defaults to 100.
 
@@ -223,8 +251,12 @@ subscription ends with an error instead and the client can resubscribe and refet
 Set `max_backlog=0` for an unbounded buffer, which trades that error for unbounded memory use
 when a subscriber cannot keep up.
 
-> Signal subscriptions are delivered within a single process. A write handled by one worker
-> does not reach subscribers attached to another worker.
+> With `ChannelLayerSubscriptionBroker`, keep the channel layer's `capacity` at or above
+> `max_backlog`. A channel layer silently drops events for a channel whose queue is full,
+> so a smaller `capacity` turns a subscriber that falls behind into a stream with an
+> undetectable gap instead of one that ends with an error.
+
+### Custom signals
 
 For other signals, you can create custom subscriptions by subclassing `undine.subscriptions.SignalSubscription`
 and adding the appropriate converters in order to use it in your schema.

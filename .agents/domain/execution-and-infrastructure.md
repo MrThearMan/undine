@@ -59,3 +59,11 @@ _Avoid_: Live query, push notification
 **Signal subscription**:
 A subscription backed by a Django signal, typically for model create, update, or delete events.
 _Avoid_: Model subscription, event subscription
+
+**Subscription broker**:
+The component that carries signal subscription events from the process that publishes an event to the processes holding subscribers for it.
+_Avoid_: Message queue, event bus, pub/sub (unqualified)
+
+**Subscription topic**:
+The name of the event stream a signal subscription publishes to and its subscribers read from, computed identically in every process.
+_Avoid_: Channel, group (both channel layer terms), queue
