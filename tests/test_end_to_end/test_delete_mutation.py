@@ -138,6 +138,55 @@ def test_delete_mutation__instance_not_found(graphql, undine_settings):
 
 
 @pytest.mark.django_db
+def test_delete_mutation__mutation_instance_limit(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskDeleteMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        delete_task = Entrypoint(TaskDeleteMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    first_task = TaskFactory.create()
+    second_task = TaskFactory.create()
+
+    query = """
+        mutation($firstInput: TaskDeleteMutation! $secondInput: TaskDeleteMutation!) {
+            first: deleteTask(input: $firstInput) {
+                pk
+            }
+            second: deleteTask(input: $secondInput) {
+                pk
+            }
+        }
+    """
+    variables = {
+        "firstInput": {"pk": first_task.pk},
+        "secondInput": {"pk": second_task.pk},
+    }
+
+    response = graphql(query, variables=variables)
+
+    assert response.errors == [
+        {
+            "message": "Cannot mutate more than 1 objects in a single request (counted 2).",
+            "extensions": {
+                "error_code": "MUTATION_TOO_MANY_OBJECTS",
+                "status_code": 400,
+            },
+            "path": ["second"],
+        }
+    ]
+
+    assert list(Task.objects.values_list("pk", flat=True)) == [second_task.pk]
+
+
+@pytest.mark.django_db
 def test_delete_mutation__missing_lookup_field(graphql, undine_settings):
     class TaskType(QueryType[Task]): ...
 

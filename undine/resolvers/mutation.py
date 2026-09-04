@@ -8,7 +8,7 @@ from asgiref.sync import sync_to_async
 from django.db.models import Model, Q
 from graphql import Undefined
 
-from undine.exceptions import GraphQLMissingLookupFieldError, GraphQLMutationInstanceLimitError
+from undine.exceptions import GraphQLMissingLookupFieldError
 from undine.settings import undine_settings
 from undine.typing import TModel
 from undine.utils.graphql.utils import pre_evaluate_request_user
@@ -19,6 +19,7 @@ from undine.utils.model_utils import (
     get_instances_or_raise,
     get_pks_from_list_of_dicts,
 )
+from undine.utils.mutation_counter import add_mutated_instances, check_mutation_instance_limit
 from undine.utils.pre_mutation import pre_mutation, pre_mutation_async, pre_mutation_many, pre_mutation_many_async
 from undine.utils.reflection import as_coroutine_func_if_not
 
@@ -214,6 +215,9 @@ class DeleteResolver(Generic[TModel]):
         if pk is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key="pk")
 
+        counter = info.context.undine_internal.mutation_counter
+        add_mutated_instances(counter, 1)
+
         instance = get_instance_or_raise(model=self.model, pk=input_data["pk"])
 
         pre_mutation(
@@ -239,6 +243,9 @@ class DeleteResolver(Generic[TModel]):
         pk: Any = input_data.get("pk", Undefined)
         if pk is Undefined:
             raise GraphQLMissingLookupFieldError(model=self.model, key="pk")
+
+        counter = info.context.undine_internal.mutation_counter
+        add_mutated_instances(counter, 1)
 
         instance = await sync_to_async(get_instance_or_raise)(model=self.model, pk=input_data["pk"])
 
@@ -284,9 +291,8 @@ class BulkCreateResolver(Generic[TModel]):
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        check_mutation_instance_limit(counter, len(input_data))
 
         instances: list[TModel] = [self.model() for _ in input_data]
 
@@ -316,9 +322,8 @@ class BulkCreateResolver(Generic[TModel]):
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        check_mutation_instance_limit(counter, len(input_data))
 
         instances: list[TModel] = [self.model() for _ in input_data]
 
@@ -370,9 +375,8 @@ class BulkUpdateResolver(Generic[TModel]):
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        check_mutation_instance_limit(counter, len(input_data))
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = get_instances_or_raise(model=self.model, pks=pks)
@@ -405,9 +409,8 @@ class BulkUpdateResolver(Generic[TModel]):
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        check_mutation_instance_limit(counter, len(input_data))
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = await sync_to_async(get_instances_or_raise)(model=self.model, pks=pks)
@@ -458,9 +461,8 @@ class BulkDeleteResolver(Generic[TModel]):
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[SimpleNamespace]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        add_mutated_instances(counter, len(input_data))
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = get_instances_or_raise(model=self.model, pks=pks)
@@ -488,9 +490,8 @@ class BulkDeleteResolver(Generic[TModel]):
 
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
-        count = len(input_data)
-        if count > undine_settings.MUTATION_INSTANCE_LIMIT:
-            raise GraphQLMutationInstanceLimitError(limit=undine_settings.MUTATION_INSTANCE_LIMIT, count=count)
+        counter = info.context.undine_internal.mutation_counter
+        add_mutated_instances(counter, len(input_data))
 
         pks = get_pks_from_list_of_dicts(input_data)
         instances = await sync_to_async(get_instances_or_raise)(model=self.model, pks=pks)

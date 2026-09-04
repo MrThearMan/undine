@@ -793,6 +793,38 @@ after the schema is created. The `Input` itself is found in the GraphQL input fi
 under a key defined by the [`INPUT_EXTENSIONS_KEY`](settings.md#input_extensions_key)
 setting.
 
+## Mutation instance limit
+
+The [`MUTATION_INSTANCE_LIMIT`](settings.md#mutation_instance_limit) setting caps how many
+Model instances a single request may mutate. This protects the database from a client that
+asks for an unreasonable amount of work in one operation.
+
+The limit is shared by the whole request. Every Model instance counts towards it, no matter
+which mutation touched it:
+
+- Each item in a [bulk mutation](schema.md#many) input list.
+- Each [related mutation](#related-mutations) object, at any depth of nesting.
+- Each row added to the through Model of a many-to-many relation.
+- Each related object deleted or disconnected by the [related mutation action](#related-mutation-action).
+
+The count also carries over between the mutations of one operation, so a client cannot bypass
+the limit by sending the same mutation several times under different aliases:
+
+```graphql
+mutation ($firstInput: TaskCreateMutation! $secondInput: TaskCreateMutation!) {
+  first: createTask(input: $firstInput) {
+    pk
+  }
+  second: createTask(input: $secondInput) {
+    pk
+  }
+}
+```
+
+When the limit is exceeded, the mutation that reached it fails with a `MUTATION_TOO_MANY_OBJECTS`
+error. Mutations that already completed earlier in the same operation are kept. Add the
+[`@atomic`](#atomic-mutations) directive to roll those back as well.
+
 ## Atomic mutations
 
 If you want to execute multiple mutations in a single operation atomically,

@@ -873,6 +873,157 @@ def test_create_mutation__atomic_mutation(graphql, undine_settings):
     assert Project.objects.count() == 0
 
 
+@pytest.mark.django_db
+def test_create_mutation__mutation_instance_limit__nested_relations(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskStepType(QueryType[TaskStep]): ...
+
+    class RelatedTaskStep(MutationType[TaskStep], kind="related"): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        steps = Input(RelatedTaskStep)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+    undine_settings.MUTATION_INSTANCE_LIMIT = 2
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [
+            {"name": "Test Step 1"},
+            {"name": "Test Step 2"},
+        ],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    assert response.errors == [
+        {
+            "message": "Cannot mutate more than 2 objects in a single request (counted 3).",
+            "extensions": {
+                "error_code": "MUTATION_TOO_MANY_OBJECTS",
+                "status_code": 400,
+            },
+            "path": ["createTask"],
+        }
+    ]
+
+    assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_create_mutation__mutation_instance_limit__many_to_many_through_rows(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class PersonType(QueryType[Person]): ...
+
+    class RelatedPerson(MutationType[Person], kind="related"): ...
+
+    class TaskCreateMutation(MutationType[Task]):
+        assignees = Input(RelatedPerson)
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+    undine_settings.MUTATION_INSTANCE_LIMIT = 2
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "assignees": [
+            {"name": "Test Person"},
+        ],
+    }
+    query = """
+        mutation($input: TaskCreateMutation!) {
+            createTask(input: $input) {
+                name
+            }
+        }
+    """
+
+    response = graphql(query, variables={"input": data})
+
+    # The task, the person, and the through row between them.
+    assert response.errors == [
+        {
+            "message": "Cannot mutate more than 2 objects in a single request (counted 3).",
+            "extensions": {
+                "error_code": "MUTATION_TOO_MANY_OBJECTS",
+                "status_code": 400,
+            },
+            "path": ["createTask"],
+        }
+    ]
+
+    assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_create_mutation__mutation_instance_limit__shared_by_whole_request(graphql, undine_settings):
+    class TaskType(QueryType[Task]): ...
+
+    class TaskCreateMutation(MutationType[Task]): ...
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType)
+
+    class Mutation(RootType):
+        create_task = Entrypoint(TaskCreateMutation)
+
+    undine_settings.SCHEMA = create_schema(query=Query, mutation=Mutation)
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    query = """
+        mutation($firstInput: TaskCreateMutation! $secondInput: TaskCreateMutation!) {
+            first: createTask(input: $firstInput) {
+                name
+            }
+            second: createTask(input: $secondInput) {
+                name
+            }
+        }
+    """
+    variables = {
+        "firstInput": {"name": "First Task", "type": TaskTypeChoices.TASK},
+        "secondInput": {"name": "Second Task", "type": TaskTypeChoices.TASK},
+    }
+
+    response = graphql(query, variables=variables)
+
+    assert response.errors == [
+        {
+            "message": "Cannot mutate more than 1 objects in a single request (counted 2).",
+            "extensions": {
+                "error_code": "MUTATION_TOO_MANY_OBJECTS",
+                "status_code": 400,
+            },
+            "path": ["second"],
+        }
+    ]
+
+    # Without the '@atomic' directive, the mutation that ran before the limit was reached is kept.
+    assert list(Task.objects.values_list("name", flat=True)) == ["First Task"]
+
+
 @pytest.mark.django_db(transaction=True)
 async def test_create_mutation__async(graphql_async, undine_settings):
     class TaskType(QueryType[Task]): ...

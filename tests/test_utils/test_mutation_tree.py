@@ -18,21 +18,23 @@ from tests.factories.example import (
     ExampleRMTMFactory,
     ExampleROTOFactory,
 )
+from tests.helpers import exact
 from undine.dataclasses import RelInfo
 from undine.exceptions import (
     GraphQLInvalidInputDataError,
+    GraphQLMutationInstanceLimitError,
     GraphQLMutationTreeModelMismatchError,
     GraphQLRelationMultipleInstancesError,
     GraphQLRelationNotNullableError,
 )
-from undine.typing import RelatedAction, RelationType
+from undine.typing import MutationInstanceCounter, RelatedAction, RelationType
 from undine.utils.mutation_tree import MutationNode, mutate
 
 
 @pytest.mark.django_db
 def test_mutation_optimization(undine_settings) -> None:  # noqa: C901, PLR0912
     undine_settings.MUTATION_FULL_CLEAN = False
-    undine_settings.MUTATION_INSTANCE_LIMIT = 200
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1_000
 
     ex = ExampleFactory.create(name="bar")
 
@@ -1001,3 +1003,37 @@ def test_mutation__generic_fk__null_not_nullable(undine_settings) -> None:
 
     with pytest.raises(GraphQLRelationNotNullableError):
         node._handle_generic_fk({"example": None}, rel_info, instance, MutationNode(model=Example))
+
+
+@pytest.mark.django_db
+def test_mutation__instance_limit(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 2
+
+    data = {
+        "name": "Test Task",
+        "type": TaskTypeChoices.TASK,
+        "steps": [{"name": "Test Step 1"}, {"name": "Test Step 2"}],
+    }
+
+    msg = "Cannot mutate more than 2 objects in a single request (counted 3)."
+    with pytest.raises(GraphQLMutationInstanceLimitError, match=exact(msg)):
+        mutate(model=Task, data=data)
+
+    assert Task.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_mutation__instance_limit__counter_shared_between_calls(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+    undine_settings.MUTATION_INSTANCE_LIMIT = 1
+
+    counter = MutationInstanceCounter()
+
+    mutate(model=Task, data={"name": "First Task", "type": TaskTypeChoices.TASK}, counter=counter)
+
+    msg = "Cannot mutate more than 1 objects in a single request (counted 2)."
+    with pytest.raises(GraphQLMutationInstanceLimitError, match=exact(msg)):
+        mutate(model=Task, data={"name": "Second Task", "type": TaskTypeChoices.TASK}, counter=counter)
+
+    assert list(Task.objects.values_list("name", flat=True)) == ["First Task"]

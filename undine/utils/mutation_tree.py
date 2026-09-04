@@ -16,7 +16,7 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_model_relation_info
 from undine.settings import undine_settings
-from undine.typing import RelatedAction, RelationType
+from undine.typing import MutationInstanceCounter, RelatedAction, RelationType
 from undine.utils.model_utils import (
     generic_relations_for_generic_foreign_key,
     get_bulk_create_kwargs,
@@ -29,10 +29,11 @@ from undine.utils.model_utils import (
     use_m2m_remove_signals,
     use_save_signals,
 )
+from undine.utils.mutation_counter import add_mutated_instances
 from undine.utils.text import to_camel_case
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model
@@ -52,6 +53,7 @@ def mutate(
     model: type[TModel],
     data: dict[str, Any],
     related_action: RelatedAction = ...,
+    counter: MutationInstanceCounter | None = ...,
 ) -> TModel: ...
 
 
@@ -61,6 +63,7 @@ def mutate(
     model: type[TModel],
     data: list[dict[str, Any]],
     related_action: RelatedAction = ...,
+    counter: MutationInstanceCounter | None = ...,
 ) -> list[TModel]: ...
 
 
@@ -70,6 +73,7 @@ def mutate(
     model: type[TModel],
     data: dict[str, Any] | list[dict[str, Any]],
     related_action: RelatedAction = RelatedAction.null,
+    counter: MutationInstanceCounter | None = None,
 ) -> TModel | list[TModel]:
     """
     Mutates a instance(s) of the given model using the given input data.
@@ -105,18 +109,33 @@ def mutate(
     >>> instances[1].name
     'New task 2'
 
+    Every instance the mutation touches, nested relations and many-to-many through rows included,
+    is counted against the `MUTATION_INSTANCE_LIMIT` setting. Pass the counter of the running
+    GraphQL operation to share one budget across all mutations in the request:
+
+    >>> counter = info.context.undine_internal.mutation_counter
+    >>> instance = mutate(model=Task, data={"name": "New task"}, counter=counter)
+
+    Without a counter, the limit applies to this call alone.
+
     :param model: The model to mutate.
     :param data: The input data to use for the mutation.
     :param related_action: The action to take for existing related objects that are not included in the input.
                            Specifically used for reverse one-to-one and reverse one-to-many relations.
+    :param counter: Counter to record the mutated instances in.
     """
-    if isinstance(data, list):
-        start_node = MutationNode(model=model, related_action=related_action)
-        start_node.handle_many(data)
-        return start_node.mutate()  # type: ignore[return-value]
+    if counter is None:
+        counter = MutationInstanceCounter()
 
     start_node = MutationNode(model=model, related_action=related_action)
+
+    if isinstance(data, list):
+        start_node.handle_many(data)
+        add_mutated_instances(counter, start_node.instance_count())
+        return start_node.mutate()  # type: ignore[return-value]
+
     start_node.handle_one(data)
+    add_mutated_instances(counter, start_node.instance_count())
     return start_node.mutate()[0]  # type: ignore[return-value]
 
 
@@ -168,6 +187,24 @@ class MutationNode:
                 after_node.mutate(previous_node=self)
 
         return instances
+
+    def walk(self, *, seen: set[int] | None = None) -> Generator[MutationNode, None, None]:
+        """Yield this node and every node linked to it, each one exactly once."""
+        if seen is None:
+            seen = set()
+
+        if id(self) in seen:
+            return
+
+        seen.add(id(self))
+        yield self
+
+        for node in (*self.before.values(), *self.after.values()):
+            yield from node.walk(seen=seen)
+
+    def instance_count(self) -> int:
+        """How many model instances will be mutated when the mutations are run starting from this node?"""
+        return sum(len(node.instances) for node in self.walk())
 
     def mutate_bulk(self) -> list[Model]:
         """Mutate model instances using the `queryset.bulk_create` method."""

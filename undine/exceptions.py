@@ -1156,7 +1156,7 @@ class GraphQLMutationInputNotFoundError(GraphQLStatusError):
 class GraphQLMutationInstanceLimitError(GraphQLStatusError):
     """Error raised when mutation contains too many objects."""
 
-    msg = "Cannot mutate more than {limit} objects in a single mutation (counted {count})."
+    msg = "Cannot mutate more than {limit} objects in a single request (counted {count})."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.MUTATION_TOO_MANY_OBJECTS
 

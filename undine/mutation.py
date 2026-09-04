@@ -272,12 +272,22 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     @classmethod
     def __mutate__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> Any:
         """Method used for single object mutations."""
-        return mutate(model=cls.__model__, data=input_data, related_action=cls.__related_action__)
+        return mutate(
+            model=cls.__model__,
+            data=input_data,
+            related_action=cls.__related_action__,
+            counter=info.context.undine_internal.mutation_counter,
+        )
 
     @classmethod
     def __bulk_mutate__(cls, instances: list[TModel], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
         """Method used for bulk mutations."""
-        return mutate(model=cls.__model__, data=input_data, related_action=cls.__related_action__)
+        return mutate(
+            model=cls.__model__,
+            data=input_data,
+            related_action=cls.__related_action__,
+            counter=info.context.undine_internal.mutation_counter,
+        )
 
     @classmethod
     def __permissions__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:

@@ -330,7 +330,7 @@ def test_bulk_update_mutation__mutation_instance_limit(graphql, undine_settings)
         "data": None,
         "errors": [
             {
-                "message": "Cannot mutate more than 1 objects in a single mutation (counted 2).",
+                "message": "Cannot mutate more than 1 objects in a single request (counted 2).",
                 "extensions": {
                     "error_code": "MUTATION_TOO_MANY_OBJECTS",
                     "status_code": 400,
@@ -1902,7 +1902,7 @@ async def test_bulk_update_mutation__mutation_instance_limit__async(graphql_asyn
         "data": None,
         "errors": [
             {
-                "message": "Cannot mutate more than 1 objects in a single mutation (counted 2).",
+                "message": "Cannot mutate more than 1 objects in a single request (counted 2).",
                 "extensions": {
                     "error_code": "MUTATION_TOO_MANY_OBJECTS",
                     "status_code": 400,

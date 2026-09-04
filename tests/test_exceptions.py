@@ -1044,7 +1044,7 @@ class GQLErrorParams(NamedTuple):
         GraphQLMutationInstanceLimitError.__name__: GQLErrorParams(
             cls=GraphQLMutationInstanceLimitError,
             args={"limit": 100, "count": 200},
-            message="Cannot mutate more than 100 objects in a single mutation (counted 200).",
+            message="Cannot mutate more than 100 objects in a single request (counted 200).",
             extensions={"error_code": "MUTATION_TOO_MANY_OBJECTS", "status_code": 400},
         ),
         GraphQLMutationTreeModelMismatchError.__name__: GQLErrorParams(

@@ -244,8 +244,9 @@ type Mutation {
 }
 ```
 
-> Note that the total amount of objects that can be mutated in a bulk mutation
+> Note that the total amount of objects that can be mutated in a single request
 > is limited by the [`MUTATION_INSTANCE_LIMIT`](settings.md#mutation_instance_limit) setting.
+> See [mutation instance limit](mutations.md#mutation-instance-limit).
 
 ### Nullable
 

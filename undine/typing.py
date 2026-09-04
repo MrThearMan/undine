@@ -911,12 +911,22 @@ AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
 # GraphQL specific
 
 
+@dataclasses.dataclass(slots=True)
+class MutationInstanceCounter:
+    """Counts the model instances mutated during a single GraphQL operation."""
+
+    count: int = 0
+
+
 @dataclasses.dataclass(slots=True, kw_only=True)
 class UndineInternalContext:
     """Undine internal implementation context."""
 
     connection_handler_storage: dict[str, CursorPaginationHandler] = dataclasses.field(default_factory=dict)
     """Index of pagination handlers for access after prefetch has been done."""
+
+    mutation_counter: MutationInstanceCounter = dataclasses.field(default_factory=MutationInstanceCounter)
+    """Counts the model instances mutated during this operation. See `MUTATION_INSTANCE_LIMIT`."""
 
 
 @dataclasses.dataclass(kw_only=True, eq=False)

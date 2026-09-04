@@ -692,7 +692,10 @@ but may introduce issues that would be solved by running full Model validation.
 
 Type: `int` | Default: `100`
 
-The maximum number of objects that can be mutated in a single bulk mutation.
+The maximum number of Model instances that can be mutated in a single request.
+
+The limit is shared by every mutation in the request, and counts nested related objects
+and many-to-many through rows as well. See [mutation instance limit](mutations.md#mutation-instance-limit).
 
 ///
 
