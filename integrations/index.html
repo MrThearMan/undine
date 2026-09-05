@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Integrations - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Integrations";
+        var mkdocs_page_input_path = "integrations.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Integrations Undine has with other libraries." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../federation/">Federation</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../visibility/">Visibility</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../caching/">Caching</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../incremental/">Incremental Delivery</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Integrations</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#channels">Channels</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#graphiql">GraphiQL</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#django-debug-toolbar">Django Debug Toolbar</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#django-model-translation">Django Model Translation</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#opentelemetry">OpenTelemetry</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#field-spans">Field spans</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sensitive-data">Sensitive data</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-attributes">Custom attributes</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sentry-and-datadog">Sentry and Datadog</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#datadog">Datadog</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#field-spans_1">Field spans</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sensitive-data_1">Sensitive data</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-attributes_1">Custom attributes</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sentry">Sentry</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#which-errors-are-reported">Which errors are reported</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#field-spans_2">Field spans</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#span-streaming">Span streaming</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sensitive-data_2">Sensitive data</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-attributes_2">Custom attributes</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#mypy">Mypy</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pytest">Pytest</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Integrations</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="integrations">Integrations<a class="headerlink" href="#integrations" title="Permanent link">🔗</a></h1>
+<p>In this section, we'll cover the integrations to other libraries that
+Undine includes.</p>
+<h2 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a>pip install undine[channels]
+</code></pre></div></td></tr></table></div>
+<p>Undine provides support for <a href="https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md" target="_blank">GraphQL over WebSocket</a> and
+<a href="https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverSSE.md" target="_blank">GraphQL over SSE</a> (<a href="../subscriptions/#single-connection-mode">Single Connection mode</a>)
+by integrating with the <a href="https://github.com/django/channels" target="_blank">channels</a> library. Using the channels integration
+requires turning on Undine's <a href="../async/">Async Support</a>.</p>
+<p>You'll need to configure Django in your project's <code>asgi.py</code> file
+so that requests are sent to Undine's channels consumers.
+There are three app wrappers available depending on which protocols you need.</p>
+<p>For WebSocket support only:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_websocket_enabled_app</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_websocket_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For SSE Single Connection mode only:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_sse_enabled_app</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_sse_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>For both WebSocket and SSE Single Connection mode:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="n">django_application</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="c1"># Needs be imported after 'django_application' is created!</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_websocket_and_sse_enabled_app</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">application</span> <span class="o">=</span> <span class="n">get_websocket_and_sse_enabled_app</span><span class="p">(</span><span class="n">django_application</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>The integration also provides <code>ChannelLayerSubscriptionBroker</code>, which delivers
+<a href="../subscriptions/#brokers">signal subscription</a> events between worker processes
+over a channel layer.</p>
+<h2 id="graphiql">GraphiQL<a class="headerlink" href="#graphiql" title="Permanent link">🔗</a></h2>
+<p>Undine includes a built-in <a href="https://github.com/graphql/graphiql" target="_blank">GraphiQL</a> interface for exploring and
+testing your GraphQL API. You can enable it using the
+<a href="../settings/#graphiql_enabled"><code>GRAPHIQL_ENABLED</code></a> setting. You should also set
+<a href="../settings/#allow_introspection_queries"><code>ALLOW_INTROSPECTION_QUERIES</code></a> to <code>True</code>
+so that GraphiQL can introspect the schema. GraphiQL is then accessible by navigating
+to the GraphQL endpoint in a browser.</p>
+<p>GraphiQL includes the explorer and history plugins. The URL encodes the current
+document, variables, and headers, so it can be shared with others.</p>
+<p>By default, <a href="../subscriptions/">subscriptions</a> use <a href="../subscriptions/#websockets">WebSockets</a>.
+To use <a href="../subscriptions/#server-sent-events">Server-Sent Events</a> instead, use the
+<a href="../settings/#graphiql_sse_enabled"><code>GRAPHIQL_SSE_ENABLED</code></a> setting.
+<a href="../subscriptions/#single-connection-mode">Single connection mode</a> can be enabled with the
+<a href="../settings/#graphiql_sse_single_connection"><code>GRAPHIQL_SSE_SINGLE_CONNECTION</code></a> setting.</p>
+<h2 id="django-debug-toolbar">Django Debug Toolbar<a class="headerlink" href="#django-debug-toolbar" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a>pip install undine[debug]
+</code></pre></div></td></tr></table></div>
+<p>Undine integrates with <a href="https://github.com/django-commons/django-debug-toolbar" target="_blank">django-debug-toolbar</a>
+by modifying the toolbar HTML so that it integrates with <a href="#graphiql">GraphiQL</a>.
+After <a href="https://django-debug-toolbar.readthedocs.io/en/stable/installation.html">installing django-debug-toolbar</a>, Undine should automatically
+patch it without any additional configuration.</p>
+<h2 id="django-model-translation">Django Model Translation<a class="headerlink" href="#django-model-translation" title="Permanent link">🔗</a></h2>
+<p>Undine integrates with <a href="https://github.com/deschler/django-modeltranslation" target="_blank">django-modeltranslation</a>
+by allowing you to modify how autogenerated <code>Fields</code>, <code>Inputs</code>, <code>Filters</code>
+and <code>Orders</code> are created. Specifically, this happens using two settings:
+<a href="../settings/#modeltranslation_include_translatable"><code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code></a>
+and <a href="../settings/#modeltranslation_include_translations"><code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code></a>.</p>
+<p>Let's say you the following Model (with <code>MODELTRANSLATION_LANGUAGES = ("en", "fi")</code>)</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span>
+<span class="normal"><a href="#__codelineno-5-4">4</a></span>
+<span class="normal"><a href="#__codelineno-5-5">5</a></span>
+<span class="normal"><a href="#__codelineno-5-6">6</a></span>
+<span class="normal"><a href="#__codelineno-5-7">7</a></span>
+<span class="normal"><a href="#__codelineno-5-8">8</a></span>
+<span class="normal"><a href="#__codelineno-5-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">django.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">models</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7"></a>    <span class="c1"># Created by modeltranslation</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8"></a>    <span class="n">name_en</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="n">name_fi</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div></td></tr></table></div>
+<p>...and the following translation options</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span>
+<span class="normal"><a href="#__codelineno-6-6">6</a></span>
+<span class="normal"><a href="#__codelineno-6-7">7</a></span>
+<span class="normal"><a href="#__codelineno-6-8">8</a></span>
+<span class="normal"><a href="#__codelineno-6-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">modeltranslation.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">register</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">modeltranslation.translator</span><span class="w"> </span><span class="kn">import</span> <span class="n">TranslationOptions</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="nd">@register</span><span class="p">(</span><span class="n">Task</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskTranslationOptions</span><span class="p">(</span><span class="n">TranslationOptions</span><span class="p">):</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+<p>Based on the Model's translation options, <code>django-modeltranslation</code> adds additional fields
+for each language defined by the <code>MODELTRANSLATION_LANGUAGES</code> setting. Let's call the added fields
+the <em>"translatable"</em> fields, and the fields they are based on the <em>"translation"</em> fields.</p>
+<p>Using the <code>MODELTRANSLATION_INCLUDE_TRANSLATABLE</code> and <code>MODELTRANSLATION_INCLUDE_TRANSLATIONS</code>
+settings, you can control which of these fields undine will add to your schema
+when using autogeneration. By default, only the <em>translation</em> fields are added.
+You can of course always add the translatable fields manually.</p>
+<blockquote>
+<p>Note that due to the way that <code>django-modeltranslation</code> works,
+the translation fields are always nullable, even for the default language.</p>
+</blockquote>
+<h2 id="opentelemetry">OpenTelemetry<a class="headerlink" href="#opentelemetry" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a>pip install undine[opentelemetry]
+</code></pre></div></td></tr></table></div>
+<p>Undine ships <code>OpenTelemetryHook</code>, a <a href="../lifecycle-hooks/">lifecycle hook</a> that records an
+<a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a> span for each GraphQL operation, with a child span for the
+parsing, validation and execution steps. Register it in
+<a href="../settings/#additional_lifecycle_hooks"><code>ADDITIONAL_LIFECYCLE_HOOKS</code></a> to opt in:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1">1</a></span>
+<span class="normal"><a href="#__codelineno-8-2">2</a></span>
+<span class="normal"><a href="#__codelineno-8-3">3</a></span>
+<span class="normal"><a href="#__codelineno-8-4">4</a></span>
+<span class="normal"><a href="#__codelineno-8-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3"></a>        <span class="s2">"undine.integrations.opentelemetry.OpenTelemetryHook"</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a>    <span class="p">],</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The operation span is named after the operation, e.g. <code>query FindTask</code>, and carries the
+<a href="https://opentelemetry.io/docs/specs/semconv/registry/attributes/graphql/" target="_blank">OpenTelemetry semantic conventions for GraphQL</a>: <code>graphql.operation.name</code>,
+<code>graphql.operation.type</code> and <code>graphql.document</code>. If the operation results in errors, the span
+status is set to <code>ERROR</code> and each error is recorded on the span.</p>
+<p>For a subscription, the operation span lasts as long as the subscription does. Each result sent
+to the client gets its own execution span inside that same trace.</p>
+<p>Undine depends on <code>opentelemetry-api</code> only. Your application configures the SDK, which is
+the standard split for instrumented libraries.</p>
+<h3 id="field-spans">Field spans<a class="headerlink" href="#field-spans" title="Permanent link">🔗</a></h3>
+<p><code>OpenTelemetryFullHook</code> records everything <code>OpenTelemetryHook</code> does, plus a span for each
+resolved field. This is opt-in, since a span per field is expensive on large responses.
+Register it instead of <code>OpenTelemetryHook</code> when you need per-field timings:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span>
+<span class="normal"><a href="#__codelineno-9-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a>        <span class="s2">"undine.integrations.opentelemetry.OpenTelemetryFullHook"</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a>    <span class="p">],</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.</p>
+<p>To decide yourself, set the
+<a href="../settings/#opentelemetry_skip_field_spans_predicate"><code>OPENTELEMETRY_SKIP_FIELD_SPANS_PREDICATE</code></a>
+setting to a function that takes the <a href="../lifecycle-hooks/">lifecycle hook context</a> and returns
+whether the field spans should be left out. Undine ships
+<code>undine.integrations.opentelemetry.never_skip_field_spans</code> for recording every field span.</p>
+<h3 id="sensitive-data">Sensitive data<a class="headerlink" href="#sensitive-data" title="Permanent link">🔗</a></h3>
+<p>A GraphQL request can carry sensitive data in two places, the document and the variables.
+The values from both are kept out of the spans by default.</p>
+<p>Arguments a client hardcodes in the document are redacted before the document is recorded.
+The structure of the document is kept, so traces can still be grouped by operation shape:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1">1</a></span>
+<span class="normal"><a href="#__codelineno-10-2">2</a></span>
+<span class="normal"><a href="#__codelineno-10-3">3</a></span>
+<span class="normal"><a href="#__codelineno-10-4">4</a></span>
+<span class="normal"><a href="#__codelineno-10-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">FindUser</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"***"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Variables are recorded by name, with each value replaced with <code>***</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="p">{</span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"***"</span><span class="p">,</span><span class="w"> </span><span class="nt">"first"</span><span class="p">:</span><span class="w"> </span><span class="s2">"***"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Only the top-level keys are kept, since the keys inside a variable can be client data as well,
+e.g. when the variable is typed as a JSON scalar. To record the values of some variables, set the
+<a href="../settings/#opentelemetry_variables_callback"><code>OPENTELEMETRY_VARIABLES_CALLBACK</code></a> setting
+to a function that returns the variables you want to record.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
+<span class="normal"><a href="#__codelineno-12-2">2</a></span>
+<span class="normal"><a href="#__codelineno-12-3">3</a></span>
+<span class="normal"><a href="#__codelineno-12-4">4</a></span>
+<span class="normal"><a href="#__codelineno-12-5">5</a></span>
+<span class="normal"><a href="#__codelineno-12-6">6</a></span>
+<span class="normal"><a href="#__codelineno-12-7">7</a></span>
+<span class="normal"><a href="#__codelineno-12-8">8</a></span>
+<span class="normal"><a href="#__codelineno-12-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.hooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifecycleHookContext</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="n">SAFE_VARIABLES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"first"</span><span class="p">,</span> <span class="s2">"last"</span><span class="p">,</span> <span class="s2">"offset"</span><span class="p">}</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">traced_variables</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">LifecycleHookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">SAFE_VARIABLES</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Undine ships <code>undine.integrations.opentelemetry.no_traced_variables</code> for recording no variables at all.</p>
+<h3 id="custom-attributes">Custom attributes<a class="headerlink" href="#custom-attributes" title="Permanent link">🔗</a></h3>
+<p>To add your own attributes to the spans, set the
+<a href="../settings/#opentelemetry_span_callback"><code>OPENTELEMETRY_SPAN_CALLBACK</code></a> setting to a function.
+It's called for every span the hook records: the operation span, the parse, validation and
+execution spans, and each field span. For the operation span it runs once the span is fully
+described (name, type and document set) and the operation has finished executing, so it can also
+react to the result, e.g. to record a custom attribute when the operation failed:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
+<span class="normal"><a href="#__codelineno-13-2">2</a></span>
+<span class="normal"><a href="#__codelineno-13-3">3</a></span>
+<span class="normal"><a href="#__codelineno-13-4">4</a></span>
+<span class="normal"><a href="#__codelineno-13-5">5</a></span>
+<span class="normal"><a href="#__codelineno-13-6">6</a></span>
+<span class="normal"><a href="#__codelineno-13-7">7</a></span>
+<span class="normal"><a href="#__codelineno-13-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">Span</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.hooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifecycleHookContext</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">tag_with_error_count</span><span class="p">(</span><span class="n">span</span><span class="p">:</span> <span class="n">Span</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">LifecycleHookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7"></a>    <span class="n">error_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">or</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>  <span class="c1"># type: ignore[union-attr]</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8"></a>    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"graphql.error_count"</span><span class="p">,</span> <span class="n">error_count</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="sentry-and-datadog">Sentry and Datadog<a class="headerlink" href="#sentry-and-datadog" title="Permanent link">🔗</a></h3>
+<p>Both vendors accept OpenTelemetry data, but with caveats.</p>
+<p><a href="https://docs.sentry.io/concepts/otlp/direct/traces/" target="_blank">Sentry's OTLP endpoint</a> is in open beta and drops span events. It also gives
+you traces only, while the dedicated <a href="#sentry">Sentry</a> integration below turns failing operations
+into issues. Prefer that one.</p>
+<p><a href="https://www.datadoghq.com/" target="_blank">Datadog</a> users on the OpenTelemetry SDK lose Continuous Profiler,
+App &amp; API Protection, Data Streams Monitoring, RUM correlation and Source Code Integration.
+Datadog users who prefer the OpenTelemetry path can set <code>DD_TRACE_OTEL_ENABLED=true</code>,
+which makes <code>ddtrace</code> serve the OpenTelemetry API this hook is written against. Prefer the
+dedicated <a href="#datadog">Datadog</a> integration below unless you have a reason to use OpenTelemetry
+directly.</p>
+<h2 id="datadog">Datadog<a class="headerlink" href="#datadog" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a>pip install undine[datadog]
+</code></pre></div></td></tr></table></div>
+<p>Undine ships <code>DatadogHook</code>, a <a href="../lifecycle-hooks/">lifecycle hook</a> that records a native
+<a href="https://www.datadoghq.com/" target="_blank">Datadog</a> span for each GraphQL operation, with a child span for the parsing,
+validation and execution steps. Prefer this over the <a href="#opentelemetry">OpenTelemetry</a> hook for
+Datadog: instrumenting natively keeps Continuous Profiler, App &amp; API Protection, Data Streams
+Monitoring, RUM correlation and Source Code Integration working, none of which survive the
+OpenTelemetry SDK path. Register it in
+<a href="../settings/#additional_lifecycle_hooks"><code>ADDITIONAL_LIFECYCLE_HOOKS</code></a> to opt in:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span>
+<span class="normal"><a href="#__codelineno-15-2">2</a></span>
+<span class="normal"><a href="#__codelineno-15-3">3</a></span>
+<span class="normal"><a href="#__codelineno-15-4">4</a></span>
+<span class="normal"><a href="#__codelineno-15-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a>        <span class="s2">"undine.integrations.datadog.DatadogHook"</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a>    <span class="p">],</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Every span has <code>span_type</code> set to <code>"graphql"</code>. The operation span is named after the operation,
+e.g. <code>query FindTask</code>, and its <code>resource</code> is <code>&lt;operation name&gt;:&lt;query hash&gt;</code> (or just the hash for
+an anonymous operation) — this is Datadog's primary grouping dimension, so getting it right is
+what keeps traces for the same operation grouped together. The operation span also carries the
+<code>graphql.operation.name</code> and <code>graphql.operation.type</code> tags.</p>
+<p>The service name defaults to <code>"undine"</code>. Set the
+<a href="../settings/#datadog_service_name"><code>DATADOG_SERVICE_NAME</code></a> setting to change it, e.g. when several
+services report to the same Datadog account.</p>
+<h3 id="field-spans_1">Field spans<a class="headerlink" href="#field-spans_1" title="Permanent link">🔗</a></h3>
+<p><code>DatadogFullHook</code> records everything <code>DatadogHook</code> does, plus a span for each resolved field,
+tagged with <code>graphql.field.name</code>, <code>graphql.field.parent.type</code>, <code>graphql.field.path</code> and
+<code>graphql.path</code>. This is opt-in, since a span per field is expensive on large responses. Register
+it instead of <code>DatadogHook</code> when you need per-field timings:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span>
+<span class="normal"><a href="#__codelineno-16-2">2</a></span>
+<span class="normal"><a href="#__codelineno-16-3">3</a></span>
+<span class="normal"><a href="#__codelineno-16-4">4</a></span>
+<span class="normal"><a href="#__codelineno-16-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3"></a>        <span class="s2">"undine.integrations.datadog.DatadogFullHook"</span><span class="p">,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a>    <span class="p">],</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.</p>
+<p>To decide yourself, set the
+<a href="../settings/#datadog_skip_field_spans_predicate"><code>DATADOG_SKIP_FIELD_SPANS_PREDICATE</code></a> setting to
+a function that takes the <a href="../lifecycle-hooks/">lifecycle hook context</a> and returns whether the
+field spans should be left out. Undine ships <code>undine.integrations.datadog.never_skip_field_spans</code>
+for recording every field span.</p>
+<h3 id="sensitive-data_1">Sensitive data<a class="headerlink" href="#sensitive-data_1" title="Permanent link">🔗</a></h3>
+<p>A GraphQL request can carry sensitive data in two places, the document and the variables.
+The values from both are kept out of the spans by default.</p>
+<p>Arguments a client hardcodes in the document are redacted before the document is recorded.
+The structure of the document is kept, so traces can still be grouped by operation shape:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span>
+<span class="normal"><a href="#__codelineno-17-2">2</a></span>
+<span class="normal"><a href="#__codelineno-17-3">3</a></span>
+<span class="normal"><a href="#__codelineno-17-4">4</a></span>
+<span class="normal"><a href="#__codelineno-17-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">FindUser</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"***"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Variables are recorded by name, with each value replaced with <code>***</code>:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="p">{</span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"***"</span><span class="p">,</span><span class="w"> </span><span class="nt">"first"</span><span class="p">:</span><span class="w"> </span><span class="s2">"***"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Only the top-level keys are kept, since the keys inside a variable can be client data as well,
+e.g. when the variable is typed as a JSON scalar. To record the values of some variables, set the
+<a href="../settings/#datadog_variables_callback"><code>DATADOG_VARIABLES_CALLBACK</code></a> setting to a function that
+returns the variables you want to record.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span>
+<span class="normal"><a href="#__codelineno-19-2">2</a></span>
+<span class="normal"><a href="#__codelineno-19-3">3</a></span>
+<span class="normal"><a href="#__codelineno-19-4">4</a></span>
+<span class="normal"><a href="#__codelineno-19-5">5</a></span>
+<span class="normal"><a href="#__codelineno-19-6">6</a></span>
+<span class="normal"><a href="#__codelineno-19-7">7</a></span>
+<span class="normal"><a href="#__codelineno-19-8">8</a></span>
+<span class="normal"><a href="#__codelineno-19-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.hooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifecycleHookContext</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5"></a><span class="n">SAFE_VARIABLES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"first"</span><span class="p">,</span> <span class="s2">"last"</span><span class="p">,</span> <span class="s2">"offset"</span><span class="p">}</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6"></a>
+<a id="__codelineno-19-7" name="__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">traced_variables</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">LifecycleHookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">context</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">SAFE_VARIABLES</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Undine ships <code>undine.integrations.datadog.no_traced_variables</code> for recording no variables at all.</p>
+<h3 id="custom-attributes_1">Custom attributes<a class="headerlink" href="#custom-attributes_1" title="Permanent link">🔗</a></h3>
+<p>To add your own tags to the spans, set the
+<a href="../settings/#datadog_span_callback"><code>DATADOG_SPAN_CALLBACK</code></a> setting to a function. It's called
+for every span the hook records: the operation span, the parse, validation and execution spans,
+and each field span. For the operation span it runs once the span is fully described (type, name
+and resource set) and the operation has finished executing, so it can also react to the result,
+e.g. to add a tag when the operation failed:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
+<span class="normal"><a href="#__codelineno-20-2">2</a></span>
+<span class="normal"><a href="#__codelineno-20-3">3</a></span>
+<span class="normal"><a href="#__codelineno-20-4">4</a></span>
+<span class="normal"><a href="#__codelineno-20-5">5</a></span>
+<span class="normal"><a href="#__codelineno-20-6">6</a></span>
+<span class="normal"><a href="#__codelineno-20-7">7</a></span>
+<span class="normal"><a href="#__codelineno-20-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ddtrace.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">Span</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.hooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifecycleHookContext</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">tag_with_error_count</span><span class="p">(</span><span class="n">span</span><span class="p">:</span> <span class="n">Span</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">LifecycleHookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a>    <span class="n">error_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">or</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>  <span class="c1"># type: ignore[union-attr]</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8"></a>    <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">"graphql.error_count"</span><span class="p">,</span> <span class="n">error_count</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="sentry">Sentry<a class="headerlink" href="#sentry" title="Permanent link">🔗</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a>pip install undine[sentry]
+</code></pre></div></td></tr></table></div>
+<p>Undine ships <code>SentryHook</code>, a <a href="../lifecycle-hooks/">lifecycle hook</a> that instruments GraphQL
+operations for <a href="https://sentry.io/" target="_blank">Sentry</a>. Prefer this over sending
+<a href="#opentelemetry">OpenTelemetry</a> data to Sentry's OTLP endpoint, which is in open beta, drops span
+events, and gives you traces only. Register it in
+<a href="../settings/#additional_lifecycle_hooks"><code>ADDITIONAL_LIFECYCLE_HOOKS</code></a> to opt in:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1">1</a></span>
+<span class="normal"><a href="#__codelineno-22-2">2</a></span>
+<span class="normal"><a href="#__codelineno-22-3">3</a></span>
+<span class="normal"><a href="#__codelineno-22-4">4</a></span>
+<span class="normal"><a href="#__codelineno-22-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3"></a>        <span class="s2">"undine.integrations.sentry.SentryHook"</span><span class="p">,</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a>    <span class="p">],</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The hook does four things.</p>
+<p><strong>It starts a transaction when nothing else has.</strong> Sentry only records spans that belong to a
+transaction. Its Django integration starts one for an HTTP request, but not for the WebSocket and
+SSE connections that <a href="../subscriptions/">subscriptions</a> run on, so the hook starts one for those
+itself. Without it, nothing about a subscription reaches Sentry.</p>
+<p><strong>It names the transaction after the GraphQL operation.</strong> Sentry's Django integration names the
+transaction after the HTTP route, so without this every GraphQL request in your service collapses
+into a single <code>/graphql/</code> transaction. The hook renames it to the operation name, e.g. <code>FindTask</code>,
+and sets the transaction operation to <code>graphql.query</code>, <code>graphql.mutation</code> or
+<code>graphql.subscription</code>. Anonymous operations keep the route name, since they have no name to use.</p>
+<p><strong>It records spans.</strong> One span for the operation, e.g. <code>query FindTask</code>, with a child span for the
+parsing, validation and execution steps. The operation span carries the <code>graphql.operation.name</code>,
+<code>graphql.operation.type</code> and <code>graphql.document</code> data.</p>
+<p><strong>It reports failing operations as issues.</strong> Each reported error becomes a Sentry issue with the
+GraphQL context attached, so an exception raised in a resolver is reported with the exception that
+actually failed, not with the generic message the client receives from
+<a href="../settings/#error_masking_predicate">error masking</a>.</p>
+<p>Undine's own log records don't become Sentry issues while this hook is installed. Undine logs the
+errors that it masks, and the hook already reports those failures with more detail, so letting
+Sentry's logging integration report them again would only create a second, poorer issue for the
+same failure.</p>
+<h3 id="which-errors-are-reported">Which errors are reported<a class="headerlink" href="#which-errors-are-reported" title="Permanent link">🔗</a></h3>
+<p>By default, only errors that indicate a fault in the server are reported. A client mistake, like a
+validation error or a denied permission, is not an incident, so reporting those would only add
+noise.</p>
+<p>To decide yourself, set the
+<a href="../settings/#sentry_report_error_predicate"><code>SENTRY_REPORT_ERROR_PREDICATE</code></a> setting to a function.
+Undine ships <code>undine.integrations.sentry.report_all_errors</code> for reporting every GraphQL error.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-23-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-23-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-23-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-23-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-23-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-23-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-23-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-23-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-23-10">10</a></span>
+<span class="normal"><a href="#__codelineno-23-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">http</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPStatus</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLError</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5"></a><span class="n">IGNORED_ERROR_CODES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"PERMISSION_DENIED"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">}</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6"></a>
+<a id="__codelineno-23-7" name="__codelineno-23-7"></a>
+<a id="__codelineno-23-8" name="__codelineno-23-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">should_report_error</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="n">GraphQLError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9"></a>    <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error_code"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">IGNORED_ERROR_CODES</span><span class="p">:</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10"></a>        <span class="k">return</span> <span class="kc">False</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11"></a>    <span class="k">return</span> <span class="n">error</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status_code"</span><span class="p">)</span> <span class="o">==</span> <span class="n">HTTPStatus</span><span class="o">.</span><span class="n">INTERNAL_SERVER_ERROR</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="field-spans_2">Field spans<a class="headerlink" href="#field-spans_2" title="Permanent link">🔗</a></h3>
+<p><code>SentryFullHook</code> records everything <code>SentryHook</code> does, plus a span for each resolved field, with
+the <code>graphql.field.name</code>, <code>graphql.field.parent.type</code>, <code>graphql.field.path</code> and <code>graphql.path</code>
+data. This is opt-in, since a span per field is expensive on large responses. Register it instead
+of <code>SentryHook</code> when you need per-field timings:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1">1</a></span>
+<span class="normal"><a href="#__codelineno-24-2">2</a></span>
+<span class="normal"><a href="#__codelineno-24-3">3</a></span>
+<span class="normal"><a href="#__codelineno-24-4">4</a></span>
+<span class="normal"><a href="#__codelineno-24-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3"></a>        <span class="s2">"undine.integrations.sentry.SentryFullHook"</span><span class="p">,</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a>    <span class="p">],</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Introspection queries are recorded without their field spans. An introspection query resolves a
+field for every type and field in the schema, so a span for each one buries the operations that
+say something about the service.</p>
+<p>To decide yourself, set the
+<a href="../settings/#sentry_skip_field_spans_predicate"><code>SENTRY_SKIP_FIELD_SPANS_PREDICATE</code></a> setting to a
+function that takes the <a href="../lifecycle-hooks/">lifecycle hook context</a> and returns whether the
+field spans should be left out. Undine ships <code>undine.integrations.sentry.never_skip_field_spans</code>
+for recording every field span.</p>
+<h3 id="span-streaming">Span streaming<a class="headerlink" href="#span-streaming" title="Permanent link">🔗</a></h3>
+<p>Sentry has two span APIs, and a client can only use the one its <code>trace_lifecycle</code> option selects.
+The hook records through whichever one is in use, so everything above holds in either mode. In
+span streaming mode each span is sent on its own, and the name of the trace is carried by the
+segment instead of a transaction. Sentry's span streaming API is experimental, so treat this the
+same way you treat the option itself.</p>
+<h3 id="sensitive-data_2">Sensitive data<a class="headerlink" href="#sensitive-data_2" title="Permanent link">🔗</a></h3>
+<p>The <code>graphql.document</code> span data is always redacted, so a value a client hardcodes in the document
+never reaches a span. The structure of the document is kept, so traces can still be grouped by
+operation shape:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span>
+<span class="normal"><a href="#__codelineno-25-2">2</a></span>
+<span class="normal"><a href="#__codelineno-25-3">3</a></span>
+<span class="normal"><a href="#__codelineno-25-4">4</a></span>
+<span class="normal"><a href="#__codelineno-25-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">query</span><span class="w"> </span><span class="nf">FindUser</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a><span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"***"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="w">    </span><span class="n">name</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The <code>graphql.variables</code> span data carries the name of each variable with its value replaced with
+<code>***</code>. Only the top-level keys are kept, since the keys inside a variable can be client data as
+well, e.g. when the variable is typed as a JSON scalar. To record the values of some variables,
+set the <a href="../settings/#sentry_variables_callback"><code>SENTRY_VARIABLES_CALLBACK</code></a> setting to a function
+that returns the variables you want to record. Undine ships
+<code>undine.integrations.sentry.no_traced_variables</code> for recording no variables at all.</p>
+<p>An issue is a separate payload from the spans, and Sentry doesn't show span data on it, so the
+hook attaches the operation to the issue as well. There it carries the operation name, the
+redacted document and the redacted variables. Enable Sentry's own
+[<code>send_default_pii</code>]{:target="_blank"} option to attach the document as the client wrote it, with
+the values of the variables. This is the SDK's own control, so it covers Undine's data the same
+way it covers the rest of your application.</p>
+<h3 id="custom-attributes_2">Custom attributes<a class="headerlink" href="#custom-attributes_2" title="Permanent link">🔗</a></h3>
+<p>To add your own attributes to the spans, set the
+<a href="../settings/#sentry_span_callback"><code>SENTRY_SPAN_CALLBACK</code></a> setting to a function. It's called for
+every span the hook records: the operation span, the parse, validation and execution spans, and
+each field span. For the operation span it runs once the span is fully described (name, type and
+document set) and the operation has finished executing, so it can also react to the result, e.g.
+to record an attribute when the operation failed:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span>
+<span class="normal"><a href="#__codelineno-26-2">2</a></span>
+<span class="normal"><a href="#__codelineno-26-3">3</a></span>
+<span class="normal"><a href="#__codelineno-26-4">4</a></span>
+<span class="normal"><a href="#__codelineno-26-5">5</a></span>
+<span class="normal"><a href="#__codelineno-26-6">6</a></span>
+<span class="normal"><a href="#__codelineno-26-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.hooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifecycleHookContext</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.integrations.sentry</span><span class="w"> </span><span class="kn">import</span> <span class="n">RecordedSpan</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3"></a>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">tag_with_error_count</span><span class="p">(</span><span class="n">span</span><span class="p">:</span> <span class="n">RecordedSpan</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">LifecycleHookContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a>    <span class="n">error_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">or</span> <span class="p">[])</span> <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>  <span class="c1"># type: ignore[union-attr]</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7"></a>    <span class="n">span</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="s2">"graphql.error_count"</span><span class="p">,</span> <span class="n">error_count</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>The callback receives a <code>RecordedSpan</code>, which is Undine's view over the two
+<a href="#span-streaming">span APIs</a>, so <code>set_data</code> works in either mode. Reach through
+<code>span.sentry_span</code> for the things the two APIs don't share, such as setting a status.</p>
+<h2 id="mypy">Mypy<a class="headerlink" href="#mypy" title="Permanent link">🔗</a></h2>
+<p>Undine ships a mypy plugin that adds additional static type checking for types defined in Undine.
+To enable it, add the following to your <code>mypy.ini</code> file:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span>
+<span class="normal"><a href="#__codelineno-27-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="k">[mypy]</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a><span class="na">plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">mypy_undine</span>
+</code></pre></div></td></tr></table></div>
+<p>The plugin adds the following additional type checks:</p>
+<ul class="task-list">
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>QueryTypes</code>, <code>MutationTypes</code>, <code>FilterSets</code>, <code>OrderSets</code>, and <code>UnionTypes</code>
+      contain correct generic parameters</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>RootTypes</code>, <code>QueryTypes</code>, <code>MutationTypes</code>, <code>FilterSets</code>, <code>OrderSets</code>, <code>InterfaceTypes</code>,
+      <code>UnionTypes</code>, <code>FederationTypes</code>, and <code>Directives</code> are created using the correct
+      class definition keyword arguments</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>Entrypoints</code>, <code>Fields</code>, <code>Inputs</code>, <code>Filters</code>, <code>InterfaceFields</code>, and <code>FederationFields</code>
+      are applied to a method with the correct signature when used as decorators</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that decorator methods on <code>RootTypes</code>, <code>QueryTypes</code>, <code>MutationTypes</code>, <code>FilterSets</code>,
+      <code>OrderSets</code>, <code>InterfaceTypes</code>, <code>Directives</code>, and <code>FederationTypes</code>
+      (e.g. <code>.resolve</code>, <code>.permissions</code>, <code>.optimize</code>, <code>.validate</code>, <code>.convert</code>, <code>.aliases</code>, <code>.visible</code>)
+      are applied to a method with the correct signature</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that the return type of a resolver method for an <code>Entrypoint</code>, <code>Field</code> or <code>FederationField</code>
+      is compatible with the field's ref type (honouring <code>many=True</code>, <code>nullable=True</code> and <code>@ExternalDirective</code>)</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>FilterSets</code> and <code>OrderSets</code> are applied to <code>QueryTypes</code> or <code>UnionTypes</code> that are
+      defined for the same Django Models</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>FilterSets</code>, <code>OrderSets</code>, and <code>InterfaceTypes</code> are applied to <code>QueryTypes</code>
+      when using their decorator interface</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>Directives</code> are applied to objects that support them, whether applied as class
+      decorators, via the <code>directives=[...]</code> keyword argument, or with the <code>@</code> operator on a field</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>Directives</code> are applied to objects that match their allowed locations</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Check that <code>Directives</code> that are not repeatable are only applied once</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Type <code>DirectiveArgument</code> and <code>FederationField</code> class attributes as their declared ref type
+      so that accessing them (e.g. <code>self.my_arg</code>) resolves to the underlying value type</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Set the <code>self</code> argument type of decorator methods to the appropriate Django Model
+      (for <code>QueryTypes</code> and <code>MutationTypes</code>) or descriptor type
+      (e.g. <code>Filter</code> inside <code>@Filter.aliases</code>) so that attribute access is correctly typed</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Create <code>Directive.__init__</code> for typing purposes based on <code>DirectiveArguments</code> if one does not exist</li>
+<li class="task-list-item"><input checked="" disabled="" type="checkbox"/> Create <code>FederationType.__init__</code> for typing purposes based on <code>FederationFields</code> if one does not exist</li>
+</ul>
+<blockquote>
+<p>If there is a check that you think should be included, please open an issue or a pull request!</p>
+</blockquote>
+<h2 id="pytest">Pytest<a class="headerlink" href="#pytest" title="Permanent link">🔗</a></h2>
+<p>Undine comes with a pytest plugin that includes a testing client and few fixtures
+to help you write tests for your GraphQL APIs.</p>
+<p>The <code>GraphQLClient</code> class is wrapper around <a href="https://docs.djangoproject.com/en/stable/topics/testing/tools/#the-test-client" target="_blank">Django's test client</a> that
+makes testing your GraphQL API easier. It can be added to a test using
+the <code>graphql</code> fixture. Here is a simple example:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1">1</a></span>
+<span class="normal"><a href="#__codelineno-28-2">2</a></span>
+<span class="normal"><a href="#__codelineno-28-3">3</a></span>
+<span class="normal"><a href="#__codelineno-28-4">4</a></span>
+<span class="normal"><a href="#__codelineno-28-5">5</a></span>
+<span class="normal"><a href="#__codelineno-28-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>GraphQL requests can be made by calling the client as shown above.
+This makes a request to the GraphQL endpoint set by the
+<a href="../settings/#graphql_path"><code>GRAPHQL_PATH</code></a> setting.</p>
+<p>GraphQL variables can be passed using the <code>variables</code> argument. If these variables
+include any files, the client will automatically create a GraphQL multipart request
+instead of a normal GraphQL request.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span>
+<span class="normal"><a href="#__codelineno-29-2">2</a></span>
+<span class="normal"><a href="#__codelineno-29-3">3</a></span>
+<span class="normal"><a href="#__codelineno-29-4">4</a></span>
+<span class="normal"><a href="#__codelineno-29-5">5</a></span>
+<span class="normal"><a href="#__codelineno-29-6">6</a></span>
+<span class="normal"><a href="#__codelineno-29-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a>    <span class="n">mutation</span> <span class="o">=</span> <span class="s2">"mutation($input: TestInput!) { test(input: $input) }"</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a>    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"World"</span><span class="p">}</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a>
+<a id="__codelineno-29-5" name="__codelineno-29-5"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">mutation</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="n">data</span><span class="p">})</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6"></a>
+<a id="__codelineno-29-7" name="__codelineno-29-7"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The client returns a custom response object <code>GraphQLClientResponse</code>,
+which has a number of useful properties for introspecting the response.
+The response object also has details on the database queries that were executed
+during the request, which can be useful for debugging the performance of your
+GraphQL API.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-30-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-30-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-30-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-30-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-30-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-30-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-30-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-30-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-30-10">10</a></span>
+<span class="normal"><a href="#__codelineno-30-11">11</a></span>
+<span class="normal"><a href="#__codelineno-30-12">12</a></span>
+<span class="normal"><a href="#__codelineno-30-13">13</a></span>
+<span class="normal"><a href="#__codelineno-30-14">14</a></span>
+<span class="normal"><a href="#__codelineno-30-15">15</a></span>
+<span class="normal"><a href="#__codelineno-30-16">16</a></span>
+<span class="normal"><a href="#__codelineno-30-17">17</a></span>
+<span class="normal"><a href="#__codelineno-30-18">18</a></span>
+<span class="normal"><a href="#__codelineno-30-19">19</a></span>
+<span class="normal"><a href="#__codelineno-30-20">20</a></span>
+<span class="normal"><a href="#__codelineno-30-21">21</a></span>
+<span class="normal"><a href="#__codelineno-30-22">22</a></span>
+<span class="normal"><a href="#__codelineno-30-23">23</a></span>
+<span class="normal"><a href="#__codelineno-30-24">24</a></span>
+<span class="normal"><a href="#__codelineno-30-25">25</a></span>
+<span class="normal"><a href="#__codelineno-30-26">26</a></span>
+<span class="normal"><a href="#__codelineno-30-27">27</a></span>
+<span class="normal"><a href="#__codelineno-30-28">28</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test { edges { node { id } } } }"</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3"></a>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">graphql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">count_queries</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a>    <span class="c1"># The whole response</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span> <span class="o">==</span> <span class="p">{</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8"></a>        <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}},</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9"></a>        <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Error message"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">]}],</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10"></a>    <span class="p">}</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11"></a>
+<a id="__codelineno-30-12" name="__codelineno-30-12"></a>    <span class="c1"># Error properties</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">has_errors</span> <span class="ow">is</span> <span class="kc">True</span>
+<a id="__codelineno-30-14" name="__codelineno-30-14"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">errors</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Error message"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"test"</span><span class="p">]}]</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">error_message</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"Error message"</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16"></a>
+<a id="__codelineno-30-17" name="__codelineno-30-17"></a>    <span class="c1"># Data properties</span>
+<a id="__codelineno-30-18" name="__codelineno-30-18"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}}</span>
+<a id="__codelineno-30-19" name="__codelineno-30-19"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">results</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"edges"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]}</span>
+<a id="__codelineno-30-20" name="__codelineno-30-20"></a>
+<a id="__codelineno-30-21" name="__codelineno-30-21"></a>    <span class="c1"># Connection specific properties</span>
+<a id="__codelineno-30-22" name="__codelineno-30-22"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">edges</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}}]</span>
+<a id="__codelineno-30-23" name="__codelineno-30-23"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"1"</span><span class="p">}</span>
+<a id="__codelineno-30-24" name="__codelineno-30-24"></a>
+<a id="__codelineno-30-25" name="__codelineno-30-25"></a>    <span class="c1"># Check queries (requires `count_queries=True`)</span>
+<a id="__codelineno-30-26" name="__codelineno-30-26"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">query_count</span> <span class="o">==</span> <span class="mi">1</span>
+<a id="__codelineno-30-27" name="__codelineno-30-27"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">queries</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"SELECT 1;"</span><span class="p">]</span>
+<a id="__codelineno-30-28" name="__codelineno-30-28"></a>    <span class="n">response</span><span class="o">.</span><span class="n">assert_query_count</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>An async version of the client is also available, which can be accessed from
+the <code>graphql_async</code> fixture.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-31-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-31-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-31-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-31-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-31-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-31-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-31-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-31-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-31-10">10</a></span>
+<span class="normal"><a href="#__codelineno-31-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a>
+<a id="__codelineno-31-4" name="__codelineno-31-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>  <span class="c1"># Requires the `pytest-asyncio` plugin</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">django_db</span><span class="p">(</span><span class="n">transaction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># For sessions</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">graphql_async</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8"></a>
+<a id="__codelineno-31-9" name="__codelineno-31-9"></a>    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_async</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10"></a>
+<a id="__codelineno-31-11" name="__codelineno-31-11"></a>    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"hello"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The plugin also includes a <code>undine_settings</code> fixture that allows modifying
+Undine's settings during testing more easily.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1">1</a></span>
+<span class="normal"><a href="#__codelineno-32-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_example</span><span class="p">(</span><span class="n">undine_settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a>    <span class="n">undine_settings</span><span class="o">.</span><span class="n">NO_ERROR_LOCATION</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div></td></tr></table></div>
+<p>If the <a href="#channels">channels</a> integration is installed, the test client can
+also send GraphQL over WebSocket requests using the <code>over_websocket</code> method.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1">1</a></span>
+<span class="normal"><a href="#__codelineno-33-2">2</a></span>
+<span class="normal"><a href="#__codelineno-33-3">3</a></span>
+<span class="normal"><a href="#__codelineno-33-4">4</a></span>
+<span class="normal"><a href="#__codelineno-33-5">5</a></span>
+<span class="normal"><a href="#__codelineno-33-6">6</a></span>
+<span class="normal"><a href="#__codelineno-33-7">7</a></span>
+<span class="normal"><a href="#__codelineno-33-8">8</a></span>
+<span class="normal"><a href="#__codelineno-33-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a>
+<a id="__codelineno-33-3" name="__codelineno-33-3"></a>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>  <span class="c1"># Requires the `pytest-asyncio` plugin</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">django_db</span><span class="p">(</span><span class="n">transaction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># For sessions</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_graphql</span><span class="p">(</span><span class="n">graphql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7"></a>    <span class="n">query</span> <span class="o">=</span> <span class="s2">"query { test }"</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8"></a>    <span class="k">async</span> <span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">graphql</span><span class="o">.</span><span class="n">over_websocket</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9"></a>        <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="p">{</span><span class="s2">"test"</span><span class="p">:</span> <span class="s2">"Hello, World!"</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../validation-rules/" title="Validation Rules"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../settings/" title="Settings">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../validation-rules/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../settings/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>

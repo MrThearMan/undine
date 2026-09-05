@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+
+<html class="writer-html5" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Federation - Undine</title>
+<link href="../css/theme.css" rel="stylesheet"/>
+<link href="../css/theme_extra.css" rel="stylesheet"/>
+<link href="../css/docs.css" rel="stylesheet"/>
+<link href="../css/pygments.css" rel="stylesheet"/>
+<script>
+        // Current page data
+        var mkdocs_page_name = "Federation";
+        var mkdocs_page_input_path = "federation.md";
+        var mkdocs_page_url = null;
+      </script>
+<!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+<meta content="Documentation on Apollo Federation 2 support in Undine." name="description"/></head>
+<body class="wy-body-for-nav" role="document">
+<div class="wy-grid-for-nav">
+<nav class="wy-nav-side stickynav" data-toggle="wy-nav-shift">
+<div class="wy-side-scroll">
+<div class="wy-side-nav-search">
+<a class="icon icon-home" href=".."> Undine
+        </a><div role="search">
+<form action="../search.html" class="wy-form" id="rtd-search-form" method="get">
+<input aria-label="Search docs" name="q" placeholder="Search docs" title="Type search term here" type="text"/>
+</form>
+</div>
+</div>
+<div aria-label="Navigation menu" class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial/">Tutorial</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../schema/">Schema</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../queries/">Queries</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../mutations/">Mutations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ordering/">Ordering</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/">Pagination</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../subscriptions/">Subscriptions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../global-object-ids/">Global Object IDs</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../file-upload/">File Upload</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../persisted-documents/">Persisted Documents</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/">Interfaces</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../unions/">Unions</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../scalars/">Scalars</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../directives/">Directives</a>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="#">Federation</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#setup">Setup</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#directives">Directives</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#linkdirective">LinkDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#keydirective">KeyDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#shareabledirective">ShareableDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#externaldirective">ExternalDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#requiresdirective">RequiresDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#providesdirective">ProvidesDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#overridedirective">OverrideDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#inaccessibledirective">InaccessibleDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#tagdirective">TagDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#composedirectivedirective">ComposeDirectiveDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#interfaceobjectdirective">InterfaceObjectDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#authenticateddirective">AuthenticatedDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#requiresscopesdirective">RequiresScopesDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#policydirective">PolicyDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#contextdirective">ContextDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#fromcontextdirective">FromContextDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#costdirective">CostDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#listsizedirective">ListSizeDirective</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#cachetagdirective">CacheTagDirective</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#entities">Entities</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#reference-resolver">Reference resolver</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#federationtype">FederationType</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#federationfield">FederationField</a>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#stub-references">Stub references</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#permissions">Permissions</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#apollo-compatibility">Apollo compatibility</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#federated-tracing">Federated tracing</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../visibility/">Visibility</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../hacking-undine/">Hacking Undine</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer/">Optimizer</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../caching/">Caching</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../async/">Async Support</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dataloaders/">DataLoaders</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../incremental/">Incremental Delivery</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../lifecycle-hooks/">Lifecycle Hooks</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation-rules/">Validation Rules</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/">Integrations</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq/">FAQ</a>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<section class="wy-nav-content-wrap" data-toggle="wy-nav-shift">
+<nav aria-label="Mobile navigation menu" class="wy-nav-top" role="navigation">
+<i class="fa fa-bars" data-toggle="wy-nav-top"></i>
+<a href="..">Undine</a>
+</nav>
+<div class="wy-nav-content">
+<div class="rst-content"><div aria-label="breadcrumbs navigation" role="navigation">
+<ul class="wy-breadcrumbs">
+<li><a aria-label="Docs" class="icon icon-home" href=".."></a></li>
+<li class="breadcrumb-item active">Federation</li>
+<li class="wy-breadcrumbs-aside">
+</li>
+</ul>
+<hr/>
+</div>
+<div class="document" itemscope="itemscope" itemtype="http://schema.org/Article" role="main">
+<div class="section" itemprop="articleBody">
+<h1 id="federation">Federation<a class="headerlink" href="#federation" title="Permanent link">🔗</a></h1>
+<p>Undine provides support for <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas" target="_blank">Apollo Federation 2</a>, letting you expose
+an Undine schema as a subgraph in a federated supergraph. Federation 2 lets a router combine
+multiple subgraphs into a single GraphQL API, so different teams can own different parts of the
+schema.</p>
+<h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">🔗</a></h2>
+<p>You can build a Federation 2 subgraph-compliant schema by importing <code>create_federation_schema</code> instead of
+<code>create_schema</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#__codelineno-0-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_federation_schema</span>
+</span><a id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14"></a>
+<a id="__codelineno-0-15" name="__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="hll"><span class="n">schema</span> <span class="o">=</span> <span class="n">create_federation_schema</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Compared with <code>create_schema</code>, <code>create_federation_schema</code> additionally:</p>
+<ol>
+<li>Validates <a href="../settings/#federation_version"><code>FEDERATION_VERSION</code></a> is supported.</li>
+<li>Auto-generates a schema-level <code>@link</code> directive.</li>
+<li>Injects <code>Query._service</code> which returns the subgraph SDL for the router.</li>
+<li>Injects <code>Query._entities</code> which fetches entities by their representations.</li>
+</ol>
+<p>To publish the subgraph SDL to a router or a schema registry, export it with
+<code>python manage.py print_schema</code>. See <a href="../schema/#schema-export">Schema export</a> for details.</p>
+<h2 id="directives">Directives<a class="headerlink" href="#directives" title="Permanent link">🔗</a></h2>
+<h3 id="linkdirective"><code>LinkDirective</code><a class="headerlink" href="#linkdirective" title="Permanent link">🔗</a></h3>
+<p>Subgraph schemas opt in to Apollo Federation 2 by applying the <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#the-link-directive" target="_blank"><code>@link</code></a>
+directive to the schema type. Undine automatically compiles the correct directive for you in <code>create_federation_schema</code>
+based on the directives in use in your schema.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="k">extend</span><span class="w"> </span><span class="k">schema</span><span class="w"> </span><span class="err">@link(url:</span><span class="w"> </span><span class="err">"https://specs.apollo.dev/federation/v2.11"</span><span class="p">,</span><span class="w"> </span><span class="err">import:</span><span class="w"> </span><span class="err">["@key"])</span>
+</code></pre></div></td></tr></table></div>
+<p>The <code>@link</code> directive also accepts two optional arguments: <code>as</code> renames the linked spec's namespace prefix,
+so directives are addressed as <code>@&lt;as&gt;__key</code> instead of <code>@key</code>, and <code>for</code> declares the purpose of the link,
+either <code>SECURITY</code> or <code>EXECUTION</code>, which Apollo Router uses to decide how to compose the subgraph.
+See the <a href="https://specs.apollo.dev/link/v1.0/" target="_blank">spec</a> for more information.</p>
+<h3 id="keydirective"><code>KeyDirective</code><a class="headerlink" href="#keydirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#key" target="_blank"><code>@key</code></a> directive marks a <code>QueryType</code> as an <a href="#entities">entity</a>.</p>
+<p>To use the directive, you must define a set of <code>fields</code> that a subgraph can use to uniquely identify
+any instance of the entity. These fields must be defined on the <code>QueryType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-2-3" name="__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="hll"><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+</span><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Set <code>resolvable=False</code> when this subgraph only references the entity but does not resolve it. The
+router uses the declaration to stitch results together, but never routes resolution requests here.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1">1</a></span>
+<span class="normal"><a href="#__codelineno-4-2">2</a></span>
+<span class="normal"><a href="#__codelineno-4-3">3</a></span>
+<span class="normal"><a href="#__codelineno-4-4">4</a></span>
+<span class="normal"><a href="#__codelineno-4-5">5</a></span>
+<span class="normal"><a href="#__codelineno-4-6">6</a></span>
+<span class="normal"><a href="#__codelineno-4-7">7</a></span>
+<span class="normal"><a href="#__codelineno-4-8">8</a></span>
+<span class="normal"><a href="#__codelineno-4-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-4-3" name="__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="hll"><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">resolvable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><a id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1">1</a></span>
+<span class="normal"><a href="#__codelineno-5-2">2</a></span>
+<span class="normal"><a href="#__codelineno-5-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id"</span><span class="p">,</span><span class="w"> </span><span class="err">resolvable:</span><span class="w"> </span><span class="err">false)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="shareabledirective"><code>ShareableDirective</code><a class="headerlink" href="#shareabledirective" title="Permanent link">🔗</a></h3>
+<p>the <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#shareable" target="_blank"><code>@shareable</code></a> directive indicates that a field, or all fields of a type,
+are allowed to be resolved by multiple subgraphs.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span>
+<span class="normal"><a href="#__codelineno-6-6">6</a></span>
+<span class="normal"><a href="#__codelineno-6-7">7</a></span>
+<span class="normal"><a href="#__codelineno-6-8">8</a></span>
+<span class="normal"><a href="#__codelineno-6-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ShareableDirective</span>
+</span><a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">ShareableDirective</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-7-1">1</a></span>
+<span class="normal"><a href="#__codelineno-7-2">2</a></span>
+<span class="normal"><a href="#__codelineno-7-3">3</a></span>
+<span class="normal"><a href="#__codelineno-7-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@shareable</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>Note: if a field is included in an entity's <a href="#keydirective"><code>@key</code></a> directive, that field is automatically
+considered <a href="#shareabledirective"><code>@shareable</code></a> and the directive is not required in the corresponding subgraph(s).</p>
+</blockquote>
+<h3 id="externaldirective"><code>ExternalDirective</code><a class="headerlink" href="#externaldirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#external" target="_blank"><code>@external</code></a> directive marks a field as owned by another subgraph.
+This subgraph declares the field so it can be referenced (e.g. by <a href="#requiresdirective"><code>@requires</code></a>) but does
+not resolve it.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-8-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-8-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-8-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-8-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-8-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-8-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-8-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-8-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-8-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-8-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-8-3" name="__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">ExternalDirective</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span>
+<span class="normal"><a href="#__codelineno-9-2">2</a></span>
+<span class="normal"><a href="#__codelineno-9-3">3</a></span>
+<span class="normal"><a href="#__codelineno-9-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@external</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="requiresdirective"><code>RequiresDirective</code><a class="headerlink" href="#requiresdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#requires" target="_blank"><code>@requires</code></a> directive declares that resolving a field on this
+subgraph requires additional <a href="#externaldirective"><code>@external</code></a> fields from the entity to be fetched first.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-10-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-10-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-10-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-10-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-10-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-10-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-10-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-10-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-10-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-10-10">10</a></span>
+<span class="normal"><a href="#__codelineno-10-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalDirective</span><span class="p">,</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">RequiresDirective</span>
+</span><a id="__codelineno-10-3" name="__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">ExternalDirective</span><span class="p">()</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11"></a><span class="hll">    <span class="n">display_name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">RequiresDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"name"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-11-1">1</a></span>
+<span class="normal"><a href="#__codelineno-11-2">2</a></span>
+<span class="normal"><a href="#__codelineno-11-3">3</a></span>
+<span class="normal"><a href="#__codelineno-11-4">4</a></span>
+<span class="normal"><a href="#__codelineno-11-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@external</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">  </span><span class="err">displayName:</span><span class="w"> </span><span class="err">String!</span><span class="w"> </span><span class="err">@requires</span><span class="p">(</span><span class="n">fields</span><span class="p">:</span><span class="w"> </span><span class="s">"name"</span><span class="p">)</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="providesdirective"><code>ProvidesDirective</code><a class="headerlink" href="#providesdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#provides" target="_blank"><code>@provides</code></a> directive tells the router that this subgraph can
+resolve the listed fields of a referenced entity, avoiding an extra round-trip to the owning subgraph.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-12-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-12-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-12-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-12-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-12-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-12-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-12-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-12-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-12-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">ProvidesDirective</span>
+</span><a id="__codelineno-12-3" name="__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10"></a><span class="hll">    <span class="n">project</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">ProvidesDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"name"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
+<span class="normal"><a href="#__codelineno-13-2">2</a></span>
+<span class="normal"><a href="#__codelineno-13-3">3</a></span>
+<span class="normal"><a href="#__codelineno-13-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="w">  </span><span class="nl">project</span><span class="p">:</span><span class="w"> </span><span class="n">ProjectType</span><span class="err">!</span><span class="w"> </span><span class="nd">@provides</span><span class="p">(</span><span class="n">fields</span><span class="p">:</span><span class="w"> </span><span class="s">"name"</span><span class="p">)</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="overridedirective"><code>OverrideDirective</code><a class="headerlink" href="#overridedirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#override" target="_blank"><code>@override</code></a> directive tells the router that this subgraph takes
+over resolution of a field previously owned by another subgraph. <code>from_</code> names the subgraph being overridden.</p>
+<p>Pass an optional <code>label</code> to opt into <strong>progressive override</strong> — the router uses the label to route a
+configurable fraction of traffic to this subgraph rather than switching over all at once.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.7"</code> or higher for the <code>label</code> argument.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-14-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-14-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-14-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-14-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-14-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-14-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-14-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-14-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-14-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-14-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">OverrideDirective</span>
+</span><a id="__codelineno-14-3" name="__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">OverrideDirective</span><span class="p">(</span><span class="n">from_</span><span class="o">=</span><span class="s2">"legacy"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-15-1">1</a></span>
+<span class="normal"><a href="#__codelineno-15-2">2</a></span>
+<span class="normal"><a href="#__codelineno-15-3">3</a></span>
+<span class="normal"><a href="#__codelineno-15-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@override</span><span class="p">(</span><span class="n">from</span><span class="p">:</span><span class="w"> </span><span class="s">"legacy"</span><span class="p">)</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="inaccessibledirective"><code>InaccessibleDirective</code><a class="headerlink" href="#inaccessibledirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#inaccessible" target="_blank"><code>@inaccessible</code></a> directive hides a schema element from the
+supergraph. The element remains defined in the subgraph but the router never exposes it to clients.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-16-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-16-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-16-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-16-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-16-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-16-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-16-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-16-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-16-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">InaccessibleDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-16-3" name="__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10"></a><span class="hll">    <span class="n">internal_note</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">InaccessibleDirective</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span>
+<span class="normal"><a href="#__codelineno-17-2">2</a></span>
+<span class="normal"><a href="#__codelineno-17-3">3</a></span>
+<span class="normal"><a href="#__codelineno-17-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="w">  </span><span class="nl">internalNote</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nd">@inaccessible</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="tagdirective"><code>TagDirective</code><a class="headerlink" href="#tagdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#tag" target="_blank"><code>@tag</code></a> directive attaches arbitrary metadata strings to schema
+elements. Contract composition and other Apollo tooling read the tags for filtering. Repeatable.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-18-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-18-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-18-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-18-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-18-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-18-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-18-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-18-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-18-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-18-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">TagDirective</span>
+</span><a id="__codelineno-18-3" name="__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">TagDirective</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"public"</span><span class="p">)</span> <span class="o">@</span> <span class="n">TagDirective</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"v2"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-19-1">1</a></span>
+<span class="normal"><a href="#__codelineno-19-2">2</a></span>
+<span class="normal"><a href="#__codelineno-19-3">3</a></span>
+<span class="normal"><a href="#__codelineno-19-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@tag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"public"</span><span class="p">)</span><span class="w"> </span><span class="nd">@tag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"v2"</span><span class="p">)</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="composedirectivedirective"><code>ComposeDirectiveDirective</code><a class="headerlink" href="#composedirectivedirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#composedirective" target="_blank"><code>@composeDirective</code></a> directive tells the router to preserve a
+custom directive from this subgraph in the supergraph schema. Apply it at the schema level via
+<code>schema_definition_directives</code>.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.1"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-20-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-20-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-20-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-20-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-20-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-20-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-20-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-20-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-20-10">10</a></span>
+<span class="normal"><a href="#__codelineno-20-11">11</a></span>
+<span class="normal"><a href="#__codelineno-20-12">12</a></span>
+<span class="normal"><a href="#__codelineno-20-13">13</a></span>
+<span class="normal"><a href="#__codelineno-20-14">14</a></span>
+<span class="normal"><a href="#__codelineno-20-15">15</a></span>
+<span class="normal"><a href="#__codelineno-20-16">16</a></span>
+<span class="normal"><a href="#__codelineno-20-17">17</a></span>
+<span class="normal"><a href="#__codelineno-20-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entrypoint</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span><span class="p">,</span> <span class="n">RootType</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComposeDirectiveDirective</span><span class="p">,</span> <span class="n">create_federation_schema</span>
+</span><a id="__codelineno-20-3" name="__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5"></a>
+<a id="__codelineno-20-6" name="__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9"></a>
+<a id="__codelineno-20-10" name="__codelineno-20-10"></a>
+<a id="__codelineno-20-11" name="__codelineno-20-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">(</span><span class="n">RootType</span><span class="p">):</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12"></a>    <span class="n">task</span> <span class="o">=</span> <span class="n">Entrypoint</span><span class="p">(</span><span class="n">TaskType</span><span class="p">)</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13"></a>
+<a id="__codelineno-20-14" name="__codelineno-20-14"></a>
+<a id="__codelineno-20-15" name="__codelineno-20-15"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">create_federation_schema</span><span class="p">(</span>
+<a id="__codelineno-20-16" name="__codelineno-20-16"></a>    <span class="n">query</span><span class="o">=</span><span class="n">Query</span><span class="p">,</span>
+<a id="__codelineno-20-17" name="__codelineno-20-17"></a><span class="hll">    <span class="n">schema_definition_directives</span><span class="o">=</span><span class="p">[</span><span class="n">ComposeDirectiveDirective</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"@custom"</span><span class="p">)],</span>
+</span><a id="__codelineno-20-18" name="__codelineno-20-18"></a><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-21-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="k">extend</span><span class="w"> </span><span class="k">schema</span><span class="w"> </span><span class="err">@composeDirective(name:</span><span class="w"> </span><span class="err">"@custom")</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="interfaceobjectdirective"><code>InterfaceObjectDirective</code><a class="headerlink" href="#interfaceobjectdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#interfaceobject" target="_blank"><code>@interfaceObject</code></a> directive lets a subgraph contribute
+fields to an entity that is declared as an interface in another subgraph. Apply it to a <code>QueryType</code> alongside
+<a href="#keydirective"><code>@key</code></a>.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.3"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-22-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-22-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-22-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-22-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-22-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-22-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-22-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-22-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-22-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-22-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterfaceObjectDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-22-3" name="__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5"></a>
+<a id="__codelineno-22-6" name="__codelineno-22-6"></a>
+<a id="__codelineno-22-7" name="__codelineno-22-7"></a><span class="hll"><span class="nd">@InterfaceObjectDirective</span><span class="p">()</span>
+</span><a id="__codelineno-22-8" name="__codelineno-22-8"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-23-1">1</a></span>
+<span class="normal"><a href="#__codelineno-23-2">2</a></span>
+<span class="normal"><a href="#__codelineno-23-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@interfaceObject</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="authenticateddirective"><code>AuthenticatedDirective</code><a class="headerlink" href="#authenticateddirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#authenticated" target="_blank"><code>@authenticated</code></a> directive marks a schema element as
+requiring an authenticated request. Enforcement happens at the router.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.5"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-24-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-24-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-24-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-24-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-24-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-24-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-24-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-24-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-24-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthenticatedDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-24-3" name="__codelineno-24-3"></a>
+<a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6"></a>
+<a id="__codelineno-24-7" name="__codelineno-24-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">AuthenticatedDirective</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-25-1">1</a></span>
+<span class="normal"><a href="#__codelineno-25-2">2</a></span>
+<span class="normal"><a href="#__codelineno-25-3">3</a></span>
+<span class="normal"><a href="#__codelineno-25-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@authenticated</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4"></a><span class="err">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="requiresscopesdirective"><code>RequiresScopesDirective</code><a class="headerlink" href="#requiresscopesdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#requiresscopes" target="_blank"><code>@requiresScopes</code></a> directive marks a schema element as
+requiring the caller to hold one of the listed scope sets. Each inner list is an "all-of" group; the outer
+list is "any-of".</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.5"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-26-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-26-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-26-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-26-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-26-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-26-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-26-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-26-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-26-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">RequiresScopesDirective</span>
+</span><a id="__codelineno-26-3" name="__codelineno-26-3"></a>
+<a id="__codelineno-26-4" name="__codelineno-26-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5"></a>
+<a id="__codelineno-26-6" name="__codelineno-26-6"></a>
+<a id="__codelineno-26-7" name="__codelineno-26-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">RequiresScopesDirective</span><span class="p">(</span><span class="n">scopes</span><span class="o">=</span><span class="p">[[</span><span class="s2">"read:task"</span><span class="p">]])</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1">1</a></span>
+<span class="normal"><a href="#__codelineno-27-2">2</a></span>
+<span class="normal"><a href="#__codelineno-27-3">3</a></span>
+<span class="normal"><a href="#__codelineno-27-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@requiresScopes</span><span class="p">(</span><span class="n">scopes</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s">"read:task"</span><span class="p">]])</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="policydirective"><code>PolicyDirective</code><a class="headerlink" href="#policydirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#policy" target="_blank"><code>@policy</code></a> directive marks a schema element as gated by named
+authorization policies. The list-of-lists shape matches <a href="#requiresscopesdirective"><code>@requiresScopes</code></a>.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.6"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-28-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-28-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-28-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-28-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-28-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-28-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-28-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-28-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-28-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-28-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">PolicyDirective</span>
+</span><a id="__codelineno-28-3" name="__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6"></a>
+<a id="__codelineno-28-7" name="__codelineno-28-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">PolicyDirective</span><span class="p">(</span><span class="n">policies</span><span class="o">=</span><span class="p">[[</span><span class="s2">"policy_a"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"policy_b"</span><span class="p">]])</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-29-1">1</a></span>
+<span class="normal"><a href="#__codelineno-29-2">2</a></span>
+<span class="normal"><a href="#__codelineno-29-3">3</a></span>
+<span class="normal"><a href="#__codelineno-29-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@policy</span><span class="p">(</span><span class="n">policies</span><span class="p">:</span><span class="w"> </span><span class="p">[[</span><span class="s">"policy_a"</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="s">"policy_b"</span><span class="p">]])</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="contextdirective"><code>ContextDirective</code><a class="headerlink" href="#contextdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#context" target="_blank"><code>@context</code></a> directive names a context that the annotated type
+contributes to. Arguments elsewhere resolve their value from that context via
+<a href="#fromcontextdirective"><code>@fromContext</code></a>. Repeatable.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.8"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-30-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-30-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-30-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-30-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-30-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-30-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-30-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-30-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-30-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-30-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-30-3" name="__codelineno-30-3"></a>
+<a id="__codelineno-30-4" name="__codelineno-30-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6"></a>
+<a id="__codelineno-30-7" name="__codelineno-30-7"></a><span class="hll"><span class="nd">@ContextDirective</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"workspace"</span><span class="p">)</span>
+</span><a id="__codelineno-30-8" name="__codelineno-30-8"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-31-1">1</a></span>
+<span class="normal"><a href="#__codelineno-31-2">2</a></span>
+<span class="normal"><a href="#__codelineno-31-3">3</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@context(name:</span><span class="w"> </span><span class="err">"workspace")</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="fromcontextdirective"><code>FromContextDirective</code><a class="headerlink" href="#fromcontextdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#fromcontext" target="_blank"><code>@fromContext</code></a> directive populates a directive argument from
+a named context declared via <a href="#contextdirective"><code>@context</code></a>.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.8"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-32-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-32-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-32-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-32-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-32-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-32-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-32-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-32-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-32-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-32-10">10</a></span>
+<span class="normal"><a href="#__codelineno-32-11">11</a></span>
+<span class="normal"><a href="#__codelineno-32-12">12</a></span>
+<span class="normal"><a href="#__codelineno-32-13">13</a></span>
+<span class="normal"><a href="#__codelineno-32-14">14</a></span>
+<span class="normal"><a href="#__codelineno-32-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectiveLocation</span><span class="p">,</span> <span class="n">GraphQLNonNull</span><span class="p">,</span> <span class="n">GraphQLString</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2"></a>
+<a id="__codelineno-32-3" name="__codelineno-32-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.directives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Directive</span><span class="p">,</span> <span class="n">DirectiveArgument</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FromContextDirective</span>
+</span><a id="__codelineno-32-5" name="__codelineno-32-5"></a>
+<a id="__codelineno-32-6" name="__codelineno-32-6"></a>
+<a id="__codelineno-32-7" name="__codelineno-32-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScopedDirective</span><span class="p">(</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8"></a>    <span class="n">Directive</span><span class="p">,</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9"></a>    <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="n">DirectiveLocation</span><span class="o">.</span><span class="n">FIELD_DEFINITION</span><span class="p">],</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10"></a>    <span class="n">schema_name</span><span class="o">=</span><span class="s2">"scoped"</span><span class="p">,</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11"></a><span class="p">):</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12"></a>    <span class="n">workspace</span> <span class="o">=</span> <span class="n">DirectiveArgument</span><span class="p">(</span>
+<a id="__codelineno-32-13" name="__codelineno-32-13"></a>        <span class="n">GraphQLNonNull</span><span class="p">(</span><span class="n">GraphQLString</span><span class="p">),</span>
+<a id="__codelineno-32-14" name="__codelineno-32-14"></a><span class="hll">        <span class="n">directives</span><span class="o">=</span><span class="p">[</span><span class="n">FromContextDirective</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">"$workspace { id }"</span><span class="p">)],</span>
+</span><a id="__codelineno-32-15" name="__codelineno-32-15"></a>    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="costdirective"><code>CostDirective</code><a class="headerlink" href="#costdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#cost" target="_blank"><code>@cost</code></a> directive attaches a demand-control weight to a schema
+element. The router's cost analyzer sums these to estimate the total cost of a query.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.9"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-33-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-33-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-33-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-33-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-33-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-33-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-33-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-33-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-33-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-33-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">CostDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-33-3" name="__codelineno-33-3"></a>
+<a id="__codelineno-33-4" name="__codelineno-33-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5"></a>
+<a id="__codelineno-33-6" name="__codelineno-33-6"></a>
+<a id="__codelineno-33-7" name="__codelineno-33-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">CostDirective</span><span class="p">(</span><span class="n">weight</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-34-1">1</a></span>
+<span class="normal"><a href="#__codelineno-34-2">2</a></span>
+<span class="normal"><a href="#__codelineno-34-3">3</a></span>
+<span class="normal"><a href="#__codelineno-34-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@cost</span><span class="p">(</span><span class="n">weight</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="listsizedirective"><code>ListSizeDirective</code><a class="headerlink" href="#listsizedirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#listsize" target="_blank"><code>@listSize</code></a> directive tells the demand-control cost analyzer
+how large a list-returning field can grow. <code>assumed_size</code> is a fixed upper bound; <code>slicing_arguments</code> and
+<code>sized_fields</code> describe pagination-based bounds.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.9"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-35-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-35-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-35-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-35-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-35-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-35-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-35-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-35-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-35-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-35-10">10</a></span>
+<span class="normal"><a href="#__codelineno-35-11">11</a></span>
+<span class="normal"><a href="#__codelineno-35-12">12</a></span>
+<span class="normal"><a href="#__codelineno-35-13">13</a></span>
+<span class="normal"><a href="#__codelineno-35-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">ListSizeDirective</span>
+</span><a id="__codelineno-35-3" name="__codelineno-35-3"></a>
+<a id="__codelineno-35-4" name="__codelineno-35-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5"></a>
+<a id="__codelineno-35-6" name="__codelineno-35-6"></a>
+<a id="__codelineno-35-7" name="__codelineno-35-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-35-10" name="__codelineno-35-10"></a><span class="hll">    <span class="n">comments</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">ListSizeDirective</span><span class="p">(</span>
+</span><a id="__codelineno-35-11" name="__codelineno-35-11"></a><span class="hll">        <span class="n">assumed_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+</span><a id="__codelineno-35-12" name="__codelineno-35-12"></a><span class="hll">        <span class="n">slicing_arguments</span><span class="o">=</span><span class="p">[</span><span class="s2">"first"</span><span class="p">,</span> <span class="s2">"last"</span><span class="p">],</span>
+</span><a id="__codelineno-35-13" name="__codelineno-35-13"></a><span class="hll">        <span class="n">sized_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"edges"</span><span class="p">],</span>
+</span><a id="__codelineno-35-14" name="__codelineno-35-14"></a><span class="hll">    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-36-1">1</a></span>
+<span class="normal"><a href="#__codelineno-36-2">2</a></span>
+<span class="normal"><a href="#__codelineno-36-3">3</a></span>
+<span class="normal"><a href="#__codelineno-36-4">4</a></span>
+<span class="normal"><a href="#__codelineno-36-5">5</a></span>
+<span class="normal"><a href="#__codelineno-36-6">6</a></span>
+<span class="normal"><a href="#__codelineno-36-7">7</a></span>
+<span class="normal"><a href="#__codelineno-36-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3"></a><span class="w">  </span><span class="nl">comments</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">String</span><span class="err">!]!</span><span class="w"> </span><span class="nd">@listSize</span><span class="p">(</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4"></a><span class="w">    </span><span class="n">assumedSize</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5"></a><span class="w">    </span><span class="n">sizedFields</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"edges"</span><span class="p">],</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6"></a><span class="w">    </span><span class="n">slicingArguments</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"first"</span><span class="p">,</span><span class="w"> </span><span class="s">"last"</span><span class="p">]</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7"></a><span class="w">  </span><span class="p">)</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="cachetagdirective"><code>CacheTagDirective</code><a class="headerlink" href="#cachetagdirective" title="Permanent link">🔗</a></h3>
+<p>The <a href="https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#cachetag" target="_blank"><code>@cacheTag</code></a> directive attaches a cache-tag template to a schema
+element. The router uses the rendered tags to invalidate response cache entries. Repeatable, and applicable
+to both object types and individual fields.</p>
+<blockquote>
+<p>Requires <code>FEDERATION_VERSION</code> <code>"2.12"</code> or higher.</p>
+</blockquote>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-37-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-37-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-37-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-37-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-37-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-37-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-37-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-37-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-37-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-37-10">10</a></span>
+<span class="normal"><a href="#__codelineno-37-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2"></a><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheTagDirective</span><span class="p">,</span> <span class="n">KeyDirective</span>
+</span><a id="__codelineno-37-3" name="__codelineno-37-3"></a>
+<a id="__codelineno-37-4" name="__codelineno-37-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5"></a>
+<a id="__codelineno-37-6" name="__codelineno-37-6"></a>
+<a id="__codelineno-37-7" name="__codelineno-37-7"></a><span class="hll"><span class="nd">@CacheTagDirective</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">"task"</span><span class="p">)</span>
+</span><a id="__codelineno-37-8" name="__codelineno-37-8"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-37-9" name="__codelineno-37-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-37-10" name="__codelineno-37-10"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-37-11" name="__codelineno-37-11"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span> <span class="o">@</span> <span class="n">CacheTagDirective</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">"task:{$response.id}:name"</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-38-1">1</a></span>
+<span class="normal"><a href="#__codelineno-38-2">2</a></span>
+<span class="normal"><a href="#__codelineno-38-3">3</a></span>
+<span class="normal"><a href="#__codelineno-38-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@cacheTag(format:</span><span class="w"> </span><span class="err">"task")</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-38-3" name="__codelineno-38-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@cacheTag</span><span class="p">(</span><span class="n">format</span><span class="p">:</span><span class="w"> </span><span class="s">"task:{$response.id}:name"</span><span class="p">)</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="entities">Entities<a class="headerlink" href="#entities" title="Permanent link">🔗</a></h2>
+<p>An <strong>entity</strong> is an object type marked with <a href="#keydirective"><code>@key</code></a> that can be fetched with one or more
+unique keys and resolve its fields from multiple data sources in a federated graph. The router fetches
+entities across subgraphs by sending <strong>representations</strong> (dicts like <code>{ "__typename": "TaskType", "id": 1 }</code>)
+to your subgraph and expects the matching entities back.</p>
+<p>Undine wires this up automatically in <a href="#setup"><code>create_federation_schema</code></a> whenever the schema contains at
+least one resolvable <code>@key</code> entity, adding an <code>_entities</code> field to the <code>Query</code> type that the router calls
+to fetch entities by their representations.</p>
+<h3 id="reference-resolver">Reference resolver<a class="headerlink" href="#reference-resolver" title="Permanent link">🔗</a></h3>
+<p>The reference resolver runs for each representation after the router dispatches by <code>__typename</code>. By default,
+Undine builds one for you, but the default resolver only supports a <code>QueryType</code> with a single resolvable
+<code>@key</code> whose <code>fields</code> is a single, unaliased token that maps to a declared <code>Field</code>. In any other case,
+you need define a custom <code>__resolve_reference__</code> on the <code>QueryType</code>.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-39-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-39-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-39-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-39-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-39-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-39-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-39-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-39-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-39-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-39-10">10</a></span>
+<span class="normal"><a href="#__codelineno-39-11">11</a></span>
+<span class="normal"><a href="#__codelineno-39-12">12</a></span>
+<span class="normal"><a href="#__codelineno-39-13">13</a></span>
+<span class="normal"><a href="#__codelineno-39-14">14</a></span>
+<span class="normal"><a href="#__codelineno-39-15">15</a></span>
+<span class="normal"><a href="#__codelineno-39-16">16</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2"></a><span class="hll">
+</span><a id="__codelineno-39-3" name="__codelineno-39-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyDirective</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5"></a>
+<a id="__codelineno-39-6" name="__codelineno-39-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7"></a>
+<a id="__codelineno-39-8" name="__codelineno-39-8"></a>
+<a id="__codelineno-39-9" name="__codelineno-39-9"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-39-11" name="__codelineno-39-11"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-39-12" name="__codelineno-39-12"></a><span class="hll">    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+</span><a id="__codelineno-39-13" name="__codelineno-39-13"></a>
+<a id="__codelineno-39-14" name="__codelineno-39-14"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-39-15" name="__codelineno-39-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__resolve_reference__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">representation</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Task</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-39-16" name="__codelineno-39-16"></a>        <span class="k">return</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pk</span><span class="o">=</span><span class="n">representation</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<p>Returning <code>None</code> from <code>__resolve_reference__</code> yields <code>null</code> for that entry. Raising propagates as a
+GraphQL error on that entry's response slot.</p>
+<h2 id="federationtype">FederationType<a class="headerlink" href="#federationtype" title="Permanent link">🔗</a></h2>
+<p>A <code>FederationType</code> contributes fields to an entity that is owned by another subgraph
+and is not backed by a Django model. You still mark it with <a href="#keydirective"><code>@KeyDirective</code></a>
+so the router knows how to identify entities of this type.</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-40-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-40-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-40-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-40-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-40-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-40-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-40-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-40-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-40-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-40-10">10</a></span>
+<span class="normal"><a href="#__codelineno-40-11">11</a></span>
+<span class="normal"><a href="#__codelineno-40-12">12</a></span>
+<span class="normal"><a href="#__codelineno-40-13">13</a></span>
+<span class="normal"><a href="#__codelineno-40-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FederationField</span><span class="p">,</span> <span class="n">FederationType</span><span class="p">,</span> <span class="n">KeyDirective</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2"></a>
+<a id="__codelineno-40-3" name="__codelineno-40-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4"></a>
+<a id="__codelineno-40-5" name="__codelineno-40-5"></a>
+<a id="__codelineno-40-6" name="__codelineno-40-6"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-40-7" name="__codelineno-40-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserExtension</span><span class="p">(</span><span class="n">FederationType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">):</span>
+<a id="__codelineno-40-8" name="__codelineno-40-8"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-40-9" name="__codelineno-40-9"></a>    <span class="n">assigned_task_count</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-40-10" name="__codelineno-40-10"></a>
+<a id="__codelineno-40-11" name="__codelineno-40-11"></a>    <span class="nd">@assigned_task_count</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-40-12" name="__codelineno-40-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_assigned_task_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-40-13" name="__codelineno-40-13"></a>        <span class="c1"># `self.id` reads from the representation the router sent.</span>
+<a id="__codelineno-40-14" name="__codelineno-40-14"></a>        <span class="k">return</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">assigned_to_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-41-1">1</a></span>
+<span class="normal"><a href="#__codelineno-41-2">2</a></span>
+<span class="normal"><a href="#__codelineno-41-3">3</a></span>
+<span class="normal"><a href="#__codelineno-41-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1"></a><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3"></a><span class="w">  </span><span class="nl">assignedTaskCount</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<blockquote>
+<p>Note: <code>schema_name</code> must match the name to the shared entity name across subgraphs.</p>
+</blockquote>
+<h3 id="federationfield">FederationField<a class="headerlink" href="#federationfield" title="Permanent link">🔗</a></h3>
+<p>A <code>FederationField</code> is used to define a queryable value on a <code>FederationType</code>.
+It mirrors <a href="../queries/#fields"><code>Field</code></a> on a <code>QueryType</code>.</p>
+<p>A <code>FederationField</code> resolves via one of three rules:</p>
+<ol>
+<li><strong>Explicit resolver</strong> — <code>@&lt;field&gt;.resolve</code> was used, or the decorator form <code>@FederationField(...)</code>
+   wrapped a function.</li>
+<li><strong>Key field</strong> — the field's name appears in some <code>@KeyDirective(fields=...)</code>. The router populates
+   the attribute from the representation; the resolver is a plain attribute lookup on the instance.</li>
+<li><strong><code>@external</code></strong> — the field carries <a href="#externaldirective"><code>@ExternalDirective()</code></a>. Populated by
+   another subgraph via <code>@requires</code>; again, a plain attribute lookup.</li>
+</ol>
+<p>Anything else — a computed field with no resolver, no key membership, and no <code>@external</code> — is a definition
+error and raises an exception when the schema is built.</p>
+<p>The following declares a computed <code>overdue_task_count</code> that depends on <code>timezone</code> from another subgraph:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-42-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-42-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-42-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-42-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-42-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-42-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-42-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-42-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-42-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-42-10">10</a></span>
+<span class="normal"><a href="#__codelineno-42-11">11</a></span>
+<span class="normal"><a href="#__codelineno-42-12">12</a></span>
+<span class="normal"><a href="#__codelineno-42-13">13</a></span>
+<span class="normal"><a href="#__codelineno-42-14">14</a></span>
+<span class="normal"><a href="#__codelineno-42-15">15</a></span>
+<span class="normal"><a href="#__codelineno-42-16">16</a></span>
+<span class="normal"><a href="#__codelineno-42-17">17</a></span>
+<span class="normal"><a href="#__codelineno-42-18">18</a></span>
+<span class="normal"><a href="#__codelineno-42-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalDirective</span><span class="p">,</span> <span class="n">FederationField</span><span class="p">,</span> <span class="n">FederationType</span><span class="p">,</span> <span class="n">KeyDirective</span><span class="p">,</span> <span class="n">RequiresDirective</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3"></a>
+<a id="__codelineno-42-4" name="__codelineno-42-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5"></a>
+<a id="__codelineno-42-6" name="__codelineno-42-6"></a>
+<a id="__codelineno-42-7" name="__codelineno-42-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-42-8" name="__codelineno-42-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserExtension</span><span class="p">(</span><span class="n">FederationType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">):</span>
+<a id="__codelineno-42-9" name="__codelineno-42-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-42-10" name="__codelineno-42-10"></a>
+<a id="__codelineno-42-11" name="__codelineno-42-11"></a>    <span class="c1"># Populated by the Users subgraph.</span>
+<a id="__codelineno-42-12" name="__codelineno-42-12"></a>    <span class="n">timezone</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">@</span> <span class="n">ExternalDirective</span><span class="p">()</span>
+<a id="__codelineno-42-13" name="__codelineno-42-13"></a>
+<a id="__codelineno-42-14" name="__codelineno-42-14"></a>    <span class="c1"># "Overdue" depends on the user's local time, so we need `timezone` resolved first.</span>
+<a id="__codelineno-42-15" name="__codelineno-42-15"></a>    <span class="n">overdue_task_count</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">@</span> <span class="n">RequiresDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"timezone"</span><span class="p">)</span>
+<a id="__codelineno-42-16" name="__codelineno-42-16"></a>
+<a id="__codelineno-42-17" name="__codelineno-42-17"></a>    <span class="nd">@overdue_task_count</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-42-18" name="__codelineno-42-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_overdue_task_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-42-19" name="__codelineno-42-19"></a>        <span class="k">return</span> <span class="n">Task</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">assigned_to_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">due_by__lt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timezone</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-43-1">1</a></span>
+<span class="normal"><a href="#__codelineno-43-2">2</a></span>
+<span class="normal"><a href="#__codelineno-43-3">3</a></span>
+<span class="normal"><a href="#__codelineno-43-4">4</a></span>
+<span class="normal"><a href="#__codelineno-43-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1"></a><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3"></a><span class="w">  </span><span class="nl">timezone</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span><span class="w"> </span><span class="nd">@external</span>
+<a id="__codelineno-43-4" name="__codelineno-43-4"></a><span class="w">  </span><span class="err">overdueTaskCount:</span><span class="w"> </span><span class="err">Int!</span><span class="w"> </span><span class="err">@requires</span><span class="p">(</span><span class="n">fields</span><span class="p">:</span><span class="w"> </span><span class="s">"timezone"</span><span class="p">)</span>
+<a id="__codelineno-43-5" name="__codelineno-43-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>Both <code>timezone</code> (an <code>@external</code> attribute) and <code>id</code> (a key field) are populated by the router; only
+<code>overdue_task_count</code> needs an explicit resolver.</p>
+<h3 id="stub-references">Stub references<a class="headerlink" href="#stub-references" title="Permanent link">🔗</a></h3>
+<p>A stub declares an entity type this subgraph <em>references</em> but does not resolve — the router routes
+resolution requests elsewhere. Mark the key as <code>resolvable=False</code>, declare the key field(s) explicitly,
+and leave the rest of the type empty. You can then use the stub as a <code>Field</code> reference on a resolvable
+<code>QueryType</code>, and return a representation dict from the resolver so the router can fetch the rest of the
+entity from the owning subgraph:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-44-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-44-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-44-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-44-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-44-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-44-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-44-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-44-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-44-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-44-10">10</a></span>
+<span class="normal"><a href="#__codelineno-44-11">11</a></span>
+<span class="normal"><a href="#__codelineno-44-12">12</a></span>
+<span class="normal"><a href="#__codelineno-44-13">13</a></span>
+<span class="normal"><a href="#__codelineno-44-14">14</a></span>
+<span class="normal"><a href="#__codelineno-44-15">15</a></span>
+<span class="normal"><a href="#__codelineno-44-16">16</a></span>
+<span class="normal"><a href="#__codelineno-44-17">17</a></span>
+<span class="normal"><a href="#__codelineno-44-18">18</a></span>
+<span class="normal"><a href="#__codelineno-44-19">19</a></span>
+<span class="normal"><a href="#__codelineno-44-20">20</a></span>
+<span class="normal"><a href="#__codelineno-44-21">21</a></span>
+<span class="normal"><a href="#__codelineno-44-22">22</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">QueryType</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FederationField</span><span class="p">,</span> <span class="n">FederationType</span><span class="p">,</span> <span class="n">KeyDirective</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3"></a>
+<a id="__codelineno-44-4" name="__codelineno-44-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5"></a>
+<a id="__codelineno-44-6" name="__codelineno-44-6"></a>
+<a id="__codelineno-44-7" name="__codelineno-44-7"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">resolvable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-44-8" name="__codelineno-44-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserStub</span><span class="p">(</span><span class="n">FederationType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">):</span>
+<a id="__codelineno-44-9" name="__codelineno-44-9"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-44-10" name="__codelineno-44-10"></a>
+<a id="__codelineno-44-11" name="__codelineno-44-11"></a>
+<a id="__codelineno-44-12" name="__codelineno-44-12"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-44-13" name="__codelineno-44-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="p">(</span><span class="n">QueryType</span><span class="p">[</span><span class="n">Task</span><span class="p">]):</span>
+<a id="__codelineno-44-14" name="__codelineno-44-14"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-44-15" name="__codelineno-44-15"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">Field</span><span class="p">()</span>
+<a id="__codelineno-44-16" name="__codelineno-44-16"></a>    <span class="n">assigned_to</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">UserStub</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-44-17" name="__codelineno-44-17"></a>
+<a id="__codelineno-44-18" name="__codelineno-44-18"></a>    <span class="nd">@assigned_to</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-44-19" name="__codelineno-44-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_assigned_to</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-44-20" name="__codelineno-44-20"></a>        <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">assigned_to_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-44-21" name="__codelineno-44-21"></a>            <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-44-22" name="__codelineno-44-22"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">root</span><span class="o">.</span><span class="n">assigned_to_id</span><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-45-1">1</a></span>
+<span class="normal"><a href="#__codelineno-45-2">2</a></span>
+<span class="normal"><a href="#__codelineno-45-3">3</a></span>
+<span class="normal"><a href="#__codelineno-45-4">4</a></span>
+<span class="normal"><a href="#__codelineno-45-5">5</a></span>
+<span class="normal"><a href="#__codelineno-45-6">6</a></span>
+<span class="normal"><a href="#__codelineno-45-7">7</a></span>
+<span class="normal"><a href="#__codelineno-45-8">8</a></span>
+<span class="normal"><a href="#__codelineno-45-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1"></a><span class="k">type</span><span class="w"> </span><span class="err">TaskType</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id")</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-45-3" name="__codelineno-45-3"></a><span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<a id="__codelineno-45-4" name="__codelineno-45-4"></a><span class="w">  </span><span class="nl">assignedTo</span><span class="p">:</span><span class="w"> </span><span class="n">User</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5"></a><span class="p">}</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6"></a>
+<a id="__codelineno-45-7" name="__codelineno-45-7"></a><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="err">@key(fields:</span><span class="w"> </span><span class="err">"id"</span><span class="p">,</span><span class="w"> </span><span class="err">resolvable:</span><span class="w"> </span><span class="err">false)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8"></a><span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
+<a id="__codelineno-45-9" name="__codelineno-45-9"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The stub still appears in <code>_service.sdl</code> (so the router can compose it), but it does not appear in the
+<code>_Entity</code> union and no <code>_entities</code> dispatch is wired for it.</p>
+<h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">🔗</a></h2>
+<p>When the router fetches entities through the injected <a href="#entities"><code>_entities</code></a> endpoint, it bypasses your
+top-level query entrypoints. To keep authorization consistent, Undine invokes the entity's
+<code>__permissions__</code> classmethod on every entity resolved through <code>_entities</code>, whether the entity is backed
+by a <code>QueryType</code> or by a <code>FederationType</code>.</p>
+<p>For a <code>QueryType</code>, the same <a href="../queries/#permissions"><code>__permissions__</code></a> that runs on regular entrypoints
+runs here too — no extra wiring is needed.</p>
+<p>For a <code>FederationType</code>, define <code>__permissions__</code> on the class; the <code>_entities</code> resolver invokes it right
+after <code>__resolve_reference__</code> builds the instance:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-46-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-46-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-46-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-46-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-46-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-46-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-46-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-46-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-46-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-46-10">10</a></span>
+<span class="normal"><a href="#__codelineno-46-11">11</a></span>
+<span class="normal"><a href="#__codelineno-46-12">12</a></span>
+<span class="normal"><a href="#__codelineno-46-13">13</a></span>
+<span class="normal"><a href="#__codelineno-46-14">14</a></span>
+<span class="normal"><a href="#__codelineno-46-15">15</a></span>
+<span class="normal"><a href="#__codelineno-46-16">16</a></span>
+<span class="normal"><a href="#__codelineno-46-17">17</a></span>
+<span class="normal"><a href="#__codelineno-46-18">18</a></span>
+<span class="normal"><a href="#__codelineno-46-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-46-2" name="__codelineno-46-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-46-3" name="__codelineno-46-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FederationField</span><span class="p">,</span> <span class="n">FederationType</span><span class="p">,</span> <span class="n">KeyDirective</span>
+<a id="__codelineno-46-4" name="__codelineno-46-4"></a>
+<a id="__codelineno-46-5" name="__codelineno-46-5"></a>
+<a id="__codelineno-46-6" name="__codelineno-46-6"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-46-7" name="__codelineno-46-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserExtension</span><span class="p">(</span><span class="n">FederationType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">):</span>
+<a id="__codelineno-46-8" name="__codelineno-46-8"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-46-9" name="__codelineno-46-9"></a>    <span class="n">assigned_task_count</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-46-10" name="__codelineno-46-10"></a>
+<a id="__codelineno-46-11" name="__codelineno-46-11"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-46-12" name="__codelineno-46-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__permissions__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="s2">"UserExtension"</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-46-13" name="__codelineno-46-13"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_authenticated</span><span class="p">:</span>
+<a id="__codelineno-46-14" name="__codelineno-46-14"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Only authenticated users can resolve User extensions."</span>
+<a id="__codelineno-46-15" name="__codelineno-46-15"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<a id="__codelineno-46-16" name="__codelineno-46-16"></a>
+<a id="__codelineno-46-17" name="__codelineno-46-17"></a>    <span class="nd">@assigned_task_count</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-46-18" name="__codelineno-46-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_assigned_task_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-46-19" name="__codelineno-46-19"></a>        <span class="k">return</span> <span class="mi">0</span>
+</code></pre></div></td></tr></table></div>
+<p>To gate an individual <code>FederationField</code>, decorate a method with <code>@&lt;field&gt;.permissions</code>. Sibling fields
+keep resolving independently:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-47-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-47-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-47-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-47-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-47-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-47-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-47-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-47-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-47-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-47-10">10</a></span>
+<span class="normal"><a href="#__codelineno-47-11">11</a></span>
+<span class="normal"><a href="#__codelineno-47-12">12</a></span>
+<span class="normal"><a href="#__codelineno-47-13">13</a></span>
+<span class="normal"><a href="#__codelineno-47-14">14</a></span>
+<span class="normal"><a href="#__codelineno-47-15">15</a></span>
+<span class="normal"><a href="#__codelineno-47-16">16</a></span>
+<span class="normal"><a href="#__codelineno-47-17">17</a></span>
+<span class="normal"><a href="#__codelineno-47-18">18</a></span>
+<span class="normal"><a href="#__codelineno-47-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine</span><span class="w"> </span><span class="kn">import</span> <span class="n">GQLInfo</span>
+<a id="__codelineno-47-2" name="__codelineno-47-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLPermissionError</span>
+<a id="__codelineno-47-3" name="__codelineno-47-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">undine.federation</span><span class="w"> </span><span class="kn">import</span> <span class="n">FederationField</span><span class="p">,</span> <span class="n">FederationType</span><span class="p">,</span> <span class="n">KeyDirective</span>
+<a id="__codelineno-47-4" name="__codelineno-47-4"></a>
+<a id="__codelineno-47-5" name="__codelineno-47-5"></a>
+<a id="__codelineno-47-6" name="__codelineno-47-6"></a><span class="nd">@KeyDirective</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
+<a id="__codelineno-47-7" name="__codelineno-47-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">UserExtension</span><span class="p">(</span><span class="n">FederationType</span><span class="p">,</span> <span class="n">schema_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">):</span>
+<a id="__codelineno-47-8" name="__codelineno-47-8"></a>    <span class="nb">id</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-47-9" name="__codelineno-47-9"></a>    <span class="n">assigned_task_count</span> <span class="o">=</span> <span class="n">FederationField</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a id="__codelineno-47-10" name="__codelineno-47-10"></a>
+<a id="__codelineno-47-11" name="__codelineno-47-11"></a>    <span class="nd">@assigned_task_count</span><span class="o">.</span><span class="n">resolve</span>
+<a id="__codelineno-47-12" name="__codelineno-47-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_assigned_task_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-47-13" name="__codelineno-47-13"></a>        <span class="k">return</span> <span class="mi">0</span>
+<a id="__codelineno-47-14" name="__codelineno-47-14"></a>
+<a id="__codelineno-47-15" name="__codelineno-47-15"></a>    <span class="nd">@assigned_task_count</span><span class="o">.</span><span class="n">permissions</span>
+<a id="__codelineno-47-16" name="__codelineno-47-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">assigned_task_count_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GQLInfo</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-47-17" name="__codelineno-47-17"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">is_staff</span><span class="p">:</span>
+<a id="__codelineno-47-18" name="__codelineno-47-18"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Only staff can see the assigned task count."</span>
+<a id="__codelineno-47-19" name="__codelineno-47-19"></a>            <span class="k">raise</span> <span class="n">GraphQLPermissionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<p>Both hooks may also be defined <code>async</code>. If a permission check fails, the failing entity slot or field
+becomes <code>null</code> with the error attached, leaving the rest of the batch intact.</p>
+<h2 id="apollo-compatibility">Apollo compatibility<a class="headerlink" href="#apollo-compatibility" title="Permanent link">🔗</a></h2>
+<p>Undine is verified against Apollo's <a href="https://github.com/apollographql/apollo-federation-subgraph-compatibility" target="_blank">subgraph compatibility harness</a>, which
+composes a subgraph with Apollo's <code>users</code> and <code>inventory</code> subgraphs plus a router and runs
+Apollo's canonical query set against the composed supergraph.</p>
+<p>A reference implementation of Apollo's <code>products</code> subgraph in Undine lives at
+<code>tests/test_federation/compatibility/</code>. It contains a small Django project you can read end-to-end to see
+entities, <code>FederationType</code> extensions, <code>@key</code>/<code>@requires</code>/<code>@provides</code>/<code>@override</code>, custom directives
+via <code>@composeDirective</code>, and reference resolvers wired against real models. See its <code>README.md</code> for
+how to boot it locally and run Apollo's compliance runner.</p>
+<table>
+<thead>
+<tr>
+<th>Federation 1 Support</th>
+<th>Federation 2 Support</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<table>
+<tr><th><code>_service</code></th><td>🟢</td></tr>
+<tr><th><code>@key (single)</code></th><td>🟢</td></tr>
+<tr><th><code>@key (multi)</code></th><td>🟢</td></tr>
+<tr><th><code>@key (composite)</code></th><td>🟢</td></tr>
+<tr><th><code>repeatable @key</code></th><td>🟢</td></tr>
+<tr><th><code>@requires</code></th><td>🟢</td></tr>
+<tr><th><code>@provides</code></th><td>🟢</td></tr>
+<tr><th><code>federated tracing</code></th><td>🟢</td></tr>
+</table>
+</td>
+<td>
+<table>
+<tr><th><code>@link</code></th><td>🟢</td></tr>
+<tr><th><code>@shareable</code></th><td>🟢</td></tr>
+<tr><th><code>@tag</code></th><td>🟢</td></tr>
+<tr><th><code>@override</code></th><td>🟢</td></tr>
+<tr><th><code>@inaccessible</code></th><td>🟢</td></tr>
+<tr><th><code>@composeDirective</code></th><td>🟢</td></tr>
+<tr><th><code>@interfaceObject</code></th><td>🟢</td></tr>
+</table>
+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="federated-tracing">Federated tracing<a class="headerlink" href="#federated-tracing" title="Permanent link">🔗</a></h2>
+<p>Undine ships <code>FederatedTracingHook</code>, a <a href="../lifecycle-hooks/">lifecycle hook</a> that implements Apollo's
+Federated Tracing v1 (<code>ftv1</code>) protocol. Register it in
+<a href="../settings/#additional_lifecycle_hooks"><code>ADDITIONAL_LIFECYCLE_HOOKS</code></a> to opt in:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-48-1">1</a></span>
+<span class="normal"><a href="#__codelineno-48-2">2</a></span>
+<span class="normal"><a href="#__codelineno-48-3">3</a></span>
+<span class="normal"><a href="#__codelineno-48-4">4</a></span>
+<span class="normal"><a href="#__codelineno-48-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1"></a><span class="n">UNDINE</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2"></a>    <span class="s2">"ADDITIONAL_LIFECYCLE_HOOKS"</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-48-3" name="__codelineno-48-3"></a>        <span class="s2">"undine.federation.tracing.FederatedTracingHook"</span><span class="p">,</span>
+<a id="__codelineno-48-4" name="__codelineno-48-4"></a>    <span class="p">],</span>
+<a id="__codelineno-48-5" name="__codelineno-48-5"></a><span class="p">}</span>
+</code></pre></div></td></tr></table></div>
+<p>The hook requires the <code>protobuf</code> package, which is not installed by default.
+Install it via the <code>federation-tracing</code> extra:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-49-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">'undine[federation-tracing]'</span>
+</code></pre></div></td></tr></table></div>
+<p>When a request carries the <code>apollo-federation-include-trace: ftv1</code> header, the
+hook records timings for every resolver call and attaches a message under <code>extensions.ftv1</code> on the response.
+See <a href="https://www.apollographql.com/docs/federation/v1/metrics" target="_blank">Apollo docs</a> for more information.</p>
+</div>
+</div><footer>
+<div aria-label="Footer Navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-left" href="../directives/" title="Directives"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+<a class="btn btn-neutral float-right" href="../visibility/" title="Visibility">Next <span class="icon icon-circle-arrow-right"></span></a>
+</div>
+<hr/>
+<div role="contentinfo">
+<!-- Copyright etc -->
+</div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+</div>
+</div>
+</section>
+</div>
+<div aria-label="Versions" class="rst-versions" role="note">
+<span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href="../directives/" style="color: #fcfcfc">« Previous</a></span>
+<span><a href="../visibility/" style="color: #fcfcfc">Next »</a></span>
+</span>
+</div>
+<script src="../js/jquery-3.6.0.min.js"></script>
+<script>var base_url = "..";</script>
+<script src="../js/theme_extra.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/docs.js"></script>
+<script src="../service-worker.js"></script>
+<script src="../search/main.js"></script>
+<script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+</body>
+</html>
