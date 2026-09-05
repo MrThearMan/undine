@@ -344,7 +344,7 @@ class TypeCollector:
         self.type_definitions.add(definition)
 
     def render_header(self) -> str:
-        header = MARKER + "\nfrom __future__ import annotations\n\n"
+        header = MARKER + "\n# isort: off\nfrom __future__ import annotations\n\n"
 
         if self.require_enum:
             header += "from enum import Enum\n"

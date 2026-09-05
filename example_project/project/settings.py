@@ -190,4 +190,5 @@ UNDINE = {
     # "ERROR_MASKING_PREDICATE": "undine.utils.graphql.utils.never_mask_error",
     "AUTOMATIC_PERSISTED_QUERIES": True,
     "ADDITIONAL_LIFECYCLE_HOOKS": additional_lifecycle_hooks,
+    "MUTATION_INPUT_DATA_TYPES_MODULE": "example_project.app.generated",
 }
