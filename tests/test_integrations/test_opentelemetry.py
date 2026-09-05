@@ -179,8 +179,10 @@ async def test_opentelemetry__subscription_operation_span_covers_the_event_strea
     assert len(execution_spans) == 3
 
     # The operation is not over when the event stream is created, but when the event stream ends.
-    assert operation_span.start_time < min(span.start_time for span in execution_spans)  # type: ignore[operator,type-var]
-    assert operation_span.end_time > max(span.end_time for span in execution_spans)  # type: ignore[operator,type-var]
+    # Use inclusive comparisons, since the system clock resolution on Windows is too coarse
+    # to separate the timestamps of fast operations.
+    assert operation_span.start_time <= min(span.start_time for span in execution_spans)  # type: ignore[operator,type-var]
+    assert operation_span.end_time >= max(span.end_time for span in execution_spans)  # type: ignore[operator,type-var]
 
 
 def test_opentelemetry__failing_operation_marks_the_span(undine_settings) -> None:
@@ -587,7 +589,10 @@ async def test_opentelemetry__field_hook_records_async_resolvers(undine_settings
     assert start_time is not None
 
     assert field_span.status.status_code == StatusCode.UNSET
-    assert end_time > start_time
+
+    # Use an inclusive comparison, since the system clock resolution on Windows is too coarse
+    # to separate the timestamps of fast operations.
+    assert end_time >= start_time
 
     operation_span = get_span(spans, "query")
     operation_span_id = operation_span.context.span_id
