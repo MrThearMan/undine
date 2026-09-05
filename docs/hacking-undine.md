@@ -183,10 +183,20 @@ In addition to the value to convert, the function also accepts the following val
 
 - `field: ModelField`: The Django Model field to look at.
 
+
+### `convert_to_entrypoint_complexity`
+
+This function is used to convert an `Entrypoint` reference to its [complexity](schema.md#complexity).
+A reference that runs a database query counts 1. Any other reference counts 0.
+
+In addition to the value to convert, the function also accepts the following values:
+
+- `caller: Entrypoint`: The `Entrypoint` instance that is calling this function.
+
 ### `convert_to_field_complexity`
 
 This function is used to convert a `Field` reference to its [complexity](queries.md#complexity) value.
-By default, any reference passed to it has a complexity of 0 if not specified.
+A reference that runs a database query counts 1. Any other reference counts 0.
 
 In addition to the value to convert, the function also accepts the following values:
 
@@ -392,7 +402,8 @@ Here are the converters that a new `Entrypoint` reference might need to implemen
 3. [`convert_to_graphql_type`](#convert_to_graphql_type) to convert the reference to a GraphQL type.
 4. [`convert_to_graphql_argument_map`](#convert_to_graphql_argument_map) to convert the reference to a GraphQL argument map.
 5. [`convert_to_entrypoint_subscription`](#convert_to_entrypoint_subscription) to convert the reference to a GraphQL subscription resolver function.
-6. [`convert_to_description`](#convert_to_description) to convert the reference to a description.
+6. [`convert_to_entrypoint_complexity`](#convert_to_entrypoint_complexity) to know the complexity of resolving the entrypoint.
+7. [`convert_to_description`](#convert_to_description) to convert the reference to a description.
 
 ### Fields
 

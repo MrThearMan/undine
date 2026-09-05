@@ -104,7 +104,7 @@ def test_validation_rules__max_complexity_rule__entrypoint__mutation__query_type
 
     assert response.errors == [
         {
-            "message": "Query complexity of 1 exceeds the maximum allowed complexity of 0.",
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 0.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -132,7 +132,7 @@ def test_validation_rules__max_complexity_rule__query_type__field(graphql, undin
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Query complexity of 1 exceeds the maximum allowed complexity of 0.",
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 0.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -192,7 +192,7 @@ def test_validation_rules__max_complexity_rule__query_type__field__connection(gr
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Query complexity of 1 exceeds the maximum allowed complexity of 0.",
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 0.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -220,7 +220,7 @@ def test_validation_rules__max_complexity_rule__at_limit(graphql, undine_setting
 
 @pytest.mark.django_db
 def test_validation_rules__max_complexity_rule__fragment_spread__already_visited(graphql, undine_settings) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 1
+    undine_settings.MAX_QUERY_COMPLEXITY = 2
 
     class TaskType(QueryType[Task], auto=False):
         name = Field(complexity=1)
@@ -251,7 +251,7 @@ def test_validation_rules__max_complexity_rule__fragment_spread__already_visited
 def test_validation_rules__max_complexity_rule__fragment_spread__already_visited__root(
     graphql, undine_settings
 ) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 1
+    undine_settings.MAX_QUERY_COMPLEXITY = 2
 
     class TaskType(QueryType[Task], auto=False):
         name = Field(complexity=1)
@@ -283,7 +283,7 @@ def test_validation_rules__max_complexity_rule__fragment_spread__already_visited
     graphql,
     undine_settings,
 ) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 1
+    undine_settings.MAX_QUERY_COMPLEXITY = 2
 
     class TaskType(QueryType[Task], auto=False):
         name = Field(complexity=1)
@@ -317,7 +317,7 @@ def test_validation_rules__max_complexity_rule__fragment_spread__already_visited
     graphql,
     undine_settings,
 ) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 1
+    undine_settings.MAX_QUERY_COMPLEXITY = 2
 
     class TaskType(QueryType[Task], auto=False):
         name = Field(complexity=1)
@@ -380,7 +380,7 @@ def test_validation_rules__max_complexity_rule__fragment_spread__different_selec
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 1.",
+            "message": "Query complexity of 3 exceeds the maximum allowed complexity of 1.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -391,7 +391,7 @@ def test_validation_rules__max_complexity_rule__fragment_spread__different_selec
     graphql,
     undine_settings,
 ) -> None:
-    undine_settings.MAX_QUERY_COMPLEXITY = 2
+    undine_settings.MAX_QUERY_COMPLEXITY = 3
 
     class TaskType(QueryType[Task], auto=False):
         name = Field(complexity=1)
@@ -477,7 +477,7 @@ def test_validation_rules__max_complexity_rule__inline_fragment(graphql, undine_
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Query complexity of 1 exceeds the maximum allowed complexity of 0.",
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 0.",
             "extensions": {"status_code": 400},
         }
     ]
@@ -507,7 +507,7 @@ def test_validation_rules__max_complexity_rule__inline_fragment__no_type_conditi
     response = graphql(query)
     assert response.errors == [
         {
-            "message": "Query complexity of 1 exceeds the maximum allowed complexity of 0.",
+            "message": "Query complexity of 2 exceeds the maximum allowed complexity of 0.",
             "extensions": {"status_code": 400},
         }
     ]

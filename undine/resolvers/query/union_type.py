@@ -119,10 +119,7 @@ class UnionTypeConnectionResolver:
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
         query_types = self.union_type.__query_types_by_model__.values()
         members = optimize_members(query_types, info, build_descriptors=True, **kwargs)
-
-        # Pagination adds the primary key to every member's optimizations,
-        # so a connection always selects something from every member.
-        if not members:  # pragma: no cover
+        if not members:
             return empty_connection()
 
         matches_anything = apply_shared_filters(self.union_type.__filterset__, members, info)
@@ -159,7 +156,7 @@ class UnionTypeConnectionResolver:
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionDict[Model]:
         query_types = self.union_type.__query_types_by_model__.values()
         members = optimize_members(query_types, info, build_descriptors=True, **kwargs)
-        if not members:  # pragma: no cover
+        if not members:
             return empty_connection()
 
         matches_anything = apply_shared_filters(self.union_type.__filterset__, members, info)

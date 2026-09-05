@@ -446,7 +446,7 @@ def test_federation_type__directives_class_kwarg_connects_directive() -> None:
     class BookExt(FederationType, schema_name="Book", directives=[shareable]):
         isbn = FederationField(str)
 
-    assert shareable in BookExt.__directives__
+    assert shareable in BookExt.__directives__.data
 
 
 # Metaclass dunder methods

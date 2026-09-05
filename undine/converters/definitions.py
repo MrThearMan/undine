@@ -18,6 +18,7 @@ __all__ = [
     "convert_to_bad_lookups",
     "convert_to_default_value",
     "convert_to_description",
+    "convert_to_entrypoint_complexity",
     "convert_to_entrypoint_ref",
     "convert_to_entrypoint_resolver",
     "convert_to_entrypoint_subscription",
@@ -159,6 +160,17 @@ Arguments:
 `ref: Any`: The reference to convert.
 
 `caller: FederationField`: The FederationField instance that is calling this function.
+"""
+
+convert_to_entrypoint_complexity: FunctionDispatcher[int] = FunctionDispatcher()
+"""
+Determine the complexity of resolving the given reference.
+
+Arguments:
+
+`ref: Any`: The reference to look at.
+
+`caller: Entrypoint`: The Entrypoint instance that is calling this function.
 """
 
 convert_to_field_complexity: FunctionDispatcher[int] = FunctionDispatcher()

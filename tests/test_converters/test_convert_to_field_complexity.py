@@ -3,7 +3,7 @@ from __future__ import annotations
 from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task
-from undine import Field, InterfaceField, InterfaceType, QueryType
+from undine import Field, InterfaceField, InterfaceType, QueryType, UnionType
 from undine.converters import convert_to_field_complexity
 from undine.federation import FederationField, FederationType, KeyDirective
 from undine.utils.model_utils import get_model_field
@@ -76,4 +76,39 @@ def test_convert_to_field_complexity__interface_field__related() -> None:
         project = Field()
 
     result = convert_to_field_complexity(InProject.project, caller=TaskType.project)
+    assert result == 1
+
+
+def test_convert_to_field_complexity__union_type() -> None:
+    class TaskType(QueryType[Task]):
+        project = Field()
+
+    class ProjectType(QueryType[Project]):
+        name = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    field = Field(Commentable)
+
+    result = convert_to_field_complexity(field.ref, caller=field)
+
+    assert result == 1
+
+
+def test_convert_to_field_complexity__interface_type() -> None:
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    @Named
+    class TaskType(QueryType[Task]):
+        project = Field()
+
+    @Named
+    class ProjectType(QueryType[Project]):
+        name = Field()
+
+    field = Field(Named)
+
+    result = convert_to_field_complexity(field.ref, caller=field)
+
     assert result == 1

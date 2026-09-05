@@ -4,7 +4,14 @@ import itertools
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
-from graphql import FieldNode, FragmentSpreadNode, GraphQLInterfaceType, GraphQLUnionType, InlineFragmentNode
+from graphql import (
+    FieldNode,
+    FragmentSpreadNode,
+    GraphQLInterfaceType,
+    GraphQLObjectType,
+    GraphQLUnionType,
+    InlineFragmentNode,
+)
 from graphql.execution.collect_fields import get_field_entry_key
 
 from undine.dataclasses import AbstractSelections
@@ -36,7 +43,6 @@ if TYPE_CHECKING:
         GraphQLAbstractType,
         GraphQLCompositeType,
         GraphQLNamedOutputType,
-        GraphQLObjectType,
         GraphQLScalarType,
     )
 
@@ -76,38 +82,25 @@ class GraphQLASTWalker:  # noqa: PLR0904
             self.handle_node_interface(parent_type, selections)
 
         results = self.flatten_abstract_type_selections(selections)
-        types_with_fragments: set[str] = set()
 
-        for inline_fragment in results.inline_fragments:
-            if should_skip_node(inline_fragment, self.info.variable_values):
-                continue
+        for type_name, member_selections in results.member_selections.items():
+            member_type: GraphQLObjectType = self.info.schema.get_type(type_name)  # type: ignore[assignment]
 
-            type_condition = inline_fragment.type_condition
-            if type_condition is None:
-                fragment_selections = itertools.chain(inline_fragment.selection_set.selections, results.field_nodes)
-                self.handle_selections(parent_type, fragment_selections)
-                continue
-
-            fragment_name = type_condition.name.value
-            types_with_fragments.add(fragment_name)
-
-            fragment_type: GraphQLObjectType = self.info.schema.get_type(fragment_name)  # type: ignore[assignment]
-
-            fragment_model = self.get_model(fragment_type)
-            if fragment_model is None:  # pragma: no cover
+            member_model = self.get_model(member_type)
+            if member_model is None:  # pragma: no cover
                 continue
 
             # Abstract types are only optimized in the top-level of the query.
             # In this case, we only optimize the fragment for the model that was set
             # in Optimizer initialization. Resolvers should run optimizer
             # for each returned concrete type separately.
-            if fragment_model != self.model:
+            if member_model != self.model:
                 continue
 
-            fragment_selections = itertools.chain(inline_fragment.selection_set.selections, results.field_nodes)
-            self.handle_selections(fragment_type, fragment_selections)
+            fragment_selections = itertools.chain(member_selections, results.field_nodes)
+            self.handle_selections(member_type, fragment_selections)
 
-        # If there is no inline fragment for some concrete implementation of an interface,
+        # If there is no fragment for some concrete implementation of an interface,
         # but some fields have been selected from the interface, we still needs to fetch
         # the concrete implementations with the interface fields selected.
         if isinstance(parent_type, GraphQLInterfaceType) and results.field_nodes:
@@ -118,20 +111,20 @@ class GraphQLASTWalker:  # noqa: PLR0904
             types_without_fragments = (
                 query_type.__schema_name__
                 for query_type in undine_interface.__concrete_implementations__()
-                if query_type.__schema_name__ not in types_with_fragments
+                if query_type.__schema_name__ not in results.member_selections
             )
 
-            for fragment_name in types_without_fragments:
-                fragment_type = self.info.schema.get_type(fragment_name)  # type: ignore[assignment]
+            for type_name in types_without_fragments:
+                member_type = self.info.schema.get_type(type_name)  # type: ignore[assignment]
 
-                fragment_model = self.get_model(fragment_type)
-                if fragment_model is None:  # pragma: no cover
+                member_model = self.get_model(member_type)
+                if member_model is None:  # pragma: no cover
                     continue
 
-                if fragment_model != self.model:
+                if member_model != self.model:
                     continue
 
-                self.handle_selections(fragment_type, results.field_nodes)
+                self.handle_selections(member_type, results.field_nodes)
 
     def handle_node_interface(self, parent_type: GraphQLInterfaceType, selections: Selections) -> None: ...
 
@@ -291,20 +284,36 @@ class GraphQLASTWalker:  # noqa: PLR0904
         return self.info.fragments[fragment_name]
 
     def flatten_abstract_type_selections(self, selections: Selections) -> AbstractSelections:
+        """Split selections on an abstract type into the ones for every member and the ones for a single member."""
         results = AbstractSelections()
 
         for selection in selections:
+            if should_skip_node(selection, self.info.variable_values):
+                continue
+
             if isinstance(selection, FieldNode):
                 results.field_nodes.append(selection)
+                continue
 
-            elif isinstance(selection, InlineFragmentNode):
-                results.inline_fragments.append(selection)
+            fragment: FragmentDefinitionNode | InlineFragmentNode = (  # type: ignore[assignment]
+                self.get_fragment_def(selection) if isinstance(selection, FragmentSpreadNode) else selection  # type: ignore[assignment]
+            )
 
-            elif isinstance(selection, FragmentSpreadNode):  # pragma: no branch
-                fragment_definition = self.get_fragment_def(selection)
-                fragment_results = self.flatten_abstract_type_selections(fragment_definition.selection_set.selections)
-                results.field_nodes += fragment_results.field_nodes
-                results.inline_fragments += fragment_results.inline_fragments
+            type_condition = fragment.type_condition
+            fragment_selections = fragment.selection_set.selections
+
+            fragment_type = None if type_condition is None else self.info.schema.get_type(type_condition.name.value)
+
+            if isinstance(fragment_type, GraphQLObjectType):
+                results.member_selections[fragment_type.name] += fragment_selections
+                continue
+
+            # A fragment without a type condition, or one on another abstract type,
+            # applies to every member the same way the surrounding selections do.
+            fragment_results = self.flatten_abstract_type_selections(fragment_selections)
+            results.field_nodes += fragment_results.field_nodes
+            for type_name, member_selections in fragment_results.member_selections.items():
+                results.member_selections[type_name] += member_selections
 
         return results
 

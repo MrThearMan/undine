@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from collections import defaultdict
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Generic, Literal
 
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
         FormattedSubsequentIncrementalExecutionResult,
         GraphQLError,
         InitialIncrementalExecutionResult,
-        InlineFragmentNode,
+        SelectionNode,
         SubsequentIncrementalExecutionResult,
     )
 
@@ -262,7 +263,10 @@ class AbstractSelections:
     """Flattened selections for an abstract type."""
 
     field_nodes: list[FieldNode] = dataclasses.field(default_factory=list)
-    inline_fragments: list[InlineFragmentNode] = dataclasses.field(default_factory=list)
+    """Fields selected on the abstract type itself. These are selected from every member."""
+
+    member_selections: dict[str, list[SelectionNode]] = dataclasses.field(default_factory=lambda: defaultdict(list))
+    """Selections meant for a single member, by that member's type name."""
 
 
 @dataclasses.dataclass(slots=True)

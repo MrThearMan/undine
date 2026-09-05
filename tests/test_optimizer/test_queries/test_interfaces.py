@@ -269,6 +269,7 @@ def test_optimizer__interfaces__only_fragment_fields(graphql, undine_settings) -
     response.assert_query_count(3)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -321,6 +322,7 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql,
     response.assert_query_count(2)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typename(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -734,11 +736,69 @@ def test_optimizer__interfaces__inline_fragment_no_type_condition(graphql, undin
         }
     """
 
-    response = graphql(query)
+    response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
-    named = response.data["named"]
-    assert len(named) > 0
+    assert response.data == {
+        "named": [
+            {"name": "P1"},
+            {"name": "T1", "type": "BUG_FIX"},
+        ],
+    }
+
+    response.assert_query_count(3)
+
+
+@skip_if_union_queryset_values_broken
+@pytest.mark.django_db
+def test_optimizer__interfaces__inline_fragment_no_type_condition__holds_member_fragment(
+    graphql, undine_settings
+) -> None:
+    """A fragment without a type condition passes its member fragments on to the interface around it."""
+
+    class Named(InterfaceType):
+        name = InterfaceField(GraphQLNonNull(GraphQLString))
+
+    class TaskType(QueryType[Task], interfaces=[Named], auto=False):
+        type = Field()
+
+    class ProjectType(QueryType[Project], interfaces=[Named], auto=False):
+        pk = Field()
+
+    class Query(RootType):
+        named = Entrypoint(Named, many=True)
+        tasks = Entrypoint(TaskType, many=True)
+        projects = Entrypoint(ProjectType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="P1")
+    TaskFactory.create(name="T1", type=TaskTypeChoices.BUG_FIX)
+
+    query = """
+        query {
+          named {
+            name
+            ... {
+              ... on TaskType {
+                type
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "named": [
+            {"name": "P1"},
+            {"name": "T1", "type": "BUG_FIX"},
+        ],
+    }
+
+    response.assert_query_count(3)
 
 
 @skip_if_union_queryset_values_broken

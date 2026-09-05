@@ -58,6 +58,7 @@ def test_optimizer__union(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__union__only_one(graphql, undine_settings) -> None:
     class ProjectType(QueryType[Project], auto=False):
@@ -407,3 +408,52 @@ def test_optimizer__union__connection__total_count(graphql, undine_settings) -> 
     ]
 
     response.assert_query_count(4)
+
+
+@skip_if_union_queryset_values_broken
+@pytest.mark.django_db
+def test_optimizer__union__inline_fragment_no_type_condition(graphql, undine_settings) -> None:
+    """A fragment without a type condition passes its member fragments on to the union around it."""
+
+    class ProjectType(QueryType[Project], auto=False):
+        name = Field()
+
+    class TaskType(QueryType[Task], auto=False):
+        type = Field()
+
+    class Commentable(UnionType[TaskType, ProjectType]): ...
+
+    class Query(RootType):
+        commentable = Entrypoint(Commentable, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    ProjectFactory.create(name="Project 1")
+    TaskFactory.create(name="Task 1", type=TaskTypeChoices.TASK)
+
+    query = """
+        query {
+          commentable {
+            ... {
+              ... on ProjectType {
+                name
+              }
+            }
+            ... on TaskType {
+              type
+            }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {
+        "commentable": [
+            {"name": "Project 1"},
+            {"type": "TASK"},
+        ]
+    }
+
+    response.assert_query_count(3)

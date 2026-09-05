@@ -3,7 +3,7 @@
 ## General
 
 - Use functions designed for formatting strings instead of hand-rolling them, e.g. `urllib.parse.urlencode` to build query strings.
-- Accept what the formatter and linter want. If a formatter rewrites imports or other code, keep the rewrite. Do not revert an autofix for any reason.
+- Accept what the formatter and linter want. Do not revert an autofix for any reason. If you disagree, you are likely assuming something about the environment that is not true.
 - Never use inline imports unless absolutely necessary. Don't assume it's needed before hitting an actual error.
 
 ## Readability

@@ -185,6 +185,10 @@ class QueryOptimizer(GraphQLASTWalker):
 
         arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)
 
+        # A union or interface connection paginates the combined result of its members.
+        # The resolver owns that pagination, so a member's own optimizations get none of it.
+        paginates_members: bool = False
+
         undine_connection = get_undine_connection(object_type)
         if undine_connection is not None:
             edge_type: GraphQLObjectType = get_underlying_type(object_type.fields["edges"].type)  # type: ignore[assignment]
@@ -203,6 +207,8 @@ class QueryOptimizer(GraphQLASTWalker):
             key = get_field_path_identifier(self.info.path)
             self.info.context.undine_internal.connection_handler_storage[key] = cursor_handler
 
+            paginates_members = undine_connection.union_type is not None or undine_connection.interface_type is not None
+
         undine_offset_pagination = get_undine_offset_pagination(graphql_field)
         if undine_offset_pagination is not None:
             offset_handler = undine_offset_pagination.pagination_handler(
@@ -211,6 +217,10 @@ class QueryOptimizer(GraphQLASTWalker):
                 page_size=undine_offset_pagination.page_size,
             )
             self.optimization_data.pagination = offset_handler
+
+            paginates_members = (
+                undine_offset_pagination.union_type is not None or undine_offset_pagination.interface_type is not None
+            )
 
         # Check MutationType first so that it can override QueryType optimizations
         if parent_type == self.info.schema.mutation_type:
@@ -225,7 +235,7 @@ class QueryOptimizer(GraphQLASTWalker):
         if query_type is not None:
             self.handle_undine_query_type(query_type, arg_values)
 
-        if self.optimization_data.pagination is not None:
+        if self.optimization_data.pagination is not None and not paginates_members:
             self.optimization_data.pagination.optimize(self.optimization_data, self.info)
 
     def handle_undine_mutation_type(self, mutation_type: type[MutationType], arg_values: dict[str, Any]) -> None:

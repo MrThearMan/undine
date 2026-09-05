@@ -2,14 +2,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from graphql import FieldNode, FragmentSpreadNode, GraphQLError, GraphQLObjectType, InlineFragmentNode, ValidationRule
+from graphql import (
+    FieldNode,
+    FragmentSpreadNode,
+    GraphQLError,
+    GraphQLInterfaceType,
+    GraphQLObjectType,
+    GraphQLUnionType,
+    InlineFragmentNode,
+    ValidationRule,
+)
 
 from undine.settings import undine_settings
 from undine.utils.graphql.undine_extensions import get_undine_entrypoint, get_undine_field
-from undine.utils.graphql.utils import get_underlying_type
+from undine.utils.graphql.utils import get_underlying_type, is_typename_metafield
 
 if TYPE_CHECKING:
     from graphql import (
+        FragmentDefinitionNode,
         GraphQLAbstractType,
         GraphQLCompositeType,
         OperationDefinitionNode,
@@ -17,6 +27,8 @@ if TYPE_CHECKING:
         ValidationContext,
         VisitorAction,
     )
+
+    from undine.typing import Selections
 
 
 __all__ = [
@@ -86,11 +98,74 @@ class MaxComplexityRule(ValidationRule):
         if undine_field is not None:
             self.complexity += undine_field.complexity
 
-        if field_node.selection_set is not None:
-            field_type: GraphQLObjectType = get_underlying_type(graphql_field.type)
-            visited_fragments: set[str] = set()
-            for selection in field_node.selection_set.selections:
-                self.handle_selection(field_type, selection, visited_fragments=visited_fragments)
+        if field_node.selection_set is None:
+            return
+
+        field_type: GraphQLObjectType = get_underlying_type(graphql_field.type)
+        selections = field_node.selection_set.selections
+
+        if isinstance(field_type, GraphQLUnionType | GraphQLInterfaceType):
+            selected_members = self.get_selected_members(field_type, selections)
+            self.complexity += len(selected_members)
+
+        visited_fragments: set[str] = set()
+        for selection in selections:
+            self.handle_selection(field_type, selection, visited_fragments=visited_fragments)
+
+    def get_selected_members(self, abstract_type: GraphQLAbstractType, selections: Selections) -> set[str]:
+        """The members of the abstract type the operation selects fields from. Each one is fetched separately."""
+        possible_types = {member_type.name for member_type in self.context.schema.get_possible_types(abstract_type)}
+        selected_members: set[str] = set()
+
+        for selection in selections:
+            if isinstance(selection, FieldNode):
+                # A field on the abstract type itself is selected from every member.
+                if not is_typename_metafield(selection):
+                    return possible_types
+                continue
+
+            fragment: FragmentDefinitionNode | InlineFragmentNode
+            if isinstance(selection, FragmentSpreadNode):
+                fragment_definition = self.context.get_fragment(selection.name.value)
+                if fragment_definition is None:
+                    continue
+
+                fragment = fragment_definition
+            else:
+                fragment = selection  # type: ignore[assignment]
+
+            type_condition = fragment.type_condition
+            fragment_selections = fragment.selection_set.selections
+
+            fragment_type = None if type_condition is None else self.context.schema.get_type(type_condition.name.value)
+
+            # A fragment without a type condition, or one on another abstract type,
+            # applies to every member the same way the surrounding selections do.
+            if not isinstance(fragment_type, GraphQLObjectType):
+                selected_members |= self.get_selected_members(abstract_type, fragment_selections)
+                continue
+
+            if self.selects_a_field(fragment_selections):
+                selected_members.add(fragment_type.name)
+
+        return selected_members
+
+    def selects_a_field(self, selections: Selections) -> bool:
+        """Does the operation select anything other than the typename in the given selections?"""
+        for selection in selections:
+            if isinstance(selection, FieldNode):
+                if not is_typename_metafield(selection):
+                    return True
+
+            elif isinstance(selection, FragmentSpreadNode):
+                fragment = self.context.get_fragment(selection.name.value)
+                if fragment is not None and self.selects_a_field(fragment.selection_set.selections):
+                    return True
+
+            elif isinstance(selection, InlineFragmentNode) and self.selects_a_field(selection.selection_set.selections):
+                return True
+
+        return False
 
     def handle_fragment_spread(
         self,

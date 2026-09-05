@@ -6,6 +6,7 @@ from graphql import DirectiveLocation, GraphQLField, Undefined
 
 from undine.converters import (
     convert_to_description,
+    convert_to_entrypoint_complexity,
     convert_to_entrypoint_ref,
     convert_to_entrypoint_resolver,
     convert_to_entrypoint_subscription,
@@ -197,7 +198,7 @@ class Entrypoint:
         self.limit: int | None = kwargs.get("limit", undine_settings.LIST_ENTRYPOINT_LIMIT)
         self.description: str | None = kwargs.get("description", Undefined)  # type: ignore[assignment]
         self.deprecation_reason: str | None = kwargs.get("deprecation_reason")
-        self.complexity: int = kwargs.get("complexity", 0)  # type: ignore[assignment]
+        self.complexity: int = kwargs.get("complexity", Undefined)  # type: ignore[assignment]
         self.cache_time: int | None = kwargs.get("cache_time")
         self.cache_per_user: bool = kwargs.get("cache_per_user", False)
         self.schema_name: str = kwargs.get("schema_name", Undefined)  # type: ignore[assignment]
@@ -225,6 +226,11 @@ class Entrypoint:
         self.schema_name = self.schema_name or to_schema_name(name)
 
         self.ref = convert_to_entrypoint_ref(self.ref, caller=self)
+
+        if self.complexity is Undefined and ComplexityDirective not in self.directives:
+            self.complexity = convert_to_entrypoint_complexity(self.ref, caller=self)
+            if self.complexity:
+                self.directives.append(ComplexityDirective(value=self.complexity))
 
         if self.description is Undefined:
             self.description = self.root_type.__attribute_docstrings__.get(name)

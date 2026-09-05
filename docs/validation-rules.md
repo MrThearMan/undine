@@ -31,7 +31,8 @@ This validation rule checks that the complexity of a GraphQL operation does not 
 as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
 This is used to prevent denial-of-service attacks that could arise from slow execution of
 a GraphQL operation due to the complexity of generated database queries or API calls.
-See the [complexity](queries.md#complexity) documentation for more information.
+See the [`Field` complexity](queries.md#complexity) and [`Entrypoint` complexity](schema.md#complexity)
+documentation for more information.
 
 ### `MaxDirectiveCountRule`
 

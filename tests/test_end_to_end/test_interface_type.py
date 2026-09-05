@@ -117,6 +117,7 @@ def test_interface_type__implementations_not_otherwise_reachable(graphql, undine
     assert "ProjectType" in undine_settings.SCHEMA.type_map
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__inline_fragment_on_implementation_not_otherwise_reachable(graphql, undine_settings) -> None:
     """An inline fragment on an implementation validates even without an `Entrypoint` for it."""
@@ -214,6 +215,7 @@ def test_interface_type__inline_fragments(graphql, undine_settings) -> None:
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__fields_selected_from_one_implementation_only(graphql, undine_settings) -> None:
     """An implementation with no fields selected is not fetched at all."""
@@ -955,6 +957,7 @@ def test_interface_type__entrypoint_permissions(graphql, undine_settings) -> Non
     assert seen == [project, task]
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__entrypoint_permissions__denied(graphql, undine_settings) -> None:
     """A denied entrypoint permission check surfaces as a GraphQL error."""
@@ -993,6 +996,7 @@ def test_interface_type__entrypoint_permissions__denied(graphql, undine_settings
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__query_type_permissions__denied(graphql, undine_settings) -> None:
     """A denied query type permission check for a single implementation surfaces as a GraphQL error."""
@@ -1031,6 +1035,7 @@ def test_interface_type__query_type_permissions__denied(graphql, undine_settings
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__entrypoint_permissions__sync_func__async(graphql_async, undine_settings) -> None:
     """A sync entrypoint permission check also runs on the async path."""
@@ -1071,6 +1076,7 @@ async def test_interface_type__entrypoint_permissions__sync_func__async(graphql_
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__entrypoint_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async entrypoint permission check is awaited on the async path."""
@@ -1111,6 +1117,7 @@ async def test_interface_type__entrypoint_permissions__async_func__async(graphql
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__query_type_permissions__sync_func__async(graphql_async, undine_settings) -> None:
     """A sync query type permission check also runs on the async path."""
@@ -1151,6 +1158,7 @@ async def test_interface_type__query_type_permissions__sync_func__async(graphql_
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_interface_type__query_type_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async query type permission check is awaited on the async path."""

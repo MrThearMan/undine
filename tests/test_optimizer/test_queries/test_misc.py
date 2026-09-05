@@ -336,9 +336,7 @@ def test_optimizer__max_query_complexity(graphql, undine_settings) -> None:
                 project {
                   tasks {
                     project {
-                      tasks {
-                        name
-                      }
+                      name
                     }
                   }
                 }

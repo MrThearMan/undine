@@ -145,6 +145,7 @@ async def test_union_type__both_members__async(graphql_async, undine_settings) -
     }
 
 
+@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_type__fields_selected_from_one_member_only(graphql, undine_settings) -> None:
     """A member with no fields selected is not fetched at all."""

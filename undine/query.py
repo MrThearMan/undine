@@ -346,7 +346,7 @@ class Field:
             self.many = is_many(self.ref, model=self.query_type.__model__, name=self.field_name)
         if self.nullable is Undefined:
             self.nullable = is_field_nullable(self.ref, caller=self)
-        if self.complexity is Undefined:
+        if self.complexity is Undefined and ComplexityDirective not in self.directives:
             self.complexity = convert_to_field_complexity(self.ref, caller=self)
             if self.complexity:
                 self.directives.append(ComplexityDirective(value=self.complexity))

@@ -463,7 +463,7 @@ def test_sdl_printer__query_type__single() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -485,7 +485,7 @@ def test_sdl_printer__query_type__list() -> None:
         }
 
         type Query {
-          task: [TaskType!]!
+          task: [TaskType!]! @complexity(value: 1)
         }
         """
     )
@@ -529,7 +529,7 @@ def test_sdl_printer__query_type__list__filterset_and_orderset() -> None:
           task(
             filter: TaskFilterSet
             orderBy: [TaskOrderSet!]
-          ): [TaskType!]!
+          ): [TaskType!]! @complexity(value: 1)
         }
         """
     )
@@ -553,7 +553,7 @@ def test_sdl_printer__query_type__deprecation_reason() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType! @deprecated(reason: "Deprecated entrypoint.")
+          ): TaskType! @deprecated(reason: "Deprecated entrypoint.") @complexity(value: 1)
         }
         """
     )
@@ -577,7 +577,7 @@ def test_sdl_printer__query_type__complexity() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -609,7 +609,7 @@ def test_sdl_printer__query_type__calculation() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -641,7 +641,7 @@ def test_sdl_printer__query_type__calculation__deprecation_reason() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -674,7 +674,7 @@ def test_sdl_printer__query_type__relation() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -708,13 +708,13 @@ def test_sdl_printer__mutation_type__single() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         type Mutation {
           createTask(
             input: TaskCreateMutation!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -748,13 +748,13 @@ def test_sdl_printer__mutation_type__many() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         type Mutation {
           bulkCreateTasks(
             input: [TaskCreateMutation!]!
-          ): [TaskType!]!
+          ): [TaskType!]! @complexity(value: 1)
         }
         """
     )
@@ -788,13 +788,13 @@ def test_sdl_printer__mutation_type__deprecation_reason() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         type Mutation {
           createTask(
             input: TaskCreateMutation!
-          ): TaskType! @deprecated(reason: "Deprecated entrypoint.")
+          ): TaskType! @deprecated(reason: "Deprecated entrypoint.") @complexity(value: 1)
         }
         """
     )
@@ -818,7 +818,7 @@ def test_sdl_printer__schema_with_description() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         """Schema description."""
@@ -847,7 +847,7 @@ def test_sdl_printer__custom_query_root_type() -> None:
         type CustomQuery {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         schema {
@@ -885,13 +885,13 @@ def test_sdl_printer__custom_mutation_root_type() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         type CustomMutation {
           createTask(
             input: TaskCreateMutation!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         schema {
@@ -927,7 +927,7 @@ def test_sdl_printer__schema_with_directive() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
 
         schema @version(version: "v1.0.0") {
@@ -963,7 +963,7 @@ def test_sdl_printer__interface_type() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1001,7 +1001,7 @@ def test_sdl_printer__interface_type__multiple() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1041,7 +1041,7 @@ def test_sdl_printer__interface_type__hierarchical() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1071,7 +1071,7 @@ def test_sdl_printer__interface_type__deprecation_reason() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -1104,7 +1104,7 @@ def test_sdl_printer__unions() -> None:
         }
 
         type Query {
-          commentable: [CommentableType!]!
+          commentable: [CommentableType!]! @complexity(value: 1)
         }
         """
     )
@@ -1134,7 +1134,7 @@ def test_sdl_printer__custom_scalar() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1169,7 +1169,7 @@ def test_sdl_printer__custom_scalar_with_specified_by_url() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -1206,7 +1206,7 @@ def test_sdl_printer__custom_directive() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         """
     )
@@ -1231,7 +1231,7 @@ def test_sdl_printer__description__short() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1258,7 +1258,7 @@ def test_sdl_printer__description__long() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )
@@ -1283,7 +1283,7 @@ def test_sdl_printer__description__empty() -> None:
         type Query {
           task(
             pk: Int!
-          ): TaskType!
+          ): TaskType! @complexity(value: 1)
         }
         '''
     )

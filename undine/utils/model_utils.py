@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from collections import Counter, defaultdict
 from contextlib import contextmanager, suppress
 from typing import TYPE_CHECKING, Any, TypeGuard
@@ -541,14 +540,18 @@ def determine_output_field(expression: CombinableExpression, *, model: type[Mode
 
 def create_union_queryset(querysets: Iterable[QuerySet]) -> QuerySet:
     """Create a union queryset from the given querysets."""
+    first, *rest = querysets
+
     # Some databases (e.g. SQLite) don't support slicing or ordering inside the union components.
     # In those cases, we have to remove any ordering from the querysets before union-ing them.
     # This will affect the order of the results, but we can't do anything about that.
-    remove_order_by = not all(get_db_features(qs.db).supports_slicing_ordering_in_compound for qs in querysets)
+    remove_order_by = not all(get_db_features(qs.db).supports_slicing_ordering_in_compound for qs in [first, *rest])
     if remove_order_by:
-        return functools.reduce(lambda x, y: x.order_by().union(y.order_by()), querysets)
+        return first.order_by().union(*(queryset.order_by() for queryset in rest))
 
-    return functools.reduce(lambda x, y: x.union(y), querysets)
+    # All members are combined in a single union. Combining them one at a time would nest the
+    # unions, and a nested union cannot be reduced to `(__typename, pk)` rows.
+    return first.union(*rest)
 
 
 def get_db_features(db: str = DEFAULT_DB_ALIAS) -> BaseDatabaseFeatures:

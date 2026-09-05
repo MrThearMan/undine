@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import UserList
 from inspect import cleandoc
-from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Self, SupportsIndex, Unpack
 
 from graphql import (
     DirectiveLocation,
@@ -26,7 +26,7 @@ from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, get_or_create_graphql_directive
 from undine.utils.graphql.utils import check_directives
-from undine.utils.reflection import get_enum_from_string, get_members, get_wrapped_func
+from undine.utils.reflection import get_enum_from_string, get_members, get_wrapped_func, is_subclass
 from undine.utils.text import dotpath, get_docstring, to_schema_name
 
 if TYPE_CHECKING:
@@ -356,13 +356,13 @@ class DirectiveList(UserList[Directive]):
         self.__check_directives(directives)
         super().__init__(directives)
 
-    def __setitem__(self, index: int, value: Directive) -> None:  # type: ignore[override]
+    def __setitem__(self, i: SupportsIndex, item: Directive) -> None:  # type: ignore[override]
         data = self.data[:]
-        data[index] = value
+        data[i] = item
         self.__check_directives(data)
         self.data = data
 
-    def __add__(self, other: Iterable[Directive]) -> DirectiveList:
+    def __add__(self, other: Iterable[Directive]) -> Self:
         data = self.data + self.__get_other_data(other)
         self.__check_directives(data)
         return self.__class__(data, location=self.location)
@@ -375,27 +375,32 @@ class DirectiveList(UserList[Directive]):
         self.data = data
         return self
 
-    def __mul__(self, other: int) -> DirectiveList:
-        data = self.data * other
+    def __mul__(self, n: int) -> Self:
+        data = self.data * n
         self.__check_directives(data)
         return self.__class__(data, location=self.location)
 
     __rmul__ = __mul__
 
-    def __imul__(self, other: int) -> Self:
-        data = self.data * other
+    def __imul__(self, n: int) -> Self:
+        data = self.data * n
         self.__check_directives(data)
         self.data = data
         return self
 
-    def append(self, value: Directive) -> None:
-        data = [*self.data, value]
+    def __contains__(self, item: object) -> bool:
+        if not is_subclass(item, Directive):  # pragma: no cover
+            return False
+        return any(isinstance(directive, item) for directive in self.data)
+
+    def append(self, item: Directive) -> None:
+        data = [*self.data, item]
         self.__check_directives(data)
         self.data = data
 
-    def insert(self, index: int, value: Directive) -> None:
+    def insert(self, i: int, item: Directive) -> None:
         data = self.data[:]
-        data.insert(index, value)
+        data.insert(i, item)
         self.__check_directives(data)
         self.data = data
 
@@ -444,7 +449,7 @@ class ComplexityDirective(
         """
         Create a new `ComplexityDirective`.
 
-        :param value: The complexity of resolving the field.
+        :param value: The complexity of resolving the field. This is what the field counts by itself.
         """
         if value < 0:
             msg = "`value` must be a positive integer."

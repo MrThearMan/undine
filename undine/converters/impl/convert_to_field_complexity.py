@@ -5,7 +5,7 @@ from typing import Any
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 from undine import Field as UndineField
-from undine import InterfaceField, QueryType
+from undine import InterfaceField, InterfaceType, QueryType, UnionType
 from undine.converters import convert_to_field_complexity
 from undine.dataclasses import LazyGenericForeignKey, LazyRelation
 from undine.federation import FederationType
@@ -35,6 +35,16 @@ def _(_: GenericForeignKey, **kwargs: Any) -> Any:
 
 @convert_to_field_complexity.register
 def _(_: type[QueryType], **kwargs: Any) -> Any:
+    return 1
+
+
+@convert_to_field_complexity.register
+def _(_: type[UnionType], **kwargs: Any) -> int:
+    return 1
+
+
+@convert_to_field_complexity.register
+def _(_: type[InterfaceType], **kwargs: Any) -> int:
     return 1
 
 

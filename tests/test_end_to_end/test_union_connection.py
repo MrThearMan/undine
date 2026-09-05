@@ -348,7 +348,7 @@ def test_union_connection__cursor_disambiguates_members_with_the_same_primary_ke
 @skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__fields_selected_from_one_member_only(graphql, undine_settings) -> None:
-    """Rows of a member with no fields selected are still counted and still take up an edge."""
+    """A member the query selects no fields from is not fetched, not counted, and gets no edges."""
     undine_settings.SCHEMA = create_union_schema()
 
     TaskFactory.create(name="Task 1")
@@ -368,13 +368,61 @@ def test_union_connection__fields_selected_from_one_member_only(graphql, undine_
 
     assert response.data == {
         "searchables": {
-            "totalCount": 2,
+            "totalCount": 1,
             "edges": [
-                {"node": {}},
                 {"node": {"name": "Task 1"}},
             ],
         },
     }
+
+
+@skip_if_union_queryset_values_broken
+@pytest.mark.django_db
+def test_union_connection__no_fields_selected_from_any_member(graphql, undine_settings) -> None:
+    """Selecting only '__typename' selects no fields from any member, so the connection is empty."""
+    undine_settings.SCHEMA = create_union_schema()
+
+    TaskFactory.create(name="Task 1")
+    ProjectFactory.create(name="Project 1")
+
+    query = """
+        query {
+          searchables {
+            totalCount
+            edges { node { __typename } }
+          }
+        }
+    """
+
+    response = graphql(query, count_queries=True)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"searchables": {"totalCount": 0, "edges": []}}
+    response.assert_query_count(0)
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_union_connection__no_fields_selected_from_any_member__async(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.SCHEMA = create_union_schema()
+
+    await sync_to_async(TaskFactory.create)(name="Task 1")
+    await sync_to_async(ProjectFactory.create)(name="Project 1")
+
+    query = """
+        query {
+          searchables {
+            totalCount
+            edges { node { __typename } }
+          }
+        }
+    """
+
+    response = await graphql_async(query)
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"searchables": {"totalCount": 0, "edges": []}}
 
 
 # Filtering

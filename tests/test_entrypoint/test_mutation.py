@@ -14,6 +14,7 @@ from graphql import (
 
 from example_project.app.models import Task
 from undine import Directive, DirectiveArgument, Entrypoint, MutationType, QueryType, RootType
+from undine.directives import ComplexityDirective
 from undine.resolvers import BulkCreateResolver, CreateResolver
 
 
@@ -139,14 +140,14 @@ def test_entrypoint__mutation_type__directive() -> None:
     class Mutation(RootType):
         create_task = Entrypoint(TaskCreateMutation) @ ValueDirective(value="foo")
 
-    assert Mutation.create_task.directives == [ValueDirective(value="foo")]
+    assert Mutation.create_task.directives == [ValueDirective(value="foo"), ComplexityDirective(value=1)]
 
     assert str(Mutation) == cleandoc(
         """
         type Mutation {
           createTask(
             input: TaskCreateMutation!
-          ): TaskType! @value(value: "foo")
+          ): TaskType! @complexity(value: 1) @value(value: "foo")
         }
         """
     )

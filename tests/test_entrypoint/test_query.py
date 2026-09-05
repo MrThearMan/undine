@@ -17,6 +17,7 @@ from graphql import (
 
 from example_project.app.models import Task
 from undine import Directive, DirectiveArgument, Entrypoint, FilterSet, GQLInfo, OrderSet, QueryType, RootType
+from undine.directives import ComplexityDirective
 from undine.exceptions import MissingEntrypointRefError
 from undine.optimizer.optimizer import optimize_sync
 from undine.resolvers import EntrypointFunctionResolver, QueryTypeManyResolver, QueryTypeSingleResolver
@@ -68,7 +69,7 @@ def test_entrypoint__query_type__str() -> None:
         """
         task(
           pk: Int!
-        ): TaskType!
+        ): TaskType! @complexity(value: 1)
         """
     )
 
@@ -233,14 +234,14 @@ def test_entrypoint__query_type__directive() -> None:
     class Query(RootType):
         task = Entrypoint(TaskType) @ ValueDirective(value="foo")
 
-    assert Query.task.directives == [ValueDirective(value="foo")]
+    assert Query.task.directives == [ValueDirective(value="foo"), ComplexityDirective(value=1)]
 
     assert str(Query) == cleandoc(
         """
         type Query {
           task(
             pk: Int!
-          ): TaskType! @value(value: "foo")
+          ): TaskType! @complexity(value: 1) @value(value: "foo")
         }
         """
     )

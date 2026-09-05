@@ -380,10 +380,19 @@ The complexity value of an `Entrypoint` is used by Undine to calculate how expen
 to the schema would be. Queries are rejected by Undine if they would exceed the maximum allowed complexity,
 as set by the [`MAX_QUERY_COMPLEXITY`](settings.md#max_query_complexity) setting.
 
-Usually, complexity is set by `QueryType` [`Fields`](queries.md#complexity), but you can also set
-complexity on the `Entrypoint` itself. This can be useful for declaring complexity of
-`Entrypoints` not based on `QueryTypes`. Note that when the `Entrypoint` _is_ based on a `QueryType`,
-this complexity _adds_ to any complexity calculated from the `QueryType's` `Fields`.
+By default, an `Entrypoint` is able to determine its complexity based on its reference.
+An `Entrypoint` that runs a database query, like one based on a `QueryType`, has a complexity of 1.
+A `MutationType` counts as 1, but if its return type is a `QueryType`, that `QueryType's` complexity
+is counted as well. An `Entrypoint` that runs none, like one based on a function, has a complexity of 0.
+
+An `Entrypoint` based on a [`UnionType`](unions.md) or an [`InterfaceType`](interfaces.md) runs one query
+for each member it fetches, so it adds 1 for each member the operation selects fields from. Selecting a field
+on the interface itself fetches every implementation, since the field is read from all of them.
+
+You can also set the complexity on the `Entrypoint` yourself. This is useful for an `Entrypoint`
+whose reference does not describe its cost, like one that calls an external service.
+Note that this complexity _adds_ to any complexity calculated from the `QueryType's`
+[`Fields`](queries.md#complexity).
 
 ### Caching
 

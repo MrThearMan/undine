@@ -645,10 +645,10 @@ def test_complexity_directive__add_to_field() -> None:
     directive = ComplexityDirective(value=1)
 
     class TaskType(QueryType[Task], auto=False):
-        name = Field() @ directive
+        project = Field() @ directive
 
-    assert TaskType.name.complexity == 1
-    assert TaskType.name.directives == [directive]
+    assert TaskType.project.complexity == 1
+    assert TaskType.project.directives == [directive]
 
 
 def test_complexity_directive__add_to_interface_field() -> None:
@@ -703,7 +703,7 @@ def test_cache_rules_directive__add_to_entrypoint() -> None:
 
     assert Query.tasks.cache_time == 1
     assert Query.tasks.cache_per_user is False
-    assert Query.tasks.directives == [directive]
+    assert Query.tasks.directives == [directive, ComplexityDirective(value=1)]
 
 
 def test_cache_rules_directive__add_to_field() -> None:
