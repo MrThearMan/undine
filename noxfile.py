@@ -63,6 +63,10 @@ def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     session.install(f"graphql-core=={graphql_core}")
 
     session.run("coverage", "run", "--parallel-mode", "-m", "pytest", external="error")
+
+    # "coverage combine" consumes all parallel data files next to the data file it writes to.
+    # Sessions that run at the same time must therefore each set "COVERAGE_FILE"
+    # to a different path. See the "nox-parallel" recipe in the justfile.
     session.run("coverage", "combine", "--append")
 
 
