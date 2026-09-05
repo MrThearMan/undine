@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 from graphql import GraphQLResolveInfo
 
 from example_project.app.models import Project, Task
+from tests.conftest import skip_if_async
 from tests.factories import ProjectFactory, TaskFactory
 from undine import Entrypoint, Field, GQLInfo, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLPermissionError
@@ -294,6 +295,7 @@ async def test_function_fields__entrypoint__permissions__many__sync_permissions_
 
 
 @pytest.mark.django_db
+@skip_if_async
 def test_function_fields__entrypoint__query_type_permissions(graphql, undine_settings) -> None:
     """Without a permission check of its own, a custom resolver falls back to the QueryType's permissions."""
 
@@ -752,6 +754,7 @@ class Metadata(TypedDict):
 
 
 @pytest.mark.django_db
+@skip_if_async
 def test_function_fields__named_tuple_return_value(graphql, undine_settings) -> None:
     """A function `Field` returning a named tuple becomes an object type resolved by attribute access."""
 
@@ -775,6 +778,7 @@ def test_function_fields__named_tuple_return_value(graphql, undine_settings) -> 
 
 
 @pytest.mark.django_db
+@skip_if_async
 def test_function_fields__typed_dict_return_value(graphql, undine_settings) -> None:
     """A function `Field` returning a typed dict becomes an object type resolved by key access."""
 

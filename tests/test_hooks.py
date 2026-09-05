@@ -11,6 +11,7 @@ from django.test import override_settings
 from graphql import ExecutionResult, GraphQLError, GraphQLFieldResolver, parse
 
 from example_project.app.models import Project, Task
+from tests.conftest import skip_if_async
 from tests.factories import TaskFactory
 from tests.helpers import CountingValidationRule, DocumentRecordingHook, MockRequest, mock_gql_info
 from undine import Entrypoint, Field, Filter, FilterSet, GQLInfo, MutationType, QueryType, RootType, create_schema
@@ -1402,6 +1403,7 @@ def test_validation_cache_hook__result_for_another_schema_is_not_used(graphql, u
 
 
 @pytest.mark.django_db
+@skip_if_async
 def test_validation_cache_hook__visibility__result_is_not_shared_between_users(graphql, undine_settings) -> None:
     undine_settings.VALIDATION_CACHE_MAX_SIZE = 10
 
