@@ -55,10 +55,10 @@ type Query {
   deprecatedProduct(
     package: String!
     sku: String!
-  ): DeprecatedProduct @deprecated(reason: "Use product query instead") @complexity(value: 1)
+  ): DeprecatedProduct @deprecated(reason: "Use product query instead")
   product(
     id: ID!
-  ): Product @complexity(value: 1)
+  ): Product
 }
 
 extend schema @link(import: ["@composeDirective", "@external", "@inaccessible", "@interfaceObject", "@key", "@override", "@provides", "@requires", "@shareable", "@tag"], url: "https://specs.apollo.dev/federation/v2.3") @link(import: ["@custom"], url: "https://myspecs.dev/myCustomDirective/v1.0") @composeDirective(name: "@custom")

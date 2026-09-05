@@ -188,12 +188,13 @@ class ProductType(QueryType[Product], schema_name="Product"):
 
 
 class Query(RootType):
-    product = Entrypoint(ProductType, nullable=True)
+    product = Entrypoint(ProductType, nullable=True, complexity=0)
 
     deprecated_product = Entrypoint(
         DeprecatedProductType,
         nullable=True,
         deprecation_reason="Use product query instead",
+        complexity=0,
     )
 
     @product.resolve
