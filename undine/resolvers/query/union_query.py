@@ -265,6 +265,18 @@ class UnionOrdering:
         order_by.append(undine_settings.PAGINATION_MEMBER_RANK_KEY)
         return order_by
 
+    def columns(self) -> list[str]:
+        """The columns each member projects into the union query."""
+        # A union query can only order by a column its members project, so the ordering
+        # columns are carried alongside the identity the rows are read for.
+        names = [
+            "__typename",
+            "pk",
+            *(descriptor.attname for descriptor in self.shared),
+            undine_settings.PAGINATION_MEMBER_RANK_KEY,
+        ]
+        return list(dict.fromkeys(names))
+
     def for_row(self, typename: str) -> list[OrderingDescriptor]:
         own_descriptors = self.per_typename.get(typename, [])
         return [*self.shared, *own_descriptors]
@@ -286,13 +298,18 @@ class UnionOrdering:
 
 
 def union_page_query(members: UnionMembers, ordering: UnionOrdering) -> QuerySet:
-    """Combine the member querysets into a single ordered query of `(__typename, pk)` rows."""
-    union_queryset = create_union_queryset(members.querysets.values())
+    """Combine the member querysets into a single ordered query of identity rows."""
+    # Each member is cut down to the shared columns before the union, not after. A union reads its
+    # rows by position, so the members have to agree on what each position holds, and only a member
+    # knows how to project its own columns. Each member's own ordering is dropped here since it is
+    # already carried by its rank, and keeping it would add columns to that member alone.
+    columns = ordering.columns()
+    identities = [queryset.order_by().values(*columns) for queryset in members.querysets.values()]
+
+    union_queryset = create_union_queryset(identities)
 
     expressions = ordering.expressions()
-    union_queryset = union_queryset.order_by(*expressions)
-
-    return union_queryset.values("__typename", "pk")
+    return union_queryset.order_by(*expressions)
 
 
 def limit_union_query(union_queryset: QuerySet, entrypoint: Entrypoint, info: GQLInfo) -> QuerySet:

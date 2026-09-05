@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 import pytest
 
-from tests.helpers import parametrize_helper, skip_if_union_queryset_values_broken
+from tests.helpers import parametrize_helper
 from tests.test_end_to_end.helpers import (
     create_interface_member_schema,
     create_one_row_per_member,
@@ -122,7 +122,6 @@ def assert_complexity(graphql, undine_settings, *, query: str, query_count: int,
 # Union types
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 @pytest.mark.parametrize(**parametrize_helper(MEMBER_CASES))
 def test_union_type__complexity__list(  # ruff: ignore[too-many-positional-arguments]
@@ -140,7 +139,6 @@ def test_union_type__complexity__list(  # ruff: ignore[too-many-positional-argum
     assert_complexity(graphql, undine_settings, query=query, query_count=query_count, complexity=complexity)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 @pytest.mark.parametrize(**parametrize_helper(MEMBER_CASES))
 def test_union_type__complexity__connection(  # ruff: ignore[too-many-positional-arguments]
@@ -158,7 +156,6 @@ def test_union_type__complexity__connection(  # ruff: ignore[too-many-positional
     assert_complexity(graphql, undine_settings, query=query, query_count=query_count, complexity=complexity)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_type__complexity__connection__total_count(graphql, undine_settings) -> None:
     """The count over the selected members is an extra query, but is not counted towards the complexity."""
@@ -169,7 +166,6 @@ def test_union_type__complexity__connection__total_count(graphql, undine_setting
     assert_complexity(graphql, undine_settings, query=query, query_count=3, complexity=2)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_type__complexity__undefined_fragment(graphql, undine_settings) -> None:
     """An undefined fragment selects no members, and is reported by the fragment validation rules."""
@@ -190,7 +186,6 @@ def test_union_type__complexity__undefined_fragment(graphql, undine_settings) ->
 # Interface types
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 @pytest.mark.parametrize(**parametrize_helper(MEMBER_CASES | INTERFACE_FIELD_CASES))
 def test_interface_type__complexity__list(  # ruff: ignore[too-many-positional-arguments]
@@ -208,7 +203,6 @@ def test_interface_type__complexity__list(  # ruff: ignore[too-many-positional-a
     assert_complexity(graphql, undine_settings, query=query, query_count=query_count, complexity=complexity)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 @pytest.mark.parametrize(**parametrize_helper(MEMBER_CASES | INTERFACE_FIELD_CASES))
 def test_interface_type__complexity__connection(  # ruff: ignore[too-many-positional-arguments]
@@ -226,7 +220,6 @@ def test_interface_type__complexity__connection(  # ruff: ignore[too-many-positi
     assert_complexity(graphql, undine_settings, query=query, query_count=query_count, complexity=complexity)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_interface_type__complexity__connection__total_count(graphql, undine_settings) -> None:
     """The count over the selected members is an extra query, but is not counted towards the complexity."""

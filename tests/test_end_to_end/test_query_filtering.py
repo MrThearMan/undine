@@ -10,7 +10,6 @@ from graphql import GraphQLNonNull, GraphQLString, version_info
 from example_project.app.models import Person, Project, Task
 from tests.conftest import skip_if_async
 from tests.factories import CommentFactory, PersonFactory, ProjectFactory, TaskFactory
-from tests.helpers import skip_if_union_queryset_values_broken
 from undine import (
     Calculation,
     CalculationArgument,
@@ -1029,7 +1028,6 @@ def test_end_to_end__filtering__incorrect_variable_value__object(graphql, undine
     ]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__union_type(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
@@ -1100,7 +1098,6 @@ def test_end_to_end__filtering__union_type(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__union_type__with_query_type_filtering(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
@@ -1177,7 +1174,6 @@ def test_end_to_end__filtering__union_type__with_query_type_filtering(graphql, u
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__union_type__connection(graphql, undine_settings) -> None:
     class TaskType(QueryType[Task], auto=False):
@@ -1258,7 +1254,6 @@ def test_end_to_end__filtering__union_type__connection(graphql, undine_settings)
     ]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__union_type__connection__with_query_type_filtering(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
@@ -1341,7 +1336,6 @@ def test_end_to_end__filtering__union_type__connection__with_query_type_filterin
     ]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__interface_type(graphql, undine_settings) -> None:
     class NamedFilterSet(FilterSet[Task, Project], auto=False):
@@ -1417,7 +1411,6 @@ def test_end_to_end__filtering__interface_type(graphql, undine_settings) -> None
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__interface_type__with_query_type_filtering(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):
@@ -1497,7 +1490,6 @@ def test_end_to_end__filtering__interface_type__with_query_type_filtering(graphq
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__interface_type__connection(graphql, undine_settings) -> None:
     class NamedFilterSet(FilterSet[Task, Project], auto=False):
@@ -1583,7 +1575,6 @@ def test_end_to_end__filtering__interface_type__connection(graphql, undine_setti
     ]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__filtering__interface_type__connection__with_query_type_filtering(graphql, undine_settings) -> None:
     class TaskFilterSet(FilterSet[Task], auto=False):

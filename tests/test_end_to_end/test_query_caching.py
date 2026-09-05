@@ -16,7 +16,6 @@ from graphql import GraphQLError, GraphQLNonNull, GraphQLString, Undefined
 
 from example_project.app.models import Project, Task
 from tests.factories import ProjectFactory, TaskFactory, UserFactory
-from tests.helpers import skip_if_union_queryset_values_broken
 from undine import (
     Entrypoint,
     Field,
@@ -1035,7 +1034,6 @@ def test_end_to_end__caching__interface_field_cacheable(graphql, undine_settings
     assert results.cache_per_user is False
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__caching__interface_field_cacheable__entrypoint(graphql, undine_settings) -> None:
     class Named(InterfaceType, auto=False):
@@ -1084,7 +1082,6 @@ def test_end_to_end__caching__interface_field_cacheable__entrypoint(graphql, und
     assert results.cache_per_user is False
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_end_to_end__caching__interface_field_not_cacheable__entrypoint(graphql, undine_settings) -> None:
     class Named(InterfaceType, auto=False):

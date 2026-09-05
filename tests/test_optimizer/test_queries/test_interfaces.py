@@ -5,7 +5,6 @@ from graphql import GraphQLInt, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task, TaskTypeChoices
 from tests.factories import ProjectFactory, TaskFactory
-from tests.helpers import skip_if_union_queryset_values_broken
 from undine import (
     Entrypoint,
     Field,
@@ -21,7 +20,6 @@ from undine import (
 )
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -88,7 +86,6 @@ def test_optimizer__interfaces(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_one_fragment(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -150,7 +147,6 @@ def test_optimizer__interfaces__only_one_fragment(graphql, undine_settings) -> N
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_interface_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -207,7 +203,6 @@ def test_optimizer__interfaces__only_interface_fields(graphql, undine_settings) 
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_fragment_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -269,7 +264,6 @@ def test_optimizer__interfaces__only_fragment_fields(graphql, undine_settings) -
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -322,7 +316,6 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql,
     response.assert_query_count(2)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typename(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -378,7 +371,6 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typenam
     response.assert_query_count(2)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__multiple_interface_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -451,7 +443,6 @@ def test_optimizer__interfaces__multiple_interface_fields(graphql, undine_settin
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__typename(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -523,7 +514,6 @@ def test_optimizer__interfaces__typename(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__filtering(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -595,7 +585,6 @@ def test_optimizer__interfaces__filtering(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__ordering(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -657,7 +646,6 @@ def test_optimizer__interfaces__ordering(graphql, undine_settings) -> None:
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__skip_inline_fragment(graphql, undine_settings) -> None:
 
@@ -701,7 +689,6 @@ def test_optimizer__interfaces__skip_inline_fragment(graphql, undine_settings) -
     assert all("pk" not in item for item in response.data["named"])
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__inline_fragment_no_type_condition(graphql, undine_settings) -> None:
     class Named(InterfaceType):
@@ -749,7 +736,6 @@ def test_optimizer__interfaces__inline_fragment_no_type_condition(graphql, undin
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__inline_fragment_no_type_condition__holds_member_fragment(
     graphql, undine_settings
@@ -801,7 +787,6 @@ def test_optimizer__interfaces__inline_fragment_no_type_condition__holds_member_
     response.assert_query_count(3)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_optimizer__interfaces__no_other_fields(graphql, undine_settings) -> None:
     class Named(InterfaceType):

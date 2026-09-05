@@ -9,7 +9,7 @@ from django.db.models.functions import Lower, Reverse, Substr
 
 from example_project.app.models import Project, Task
 from tests.factories import ProjectFactory, TaskFactory
-from tests.helpers import keyset_cursor, skip_if_union_queryset_values_broken, walk_connection_forward_and_backward
+from tests.helpers import keyset_cursor, walk_connection_forward_and_backward
 from undine import (
     Entrypoint,
     Field,
@@ -99,7 +99,6 @@ def test_union_connection__empty(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__first(graphql, undine_settings) -> None:
     """A page taken with 'first' spans both members of the union, and 'totalCount' counts rows in both."""
@@ -135,7 +134,6 @@ def test_union_connection__first(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__last(graphql, undine_settings) -> None:
     """A page taken with 'last' returns the end of the connection."""
@@ -167,7 +165,6 @@ def test_union_connection__last(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__first__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -204,7 +201,6 @@ async def test_union_connection__first__async(graphql_async, undine_settings) ->
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__first_and_after(graphql, undine_settings) -> None:
     """Paging with 'first' and 'after' across the union does not crash, and walks the whole connection."""
@@ -241,7 +237,6 @@ def test_union_connection__first_and_after(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__last_and_before(graphql, undine_settings) -> None:
     """Paging with 'last' and 'before' across the union does not crash, and walks the whole connection."""
@@ -279,7 +274,6 @@ def test_union_connection__last_and_before(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__first_and_after__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -317,7 +311,6 @@ async def test_union_connection__first_and_after__async(graphql_async, undine_se
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__cursor_disambiguates_members_with_the_same_primary_key(graphql, undine_settings) -> None:
     """A Task and a Project sharing the same primary key must not produce the same cursor."""
@@ -345,7 +338,6 @@ def test_union_connection__cursor_disambiguates_members_with_the_same_primary_ke
     assert response.data["searchables"]["edges"][0]["cursor"] != first_cursor
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__fields_selected_from_one_member_only(graphql, undine_settings) -> None:
     """A member the query selects no fields from is not fetched, not counted, and gets no edges."""
@@ -376,7 +368,6 @@ def test_union_connection__fields_selected_from_one_member_only(graphql, undine_
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__no_fields_selected_from_any_member(graphql, undine_settings) -> None:
     """Selecting only '__typename' selects no fields from any member, so the connection is empty."""
@@ -428,7 +419,6 @@ async def test_union_connection__no_fields_selected_from_any_member__async(graph
 # Filtering
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__filter_per_member(graphql, undine_settings) -> None:
     """Each member of the union can be filtered separately with its own filterset."""
@@ -514,7 +504,6 @@ def create_filterset_union_schema():
     return create_schema(query=Query)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__filter_across_members(graphql, undine_settings) -> None:
     """A filterset on the union type filters every member of the union."""
@@ -551,7 +540,6 @@ def test_union_connection__filter_across_members(graphql, undine_settings) -> No
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__filter_across_members__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -589,7 +577,6 @@ async def test_union_connection__filter_across_members__async(graphql_async, und
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__filter_not_used(graphql, undine_settings) -> None:
     """A filterset on the union type that is not used leaves the members untouched."""
@@ -611,7 +598,6 @@ def test_union_connection__filter_not_used(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__filter_with_aliases_and_distinct(graphql, undine_settings) -> None:
     """A filter that requires aliases and 'distinct' applies both to every member of the union."""
@@ -729,7 +715,6 @@ def create_orderset_union_schema():
     return create_schema(query=Query)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__order_across_members(graphql, undine_settings) -> None:
     """An orderset on the union type orders the rows of every member together."""
@@ -769,7 +754,6 @@ def test_union_connection__order_across_members(graphql, undine_settings) -> Non
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__order_not_used(graphql, undine_settings) -> None:
     """An orderset on the union type that is not used leaves the default ordering in place."""
@@ -810,7 +794,6 @@ def create_expression_orderset_union_schema():
     return create_schema(query=Query)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__order_across_members__expression(graphql, undine_settings) -> None:
     """
@@ -850,7 +833,6 @@ def test_union_connection__order_across_members__expression(graphql, undine_sett
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__order_across_members__expression__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -887,7 +869,6 @@ async def test_union_connection__order_across_members__expression__async(graphql
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__order_across_members__async(graphql_async, undine_settings) -> None:
     undine_settings.ASYNC = True
@@ -943,7 +924,6 @@ def create_task_points_order_union_schema():
     return create_schema(query=Query)
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__order_per_member(graphql, undine_settings) -> None:
     """
@@ -985,7 +965,6 @@ def test_union_connection__order_per_member(graphql, undine_settings) -> None:
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__last_and_before_with_per_member_order(graphql, undine_settings) -> None:
     """
@@ -1031,7 +1010,6 @@ def test_union_connection__last_and_before_with_per_member_order(graphql, undine
     assert names == ["P1", "T1"]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__insert_before_cursor_with_per_member_order(graphql, undine_settings) -> None:
     """
@@ -1071,7 +1049,6 @@ def test_union_connection__insert_before_cursor_with_per_member_order(graphql, u
     assert names == ["D", "E"]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__delete_cursor_row_itself(graphql, undine_settings) -> None:
     """Deleting the exact row a cursor points to must not break decoding or paging past it."""
@@ -1106,7 +1083,6 @@ def test_union_connection__delete_cursor_row_itself(graphql, undine_settings) ->
     assert names == ["T3"]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__full_walk_forward_and_backward(graphql, undine_settings) -> None:
     """
@@ -1162,7 +1138,6 @@ def test_union_connection__full_walk_forward_and_backward(graphql, undine_settin
 # Permissions
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__entrypoint_permissions(graphql, undine_settings) -> None:
     """The entrypoint permission check runs for every instance in the connection, from every member."""
@@ -1203,7 +1178,6 @@ def test_union_connection__entrypoint_permissions(graphql, undine_settings) -> N
     assert seen == [project, task]
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__entrypoint_permissions__denied(graphql, undine_settings) -> None:
     """A denied entrypoint permission check surfaces as a GraphQL error."""
@@ -1244,7 +1218,6 @@ def test_union_connection__entrypoint_permissions__denied(graphql, undine_settin
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db
 def test_union_connection__query_type_permissions__denied(graphql, undine_settings) -> None:
     """A denied query type permission check for a single member surfaces as a GraphQL error."""
@@ -1285,7 +1258,6 @@ def test_union_connection__query_type_permissions__denied(graphql, undine_settin
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__entrypoint_permissions__sync_func__async(graphql_async, undine_settings) -> None:
     """A sync entrypoint permission check also runs on the async path."""
@@ -1328,7 +1300,6 @@ async def test_union_connection__entrypoint_permissions__sync_func__async(graphq
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__entrypoint_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async entrypoint permission check is awaited on the async path."""
@@ -1371,7 +1342,6 @@ async def test_union_connection__entrypoint_permissions__async_func__async(graph
     }
 
 
-@skip_if_union_queryset_values_broken
 @pytest.mark.django_db(transaction=True)
 async def test_union_connection__query_type_permissions__async_func__async(graphql_async, undine_settings) -> None:
     """An async query type permission check is awaited on the async path."""
