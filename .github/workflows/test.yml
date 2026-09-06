@@ -43,20 +43,20 @@ jobs:
       - name: "Check out repository"
         uses: actions/checkout@v7
         with:
-          submodules: ${{ inputs.submodules }}
-          fetch-depth: ${{ inputs.fetch-depth }}
+          persist-credentials: false
 
       - name: "Set up python"
         id: setup-python
         uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
 
       - name: "Set up uv"
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.10"
           enable-cache: true
+          cache-suffix: "mypy"
 
       - name: "Install dependencies"
         run: |
