@@ -18,6 +18,6 @@ EOF
 
 ## Nox
 
-Use nox ONLY when the user EXPLICITLY asks for it. Otherwise use the poetry virtualenv.
+Use nox ONLY when the user EXPLICITLY asks for it. Otherwise use the project virtualenv in `.venv`.
 Existing nox session virtualenvs live under `.nox/`. You can invoke them directly for debugging:
 `.nox/<session-dir>/bin/python <command>`.

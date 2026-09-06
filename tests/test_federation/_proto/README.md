@@ -12,5 +12,5 @@ curl -sSL https://raw.githubusercontent.com/apollographql/apollo-server/main/pac
     -o reports.proto
 # strip proto2-era options that the current protoc rejects
 sed -i 's/\s*\[(js_use_toArray)=true\]//g;s/\s*\[(js_preEncoded)=true\]//g' reports.proto
-poetry run python -m grpc_tools.protoc --python_out=. --proto_path=. reports.proto
+uv run python -m grpc_tools.protoc --python_out=. --proto_path=. reports.proto
 ```

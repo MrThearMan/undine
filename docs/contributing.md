@@ -111,12 +111,12 @@ but if not, you can also ask for one.
 
 ## Setting up the environment
 
-1. Install [Poetry].
+1. Install [uv].
 2. Install [Just].
 3. Run `just install` to create a virtual environment and install project dependencies.
 4. Run `just hook` to install the [prek] hooks.
 
-[Poetry]: https://python-poetry.org/docs/#installation
+[uv]: https://docs.astral.sh/uv/getting-started/installation/
 [Just]: https://github.com/casey/just
 [prek]: https://prek.j178.dev/
 

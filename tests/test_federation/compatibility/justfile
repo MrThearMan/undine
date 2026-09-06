@@ -17,7 +17,7 @@ clean:
 
 # Export schema
 export:
-    @poetry run python manage.py export
+    @uv run python manage.py export
 
 # Run Apollo's subgraph compatibility runner against the composed supergraph
 compliance:

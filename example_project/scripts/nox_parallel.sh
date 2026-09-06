@@ -13,11 +13,10 @@ set -uo pipefail
 jobs="${1:-100%}"
 cd "$(dirname "$(readlink -f "$0")")/../.." || exit 1
 
-# Poetry asks the system keyring for credentials on every install. With this many
-# installs at once a SecretService lookup can fail, and Poetry reports that as
-# "Cannot install <package>" instead of moving on. The project has no private
-# package source, so there is nothing for the keyring to answer.
-export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
+# Every command below runs with "--no-sync", so the project virtualenv is built once
+# here. Letting each session build it instead would have them all wait on the same
+# lock, and each nox session builds its own virtualenv anyway.
+uv sync --all-extras --all-groups || exit 1
 
 logs=".nox/logs"
 joblog="$logs/joblog.tsv"
@@ -27,7 +26,7 @@ rm -rf "$logs" && mkdir -p "$logs"
 # end would otherwise fold into this run.
 rm -f .coverage.*
 
-poetry run nox --list --json 2>/dev/null | jq -r '.[].session' > "$sessions"
+uv run --no-sync nox --list --json 2>/dev/null | jq -r '.[].session' > "$sessions"
 mapfile -t names < "$sessions"
 total=${#names[@]}
 
@@ -56,9 +55,9 @@ if [ "$live_max" -lt 1 ]; then live_max=1; fi
     'slug="$(printf %s {} | tr -c "[:alnum:]" "-")"
      dir="'"$logs"'"
      export COVERAGE_FILE=".coverage.$slug"
-     poetry run nox -s {} > "$dir/$slug.log" 2>&1
+     uv run --no-sync nox -s {} > "$dir/$slug.log" 2>&1
      rc=$?
-     if report="$(poetry run coverage report --skip-covered --show-missing 2>/dev/null)"; then
+     if report="$(uv run --no-sync coverage report --skip-covered --show-missing 2>/dev/null)"; then
        printf "\n--- coverage: lines this session did not cover ---\n%s\n" "$report" >> "$dir/$slug.log"
        printf %s "$report" | grep "^TOTAL" | grep -oE "[0-9]+%" | tail -1 | tr -d "%" > "$dir/$slug.pct"
      fi
@@ -222,10 +221,10 @@ wait
 if [ "$tty" = 1 ]; then printf '\033[?25h'; fi
 
 # Merge the per-session data files into the ".coverage" file.
-poetry run coverage combine
+uv run --no-sync coverage combine
 
 summary="$(printf 'Ran %d sessions in %dm %02ds.' "$total" "$((SECONDS / 60))" "$((SECONDS % 60))")"
-if combined="$(poetry run coverage report --format=total 2>/dev/null)"; then
+if combined="$(uv run --no-sync coverage report --format=total 2>/dev/null)"; then
   summary="$summary Combined coverage $combined%."
 fi
 echo "$summary"

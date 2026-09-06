@@ -299,6 +299,9 @@ split-on-trailing-comma = false
 required-imports = [
     "from __future__ import annotations",
 ]
+extra-standard-library = [
+    "tomllib",
+]
 known-third-party = [
     "django",
     "graphql",

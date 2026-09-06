@@ -14,5 +14,8 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         path = settings.BASE_DIR.parent / "pyproject.toml"
         data = tomllib.loads(path.read_text())
-        dependencies = data["tool"]["poetry"]["dependencies"]
-        self.stdout.write(json.dumps(dependencies, indent=4, sort_keys=True))
+        project = data["project"]
+        dependencies: list[str] = list(project["dependencies"])
+        for extra in project["optional-dependencies"].values():
+            dependencies.extend(extra)
+        self.stdout.write(json.dumps(sorted(dependencies), indent=4))

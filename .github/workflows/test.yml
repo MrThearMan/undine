@@ -7,19 +7,19 @@ on:
     paths:
       - "**.py"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - ".github/workflows/test.yml"
   pull_request:
   workflow_dispatch:
 
 jobs:
   test:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.2
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.0
     with:
       coveralls: ${{ fromJSON(vars.COVERALLS_ENABLED || 'false') }}
 
   test-async:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.2
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.0
     with:
       python-version: '["3.14"]'
       os: '["ubuntu-latest"]'
@@ -52,17 +52,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: MrThearMan/CI/.github/actions/poetry@v0.5.2
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          os: "ubuntu-latest"
-          poetry-version: "2.3.2"
-          python-version: ${{ steps.setup-python.outputs.python-version }}
+          version: "0.12.10"
+          enable-cache: true
 
       - name: "Install dependencies"
         run: |
-          poetry install --all-extras --all-groups
+          uv sync --locked --all-extras --all-groups --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: "Run mypy tests"
         run: |
-          poetry run python manage.py generate_test_mypy_yml
-          RUN_MYPY_TESTS=1 poetry run pytest tests/test_mypy/cases/*.yml
+          uv run --no-sync python manage.py generate_test_mypy_yml
+          RUN_MYPY_TESTS=1 uv run --no-sync pytest tests/test_mypy/cases/*.yml

@@ -14,7 +14,7 @@ with automatic query optimization, composable filtering and ordering, mutations,
 
 Never do any of the following without explicit permission from the user:
 
-- **Publish or release.** No `poetry publish`, `gh release create`, deploying the docs site, `docker push`,
+- **Publish or release.** No `uv publish`, `gh release create`, deploying the docs site, `docker push`,
   creating or pushing tags, or changing the project version number.
 - **Rewrite git history or push.** No `git push` (in any form), `git commit`,
   `git commit --amend`, `git rebase`, `git reset --hard`, `git filter-branch`,
@@ -22,7 +22,7 @@ Never do any of the following without explicit permission from the user:
 - **Delete or discard work.** No `rm -rf`, `git clean`, `git checkout .` /
   `git restore .` on a dirty tree, dropping the dev database, or overwriting
   lockfiles, migrations, or fixtures.
-- **Change dependencies.** No adding or removing packages, no regenerating `poetry.lock`.
+- **Change dependencies.** No adding or removing packages, no regenerating `uv.lock`.
 - **Commit secrets.** No credentials or tokens in git-tracked files.
 
 ## Detailed guides

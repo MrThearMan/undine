@@ -27,7 +27,7 @@ class Command(BaseCommand):
         self.setup_pyrightconfig(root, venv)
         self.setup_pytest_ini(root)
 
-        if options["claude_md"]:
+        if options["claude"]:
             self.setup_claude(root)
 
     def setup_mypy_ini(self, root: Path, python_exe: Path) -> None:

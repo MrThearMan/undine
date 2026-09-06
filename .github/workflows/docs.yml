@@ -50,19 +50,19 @@ jobs:
         with:
           python-version: "3.14"
 
-      - uses: MrThearMan/CI/.github/actions/poetry@v0.5.2
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          os: "ubuntu-latest"
-          poetry-version: "2.3.2"
-          python-version: ${{ steps.setup-python.outputs.python-version }}
+          version: "0.12.10"
+          enable-cache: true
 
       - name: "Install dependencies"
         run: |
-          poetry install --only docs --no-root
+          uv sync --locked --only-group docs --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: "Build documentation"
         run: |
-          poetry run python build_docs.py
+          uv run --no-sync python build_docs.py
 
       - name: "Upload documentation artifact"
         uses: actions/upload-pages-artifact@v5

@@ -31,9 +31,21 @@ classifiers = [
     "Framework :: Django :: 6.0",
 ]
 requires-python = ">=3.11,<4"
-dynamic = [
-    "dependencies",
+dependencies = [
+    "django>=5.0",
+    "graphql-core>=3.2.12",
+    "django-settings-holder>=0.3.0",
+    "sqlparse>=0.6.0",
 ]
+
+[project.optional-dependencies]
+image = ["pillow>=12.3.0"]
+debug = ["django-debug-toolbar>=7.1.1"]
+channels = ["channels>=4.2.2"]
+federation-tracing = ["protobuf>=7.36.0"]
+opentelemetry = ["opentelemetry-api>=1.38.0"]
+datadog = ["ddtrace>=3.0.0"]
+sentry = ["sentry-sdk>=2.0.0"]
 
 [project.urls]
 "Homepage" = "https://mrthearman.github.io/undine"
@@ -41,73 +53,66 @@ dynamic = [
 "Bug Tracker" = "https://github.com/MrThearMan/undine/issues"
 "Documentation" = "https://mrthearman.github.io/undine"
 
-[tool.poetry]
-requires-poetry = ">=2.0.0"
-packages = [
-    { include = "undine" },
-    { include = "mypy_undine" },
-    { include = "pytest_undine" },
-]
-
 [project.entry-points."mypy.plugins"]
 mypy_undine = "mypy_undine:plugin"
 
 [project.entry-points.pytest11]
 undine = "pytest_undine.fixtures"
 
-[tool.poetry.dependencies]
-django = ">=5.0"
-graphql-core = ">=3.2.12"
-django-settings-holder = ">=0.3.0"
-sqlparse = ">=0.6.0"
-pillow = { version = ">=12.3.0", optional = true }
-django-debug-toolbar = { version = ">=7.1.1", optional = true }
-channels = { version = ">=4.2.2", optional = true }
-protobuf = { version = ">=7.36.0", optional = true }
-opentelemetry-api = { version = ">=1.38.0", optional = true }
-ddtrace = { version = ">=3.0.0", optional = true }
-sentry-sdk = { version = ">=2.0.0", optional = true }
+[dependency-groups]
+# Development installs the library with every extra, so that "uv run" needs no
+# extra flags and every optional integration is importable.
+dev = [
+    "undine[image,debug,channels,federation-tracing,opentelemetry,datadog,sentry]",
+]
+test = [
+    "pytest==9.1.1",
+    "pytest-django==4.14.0",
+    "pytest-asyncio==1.4.0",
+    "pytest-mypy-plugins==4.0.3",
+    "coverage==7.15.4",
+    "hypothesis==6.165.10",
+    "freezegun==1.5.5",
+    "factory-boy==3.3.3",
+    "nox==2026.8.17",
+    "urllib3==2.7.0",
+    "django-modeltranslation==0.20.3",
+    "psycopg[binary,pool]==3.3.4",
+    "granian[pname,uvloop,reload]==2.8.2",
+    "opentelemetry-sdk==1.44.0",
+    "opentelemetry-exporter-otlp-proto-http==1.44.0",
+]
+docs = [
+    "zensical==0.0.59",
+    "pymdown-extensions==11.0.2",
+    "pygments==2.21.0",
+]
+lint = [
+    "prek==0.5.2",
+    "py-spy==0.4.2",
+    "httpx==0.28.1",
+    "ruff==0.16.3",
+    "mypy==2.3.1",
+    "django-stubs==5.2.9",
+    "channels-stubs==0.1.9",
+    "types-protobuf==7.35.1.20260827",
+]
 
-[tool.poetry.group.test.dependencies]
-pytest = "9.1.1"
-pytest-django = "4.14.0"
-pytest-asyncio = "1.4.0"
-pytest-mypy-plugins = "4.0.3"
-coverage = "7.15.4"
-hypothesis = "6.165.10"
-freezegun = "1.5.5"
-factory-boy = "3.3.3"
-nox = "2026.8.17"
-urllib3 = "2.7.0"
-django-modeltranslation = "0.20.3"
-psycopg = { version = "3.3.4", extras = ["binary", "pool"] }
-granian = { version = "2.8.2", extras = ["pname", "uvloop", "reload"] }
-opentelemetry-sdk = "1.44.0"
-opentelemetry-exporter-otlp-proto-http = "1.44.0"
+[tool.uv]
+default-groups = "all"
 
-[tool.poetry.group.docs.dependencies]
-zensical = "0.0.59"
-pymdown-extensions = "11.0.2"
-pygments = "2.21.0"
+[tool.uv.sources]
+# Lets the "dev" group name this project's own extras.
+undine = { workspace = true }
 
-[tool.poetry.group.lint.dependencies]
-prek = "0.5.2"
-py-spy = "0.4.2"
-httpx = "0.28.1"
-ruff = "0.16.3"
-mypy = "2.3.1"
-django-stubs = "5.2.9"
-channels-stubs = "0.1.9"
-types-protobuf = "7.35.1.20260827"
-
-[tool.poetry.extras]
-image = ["pillow"]
-debug = ["django-debug-toolbar"]
-channels = ["channels"]
-federation-tracing = ["protobuf"]
-opentelemetry = ["opentelemetry-api"]
-datadog = ["ddtrace"]
-sentry = ["sentry-sdk"]
+[tool.uv.build-backend]
+# The packages sit at the repository root, not under "src".
+module-root = ""
+module-name = [
+    "undine",
+    "mypy_undine",
+    "pytest_undine",
+]
 
 [tool.coverage.run]
 relative_files = true
@@ -147,5 +152,5 @@ addopts = "--disable-warnings"
 asyncio_mode = "auto"
 
 [build-system]
-requires = ["poetry-core>=2.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"

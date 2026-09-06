@@ -9,7 +9,7 @@ on:
       - "undine/**"
       - "tests/test_federation/compatibility/**"
       - "pyproject.toml"
-      - "poetry.lock"
+      - "uv.lock"
       - ".github/workflows/federation-compatibility.yml"
   workflow_dispatch:
 
@@ -42,20 +42,20 @@ jobs:
         with:
           python-version: "3.14"
 
-      - uses: MrThearMan/CI/.github/actions/poetry@v0.5.2
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          os: "ubuntu-latest"
-          poetry-version: "2.3.2"
-          python-version: ${{ steps.setup-python.outputs.python-version }}
+          version: "0.12.10"
+          enable-cache: true
 
       - name: "Install dependencies"
         run: |
-          poetry install --all-extras --all-groups
+          uv sync --locked --all-extras --all-groups --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: "Export subgraph schema"
         working-directory: tests/test_federation/compatibility
         run: |
-          poetry run python manage.py export
+          uv run --no-sync python manage.py export
 
       - name: "Run Apollo subgraph compatibility harness"
         uses: apollographql/federation-subgraph-compatibility@v3

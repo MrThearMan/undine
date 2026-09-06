@@ -54,13 +54,23 @@ def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     if session.python == "3.14" and django in {"5.0.*", "5.1.*"}:
         session.skip()
 
-    env = {
-        "POETRY_VIRTUALENVS_PATH": str(Path(session.virtualenv.bin).parent),
-    }
+    venv = session.virtualenv.location
+    env = {"UV_PROJECT_ENVIRONMENT": venv}
 
-    session.run_install("poetry", "install", "--all-extras", "--all-groups", external=True, env=env)
-    session.install(f"django=={django}")
-    session.install(f"graphql-core=={graphql_core}")
+    session.run_install("uv", "sync", "--all-extras", "--all-groups", external=True, env=env)
+
+    # "uv sync" removes every package the lockfile does not name, pip included,
+    # so the version under test is installed with uv as well.
+    session.run_install(
+        "uv",
+        "pip",
+        "install",
+        "--python",
+        venv,
+        f"django=={django}",
+        f"graphql-core=={graphql_core}",
+        external=True,
+    )
 
     session.run("coverage", "run", "--parallel-mode", "-m", "pytest", external="error")
 

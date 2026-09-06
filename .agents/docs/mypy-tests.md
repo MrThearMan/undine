@@ -27,6 +27,6 @@ The `### out` block's `main:N:` line numbers count from the first line of Python
 **after the module docstring closes**, not from the top of the source file.
 When adding or reshuffling a case, run it once, copy the actual `main:N:` values from
 the output, and paste them in. Guessing offsets wastes iterations.
-`poetry run mypy path/to/case.py` reports errors relative to the source file's line
+`just mypy path/to/case.py` reports errors relative to the source file's line
 numbers. Those are **not** the ones to paste into `### out`. Only the yml runner
 produces `main:N:` numbers.
