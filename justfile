@@ -68,11 +68,11 @@ generate:
 
 # Install pre-commit hooks
 hook:
-    @poetry run pre-commit install
+    @poetry run prek install
 
 # Update all pre-commit hooks
 hook-update:
-    @poetry run pre-commit autoupdate
+    @poetry run prek update
 
 # Install all dependencies & make sure they are up to date
 install:
@@ -84,7 +84,7 @@ importmap:
 
 # Run pre-commit hooks on all files
 lint:
-    @poetry run pre-commit run --all-files
+    @poetry run prek run --all-files
 
 # Generate a new dependency lock file
 lock:

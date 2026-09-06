@@ -114,11 +114,11 @@ but if not, you can also ask for one.
 1. Install [Poetry].
 2. Install [Just].
 3. Run `just install` to create a virtual environment and install project dependencies.
-4. Run `just hook` to install the [pre-commit] hooks.
+4. Run `just hook` to install the [prek] hooks.
 
 [Poetry]: https://python-poetry.org/docs/#installation
 [Just]: https://github.com/casey/just
-[pre-commit]: https://pre-commit.com/
+[prek]: https://prek.j178.dev/
 
 Run `just help` to list all existing development commands and their descriptions.
 
@@ -242,11 +242,11 @@ Docstrings can include code examples, but longer one should be written to [docs]
 
 ### All code should be linted using the projects lint rules
 
-Easiest way to do this is to install the [pre-commit] hooks with `just hook`. This will make
-sure the pre-commit hooks will run automatically when you make a commit. You can also run
+Easiest way to do this is to install the [prek] hooks with `just hook`. This will make
+sure the hooks will run automatically when you make a commit. You can also run
 hooks manually with `just lint`.
 
-[pre-commit]: https://pre-commit.com/
+[prek]: https://prek.j178.dev/
 
 Comments that ignore linting rules (`# type: ignore[...]`, `# fmt: off`, `# noqa: ...`)
 should be used _**very**_ sparingly. They are often not necessary and can lead to
