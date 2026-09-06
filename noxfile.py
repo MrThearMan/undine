@@ -57,7 +57,18 @@ def tests(session: nox.Session, django: str, graphql_core: str) -> None:
     venv = session.virtualenv.location
     env = {"UV_PROJECT_ENVIRONMENT": venv}
 
-    session.run_install("uv", "sync", "--all-extras", "--all-groups", external=True, env=env)
+    # "uv sync" picks its own interpreter unless "--python" names one, and would replace
+    # the virtualenv nox just made with one built from the first entry in ".python-version".
+    session.run_install(
+        "uv",
+        "sync",
+        "--all-extras",
+        "--all-groups",
+        "--python",
+        venv,
+        external=True,
+        env=env,
+    )
 
     # "uv sync" removes every package the lockfile does not name, pip included,
     # so the version under test is installed with uv as well.
