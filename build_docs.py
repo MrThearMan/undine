@@ -17,7 +17,7 @@ SITE_DIR = ROOT_DIR / "site"
 
 # Zensical has no `exclude_docs` setting, so anything not meant to be served is removed after the build.
 EXCLUDED_SUFFIXES = frozenset({".py"})
-EXCLUDED_DIRECTORIES = frozenset({"snippets"})
+EXCLUDED_DIRECTORIES = frozenset({"snippets", "overrides"})
 
 CACHEABLE_SUFFIXES = frozenset({".css", ".js", ".json", ".svg", ".png", ".ico", ".woff", ".woff2"})
 

@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "docs/**"
-      - "overrides/**"
       - "zensical.toml"
       - "build_docs.py"
       - ".github/workflows/docs.yml"

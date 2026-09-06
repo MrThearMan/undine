@@ -50,7 +50,7 @@ nav = [
 
 [project.theme]
 variant = "modern"
-custom_dir = "overrides"
+custom_dir = "docs/overrides"
 language = "en"
 features = [
   "content.code.copy",
