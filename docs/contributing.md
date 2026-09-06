@@ -9,7 +9,7 @@ Thank you for your interest in contributing!
 To start, please read the library [docs] thoroughly.
 If you don't find what you are looking for, proceed with the steps below.
 
-[docs]: https://mrthearman.github.io/undine/
+[docs]: https://undine-graphql.dev/
 
 ## I found a bug!
 
@@ -238,7 +238,7 @@ Keep the docstring to the point. Each line of documentation has a maintenance co
 Documentation is not an excuse to write code that is hard to understand.
 Docstrings can include code examples, but longer one should be written to [docs].
 
-[docs]: https://mrthearman.github.io/undine/
+[docs]: https://undine-graphql.dev/
 
 ### All code should be linted using the projects lint rules
 

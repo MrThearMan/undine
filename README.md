@@ -33,11 +33,11 @@ pip install undine
 
 ---
 
-**Documentation**: [https://mrthearman.github.io/undine/](https://mrthearman.github.io/undine/)
+**Documentation**: [https://undine-graphql.dev/](https://undine-graphql.dev/)
 
 **Source Code**: [https://github.com/MrThearMan/undine/](https://github.com/MrThearMan/undine/)
 
-**Contributing**: [https://mrthearman.github.io/undine/contributing/](https://mrthearman.github.io/undine/contributing/)
+**Contributing**: [https://undine-graphql.dev/contributing/](https://undine-graphql.dev/contributing/)
 
 ---
 
@@ -67,7 +67,7 @@ while providing out-of-the-box solutions for many common issues GraphQL develope
 
 Check out the [Tutorial] to get started.
 
-[Tutorial]: https://mrthearman.github.io/undine/tutorial/
+[Tutorial]: https://undine-graphql.dev/tutorial/
 
 ```python
 import asyncio

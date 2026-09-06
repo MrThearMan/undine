@@ -8,6 +8,8 @@ import tomllib
 import uuid
 from functools import cache
 from pathlib import Path
+from typing import Any
+from xml.etree import ElementTree as ET
 
 ROOT_DIR = Path(__file__).parent
 CONFIG_FILE = ROOT_DIR / "zensical.toml"
@@ -22,6 +24,8 @@ EXCLUDED_DIRECTORIES = frozenset({"snippets", "overrides"})
 CACHEABLE_SUFFIXES = frozenset({".css", ".js", ".json", ".svg", ".png", ".ico", ".woff", ".woff2"})
 
 LLMS_FILE_NAME = "llms.txt"
+SITEMAP_FILE_NAME = "sitemap.xml"
+SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
 FRONT_MATTER_PATTERN = re.compile(r"\A---\n(?P<front_matter>.*?)\n---\n", flags=re.DOTALL)
 DESCRIPTION_PATTERN = re.compile(r"^description:\s*(?P<description>.+?)\s*$", flags=re.MULTILINE)
 SNIPPET_MARKER = "-8<-"
@@ -50,6 +54,7 @@ def main() -> int:
     remove_excluded_files(SITE_DIR)
     write_markdown_pages(SITE_DIR)
     write_llms_file(SITE_DIR)
+    add_llms_file_to_sitemap(SITE_DIR)
     write_service_worker(SITE_DIR)
     return 0
 
@@ -105,7 +110,7 @@ def expand_snippets(source_file: Path) -> str:
 
 def write_llms_file(site_dir: Path) -> None:
     """Write an `llms.txt` index, which is where agents look for the Markdown versions of the pages."""
-    config = tomllib.loads(CONFIG_FILE.read_text(encoding="utf-8"))["project"]
+    config = read_config()
     site_url = config["site_url"].rstrip("/")
 
     lines = [
@@ -123,6 +128,32 @@ def write_llms_file(site_dir: Path) -> None:
         lines.append(f"- [{title}]({site_url}/{page}): {description}")
 
     (site_dir / LLMS_FILE_NAME).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def add_llms_file_to_sitemap(site_dir: Path) -> None:
+    """Add `llms.txt` to the sitemap, since the sitemap only lists the pages the site navigation renders."""
+    sitemap_file = site_dir / SITEMAP_FILE_NAME
+    if not sitemap_file.is_file():
+        msg = f"Sitemap file not found: {sitemap_file}"
+        raise DocsBuildError(msg)
+
+    site_url = read_config()["site_url"].rstrip("/")
+
+    # Registering the empty prefix keeps the sitemap namespace as the default one, as the schema requires.
+    ET.register_namespace("", SITEMAP_NAMESPACE)
+    tree = ET.parse(sitemap_file)  # noqa: S314  # The sitemap is our own build output, not untrusted input.
+
+    url_element = ET.SubElement(tree.getroot(), f"{{{SITEMAP_NAMESPACE}}}url")
+    location_element = ET.SubElement(url_element, f"{{{SITEMAP_NAMESPACE}}}loc")
+    location_element.text = f"{site_url}/{LLMS_FILE_NAME}"
+
+    ET.indent(tree)
+    tree.write(sitemap_file, encoding="utf-8", xml_declaration=True)
+
+
+@cache
+def read_config() -> dict[str, Any]:
+    return tomllib.loads(CONFIG_FILE.read_text(encoding="utf-8"))["project"]
 
 
 @cache

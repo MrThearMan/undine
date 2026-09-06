@@ -1,7 +1,7 @@
 [project]
 site_name = "Undine"
 site_description = "Undine: A batteries-included GraphQL library for Django."
-site_url = "https://mrthearman.github.io/undine/"
+site_url = "https://undine-graphql.dev/"
 
 repo_url = "https://github.com/MrThearMan/undine"
 repo_name = "MrThearMan/undine"

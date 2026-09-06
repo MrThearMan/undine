@@ -13,7 +13,7 @@ body:
     attributes:
       label: I have read the docs thoroughly before making this feature request.
       description: >-
-        Docs can be found [here](https://mrthearman.github.io/undine/).
+        Docs can be found [here](https://undine-graphql.dev/).
       options:
         - label: "Yes"
           required: true
