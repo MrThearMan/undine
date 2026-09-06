@@ -1,4 +1,6 @@
+---
 description: Documentation on queries in Undine.
+---
 
 # Queries
 

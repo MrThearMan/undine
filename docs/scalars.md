@@ -1,4 +1,6 @@
+---
 description: Documentation on GraphQL scalars in Undine.
+---
 
 # Scalars
 

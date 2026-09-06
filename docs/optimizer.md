@@ -1,4 +1,6 @@
+---
 description: Documentation on the query optimizer in Undine.
+---
 
 # Optimizer
 

@@ -15,10 +15,12 @@ Read a few docs pages for reference before writing a new one.
 
 ## Page structure
 
-Every page starts with a `description:` line, a blank line, then the `# Title`:
+Every page starts with a `description:` frontmatter line, a blank line, then the `# Title`:
 
 ```markdown
+---
 description: Documentation on queries in Undine.
+---
 
 # Queries
 ```
@@ -82,5 +84,4 @@ This is a [link]{:target="_blank"}
 
 ## Verification
 
-After editing docs, run `mkdocs build --strict` and check for broken links or warnings.
-Note that this does not exit with a non-zero status code, so you'll need to read the full output.
+After editing docs, run `just docs-build` and fix any warnings or errors.

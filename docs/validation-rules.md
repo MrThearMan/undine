@@ -1,3 +1,7 @@
+---
+description: GraphQL validation rules in Undine.
+---
+
 # Validation rules
 
 > This is an advanced GraphQL core feature. For validating mutations, see

@@ -1,4 +1,6 @@
+---
 description: Documentation on GraphQL directives in Undine.
+---
 
 # Directives
 

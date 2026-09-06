@@ -1,4 +1,6 @@
+---
 description: Documentation on Apollo Federation 2 support in Undine.
+---
 
 # Federation
 

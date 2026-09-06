@@ -1,3 +1,7 @@
+---
+description: Incremental Delivery in Undine.
+---
+
 # Incremental Delivery
 
 > Note that incremental delivery is currently experimental and may change in the future.

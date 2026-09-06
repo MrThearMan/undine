@@ -1,4 +1,6 @@
+---
 description: Documentation on mutations in Undine.
+---
 
 # Mutations
 
@@ -802,7 +804,7 @@ asks for an unreasonable amount of work in one operation.
 The limit is shared by the whole request. Every Model instance counts towards it, no matter
 which mutation touched it:
 
-- Each item in a [bulk mutation](schema.md#many) input list.
+- Each item in a [bulk mutation](schema.md#mutationtype-references) input list.
 - Each [related mutation](#related-mutations) object, at any depth of nesting.
 - Each row added to the through Model of a many-to-many relation.
 - Each related object deleted or disconnected by the [related mutation action](#related-mutation-action).

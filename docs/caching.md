@@ -1,4 +1,6 @@
+---
 description: Documentation on caching in Undine.
+---
 
 # Caching
 

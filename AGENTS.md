@@ -14,7 +14,7 @@ with automatic query optimization, composable filtering and ordering, mutations,
 
 Never do any of the following without explicit permission from the user:
 
-- **Publish or release.** No `poetry publish`, `gh release create`, `mkdocs gh-deploy`, `docker push`,
+- **Publish or release.** No `poetry publish`, `gh release create`, deploying the docs site, `docker push`,
   creating or pushing tags, or changing the project version number.
 - **Rewrite git history or push.** No `git push` (in any form), `git commit`,
   `git commit --amend`, `git rebase`, `git reset --hard`, `git filter-branch`,

@@ -1,4 +1,6 @@
+---
 description: Documentation on schema root types and entrypoints in Undine.
+---
 
 # Schema
 

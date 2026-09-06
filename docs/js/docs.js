@@ -12,16 +12,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // When a details element is opened, make its id the URL hash, if it has one.
 // When the element is closed, remove the hash from the URL.
-document.querySelectorAll("details").forEach(details => {
-  details.addEventListener("toggle", () => {
-    if (details.open && details.id) {
-      history.replaceState(null, "", `#${details.id}`);
-    }
-    else if (!details.open && `#${details.id}` === window.location.hash) {
-      history.replaceState(null, "", window.location.pathname);
-    }
-  });
-});
+// Instant navigation replaces the page content, so the listener is on the document instead
+// of on each element. A `toggle` event does not bubble, so it is caught on the way down.
+document.addEventListener("toggle", event => {
+  const details = event.target;
+  if (!(details instanceof HTMLDetailsElement) || !details.id) return;
+
+  if (details.open) {
+    history.replaceState(null, "", `#${details.id}`);
+  }
+  else if (`#${details.id}` === window.location.hash) {
+    history.replaceState(null, "", window.location.pathname);
+  }
+}, true);
 
 
 // When an anchor containing a hash is clicked, and the hash corresponds to an
@@ -42,9 +45,26 @@ document.addEventListener("click", event => {
 });
 
 
-// Register the service worker for caching docs offline
+// Register the service worker for caching docs offline.
+// The dev server serves the service worker template with its placeholders unreplaced,
+// so the worker cannot install and a worker from an earlier build keeps serving stale files.
+// Local builds therefore get no worker, and any worker left over from before is removed.
+const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    if (isLocalHost) {
+      navigator.serviceWorker.getRegistrations()
+        .then(regs => Promise.all(regs.map(reg => reg.unregister())))
+        .then(results => {
+          if (results.some(Boolean)) {
+            console.log('Service Worker unregistered. Reload to serve files from the network.');
+          }
+        })
+        .catch(err => console.error('Service Worker unregistration failed:', err));
+      return;
+    }
+
     navigator.serviceWorker.register('/undine/service-worker.js', { scope: '/undine/' })
       .then(reg => console.log('Service Worker registered:', reg.scope))
       .catch(err => console.error('Service Worker registration failed:', err));

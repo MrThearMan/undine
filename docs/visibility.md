@@ -1,4 +1,6 @@
+---
 description: Documentation on hiding schema entities per request in Undine.
+---
 
 # Visibility
 

@@ -1,4 +1,6 @@
+---
 description: How to contribute to Undine.
+---
 
 # Contributing
 
@@ -252,7 +254,7 @@ undocumented behavior if you are not careful.
 
 ## Guidelines for writing documentation
 
-- All documentation is written in `docs/` using markdown, and built with [mkdocs]
+- All documentation is written in `docs/` using markdown, and built with [zensical]
 - Write in idiomatic english, using simple language
 - Keep examples simple and self-contained
 - Give the reader time to understand the basics before going over edge cases and configurations
@@ -263,8 +265,8 @@ undocumented behavior if you are not careful.
 - Do not use emojis
 - Double-check for spelling mistakes and grammar
 
-[mkdocs]: https://www.mkdocs.org/
-[fenced code blocks]: https://www.mkdocs.org/user-guide/writing-your-docs/#fenced-code-blocks
+[zensical]: https://zensical.org/
+[fenced code blocks]: https://www.markdownguide.org/extended-syntax/#fenced-code-blocks
 [blockquotes]: https://www.markdownguide.org/basic-syntax#blockquotes-1
 [horizontal rules]: https://www.markdownguide.org/basic-syntax#horizontal-rules
 [links]: https://www.markdownguide.org/basic-syntax#links

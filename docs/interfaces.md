@@ -1,4 +1,6 @@
+---
 description: Documentation on GraphQL Interfaces in Undine.
+---
 
 # Interfaces
 

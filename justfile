@@ -46,9 +46,17 @@ deps-tree:
 dev port="8000":
     @poetry run python manage.py runserver localhost:{{port}}
 
-# Start an mkdocs server
+# Start a zensical server
 docs port="8080":
-    @poetry run mkdocs serve -a localhost:{{port}} -w docs -o --livereload
+    @just docs-build
+    @echo "Note: the server rebuilds the site on start and on every edit. \
+      A page loaded during a rebuild shows the 404 page. \
+      If this happens, hard reload once the rebuild is done."
+    @poetry run zensical serve -a localhost:{{port}} -o
+
+# Build the zensical docs, including the service worker
+docs-build:
+    @poetry run python build_docs.py
 
 # Download a pygments code highlighting theme
 docs-theme style="fruity":

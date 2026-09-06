@@ -1,4 +1,6 @@
+---
 description: Documentation on lifecycle hooks in Undine.
+---
 
 # Lifecycle Hooks
 

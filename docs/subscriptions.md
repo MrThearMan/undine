@@ -1,4 +1,6 @@
+---
 description: Documentation on subscriptions in Undine.
+---
 
 # Subscriptions
 
