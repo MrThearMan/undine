@@ -52,6 +52,7 @@ sentry = ["sentry-sdk>=2.0.0"]
 "Repository" = "https://github.com/MrThearMan/undine"
 "Bug Tracker" = "https://github.com/MrThearMan/undine/issues"
 "Documentation" = "https://undine-graphql.dev"
+"Documentation for LLMs" = "https://undine-graphql.dev/llms.txt"
 
 [project.entry-points."mypy.plugins"]
 mypy_undine = "mypy_undine:plugin"

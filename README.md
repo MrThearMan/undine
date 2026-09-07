@@ -35,7 +35,7 @@ pip install undine
 
 **Documentation**: [https://undine-graphql.dev/](https://undine-graphql.dev/)
 
-**Source Code**: [https://github.com/MrThearMan/undine/](https://github.com/MrThearMan/undine/)
+**Documentation for LLMs**: [https://undine-graphql.dev/llms.txt](https://undine-graphql.dev/llms.txt)
 
 **Contributing**: [https://undine-graphql.dev/contributing/](https://undine-graphql.dev/contributing/)
 
