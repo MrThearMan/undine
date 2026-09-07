@@ -105,12 +105,16 @@ async def test_end_to_end__defer__multiple_subsequent_responses(graphql_async, u
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
 
+    # Each deferred field blocks on its own event so that the responses are released one at a time.
+    # Spacing the fields apart with sleeps instead would batch them into one response on a slow machine.
+    release = {1: asyncio.Event(), 2: asyncio.Event(), 3: asyncio.Event()}
+
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
         @Field
         async def slow(self: Task) -> str:
-            await asyncio.sleep(self.points * 0.1)
+            await release[self.points].wait()
             return "slow"
 
         @slow.optimize
@@ -137,7 +141,16 @@ async def test_end_to_end__defer__multiple_subsequent_responses(graphql_async, u
         }
     """
 
-    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+    stream = graphql_async.incremental_delivery(query)
+
+    responses = [(await anext(stream)).json]
+
+    for points in [1, 2, 3]:
+        release[points].set()
+        responses.append((await anext(stream)).json)
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
 
     assert len(responses) == 4
 
@@ -238,20 +251,22 @@ async def test_end_to_end__defer__errors_in_subsequent_responses(graphql_async, 
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
 
+    # Each deferred field blocks on its own event so that the responses are released one at a time.
+    # Spacing the fields apart with sleeps instead would batch them into one response on a slow machine.
+    release = {1: asyncio.Event(), 2: asyncio.Event(), 3: asyncio.Event()}
+
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
         @Field
         async def slow(self: Task) -> str:
-            sleep_time = self.points * 0.1
+            await release[self.points].wait()
 
-            if sleep_time > 0.2:
+            if self.points == 3:
                 msg = "dont even try"
                 raise GraphQLError(msg)
 
-            await asyncio.sleep(sleep_time)
-
-            if sleep_time > 0.1:
+            if self.points == 2:
                 msg = "too slow"
                 raise GraphQLError(msg)
 
@@ -281,7 +296,16 @@ async def test_end_to_end__defer__errors_in_subsequent_responses(graphql_async, 
         }
     """
 
-    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+    stream = graphql_async.incremental_delivery(query)
+
+    responses = [(await anext(stream)).json]
+
+    for points in [3, 1, 2]:
+        release[points].set()
+        responses.append((await anext(stream)).json)
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
 
     assert len(responses) == 4
 
@@ -413,13 +437,17 @@ async def test_end_to_end__stream__multiple_subsequent_responses(graphql_async, 
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
 
+    # All streams block on a shared event per item index, so that each response carries one item per stream.
+    # Spacing the items apart with sleeps instead would batch two indexes into one response on a slow machine.
+    release_item = [asyncio.Event(), asyncio.Event(), asyncio.Event()]
+
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
         @Field
         async def slow(self: Task) -> AsyncIterator[str]:
-            for _ in range(self.points):
-                await asyncio.sleep(0.1)
+            for index in range(self.points):
+                await release_item[index].wait()
                 yield "slow"
 
         @slow.optimize
@@ -444,7 +472,16 @@ async def test_end_to_end__stream__multiple_subsequent_responses(graphql_async, 
         }
     """
 
-    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+    stream = graphql_async.incremental_delivery(query)
+
+    responses = [(await anext(stream)).json]
+
+    for event in release_item:
+        event.set()
+        responses.append((await anext(stream)).json)
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
 
     # Compare like this to ensure deferred field resolution order doesnt matter for asserts
     assert len(responses) == 4
@@ -543,6 +580,10 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
     undine_settings.ASYNC = True
     undine_settings.GRAPHQL_PATH = "graphql/async/"
 
+    # All streams block on a shared event per item index, so that each response carries one item per stream.
+    # Spacing the items apart with sleeps instead would batch two indexes into one response on a slow machine.
+    release_item = [asyncio.Event(), asyncio.Event()]
+
     class TaskType(QueryType[Task], auto=False):
         name = Field()
 
@@ -552,12 +593,12 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
                 msg = "dont even try"
                 raise GraphQLError(msg)
 
-            for i in range(self.points):
-                if i == 2:
+            for index in range(self.points):
+                if index == 2:
                     msg = "too slow"
                     raise GraphQLError(msg)
 
-                await asyncio.sleep(0.1)
+                await release_item[index].wait()
                 yield "slow"
 
         @slow.optimize
@@ -582,7 +623,17 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
         }
     """
 
-    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+    stream = graphql_async.incremental_delivery(query)
+
+    # The first stream raises before awaiting anything, so its error needs no release.
+    responses = [(await anext(stream)).json, (await anext(stream)).json]
+
+    for event in release_item:
+        event.set()
+        responses.append((await anext(stream)).json)
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
 
     assert len(responses) == 4
 
