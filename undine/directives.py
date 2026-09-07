@@ -476,7 +476,7 @@ class CacheRulesDirective(
 
     cache_time = DirectiveArgument(
         GraphQLNonNull(GraphQLInt),
-        description="How many seconds this field of fields of this type can be cached for.",
+        description="How many seconds this field should be cached for.",
     )
 
     cache_per_user = DirectiveArgument(
@@ -489,8 +489,8 @@ class CacheRulesDirective(
         """
         Create a new `CacheDirective`.
 
-        :param cache_time: How many seconds this field of fields of this type can be cached for.
-                           I undefined, a default value is used.
+        :param cache_time: How many seconds this field should be cached for.
+                           If undefined, a default value is used.
                            For an `Entrypoint`, the value is set by `ENTRYPOINT_DEFAULT_CACHE_TIME`.
                            For a `Field`, the value is inherited from the parent.
         :param cache_per_user: Whether the value is cached per user or not.

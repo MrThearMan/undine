@@ -89,7 +89,7 @@ class OrderingDescriptor:
 
         # Copy the output field and set the instance's attname to it in case the ordering value
         # is not available under the output field's original attname on the instance.
-        # The output field might also no have attname set.
+        # The output field might also not have attname set.
         output_field = copy(self.output_field)
         output_field.attname = self.attname
         return output_field.value_to_string(instance)

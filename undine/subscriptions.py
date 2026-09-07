@@ -212,7 +212,7 @@ class ModelUpdateSubscription(ModelSaveSubscription[TModel]):
 
 
 class ModelDeleteSubscription(QueryTypeSignalSubscription[TModel]):
-    """Subscription that sends an event before a model instance has been deleted."""
+    """Subscription that sends an event before a model instance is deleted."""
 
     signal = pre_delete
 

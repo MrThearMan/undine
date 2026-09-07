@@ -9,7 +9,7 @@ from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import (
     GraphQLAPQHashInvalidError,
     GraphQLAPQHashMissingError,
-    GraphQLAPQNotSuppoertedError,
+    GraphQLAPQNotSupportedError,
     GraphQLAPQVersionInvalidError,
     GraphQLAPQVersionMissingError,
     GraphQLAPQVersionNotSupportedError,
@@ -239,7 +239,7 @@ class GraphQLRequestParamsParser:
         if not undine_settings.AUTOMATIC_PERSISTED_QUERIES:
             # Add 'code' so that Apollo Client knows what's going on.
             extensions = {"code": "PERSISTED_QUERY_NOT_SUPPORTED"}
-            raise GraphQLAPQNotSuppoertedError(extensions=extensions)
+            raise GraphQLAPQNotSupportedError(extensions=extensions)
 
         version: int | None = persisted_query.get("version")
         if version is None:

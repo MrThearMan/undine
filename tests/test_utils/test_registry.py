@@ -4,7 +4,7 @@ import pytest
 
 from tests.helpers import exact
 from undine.exceptions import RegistryDuplicateError, RegistryMissingTypeError
-from undine.utils.registy import Registry
+from undine.utils.registry import Registry
 
 
 def test_registry__basic() -> None:

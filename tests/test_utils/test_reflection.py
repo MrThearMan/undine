@@ -283,13 +283,13 @@ def test_get_root_and_info_params__root_param_name(undine_settings) -> None:
     assert params.info_param is None
 
 
-@pytest.mark.parametrize("inpt", [[1, 2, 3], [1], []])
-def test_reverse_enumerate(inpt) -> None:
-    for i, item in reverse_enumerate(inpt):
-        assert item == inpt[-1]
-        inpt.pop(i)
+@pytest.mark.parametrize("input_", [[1, 2, 3], [1], []])
+def test_reverse_enumerate(input_) -> None:
+    for i, item in reverse_enumerate(input_):
+        assert item == input_[-1]
+        input_.pop(i)
 
-    assert inpt == []
+    assert input_ == []
 
 
 def test_get_wrapped_func__bound_method() -> None:

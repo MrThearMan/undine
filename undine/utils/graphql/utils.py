@@ -431,7 +431,7 @@ def located_validation_error(
     nodes: Collection[Node],
     path: list[str | int],
 ) -> GraphQLErrorGroup:
-    """Transform a Django ValidationError into a GraphQL errors for each message in the error."""
+    """Transform a Django ValidationError into GraphQL errors for each message in the error."""
     code = getattr(error, "code", "").upper()
     error_messages = get_validation_error_messages(error)
 

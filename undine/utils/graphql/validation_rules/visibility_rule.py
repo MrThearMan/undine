@@ -157,7 +157,7 @@ class VisibilityRule(ValidationRule):
 
         return None
 
-    # handle undine types
+    # Handle undine types
 
     def handle_filterset(
         self,
@@ -274,7 +274,7 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLCompositeType,
         node: ast.NamedTypeNode,
     ) -> None:
-        # This type is invisible so treat is as if it doesn't exist.
+        # This type is invisible so treat it as if it doesn't exist.
         # Do not include suggestions, since they might include types that are not visible.
         msg = f"Unknown type '{node.name.value}'."
         self.report_error(GraphQLError(msg, node))
@@ -284,7 +284,7 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLCompositeType,
         field_node: ast.FieldNode,
     ) -> None:
-        # This field is invisible so treat is as if it doesn't exist.
+        # This field is invisible so treat it as if it doesn't exist.
         # Do not include suggestions, since they might include fields that are not visible.
         msg = f"Cannot query field '{field_node.name.value}' on type '{parent_type}'."
         self.report_error(GraphQLError(msg, nodes=field_node))
@@ -295,8 +295,8 @@ class VisibilityRule(ValidationRule):
         field_node: ast.FieldNode,
         arg_node: ast.ArgumentNode,
     ) -> None:
-        # This argument is invisible so treat is as if it doesn't exist.
-        # Do not include suggestions, since they might include argument that are not visible.
+        # This argument is invisible so treat it as if it doesn't exist.
+        # Do not include suggestions, since they might include arguments that are not visible.
         msg = f"Unknown argument '{arg_node.name.value}' on field '{parent_type}.{field_node.name.value}'."
         self.report_error(GraphQLError(msg, nodes=arg_node))
 
@@ -305,8 +305,8 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLDirective,
         arg_node: ast.ArgumentNode,
     ) -> None:
-        # This argument is invisible so treat is as if it doesn't exist.
-        # Do not include suggestions, since they might include argument that are not visible.
+        # This argument is invisible so treat it as if it doesn't exist.
+        # Do not include suggestions, since they might include arguments that are not visible.
         msg = f"Unknown argument '{arg_node.name.value}' on directive '{parent_type}'."
         self.report_error(GraphQLError(msg, nodes=arg_node))
 
@@ -315,7 +315,7 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLInputObjectType,
         object_field_node: ast.ObjectFieldNode,
     ) -> None:
-        # This argument is invisible so treat is as if it doesn't exist.
+        # This argument is invisible so treat it as if it doesn't exist.
         # Do not include suggestions, since they might include arguments that are not visible.
         msg = f"Field '{object_field_node.name.value}' is not defined by type '{parent_type.name}'."
         self.report_error(GraphQLError(msg, nodes=object_field_node))
@@ -325,7 +325,7 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLEnumType,
         enum_value_node: ast.EnumValueNode,
     ) -> None:
-        # This enum value is invisible so treat is as if it doesn't exist.
+        # This enum value is invisible so treat it as if it doesn't exist.
         # Do not include suggestions, since they might include values that are not visible.
         msg = f"Value '{enum_value_node.value}' does not exist in '{parent_type.name}' enum."
         self.report_error(GraphQLError(msg, nodes=enum_value_node))
@@ -335,7 +335,7 @@ class VisibilityRule(ValidationRule):
         parent_type: GraphQLDirective,
         directive_node: ast.DirectiveNode,
     ) -> None:
-        # This directive is invisible so treat is as if it doesn't exist.
+        # This directive is invisible so treat it as if it doesn't exist.
         # Do not include suggestions, since they might include directives that are not visible.
         msg = f"Unknown directive '@{directive_node.name.value}'."
         self.report_error(GraphQLError(msg, nodes=directive_node))

@@ -110,7 +110,7 @@ class TypeRef:
     value: TypeHint
 
     total: bool = True
-    """If the type hint is in a TypedDict, whether the TypedDict has totality of not."""
+    """If the type hint is in a TypedDict, whether the TypedDict has totality or not."""
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

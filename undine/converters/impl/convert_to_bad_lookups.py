@@ -273,7 +273,7 @@ def _(field: ManyToManyField | ManyToManyRel, **kwargs: Any) -> set[str]:
 
     # For many-to-many fields, any lookups are done to the corresponding field on the through-model.
     # Remove any lookups from the many-to-many fields' lookups that are not on the through-model field,
-    # as well as any bad lookups registered for the the through-model field's type.
+    # as well as any bad lookups registered for the through-model field's type.
     bad_lookups = set(field.get_lookups()) - set(through_field.get_lookups())
     bad_lookups |= convert_to_bad_lookups(through_field)
 

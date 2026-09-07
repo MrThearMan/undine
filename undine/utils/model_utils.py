@@ -103,7 +103,7 @@ def get_instance_or_raise(*, model: type[TModel], pk: Any) -> TModel:
     """
     Get model instance by the given key with the given primary key.
 
-    :raises GraphQLModelNotFoundError: If an instance for the given primary key does not exists.
+    :raises GraphQLModelNotFoundError: If an instance for the given primary key does not exist.
     """
     try:
         return get_default_manager(model).get(pk=pk)
@@ -115,7 +115,7 @@ async def get_instance_or_raise_async(*, model: type[TModel], pk: Any) -> TModel
     """
     Get model instance by the given key with the given primary key.
 
-    :raises GraphQLModelNotFoundError: If an instance for the given primary key does not exists.
+    :raises GraphQLModelNotFoundError: If an instance for the given primary key does not exist.
     """
     try:
         return await get_default_manager(model).aget(pk=pk)
@@ -142,8 +142,8 @@ def get_instance_by_field_or_raise(*, queryset: QuerySet, field_name: str, value
     """
     Get model instances by the given field and value.
 
-    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exists.
-    :raises GraphQLMultipleModelsFoundError: If an instance for the given field and value matches multiple instances.
+    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exist.
+    :raises GraphQLMultipleModelsFoundError: If the database matches multiple instances for the given field and value.
     """
     try:
         return queryset.get(**{field_name: value})
@@ -157,7 +157,7 @@ async def get_instance_by_field_or_raise_async(*, queryset: QuerySet, field_name
     """
     Get model instances by the given field and value.
 
-    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exists.
+    :raises GraphQLModelFieldNotFoundError: If an instance for the given field and value does not exist.
     :raises GraphQLMultipleModelsFoundError: If an instance for the given field and value matches multiple instances.
     """
     try:
@@ -244,7 +244,7 @@ def generic_foreign_key_for_generic_relation(relation: GenericRelation) -> Gener
 
 
 def get_model(*, name: str, app_label: str | None = None) -> type[Model] | None:
-    """Get model if it exists in the app. Optionally specify 'app_label' for only look in that app."""
+    """Get model if it exists in the app. Optionally specify 'app_label' to only look in that app."""
     if app_label is not None:
         try:
             return apps.get_model(app_label, name)
@@ -319,7 +319,7 @@ def get_many_to_many_through_field(field: ManyToManyField | ManyToManyRel) -> Fo
 
 def get_related_name(related_field: RelatedField | GenericField) -> str:  # pragma: no cover
     """
-    Get by which the relation of this field can be used in:
+    Name by which the relation of this field can be used in:
 
     - Accessing the relation from a model instance: `instance.related_name.all()`
     - Pre-fetching: `qs.select_related("related_name")` or `qs.prefetch_related("related_name")`

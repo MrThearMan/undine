@@ -25,7 +25,7 @@ __all__ = [
 
 def extract_files(variables: dict[str, Any]) -> dict[File, list[str]]:
     """
-    Extract Django File objects paths in the given variables. Replace the file objects with None values.
+    Extract Django File objects and their paths in the given variables. Replace the file objects with None values.
 
     >>> file_1 = File(file=..., name="test_file_1.png")
     >>> file_2 = File(file=..., name="test_file_2.png")

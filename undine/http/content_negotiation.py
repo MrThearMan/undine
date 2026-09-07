@@ -68,7 +68,7 @@ def require_graphql_request_sync(func: SyncViewIn) -> SyncViewOut:
         if media_type is None:
             return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
-        # 'test/html' is reserved for GraphiQL which must use GET
+        # 'text/html' is reserved for GraphiQL which must use GET
         if media_type_match(media_type, text_html):
             if request.method != "GET":
                 return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
@@ -122,7 +122,7 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
         if media_type is None:
             return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
-        # 'test/html' is reserved for GraphiQL which must use GET
+        # 'text/html' is reserved for GraphiQL which must use GET
         if media_type_match(media_type, text_html):
             if request.method != "GET":
                 return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
@@ -193,7 +193,7 @@ def get_preferred_response_content_type(
 
     :param accepted: The accepted media types by the client.
     :param supported: The supported media types, in order of preference.
-    :param all_types_override: Is accepted type is '*/*', match this type instead of the first supported type.
+    :param all_types_override: If accepted type is '*/*', match this type instead of the first supported type.
     """
     if not supported or not accepted:
         return None

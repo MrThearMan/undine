@@ -184,7 +184,7 @@ class FederationField:
         Create a new FederationField.
 
         :param ref: Reference to build the `FederationField` from.
-                    Must be convertable by the `convert_to_federation_field_ref` function.
+                    Must be convertible by the `convert_to_federation_field_ref` function.
         :param many: Whether the `FederationField` should return a non-null list of the referenced type.
         :param nullable: Whether the referenced type can be null.
         :param description: Description for the `FederationField`.

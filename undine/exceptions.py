@@ -95,7 +95,7 @@ class UndineErrorGroup(ExceptionGroup):
         super().__init__(msg, errors)
 
     def flatten(self) -> Generator[Exception, None, None]:
-        """Flattened the errors inside the `UndineErrorGroup`."""
+        """Flatten the errors inside the `UndineErrorGroup`."""
         for error in self.exceptions:
             if isinstance(error, UndineErrorGroup):
                 yield from error.flatten()
@@ -104,7 +104,7 @@ class UndineErrorGroup(ExceptionGroup):
 
 
 class BulkMutateNeedsImplementationError(UndineError):
-    """Error raised if a MutationType '__bulk_mutate__' method is not implemented when its should be."""
+    """Error raised if a MutationType '__bulk_mutate__' method is not implemented when it should be."""
 
     msg = "Must implement '{mutation_type}.__bulk_mutate__' to handle related inputs"
 
@@ -140,7 +140,7 @@ class EmptyFilterResult(UndineError):  # noqa: N818
 
 
 class ExpressionMultipleOutputFieldError(UndineError):
-    """Error raised if no output field cannot be determined for an expression."""
+    """Error raised if an expression has multiple possible output fields."""
 
     msg = (
         "Could not determine an output field for expression {expr!r}. "
@@ -149,7 +149,7 @@ class ExpressionMultipleOutputFieldError(UndineError):
 
 
 class ExpressionNoOutputFieldError(UndineError):
-    """Error raised if no output field cannot be determined for an expression."""
+    """Error raised if an output field cannot be determined for an expression."""
 
     msg = (
         "Could not determine an output field for expression {expr!r}. "
@@ -241,7 +241,7 @@ class FunctionDispatcherImplementationNotFoundError(FunctionDispatcherError):
 
 class FunctionDispatcherImproperLiteralError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with a Literal that has an invalid value.
     """
 
@@ -250,7 +250,7 @@ class FunctionDispatcherImproperLiteralError(FunctionDispatcherError):
 
 class FunctionDispatcherNoArgumentAnnotationError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with a function that doesn't have a type hint for its first argument.
     """
 
@@ -261,7 +261,7 @@ class FunctionDispatcherNoArgumentAnnotationError(FunctionDispatcherError):
 
 class FunctionDispatcherNoArgumentsError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with a function that doesn't have any arguments.
     """
 
@@ -270,7 +270,7 @@ class FunctionDispatcherNoArgumentsError(FunctionDispatcherError):
 
 class FunctionDispatcherNonRuntimeProtocolError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with a protocol that hasn't been decorated with `@runtime_checkable`.
     """
 
@@ -279,7 +279,7 @@ class FunctionDispatcherNonRuntimeProtocolError(FunctionDispatcherError):
 
 class FunctionDispatcherRegistrationError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     that is something other than a function.
     """
 
@@ -288,7 +288,7 @@ class FunctionDispatcherRegistrationError(FunctionDispatcherError):
 
 class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with an unknown argument type.
     """
 
@@ -296,7 +296,7 @@ class FunctionDispatcherUnknownArgumentError(FunctionDispatcherError):
 
 
 class FunctionSignatureParsingError(UndineError):
-    """Error raised if a function is missing type annotations for its parameters."""
+    """Error raised if a function signature cannot be inspected because a type hint is missing at runtime."""
 
     msg = (
         "Type '{name}' is not defined in module '{func:module}'. "
@@ -316,7 +316,7 @@ class InterfaceFieldDoesNotExistError(UndineError):
 
 class InterfaceFieldNodeIDError(UndineError):
     """
-    Error raised when an InterfaceType is trying to inherit Node, but it has a "id" field
+    Error raised when an InterfaceType is trying to inherit Node, but it has an "id" field
     that is not a `NodeIDField`.
     """
 
@@ -465,7 +465,7 @@ class MissingFunctionAnnotationsError(UndineError):
 
 
 class MissingFunctionReturnTypeError(UndineError):
-    """Error raised if a function does not contain a parameter to parse type from."""
+    """Error raised if a function is missing a type hint for its return value."""
 
     msg = "Missing type hint for return value in function '{func:dotpath}'."
 
@@ -498,13 +498,13 @@ class ModelFieldNotARelationError(ModelFieldError):
 
 
 class ModelFieldNotARelationOfModelError(ModelFieldError):
-    """Error raised if a field is not a relation in the given model."""
+    """Error raised if a field is not a relation from the given model to the given related model."""
 
     msg = "Field '{field}' is not a relation from model '{model:dotpath}' to model '{related:dotpath}'."
 
 
 class MutateNeedsImplementationError(UndineError):
-    """Error raised if a MutationType '__mutate__' method is not implemented when its should be."""
+    """Error raised if a MutationType '__mutate__' method is not implemented when it should be."""
 
     msg = "Must implement '{mutation_type}.__mutate__' to handle related inputs"
 
@@ -519,7 +519,7 @@ class MutationInputDataTypesModuleNotSetError(UndineError):
 
 
 class MutationInputDataTypesModuleNoParentError(UndineError):
-    """Error raised if module set by `MUTATION_INPUT_DATA_TYPES_MODULE` is not withing a package."""
+    """Error raised if module set by `MUTATION_INPUT_DATA_TYPES_MODULE` is not within a package."""
 
     msg = "Cannot resolve target file for module '{module_path}': path must include at least one package."
 
@@ -644,7 +644,7 @@ class UnionTypeModelsDifferentError(UndineError):
 
 class UnionTypeMultipleTypesError(FunctionDispatcherError):
     """
-    Error raised when a trying to register an implementation for a `FunctionDispatcher`
+    Error raised when trying to register an implementation for a `FunctionDispatcher`
     with a Union type that has more than one non-null type.
     """
 
@@ -792,7 +792,7 @@ class GraphQLErrorGroup(ExceptionGroup):
 
 
 class GraphQLAPQHashInvalidError(GraphQLStatusError):
-    """Error raised when automated persisted query sent with an invalid hash."""
+    """Error raised when automated persisted query is sent with an invalid hash."""
 
     msg = "Automated Persisted Query hash is invalid."
     status = HTTPStatus.BAD_REQUEST
@@ -800,14 +800,14 @@ class GraphQLAPQHashInvalidError(GraphQLStatusError):
 
 
 class GraphQLAPQHashMissingError(GraphQLStatusError):
-    """Error raised when automated persisted query sent without a hash."""
+    """Error raised when automated persisted query is sent without a hash."""
 
     msg = "Automated Persisted Query hash information is missing."
     status = HTTPStatus.BAD_REQUEST
     code = UndineErrorCodes.APQ_HASH_MISSING
 
 
-class GraphQLAPQNotSuppoertedError(GraphQLStatusError):
+class GraphQLAPQNotSupportedError(GraphQLStatusError):
     """Error raised when automated persisted query is not supported."""
 
     msg = "Automated Persisted Queries are not supported."
@@ -816,7 +816,7 @@ class GraphQLAPQNotSuppoertedError(GraphQLStatusError):
 
 
 class GraphQLAPQVersionInvalidError(GraphQLStatusError):
-    """Error raised when automated persisted query sent with an invalid version."""
+    """Error raised when automated persisted query is sent with an invalid version."""
 
     msg = "Automated Persisted Query version information is invalid."
     status = HTTPStatus.BAD_REQUEST
@@ -824,7 +824,7 @@ class GraphQLAPQVersionInvalidError(GraphQLStatusError):
 
 
 class GraphQLAPQVersionMissingError(GraphQLStatusError):
-    """Error raised when automated persisted query sent without a version."""
+    """Error raised when automated persisted query is sent without a version."""
 
     msg = "Automated Persisted Query version information is missing."
     status = HTTPStatus.BAD_REQUEST
@@ -832,7 +832,7 @@ class GraphQLAPQVersionMissingError(GraphQLStatusError):
 
 
 class GraphQLAPQVersionNotSupportedError(GraphQLStatusError):
-    """Error raised when automated persisted query sent using an unsupported version."""
+    """Error raised when automated persisted query is sent using an unsupported version."""
 
     msg = "Automated Persisted Query version {version} is not supported."
     status = HTTPStatus.BAD_REQUEST
@@ -840,7 +840,7 @@ class GraphQLAPQVersionNotSupportedError(GraphQLStatusError):
 
 
 class GraphQLAsyncAtomicMutationNotSupportedError(GraphQLStatusError):
-    """Error raised when a trying to use atomic mutations with async views."""
+    """Error raised when trying to use atomic mutations with async views."""
 
     msg = "Atomic mutations are not supported when using async views."
     status = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -936,7 +936,7 @@ class GraphQLDataLoaderDidNotReturnSortedSequenceError(GraphQLStatusError):
 
 
 class GraphQLDataLoaderPrimingError(GraphQLStatusError):
-    """Error raised when a trying to prime keys and values of different lengths."""
+    """Error raised when trying to prime keys and values of different lengths."""
 
     msg = "Cannot prime DataLoader from {keys} keys to {values} values"
     status = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -952,7 +952,7 @@ class GraphQLDataLoaderWrongNumberOfValuesReturnedError(GraphQLStatusError):
 
 
 class GraphQLDuplicatePrimaryKeysError(GraphQLStatusError):
-    """Error raised when bulk update did not receive primary keys for all input dicts."""
+    """Error raised when bulk update receives instances with duplicate primary keys."""
 
     msg = "Bulk update received instances with duplicate primary keys: {duplicates}."
     status = HTTPStatus.BAD_REQUEST
@@ -1007,7 +1007,7 @@ class GraphQLIncrementalDeliveryNotRequestedError(GraphQLStatusError):
 
 
 class GraphQLIncrementalDeliveryNotSupportedError(GraphQLStatusError):
-    """Error raised when a incremental delivery is not supported by the server."""
+    """Error raised when incremental delivery is not supported by the server."""
 
     msg = "Incremental delivery over HTTP is not supported."
     status = HTTPStatus.BAD_REQUEST
@@ -1058,7 +1058,7 @@ class GraphQLMissingDocumentError(GraphQLStatusError):
 
 
 class GraphQLMissingDocumentIDError(GraphQLStatusError):
-    """Error raised if persisted document id are missing from the request."""
+    """Error raised if persisted document id is missing from the request."""
 
     msg = "Could not find persisted document based on request data."
     status = HTTPStatus.BAD_REQUEST
@@ -1109,7 +1109,7 @@ class GraphQLMissingQueryError(GraphQLStatusError):
 
 
 class GraphQLModelConstraintViolationError(GraphQLStatusError):
-    """Error raised when a request is made with an unsupported content type."""
+    """Error raised when a mutation violates a model constraint."""
 
     msg = "Model constraint violation"
     status = HTTPStatus.BAD_REQUEST
@@ -1208,7 +1208,7 @@ class GraphQLNodeMissingIDFieldError(GraphQLStatusError):
 
 
 class GraphQLNodeObjectTypeMissingError(GraphQLStatusError):
-    """Error raised when a Node request `id` is for an unrecognized ObjectType."""
+    """Error raised when a Node request `id` is for an ObjectType that does not exist in the schema."""
 
     msg = "Object type '{typename}' does not exist in schema."
     status = HTTPStatus.BAD_REQUEST
@@ -1216,7 +1216,7 @@ class GraphQLNodeObjectTypeMissingError(GraphQLStatusError):
 
 
 class GraphQLNodeQueryTypeMissingError(GraphQLStatusError):
-    """Error raised when a Node request ObjectType does not contain an extension for it's undine QueryType."""
+    """Error raised when a Node request ObjectType does not contain an extension for its undine QueryType."""
 
     msg = "Cannot find undine QueryType from object type '{typename}'."
     status = HTTPStatus.BAD_REQUEST
@@ -1224,7 +1224,7 @@ class GraphQLNodeQueryTypeMissingError(GraphQLStatusError):
 
 
 class GraphQLNodeTypeNotObjectTypeError(GraphQLStatusError):
-    """Error raised when a Node request `id` is for an unrecognized ObjectType."""
+    """Error raised when a Node request `id` is for a type that is not an ObjectType."""
 
     msg = "Node ID type '{typename}' is not an object type."
     status = HTTPStatus.BAD_REQUEST
@@ -1380,7 +1380,7 @@ class GraphQLScalarTypeNotSupportedError(GraphQLStatusError):
 
 class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):
     """
-    Error raised when a SSE request is trying to execute an operation
+    Error raised when an SSE request is trying to execute an operation
     with an ID that already has an operation in the stream.
     """
 
@@ -1390,7 +1390,7 @@ class GraphQLSSEOperationAlreadyExistsError(GraphQLStatusError):
 
 
 class GraphQLSSEOperationIdMissingError(GraphQLStatusError):
-    """Error raised when a SSE request is missing operationId query parameter."""
+    """Error raised when an SSE request is missing operationId query parameter."""
 
     msg = "Operation ID is missing"
     status = HTTPStatus.BAD_REQUEST
@@ -1398,7 +1398,7 @@ class GraphQLSSEOperationIdMissingError(GraphQLStatusError):
 
 
 class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):
-    """Error raised when a SSE request is unauthenticated."""
+    """Error raised when an SSE request is unauthenticated."""
 
     msg = "GraphQL over SSE requires authentication in single connection mode"
     status = HTTPStatus.UNAUTHORIZED
@@ -1406,7 +1406,7 @@ class GraphQLSSESingleConnectionNotAuthenticatedError(GraphQLStatusError):
 
 
 class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):
-    """Error raised when a SSE request is trying to open a stream when it has already been opened."""
+    """Error raised when an SSE request is trying to open a stream when it has already been opened."""
 
     msg = "Stream already open"
     status = HTTPStatus.CONFLICT
@@ -1414,7 +1414,7 @@ class GraphQLSSEStreamAlreadyOpenError(GraphQLStatusError):
 
 
 class GraphQLSSEStreamNotFoundError(GraphQLStatusError):
-    """Error raised when a SSE request when a stream doesn't exist."""
+    """Error raised for an SSE request when a stream doesn't exist."""
 
     msg = "Stream not found"
     status = HTTPStatus.NOT_FOUND
@@ -1422,7 +1422,7 @@ class GraphQLSSEStreamNotFoundError(GraphQLStatusError):
 
 
 class GraphQLSSEStreamNotOpenError(GraphQLStatusError):
-    """Error raised when a SSE request when a stream did not open before the operation timeout."""
+    """Error raised for an SSE request when a stream did not open before the operation timeout."""
 
     msg = "Operation timed out before stream was opened"
     status = HTTPStatus.CONFLICT
@@ -1430,7 +1430,7 @@ class GraphQLSSEStreamNotOpenError(GraphQLStatusError):
 
 
 class GraphQLSSEStreamTokenMissingError(GraphQLStatusError):
-    """Error raised when a SSE request when a stream token is missing."""
+    """Error raised for an SSE request when a stream token is missing."""
 
     msg = "Stream token missing"
     status = HTTPStatus.BAD_REQUEST

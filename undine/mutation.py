@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
     from undine import QueryType
     from undine.typing import (
-        ConvertionFunc,
+        ConversionFunc,
         DefaultValueType,
         DjangoRequestProtocol,
         GQLInfo,
@@ -210,11 +210,11 @@ class MutationTypeMeta(type):
         return query_type.__output_type__()
 
     def __convert_input__(cls, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Enables additional conversion of input data on per-input basis."""
+        """Enables additional conversion of input data on a per-input basis."""
         for key, value in input_data.items():
-            inpt = cls.__input_map__.get(key)
-            if inpt is not None and inpt.convertion_func is not None:
-                input_data[key] = inpt.convertion_func(inpt, value)
+            input_ = cls.__input_map__.get(key)
+            if input_ is not None and input_.conversion_func is not None:
+                input_data[key] = input_.conversion_func(input_, value)
         return input_data
 
 
@@ -325,7 +325,7 @@ class Input:
         """
         Create a new Input.
 
-        :param ref: Reference to build the input from. Must be convertable by the `convert_to_input_ref` function.
+        :param ref: Reference to build the input from. Must be convertible by the `convert_to_input_ref` function.
                     If not provided, use the name of the attribute this is assigned to in the `MutationType` class.
         :param many: Whether the `Input` should return a non-null list of the referenced type.
         :param required: Whether the input should be required.
@@ -363,7 +363,7 @@ class Input:
 
         self.validator_func: ValidatorFunc | None = None
         self.permissions_func: InputPermFunc | None = None
-        self.convertion_func: ConvertionFunc | None = None
+        self.conversion_func: ConversionFunc | None = None
         self.visible_func: VisibilityFunc | None = None
 
     def __connect__(self, mutation_type: type[MutationType], name: str) -> None:
@@ -409,8 +409,8 @@ class Input:
         return f"<{dotpath(self.__class__)}(ref={self.ref!r})>"
 
     def __str__(self) -> str:
-        inpt = self.as_graphql_input_field()
-        return undine_settings.SDL_PRINTER.print_input_field(self.schema_name, inpt, indent=False)
+        input_ = self.as_graphql_input_field()
+        return undine_settings.SDL_PRINTER.print_input_field(self.schema_name, input_, indent=False)
 
     def as_graphql_input_field(self) -> GraphQLInputField:
         return GraphQLInputField(
@@ -458,9 +458,9 @@ class Input:
         self.permissions_func = get_wrapped_func(func)
         return func
 
-    def convert(self, func: ConvertionFunc | None = None, /) -> ConvertionFunc:
+    def convert(self, func: ConversionFunc | None = None, /) -> ConversionFunc:
         """
-        Decorate a function to add it as a convertion function for this Input.
+        Decorate a function to add it as a conversion function for this Input.
 
         >>> class TaskCreateMutation(MutationType[Task]):
         ...     name = Input()
@@ -471,7 +471,7 @@ class Input:
         """
         if func is None:  # Allow `@<input_name>.convert()`
             return self.convert  # type: ignore[return-value]
-        self.convertion_func = get_wrapped_func(func)
+        self.conversion_func = get_wrapped_func(func)
         return func
 
     def visible(self, func: VisibilityFunc | None = None, /) -> VisibilityFunc:
@@ -527,16 +527,16 @@ def get_inputs_for_model(model: type[Model], *, exclude: Container[str] = ()) ->
 def handle_non_hashable_default_values(input_: Input) -> None:
     """
     If the Input's default value is not hashable (i.e. a list or a dict),
-    we need to make a copy of the input value looks like it's the default value.
+    we need to make a copy of the input value that looks like it's the default value.
     Otherwise, mutations could change the default value and cause unexpected behavior.
     """
-    user_func = input_.convertion_func
+    user_func = input_.conversion_func
 
-    def convert(inpt: Input, value: Any) -> Any:
-        if value == inpt.default_value:
+    def convert(input_: Input, value: Any) -> Any:
+        if value == input_.default_value:
             value = copy.deepcopy(value)
         if user_func is not None:
-            value = user_func(inpt, value)
+            value = user_func(input_, value)
         return value
 
-    input_.convertion_func = convert
+    input_.conversion_func = convert

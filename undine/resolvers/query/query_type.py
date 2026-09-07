@@ -54,7 +54,7 @@ class QueryTypeSingleResolver(Generic[TModel]):
         return instance
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         queryset = self.query_type.__get_queryset__(info)
@@ -110,7 +110,7 @@ class QueryTypeManyResolver(Generic[TModel]):
         return instances
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         queryset = self.get_queryset(info)

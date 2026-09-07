@@ -258,7 +258,7 @@ __all__ = [
     "ConnectionAckMessage",
     "ConnectionDict",
     "ConnectionInitMessage",
-    "ConvertionFunc",
+    "ConversionFunc",
     "DirectiveArgumentParams",
     "DirectiveParams",
     "DispatchProtocol",
@@ -395,7 +395,7 @@ RequestMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPT
 
 Lambda = NewType("Lambda", types.FunctionType)
 """
-Type used to register a different implementations for lambda functions
+Type used to register different implementations for lambda functions
 as opposed to a regular function in the FunctionDispatcher.
 """
 
@@ -963,7 +963,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
 
     field_nodes: list[FieldNode]
     """
-    GraphQL AST Field Nodes in the GraphQL operation for which this field is being resolved for.
+    GraphQL AST Field Nodes in the GraphQL operation for which this field is being resolved.
     If the same field is queried with a different alias, it will be resolved separately.
     """
 
@@ -1330,7 +1330,7 @@ class PreSaveParams(TypedDict, Generic[TModel]):
 
     raw: bool
     """
-    Is the model is saved exactly as presented (i.e. when loading a fixture).
+    Whether the model is saved exactly as presented (i.e. when loading a fixture).
     One should not query/modify other records in the database as the database might not be in a consistent state yet.
     """
 
@@ -1348,14 +1348,14 @@ class PostSaveParams(TypedDict, Generic[TModel]):
     """The model whose instance was saved"""
 
     instance: TModel
-    """The instance was saved"""
+    """The instance that was saved"""
 
     created: bool
     """Whether the instance was created or updated"""
 
     raw: bool
     """
-    Is the model is saved exactly as presented (i.e. when loading a fixture).
+    Whether the model is saved exactly as presented (i.e. when loading a fixture).
     One should not query/modify other records in the database as the database might not be in a consistent state yet.
     """
 
@@ -1418,7 +1418,7 @@ class M2MChangedParams(TypedDict):
     """The action being performed on the relation"""
 
     reverse: bool
-    """Whether the reverse relation being modified or not"""
+    """Whether the reverse relation is being modified or not"""
 
     model: type[Model]
     """
@@ -1632,7 +1632,7 @@ InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOr
 ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 FederationFieldPermFunc: TypeAlias = Callable[[_AnyFederationType, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 
-ConvertionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
+ConversionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
 VisibilityFunc: TypeAlias = Callable[[Any, DjangoRequestProtocol], bool]
 
 OptimizerFunc: TypeAlias = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
@@ -1799,10 +1799,10 @@ class GraphQLWebSocketCloseCode(enum.IntEnum):
     # See: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
 
     BAD_REQUEST = 4400
-    """Client has sent and invalid message to the Server."""
+    """Client has sent an invalid message to the Server."""
 
     UNAUTHORIZED = 4401
-    """Client has not received a ConnectionAck response before attempting to sent a Subscribe message."""
+    """Client has not received a ConnectionAck response before attempting to send a Subscribe message."""
 
     FORBIDDEN = 4403
     """Server has rejected the connection init attempt."""

@@ -717,7 +717,7 @@ class OptimizationResults:
         for calculation in self.field_calculations:
             queryset = queryset.annotate(**{calculation.__field_name__: calculation(info)})
 
-        # Note that we want to add the filters as as single Q object to prevent some issues
+        # Note that we want to add the filters as a single Q object to prevent some issues
         # when filters are "spanning multi-valued relationships". See Django documentation here:
         # https://docs.djangoproject.com/en/stable/topics/db/queries/#spanning-multi-valued-relationships
         #

@@ -49,9 +49,9 @@ class OffsetPaginationHandler(PaginationHandler):
         """
         Create a new OffsetPaginationHandler.
 
-        :param offset: Number of item to skip from the start. No offset if `None`.
-        :param limit: Maximum limit for the number of item that can be requested in a page. No limit if `None`.
-        :param page_size: Maximum limit for the number of item that can be requested in a page. No limit if `None`.
+        :param offset: Number of items to skip from the start. No offset if `None`.
+        :param limit: How many items to return in a page. No limit if `None`.
+        :param page_size: The maximum number of items that can be requested in a page. No limit if `None`.
         """
         self.offset: int = offset if offset is not None else 0
         self.limit: int | None = limit if limit is not None else page_size

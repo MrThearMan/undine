@@ -51,7 +51,7 @@ class UndineDefaultSettings(NamedTuple):
     """The path where the GraphQL endpoint is located by default."""
 
     GRAPHQL_VIEW_NAME: str = "graphql"
-    """The name of given to the GraphQL view in the URLconf."""
+    """The name given to the GraphQL view in the URLconf."""
 
     # Flags
 
@@ -117,7 +117,7 @@ class UndineDefaultSettings(NamedTuple):
     """The key to which a union/interface member's own per-implementation order is annotated as a rank."""
 
     PAGINATION_TOTAL_COUNT_KEY: str = "_undine_pagination_total_count"
-    """The key to which the connection's total count annotated to or added to in the queryset hints."""
+    """The key to which the connection's total count is annotated to or added to in the queryset hints."""
 
     # GraphQL execution
 
@@ -146,7 +146,7 @@ class UndineDefaultSettings(NamedTuple):
     """Maximum query complexity that is allowed to be queried in a single operation."""
 
     MAX_TOKENS: int | None = None
-    """Maximum number of tokens the GraphQL parser will parse before it rejects a request"""
+    """Maximum number of tokens the GraphQL parser will parse before it rejects a request."""
 
     MUTATION_INSTANCE_LIMIT: int = 100
     """The maximum number of objects that can be mutated in a single mutation."""
@@ -201,7 +201,7 @@ class UndineDefaultSettings(NamedTuple):
     """The function to use for permission checks for registration of persisted documents."""
 
     PERSISTED_DOCUMENTS_VIEW_NAME: str = "persisted_documents"
-    """The name of given to the persisted documents registration view in the URLconf."""
+    """The name given to the persisted documents registration view in the URLconf."""
 
     # Subscriptions
 
@@ -229,7 +229,7 @@ class UndineDefaultSettings(NamedTuple):
     """The function for specifying custom `Ping` message logic."""
 
     WEBSOCKET_PONG_HOOK: WebSocketConnectionPongHook = "undine.utils.graphql.websocket.pong_hook"  # type: ignore[assignment]
-    """The function to for specifying custom `Pong` message logic."""
+    """The function for specifying custom `Pong` message logic."""
 
     # Server-Sent Events
 
@@ -504,7 +504,7 @@ class UndineDefaultSettings(NamedTuple):
     """The key used to store an `InterfaceField` in the field GraphQL extensions."""
 
     INTERFACE_TYPE_EXTENSIONS_KEY: str = "undine_interface"
-    """The key used to store a `InterfaceType` in the object type GraphQL extensions."""
+    """The key used to store an `InterfaceType` in the object type GraphQL extensions."""
 
     MUTATION_TYPE_EXTENSIONS_KEY: str = "undine_mutation_type"
     """The key used to store a `MutationType` in the argument GraphQL extensions."""
@@ -513,7 +513,7 @@ class UndineDefaultSettings(NamedTuple):
     """The key used to store an `Order` in the argument GraphQL extensions."""
 
     ORDERSET_EXTENSIONS_KEY: str = "undine_orderset"
-    """The key used to store a `OrderSet` in the argument GraphQL extensions."""
+    """The key used to store an `OrderSet` in the argument GraphQL extensions."""
 
     QUERY_TYPE_EXTENSIONS_KEY: str = "undine_query_type"
     """The key used to store a `QueryType` in the object type GraphQL extensions."""

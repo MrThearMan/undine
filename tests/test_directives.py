@@ -685,7 +685,7 @@ def test_cache_rules_directive__str() -> None:
         directive @cacheRules(
           """Whether the value is cached per user or not."""
           cachePerUser: Boolean! = false
-          """How many seconds this field of fields of this type can be cached for."""
+          """How many seconds this field should be cached for."""
           cacheTime: Int!
         ) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
         '''

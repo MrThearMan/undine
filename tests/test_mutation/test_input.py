@@ -243,18 +243,18 @@ def test_input__default_value__not_hashable() -> None:
         foo = Input(list[str], default_value=["123"])
 
     assert TaskCreateMutation.foo.default_value == ["123"]
-    assert TaskCreateMutation.foo.convertion_func is not None
+    assert TaskCreateMutation.foo.conversion_func is not None
 
 
 def test_input__default_value__not_hashable__value_differs() -> None:
     class TaskUpdateMutation(MutationType[Task]):
         foo = Input(list[str], default_value=["123"])
 
-    inpt = TaskUpdateMutation.foo
-    assert inpt.convertion_func is not None
+    input_ = TaskUpdateMutation.foo
+    assert input_.conversion_func is not None
 
     different_value = ["456"]
-    result = inpt.convertion_func(inpt, different_value)
+    result = input_.conversion_func(input_, different_value)
     assert result is different_value
 
 
@@ -266,7 +266,7 @@ def test_input__convert_func() -> None:
         def convert_foo(self, value: str) -> str:
             return value.upper()
 
-    assert TaskCreateMutation.foo.convertion_func is not None
+    assert TaskCreateMutation.foo.conversion_func is not None
 
     assert TaskCreateMutation.__convert_input__({"foo": "abc"}) == {"foo": "ABC"}
 
@@ -315,7 +315,7 @@ def test_input__convert__call_without_args() -> None:
         def name_convert(self, value: str) -> str:
             return value.upper()
 
-    assert TaskCreateMutation.name.convertion_func is not None
+    assert TaskCreateMutation.name.conversion_func is not None
 
 
 def test_input__visible__call_without_args() -> None:
@@ -335,8 +335,8 @@ def test_input__convert_closure__different_value() -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         foo = Input(list[str], default_value=default_value)
 
-    inpt = TaskCreateMutation.foo
-    result = inpt.convertion_func(inpt, default_value)
+    input_ = TaskCreateMutation.foo
+    result = input_.conversion_func(input_, default_value)
 
     assert result == default_value
     assert id(result) != id(default_value)
@@ -352,8 +352,8 @@ def test_input__convert_closure__with_user_func() -> None:
         def foo_convert(self, value: list[str]) -> list[str]:
             return sorted(value)
 
-    inpt = TaskCreateMutation.foo
-    result = inpt.convertion_func(inpt, default_value)
+    input_ = TaskCreateMutation.foo
+    result = input_.conversion_func(input_, default_value)
 
     assert result == default_value
     assert id(result) != id(default_value)

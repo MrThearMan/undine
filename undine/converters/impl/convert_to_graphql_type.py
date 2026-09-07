@@ -319,22 +319,22 @@ def _(ref: type[dict], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
             evaluated_type = eval_type(value, globals_=module_globals)
 
             if is_annotated(evaluated_type):
-                inpt = evaluated_type.__metadata__[0]  # type: ignore[attr-defined]
-                if isinstance(inpt, str):
-                    inpt = Input(description=inpt)
+                input_ = evaluated_type.__metadata__[0]  # type: ignore[attr-defined]
+                if isinstance(input_, str):
+                    input_ = Input(description=input_)
 
-                if not isinstance(inpt, Input):
+                if not isinstance(input_, Input):
                     raise GraphQLTypedDictAnnotatedIncorrectMetadataError(typed_dict=ref, field=key, expected=Input)
 
-                inpt.ref = evaluated_type.__args__[0]  # type: ignore[attr-defined]
+                input_.ref = evaluated_type.__args__[0]  # type: ignore[attr-defined]
 
                 input_fields[to_schema_name(key)] = GraphQLInputField(
-                    convert_to_graphql_type(TypeRef(inpt.ref, total=total), **kwargs),  # type: ignore[arg-type]
-                    default_value=inpt.default_value,
-                    description=inpt.description if inpt.description is not Undefined else None,
-                    deprecation_reason=inpt.deprecation_reason,
+                    convert_to_graphql_type(TypeRef(input_.ref, total=total), **kwargs),  # type: ignore[arg-type]
+                    default_value=input_.default_value,
+                    description=input_.description if input_.description is not Undefined else None,
+                    deprecation_reason=input_.deprecation_reason,
                     out_name=key,
-                    extensions=inpt.extensions,
+                    extensions=input_.extensions,
                 )
                 continue
 

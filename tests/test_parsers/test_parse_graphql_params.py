@@ -15,7 +15,7 @@ from undine.dataclasses import GraphQLHttpParams
 from undine.exceptions import (
     GraphQLAPQHashInvalidError,
     GraphQLAPQHashMissingError,
-    GraphQLAPQNotSuppoertedError,
+    GraphQLAPQNotSupportedError,
     GraphQLAPQVersionInvalidError,
     GraphQLAPQVersionMissingError,
     GraphQLAPQVersionNotSupportedError,
@@ -431,7 +431,7 @@ def test_parse_graphql_params__aqp__not_enabled(undine_settings) -> None:
         body=json.dumps(body).encode("utf-8"),
     )
 
-    with pytest.raises(GraphQLAPQNotSuppoertedError):
+    with pytest.raises(GraphQLAPQNotSupportedError):
         GraphQLRequestParamsParser.run(request)
 
 

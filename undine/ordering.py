@@ -128,7 +128,7 @@ class OrderSetMeta(type):
 
     def __call__(cls, ref: T) -> T:
         """
-        Allow adding this OrderSet to a QueryType using a decorator syntax
+        Allow adding this OrderSet to a QueryType using a decorator syntax.
 
         >>> class TaskOrderSet(OrderSet[Task]): ...
         >>>
@@ -312,7 +312,7 @@ class Order:
         """
         Create a new `Order`.
 
-        :param ref: the expression to order by. Must be convertable by the `convert_to_order_ref` function.
+        :param ref: The expression to order by. Must be convertible by the `convert_to_order_ref` function.
                     If not provided, use the name of the attribute this is assigned to in the `OrderSet` class.
         :param null_placement: Where should null values be placed? By default, use database default.
         :param description: Description of the `Order`.

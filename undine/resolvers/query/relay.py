@@ -123,7 +123,7 @@ class ConnectionResolver(Generic[TModel]):
         return self.to_connection(instances, pagination=pagination)
 
     async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         queryset = await self.run_optimizer_async(info)

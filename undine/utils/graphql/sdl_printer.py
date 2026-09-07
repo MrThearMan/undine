@@ -153,7 +153,7 @@ class SDLPrinter:  # noqa: PLR0904
         non_default_root_types = set(root_types) - {"Query", "Mutation", "Subscription"}
         has_default_root_types = not non_default_root_types
 
-        # The schema definition only needs to be printed if its not the default schema definition.
+        # The schema definition only needs to be printed if it's not the default schema definition.
         if not extend_schema and not description and (not root_types or has_default_root_types) and not has_directives:
             return ""
 

@@ -38,7 +38,7 @@ from undine.exceptions import (
     FunctionSignatureParsingError,
     GraphQLAPQHashInvalidError,
     GraphQLAPQHashMissingError,
-    GraphQLAPQNotSuppoertedError,
+    GraphQLAPQNotSupportedError,
     GraphQLAPQVersionInvalidError,
     GraphQLAPQVersionMissingError,
     GraphQLAPQVersionNotSupportedError,
@@ -772,8 +772,8 @@ class GQLErrorParams(NamedTuple):
             message="Automated Persisted Query hash information is missing.",
             extensions={"error_code": "APQ_HASH_MISSING", "status_code": 400},
         ),
-        GraphQLAPQNotSuppoertedError.__name__: GQLErrorParams(
-            cls=GraphQLAPQNotSuppoertedError,
+        GraphQLAPQNotSupportedError.__name__: GQLErrorParams(
+            cls=GraphQLAPQNotSupportedError,
             args={},
             message="Automated Persisted Queries are not supported.",
             extensions={"error_code": "APQ_NOT_SUPPORTED", "status_code": 400},

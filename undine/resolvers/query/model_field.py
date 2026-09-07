@@ -90,7 +90,7 @@ class ModelAttributeResolver:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ModelSingleRelatedFieldResolver(Generic[TModel]):
-    """Resolves single-related model field to its primary key."""
+    """Resolves a single-related model field to its primary key."""
 
     field: Field
 
@@ -179,7 +179,7 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class ModelGenericForeignKeyResolver(Generic[TModel]):
-    """Resolves generic foreign key field to its related model instance."""
+    """Resolves a generic foreign key field to its related model instance."""
 
     field: Field
 

@@ -113,7 +113,7 @@ def get_websocket_enabled_app(django_application: ASGIHandler) -> Any:  # pragma
 def get_sse_enabled_app(django_application: ASGIHandler) -> Any:  # pragma: no cover
     """
     Create the default routing configuration for supporting GraphQL over Server-Sent Events.
-    Onlt required when using the single connection mode.
+    Only required when using the single connection mode.
 
     >>> # asgi.py
     >>> import os

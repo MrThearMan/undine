@@ -36,7 +36,7 @@ class SubscriptionValueResolver:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class FunctionSubscriptionResolver:
-    """Subscription resolver for a async generator function or async iterable coroutine."""
+    """Subscription resolver for an async generator function or async iterable coroutine."""
 
     func: Callable[..., AsyncGenerator[Any, None] | Coroutine[Any, Any, AsyncIterable[Any]]]
     entrypoint: Entrypoint
@@ -53,7 +53,7 @@ class FunctionSubscriptionResolver:
         return self.subscribe(root, info, **kwargs)
 
     async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[Any]:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         if self.root_param is not None:
@@ -108,7 +108,7 @@ class ModelSaveSubscriptionResolver(Generic[TModel]):
         return self.subscription.query_type
 
     async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         query_type = self.subscription.query_type
@@ -159,7 +159,7 @@ class ModelDeleteSubscriptionResolver(Generic[TModel]):
         return self.subscribe(root, info, **kwargs)
 
     async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         subscriber = self.subscription.create_subscriber()

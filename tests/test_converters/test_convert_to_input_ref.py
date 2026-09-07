@@ -159,10 +159,10 @@ def test_convert_to_input_ref__mutation_type__not_related() -> None:
 
     class TaskCreateMutation(MutationType[Task]): ...
 
-    inpt = Input(ProjectMutation)
+    input_ = Input(ProjectMutation)
 
     with pytest.raises(InvalidInputMutationTypeError):
-        convert_to_input_ref(TaskCreateMutation, caller=inpt)
+        convert_to_input_ref(TaskCreateMutation, caller=input_)
 
 
 def test_convert_to_input_ref__generic_relation() -> None:

@@ -76,9 +76,9 @@ def mutate(
     counter: MutationInstanceCounter | None = None,
 ) -> TModel | list[TModel]:
     """
-    Mutates a instance(s) of the given model using the given input data.
+    Mutates instance(s) of the given model using the given input data.
 
-    New instance can created like this:
+    New instance can be created like this:
 
     >>> instance = mutate(model=Task, data={"name": "New task"})
     >>> instance.name
@@ -225,7 +225,7 @@ class MutationNode:
         return self.instances
 
     def mutate_delete(self) -> list[Model]:
-        """Delete model instance s using the `queryset.delete` method."""
+        """Delete model instances using the `queryset.delete` method."""
         pks = [instance.pk for instance in self.instances]
         with use_delete_signals(self.model, self.instances):
             get_default_manager(self.model).filter(pk__in=pks).delete()
@@ -586,7 +586,7 @@ class MutationNode:
         Disconnect instances for:
 
         - reverse one-to-one, if the relation is updated to another instance
-        - reverse foreign keys relations, if a some of the instances are not updated or picked using pk.
+        - reverse foreign key relations, if some of the instances are not updated or picked using pk.
 
         Do not allow disconnecting if the forward relation is not nullable.
         """
@@ -601,7 +601,7 @@ class MutationNode:
             disconnect_node.field_names.add(rel_info.related_name)  # type: ignore[arg-type]
 
         # For reverse one-to-one relations, existing relation must be disconnected before new relation is added
-        # to satisfy on-to-one constraint.
+        # to satisfy one-to-one constraint.
         node.put_before(
             disconnect_node,
             field_name=f"__disconnect_old_{rel_info.field_name}",
@@ -615,7 +615,7 @@ class MutationNode:
         remove_node.mutation_func = remove_node.mutate_delete
 
         # For reverse one-to-one relations, existing relation must be removed before new relation is added
-        # to satisfy on-to-one constraint.
+        # to satisfy one-to-one constraint.
         node.put_before(
             remove_node,
             field_name=f"__remove_old_{rel_info.field_name}",

@@ -26,7 +26,7 @@ def parse_is_nullable(ref: Any, *, is_input: bool = False, total: bool = True) -
 
     :param ref: The reference to check.
     :param is_input: Whether the reference is for an input or output type.
-    :param total: If the reference is in a TypedDict, whether the TypedDict has totality of not.
+    :param total: If the reference is in a TypedDict, whether the TypedDict has totality or not.
     """
     # GraphQL doesn't differentiate between required and non-null...
     if not total:

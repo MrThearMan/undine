@@ -31,7 +31,7 @@ from undine.utils.reflection import (
     get_wrapped_func,
     sort_by_mro,
 )
-from undine.utils.registy import Registry
+from undine.utils.registry import Registry
 from undine.utils.text import dotpath, get_docstring, to_pascal_case, to_schema_name
 
 if TYPE_CHECKING:
@@ -284,7 +284,7 @@ class Field:
         """
         Create a new Field.
 
-        :param ref: Reference to build the `Field` from. Must be convertable by the `convert_to_field_ref` function.
+        :param ref: Reference to build the `Field` from. Must be convertible by the `convert_to_field_ref` function.
                     If not provided, use the name of the attribute this is assigned to in the `QueryType` class.
         :param many: Whether the `Field` should return a non-null list of the referenced type.
         :param nullable: Whether the referenced type can be null.

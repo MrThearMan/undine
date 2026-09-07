@@ -297,7 +297,7 @@ def is_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
 
 
 def is_not_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
-    """Check if the given type is a TypedDict `Required` type."""
+    """Check if the given type is a TypedDict `NotRequired` type."""
     return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
 
 
@@ -339,7 +339,7 @@ def get_instance_name() -> str:
     Should be used in the '__init__' method.
 
     Note: This only works if the instance initializer is called on the
-    same line as the variable for it's defined to.
+    same line as the variable its defined to.
     """
     frame = sys._getframe(2)
     source = inspect.findsource(frame)[0]
@@ -470,7 +470,7 @@ def cancel_awaitable(value: Awaitable) -> None:
 
 class delegate_to_subgenerator:  # noqa: N801
     """
-    Allows delegating how a generator exists to a subgenerator.
+    Allows delegating how a generator exits to a subgenerator.
 
     >>> def subgenerator():
     ...     for _ in range(2):
@@ -484,14 +484,14 @@ class delegate_to_subgenerator:  # noqa: N801
     >>> for item in generator():
     ...     pass
 
-    If the generator exists normally, the subgenerator will be closed.
-    If the generator exists with an exception, the error is propagated to the subgenerator
+    If the generator exits normally, the subgenerator will be closed.
+    If the generator exits with an exception, the error is propagated to the subgenerator
     so that it may handle the error.
     """
 
     def __init__(self, gen: Generator[None, None, None] | AsyncGenerator[None, None]) -> None:
         """
-        Allows delegating how a generator exists to a subgenerator.
+        Allows delegating how a generator exits to a subgenerator.
 
         :param gen: The generator to delegate to. If generator is an async generator,
                     must use `async with` syntax to delegate. For regular generators,

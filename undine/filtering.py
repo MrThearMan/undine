@@ -144,7 +144,7 @@ class FilterSetMeta(type):
 
     def __call__(cls, ref: T) -> T:
         """
-        Allow adding this FilterSet to a QueryType using a decorator syntax
+        Allow adding this FilterSet to a QueryType using a decorator syntax.
 
         >>> class TaskFilterSet(FilterSet[Task]): ...
         >>>
@@ -166,7 +166,7 @@ class FilterSetMeta(type):
 
     def __build__(cls, filter_data: dict[str, Any], info: GQLInfo) -> FilterResults:
         """
-        Build a list of 'Q' expression from the given filter data to apply to the queryset.
+        Build a list of 'Q' expressions from the given filter data to apply to the queryset.
         Also indicate if 'queryset.distinct()' is needed, what aliases are required,
         or if the filtering should result in an empty queryset.
 
@@ -368,7 +368,7 @@ class Filter:
         """
         Create a new `Filter`.
 
-        :param ref: The expression to filter by. Must be convertable by the `convert_to_filter_ref` function.
+        :param ref: The expression to filter by. Must be convertible by the `convert_to_filter_ref` function.
                     If not provided, use the name of the attribute this is assigned to in the `FilterSet` class.
         :param lookup: The lookup expression to use for the `Filter`.
         :param many: If `True`, the `Filter` will accept a list of values, and filtering will be done by matching
@@ -376,7 +376,7 @@ class Filter:
         :param match: Sets the behavior of `many` so that the filter condition will include an item if it
                       matches either "any", "all", or "one_of" of the provided values.
         :param distinct: Does the `Filter` require `queryset.distinct()` to be used?
-        :param required: Is the `Filter` is a required input?
+        :param required: Is the `Filter` a required input?
         :param empty_values: Values that will be ignored if they are provided as filter values.
         :param description: Description of the `Filter`.
         :param deprecation_reason: If the `Filter` is deprecated, describes the reason for deprecation.
@@ -439,8 +439,8 @@ class Filter:
         return f"<{dotpath(self.__class__)}(ref={self.ref!r}, lookup={self.lookup!r})>"
 
     def __str__(self) -> str:
-        inpt = self.as_graphql_input_field()
-        return undine_settings.SDL_PRINTER.print_input_field(self.schema_name, inpt, indent=False)
+        input_ = self.as_graphql_input_field()
+        return undine_settings.SDL_PRINTER.print_input_field(self.schema_name, input_, indent=False)
 
     def get_expression(self, value: Any, info: GQLInfo) -> Q:
         return self.resolver(self, info, value=value)

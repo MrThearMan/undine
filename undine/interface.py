@@ -38,7 +38,7 @@ __all__ = [
 
 
 class InterfaceTypeMeta(type):
-    """A metaclass that modifies how a `InterfaceType` is created."""
+    """A metaclass that modifies how an `InterfaceType` is created."""
 
     # Set in '__new__'
     __field_map__: dict[str, InterfaceField]
@@ -113,7 +113,7 @@ class InterfaceTypeMeta(type):
 
     def __call__(cls, implementation: type[TInterfaceQueryType]) -> type[TInterfaceQueryType]:
         """
-        Allow iheriting this InterfaceType to a QueryType or another InterfaceType using a decorator syntax.
+        Allow inheriting this InterfaceType to a QueryType or another InterfaceType using a decorator syntax.
 
         >>> class Named(InterfaceType): ...
         >>>

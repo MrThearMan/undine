@@ -297,7 +297,7 @@ class GraphQLOverSSESCHandler:
                 completed = completed or event.event == "complete"
                 await self.signaler.signal_operation_event(stream_token, event.encode())
 
-        # Catch any exception so to make sure client receives a complete event.
+        # Catch any exception to make sure client receives a complete event.
         except (asyncio.CancelledError, Exception):  # noqa: BLE001
             if not completed:
                 # Suppress errors in case it's the signaler that's dead.

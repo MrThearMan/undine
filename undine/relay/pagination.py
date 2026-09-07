@@ -46,9 +46,9 @@ class CursorPaginationHandler(PaginationHandler):
         :param typename: The typename of the GraphQL type to paginate.
         :param after: Cursor value for the last item in the previous page.
         :param before: Cursor value for the first item in the next page.
-        :param first: Number of item to return from the start.
-        :param last: Number of item to return from the end (after applying `first`).
-        :param page_size: Maximum limit for the number of item that can be requested in a page.
+        :param first: Number of items to return from the start.
+        :param last: Number of items to return from the end (after applying `first`).
+        :param page_size: Maximum limit for the number of items that can be requested in a page.
                           No limit if `None`.
         """
         self.typename = typename
@@ -97,7 +97,7 @@ class CursorPaginationHandler(PaginationHandler):
 
         if self.last is not None:
             # Since we don't know the size of the queryset, we can't do `qs[size-self.last:]`.
-            # Since QuerySets don's support negative indexes, we can't do `qs[-self.last:]`.
+            # Since QuerySets don't support negative indexes, we can't do `qs[-self.last:]`.
             # Instead, we reverse the queryset and filter from the end.
             # We then re-reverse it in `get_page`.
             return queryset.reverse()[: self.last + 1]
@@ -181,7 +181,7 @@ class CursorPaginationHandler(PaginationHandler):
             return queryset.filter(**{f"{undine_settings.PAGINATION_INDEX_KEY}__lte": self.first + 1})
 
         if self.last is not None:
-            # Add row numbers in reverse order so that we can starting from the beginning of the queryset.
+            # Add row numbers in reverse order so that we can start from the beginning of the queryset.
             order_by = [copy(descriptor.order_by).reverse_ordering() for descriptor in self.descriptors]  # type: ignore[misc]
             row_number = Window(expression=RowNumber(), partition_by=F(field.remote_field.name), order_by=order_by)
             queryset = queryset.alias(**{undine_settings.PAGINATION_INDEX_KEY: row_number})

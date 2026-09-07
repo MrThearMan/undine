@@ -18,7 +18,7 @@ from graphql import (
 
 from undine.exceptions import GraphQLDuplicateTypeError
 from undine.settings import undine_settings
-from undine.utils.registy import Registry
+from undine.utils.registry import Registry
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection

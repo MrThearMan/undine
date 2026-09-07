@@ -51,7 +51,7 @@ class EntrypointFunctionResolver:
         return result
 
     async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> Any:
-        # Fetch user eagerly so that its available in synchronous parts of the code.
+        # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
         self.set_kwargs(kwargs, root, info)

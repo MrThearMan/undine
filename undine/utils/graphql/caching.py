@@ -72,7 +72,7 @@ def schema_uses_request_caching(schema: GraphQLSchema) -> bool:
 
 
 class RequestCacheCalculator:
-    """Calculated the cache time allowed for the given operation."""
+    """Calculate the cache time allowed for the given operation."""
 
     def __init__(self, operation: OperationDefinitionNode, fragments: dict[str, FragmentDefinitionNode]) -> None:
         self.cache_time: int = -1

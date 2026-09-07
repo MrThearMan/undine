@@ -100,7 +100,7 @@ Arguments:
 
 convert_to_description: FunctionDispatcher[str | None] = FunctionDispatcher()
 """
-Convert the given convert.
+Convert the given reference to a description.
 
 Arguments:
 
@@ -311,7 +311,7 @@ Arguments:
 
 is_input_only: FunctionDispatcher[bool] = FunctionDispatcher()
 """
-Determine whether the given reference is indicates an input-only Input or not.
+Determine whether the given reference indicates an input-only Input or not.
 
 Arguments:
 
@@ -322,7 +322,7 @@ Arguments:
 
 is_input_required: FunctionDispatcher[bool] = FunctionDispatcher()
 """
-Determine whether the give reference indicates a required Input or not.
+Determine whether the given reference indicates a required Input or not.
 
 Arguments:
 
@@ -341,7 +341,7 @@ Arguments:
 
 `model: type[Model] | None`: The Django Model associated with the reference.
 
-`name: str`: A name associated with the reference (e.g. field name)
+`name: str`: A name associated with the reference (e.g. field name).
 """
 
 

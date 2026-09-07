@@ -154,8 +154,8 @@ def is_visible(obj: HasGraphQLExtensions, request: DjangoRequestProtocol) -> boo
             return is_named_type_visible(get_underlying_type(obj.type), request)
 
         case GraphQLInputField():
-            inpt = get_undine_input(obj)
-            if inpt is not None and not is_member_visible(inpt, request):
+            input_ = get_undine_input(obj)
+            if input_ is not None and not is_member_visible(input_, request):
                 return False
 
             ftr = get_undine_filter(obj)

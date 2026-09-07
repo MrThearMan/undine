@@ -101,7 +101,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
             self.handle_selections(member_type, fragment_selections)
 
         # If there is no fragment for some concrete implementation of an interface,
-        # but some fields have been selected from the interface, we still needs to fetch
+        # but some fields have been selected from the interface, we still need to fetch
         # the concrete implementations with the interface fields selected.
         if isinstance(parent_type, GraphQLInterfaceType) and results.field_nodes:
             undine_interface = get_undine_interface_type(parent_type)

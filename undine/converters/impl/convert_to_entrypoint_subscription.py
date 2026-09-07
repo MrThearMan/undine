@@ -25,7 +25,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLFieldResolver | None:
         return None
 
     # We don't know if the function submitted here is actually for a subscription,
-    # or if it returns a something that can be used for subscriptions,
+    # or if it returns something that can be used for subscriptions,
     # but there is no harm in creating the resolver anyway.
     caller: Entrypoint = kwargs["caller"]
     return FunctionSubscriptionResolver(func=ref, entrypoint=caller)
