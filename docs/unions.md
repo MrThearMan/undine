@@ -67,7 +67,7 @@ type Query {
 
 This allows filtering and ordering the different types of models in the `UnionType` separately.
 
-To filter and order _across_ different Models in the `Union`, you can implement
+To filter and order *across* different Models in the `Union`, you can implement
 a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
 for the same Models as the `QueryTypes` in the `UnionType` and add it to the `UnionType`.
 

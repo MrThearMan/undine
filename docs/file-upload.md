@@ -22,7 +22,7 @@ a ["simple request"]{:target="_blank"}.
 Therefore, you should make sure CSRF protection is enabled on the GraphQL endpoint
 if you want to use file uploads. This can be done by making sure that
 
-1. The GraphQL view is decorated with `@csrf_protect`, _OR_
+1. The GraphQL view is decorated with `@csrf_protect`, *OR*
 2. `CsrfViewMiddleware` exists in your `MIDDLEWARE` setting (and the GraphQL view is not decorated with `@csrf_exempt`)
 
 ```python

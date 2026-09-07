@@ -281,7 +281,7 @@ query {
 }
 ```
 
-Note that only the results _inside_ the conditional block will use that logical combinator.
+Note that only the results *inside* the conditional block will use that logical combinator.
 For example, in the following example, only tasks that contains an "e" AND EITHER start with "a"
 OR are done will be returned:
 
@@ -311,8 +311,8 @@ when fetching objects through `QueryTypes` using the given `FilterSet`.
 -8<- "filtering/filterset_filter_queryset.py"
 ```
 
-Note that `QueryTypes` also have a `__filter_queryset__` classmethod, which is run _before_
-any `FilterSet` `Filters`, and that `FilterSet's` `__filter_queryset__` is run _after_.
+Note that `QueryTypes` also have a `__filter_queryset__` classmethod, which is run *before*
+any `FilterSet` `Filters`, and that `FilterSet's` `__filter_queryset__` is run *after*.
 See the Optimizer's [order of operations](optimizer.md#order-of-optimizations) for more details.
 
 ### Schema name
@@ -374,7 +374,7 @@ In GraphQL, a `Filter` represents a `GraphQLInputField` on an `InputObjectType`.
 
 [lookup expression]: https://docs.djangoproject.com/en/stable/topics/db/queries/#field-lookups
 
-A `Filter` always requires a _**reference**_ from which it will create the proper GraphQL resolver
+A `Filter` always requires a **reference** from which it will create the proper GraphQL resolver
 and input type for the `Filter`.
 
 ### Model field references
@@ -527,7 +527,7 @@ that returns a dictionary of expressions and decorate it with the `aliases` deco
 
 ### Empty values
 
-By default, `Filters` will ignore some values which are considered _"empty"_ in the context of filtering.
+By default, `Filters` will ignore some values which are considered *"empty"* in the context of filtering.
 These values are set globally by the [`EMPTY_VALUES`](settings.md#empty_values) setting.
 Usually this is what you want, as it allows you to set default values in your GraphQL variables.
 
@@ -553,7 +553,7 @@ has a different name and type in the GraphQL schema than in the Model.
 ### Schema name
 
 By default, the name of the `InputObjectType` field generated from a `Filter` is the same
-as the name of the `Filter` on the `FilterSet` class (converted to _camelCase_ if
+as the name of the `Filter` on the `FilterSet` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `InputObjectType` field separately,
 you can do so by setting the `schema_name` argument:

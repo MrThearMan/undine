@@ -492,7 +492,7 @@ An `Input` is used to define a possible input in a `MutationType`.
 Usually `Inputs` correspond to fields on the Django Model for their respective `MutationType`.
 In GraphQL, an `Input` represents a `GraphQLInputField` on an `InputObjectType`.
 
-An `Input` always requires a _**reference**_ from which it will create the proper
+An `Input` always requires a **reference** from which it will create the proper
 input type and default value for the `Input`.
 
 ### Model field references
@@ -699,7 +699,7 @@ set this manually, you can set the `required` argument on the `Input`.
 ```
 
 > Note that due to GraphQL implementation details, there is no distinction between
-> _required_ and _nullable_. Therefore, non-required `Inputs` can always accept `null` values,
+> *required* and *nullable*. Therefore, non-required `Inputs` can always accept `null` values,
 > and required inputs cannot accept `null` values.
 
 ### Field name
@@ -716,7 +716,7 @@ This can be useful when the `Input` has a different name and type in the GraphQL
 ### Schema name
 
 By default, the name of the `InputObjectType` field generated from an `Input` is the same
-as the name of the `Input` on the `MutationType` class (converted to _camelCase_ if
+as the name of the `Input` on the `MutationType` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `InputObjectType` field separately,
 you can do so by setting the `schema_name` argument:

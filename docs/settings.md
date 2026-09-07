@@ -43,7 +43,7 @@ Values should be given as the dotted paths to the validation rules used.
 
 Type: `bool` | Default: `False`
 
-Whether to allow the _'did you mean'_ suggestions on error messages.
+Whether to allow the *"did you mean"* suggestions on error messages.
 Disabled by default so that information on the schema structure cannot
 be gained from error messages when trying to find schema entrypoints through
 trial and error (a form of security through obscurity).
@@ -164,7 +164,7 @@ The key used to store a `CalculationArgument` in the `extensions` of its `GraphQ
 
 Type: `bool` | Default: `True`
 
-Should field names be converted from _'snake_case'_ to _'camelCase'_ for the GraphQL schema?
+Should field names be converted from *"snake_case"* to *"camelCase"* for the GraphQL schema?
 Conversion is not applied if `schema_name` is set manually in on the `Entrypoint`, `Field`, `Input`, etc.
 
 ///

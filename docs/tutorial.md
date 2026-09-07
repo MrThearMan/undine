@@ -13,7 +13,7 @@ This should give you familiarity with how Undine works so that
 you can explore the rest of the documentation for more details.
 
 The example application will be a project management system, where users can create
-tasks with multiple steps and add them to projects. _Very exciting!_
+tasks with multiple steps and add them to projects. *Very exciting!*
 The Django project will have a single app called `service` where you'll create
 your models and schema. See the full directory structure below:
 
@@ -246,7 +246,7 @@ query {
 
 ///
 
-Now that you're are using relations, Undine will _automatically_ optimize the database queries
+Now that you're are using relations, Undine will *automatically* optimize the database queries
 for those relations.
 
 ---
@@ -261,8 +261,8 @@ Add the following to the `schema.py` file:
 ```
 
 Undine will know that the [`MutationType`](mutations.md#mutationtypes) `TaskCreateMutation`
-is a create mutation because the class has the word _"create"_ in its name. Similarly,
-having _"update"_ in the name will make an update mutation, and _"delete"_ will make a delete mutation.
+is a create mutation because the class has the word *"create"* in its name. Similarly,
+having *"update"* in the name will make an update mutation, and *"delete"* will make a delete mutation.
 Create, update and delete mutations are executed differently
 (see the [Mutations](mutations.md) section for more details).
 
@@ -301,7 +301,7 @@ Modify the `TaskCreateMutation` by adding a `Project` Input.
 -8<- "tutorial/adding_related_mutation_type.py"
 ```
 
-Here `TaskProjectInput` is a special _"related"_ `kind` of `MutationType`.
+Here `TaskProjectInput` is a special *"related"* `kind` of `MutationType`.
 These `MutationTypes` allow you to freely modify the related objects during the mutation.
 For example, using the above configuration, you could create a `Task` and a `Project` in a single mutation.
 
@@ -554,9 +554,9 @@ query {
 }
 ```
 
-With this query, you should only see `Tasks` that contain the letter "a" _and_ are not done.
+With this query, you should only see `Tasks` that contain the letter "a" *and* are not done.
 
-If you wanted to see _either_ tasks containing the letter a _or_ tasks that are not done,
+If you wanted to see *either* tasks containing the letter a *or* tasks that are not done,
 you could put the filters inside an `OR` block:
 
 ```graphql hl_lines="4 5 6 7"

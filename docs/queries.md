@@ -116,7 +116,7 @@ Now, when the `QueryType` is used in a list `Entrypoint` or many related `Field`
 items that the user doesn't have permission to access will be filtered out.
 For single-item entrypoints or "to-one" relations, a `null` value will be returned
 instead. Note that you'll need to manually check all `Fields` and `Entrypoints`
-where the `QueryType` is used and mark them as _nullable_ if they would otherwise not be.
+where the `QueryType` is used and mark them as *nullable* if they would otherwise not be.
 
 If your permissions check requires data from outside of the GraphQL execution context,
 you should check the [Optimizer](optimizer.md) section on how you can make sure permissions
@@ -240,7 +240,7 @@ A `Field` is used to define a queryable value on a `QueryType`.
 Usually `Fields` correspond to fields on the Django Model for their respective `QueryType`.
 In GraphQL, a `Field` represents a `GraphQLField` on an `ObjectType`.
 
-A `Field` always requires a _**reference**_ from which it will create the proper GraphQL resolver,
+A `Field` always requires a **reference** from which it will create the proper GraphQL resolver,
 output type, and arguments for the `Field`.
 
 ### Model field references
@@ -492,7 +492,7 @@ This can be useful when the `Field` has a different name and type in the GraphQL
 ### Schema name
 
 By default, the name of the `ObjectType` field generated from a `Field` is the same
-as the name of the `Field` on the `QueryType` class (converted to _camelCase_ if
+as the name of the `Field` on the `QueryType` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `ObjectType` field separately,
 you can do so by setting the `schema_name` argument:

@@ -106,11 +106,11 @@ Let's say you the following Model (with `MODELTRANSLATION_LANGUAGES = ("en", "fi
 
 Based on the Model's translation options, `django-modeltranslation` adds additional fields
 for each language defined by the `MODELTRANSLATION_LANGUAGES` setting. Let's call the added fields
-the _"translatable"_ fields, and the fields they are based on the _"translation"_ fields.
+the *"translatable"* fields, and the fields they are based on the _"translation"_ fields.
 
 Using the `MODELTRANSLATION_INCLUDE_TRANSLATABLE` and `MODELTRANSLATION_INCLUDE_TRANSLATIONS`
 settings, you can control which of these fields undine will add to your schema
-when using autogeneration. By default, only the _translation_ fields are added.
+when using autogeneration. By default, only the *translation* fields are added.
 You can of course always add the translatable fields manually.
 
 > Note that due to the way that `django-modeltranslation` works,

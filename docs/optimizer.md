@@ -10,8 +10,8 @@ of database queries that are made when resolving a request.
 
 ## The Problems
 
-Before we take a look at _how_ the optimizer works, let's first
-understand _why_ it exists by going over some common problems
+Before we take a look at *how* the optimizer works, let's first
+understand *why* it exists by going over some common problems
 that arise when using GraphQL to fetch data from a relational database.
 
 ### The N+1 Problem
@@ -83,7 +83,7 @@ try to look up the `Project` from the root `Task` instance it received, but sinc
 
 This means that for the whole query we first fetch all `Tasks`, and then all `Projects`
 and `Steps` for each `Task`. If we had 100 `Tasks`, each of which is linked to a `Project`,
-but also to 10 `Steps`. In total this would result in **_201_** queries to the database!
+but also to 10 `Steps`. In total this would result in ***201*** queries to the database!
 
 It's important to notice that the amount of queries is proportional to the amount of `Tasks` in the database.
 You can imagine how this can get out of hand quickly, especially when you start nesting
@@ -263,7 +263,7 @@ A callback function that will be called after [`order_by`](#order_by), [`distinc
 
 #### `field_calculations`
 
-A list of [`Calculation`](queries.md#calculation-references) _instances_ that should be run
+A list of [`Calculation`](queries.md#calculation-references) *instances* that should be run
 and annotated to the `QuerySet`. Normally, the optimizer will automatically add `Fields`
 using `Calculation` objects to this list.
 

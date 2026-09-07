@@ -128,7 +128,7 @@ usually a field on the Django Model of the `OrderSet` it belongs to.
 In GraphQL, an `Order` represent two `EnumValues` on a GraphQL `Enum`,
 one for ordering in ascending direction and one for ordering in descending direction.
 
-An `Order` always requires a _**reference**_ which it will use to create the
+An `Order` always requires a **reference** which it will use to create the
 Django `OrderBy` expression for the `Order`.
 
 ### Model field references
@@ -210,7 +210,7 @@ has a different name and type in the GraphQL schema than on the Model.
 ### Schema name
 
 By default, the name of the generated `Enum` values for an `Order` use the
-name of the `Order` on the `OrderSet` class (converted to _camelCase_ if
+name of the `Order` on the `OrderSet` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled)
 as a base, with the full names having "Asc" and "Desc" suffixes added.
 If you want to change the base name of the `Enum` value separately,

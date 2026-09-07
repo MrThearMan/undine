@@ -81,7 +81,7 @@ so that a `documentId` corresponding to a document is returned in the same key.
 The keys are not used for anything else.
 
 Response for this view follows the [GraphQL response format],
-so any errors are returned in the _"errors"_ key.
+so any errors are returned in the *"errors"* key.
 
 [GraphQL response format]: https://spec.graphql.org/draft/#sec-Response-Format.Response
 

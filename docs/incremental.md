@@ -19,7 +19,8 @@ all of the following must be true:
 
 [incremental]: https://github.com/graphql/graphql-wg/blob/main/rfcs/DeferStream.md
 
-1. [`graphql-core`][graphql-core]{:target="_blank"} version must be `3.3.0rc0` _exactly_ (later versions may work, but are not tested)
+1. [`graphql-core`][graphql-core]{:target="_blank"} version must be `3.3.0rc0`
+   *exactly* (later versions may work, but are not tested)
 2. [`EXPERIMENTAL_INCREMENTAL_DELIVERY`](settings.md#experimental_incremental_delivery) must be set to `True`
 3. [Async support](async.md) must be enabled
 

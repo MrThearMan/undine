@@ -50,7 +50,7 @@ is always fetched eagerly, even if it's not used in the operation. This allows u
 the request user in synchronous parts of the code without causing an
 error due to using the Django ORM directly in an async context.
 
-Asynchronous execution is also _slightly_ slower than synchronous execution
+Asynchronous execution is also *slightly* slower than synchronous execution
 due to inherent overhead of the asyncio event loop.
 
 See Django's [async documentation]{:target="_blank"} for changes that need to be made

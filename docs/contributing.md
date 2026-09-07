@@ -200,7 +200,7 @@ If you find uncovered code, see if you can remove it, or maybe you simply missed
 You should always need more tests to cover all use cases than to achieve 100% coverage.
 
 Adding `# pragma: no cover` to a line of code will ignore it from coverage results, but this
-should be used _**very**_ sparingly, as this can lead to undocumented behavior if you are not careful.
+should be used ***very*** sparingly, as this can lead to undocumented behavior if you are not careful.
 An example of a line that might be ignored like this is an exception
 that is raised at the end of a match statement, where its cases cover all possible inputs
 (basically a statement that should never be reached).
@@ -229,7 +229,7 @@ Docstrings should be written in [reStructuredText format].
 
 [reStructuredText format]: https://peps.python.org/pep-0287/
 
-Code that is short and _clearly_ self-documenting does not necessarily need a docstring.
+Code that is short and *clearly* self-documenting does not necessarily need a docstring.
 As an example, `def sum(i: int, j: int) -> int: return i + j` does not need a docstring.
 This applies more broadly to arguments, e.g., when a function might need a docstring, the arguments
 might not need explicit documentation.
@@ -249,7 +249,7 @@ hooks manually with `just lint`.
 [prek]: https://prek.j178.dev/
 
 Comments that ignore linting rules (`# type: ignore[...]`, `# fmt: off`, `# noqa: ...`)
-should be used _**very**_ sparingly. They are often not necessary and can lead to
+should be used ***very*** sparingly. They are often not necessary and can lead to
 undocumented behavior if you are not careful.
 
 ## Guidelines for writing documentation

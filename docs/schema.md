@@ -87,11 +87,11 @@ setting.
 
 ## Entrypoints
 
-`Entrypoints` can be thought of as the _"API endpoints inside the GraphQL schema"_
+`Entrypoints` can be thought of as the *"API endpoints inside the GraphQL schema"*
 from which you can execute operations like queries or mutations.
 In GraphQL terms, they are the fields on the `ObjectType` created from a `RootType`
 
-An `Entrypoint` always requires a _**reference**_ from which it will create the
+An `Entrypoint` always requires a **reference** from which it will create the
 proper GraphQL resolver, output type, and arguments for the operation.
 
 ### Function references
@@ -333,7 +333,7 @@ like in the above example, so that queries are optimized.
 ### Schema name
 
 By default, the name of the `ObjectType` field generated from an `Entrypoint` is the same
-as the name of the `Entrypoint` on the `RootType` class (converted to _camelCase_ if
+as the name of the `Entrypoint` on the `RootType` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `ObjectType` field separately,
 you can do so by setting the `schema_name` argument:
@@ -393,7 +393,7 @@ on the interface itself fetches every implementation, since the field is read fr
 
 You can also set the complexity on the `Entrypoint` yourself. This is useful for an `Entrypoint`
 whose reference does not describe its cost, like one that calls an external service.
-Note that this complexity _adds_ to any complexity calculated from the `QueryType's`
+Note that this complexity *adds* to any complexity calculated from the `QueryType's`
 [`Fields`](queries.md#complexity).
 
 ### Caching

@@ -22,18 +22,18 @@ If the directive implies some behavior, you'll need to add it, e.g., using a [`V
 
 Note that declared `Directives` are automatically added to the schema, even if they are not used.
 
-A `Directive` always requires the _**locations**_ it can be used in to be set using the `locations` argument.
-The locations can be divided into two categories: [_executable locations_](#executable-locations)
-and [_type system locations_](#type-system-locations).
+A `Directive` always requires the **locations** it can be used in to be set using the `locations` argument.
+The locations can be divided into two categories: [*executable locations*](#executable-locations)
+and [*type system locations*](#type-system-locations).
 
 ### Executable locations
 
-Executable locations identify places in a GraphQL _document_ (i.e. "request") where a directive can be used.
+Executable locations identify places in a GraphQL *document* (i.e. "request") where a directive can be used.
 See the example below on what these locations are.
 
 #### `QUERY`
 
-The `QUERY` location corresponds to _query_ operation.
+The `QUERY` location corresponds to *query* operation.
 
 ```python
 -8<- "directives/directive_location_query.py"
@@ -53,7 +53,7 @@ query ($pk: Int!) @new {
 
 #### `MUTATION`
 
-The `MUTATION` location corresponds to _mutation_ operation.
+The `MUTATION` location corresponds to *mutation* operation.
 
 ```python
 -8<- "directives/directive_location_mutation.py"
@@ -71,7 +71,7 @@ mutation ($input: CreateTaskMutation!) @new {
 
 #### `SUBSCRIPTION`
 
-The `SUBSCRIPTION` location corresponds to _subscription_ operation.
+The `SUBSCRIPTION` location corresponds to *subscription* operation.
 
 ```python
 -8<- "directives/directive_location_subscription.py"
@@ -199,7 +199,7 @@ query ($pk: Int! @new) {
 
 ### Type system locations
 
-Type system locations identify places in a GraphQL _schema_ (i.e. "API") where a directive can be used.
+Type system locations identify places in a GraphQL *schema* (i.e. "API") where a directive can be used.
 Since Undine is used to define the schema, each type system location corresponds to an Undine
 object that accepts that "type" of directive.
 
@@ -488,7 +488,7 @@ setting.
 
 A `Directive` can optionally have a number of [`DirectiveArguments`](#directiveargument)
 defined in the class body. These define the arguments that can or must be used with the directive.
-A `DirectiveArgument` always requires _input type_ of the argument, which needs to be a GraphQL input type.
+A `DirectiveArgument` always requires *input type* of the argument, which needs to be a GraphQL input type.
 
 ```python
 -8<- "directives/directive_argument.py"
@@ -497,7 +497,7 @@ A `DirectiveArgument` always requires _input type_ of the argument, which needs 
 ### Schema name
 
 By default, the name of the GraphQL directive argument generated from a `DirectiveArgument` is the same
-as the name of the `DirectiveArgument` on the `Directive` class (converted to _camelCase_ if
+as the name of the `DirectiveArgument` on the `Directive` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the GraphQL directive argument separately,
 you can do so by setting the `schema_name` argument:

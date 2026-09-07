@@ -56,7 +56,7 @@ To test that Undine is working, you can run the following command:
 python manage.py check undine
 ```
 
-You should see the message _"System check identified no issues (0 silenced)."_
+You should see the message *"System check identified no issues (0 silenced)."*
 
 Undine requires the `"django.contrib.contenttypes"` app to be installed,
 but there is no need to place `"undine"` in any specific order in the `INSTALLED_APPS` setting.

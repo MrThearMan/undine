@@ -11,7 +11,7 @@ Visibility is used to hide parts of your schema from selected users. Visibility 
    with the same error shape that `graphql-core` produces for genuinely nonexistent types and fields.
 
 Use visibility to control **availability**, not **access**, for example to gradually roll out
-a new field or phase out an old one. _**Visibility is not a security boundary.**_ Treat it as a way to shape
+a new field or phase out an old one. ***Visibility is not a security boundary.*** Treat it as a way to shape
 what the schema looks like, not as a way to protect data.
 
 ## Basic usage

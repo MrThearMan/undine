@@ -87,7 +87,7 @@ type Query {
 
 This allows filtering and ordering the different types of models in the `InterfaceType` separately.
 
-To filter and order _across_ the different Models that implement the `InterfaceType`, you can implement
+To filter and order *across* the different Models that implement the `InterfaceType`, you can implement
 a [`FilterSet`](filtering.md#filterset) or an [`OrderSet`](ordering.md#orderset)
 for the same Models as the `QueryTypes` implementing the `InterfaceType` and add it to the `InterfaceType`.
 
@@ -218,7 +218,7 @@ you can do so by setting the `field_name` argument:
 ### Schema name
 
 By default, the name of the `Interface` field generated from a `InterfaceField` is the same
-as the name of the `InterfaceField` on the `InterfaceType` class (converted to _camelCase_ if
+as the name of the `InterfaceField` on the `InterfaceType` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `Interface` field separately,
 you can do so by setting the `schema_name` argument:
