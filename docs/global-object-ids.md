@@ -35,7 +35,7 @@ type TaskType implements Node {
 }
 ```
 
-Note that most Django models already contain an `id` field for as the primary key of the table,
+Note that most Django models already contain an `id` field as the primary key of the table,
 and that implementing this interface will override it with the _Global Object ID_ field. To access the
 model `id` field, you can use the `pk` field instead.
 

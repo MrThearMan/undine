@@ -31,11 +31,11 @@ and makes an equal number of concurrent HTTP requests to an external API to fetc
 
 The keys which the load function receives for a given GraphQL operation are defined by
 calls to `DataLoader.load`, like in the `pokemon_by_name` `Entrypoint` resolver in the above example.
-Note that the resolver returns a [`Future`][Furure]{:target="_blank"} object from the `DataLoader`,
-and that the function is not async — this is important for the `DataLoader` to work correctly.
+Note that the resolver returns a [`Future`][Future]{:target="_blank"} object from the `DataLoader`,
+and that the function is not async. This is important for the `DataLoader` to work correctly.
 This is discussed more thoroughly in the [Technical Details](#technical-details) section.
 
-[Furure]: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
+[Future]: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future
 
 Given the above setup, if you query `pokemon_by_name` multiple times like this:
 
@@ -60,7 +60,7 @@ The `DataLoader` will run the load function `load_pokemon` once with keys `["pik
 pokemon information for both `slotOne` and `slotTwo`.
 
 Note that the load function needs to return the loaded values in the same order that it received the keys in,
-so that the values can be matched up with the keys by the `DataLoader`. You also cannot return less or more
+so that the values can be matched up with the keys by the `DataLoader`. You also cannot return fewer or more
 values than the number of keys you received.
 
 ### Returning errors
@@ -126,7 +126,7 @@ query {
 ```
 
 The `DataLoader` will run the load function `load_pokemon` once with keys `["pikachu"]` and reuse the result
-for both `slotOne` and `slotTwo`. Reuse will happen even if the load happens in a different batches when
+for both `slotOne` and `slotTwo`. Reuse will happen even if the load happens in different batches when
 a [`max_batch_size`](#max-batch-size) has been set.
 
 If you want to disable reuse, you can set the `reuse_loads` parameter to `False`.
@@ -194,10 +194,10 @@ is also useful when two different objects should be considered equal when loadin
 ## Technical Details
 
 In this section, we'll go over how Undine's `DataLoader` works during a GraphQL operation.
-Knowing these details can help you in debugging `DataLoaders`, but are not necessary
+Knowing these details can help you in debugging `DataLoaders`, but is not necessary
 for getting started with them.
 
-When a `DataLoder` is created, it adds a signal receiver for the `request_finished` signal.
+When a `DataLoader` is created, it adds a signal receiver for the `request_finished` signal.
 This receiver is responsible for clearing the `DataLoader's` [reusable loads](#reusing-loads)
 when a request finishes, freeing up memory. This ensures that you can reuse the same `DataLoader`
 for the next request.
@@ -221,7 +221,7 @@ This batch is then scheduled in the event loop as a [`Task`][asyncio Task]{:targ
 
 [asyncio Task]: https://docs.python.org/3/library/asyncio-task.html#asyncio.Task
 
-Whether a call to `DataLoder.load` returns an existing `Future` or creates a new one,
+Whether a call to `DataLoader.load` returns an existing `Future` or creates a new one,
 the resolver should then return that `Future`. During the execution of a GraphQL operation,
 when a resolver returns an awaitable value (like a coroutine or `Future`), that awaitable
 is wrapped in a coroutine and saved until all other fields have been resolved.
@@ -231,9 +231,9 @@ and any batches are dispatched.
 
 Next, all these resolver coroutines are executed concurrently using [`gather`][asyncio gather]{:target="_blank"},
 which turns them into `Tasks` and schedules them to run in the event loop. Then, the `Future` returned by
-`gather` is awaited, which hands control back to the event loop. The event loop then decides which order
+`gather` is awaited, which hands control back to the event loop. The event loop then decides in which order
 it runs the batch and resolver `Tasks`. In a resolver `Task`, the resolver
-will begin awaiting its awaitable, which in case of `DataLoader` is the `Future` returned by the `load`.
+will begin awaiting its awaitable, which in case of `DataLoader` is the `Future` returned by `load`.
 
 [asyncio gather]: https://docs.python.org/3/library/asyncio-task.html#asyncio.gather
 
@@ -242,17 +242,17 @@ Additionally, all `Futures` in the batch that are waiting for results from the l
 a [done callback]{:target="_blank"} added at this point. This callback will cancel the load function `Task`
 if any of the `Futures` waiting for its results are canceled and all other `Futures` are also done.
 This can happen, for example, when a [`TaskGroup`][asyncio TaskGroup]{:target="_blank"} is canceled
-due to an exception in one of its `Tasks`. Cancelling the load function `Task` in this case ensures that
+due to an exception in one of its `Tasks`. Canceling the load function `Task` in this case ensures that
 it won't use resources that are no longer available (e.g. a database connection).
 
 [done callback]: https://docs.python.org/3/library/asyncio-future.html#asyncio.Future.add_done_callback
 [asyncio TaskGroup]: https://docs.python.org/3/library/asyncio-task.html#asyncio.TaskGroup
 
-The batch `Task` then begins awaiting for the load function `Task` to complete.
+The batch `Task` then begins waiting for the load function `Task` to complete.
 If multiple `DataLoaders` are used in the operation, their batch `Tasks` might also schedule
 their load function `Tasks` in the event loop as well. Then each `DataLoader's`
 load function `Tasks` are executed, until they have all finished running. Then execution
-resumes in the one of the batch `Tasks`, which sets its `Futures` with the results from the load function.
+resumes in one of the batch `Tasks`, which sets its `Futures` with the results from the load function.
 
 After a batch `Task` returns, the resolver `Tasks` that were waiting for the `Futures` to be set
 from this batch can resume and return the `Future` results. The other batch `Tasks` will follow suit

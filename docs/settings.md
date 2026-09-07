@@ -1,5 +1,5 @@
 ---
-description: Documentation on Undine various settings.
+description: Documentation on Undine's various settings.
 ---
 
 # Settings
@@ -55,7 +55,7 @@ Automatically forced to `False` when a schema uses [visibility](visibility.md).
 /// details | `ALLOW_INTROSPECTION_QUERIES`
     attrs: {id: allow_introspection_queries}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Whether schema introspection queries are allowed or not.
 Disabled by default so that information on the schema structure cannot
@@ -122,7 +122,7 @@ Whether mutations can be executed over WebSockets.
 /// details | `ASYNC`
     attrs: {id: async}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Whether to use async view for the GraphQL endpoint or not.
 See Undine's [Async](async.md) documentation for more information.
@@ -132,10 +132,10 @@ See Undine's [Async](async.md) documentation for more information.
 /// details | `AUTOGENERATION`
     attrs: {id: autogeneration}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `MutationTypes`,
-`Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on an individual
+`Filters` for `FilterSets`, and `Orders` for `OrderSets`. Can also be set on individual
 `QueryType`, `MutationType`, `FilterSet`, and `OrderSet` classes.
 
 ///
@@ -143,7 +143,7 @@ Whether to automatically generate `Fields` for `QueryTypes`, `Inputs` for `Mutat
 /// details | `AUTOMATIC_PERSISTED_QUERIES`
     attrs: {id: automatic_persisted_queries}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Whether clients can register persisted documents during the request phase using the APQ protocol.
 See [automatic persisted queries](persisted-documents.md#automatic-persisted-queries) for more information.
@@ -165,7 +165,7 @@ The key used to store a `CalculationArgument` in the `extensions` of its `GraphQ
 Type: `bool` | Default: `True`
 
 Should field names be converted from *"snake_case"* to *"camelCase"* for the GraphQL schema?
-Conversion is not applied if `schema_name` is set manually in on the `Entrypoint`, `Field`, `Input`, etc.
+Conversion is not applied if `schema_name` is set manually on the `Entrypoint`, `Field`, `Input`, etc.
 
 ///
 
@@ -237,7 +237,7 @@ The key used to store a `DirectiveArgument` in the `extensions` of its `GraphQLA
 /// details | `DIRECTIVE_EXTENSIONS_KEY`
     attrs: {id: directive_extensions_key}
 
-Type `str` | Default: `"undine_directive"`
+Type: `str` | Default: `"undine_directive"`
 
 The key used to store a `Directive` in the `extensions` of its `GraphQLDirective`.
 
@@ -246,7 +246,7 @@ The key used to store a `Directive` in the `extensions` of its `GraphQLDirective
 /// details | `DISABLE_ONLY_FIELDS_OPTIMIZATION`
     attrs: {id: disable_only_fields_optimization}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Disable optimizing fetched fields with `queryset.only()`.
 
@@ -255,7 +255,7 @@ Disable optimizing fetched fields with `queryset.only()`.
 /// details | `DOCSTRING_PARSER`
     attrs: {id: docstring_parser}
 
-Type `type[DocstringParserProtocol]` | Default: `"undine.parsers.parse_docstring.RSTDocstringParser"`
+Type: `type[DocstringParserProtocol]` | Default: `"undine.parsers.parse_docstring.RSTDocstringParser"`
 
 The docstring parser to use to parse function docstrings to schema descriptions.
 Should be given as the dotted path to the docstring parser class.
@@ -265,17 +265,17 @@ Should be given as the dotted path to the docstring parser class.
 /// details | `EMPTY_VALUES`
     attrs: {id: empty_values}
 
-Type `Container[Any]` | Default: `(None, "", [], {})`
+Type: `Container[Any]` | Default: `(None, "", [], {})`
 
 By default, if a `Filter` receives any of these values, that filter will be ignored.
-Can be changed on per-`Filter` basis using the [`empty_values`](filtering.md#empty-values) argument.
+Can be changed on a per-`Filter` basis using the [`empty_values`](filtering.md#empty-values) argument.
 
 ///
 
 /// details | `ENABLE_CLASS_ATTRIBUTE_DOCSTRINGS`
     attrs: {id: enable_class_attribute_docstrings}
 
-Type `bool` | Default: `False`
+Type: `bool` | Default: `False`
 
 Whether to parse class attribute docstrings or not.
 Disabled by default to improve performance of the schema creation.
@@ -285,7 +285,7 @@ Disabled by default to improve performance of the schema creation.
 /// details | `ENTRYPOINT_DEFAULT_CACHE_TIME`
     attrs: {id: entrypoint_default_cache_time}
 
-Type `int` | Default: `0`
+Type: `int` | Default: `0`
 
 How many seconds each `Entrypoint` of the `Query` root type can be cached for when it doesn't set
 its own `cache_time`. Set to `0` (default) to cache no `Entrypoint` unless it asks for it.
@@ -296,7 +296,7 @@ See [response caching](caching.md#response-caching) for more information.
 /// details | `ENTRYPOINT_EXTENSIONS_KEY`
     attrs: {id: entrypoint_extensions_key}
 
-Type `str` | Default: `"undine_entrypoint"`
+Type: `str` | Default: `"undine_entrypoint"`
 
 The key used to store an `Entrypoint` in the `extensions` of its `GraphQLField`.
 
@@ -344,7 +344,7 @@ To turn masking off, set this to `"undine.utils.graphql.utils.never_mask_error"`
 /// details | `EXECUTION_CONTEXT_CLASS`
     attrs: {id: execution_context_class}
 
-Type `type[UndineExecutionContext]` | Default: `"undine.execution.UndineExecutionContext"`
+Type: `type[UndineExecutionContext]` | Default: `"undine.execution.UndineExecutionContext"`
 
 GraphQL execution context class used by the schema.
 Should be given as the dotted path to the execution context class.
@@ -432,7 +432,7 @@ The key used to store a `Field` in the `extensions` of its `GraphQLField`.
 
 Type: `bool` | Default: `False`
 
-Whether file uploads are enabled. Should enable CSRF protection on the GraphiQL endpoint if enabled.
+Whether file uploads are enabled. Should enable CSRF protection on the GraphQL endpoint if enabled.
 See [file uploads](file-upload.md) for more information.
 
 ///
@@ -555,14 +555,14 @@ The key used to store an `InterfaceField` in the `extensions` of its `GraphQLFie
 
 Type: `str` | Default: `"undine_interface"`
 
-The key used to store a `InterfaceType` in the `extensions` of its `GraphQLInterfaceType`.
+The key used to store an `InterfaceType` in the `extensions` of its `GraphQLInterfaceType`.
 
 ///
 
 /// details | `LIST_ENTRYPOINT_LIMIT`
     attrs: {id: list_entrypoint_limit}
 
-Type `int | None` | Default: `None`
+Type: `int | None` | Default: `None`
 
 Maximum number of objects that can be returned from a list `Entrypoint` when not using pagination.
 If None, all items are fetched.
@@ -640,7 +640,7 @@ See the [field complexity](queries.md#complexity) documentation for more informa
 /// details | `MAX_TOKENS`
     attrs: {id: max_tokens}
 
-Type `int` | Default: `None`
+Type: `int | None` | Default: `None`
 
 Maximum number of [GraphQL document tokens]{:target="_blank"} the GraphQL parser will
 parse before it rejects a request. By default, this is set to `None` which means no limit.
@@ -683,7 +683,7 @@ Interval in seconds for multipart/mixed HTTP heartbeats. Set to 0 to disable.
 
 Type: `bool` | Default: `True`
 
-Whether to run `model.full_clean()` when creating or updating Model using `MutationTypes`.
+Whether to run `model.full_clean()` when creating or updating a Model using `MutationTypes`.
 Turning this off can reduce the number of database queries during mutations,
 but may introduce issues that would be solved by running full Model validation.
 
@@ -716,11 +716,11 @@ when said `MutationType` is used in `Entrypoints`.
 
 Type: `str | None` | Default: `None`
 
-Dotted module path where the [`test_generate_mutation_input_types`](mutations.md#generating-input-data-types)
+Dotted module path where the [`generate_mutation_input_types`](mutations.md#generating-input-data-types)
 management command writes the generated `TypedDicts` for each `MutationType.__input_map__`.
 For example, `"myproj.gql_input_types"` writes to `myproj/gql_input_types.py`.
 
-The setting is a write target only; it is not imported at runtime. Set it to a module path
+The setting is a write target only. It is not imported at runtime. Set it to a module path
 under one of your Python packages before running the management command.
 
 ///
@@ -739,7 +739,7 @@ The key used to store a `MutationType` in the `extensions` of its `GraphQLInputO
 
 Type: `bool` | Default: `False`
 
-Whether to remove error location information to GraphQL errors.
+Whether to remove error location information from GraphQL errors.
 
 ///
 
@@ -813,7 +813,7 @@ The key used to store an `Order` in the `extensions` of its `GraphQLEnumValue`.
 
 Type: `str` | Default: `"undine_orderset"`
 
-The key used to store a `OrderSet` in the `extensions` of its `GraphQLEnumType`.
+The key used to store an `OrderSet` in the `extensions` of its `GraphQLEnumType`.
 
 ///
 
@@ -822,7 +822,7 @@ The key used to store a `OrderSet` in the `extensions` of its `GraphQLEnumType`.
 
 Type: `str` | Default: `"_undine_pagination_index"`
 
-The key to which a nested pagination indexes are annotated to.
+The key to which nested pagination indexes are annotated.
 
 ///
 
@@ -850,7 +850,7 @@ The maximum number of items to return from a page when paginating.
 
 Type: `str` | Default: `"_undine_pagination_start"`
 
-The key to which a nested pagination start indexes are annotated to.
+The key to which nested pagination start indexes are annotated.
 
 ///
 
@@ -859,7 +859,7 @@ The key to which a nested pagination start indexes are annotated to.
 
 Type: `str` | Default: `"_undine_pagination_stop"`
 
-The key to which a nested pagination stop indexes are annotated to.
+The key to which nested pagination stop indexes are annotated.
 
 ///
 
@@ -868,7 +868,7 @@ The key to which a nested pagination stop indexes are annotated to.
 
 Type: `str` | Default: `"_undine_pagination_total_count"`
 
-The key to which a nested pagination total counts are annotated to.
+The key to which nested pagination total counts are annotated.
 
 ///
 
@@ -915,7 +915,7 @@ The function to use for permission checks for registration of persisted document
 
 Type: `str` | Default: `"persisted_documents"`
 
-The name of given to the persisted documents registration view in the URLconf.
+The name given to the persisted documents registration view in the URLconf.
 
 ///
 
@@ -992,7 +992,7 @@ The cache alias to use for caching requests using the `@cache` directive.
 Type: `Callable[[LifecycleHookContext], dict[str, Any]]` | Default: `"undine.hooks.default_extra_context"`
 
 Function to use for extra context to add to the cache key.
-Value should be given as the dotted paths to the function.
+Value should be given as the dotted path to the function.
 
 ///
 
@@ -1002,7 +1002,7 @@ Value should be given as the dotted paths to the function.
 Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.hooks.should_read_from_cache"`
 
 Function to use for checking if the result should be read from cache.
-Value should be given as the dotted paths to the function.
+Value should be given as the dotted path to the function.
 
 ///
 
@@ -1012,7 +1012,7 @@ Value should be given as the dotted paths to the function.
 Type: `Callable[[LifecycleHookContext], bool]` | Default: `"undine.hooks.should_write_to_cache"`
 
 Function to use for checking if the result should be written to cache.
-Value should be given as the dotted paths to the function.
+Value should be given as the dotted path to the function.
 
 ///
 
@@ -1058,7 +1058,7 @@ from the `root` argument.
 
 Type: `str` | Default: `"undine_scalar"`
 
-The key used to store a Undine `ScalarType` in the `extensions` of its `GraphQLScalarType`.
+The key used to store an Undine `ScalarType` in the `extensions` of its `GraphQLScalarType`.
 
 ///
 
@@ -1204,7 +1204,7 @@ See [Brokers](subscriptions.md#brokers) for the alternatives.
 
 Type: `bool` | Default: `False`
 
-Whether to include the full stacktrace in testing client instead of just the relevant frames
+Whether to include the full stacktrace in the testing client instead of just the relevant frames
 when checking where SQL queries are made.
 
 ///
@@ -1214,7 +1214,7 @@ when checking where SQL queries are made.
 
 Type: `bool` | Default: `False`
 
-Whether to disable the websocket timeouts in testing client.
+Whether to disable the websocket timeouts in the testing client.
 Can be useful in debugging.
 
 ///
@@ -1249,7 +1249,7 @@ so must be set before running migrations for the persisted documents app.
 
 Type: `str` | Default: `"undine_union_type"`
 
-The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
+The key used to store an Undine `UnionType` in the `extensions` of its `GraphQLUnion`.
 
 ///
 
@@ -1258,7 +1258,7 @@ The key used to store a Undine `UnionType` in the `extensions` of its `GraphQLUn
 
 Type: `bool` | Default: `False`
 
-Whether Server-Sent Events should use distinct connections mode even with a HTTP/1.1 connection.
+Whether Server-Sent Events should use distinct connections mode even with an HTTP/1.1 connection.
 Note that when using HTTP/1.1, the maximum number of open connections is limited to 6 per domain
 and browser. That means you will likely hit the limit in a real production environment
 with multiple requests and browser tabs.
@@ -1283,7 +1283,7 @@ Type: `str` | Default: `"undine_visibility_active"`
 
 The key on `schema.extensions` set to `True` when [visibility](visibility.md) is
 detected in the schema. Used internally to install the visibility validation
-rule per schema; you rarely need to read it yourself.
+rule per schema. You rarely need to read it yourself.
 
 ///
 
@@ -1301,7 +1301,7 @@ The cache alias to use for visibility caching.
 
 Type: `Callable[[DjangoRequestProtocol], Any]` | Default: `"undine.utils.visibility.default_visibility_extra_context"`
 
-Function returning any JSON-serialisable extra context added to the cross-request
+Function returning any JSON-serializable extra context added to the cross-request
 [visibility cache](caching.md#visibility-caching) key. Use this when
 per-user visibility depends on more than the user primary key (for example a
 tenant identifier or group membership).
@@ -1323,7 +1323,7 @@ Prefix used for the cross-request [visibility cache](caching.md#visibility-cachi
 Type: `int` | Default: `0`
 
 How many seconds to cache the filtered introspection payload per user context.
-Set to `0` (default) to disable cross-request caching; the per-request visibility
+Set to `0` (default) to disable cross-request caching. The per-request visibility
 memoization still runs.
 
 ///
@@ -1382,7 +1382,7 @@ Value should be given as the dotted path to the function.
 
 Type: `WebSocketConnectionPongHook` | Default: `"undine.utils.graphql.websocket.pong_hook"`
 
-The function to for specifying custom `Pong` message logic.
+The function for specifying custom `Pong` message logic.
 Value should be given as the dotted path to the function.
 
 ///

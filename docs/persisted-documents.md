@@ -30,7 +30,7 @@ Then, add the persisted document registration view to your URL conf:
 ```
 
 Before running migrations, you should have a look at the `PersistedDocument` Model
-in `undine.persisted_documents.model`. This Model can be swapped out with your own
+in `undine.persisted_documents.models`. This Model can be swapped out with your own
 implementation using the [`UNDINE_PERSISTED_DOCUMENTS_MODEL`](settings.md#undine_persisted_documents_model)
 setting, similar to how the `User` model can be swapped out with [`AUTH_USER_MODEL`][AUTH_USER_MODEL]{:target="_blank"}.
 Whether you decide to do this or not, remember to run migrations afterwards.
@@ -41,7 +41,7 @@ Whether you decide to do this or not, remember to run migrations afterwards.
 
 Once the app is installed, Undine is ready to accept persisted documents.
 Persisted documents work through the same GraphQL endpoint used for regular GraphQL requests,
-but instead of a `query` string, you must provide a `documentId` instead.
+but instead of a `query` string, you must provide a `documentId`.
 
 ```json
 {
@@ -80,7 +80,7 @@ setting. The view accepts a dictionary of `documents` like this
 so that a `documentId` corresponding to a document is returned in the same key.
 The keys are not used for anything else.
 
-Response for this view follows the [GraphQL response format],
+The response for this view follows the [GraphQL response format],
 so any errors are returned in the *"errors"* key.
 
 [GraphQL response format]: https://spec.graphql.org/draft/#sec-Response-Format.Response

@@ -92,7 +92,7 @@ or a many-related [`Field`](#fields), its results can be ordered in one of two w
 ### Permissions
 
 You can add a permission check for querying data from a `QueryType` by
-adding a `__permissions__` classmethod it.
+adding a `__permissions__` classmethod to it.
 
 ```python
 -8<- "queries/query_type_permissions.py"
@@ -120,7 +120,7 @@ where the `QueryType` is used and mark them as *nullable* if they would otherwis
 
 If your permissions check requires data from outside of the GraphQL execution context,
 you should check the [Optimizer](optimizer.md) section on how you can make sure permissions
-checks don't cause an excessive database queries.
+checks don't cause excessive database queries.
 
 ### QueryType registry
 
@@ -221,7 +221,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `QueryType` by providing a
+You can provide custom extensions for the `QueryType` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `QueryType`.
 
@@ -334,7 +334,7 @@ Typing these arguments is required to determine their input type.
 A `Calculation` reference is like a combination of [function references](#function-references) and
 [expression references](#expression-references). They can accept data from input arguments
 like a function reference, and return an expression that should be annotated to a queryset
-like an expression reference. A `Calculation` references can be created by subclassing
+like an expression reference. A `Calculation` reference can be created by subclassing
 the `Calculation` class and adding the required `CalculationArguments` to its class body.
 
 ```python
@@ -420,7 +420,7 @@ are overridden by the `Field` permissions.
 ```
 
 Instead of raising an exception, you might want a failed permission check to
-result in a `null` value instead of an error. You can do this overriding the
+result in a `null` value instead of an error. You can do this by overriding the
 `Field's` [resolver](#custom-resolvers) and manually checking the permissions there,
 returning `None` when permission is denied. Note that you'll need to manually set the
 `Field` as [nullable](#nullable) if it would otherwise not be.
@@ -723,7 +723,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `Field` by providing a
+You can provide custom extensions for the `Field` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `Field`.
 

@@ -125,7 +125,7 @@ See the [Pagination](pagination.md) section for more details on pagination.
 
 ### Schema name
 
-By default, the name of the generated GraphQL `Interface` for a `InterfaceType` class
+By default, the name of the generated GraphQL `Interface` for an `InterfaceType` class
 is the name of the `InterfaceType` class. If you want to change the name separately,
 you can do so by setting the `schema_name` argument:
 
@@ -189,7 +189,7 @@ setting.
 When a `QueryType` implements an `InterfaceType`, all of the `InterfaceFields` on
 the `InterfaceType` are converted to `Fields` on the `QueryType`. The converted `Field` must
 correspond to a Model field on the `QueryType` Model, and the `InterfaceField` output type
-must match the GraphQL output type converted from Model field. In other words, all `InterfaceFields`
+must match the GraphQL output type converted from the Model field. In other words, all `InterfaceFields`
 must correspond to Model fields when implemented on a `QueryType`.
 
 An `InterfaceField` always requires its desired GraphQL output type to be defined.
@@ -217,7 +217,7 @@ you can do so by setting the `field_name` argument:
 
 ### Schema name
 
-By default, the name of the `Interface` field generated from a `InterfaceField` is the same
+By default, the name of the `Interface` field generated from an `InterfaceField` is the same
 as the name of the `InterfaceField` on the `InterfaceType` class (converted to *camelCase* if
 [`CAMEL_CASE_SCHEMA_FIELDS`](settings.md#camel_case_schema_fields) is enabled).
 If you want to change the name of the `Interface` field separately,
@@ -268,7 +268,7 @@ See the [Caching](caching.md) section for more details.
 
 ### Directives
 
-You can add directives to the `IntefaceField` by providing them using the `directives` argument.
+You can add directives to the `InterfaceField` by providing them using the `directives` argument.
 The directive must be usable in the `FIELD_DEFINITION` location.
 
 ```python
@@ -285,7 +285,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL Extensions
 
-You can provide custom extensions for the `InterfaceField` by providing a
+You can provide custom extensions for the `InterfaceField` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `InterfaceField`.
 

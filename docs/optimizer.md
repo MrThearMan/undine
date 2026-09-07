@@ -82,7 +82,7 @@ try to look up the `Project` from the root `Task` instance it received, but sinc
 `Project` was not fetched along with the `Task`, it needs to make another query to the database.
 
 This means that for the whole query we first fetch all `Tasks`, and then all `Projects`
-and `Steps` for each `Task`. If we had 100 `Tasks`, each of which is linked to a `Project`,
+and `Steps` for each `Task`. Let's say we had 100 `Tasks`, each of which is linked to a `Project`,
 but also to 10 `Steps`. In total this would result in ***201*** queries to the database!
 
 It's important to notice that the amount of queries is proportional to the amount of `Tasks` in the database.
@@ -114,7 +114,7 @@ For the most part, this is all you need to know about the optimizer. However,
 there are a few things you need to know to not break these optimizations.
 
 Be careful when overriding `Field` resolvers. If you define a custom resolver
-for Model field which uses Model data outside of the field itself,
+for a Model field which uses Model data outside of the field itself,
 those fields may not have been fetched if they are not also part of the query.
 More generally, you need to be careful when using Models outside of the GraphQL context.
 A common place where this may happen is in permission checks, which often need to access
@@ -159,7 +159,7 @@ During field resolving, the `field_name`, `field_nodes`, `return_type` and `pare
 of the resolver info object are different depending on the `ObjectType` being resolved,
 so each `OptimizationData` needs to know how the resolver info would look when its
 `ObjectType` is being resolved. Various methods in Undine get passed this `info` object
-so that users of the library can use it do their own introspections.
+so that users of the library can use it to do their own introspections.
 
 #### `related_field`
 
@@ -169,7 +169,7 @@ The related Model field being optimized. Can be `None` if the `OptimizationData`
 
 If the `OptimizationData` is for a related Model, this links to the
 optimization data of the parent Model. Conversely, the `parent` `OptimizationData`
-has a link this `OptimizationData` using either [`select_related`](#select_related),
+has a link to this `OptimizationData` using either [`select_related`](#select_related),
 [`prefetch_related`](#prefetch_related) or [`generic_prefetches`](#generic_prefetches).
 
 #### `only_fields`
@@ -182,8 +182,8 @@ setting is `True`, these values will be ignored when the optimizations are appli
 #### `aliases`
 
 Contains the Django ORM expressions that will be applied to `QuerySet.alias()`. Various
-methods in Undine can add to these aliases to enable more clearer use of
-for [`annotations`](#annotations).
+methods in Undine can add to these aliases to enable clearer use of
+[`annotations`](#annotations).
 
 #### `annotations`
 
@@ -195,14 +195,14 @@ Contains the Django ORM expressions that will be applied to `QuerySet.annotate()
 Contains `OptimizationData` for related fields that should be fetched together
 using `QuerySet.select_related()`. New related fields should be added using
 [`add_select_related`](#add_select_related) to ensure that the correct references
-are places in both `OptimizationData`.
+are placed in both `OptimizationData`.
 
 #### `prefetch_related`
 
 Contains `OptimizationData` for related fields that should be fetched together
 using `QuerySet.prefetch_related()`. New related fields should be added using
 [`add_prefetch_related`](#add_prefetch_related) to ensure that the correct references
-are places in both `OptimizationData`.
+are placed in both `OptimizationData`.
 
 Note that the key in the mapping can be either the name of the related field,
 or an alias that the data should be fetched with (using `Prefetch(..., to_attr=<alias>)`).
@@ -212,7 +212,7 @@ or an alias that the data should be fetched with (using `Prefetch(..., to_attr=<
 Contains `OptimizationData` for generic foreign keys that should be fetched together
 using `QuerySet.prefetch_related()`. New generic prefetches should be added using
 [`add_generic_prefetch_related`](#add_generic_prefetch_related) to ensure that the correct references
-are places in both `OptimizationData`.
+are placed in both `OptimizationData`.
 
 #### `filters`
 
@@ -259,7 +259,7 @@ A callback function that will be called before [`order_by`](#order_by), [`distin
 
 A callback function that will be called after [`order_by`](#order_by), [`distinct`](#distinct),
 [`filters`](#filters), and [`field_calculations`](#field_calculations) are applied to the
-`QuerySet`. Normally, this is populated using the  `FilterSet.__filter_queryset__` method.
+`QuerySet`. Normally, this is populated using the `FilterSet.__filter_queryset__` method.
 
 #### `field_calculations`
 
@@ -330,7 +330,7 @@ and applied to the queryset taken from `OptimizationResults.queryset_callback`.
 The resulting `Prefetch()` object is added to the parent `OptimizationResults.prefetch_related`.
 
 `generic_prefetch_related` is processed similarly to `prefetch_related`,
-expect a `GenericPrefetch()` object is created instead.
+except a `GenericPrefetch()` object is created instead.
 
 #### Promotion to prefetch
 
@@ -339,7 +339,7 @@ This can happen for one of the following reasons:
 
 1. Any [`annotations`](#annotations) (or [`aliases`](#aliases)) are requested from the relation.
    A prefetch must be made so that the annotation remains available in the related object.
-2. Any [`field_calculations`](#field_calculations) are present. Calculation will become annotations,
+2. Any [`field_calculations`](#field_calculations) are present. Calculations will become annotations,
    so the reason is the same as above.
 3. A `pre_filter_callback` or `post_filter_callback` is needed. Since these callbacks might filter out
    the related object, a prefetch must be done to ensure this. Note that this might result in
@@ -352,7 +352,7 @@ This can happen for one of the following reasons:
 1. If `none` is `True`, return an empty `QuerySet` and exit early.
 2. If `select_related` is not empty, apply them using `QuerySet.select_related()`.
 3. If `prefetch_related` is not empty, apply them using `QuerySet.prefetch_related()`.
-4. If  the [`DISABLE_ONLY_FIELDS_OPTIMIZATION`](settings.md#disable_only_fields_optimization)
+4. If the [`DISABLE_ONLY_FIELDS_OPTIMIZATION`](settings.md#disable_only_fields_optimization)
    setting is `False`, and `only_fields` is not empty, apply them using `QuerySet.only()`.
 5. If `aliases` is not empty, apply them using `QuerySet.alias()`.
 6. If `annotations` is not empty, apply them using `QuerySet.annotate()`.
@@ -360,7 +360,7 @@ This can happen for one of the following reasons:
 8. If `order_by` is not empty, apply them using `QuerySet.order_by()`.
 9. If `distinct` is `True`, call `QuerySet.distinct()`.
 10. If `field_calculations` are not empty, run them and annotate their results to the `QuerySet`.
-11. If `filters` is not empty, apply them using `QuerySet.filter()`
+11. If `filters` is not empty, apply them using `QuerySet.filter()`.
 12. If `post_filter_callback` exists, call it.
 13. If `pagination` data exists, run either `pagination.paginate_queryset()`
     or `pagination.paginate_prefetch_queryset()` depending on whether a `related_field` exists or not.

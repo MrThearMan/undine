@@ -27,7 +27,7 @@ in Python.
 
 ### `Any`
 
-Represent any value accepted by GraphQL. Used for e.g. for [`UnionTypes`](unions.md).
+Represents any value accepted by GraphQL. Used e.g. for [`UnionTypes`](unions.md).
 
 ### `Base16`
 
@@ -79,7 +79,7 @@ Represents any kind of file. See the [file upload](file-upload.md) section.
 ### `IP`
 
 Represents a valid IPv4 or IPv6 address.
-See [RFC 8200](https://datatracker.ietf.org/doc/html/rfc8200){:target="_blank"}.
+See [RFC 8200](https://datatracker.ietf.org/doc/html/rfc8200){:target="_blank"}
 and [RFC 791](https://datatracker.ietf.org/doc/html/rfc791){:target="_blank"}.
 
 ### `IPv4`
@@ -105,7 +105,7 @@ See [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259){:target="_blank"}.
 
 ### `Null`
 
-Represents represents an always null value.
+Represents an always null value.
 Maps to the Python `None` value.
 
 ### `Time`
@@ -127,7 +127,7 @@ See [RFC 9562](https://datatracker.ietf.org/doc/html/rfc9562){:target="_blank"}.
 
 ## Modifying existing scalars
 
-All scalars have two functions that define its operation:
+All scalars have two functions that define their operation:
 
 1. `parse`, which is used to parse incoming data to python types
 2. `serialize`, which is used to serialize python data to GraphQL accepted types
@@ -138,7 +138,7 @@ depending on the type of the input value. Think of them like a dynamic switch st
 This allows you to replace or extend the behavior of a scalar depending on your use case.
 
 For example, you might want to use the [whenever]{:target="_blank"} library instead
-or in addition to python's built-in `datetime`. To do this, you can register a new
+of or in addition to python's built-in `datetime`. To do this, you can register a new
 implementation for the `parse` function of the `DateTime` scalar.
 
 [whenever]: https://github.com/ariebovenberg/whenever

@@ -55,7 +55,7 @@ In addition to the value to convert, the function also accepts the following val
 ### `convert_lookup_to_graphql_type`
 
 This function is used to convert a lookup expression to a GraphQL type.
-It's used in `Filters` to figure out the `Filter's` input type after the its
+It's used in `Filters` to figure out the `Filter's` input type after its
 lookup expression has been added. For example a `__date` lookup changes the expected
 input for a `DateTimeField` `Filter` from `DateTime` to `Date`.
 
@@ -176,7 +176,7 @@ In addition to the value to convert, the function also accepts the following val
 This function is used to convert a given Model field to a list of lookups
 that are not supported by the field, even if the given lookup is registered for it.
 
-For example, if you check `BooleanField.get_lookups()`, it show many generic
+For example, if you check `BooleanField.get_lookups()`, it shows many generic
 lookups registered for the base `Field` class, which don't actually work
 on a `BooleanField` (e.g. `contains` or `iendswith`). This function is used
 to remove those lookups when auto-generating `Filters` for a `FilterSet`.
@@ -252,7 +252,7 @@ For example, a "many-to-many" field would return `True`.
 In addition to the value to convert, the function also accepts the following values:
 
 - `model: type[Model]`: The Django Model associated with the reference.
-- `name: str`: A name associated with the reference (e.g. field name)
+- `name: str`: A name associated with the reference (e.g. field name).
 
 ### `extend_expression`
 
@@ -260,8 +260,8 @@ This function is used to rewrite a Django expression as if it was referenced
 from a given Model field. For example, an `F` expression `F("name")` can be
 rewritten to extend from `field_name` as `F("field_name__name")`, and similarly,
 a `Q(name__exact="foo")` can be rewritten as `Q(field_name__name__exact="foo")`.
-This is used by the optimizer to rewrite expressions from "to-one" fields
-to the fields if the related Model can be fetched using `select_related`.
+This is used by the optimizer to rewrite expressions from related fields
+to the parent model, if the related Model can be fetched using `select_related`.
 
 In addition to the expression to extend, the function also accepts the following values:
 
@@ -276,7 +276,7 @@ function using the `<converter>.register` method.
 -8<- "hacking_undine/registration_class.py"
 ```
 
-With this implementation registered fo the `convert_to_graphql_type` converter,
+With this implementation registered for the `convert_to_graphql_type` converter,
 calling `convert_to_graphql_type(str)` will return a `GraphQLString` object.
 However, calling `convert_to_graphql_type("foo")` will not, since registration
 distinguishes between types and instances of types. To register for an instance,
@@ -298,7 +298,7 @@ using a type union.
 -8<- "hacking_undine/registration_union.py"
 ```
 
-If the implementation of a superclass is can be used for a child class,
+If the implementation of a superclass can be used for a child class,
 you don't need to register implementations for the child class.
 Converters will automatically look up implementations based on the
 method resolution order of a class if an implementation is not found for the
@@ -326,7 +326,7 @@ functions, you can register an implementation for the special `Lambda` type.
 
 You can also register a default implementation for a converter using `Any`.
 Usually this is not needed and should be left for Undine to handle, since
-its likely you want an error to be raised by a converter for an unsupported
+it's likely you want an error to be raised by a converter for an unsupported
 type.
 
 ## When registrations run
@@ -337,7 +337,7 @@ imported *before* any Undine class that relies on it is instantiated. Otherwise,
 dispatch will fail to find the implementation.
 
 Undine's own implementations live in `undine/converters/impl/` and are
-imported automatically when it's Django app is ready, so you never need to
+imported automatically when its Django app is ready, so you never need to
 manage them. For your own registrations there are two supported patterns.
 
 1. Co-locate the reference and its converters
@@ -381,11 +381,11 @@ class MyAppConfig(AppConfig):
         from myapp import converters  # noqa: F401
 ```
 
-Registering the same key twice is not an error — the last registration wins.
+Registering the same key twice is not an error. The last registration wins.
 This is deliberate: it is the sanctioned way to override Undine's own behavior
 for a given reference type without subclassing or monkey-patching. Two
 third-party packages that both register for the same reference will clash
-silently in whichever order their `AppConfig.ready()` runs; Undine does not
+silently in whichever order their `AppConfig.ready()` runs. Undine does not
 arbitrate between them.
 
 ## Supporting new references
@@ -393,7 +393,7 @@ arbitrate between them.
 Using the converters described above, we can extend the functionality of Undine objects
 to support new references by registering new implementations for specific converters.
 A new implementation might not be required for all converters if the new type
-is a subtype of some existing type, which already has a implementation that works for it.
+is a subtype of some existing type, which already has an implementation that works for it.
 
 ### Entrypoints
 

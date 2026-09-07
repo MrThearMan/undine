@@ -133,7 +133,7 @@ Variables are defined at the start of an operation using dollar signs (`$`).
 /// details | `NameNode`
     attrs: {id: name_node}
 
-Hooks `enter_name` and `enter_name` | Node: `graphql.language.ast.NameNode`
+Hooks `enter_name` and `leave_name` | Node: `graphql.language.ast.NameNode`
 
 A `NameNode` is visited for each named entity in the GraphQL document.
 This includes field names, argument names, and type names, etc.
@@ -182,7 +182,7 @@ A `FragmentSpreadNode` is visited for each fragment spread in the GraphQL docume
 
 Hooks `enter_inline_fragment` and `leave_inline_fragment` | Node: `graphql.language.ast.InlineFragmentNode`
 
-A `InlineFragmentNode` is visited for each inline fragment in the GraphQL document.
+An `InlineFragmentNode` is visited for each inline fragment in the GraphQL document.
 
 ///
 
@@ -263,7 +263,7 @@ A `VariableNode` is visited for each variable used in the GraphQL document.
 
 Hooks `enter_int_value` and `leave_int_value` | Node: `graphql.language.ast.IntValueNode`
 
-A `IntValueNode` is visited for each integer value in the GraphQL document.
+An `IntValueNode` is visited for each integer value in the GraphQL document.
 Values can be used in arguments or variables.
 
 ///
@@ -313,7 +313,7 @@ Values can be used in arguments or variables.
 
 Hooks `enter_enum_value` and `leave_enum_value` | Node: `graphql.language.ast.EnumValueNode`
 
-A `EnumValueNode` is visited for each enum value in the GraphQL document.
+An `EnumValueNode` is visited for each enum value in the GraphQL document.
 Values can be used in arguments or variables.
 
 ///
@@ -333,7 +333,7 @@ Values can be used in arguments or variables.
 
 Hooks `enter_object_value` and `leave_object_value` | Node: `graphql.language.ast.ObjectValueNode`
 
-A `ObjectValueNode` is visited for each object value in the GraphQL document.
+An `ObjectValueNode` is visited for each object value in the GraphQL document.
 Values can be used in arguments or variables.
 
 ///
@@ -343,7 +343,7 @@ Values can be used in arguments or variables.
 
 Hooks `enter_object_field` and `leave_object_field` | Node: `graphql.language.ast.ObjectFieldNode`
 
-A `ObjectFieldNode` is visited for each object field in the GraphQL document.
+An `ObjectFieldNode` is visited for each object field in the GraphQL document.
 Values can be used in arguments or variables.
 
 ///
@@ -352,7 +352,7 @@ Values can be used in arguments or variables.
 > the GraphQL schema, but these are not covered in this documentation.
 
 A `ValidationRule` instance has access to the [`ValidationContext`][ValidationContext]{:target="_blank"}
-instance, through which you can access to useful contextual information relative to the visited node.
+instance, through which you can access useful contextual information relative to the visited node.
 For example, you can access the current GraphQL type for the node using `self.context.get_type()`.
 
 [ValidationContext]: https://github.com/graphql-python/graphql-core/blob/main/src/graphql/validation/validation_context.py

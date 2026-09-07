@@ -8,7 +8,7 @@ Here are some common questions you might have when it comes to using Undine
 or why it's designed the way it is. If you don't find an answer here,
 please ask a question on [the discussion page](https://github.com/MrThearMan/undine/discussions).
 
-## Why are all the methods dunder method on, e.g., the `QueryType` class?
+## Why are all the methods dunder methods on, e.g., the `QueryType` class?
 
 This is to avoid name collisions with possible names of `Fields` that
 can be added to the class body of a `QueryType` class. In GraphQL, all names

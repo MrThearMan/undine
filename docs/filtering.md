@@ -4,7 +4,7 @@ description: Documentation on query filtering in Undine.
 
 # Filtering
 
-In this section, we'll cover the everything necessary for filtering
+In this section, we'll cover everything necessary for filtering
 results returned by your [`QueryTypes`](queries.md#querytypes).
 
 ## FilterSet
@@ -282,7 +282,7 @@ query {
 ```
 
 Note that only the results *inside* the conditional block will use that logical combinator.
-For example, in the following example, only tasks that contains an "e" AND EITHER start with "a"
+For example, in the following example, only tasks that contain an "e" AND EITHER start with "a"
 OR are done will be returned:
 
 ```graphql
@@ -352,7 +352,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `FilterSet` by providing a
+You can provide custom extensions for the `FilterSet` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `FilterSet`.
 
@@ -510,7 +510,7 @@ If you want to make a `Filter` required, you can do so by setting the `required`
 -8<- "filtering/filter_required.py"
 ```
 
-Making a `Filter` required means that if any filtering is done on an `Entrypoint` of related `Field`
+Making a `Filter` required means that if any filtering is done on an `Entrypoint` or related `Field`
 using a `QueryType` with the `FilterSet` this `Filter` belongs to, this `Filter` must be used in
 addition to any other `Filters` you might want to use. It must also be used in any logical
 blocks that users might want to make.
@@ -602,7 +602,7 @@ This is for documentation purposes only, and does not affect the use of the `Fil
 
 ### Permissions
 
-You can add permissions check to individual `Filters` by using `Filter` [functions](#function-references)
+You can add permission checks to individual `Filters` by using `Filter` [functions](#function-references)
 and adding the permission check inline.
 
 ```python
@@ -634,7 +634,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `Filter` by providing a
+You can provide custom extensions for the `Filter` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `Filter`.
 

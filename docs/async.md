@@ -4,7 +4,7 @@ description: Documentation on async support for Undine.
 
 # Async support
 
-In this section, we'll cover how you can make you schema support async operations.
+In this section, we'll cover how you can make your schema support async operations.
 
 > Note that asynchronous execution will require an [ASGI capable web server]{:target="_blank"}.
 
@@ -51,9 +51,9 @@ the request user in synchronous parts of the code without causing an
 error due to using the Django ORM directly in an async context.
 
 Asynchronous execution is also *slightly* slower than synchronous execution
-due to inherent overhead of the asyncio event loop.
+due to the inherent overhead of the asyncio event loop.
 
 See Django's [async documentation]{:target="_blank"} for changes that need to be made
-for Django to work in async context.
+for Django to work in an async context.
 
 [async documentation]: https://docs.djangoproject.com/en/stable/topics/async/

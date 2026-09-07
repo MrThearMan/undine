@@ -4,16 +4,16 @@ description: File upload support in Undine.
 
 # File Upload
 
-In this section, we'll cover the everything necessary for adding support for file uploads
+In this section, we'll cover everything necessary for adding support for file uploads
 to your GraphQL schema using the [GraphQL multipart request specification]{:target="_blank"}.
 
 [GraphQL multipart request specification]: https://github.com/jaydenseric/graphql-multipart-request-spec
 
 ## Setup
 
-Undine supports file uploads, but they disabled by default due to security reasons.
+Undine supports file uploads, but they are disabled by default due to security reasons.
 Specifically, since file uploads are sent using a `multipart/form-data` request, they may be sent without
-a [CORS preflight request]{:target="_blank"} if the browser determines the requests meets the criteria for
+a [CORS preflight request]{:target="_blank"} if the browser determines the request meets the criteria for
 a ["simple request"]{:target="_blank"}.
 
 [CORS preflight request]: https://developer.mozilla.org/en-US/docs/Glossary/Preflight_request
@@ -45,7 +45,7 @@ UNDINE = {
 
 Undine has two [Scalars](scalars.md) for uploading files: [`File`](scalars.md#file) and [`Image`](scalars.md#image).
 They correspond to Django's `FileField` and `ImageField` respectively.
-The `File` scalar if for general files while the `Image` scalar validates that the file is an image file.
+The `File` scalar is for general files while the `Image` scalar validates that the file is an image file.
 
 > Like Django's `ImageField`, using the `Image` scalar requires the `Pillow` library to be installed.
 > You can install it together with Undine using `pip install undine[image]`.

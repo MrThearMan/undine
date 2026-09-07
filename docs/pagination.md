@@ -4,7 +4,7 @@ description: Documentation on query pagination in Undine.
 
 # Pagination
 
-In this section, we'll cover the everything necessary for adding pagination
+In this section, we'll cover everything necessary for adding pagination
 to your GraphQL schema. Undine supports both [offset](#offset-pagination)
 and [cursor](#cursor-pagination) based pagination.
 
@@ -105,8 +105,8 @@ see the [GraphQL Cursor Connections Specification]{:target="_blank"}.
 
 [GraphQL Cursor Connections Specification]: https://relay.dev/graphql/connections.htm
 
-To add cursor pagination to a `QueryType`, `UnionType` or `InterfaceType`, `Entrypoint`,
-you need to wrap with the `Connection` class.
+To add cursor pagination to an `Entrypoint`, you need to wrap the `QueryType`,
+`UnionType`, or `InterfaceType` with the `Connection` class.
 
 ```python hl_lines="11"
 -8<- "pagination/connection_entrypoint.py"

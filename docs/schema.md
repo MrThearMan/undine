@@ -5,7 +5,7 @@ description: Documentation on schema root types and entrypoints in Undine.
 # Schema
 
 In this section, we'll cover how you can set up entrypoints
-to you GraphQL schema for executing operations in Undine.
+to your GraphQL schema for executing operations in Undine.
 
 ## RootTypes
 
@@ -72,7 +72,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `RootType` by providing a
+You can provide custom extensions for the `RootType` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `RootType`.
 
@@ -89,7 +89,7 @@ setting.
 
 `Entrypoints` can be thought of as the *"API endpoints inside the GraphQL schema"*
 from which you can execute operations like queries or mutations.
-In GraphQL terms, they are the fields on the `ObjectType` created from a `RootType`
+In GraphQL terms, they are the fields on the `ObjectType` created from a `RootType`.
 
 An `Entrypoint` always requires a **reference** from which it will create the
 proper GraphQL resolver, output type, and arguments for the operation.
@@ -138,7 +138,7 @@ Typing these arguments is required to determine their input type.
 This will add a non-null `name` string argument to the `Entrypoint`.
 Note that non-null arguments are required by GraphQL, so if you wanted to make the argument
 optional, you'd need to make it nullable (in which case it will be `None` by default)
-or add a default value ourselves.
+or add a default value yourself.
 
 ```python
 -8<- "schema/entrypoint_arguments_2.py"
@@ -156,7 +156,7 @@ If the method has arguments, you can add descriptions to those arguments by usin
 
 /// details | What about other docstring formats?
 
-Other types of docstrings can be used by parsed by providing a custom parser to the
+Other types of docstrings can be parsed by providing a custom parser to the
 [`DOCSTRING_PARSER`](settings.md#docstring_parser) setting that conforms to the
 `DocstringParserProtocol` from `undine.typing`.
 
@@ -183,7 +183,7 @@ type Query {
 }
 ```
 
-To crete an Entrypoint for listing all instances of the Model,
+To create an Entrypoint for listing all instances of the Model,
 add the `many` argument to the `Entrypoint`.
 
 ```python
@@ -321,7 +321,7 @@ e.g., "name" in the example above.
 
 When overriding the resolver for `Entrypoints` based on `QueryTypes`,
 the `QueryType's` [FilterSet](filtering.md#filterset) and [OrderSet](ordering.md#orderset)
-will not be available on the `Entrypoint`
+will not be available on the `Entrypoint`.
 
 Overriding the resolver for `Entrypoints` using `MutationTypes` is not recommended,
 as it bypasses the whole mutation process and many `MutationType` functions will not work.
@@ -439,7 +439,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `Entrypoint` by providing a extensions
+You can provide custom extensions for the `Entrypoint` by providing an extensions
 argument with a dictionary containing them. These can then be used however you wish to
 extend the functionality of the `Entrypoint`.
 

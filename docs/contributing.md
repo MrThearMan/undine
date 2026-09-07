@@ -61,7 +61,7 @@ If you want multiple issues solved, make separate pull requests for each.
 Corrections for spelling mistakes are the exception, since I make so many of those...
 
 Pull requests should be kept as small as possible while following the guidelines
-mentioned above. Smaller pull request are easier to review and test which helps
+mentioned above. Smaller pull requests are easier to review and test which helps
 them get merged.
 
 ## Code review process
@@ -82,7 +82,7 @@ Don't be afraid to ask for advice if you're unsure what is wrong.
 
 In the manual phase, I will review the pull request by adding comments with suggestions
 for changes. If you agree with the suggestions, implement them and push the changes to
-you fork — the pull request will be updated automatically. You can either amend your previous
+your fork. The pull request will be updated automatically. You can either amend your previous
 commits or add more commits, either is fine. If you disagree with the suggestions, provide
 your reasons for disagreeing and we can discuss what to do.
 
@@ -125,10 +125,10 @@ Run `just help` to list all existing development commands and their descriptions
 ## Testing
 
 Tests can be run with `just test` and individual tests with `just test <test_name>`.
-This will run tests in you [local environment](#setting-up-the-environment).
+This will run tests in your [local environment](#setting-up-the-environment).
 
 You can also test your code in multiple environments with [nox]. To do this, you must
-install python interpreters for all python version the library supports and then run
+install python interpreters for all python versions the library supports and then run
 `just nox`.
 
 [nox]: https://github.com/wntrblm/nox
@@ -194,7 +194,7 @@ up under errors.
 
 ### All code should be tested with 100% coverage
 
-Do not write tests simply to archive 100% coverage. Instead, try to write tests for all the ways the
+Do not write tests simply to achieve 100% coverage. Instead, try to write tests for all the ways the
 feature could be used (use cases), including ways that should not work, and then test for coverage.
 If you find uncovered code, see if you can remove it, or maybe you simply missed a use case.
 You should always need more tests to cover all use cases than to achieve 100% coverage.
@@ -216,7 +216,7 @@ In these cases, the type should be added to the `undine/typing.py` file, so that
 import logic between the backport and the standard library is contained in one place.
 
 Create all custom types in `undine/typing.py` and import them from there.
-This helps avoids circular imports and prevents creating duplicate types.
+This helps avoid circular imports and prevents creating duplicate types.
 
 Use of `TypedDict` is encouraged where dicts would be used.
 
@@ -236,13 +236,13 @@ might not need explicit documentation.
 
 Keep the docstring to the point. Each line of documentation has a maintenance cost.
 Documentation is not an excuse to write code that is hard to understand.
-Docstrings can include code examples, but longer one should be written to [docs].
+Docstrings can include code examples, but longer ones should be written to [docs].
 
 [docs]: https://undine-graphql.dev/
 
-### All code should be linted using the projects lint rules
+### All code should be linted using the project's lint rules
 
-Easiest way to do this is to install the [prek] hooks with `just hook`. This will make
+The easiest way to do this is to install the [prek] hooks with `just hook`. This will make
 sure the hooks will run automatically when you make a commit. You can also run
 hooks manually with `just lint`.
 
@@ -255,7 +255,7 @@ undocumented behavior if you are not careful.
 ## Guidelines for writing documentation
 
 - All documentation is written in `docs/` using markdown, and built with [zensical]
-- Write in idiomatic english, using simple language
+- Write in idiomatic English, using simple language
 - Keep examples simple and self-contained
 - Give the reader time to understand the basics before going over edge cases and configurations
 - Use markdown features, like [fenced code blocks], [blockquotes], [horizontal rules],

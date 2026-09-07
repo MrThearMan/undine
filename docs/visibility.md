@@ -100,7 +100,7 @@ Hides every `Entrypoint`, `Field`, `InterfaceField`, and `FederationField` that
 returns it, every `MutationType` that has it as its output type, and removes it
 from any `UnionType`'s member list. Cascade is transitive, so a `MutationType`
 hidden this way in turn hides any `Input` or `Entrypoint` that references it.
-`FilterSet` and `OrderSet` connected to the `QueryType` are hidden if not
+`FilterSet` and `OrderSet` connected to the `QueryType` are hidden if no
 other entrypoint references them.
 
 ### `Field`
@@ -252,7 +252,7 @@ request can't see are filtered out of the response.
 The `_service { sdl }` payload is **not** filtered, however. It always returns the full
 subgraph SDL because the router uses it to compose the supergraph, and composition needs
 a stable, request-independent view of the schema. Per-request visibility on federation
-types therefore doesn't propagate to clients through the supergraph — the router remains
+types therefore doesn't propagate to clients through the supergraph. The router remains
 the source of truth for what clients see.
 
 For hiding a federation element from the supergraph entirely, use the
@@ -272,7 +272,7 @@ cached on its own. See [visibility caching](caching.md#visibility-caching) for m
   cannot suspend on `await`. If your visibility check needs data that is only
   reachable through an async fetch, resolve it using a [lifecycle hook](lifecycle-hooks.md)
   and store the result on the request object.
-- **Fail-closed on exception.** If a hook raises, the entity is treated as hidden
+- **Fail-closed on exception.** If a hook raises, the entity is treated as hidden.
 - **"did you mean" suggestions.** Auto-disabled globally when any schema uses
   visibility so hidden entities never leak through error messages. This is equivalent to setting
   [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) to `False`.

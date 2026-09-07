@@ -112,7 +112,7 @@ UNDINE = {
 
 /// details | How do I determine the value for `SCHEMA`?
 
-The value for `SCHEMA` is a "dotted import path" — a string that can be imported with Django's
+The value for `SCHEMA` is a "dotted import path", a string that can be imported with Django's
 [`import_string`][import_string]{:target="_blank"} utility. In other words,
 `"service.schema.schema"` points to a file `service/schema.py` with a variable `schema`.
 
@@ -203,15 +203,15 @@ Create and run migrations for these Models, then create some data for them:
 >>> task_1.save()
 >>> task_2.project = project_2
 >>> task_2.save()
->>> step_1 = Step.objects.create(name="Step 1", done=false, task=task_1)
->>> step_2 = Step.objects.create(name="Step 2", done=true, task=task_1)
->>> step_3 = Step.objects.create(name="Step 3", done=false, task=task_2)
->>> step_4 = Step.objects.create(name="Step 4", done=true, task=task_3)
->>> step_5 = Step.objects.create(name="Step 5", done=true, task=task_3)
+>>> step_1 = Step.objects.create(name="Step 1", done=False, task=task_1)
+>>> step_2 = Step.objects.create(name="Step 2", done=True, task=task_1)
+>>> step_3 = Step.objects.create(name="Step 3", done=False, task=task_2)
+>>> step_4 = Step.objects.create(name="Step 4", done=True, task=task_3)
+>>> step_5 = Step.objects.create(name="Step 5", done=True, task=task_3)
 ```
 
 Then, add these Models to your schema by creating a `QueryType` for each of them.
-Your can also link the `QueryTypes` to each other by adding `Fields` for the Model related fields.
+You can also link the `QueryTypes` to each other by adding `Fields` for the Model related fields.
 
 ```python hl_lines="6 7 8 9 17 18 21 22 23 24 25"
 -8<- "tutorial/adding_more_query_types.py"
@@ -246,7 +246,7 @@ query {
 
 ///
 
-Now that you're are using relations, Undine will *automatically* optimize the database queries
+Now that you're using relations, Undine will *automatically* optimize the database queries
 for those relations.
 
 ---
@@ -592,7 +592,7 @@ and add it to your `TaskType`.
 Now all `Entrypoints` created from this `QueryType` will have an `orderBy` argument that contains
 the ordering options defined by the `OrderSet`.
 
-Adding an ordering enables you to order by that fields in both ascending and descending directions.
+Adding an ordering enables you to order by that field in both ascending and descending directions.
 Boot up the Django server and make the following request:
 
 ```graphql

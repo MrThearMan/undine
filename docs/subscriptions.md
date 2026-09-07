@@ -13,7 +13,7 @@ your GraphQL Schema.
 To use subscriptions, you'll need to turn on Undine's [async support](async.md),
 as subscription resolvers are always async. Then, you have three options
 for a transport protocol: [WebSockets](#websockets), [Server-Sent Events](#server-sent-events),
-or [Multipart HTTP](#multipart-http)
+or [Multipart HTTP](#multipart-http).
 
 ### WebSockets
 
@@ -21,7 +21,7 @@ WebSockets use a persistent TCP connection between the client and server.
 They have broad client library support in the GraphQL ecosystem, making them
 a good choice when your client tooling expects WebSocket-based subscriptions.
 
-To use WebSockets, you'll need use Undine's [`channels` integration](integrations.md#channels).
+To use WebSockets, you'll need to use Undine's [`channels` integration](integrations.md#channels).
 See the [GraphQL over WebSocket protocol]{:target="_blank"} for details on how the protocol works.
 
 [GraphQL over WebSocket protocol]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/GraphQLOverWebSocket.md
@@ -135,8 +135,8 @@ type Subscription {
 }
 ```
 
-Using this subscription, you'll receive the following response 10 times on 1 second intervals,
-while the value of the `countdown` field is decreases from 10 to 1.
+Using this subscription, you'll receive the following response 10 times at 1 second intervals,
+while the value of the `countdown` field decreases from 10 to 1.
 
 ```json
 {
@@ -196,7 +196,7 @@ not used as the `Entrypoint` reference itself. Otherwise, they work similarly to
 
 ## Signal subscriptions
 
-Undine also supports creating subscriptions for [Django signals]{:target="blank"}
+Undine also supports creating subscriptions for [Django signals]{:target="_blank"}
 using `SignalSubscriptions`. For example, if you wanted to listen to new `Tasks`
 being created, you could add a `ModelCreateSubscription` for the `Task` Model like this.
 
@@ -206,7 +206,7 @@ being created, you could add a `ModelCreateSubscription` for the `Task` Model li
 -8<- "subscriptions/subscription_signals.py"
 ```
 
-Similar subscriptions exists for Model updates (`ModelUpdateSubscription`), deletes (`ModelDeleteSubscription`),
+Similar subscriptions exist for Model updates (`ModelUpdateSubscription`), deletes (`ModelDeleteSubscription`),
 and overall saves (`ModelSaveSubscription`). These subscriptions return data through `QueryTypes`
 so queries to them are optimized just like any other query.
 

@@ -4,7 +4,7 @@ description: Documentation on query ordering in Undine.
 
 # Ordering
 
-In this section, we'll cover the everything necessary for ordering
+In this section, we'll cover everything necessary for ordering
 results returned by your [`QueryTypes`](queries.md#querytypes).
 
 ## OrderSet
@@ -34,7 +34,7 @@ You can also add the `OrderSet` to the `QueryType` using decorator syntax.
 ### Auto-generation
 
 An `OrderSet` can automatically introspect its Django Model and convert the Model's fields
-to `Orders` on the `OrderSet`.  For example, if the `Task` Model has the following fields:
+to `Orders` on the `OrderSet`. For example, if the `Task` Model has the following fields:
 
 ```python
 -8<- "ordering/models_1.py"
@@ -64,7 +64,7 @@ With this, you can leave the `OrderSet` class body empty.
 -8<- "ordering/orderset_auto.py"
 ```
 
-Your can exclude some model fields from the auto-generation by setting the `exclude` argument:
+You can exclude some model fields from the auto-generation by setting the `exclude` argument:
 
 ```python
 -8<- "ordering/orderset_exclude.py"
@@ -107,7 +107,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `OrderSet` by providing a
+You can provide custom extensions for the `OrderSet` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `OrderSet`.
 
@@ -125,7 +125,7 @@ setting.
 An `Order` defines a way of ordering the results returned by an `Entrypoint` or `Field` using a `QueryType`.
 An `Order` corresponds to anything that can be passed to a `queryset.order_by()` call,
 usually a field on the Django Model of the `OrderSet` it belongs to.
-In GraphQL, an `Order` represent two `EnumValues` on a GraphQL `Enum`,
+In GraphQL, an `Order` represents two `EnumValues` on a GraphQL `Enum`,
 one for ordering in ascending direction and one for ordering in descending direction.
 
 An `Order` always requires a **reference** which it will use to create the
@@ -162,7 +162,7 @@ is different from the Model field name.
 
 ### Expression references
 
-Django ORM expressions can also be used as `Filter` references.
+Django ORM expressions can also be used as `Order` references.
 
 ```python
 -8<- "ordering/order_expression.py"
@@ -266,7 +266,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `Order` by providing a
+You can provide custom extensions for the `Order` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `Order`.
 

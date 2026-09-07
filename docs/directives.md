@@ -33,7 +33,7 @@ See the example below on what these locations are.
 
 #### `QUERY`
 
-The `QUERY` location corresponds to *query* operation.
+The `QUERY` location corresponds to a *query* operation.
 
 ```python
 -8<- "directives/directive_location_query.py"
@@ -53,7 +53,7 @@ query ($pk: Int!) @new {
 
 #### `MUTATION`
 
-The `MUTATION` location corresponds to *mutation* operation.
+The `MUTATION` location corresponds to a *mutation* operation.
 
 ```python
 -8<- "directives/directive_location_mutation.py"
@@ -71,7 +71,7 @@ mutation ($input: CreateTaskMutation!) @new {
 
 #### `SUBSCRIPTION`
 
-The `SUBSCRIPTION` location corresponds to *subscription* operation.
+The `SUBSCRIPTION` location corresponds to a *subscription* operation.
 
 ```python
 -8<- "directives/directive_location_subscription.py"
@@ -244,7 +244,7 @@ scalar Vector3 @new
 #### `OBJECT`
 
 The `OBJECT` location corresponds to the ObjectTypes defined in the schema.
-In Undine, `QueryTypes` and `RootTypes` accepts `Directives` declared for this location.
+In Undine, `QueryTypes` and `RootTypes` accept `Directives` declared for this location.
 
 ```python
 -8<- "directives/directive_location_object.py"
@@ -268,7 +268,7 @@ type Query @new {
 #### `FIELD_DEFINITION`
 
 The `FIELD_DEFINITION` location corresponds to the fields defined in the schema.
-In Undine, `Fields`, `InterfaceFields` and `Entrypoints` accepts `Directives` declared for this location.
+In Undine, `Fields`, `InterfaceFields` and `Entrypoints` accept `Directives` declared for this location.
 
 ```python
 -8<- "directives/directive_location_field_definition.py"
@@ -296,7 +296,7 @@ type Query {
 #### `ARGUMENT_DEFINITION`
 
 The `ARGUMENT_DEFINITION` location corresponds to the field arguments defined in the schema.
-In Undine, `CalculationArguments` and `DirectiveArguments` accepts `Directives` declared for this location.
+In Undine, `CalculationArguments` and `DirectiveArguments` accept `Directives` declared for this location.
 
 ```python
 -8<- "directives/directive_location_argument_definition.py"
@@ -471,7 +471,7 @@ you can do so by setting the `schema_name` argument:
 
 ### Extensions
 
-You can provide custom extensions for the `Directive` by providing a
+You can provide custom extensions for the `Directive` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `Directive`.
 
@@ -511,7 +511,7 @@ and cannot be used as the `DirectiveArgument` attribute name.
 
 ### Description
 
-A description for a `DirectiveArgument` can be provided in on of two ways:
+A description for a `DirectiveArgument` can be provided in one of two ways:
 
 1) By setting the `description` argument.
 
@@ -558,7 +558,7 @@ You can also add them using the `@` operator (which kind of looks like GraphQL s
 
 ### Extensions
 
-You can provide custom extensions for the `DirectiveArgument` by providing a
+You can provide custom extensions for the `DirectiveArgument` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `DirectiveArgument`.
 

@@ -15,9 +15,9 @@ A GraphQL **operation** is executed in a series of steps. These steps are:
 2. **Validation** of the GraphQL AST against the GraphQL schema.
 3. **Execution** of the GraphQL operation according to the GraphQL AST.
 
-`LifecycleHooks` allow you to hook into the these steps.
+`LifecycleHooks` allow you to hook into these steps.
 To implement a hook, you need to create a class that inherits from `LifecycleHook`
-and implement the the appropriate methods based on the steps you want to hook into.
+and implement the appropriate methods based on the steps you want to hook into.
 The points you can hook into are:
 
 `on_operation` / `on_operation_async`: Encompasses the entire GraphQL **operation**.
@@ -113,7 +113,7 @@ This includes:
 
 ## Examples
 
-Here's some more complex examples of possible lifecycle hooks.
+Here are some more complex examples of possible lifecycle hooks.
 
 ```python
 -8<- "lifecycle_hooks/caching_hook.py"

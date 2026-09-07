@@ -86,7 +86,7 @@ type TaskType @key(fields: "id", resolvable: false) {
 
 ### `ShareableDirective`
 
-the [`@shareable`][shareable directive]{:target="_blank"} directive indicates that a field, or all fields of a type,
+The [`@shareable`][shareable directive]{:target="_blank"} directive indicates that a field, or all fields of a type,
 are allowed to be resolved by multiple subgraphs.
 
 [shareable directive]: https://www.apollographql.com/docs/graphos/schema-design/federated-schemas/reference/directives#shareable
@@ -166,7 +166,7 @@ type TaskType @key(fields: "id") {
 The [`@override`][override directive]{:target="_blank"} directive tells the router that this subgraph takes
 over resolution of a field previously owned by another subgraph. `from_` names the subgraph being overridden.
 
-Pass an optional `label` to opt into **progressive override** — the router uses the label to route a
+Pass an optional `label` to opt into **progressive override**. The router uses the label to route a
 configurable fraction of traffic to this subgraph rather than switching over all at once.
 
 > Requires `FEDERATION_VERSION` `"2.7"` or higher for the `label` argument.
@@ -281,7 +281,7 @@ type TaskType @key(fields: "id") {
 ### `RequiresScopesDirective`
 
 The [`@requiresScopes`][requires scopes directive]{:target="_blank"} directive marks a schema element as
-requiring the caller to hold one of the listed scope sets. Each inner list is an "all-of" group; the outer
+requiring the caller to hold one of the listed scope sets. Each inner list is an "all-of" group. The outer
 list is "any-of".
 
 > Requires `FEDERATION_VERSION` `"2.5"` or higher.
@@ -375,7 +375,7 @@ type TaskType @key(fields: "id") {
 ### `ListSizeDirective`
 
 The [`@listSize`][list size directive]{:target="_blank"} directive tells the demand-control cost analyzer
-how large a list-returning field can grow. `assumed_size` is a fixed upper bound; `slicing_arguments` and
+how large a list-returning field can grow. `assumed_size` is a fixed upper bound. `slicing_arguments` and
 `sized_fields` describe pagination-based bounds.
 
 > Requires `FEDERATION_VERSION` `"2.9"` or higher.
@@ -434,7 +434,7 @@ to fetch entities by their representations.
 The reference resolver runs for each representation after the router dispatches by `__typename`. By default,
 Undine builds one for you, but the default resolver only supports a `QueryType` with a single resolvable
 `@key` whose `fields` is a single, unaliased token that maps to a declared `Field`. In any other case,
-you need define a custom `__resolve_reference__` on the `QueryType`.
+you need to define a custom `__resolve_reference__` on the `QueryType`.
 
 ```python hl_lines="2 12"
 -8<- "federation/resolve_reference.py"
@@ -460,7 +460,7 @@ type User @key(fields: "id") {
 }
 ```
 
-> Note: `schema_name` must match the name to the shared entity name across subgraphs.
+> Note: `schema_name` must match the shared entity name across subgraphs.
 
 ### FederationField
 
@@ -469,14 +469,14 @@ It mirrors [`Field`](queries.md#fields) on a `QueryType`.
 
 A `FederationField` resolves via one of three rules:
 
-1. **Explicit resolver** — `@<field>.resolve` was used, or the decorator form `@FederationField(...)`
+1. **Explicit resolver**. `@<field>.resolve` was used, or the decorator form `@FederationField(...)`
    wrapped a function.
-2. **Key field** — the field's name appears in some `@KeyDirective(fields=...)`. The router populates
-   the attribute from the representation; the resolver is a plain attribute lookup on the instance.
-3. **`@external`** — the field carries [`@ExternalDirective()`](#externaldirective). Populated by
-   another subgraph via `@requires`; again, a plain attribute lookup.
+2. **Key field**. The field's name appears in some `@KeyDirective(fields=...)`. The router populates
+   the attribute from the representation. The resolver is a plain attribute lookup on the instance.
+3. **`@external`**. The field carries [`@ExternalDirective()`](#externaldirective). Populated by
+   another subgraph via `@requires`. Again, a plain attribute lookup.
 
-Anything else — a computed field with no resolver, no key membership, and no `@external` — is a definition
+Anything else (a computed field with no resolver, no key membership, and no `@external`) is a definition
 error and raises an exception when the schema is built.
 
 The following declares a computed `overdue_task_count` that depends on `timezone` from another subgraph:
@@ -493,12 +493,12 @@ type User @key(fields: "id") {
 }
 ```
 
-Both `timezone` (an `@external` attribute) and `id` (a key field) are populated by the router; only
+Both `timezone` (an `@external` attribute) and `id` (a key field) are populated by the router. Only
 `overdue_task_count` needs an explicit resolver.
 
 ### Stub references
 
-A stub declares an entity type this subgraph *references* but does not resolve — the router routes
+A stub declares an entity type this subgraph *references* but does not resolve. The router routes
 resolution requests elsewhere. Mark the key as `resolvable=False`, declare the key field(s) explicitly,
 and leave the rest of the type empty. You can then use the stub as a `Field` reference on a resolvable
 `QueryType`, and return a representation dict from the resolver so the router can fetch the rest of the
@@ -531,9 +531,9 @@ top-level query entrypoints. To keep authorization consistent, Undine invokes th
 by a `QueryType` or by a `FederationType`.
 
 For a `QueryType`, the same [`__permissions__`](queries.md#permissions) that runs on regular entrypoints
-runs here too — no extra wiring is needed.
+runs here too. No extra wiring is needed.
 
-For a `FederationType`, define `__permissions__` on the class; the `_entities` resolver invokes it right
+For a `FederationType`, define `__permissions__` on the class. The `_entities` resolver invokes it right
 after `__resolve_reference__` builds the instance:
 
 ```python

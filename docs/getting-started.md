@@ -26,7 +26,7 @@ After going through the [installation steps](#installation) below, we have a
 [tutorial](tutorial.md) that will walk you through creating a simple GraphQL server using Undine.
 
 Undine is built on top of [graphql-core]{:target="_blank"},
-which is port of the [GraphQL.js] reference implementation of GraphQL. Knowing how graphql-core
+which is a port of the [GraphQL.js] reference implementation of GraphQL. Knowing how graphql-core
 works can help you understand how Undine works, but is not required to get started.
 
 [graphql-core]: https://github.com/graphql-python/graphql-core
@@ -40,7 +40,7 @@ Undine is available on PyPI and can be installed with `pip`:
 pip install undine
 ```
 
-Next, you'll need to add Undine it to your `INSTALLED_APPS` setting in your
+Next, you'll need to add Undine to your `INSTALLED_APPS` setting in your
 Django project's `settings.py` file:
 
 ```python

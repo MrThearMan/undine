@@ -92,7 +92,7 @@ and [`MODELTRANSLATION_INCLUDE_TRANSLATIONS`](settings.md#modeltranslation_inclu
 
 [django-modeltranslation]: https://github.com/deschler/django-modeltranslation
 
-Let's say you the following Model (with `MODELTRANSLATION_LANGUAGES = ("en", "fi")`)
+Let's say you have the following Model (with `MODELTRANSLATION_LANGUAGES = ("en", "fi")`)
 
 ```python
 -8<- "integrations/model_translation_models.py"
@@ -109,7 +109,7 @@ for each language defined by the `MODELTRANSLATION_LANGUAGES` setting. Let's cal
 the *"translatable"* fields, and the fields they are based on the _"translation"_ fields.
 
 Using the `MODELTRANSLATION_INCLUDE_TRANSLATABLE` and `MODELTRANSLATION_INCLUDE_TRANSLATIONS`
-settings, you can control which of these fields undine will add to your schema
+settings, you can control which of these fields Undine will add to your schema
 when using autogeneration. By default, only the *translation* fields are added.
 You can of course always add the translatable fields manually.
 
@@ -264,7 +264,7 @@ UNDINE = {
 
 Every span has `span_type` set to `"graphql"`. The operation span is named after the operation,
 e.g. `query FindTask`, and its `resource` is `<operation name>:<query hash>` (or just the hash for
-an anonymous operation) — this is Datadog's primary grouping dimension, so getting it right is
+an anonymous operation). This is Datadog's primary grouping dimension, so getting it right is
 what keeps traces for the same operation grouped together. The operation span also carries the
 `graphql.operation.name` and `graphql.operation.type` tags.
 
@@ -510,7 +510,7 @@ The plugin adds the following additional type checks:
       (e.g. `.resolve`, `.permissions`, `.optimize`, `.validate`, `.convert`, `.aliases`, `.visible`)
       are applied to a method with the correct signature
 - [x] Check that the return type of a resolver method for an `Entrypoint`, `Field` or `FederationField`
-      is compatible with the field's ref type (honouring `many=True`, `nullable=True` and `@ExternalDirective`)
+      is compatible with the field's ref type (honoring `many=True`, `nullable=True` and `@ExternalDirective`)
 - [x] Check that `FilterSets` and `OrderSets` are applied to `QueryTypes` or `UnionTypes` that are
       defined for the same Django Models
 - [x] Check that `FilterSets`, `OrderSets`, and `InterfaceTypes` are applied to `QueryTypes`
@@ -531,10 +531,10 @@ The plugin adds the following additional type checks:
 
 ## Pytest
 
-Undine comes with a pytest plugin that includes a testing client and few fixtures
+Undine comes with a pytest plugin that includes a testing client and a few fixtures
 to help you write tests for your GraphQL APIs.
 
-The `GraphQLClient` class is wrapper around [Django's test client]{:target="_blank"} that
+The `GraphQLClient` class is a wrapper around [Django's test client]{:target="_blank"} that
 makes testing your GraphQL API easier. It can be added to a test using
 the `graphql` fixture. Here is a simple example:
 
@@ -573,7 +573,7 @@ the `graphql_async` fixture.
 -8<- "integrations/graphql_test_client_async.py"
 ```
 
-The plugin also includes a `undine_settings` fixture that allows modifying
+The plugin also includes an `undine_settings` fixture that allows modifying
 Undine's settings during testing more easily.
 
 ```python

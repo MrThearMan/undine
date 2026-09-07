@@ -5,7 +5,7 @@ description: Documentation on mutations in Undine.
 # Mutations
 
 In this section, we'll cover Undine's [`MutationTypes`](#mutationtypes)
-which allow you to create mutations base on your Django Models.
+which allow you to create mutations based on your Django Models.
 
 For mutations not concerning your Django Models,
 you can create [function](schema.md#function-references) `Entrypoints`.
@@ -195,7 +195,7 @@ raise a `GraphQLValidationError` from the `undine.exceptions` module.
 
 ### After mutation handling
 
-You can add custom handling that happens after the mutation is done by defining the`__after__`
+You can add custom handling that happens after the mutation is done by defining the `__after__`
 classmethod on the `MutationType`.
 
 ```python
@@ -226,7 +226,7 @@ the `MutationType` class for single or bulk mutations respectively.
 -8<- "mutations/mutation_type_custom.py"
 ```
 
-In the above example, the `MutationType` still a `create` mutation,
+In the above example, the `MutationType` is still a `create` mutation,
 just with some custom mutation logic. The `MutationType` `kind` still affects [auto-generation](#auto-generation),
 which resolvers are used (whether the mutation creates a new instance or modifies an existing one),
 as well as some inference rules for its `Inputs`.
@@ -345,7 +345,7 @@ mutation {
 }
 ```
 
-Permission an validation checks are run for `related` `MutationTypes` and their `Inputs` as well,
+Permission and validation checks are run for `related` `MutationTypes` and their `Inputs` as well,
 although existing instances are not fetched from the database even if the input contains its primary key
 (for performance reasons).
 
@@ -362,25 +362,25 @@ When updating an instance and its relations using a related mutation,
 that instance may already have existing related objects. For some relations,
 it's clear what should happen to relations that are not selected in the related mutation.
 
-- **Forward one-to-one relation**: Selects the new related object to attach to, or set the relation to null.
+- **Forward one-to-one relation**: Selects the new related object to attach to, or sets the relation to null.
   Reverse one-to-one relation can always be missing.
-- **Forward foreign key (many-to-one) relation**: Selects the new related object to attach to, or set the relation to null.
+- **Forward foreign key (many-to-one) relation**: Selects the new related object to attach to, or sets the relation to null.
   Reverse relations do not have any constraints.
 - **Many-to-many relations**: Selects the new related objects that the current instance should be linked to.
   Non-selected objects are unlinked, meaning through table rows are deleted.
 
 For other relations, you might need different behavior depending on the situation:
 
-- **Reverse one-to-one relation**: You might want to delete the exiting related object, or set the relation to null
+- **Reverse one-to-one relation**: You might want to delete the existing related object, or set the relation to null
   (although the forward part of the relation might not be nullable).
-- **Reverse foreign key (one-to-many) relation**: You might want to delete exiting related objects,
+- **Reverse foreign key (one-to-many) relation**: You might want to delete existing related objects,
   or set their relation to null (although the forward part of the relation might not be nullable).
   You might even want to leave the existing relations as they are.
 
 The action that should be taken for the relations is defined by the `MutationType` `related_action` argument.
 The actions are as follows:
 
-- `null`: Set the relaton to null. If the relation is not nullable, an error is raised. Default action.
+- `null`: Set the relation to null. If the relation is not nullable, an error is raised. Default action.
 - `delete`: Delete the related objects.
 - `ignore`: Leave the existing relations as they are. For one-to-one relations, an error is raised.
 
@@ -397,7 +397,7 @@ instead.
 The order of operations for executing a mutation using a `MutationType` is as follows:
 
 1. [Model inputs](#model-field-references) have their Model instances fetched.
-2. [Hidden inputs](#hidden-inputs) are be added to the input data.
+2. [Hidden inputs](#hidden-inputs) are added to the input data.
 3. [Function inputs](#function-references) are run.
 4. `MutationType` [permissions](#permissions) and `Input` [permissions](#permissions_1) are checked.
 5. `MutationType` [validation](#validation) and `Input` [validation](#validation_1) are run.
@@ -474,7 +474,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `MutationType` by providing a
+You can provide custom extensions for the `MutationType` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `MutationType`.
 
@@ -540,7 +540,7 @@ have the `GQLInfo` type annotation.
 
 The `value` argument determines the input given by the user, which can then be transformed
 into the input data for the mutation in the function. The type of the `value` argument
-determines the input type of the function input in. The `value` argument can also be left out,
+determines the input type of the function input. The `value` argument can also be left out,
 in which case the input will become a [`hidden`](#hidden-inputs) input.
 
 ```python
@@ -583,7 +583,7 @@ The `value` argument is the value provided for the input.
 
 ///
 
-You can raise any `GraphQLError` when validation fails, but it's recommended to
+You can raise any `GraphQLError` when permission checks fail, but it's recommended to
 raise a `GraphQLPermissionError` from the `undine.exceptions` module.
 
 ### Validation
@@ -612,7 +612,7 @@ raise a `GraphQLValidationError` from the `undine.exceptions` module.
 ### Conversion
 
 Normally, values for `Inputs` are parsed and converted based on the `Input's` [`Scalar`](scalars.md).
-However, you can add additional convertion for an individual `Input` by first defining
+However, you can add additional conversion for an individual `Input` by first defining
 the `Input` in the class body of the `MutationType` and then adding a method with
 the `@<input_name>.convert` decorator.
 
@@ -757,7 +757,7 @@ you add a docstring to the function/method used as the reference instead.
 ### Deprecation reason
 
 A `deprecation_reason` can be provided to mark the `Input` as deprecated.
-This is for documentation purposes only, and does not affect the use of the `Field`.
+This is for documentation purposes only, and does not affect the use of the `Input`.
 
 ```python hl_lines="13"
 -8<- "mutations/input_deprecation_reason.py"
@@ -782,7 +782,7 @@ See the [Directives](directives.md) section for more details on directives.
 
 ### GraphQL extensions
 
-You can provide custom extensions for the `Input` by providing a
+You can provide custom extensions for the `Input` by providing an
 `extensions` argument with a dictionary containing them. These can then be used
 however you wish to extend the functionality of the `Input`.
 
@@ -880,8 +880,8 @@ python manage.py generate_mutation_input_types
 
 Two `TypedDicts` are emitted per `MutationType`:
 
-- `<SchemaName>FullInputData` — the view seen by `__permissions__` and `__validate__`.
-- `<SchemaName>InputData` — the view seen by `__mutate__`, `__bulk_mutate__` and `__after__`
+- `<SchemaName>FullInputData`. The view seen by `__permissions__` and `__validate__`.
+- `<SchemaName>InputData`. The view seen by `__mutate__`, `__bulk_mutate__` and `__after__`
   ([input only inputs](#input-only-inputs) have been removed).
 
 Import them under a `TYPE_CHECKING` guard and annotate the hooks accordingly:

@@ -48,7 +48,7 @@ query {
 ```
 
 However, using the `@defer` directive, the client can receive the rest of the data immediately and
-the deferred data when its complete. The `@defer` directive works on fragment spreads an inline fragments.
+the deferred data when it's complete. The `@defer` directive works on fragment spreads and inline fragments.
 
 ```graphql hl_lines="6 7 8"
 query {
