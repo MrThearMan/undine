@@ -1020,10 +1020,7 @@ def _decode_multipart_mixed_heartbeat(event_data: bytes | str) -> MultipartMixed
 
 
 def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDeliveryResponse:
-    from graphql import (  # type: ignore[attr-defined] # noqa: PLC0415
-        InitialIncrementalExecutionResult,
-        SubsequentIncrementalExecutionResult,
-    )
+    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # type: ignore[attr-defined] # noqa: PLC0415
 
     if isinstance(event_data, bytes):
         event_data = event_data.decode()

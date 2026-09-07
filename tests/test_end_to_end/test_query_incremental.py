@@ -16,10 +16,7 @@ from undine.exceptions import GraphQLPermissionError
 from undine.optimizer import OptimizationData
 
 if version_info >= (3, 3, 0):
-    from graphql import (  # type: ignore[attr-defined]
-        InitialIncrementalExecutionResult,
-        SubsequentIncrementalExecutionResult,
-    )
+    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # type: ignore[attr-defined]
 
 pytestmark = [
     pytest.mark.django_db(transaction=True),
