@@ -55,7 +55,7 @@ def resolve_field_call_ref_type(ctx: ClassDefContext, call: CallExpr) -> MypyTyp
     Compute the ref type for a field factory call, honouring `many=True` / `nullable=True`.
 
     Returns `AnyType` for refs we cannot statically resolve (string field names, plain
-    `Field()` with no ref, etc.) — callers should treat this as "skip the check".
+    `Field()` with no ref, etc.). Callers should treat this as "skip the check".
     """
     if not call.args:
         return AnyType(TypeOfAny.special_form)

@@ -676,7 +676,7 @@ async def test_dataloader__prime__pending_exception() -> None:
 
     loader = DataLoader(load_fn=load_fn)
 
-    # Schedule a load — future is pending (not done)
+    # Schedule a load. Future is pending (not done)
     future = loader.load(key=1)
     assert not future.done()
 

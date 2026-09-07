@@ -76,7 +76,7 @@
           if (!resp.ok) {
             const text = await resp.text();
             document.querySelector("#log").value += (
-              "Error " + label + ": " + resp.status + " " + resp.statusText + " — " + text + "\n"
+              "Error " + label + ": " + resp.status + " " + resp.statusText + " - " + text + "\n"
             );
             return;
           }

@@ -6,25 +6,25 @@ This directory contains a runnable Django project that implements Apollo's `prod
 Its two jobs are:
 
 1. Serve as the Docker deliverable for landing Undine on Apollo's
-   [supported subgraphs matrix][matrix]{:target="_blank"} — the harness composes
+   [supported subgraphs matrix][matrix]{:target="_blank"}. The harness composes
    this `products` service with Apollo's own `users` and `inventory` subgraphs
    and a router, then runs the query set from [COMPATIBILITY.md][compat md]{:target="_blank"}
    against the composed supergraph.
-2. Give Undine maintainers a local certification target — `just up` boots the
+2. Give Undine maintainers a local certification target. `just up` boots the
    subgraph on `localhost:4001`, `just compliance` runs the harness, and
    `just export` regenerates `schema.graphql` from the Undine schema.
 
 ## Layout
 
-- `config/` — Django project (settings, URL conf, WSGI entry point).
-- `products/` — Django app: models, Undine schema, seed migration, and the `export` management command.
-- `Dockerfile` + `docker-compose.yaml` — matrix-shaped container packaging. Builds from the repo
+- `config/`: Django project (settings, URL conf, WSGI entry point).
+- `products/`: Django app: models, Undine schema, seed migration, and the `export` management command.
+- `Dockerfile` + `docker-compose.yaml`: Matrix-shaped container packaging. Builds from the repo
   root so the container installs Undine from the local checkout.
-- `justfile` — `just up` / `just down` / `just clean` / `just export` / `just compliance`.
-- `schema.graphql` — Undine-exported SDL, checked in. A pytest smoke test
+- `justfile`: `just up` / `just down` / `just clean` / `just export` / `just compliance`.
+- `schema.graphql`: Undine-exported SDL, checked in. A pytest smoke test
   (`tests/test_federation/test_compatibility_schema.py`) fails if the file drifts from what
   `render_schema()` produces; re-run `just export` and commit the update.
-- `metadata.json` — matrix submission metadata (name, language, links).
+- `metadata.json`: matrix submission metadata (name, language, links).
 
 ## Local workflows
 

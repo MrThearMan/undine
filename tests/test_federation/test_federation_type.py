@@ -165,7 +165,7 @@ def test_federation_type__non_resolvable_key_excluded_from_entity_union_but_stil
 
 
 def test_federation_type__stub_with_explicit_id_field_renders_correctly() -> None:
-    # Interpretation of the plan's "stub reference pattern" test — key field is
+    # Interpretation of the plan's "stub reference pattern" test. Key field is
     # declared explicitly by the user.
     @KeyDirective(fields="id", resolvable=False)
     class BookStub(FederationType, schema_name="Book"):
@@ -337,7 +337,7 @@ def test_federation_type__service_sdl_uses_extend_keyword() -> None:
     assert "extend type Book" in sdl
 
 
-# Field(FederationType) — QueryType-side references to entity stubs
+# Field(FederationType). QueryType-side references to entity stubs
 
 
 def test_federation_type__field_ref_from_query_type_renders_stub_type() -> None:

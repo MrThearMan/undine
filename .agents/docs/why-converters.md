@@ -1,14 +1,14 @@
 # Why Undine does not use class hierarchies
 
-Undine's schema-declaration classes — `Field`, `Input`, `Entrypoint`, `Filter`,
-`Order`, `FederationField` — do not form class hierarchies keyed on the kind of
+Undine's schema-declaration classes (`Field`, `Input`, `Entrypoint`, `Filter`,
+`Order`, `FederationField`) do not form class hierarchies keyed on the kind of
 thing they represent. Each holds a single `ref: Any` and delegates every
 ref-dependent behavior (GraphQL type, resolver, nullability, complexity,
 argument map, description, etc.) to a family of dispatch-based **converters**
 in `undine/converters`. The dispatcher backing them (`FunctionDispatcher`) is
 custom rather than `functools.singledispatch`. This document records why.
 
-## Context — Django-first, not GraphQL-first
+## Context: Django-first, not GraphQL-first
 
 Undine assumes a service that owns its database, where Django Models are the
 source of truth for *both data and types*. GraphQL is a *derivation* of the
@@ -23,7 +23,7 @@ GraphQL-vs-model impedance mismatch that shows up as DataLoaders, N+1
 workarounds, and typed shells that don't quite fit the underlying model.
 
 Undine picks the opposite trade. The model is the type. QueryType and
-MutationType are *schema declarations*, not data classes — user code never
+MutationType are *schema declarations*, not data classes. User code never
 holds instances of them. Every user hook (`__permissions__`, `@Field.resolve`,
 `@MutationType.validate`) receives a Model instance or an input dict, not a
 QueryType instance. That decision is what makes converters not just viable
@@ -70,7 +70,7 @@ remains the one place types are declared, and the converter tree is how the
 schema derives from it.
 
 The alternative that seems to answer both is to restate types explicitly on
-the GraphQL side — whether as dataclass-style attribute annotations (`id:
+the GraphQL side. Whether as dataclass-style attribute annotations (`id:
 int`, `name: str`, `created_at: datetime` alongside the model) or as
 per-type Field subclasses (`IntegerField()`, `CharField()`, `DateTimeField()`).
 Either shape reintroduces the drift problem: every model change becomes
@@ -123,7 +123,7 @@ say "we use `whenever` in the fields we remembered to convert."
 Cross-class strategy reuse falls out of the same property. `Field` and
 `Input` and `Filter` all agree on `convert_to_graphql_type` without sharing
 a base class or a mixin. Adding a new consumer that also needs the same
-type-conversion behavior costs zero — it just calls the same converter.
+type-conversion behavior costs zero. It just calls the same converter.
 
 ### 3. The class-hierarchy alternative
 

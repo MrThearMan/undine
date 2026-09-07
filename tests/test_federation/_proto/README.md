@@ -1,7 +1,7 @@
 Apollo `reports.proto` and its Python bindings, used **only** for verifying
 `undine.federation.tracing` output in tests.
 
-The wheel does not ship these files — they live under `tests/` deliberately so
+The wheel does not ship these files. They live under `tests/` deliberately so
 that the runtime hand-encoded ftv1 output can be cross-checked against the real
 protobuf runtime.
 

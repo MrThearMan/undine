@@ -231,7 +231,7 @@ def test_federation_field__offset_pagination_ref_raises_dispatcher_error() -> No
             tasks = FederationField(OffsetPagination(TaskType))
 
 
-# Resolver dispatch — three-case rule
+# Resolver dispatch: three-case rule
 
 
 def test_federation_field__computed_field_without_resolve_raises_at_schema_build() -> None:

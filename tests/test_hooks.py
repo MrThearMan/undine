@@ -603,7 +603,7 @@ def test_atomic_mutation_hook__no_error(undine_settings) -> None:
     gen = hook.on_execution()
     next(gen)  # enters atomic transaction, yields
 
-    # hook.error is None — should call atomic.__exit__(None, None, None)
+    # hook.error is None. Should call atomic.__exit__(None, None, None)
     with contextlib.suppress(StopIteration):
         next(gen)
 

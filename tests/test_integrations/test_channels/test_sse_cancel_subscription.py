@@ -175,7 +175,7 @@ async def test_channels__sse__cancel_subscription__before_stream_opened(undine_s
     body = make_operation_body(query="query { test }", operation_id=operation_id)
     await sse_send_request(op_communicator, body=body)
 
-    # Let the operation consumer complete handle() — it needs multiple
+    # Let the operation consumer complete handle(). It needs multiple
     # yields for session save and channel group joins.
     await asyncio.sleep(TEST_WAIT_TIME)
 

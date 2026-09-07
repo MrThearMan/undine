@@ -127,7 +127,7 @@ def _collect_min_version_workarounds() -> list[tuple[str, str]]:
 
 
 # Ad-hoc branches that don't live on a `min_version` class var and can't be discovered by scan.
-# Keep in sync with the code — add an entry whenever calling `not is_supported_in_federation_version(...)`.
+# Keep in sync with the code. Add an entry whenever calling `not is_supported_in_federation_version(...)`.
 _AD_HOC_VERSION_WORKAROUNDS: list[tuple[str, str]] = [
     (
         "undine.federation.directives._ShareableIsRepeatable (@shareable pre-2.2 non-repeatable)",

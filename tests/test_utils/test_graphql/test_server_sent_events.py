@@ -164,7 +164,7 @@ async def test_with_keep_alive_dc__with_interval(undine_settings) -> None:
 
 
 async def test_with_keep_alive_dc__cancel_on_close(undine_settings) -> None:
-    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 60  # Long — ensures next_event is pending
+    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 60  # Long, ensures next_event is pending
 
     async def source() -> AsyncIterator[NextEventDC | CompletedEventDC]:
         await asyncio.sleep(100)  # Never completes in test
@@ -174,13 +174,13 @@ async def test_with_keep_alive_dc__cancel_on_close(undine_settings) -> None:
     first = await anext(gen)
     assert isinstance(first, KeepAliveSignalDC)  # initial keep-alive
 
-    # Close generator while next_event is still pending — triggers finally: next_event.cancel()
+    # Close generator while next_event is still pending, triggers finally: next_event.cancel()
     await gen.aclose()
 
 
 async def test_with_keep_alive_dc__cancel_inside_try(undine_settings) -> None:
     """Line 99: cancel next_event in finally when closed while inside the try block."""
-    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0.001  # 1ms — fires quickly
+    undine_settings.SSE_KEEP_ALIVE_INTERVAL = 0.001  # 1ms, fires quickly
 
     async def source() -> AsyncIterator[NextEventDC | CompletedEventDC]:
         yield CompletedEventDC()
@@ -574,14 +574,14 @@ async def test_handler__execute_operation__cancelled(undine_settings) -> None:
 
 
 async def test_handler__execute_operation__completed_then_exception(undine_settings) -> None:
-    """Branch 302->exit: exception raised after completed=True — no extra complete event sent."""
+    """Branch 302->exit: exception raised after completed=True. No extra complete event sent."""
     handler, signaler, session_store = _make_handler()
     session_store.set_stream_token("tok")
 
     async def yields_complete(*args, **kwargs) -> AsyncIterator[CompletedEventSC]:  # noqa: RUF029
         yield CompletedEventSC(operation_id="op1")
 
-    # signal_operation_event raises CancelledError — while completed is already True
+    # signal_operation_event raises CancelledError. While completed is already True
     async def signal_raises(stream_token: str, data: bytes) -> None:  # noqa: RUF029
         raise asyncio.CancelledError
 

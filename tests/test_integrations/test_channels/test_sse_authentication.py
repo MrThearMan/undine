@@ -36,6 +36,6 @@ async def test_channels__sse__consumer_stopped_when_unauthenticated() -> None:
         "GraphQL over SSE requires authentication in single connection mode"
     )
 
-    # handle() was never called — session remains untouched
+    # handle() was never called. Session remains untouched
     assert await session_aget(session, get_sse_stream_token_key()) is None
     assert await session_aget(session, get_sse_stream_state_key()) is None

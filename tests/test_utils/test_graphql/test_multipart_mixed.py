@@ -137,7 +137,7 @@ async def test_with_multipart_mixed_heartbeat__with_interval(undine_settings) ->
 
 
 async def test_with_multipart_mixed_heartbeat__cancel_on_close(undine_settings) -> None:
-    undine_settings.MULTIPART_MIXED_HEARTBEAT_INTERVAL = 60  # Long — ensures next_event is pending
+    undine_settings.MULTIPART_MIXED_HEARTBEAT_INTERVAL = 60  # Long, ensures next_event is pending
 
     async def source() -> AsyncIterator[MultipartMixedHttpResponse | MultipartMixedHttpComplete]:
         await asyncio.sleep(100)  # Never completes in test
@@ -147,12 +147,12 @@ async def test_with_multipart_mixed_heartbeat__cancel_on_close(undine_settings) 
     first = await anext(gen)
     assert isinstance(first, MultipartMixedHttpHeartbeat)  # initial heartbeat
 
-    # Close generator while next_event is still pending — triggers finally: next_event.cancel()
+    # Close generator while next_event is still pending, triggers finally: next_event.cancel()
     await gen.aclose()
 
 
 async def test_with_multipart_mixed_heartbeat__cancel_inside_try(undine_settings) -> None:
-    undine_settings.MULTIPART_MIXED_HEARTBEAT_INTERVAL = 0.001  # 1ms — fires quickly
+    undine_settings.MULTIPART_MIXED_HEARTBEAT_INTERVAL = 0.001  # 1ms, fires quickly
 
     async def source() -> AsyncIterator[MultipartMixedHttpResponse | MultipartMixedHttpComplete]:
         yield MultipartMixedHttpComplete()
@@ -160,7 +160,7 @@ async def test_with_multipart_mixed_heartbeat__cancel_inside_try(undine_settings
 
     gen = with_multipart_mixed_heartbeat(source())
 
-    # 1. Initial heartbeat (line 81 yield — BEFORE the try block)
+    # 1. Initial heartbeat (line 81 yield, BEFORE the try block)
     first = await anext(gen)
     assert isinstance(first, MultipartMixedHttpHeartbeat)
 

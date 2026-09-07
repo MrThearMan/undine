@@ -153,7 +153,7 @@ class FederationType(metaclass=FederationTypeMeta):
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
     def __init__(self, **kwargs: Any) -> None:
-        # Untyped kwarg passthrough — the mypy plugin enforces valid kwargs statically.
+        # Untyped kwarg passthrough. The mypy plugin enforces valid kwargs statically.
         self.__parameters__ = dict(kwargs)
 
     def __repr__(self) -> str:
