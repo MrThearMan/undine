@@ -14,16 +14,18 @@ on:
 
 jobs:
   test:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.0
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.1
     with:
+      uv-cache-suffix: "test"
       coveralls: ${{ fromJSON(vars.COVERALLS_ENABLED || 'false') }}
 
   test-async:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.0
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.6.1
     with:
       python-version: '["3.14"]'
       os: '["ubuntu-latest"]'
       env: '{"ASYNC": "true"}'
+      uv-cache-suffix: 'test-async'
       coveralls: false
 
   test-mypy:
