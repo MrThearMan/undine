@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from django.db.models import ManyToManyField
-from django.db.models.fields.related_descriptors import (
-    _filter_prefetch_queryset,  # type: ignore[attr-defined]  # noqa: PLC2701
-)
+from django.db.models.fields.related_descriptors import _filter_prefetch_queryset  # type: ignore[attr-defined]  # noqa: PLC2701
 
 from undine.settings import undine_settings
 

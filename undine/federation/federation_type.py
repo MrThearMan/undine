@@ -4,14 +4,7 @@ import dataclasses
 import inspect
 from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
-from graphql import (  # noqa: TC002
-    DirectiveLocation,
-    GraphQLArgumentMap,
-    GraphQLField,
-    GraphQLObjectType,
-    GraphQLOutputType,
-    Undefined,
-)
+from graphql import DirectiveLocation, GraphQLArgumentMap, GraphQLField, GraphQLObjectType, GraphQLOutputType, Undefined  # noqa: TC002
 
 from undine.converters import (
     convert_to_description,
