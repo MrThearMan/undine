@@ -77,7 +77,7 @@ test = [
     "factory-boy==3.3.3",
     "nox==2026.8.17",
     "urllib3==2.7.0",
-    "django-modeltranslation==0.20.4",
+    "django-modeltranslation==0.20.5",
     "psycopg[binary,pool]==3.3.5",
     "granian[pname,uvloop,reload]==2.8.2",
     "opentelemetry-sdk==1.44.0",
@@ -96,7 +96,7 @@ lint = [
     "mypy==2.3.1",
     "django-stubs==5.2.9",
     "channels-stubs==0.1.9",
-    "types-protobuf==7.35.1.20260827",
+    "types-protobuf==7.35.1.20260906",
 ]
 
 [tool.uv]
