@@ -251,7 +251,7 @@ The gold standard for code-first plugin design: Relay, dataloader, auth-scopes, 
 
 ### Nexus
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -263,7 +263,7 @@ Historically important code-first builder with schema-file generation.
 
 ### TypeGraphQL
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -275,7 +275,7 @@ Decorator/class-based schema definition, middleware, auth, validation.
 
 ### Mercurius
 
-> Status: pending
+> Status: done
 
 > Stack: TS/Fastify
 
@@ -287,7 +287,7 @@ JIT compilation, caching, federation. Notable for performance ideas.
 
 ### graphql-ruby
 
-> Status: pending
+> Status: done
 
 > Stack: Ruby
 
@@ -299,7 +299,7 @@ Arguably the richest feature set anywhere: query analyzers, complexity/depth lim
 
 ### Absinthe
 
-> Status: pending
+> Status: done
 
 > Stack: Elixir
 
@@ -311,7 +311,7 @@ Compile-time schema verification, middleware pipeline, best-in-class subscriptio
 
 ### Hot Chocolate
 
-> Status: pending
+> Status: done
 
 > Stack: C#/.NET
 
@@ -323,7 +323,7 @@ Very feature-rich: auto filtering/sorting/projections from IQueryable, cost anal
 
 ### graphql-java
 
-> Status: pending
+> Status: done
 
 > Stack: Java
 
@@ -335,7 +335,7 @@ Instrumentation API, dataloader integration, execution strategies.
 
 ### Netflix DGS
 
-> Status: pending
+> Status: done
 
 > Stack: Java/Kotlin
 
@@ -347,7 +347,7 @@ Codegen, federation, error handling at scale.
 
 ### Spring for GraphQL
 
-> Status: pending
+> Status: done
 
 > Stack: Java
 
@@ -359,7 +359,7 @@ Notable for `@Argument`/projection binding and Querydsl/QueryByExample auto-repo
 
 ### graphql-kotlin
 
-> Status: pending
+> Status: done
 
 > Stack: Kotlin
 
@@ -371,7 +371,7 @@ Reflection-based code-first, federation, coroutine dataloaders.
 
 ### gqlgen
 
-> Status: pending
+> Status: done
 
 > Stack: Go
 
