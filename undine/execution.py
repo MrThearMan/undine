@@ -183,6 +183,7 @@ def _parse_source_sync(context: LifecycleHookContext) -> None:
             source=context.source,
             no_location=undine_settings.NO_ERROR_LOCATION,
             max_tokens=undine_settings.MAX_TOKENS,
+            experimental_fragment_arguments=undine_settings.EXPERIMENTAL_FRAGMENT_ARGUMENTS,
         )
     except GraphQLError as error:
         context.result = get_error_execution_result(error)
@@ -311,6 +312,7 @@ async def _parse_source_async(context: LifecycleHookContext) -> None:  # noqa: R
             source=context.source,
             no_location=undine_settings.NO_ERROR_LOCATION,
             max_tokens=undine_settings.MAX_TOKENS,
+            experimental_fragment_arguments=undine_settings.EXPERIMENTAL_FRAGMENT_ARGUMENTS,
         )
     except GraphQLError as error:
         context.result = get_error_execution_result(error)

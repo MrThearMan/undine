@@ -142,6 +142,9 @@ class UndineDefaultSettings(NamedTuple):
     Operations using the directive don't propagate errors from non-null fields to their parents.
     """
 
+    EXPERIMENTAL_FRAGMENT_ARGUMENTS: bool = False
+    """Whether to allow the experimental fragment arguments syntax in GraphQL documents."""
+
     MAX_ALLOWED_ALIASES: int = 15
     """The maximum number of aliases allowed in a single operation."""
 

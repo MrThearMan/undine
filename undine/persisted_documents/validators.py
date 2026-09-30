@@ -41,6 +41,7 @@ def validate_document(value: Any) -> None:
             source=value,
             no_location=undine_settings.NO_ERROR_LOCATION,
             max_tokens=undine_settings.MAX_TOKENS,
+            experimental_fragment_arguments=undine_settings.EXPERIMENTAL_FRAGMENT_ARGUMENTS,
         )
     except GraphQLError as parse_error:
         raise ValidationError(parse_error.message) from parse_error

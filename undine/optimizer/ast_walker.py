@@ -17,6 +17,7 @@ from graphql.execution.collect_fields import get_field_entry_key
 from undine.dataclasses import AbstractSelections
 from undine.exceptions import GraphQLOptimizerError, ModelFieldError
 from undine.settings import undine_settings
+from undine.utils.graphql.fragment_arguments import get_collected_field_node_ids, uses_fragment_arguments
 from undine.utils.graphql.undine_extensions import get_undine_interface_type, get_undine_query_type
 from undine.utils.graphql.utils import (
     copy_info,
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
         GraphQLCompositeType,
         GraphQLNamedOutputType,
         GraphQLScalarType,
+        SelectionNode,
     )
 
     from undine.typing import GQLInfo, ModelField, ObjectSelections, Selections, ToManyField, ToOneField
@@ -129,8 +131,10 @@ class GraphQLASTWalker:  # noqa: PLR0904
     def handle_node_interface(self, parent_type: GraphQLInterfaceType, selections: Selections) -> None: ...
 
     def handle_object_type(self, parent_type: GraphQLObjectType, selections: ObjectSelections) -> None:
+        collected_field_node_ids = self.get_collected_field_node_ids(parent_type)
+
         for selection in selections:
-            if should_skip_node(selection, self.info.variable_values):
+            if self.should_skip(selection, collected_field_node_ids=collected_field_node_ids):
                 continue
 
             if is_typename_metafield(selection):
@@ -288,7 +292,7 @@ class GraphQLASTWalker:  # noqa: PLR0904
         results = AbstractSelections()
 
         for selection in selections:
-            if should_skip_node(selection, self.info.variable_values):
+            if self.should_skip(selection, collected_field_node_ids=None):
                 continue
 
             if isinstance(selection, FieldNode):
@@ -316,6 +320,27 @@ class GraphQLASTWalker:  # noqa: PLR0904
                 results.member_selections[type_name] += member_selections
 
         return results
+
+    def get_collected_field_node_ids(self, runtime_type: GraphQLObjectType) -> set[int] | None:
+        """
+        Get the identities of the field nodes the executor collects for the current field with the given runtime type.
+        `None` if the operation doesn't use fragment arguments, since then `@skip` and `@include` can be evaluated
+        directly without collecting the fields.
+        """
+        if not uses_fragment_arguments(self.info):
+            return None
+        return get_collected_field_node_ids(self.info, runtime_type)
+
+    def should_skip(self, selection: SelectionNode, *, collected_field_node_ids: set[int] | None) -> bool:
+        if not uses_fragment_arguments(self.info):
+            return should_skip_node(selection, self.info.variable_values)
+
+        # `@skip` and `@include` can refer to fragment variables, which are only known to the executor.
+        # Instead of evaluating them, field nodes are checked against the fields the executor collects.
+        # Fragments are always walked into, since their field nodes are checked the same way.
+        if collected_field_node_ids is None or not isinstance(selection, FieldNode):
+            return False
+        return id(selection) not in collected_field_node_ids
 
     @contextmanager
     def use_model(self, model: type[Model]) -> Generator[None, Any, None]:

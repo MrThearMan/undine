@@ -392,6 +392,33 @@ The directive comes from `graphql-core` and may change, since error behavior is 
 
 ///
 
+/// details | `EXPERIMENTAL_FRAGMENT_ARGUMENTS`
+    attrs: {id: experimental_fragment_arguments}
+
+Type: `bool` | Default: `False`
+
+Whether to allow the experimental fragment arguments syntax in GraphQL documents.
+Fragments can then define variables, and fragment spreads can give values for them.
+
+```graphql
+query {
+  tasks {
+    ...TaskFields(personName: "alice")
+  }
+}
+
+fragment TaskFields($personName: String) on TaskType {
+  name
+  assignees(filter: {name: $personName}) {
+    name
+  }
+}
+```
+
+The syntax comes from `graphql-core` and may change, since it's not part of the GraphQL specification yet.
+
+///
+
 /// details | `EXPERIMENTAL_INCREMENTAL_DELIVERY`
     attrs: {id: experimental_incremental_delivery}
 

@@ -12,6 +12,7 @@ from graphql import InlineFragmentNode, get_argument_values
 from undine.converters import extend_expression
 from undine.exceptions import GraphQLTooManyFiltersError, GraphQLTooManyOrdersError
 from undine.settings import undine_settings
+from undine.utils.graphql.fragment_arguments import get_fragment_variable_values
 from undine.utils.graphql.undine_extensions import (
     get_undine_connection,
     get_undine_field,
@@ -19,12 +20,7 @@ from undine.utils.graphql.undine_extensions import (
     get_undine_offset_pagination,
     get_undine_query_type,
 )
-from undine.utils.graphql.utils import (
-    get_field_path_identifier,
-    get_underlying_type,
-    is_typename_metafield,
-    should_skip_node,
-)
+from undine.utils.graphql.utils import get_field_path_identifier, get_underlying_type, is_typename_metafield
 from undine.utils.model_utils import get_default_manager, get_field_name, get_related_name
 from undine.utils.reflection import is_same_func
 
@@ -183,7 +179,8 @@ class QueryOptimizer(GraphQLASTWalker):
         graphql_field = parent_type.fields[field_node.name.value]
         object_type: GraphQLObjectType = get_underlying_type(graphql_field.type)  # type: ignore[assignment]
 
-        arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values)
+        fragment_variable_values = get_fragment_variable_values(self.info)
+        arg_values = get_argument_values(graphql_field, field_node, self.info.variable_values, fragment_variable_values)
 
         # A union or interface connection paginates the combined result of its members.
         # The resolver owns that pagination, so a member's own optimizations get none of it.
@@ -370,7 +367,7 @@ class QueryOptimizer(GraphQLASTWalker):
             return
 
         for selection in field_node.selection_set.selections:
-            if should_skip_node(selection, self.info.variable_values):
+            if self.should_skip(selection, collected_field_node_ids=None):
                 continue
 
             # GenericForeignKey can only contain InlineFragments for its related models,

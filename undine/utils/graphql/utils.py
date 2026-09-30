@@ -40,6 +40,7 @@ from undine.exceptions import (
     GraphQLRequestOperationNotFoundError,
 )
 from undine.settings import undine_settings
+from undine.utils.graphql.fragment_arguments import get_fragment_variable_values
 from undine.utils.logging import log_traceback, logger
 from undine.utils.model_utils import get_validation_error_messages
 from undine.utils.reflection import get_traceback
@@ -135,7 +136,8 @@ def get_underlying_type(
 def get_arguments(info: GQLInfo) -> dict[str, Any]:
     """Get input arguments for the current field from the GraphQL resolve info."""
     graphql_field = info.parent_type.fields[info.field_name]
-    return get_argument_values(graphql_field, info.field_nodes[0], info.variable_values)
+    fragment_variable_values = get_fragment_variable_values(info)
+    return get_argument_values(graphql_field, info.field_nodes[0], info.variable_values, fragment_variable_values)
 
 
 def get_queried_field_name(original_name: str, info: GQLInfo) -> str:

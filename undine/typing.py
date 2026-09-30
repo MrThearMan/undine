@@ -115,6 +115,7 @@ if TYPE_CHECKING:
         OperationDefinitionNode,
         VariableValues,
     )
+    from graphql.execution.collect_fields import FieldDetailsList, FragmentDetails
     from graphql.pyutils import Path
 
     from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
@@ -809,6 +810,12 @@ class UndineInternalContext:
 
     mutation_counter: MutationInstanceCounter = dataclasses.field(default_factory=MutationInstanceCounter)
     """Counts the model instances mutated during this operation. See `MUTATION_INSTANCE_LIMIT`."""
+
+    fragment_details: dict[str, FragmentDetails] | None = None
+    """Details of the fragments in the operation's document. Only used with fragment arguments."""
+
+    field_details_lists: dict[tuple[tuple[str, str], ...], FieldDetailsList] = dataclasses.field(default_factory=dict)
+    """Fields collected for each path in the operation, by path segments. Only used with fragment arguments."""
 
 
 @dataclasses.dataclass(kw_only=True, eq=False)
