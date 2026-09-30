@@ -212,7 +212,7 @@ def test_interface_type__inline_fragments(graphql, undine_settings) -> None:
 
 @pytest.mark.django_db
 def test_interface_type__fields_selected_from_one_implementation_only(graphql, undine_settings) -> None:
-    """An implementation with no fields selected is not fetched at all."""
+    """An implementation with no fields selected is still fetched, and its objects have no fields."""
     undine_settings.SCHEMA = create_interface_schema()
 
     TaskFactory.create(name="Task 1")
@@ -229,7 +229,21 @@ def test_interface_type__fields_selected_from_one_implementation_only(graphql, u
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"named": [{"name": "Task 1"}]}
+    assert response.data == {"named": [{}, {"name": "Task 1"}]}
+
+
+@pytest.mark.django_db
+def test_interface_type__typename_only(graphql, undine_settings) -> None:
+    """Selecting only `__typename` still returns the rows of every implementation."""
+    undine_settings.SCHEMA = create_interface_schema()
+
+    TaskFactory.create(name="Task 1")
+    ProjectFactory.create(name="Project 1")
+
+    response = graphql("query { named { __typename } }")
+    assert response.has_errors is False, response.errors
+
+    assert response.data == {"named": [{"__typename": "ProjectType"}, {"__typename": "TaskType"}]}
 
 
 @pytest.mark.django_db

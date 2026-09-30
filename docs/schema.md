@@ -388,8 +388,8 @@ A `MutationType` counts as 1, but if its return type is a `QueryType`, that `Que
 is counted as well. An `Entrypoint` that runs none, like one based on a function, has a complexity of 0.
 
 An `Entrypoint` based on a [`UnionType`](unions.md) or an [`InterfaceType`](interfaces.md) runs one query
-for each member it fetches, so it adds 1 for each member the operation selects fields from. Selecting a field
-on the interface itself fetches every implementation, since the field is read from all of them.
+for each of its members, so it adds 1 for each member. Every member is fetched, even if the operation
+selects no fields from it, since its objects are still part of the result.
 
 You can also set the complexity on the `Entrypoint` yourself. This is useful for an `Entrypoint`
 whose reference does not describe its cost, like one that calls an external service.

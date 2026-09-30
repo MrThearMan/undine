@@ -93,10 +93,12 @@ def test_optimizer__union__only_one(graphql, undine_settings) -> None:
         "commentable": [
             {"name": "Project 1"},
             {"name": "Project 2"},
+            {},
+            {},
         ],
     }
 
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db

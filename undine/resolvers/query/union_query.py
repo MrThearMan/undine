@@ -89,7 +89,7 @@ def optimize_members(
     **kwargs: Any,
 ) -> UnionMembers:
     """
-    Build a queryset for each member the current query selects something from.
+    Build a queryset for each member of the union or interface.
 
     :param build_descriptors: Also describe each member's own ordering. Needed for cursors.
                               This annotates the columns an expression order is read and compared
@@ -99,8 +99,6 @@ def optimize_members(
 
     for query_type in query_types:
         optimizations = optimize_member(query_type, info, **kwargs)
-        if optimizations is None:
-            continue
 
         if build_descriptors:
             descriptors = order_by_list_to_ordering_descriptors(
@@ -118,8 +116,7 @@ def optimize_members(
     return members
 
 
-def optimize_member(query_type: type[QueryType], info: GQLInfo, **kwargs: Any) -> OptimizationResults | None:
-    """Returns `None` if the query selects nothing from this member."""
+def optimize_member(query_type: type[QueryType], info: GQLInfo, **kwargs: Any) -> OptimizationResults:
     model = query_type.__model__
 
     argument_values: dict[str, Any] = {}
@@ -135,8 +132,10 @@ def optimize_member(query_type: type[QueryType], info: GQLInfo, **kwargs: Any) -
     optimizer.handle_undine_query_type(query_type, argument_values)
     optimizations = optimizer.compile()
 
+    # A member's objects are part of the result even if no fields are selected from them,
+    # e.g. when only `__typename` is selected, so only the primary key is fetched for them.
     if optimizations.nothing_selected:
-        return None
+        optimizations.only_fields.add(model._meta.pk.name)
 
     primary_key_order = OrderBy(F("pk"))
     optimizations.order_by.append(primary_key_order)

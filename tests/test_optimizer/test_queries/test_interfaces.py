@@ -304,6 +304,8 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql,
 
     assert response.data == {
         "named": [
+            {},
+            {},
             {
                 "type": "TASK",
             },
@@ -313,7 +315,7 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment(graphql,
         ],
     }
 
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db
@@ -358,6 +360,12 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typenam
     assert response.data == {
         "named": [
             {
+                "__typename": "ProjectType",
+            },
+            {
+                "__typename": "ProjectType",
+            },
+            {
                 "__typename": "TaskType",
                 "type": "TASK",
             },
@@ -368,7 +376,7 @@ def test_optimizer__interfaces__only_fragment_fields__from_one_fragment__typenam
         ],
     }
 
-    response.assert_query_count(2)
+    response.assert_query_count(3)
 
 
 @pytest.mark.django_db

@@ -19,54 +19,55 @@ class ComplexityParams(NamedTuple):
     complexity: int
 
 
+# Every member is fetched, no matter which of them the operation selects fields from.
 MEMBER_CASES: dict[str, ComplexityParams] = {
     "no member selected": ComplexityParams(
         selection="{ __typename }",
         fragments="",
-        query_count=0,
-        complexity=1,
+        query_count=4,
+        complexity=4,
     ),
     "member selects its typename only": ComplexityParams(
         selection="{ ... on TaskType { __typename } }",
         fragments="",
-        query_count=0,
-        complexity=1,
+        query_count=4,
+        complexity=4,
     ),
     "one member selected": ComplexityParams(
         selection="{ ... on TaskType { done } }",
         fragments="",
-        query_count=2,
-        complexity=2,
+        query_count=4,
+        complexity=4,
     ),
     "one member selected through a fragment": ComplexityParams(
         selection="{ ...TaskFields }",
         fragments="fragment TaskFields on TaskType { done }",
-        query_count=2,
-        complexity=2,
+        query_count=4,
+        complexity=4,
     ),
     "one member selected through a fragment inside a fragment": ComplexityParams(
         selection="{ ... on TaskType { ...TaskFields } }",
         fragments="fragment TaskFields on TaskType { done }",
-        query_count=2,
-        complexity=2,
+        query_count=4,
+        complexity=4,
     ),
     "one member selected through an inline fragment inside a fragment": ComplexityParams(
         selection="{ ... on TaskType { ... on TaskType { done } } }",
         fragments="",
-        query_count=2,
-        complexity=2,
+        query_count=4,
+        complexity=4,
     ),
     "member fragment mixes typenames, empty fragments and a field": ComplexityParams(
         selection="{ ... on TaskType { __typename ...TypenameFields ... on TaskType { __typename } done } }",
         fragments="fragment TypenameFields on TaskType { __typename }",
-        query_count=2,
-        complexity=2,
+        query_count=4,
+        complexity=4,
     ),
     "two members selected, third one left out": ComplexityParams(
         selection="{ ... on TaskType { done } ... on ProjectType { name } }",
         fragments="",
-        query_count=3,
-        complexity=3,
+        query_count=4,
+        complexity=4,
     ),
     "every member selected": ComplexityParams(
         selection="{ ... on TaskType { done } ... on ProjectType { name } ... on ReportType { name } }",
@@ -158,19 +159,19 @@ def test_union_type__complexity__connection(  # ruff: ignore[too-many-positional
 
 @pytest.mark.django_db
 def test_union_type__complexity__connection__total_count(graphql, undine_settings) -> None:
-    """The count over the selected members is an extra query, but is not counted towards the complexity."""
+    """The count over the members is an extra query, but is not counted towards the complexity."""
     undine_settings.SCHEMA = create_union_member_schema()
     create_one_row_per_member()
 
     query = "query { commentable { totalCount edges { node { ... on TaskType { done } } } } }"
-    assert_complexity(graphql, undine_settings, query=query, query_count=3, complexity=2)
+    assert_complexity(graphql, undine_settings, query=query, query_count=5, complexity=4)
 
 
 @pytest.mark.django_db
 def test_union_type__complexity__undefined_fragment(graphql, undine_settings) -> None:
-    """An undefined fragment selects no members, and is reported by the fragment validation rules."""
+    """An undefined fragment doesn't break the complexity rule, and is reported by the fragment validation rules."""
     undine_settings.SCHEMA = create_union_member_schema()
-    undine_settings.MAX_QUERY_COMPLEXITY = 1
+    undine_settings.MAX_QUERY_COMPLEXITY = 4
 
     query = "query { commentables { ...UndefinedFields } }"
 
@@ -222,9 +223,9 @@ def test_interface_type__complexity__connection(  # ruff: ignore[too-many-positi
 
 @pytest.mark.django_db
 def test_interface_type__complexity__connection__total_count(graphql, undine_settings) -> None:
-    """The count over the selected members is an extra query, but is not counted towards the complexity."""
+    """The count over the members is an extra query, but is not counted towards the complexity."""
     undine_settings.SCHEMA = create_interface_member_schema()
     create_one_row_per_member()
 
     query = "query { named { totalCount edges { node { ... on TaskType { done } } } } }"
-    assert_complexity(graphql, undine_settings, query=query, query_count=3, complexity=2)
+    assert_complexity(graphql, undine_settings, query=query, query_count=5, complexity=4)

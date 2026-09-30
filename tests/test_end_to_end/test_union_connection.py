@@ -340,7 +340,7 @@ def test_union_connection__cursor_disambiguates_members_with_the_same_primary_ke
 
 @pytest.mark.django_db
 def test_union_connection__fields_selected_from_one_member_only(graphql, undine_settings) -> None:
-    """A member the query selects no fields from is not fetched, not counted, and gets no edges."""
+    """A member the query selects no fields from is still fetched, counted, and gets edges with no fields."""
     undine_settings.SCHEMA = create_union_schema()
 
     TaskFactory.create(name="Task 1")
@@ -360,8 +360,9 @@ def test_union_connection__fields_selected_from_one_member_only(graphql, undine_
 
     assert response.data == {
         "searchables": {
-            "totalCount": 1,
+            "totalCount": 2,
             "edges": [
+                {"node": {}},
                 {"node": {"name": "Task 1"}},
             ],
         },
@@ -370,7 +371,7 @@ def test_union_connection__fields_selected_from_one_member_only(graphql, undine_
 
 @pytest.mark.django_db
 def test_union_connection__no_fields_selected_from_any_member(graphql, undine_settings) -> None:
-    """Selecting only '__typename' selects no fields from any member, so the connection is empty."""
+    """Selecting only '__typename' selects no fields from any member, but every member is still fetched."""
     undine_settings.SCHEMA = create_union_schema()
 
     TaskFactory.create(name="Task 1")
@@ -388,8 +389,16 @@ def test_union_connection__no_fields_selected_from_any_member(graphql, undine_se
     response = graphql(query, count_queries=True)
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"searchables": {"totalCount": 0, "edges": []}}
-    response.assert_query_count(0)
+    assert response.data == {
+        "searchables": {
+            "totalCount": 2,
+            "edges": [
+                {"node": {"__typename": "ProjectType"}},
+                {"node": {"__typename": "TaskType"}},
+            ],
+        },
+    }
+    response.assert_query_count(4)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -413,7 +422,15 @@ async def test_union_connection__no_fields_selected_from_any_member__async(graph
     response = await graphql_async(query)
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"searchables": {"totalCount": 0, "edges": []}}
+    assert response.data == {
+        "searchables": {
+            "totalCount": 2,
+            "edges": [
+                {"node": {"__typename": "ProjectType"}},
+                {"node": {"__typename": "TaskType"}},
+            ],
+        },
+    }
 
 
 # Filtering

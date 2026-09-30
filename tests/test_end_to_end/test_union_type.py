@@ -69,9 +69,8 @@ def test_union_type__empty(graphql, undine_settings) -> None:
 @pytest.mark.django_db
 def test_union_type__typename_only_no_matching_fragment(graphql, undine_settings) -> None:
     """
-    Selecting only `__typename`, with no inline fragment for either member, selects nothing from
-    either member's query type, so the union entrypoint has nothing to fetch and returns an empty
-    list, even though rows exist for both members.
+    Selecting only `__typename`, with no inline fragment for either member, still returns
+    the rows of every member, since the selections don't decide which objects are in the result.
     """
     undine_settings.SCHEMA = create_union_schema()
 
@@ -81,7 +80,7 @@ def test_union_type__typename_only_no_matching_fragment(graphql, undine_settings
     response = graphql("query { searchables { __typename } }")
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"searchables": []}
+    assert response.data == {"searchables": [{"__typename": "ProjectType"}, {"__typename": "TaskType"}]}
 
 
 @pytest.mark.django_db(transaction=True)
@@ -96,7 +95,7 @@ async def test_union_type__typename_only_no_matching_fragment__async(graphql_asy
     response = await graphql_async("query { searchables { __typename } }")
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"searchables": []}
+    assert response.data == {"searchables": [{"__typename": "ProjectType"}, {"__typename": "TaskType"}]}
 
 
 @pytest.mark.django_db
@@ -144,7 +143,7 @@ async def test_union_type__both_members__async(graphql_async, undine_settings) -
 
 @pytest.mark.django_db
 def test_union_type__fields_selected_from_one_member_only(graphql, undine_settings) -> None:
-    """A member with no fields selected is not fetched at all."""
+    """A member with no fields selected is still fetched, and its objects have no fields."""
     undine_settings.SCHEMA = create_union_schema()
 
     TaskFactory.create(name="Task 1")
@@ -161,7 +160,7 @@ def test_union_type__fields_selected_from_one_member_only(graphql, undine_settin
     response = graphql(query)
     assert response.has_errors is False, response.errors
 
-    assert response.data == {"searchables": [{"name": "Task 1"}]}
+    assert response.data == {"searchables": [{}, {"name": "Task 1"}]}
 
 
 @pytest.mark.django_db
