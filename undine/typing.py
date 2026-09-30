@@ -77,14 +77,12 @@ from graphql import (
     GraphQLScalarType,
     GraphQLUnionType,
     SelectionNode,
-    Undefined,
     UndefinedType,
-    version_info,
 )
 from graphql.pyutils import AwaitableOrValue
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Container, Sequence
+    from collections.abc import Container
     from http.cookies import SimpleCookie
 
     from asgiref.typing import (
@@ -105,17 +103,17 @@ if TYPE_CHECKING:
     from django.test.client import Client
     from django.utils.datastructures import MultiValueDict
     from graphql import (
+        AbortSignal,
         ASTValidationRule,
-        ConstValueNode,
         DirectiveLocation,
         FormattedExecutionResult,
         FragmentDefinitionNode,
-        GraphQLError,
         GraphQLFormattedError,
-        GraphQLInputType,
         GraphQLOutputType,
+        GraphQLResolveInfoHelpers,
         GraphQLSchema,
         OperationDefinitionNode,
+        VariableValues,
     )
     from graphql.pyutils import Path
 
@@ -125,127 +123,7 @@ if TYPE_CHECKING:
     from undine.utils.graphql.websocket import WebSocketRequest
 
 
-if version_info >= (3, 3, 0):  # pragma: no cover
-    from graphql import (  # type: ignore[attr-defined]
-        AbortSignal,  # type: ignore[attr-defined]
-        ExperimentalIncrementalExecutionResults,  # type: ignore[attr-defined]
-        GraphQLResolveInfoHelpers,  # type: ignore[attr-defined]
-        VariableValues,  # type: ignore[attr-defined]
-    )
-
-else:  # pragma: no cover
-
-    class _FormattedCompletedResult(TypedDict):
-        id: str
-        errors: NotRequired[list[GraphQLFormattedError]]
-
-    class _FormattedPendingResult(TypedDict):
-        id: str
-        path: list[str | int]
-        label: NotRequired[str]
-
-    class _FormattedIncrementalDeferResult(TypedDict):
-        id: str
-        data: dict[str, Any]
-        errors: NotRequired[list[GraphQLFormattedError]]
-        subPath: NotRequired[list[str | int]]
-        extensions: NotRequired[dict[str, Any]]
-
-    class _FormattedIncrementalStreamResult(TypedDict):
-        id: str
-        items: list[Any]
-        errors: NotRequired[list[GraphQLFormattedError]]
-        subPath: NotRequired[list[str | int]]
-        extensions: NotRequired[dict[str, Any]]
-
-    class _FormattedInitialIncrementalExecutionResult(TypedDict):
-        data: NotRequired[dict[str, Any] | None]
-        errors: NotRequired[list[GraphQLFormattedError]]
-        pending: list[_FormattedPendingResult]
-        hasNext: bool
-        incremental: list[_FormattedIncrementalDeferResult | _FormattedIncrementalStreamResult]
-        extensions: NotRequired[dict[str, Any]]
-
-    class _FormattedSubsequentIncrementalExecutionResult(TypedDict):
-        pending: NotRequired[list[_FormattedPendingResult]]
-        incremental: NotRequired[list[_FormattedIncrementalDeferResult | _FormattedIncrementalStreamResult]]
-        completed: NotRequired[list[_FormattedCompletedResult]]
-        hasNext: bool
-        extensions: NotRequired[dict[str, Any]]
-
-    class _PendingResult(Protocol):
-        id: str
-        path: list[str | int]
-        label: str | None
-        formatted: _FormattedPendingResult
-
-    class _CompletedResult(Protocol):
-        id: str
-        errors: list[GraphQLError] | None
-        formatted: _FormattedCompletedResult
-
-    class _InitialIncrementalExecutionResult(Protocol):
-        data: dict[str, Any] | None
-        errors: list[GraphQLError] | None
-        pending: list[_PendingResult]
-        has_next: bool
-        extensions: dict[str, Any] | None
-        formatted: _FormattedInitialIncrementalExecutionResult
-
-    class _IncrementalDeferResult(Protocol):
-        errors: list[GraphQLError] | None
-        data: dict[str, Any]
-        id: str
-        sub_path: list[str | int] | None
-        extensions: dict[str, Any] | None
-        formatted: _FormattedIncrementalDeferResult
-
-    class _IncrementalStreamResult(Protocol):
-        errors: list[GraphQLError] | None
-        items: list[Any]
-        id: str
-        sub_path: list[str | int] | None
-        extensions: dict[str, Any] | None
-        formatted: _FormattedIncrementalStreamResult
-
-    class _SubsequentIncrementalExecutionResult(Protocol):
-        pending: list[_PendingResult] | None
-        incremental: list[_IncrementalDeferResult | _IncrementalStreamResult] | None
-        completed: list[_CompletedResult] | None
-        has_next: bool
-        extensions: dict[str, Any] | None
-        formatted: _FormattedSubsequentIncrementalExecutionResult
-
-    class ExperimentalIncrementalExecutionResults(Protocol):  # type: ignore[no-redef]
-        initial_result: _InitialIncrementalExecutionResult
-        subsequent_results: AsyncGenerator[_SubsequentIncrementalExecutionResult, None]
-
-    class AbortSignal:  # type: ignore[no-redef]
-        aborted: bool
-        reason: Any
-
-    class GraphQLResolveInfoHelpers(NamedTuple):  # type: ignore[no-redef]
-        gather: Callable[[Sequence[Awaitable[Any]]], Awaitable[list[Any]]]
-        track: Callable[[Sequence[Any]], None]
-
-    class GraphQLDefaultInput:
-        value: Any
-        literal: ConstValueNode | None
-
-    class GraphQLVariableSignature(NamedTuple):
-        name: str
-        type: GraphQLInputType
-        default: GraphQLDefaultInput | None
-        default_value: Any = Undefined
-
-    class VariableValueSource(NamedTuple):
-        signature: GraphQLVariableSignature
-        value: Any = Undefined
-
-    class VariableValues(NamedTuple):  # type: ignore[no-redef]
-        sources: dict[str, VariableValueSource]
-        coerced: dict[str, Any]
-
+from graphql import ExperimentalIncrementalExecutionResults
 
 __all__ = [
     "ID",
@@ -991,64 +869,37 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     operation: OperationDefinitionNode
     """The GraphQL AST Operation Definition Node currently being executed."""
 
-    if version_info >= (3, 3, 0):  # pragma: no cover
-        variable_values: VariableValues
-        """The variables passed to the GraphQL operation."""
-    else:  # pragma: no cover
-        variable_values: dict[str, Any]  # type: ignore[no-redef]
-        """The variables passed to the GraphQL operation."""
+    variable_values: VariableValues
+    """The variables passed to the GraphQL operation."""
 
     context: GQLContext[TUser]
     """The context passed to the GraphQL operation. This is always the Django request object."""
 
-    if version_info >= (3, 3, 0):  # pragma: no cover
-        is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
-        """Function for testing whether the GraphQL resolver is awaitable or not."""
-    else:  # pragma: no cover
-        is_awaitable: Callable[[Any], bool]  # type: ignore[no-redef]
-        """Function for testing whether the GraphQL resolver is awaitable or not."""
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
+    """Function for testing whether the GraphQL resolver is awaitable or not."""
 
-    if version_info >= (3, 3, 0):  # pragma: no cover
-        abort_signal: AbortSignal | None
-        """The abort signal passed to the GraphQL operation."""
+    abort_signal: AbortSignal | None
+    """The abort signal passed to the GraphQL operation."""
 
-        async_helpers: GraphQLResolveInfoHelpers
-        """The async helpers passed to the GraphQL operation."""
+    async_helpers: GraphQLResolveInfoHelpers
+    """The async helpers passed to the GraphQL operation."""
 
 
-if version_info >= (3, 3, 0):  # pragma: no cover
-
-    class GQLInfoDict(TypedDict, Generic[TUser], total=False):
-        field_name: str
-        field_nodes: list[FieldNode]
-        return_type: GraphQLOutputType
-        parent_type: GraphQLObjectType
-        path: Path
-        schema: GraphQLSchema
-        fragments: dict[str, FragmentDefinitionNode]
-        root_value: Any
-        operation: OperationDefinitionNode
-        variable_values: VariableValues
-        context: GQLContext[TUser]
-        is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
-        abort_signal: AbortSignal | None
-        async_helpers: GraphQLResolveInfoHelpers | None
-
-else:  # pragma: no cover
-
-    class GQLInfoDict(TypedDict, Generic[TUser], total=False):  # type: ignore[no-redef]
-        field_name: str
-        field_nodes: list[FieldNode]
-        return_type: GraphQLOutputType
-        parent_type: GraphQLObjectType
-        path: Path
-        schema: GraphQLSchema
-        fragments: dict[str, FragmentDefinitionNode]
-        root_value: Any
-        operation: OperationDefinitionNode
-        variable_values: dict[str, Any]
-        context: GQLContext[TUser]
-        is_awaitable: Callable[[Any], bool]
+class GQLInfoDict(TypedDict, Generic[TUser], total=False):
+    field_name: str
+    field_nodes: list[FieldNode]
+    return_type: GraphQLOutputType
+    parent_type: GraphQLObjectType
+    path: Path
+    schema: GraphQLSchema
+    fragments: dict[str, FragmentDefinitionNode]
+    root_value: Any
+    operation: OperationDefinitionNode
+    variable_values: VariableValues
+    context: GQLContext[TUser]
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
+    abort_signal: AbortSignal | None
+    async_helpers: GraphQLResolveInfoHelpers
 
 
 UniquelyNamedGraphQLElement: TypeAlias = (

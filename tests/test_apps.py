@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from django.apps import apps
-from graphql.pyutils import did_you_mean
 
 if TYPE_CHECKING:
     from undine.apps import UndineConfig
@@ -13,15 +12,6 @@ if TYPE_CHECKING:
 
 def get_undine_config() -> UndineConfig:
     return apps.get_app_config("undine")  # type: ignore[return-value]
-
-
-def test_apps__maybe_disable_did_you_mean__disabled(undine_settings) -> None:
-    undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS = False
-
-    config = get_undine_config()
-    config.maybe_disable_did_you_mean()
-
-    assert did_you_mean.__globals__["MAX_LENGTH"] == 0
 
 
 def test_apps__patch_debug_toolbar_if_installed__debug_toolbar_installed() -> None:

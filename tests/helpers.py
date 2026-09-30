@@ -39,7 +39,6 @@ from graphql import (
     SelectionSetNode,
     Undefined,
     ValidationRule,
-    version_info,
 )
 from graphql.pyutils import Path
 from urllib3 import encode_multipart_formdata
@@ -454,7 +453,8 @@ def mock_gql_info(  # noqa: PLR0913
         variable_values={} if variable_values is None else variable_values,
         context=GQLContext(request=MockRequest()) if context is None else context,
         is_awaitable=(lambda _: False) if is_awaitable is None else is_awaitable,
-        **({"abort_signal": abort_signal, "async_helpers": None} if version_info >= (3, 3, 0) else {}),
+        abort_signal=abort_signal,
+        async_helpers=None,
     )
 
 

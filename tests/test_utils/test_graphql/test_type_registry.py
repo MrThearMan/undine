@@ -4,6 +4,7 @@ import pytest
 from django.db.models import TextChoices
 from graphql import (
     DirectiveLocation,
+    GraphQLDeferDirective,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -13,12 +14,15 @@ from graphql import (
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLScalarType,
+    GraphQLStreamDirective,
     GraphQLString,
     GraphQLUnionType,
 )
 
+from undine import Entrypoint, RootType, create_schema
 from undine.exceptions import GraphQLDuplicateTypeError
 from undine.utils.graphql.type_registry import (
+    GRAPHQL_REGISTRY,
     get_or_create_graphql_directive,
     get_or_create_graphql_enum,
     get_or_create_graphql_input_object_type,
@@ -26,6 +30,7 @@ from undine.utils.graphql.type_registry import (
     get_or_create_graphql_object_type,
     get_or_create_graphql_scalar,
     get_or_create_graphql_union,
+    register_builtins,
 )
 
 
@@ -316,3 +321,39 @@ def test_undine_extensions__get_or_create_graphql_directive__different_graphql_e
             name="foo",
             locations=[DirectiveLocation.FIELD],
         )
+
+
+def test_register_builtins__incremental_delivery_disabled(undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY = False
+
+    GRAPHQL_REGISTRY.clear()
+    register_builtins()
+
+    assert "defer" not in GRAPHQL_REGISTRY
+    assert "stream" not in GRAPHQL_REGISTRY
+
+
+def test_register_builtins__incremental_directives_already_registered(undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY = True
+
+    GRAPHQL_REGISTRY.clear()
+    GRAPHQL_REGISTRY["defer"] = GraphQLDeferDirective
+    GRAPHQL_REGISTRY["stream"] = GraphQLStreamDirective
+    register_builtins()
+
+    assert GRAPHQL_REGISTRY["defer"] is GraphQLDeferDirective
+    assert GRAPHQL_REGISTRY["stream"] is GraphQLStreamDirective
+
+
+def test_create_schema__incremental_delivery_disabled(undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY = False
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+    schema = create_schema(query=Query)
+
+    assert schema.get_directive("defer") is None
+    assert schema.get_directive("stream") is None

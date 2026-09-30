@@ -9,11 +9,14 @@ import pytest
 from django.http.request import MediaType
 from graphql import (
     ExecutionResult,
+    ExperimentalIncrementalExecutionResults,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
+    InitialIncrementalExecutionResult,
+    SubsequentIncrementalExecutionResult,
     TypeInfo,
     parse,
 )
@@ -1193,6 +1196,41 @@ async def test_execute_graphql_http_async__incremental_disabled(undine_settings)
     assert result.errors[0].extensions.get("error_code") == "INCREMENTAL_DELIVERY_NOT_SUPPORTED"
 
 
+def test_execute_graphql_http_sync__defer(undine_settings) -> None:
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+        @Entrypoint
+        def broken(self) -> str | None:
+            msg = "Broken."
+            raise GraphQLError(msg)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    params = GraphQLHttpParams(
+        document="query { broken ... @defer { example } }",
+        variables={},
+        operation_name=None,
+        extensions={},
+    )
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
+
+    assert result.formatted == {
+        "data": None,
+        "errors": [
+            {
+                "message": (
+                    "Executing this GraphQL operation would unexpectedly produce multiple payloads "
+                    "(due to @defer or @stream directive)"
+                ),
+                "extensions": {"status_code": 500, "error_code": "UNEXPECTED_MULTIPLE_PAYLOADS"},
+            },
+        ],
+    }
+
+
 def test_undine_validation_context__variable_as_ast__none_value(undine_settings) -> None:
     undine_settings.SCHEMA = example_schema
 
@@ -1369,6 +1407,44 @@ def test_execute_graphql_http_sync__result_pre_set_in_parse_hook(undine_settings
     result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
 
     assert result == ExecutionResult(data={"preparse": "sync"})
+
+
+def test_execute_graphql_http_sync__result_pre_set_as_incremental(undine_settings) -> None:
+    undine_settings.SCHEMA = example_schema
+
+    async def _subsequent_results() -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:  # noqa: RUF029
+        yield SubsequentIncrementalExecutionResult()
+
+    class PreSetIncrementalHook(LifecycleHook):
+        def on_parse(self) -> Generator[None, None, None]:
+            self.context.result = ExperimentalIncrementalExecutionResults(
+                initial_result=InitialIncrementalExecutionResult(data={"pre": "set"}, has_next=True),
+                subsequent_results=_subsequent_results(),
+            )
+            yield
+
+    undine_settings.ADDITIONAL_LIFECYCLE_HOOKS = [PreSetIncrementalHook]
+
+    params = GraphQLHttpParams(
+        document="query { testing }",
+        variables={},
+        operation_name=None,
+        extensions={},
+    )
+    result = execute_graphql_http_sync(params=params, request=MockRequest(method="POST"))
+
+    assert result.formatted == {
+        "data": None,
+        "errors": [
+            {
+                "message": (
+                    "Executing this GraphQL operation would unexpectedly produce multiple payloads "
+                    "(due to @defer or @stream directive)"
+                ),
+                "extensions": {"status_code": 500, "error_code": "UNEXPECTED_MULTIPLE_PAYLOADS"},
+            },
+        ],
+    }
 
 
 def test_execute_graphql_http_sync__document_pre_set(undine_settings) -> None:
@@ -1738,6 +1814,7 @@ def test_get_execution_context__success(undine_settings) -> None:
         variable_values={},
         operation_name=None,
         middleware=None,
+        incremental_delivery_error=None,
     )
 
     assert context is not None
@@ -2183,4 +2260,5 @@ def test_get_execution_context__invalid_variable_values(undine_settings) -> None
             variable_values={"name": 123},  # Wrong type - should be String
             operation_name=None,
             middleware=None,
+            incremental_delivery_error=None,
         )

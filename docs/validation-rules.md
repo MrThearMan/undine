@@ -61,14 +61,6 @@ queries an operation runs, while list nesting depth bounds how many rows those q
 A query selecting four levels of nested to-many relations only has a complexity of `4`, but can easily
 return hundreds of thousands of rows.
 
-### `OneOfInputObjectTypeRule`
-
-This validation rule checks that a one-of input object is used correctly.
-Only added when `graphql-core` version is below [v3.2.7]{:target="_blank"}
-since `oneOf` input object support was added in that version.
-
-[v3.2.7]: https://github.com/graphql-python/graphql-core/releases/tag/v3.2.7
-
 ### `VisibilityRule`
 
 Installed automatically on schemas that use [visibility](visibility.md). This

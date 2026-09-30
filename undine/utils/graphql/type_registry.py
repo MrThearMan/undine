@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from graphql import (
+    GraphQLDeferDirective,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -10,10 +11,10 @@ from graphql import (
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLScalarType,
+    GraphQLStreamDirective,
     GraphQLUnionType,
     specified_directives,
     specified_scalar_types,
-    version_info,
 )
 
 from undine.exceptions import GraphQLDuplicateTypeError
@@ -383,9 +384,7 @@ def register_builtins() -> None:
     for directive in specified_directives:
         GRAPHQL_REGISTRY[directive.name] = directive
 
-    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY and version_info >= (3, 3, 0):  # pragma: no cover
-        from graphql import GraphQLDeferDirective, GraphQLStreamDirective  # type: ignore[attr-defined] # noqa: PLC0415
-
+    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY:
         if GraphQLDeferDirective.name not in GRAPHQL_REGISTRY:
             GRAPHQL_REGISTRY[GraphQLDeferDirective.name] = GraphQLDeferDirective
         if GraphQLStreamDirective.name not in GRAPHQL_REGISTRY:
@@ -394,9 +393,7 @@ def register_builtins() -> None:
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:
     additional_directives: tuple[GraphQLDirective, ...] = ()
-    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY and version_info >= (3, 3, 0):  # pragma: no cover
-        from graphql import GraphQLDeferDirective, GraphQLStreamDirective  # type: ignore[attr-defined] # noqa: PLC0415
-
+    if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY:
         additional_directives = (GraphQLDeferDirective, GraphQLStreamDirective)
 
     return (

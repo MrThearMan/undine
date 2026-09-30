@@ -1812,6 +1812,27 @@ def test_sdl_printer__directive_usage__value_equals_default() -> None:
     assert "42" not in result.split("@withDefault")[1].split("\n")[0]
 
 
+def test_sdl_printer__directive_usage__null_value_with_default() -> None:
+    class WithDefaultDir(
+        Directive,
+        locations=[DirectiveLocation.FIELD_DEFINITION],
+        schema_name="withDefault",
+    ):
+        value = DirectiveArgument(GraphQLInt, default_value=42)
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field(directives=[WithDefaultDir(value=None)])
+
+    class Query(RootType):
+        task = Entrypoint(TaskType)
+
+    schema = create_schema(query=Query)
+    result = print_schema(schema)
+
+    field_lines = [line for line in result.splitlines() if line.strip().startswith("name:")]
+    assert field_lines == ["  name: String! @withDefault"]
+
+
 def test_sdl_printer__deprecated__default_reason() -> None:
     result = SDLPrinter.print_deprecated(DEFAULT_DEPRECATION_REASON)
     assert result == " @deprecated"

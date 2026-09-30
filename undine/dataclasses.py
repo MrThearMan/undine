@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.db.models import Model, OrderBy, Q
-    from graphql import (  # type: ignore[attr-defined]
+    from graphql import (
         FieldNode,
         FormattedInitialIncrementalExecutionResult,
         FormattedSubsequentIncrementalExecutionResult,

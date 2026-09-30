@@ -124,6 +124,7 @@ from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
 )
+from undine.utils.graphql.utils import non_null
 from undine.utils.model_fields import TextChoicesField
 from undine.utils.model_utils import generic_relations_for_generic_foreign_key, get_model_field
 from undine.utils.reflection import (
@@ -297,7 +298,7 @@ def _(ref: type[list], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
     graphql_type = convert_to_graphql_type(args[0], **kwargs)
     if not nullable:
-        graphql_type = GraphQLNonNull(graphql_type)
+        graphql_type = non_null(graphql_type)
 
     return GraphQLList(graphql_type)
 
@@ -401,7 +402,7 @@ def _(ref: type[tuple], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
         graphql_type = convert_to_graphql_type(args[0], **kwargs)
         if not nullable:
-            graphql_type = GraphQLNonNull(graphql_type)
+            graphql_type = non_null(graphql_type)
 
         return GraphQLList(graphql_type)
 
@@ -735,7 +736,7 @@ with suppress(ImportError):  # pragma: no cover
     def _(ref: ArrayField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
         inner_type = convert_to_graphql_type(ref.base_field, **kwargs)
         if not ref.base_field.null:
-            inner_type = GraphQLNonNull(inner_type)
+            inner_type = non_null(inner_type)
         return GraphQLList(inner_type)
 
 
@@ -861,8 +862,8 @@ def _(ref: LazyLambda, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 def _(ref: TypeRef, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     value = convert_to_graphql_type(ref.value, **kwargs)
     nullable = parse_is_nullable(ref.value, is_input=kwargs.get("is_input", False), total=ref.total)
-    if not nullable and not isinstance(value, GraphQLNonNull):
-        value = GraphQLNonNull(value)
+    if not nullable:
+        value = non_null(value)
     return value
 
 
@@ -879,12 +880,11 @@ def _(ref: MaybeManyOrNonNull, **kwargs: Any) -> GraphQLInputType | GraphQLOutpu
         not isinstance(value, GraphQLList)
         and not (isinstance(value, GraphQLNonNull) and isinstance(value.of_type, GraphQLList))
     ):
-        if not isinstance(value, GraphQLNonNull):
-            value = GraphQLNonNull(value)
+        value = non_null(value)
         value = GraphQLList(value)
 
-    if ref.nullable is False and not isinstance(value, GraphQLNonNull):
-        value = GraphQLNonNull(value)
+    if ref.nullable is False:
+        value = non_null(value)
 
     return value
 

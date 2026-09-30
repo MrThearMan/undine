@@ -4,7 +4,6 @@ from io import BytesIO
 
 import pytest
 from django.core.files import File
-from graphql import version_info
 
 from example_project.app.models import Task
 from tests.helpers import create_png
@@ -174,17 +173,9 @@ def test_end_to_end__mutation__image_upload__not_image(graphql, undine_settings)
     response = graphql(query, variables={"input": data})
 
     msg = (
-        (
-            "Variable '$input' has invalid value at .image: "
-            "'Image' cannot represent value <InMemoryUploadedFile instance>: "
-            "File either not an image or a corrupted image."
-        )
-        if version_info >= (3, 3, 0)
-        else (
-            "Variable '$input' got invalid value <InMemoryUploadedFile instance> at 'input.image'; "
-            "'Image' cannot represent value <InMemoryUploadedFile instance>: "
-            "File either not an image or a corrupted image."
-        )
+        "Variable '$input' has invalid value at .image: "
+        "'Image' cannot represent value <InMemoryUploadedFile instance>: "
+        "File either not an image or a corrupted image."
     )
 
     assert response.error_message(0) == msg

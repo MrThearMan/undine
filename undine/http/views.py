@@ -71,7 +71,7 @@ async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponsePr
     except (GraphQLError, GraphQLErrorGroup) as error:
         result = get_error_execution_result(error)
     else:
-        result = await execute_graphql_http_async(params, request)
+        result = await execute_graphql_http_async(params, request)  # type: ignore[assignment]
 
     return graphql_result_response(
         result,

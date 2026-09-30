@@ -5,29 +5,24 @@ from collections.abc import AsyncIterator
 from unittest.mock import patch
 
 import pytest
-from graphql import ExecutionResult, GraphQLError, version_info
+from graphql import ExecutionResult, GraphQLError
+from graphql.execution import (
+    CompletedResult,
+    ExperimentalIncrementalExecutionResults,
+    IncrementalDeferResult,
+    InitialIncrementalExecutionResult,
+    SubsequentIncrementalExecutionResult,
+)
 
 from undine.dataclasses import IncrementalDeliveryComplete, IncrementalDeliveryHeartbeat, IncrementalDeliveryResponse
-
-if version_info >= (3, 3, 0):
-    from graphql.execution import (
-        CompletedResult,
-        ExperimentalIncrementalExecutionResults,
-        IncrementalDeferResult,
-        InitialIncrementalExecutionResult,
-        SubsequentIncrementalExecutionResult,
-    )
-
-    from undine.utils.graphql.incremental import (
-        execute_graphql_incremental,
-        result_to_incremental_response,
-        with_incremental_stream_heartbeat,
-    )
-
+from undine.utils.graphql.incremental import (
+    execute_graphql_incremental,
+    result_to_incremental_response,
+    with_incremental_stream_heartbeat,
+)
 
 pytestmark = [
     pytest.mark.django_db(transaction=True),
-    pytest.mark.skipif(version_info < (3, 3, 0), reason="requires graphql-core>=3.3.0"),
 ]
 
 

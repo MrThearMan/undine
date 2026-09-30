@@ -8,8 +8,7 @@ description: Incremental Delivery in Undine.
 > The `@defer` and `@stream` directives are not part of the GraphQL specification yet.
 > They are an [RFC][incremental]{:target="_blank"} in the GraphQL Working Group and the
 > [transport RFC][incremental-http]{:target="_blank"} they are delivered over is a draft as well.
-> `graphql-core` also still exposes incremental execution under an "experimental" name,
-> and has not released a stable version with support for it.
+> `graphql-core` also still exposes incremental execution under an "experimental" name.
 
 [incremental-http]: https://github.com/graphql/graphql-over-http/blob/main/rfcs/IncrementalDelivery.md
 
@@ -19,12 +18,8 @@ all of the following must be true:
 
 [incremental]: https://github.com/graphql/graphql-wg/blob/main/rfcs/DeferStream.md
 
-1. [`graphql-core`][graphql-core]{:target="_blank"} version must be `3.3.0rc0`
-   *exactly* (later versions may work, but are not tested)
-2. [`EXPERIMENTAL_INCREMENTAL_DELIVERY`](settings.md#experimental_incremental_delivery) must be set to `True`
-3. [Async support](async.md) must be enabled
-
-[graphql-core]: https://github.com/graphql-python/graphql-core/
+1. [`EXPERIMENTAL_INCREMENTAL_DELIVERY`](settings.md#experimental_incremental_delivery) must be set to `True`
+2. [Async support](async.md) must be enabled
 
 Let's look at an example of incremental delivery using the `@defer` and `@stream` directives.
 Given the following schema:

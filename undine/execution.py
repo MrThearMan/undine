@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from django.core.exceptions import ValidationError
 from graphql import (
     ExecutionResult,
+    ExperimentalIncrementalExecutionResults,
     GraphQLEnumType,
     GraphQLError,
     MiddlewareManager,
@@ -20,9 +21,11 @@ from graphql import (
     ast_from_value,
     is_non_null_type,
     parse,
-    version_info,
     visit,
 )
+from graphql.execution.execute import execute_subscription
+from graphql.execution.executor import to_nodes
+from graphql.execution.incremental.incremental_executor import IncrementalExecutor
 
 from undine.exceptions import (
     GraphQLAsyncNotSupportedError,
@@ -74,20 +77,21 @@ from undine.utils.graphql.utils import (
 from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
-if version_info >= (3, 3, 0):  # pragma: no cover
-    from graphql import Executor  # type: ignore[attr-defined]
-    from graphql.execution.execute import execute_subscription  # type: ignore[attr-defined]
-else:  # pragma: no cover
-    from graphql import ExecutionContext as Executor
-    from graphql.execution.subscribe import execute_subscription
-
-
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Iterable, Sequence
 
-    from graphql import DocumentNode, GraphQLInputType, GraphQLOutputType, GraphQLSchema, Node, ValueNode
-    from graphql.execution.collect_fields import FieldDetailsList  # type: ignore[attr-defined]
-    from graphql.execution.execute import IncrementalContext  # type: ignore[attr-defined]
+    from graphql import (
+        DocumentNode,
+        GraphQLInputType,
+        GraphQLList,
+        GraphQLObjectType,
+        GraphQLOutputType,
+        GraphQLResolveInfo,
+        GraphQLSchema,
+        ValueNode,
+    )
+    from graphql.execution.collect_fields import DeferUsage, FieldDetailsList, GroupedFieldSet
+    from graphql.execution.incremental.incremental_executor import DeliveryGroupMap
     from graphql.pyutils import AwaitableOrValue, Path
 
     from undine.dataclasses import GraphQLHttpParams
@@ -152,12 +156,9 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
-    if version_info >= (3, 3, 0):  # pragma: no cover
-        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
-
-        if isinstance(context.result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
-            return context.result
+    if isinstance(context.result, ExperimentalIncrementalExecutionResults):
+        context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
+        return context.result
 
     return context.result  # type: ignore[return-value]
 
@@ -214,6 +215,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
+            incremental_delivery_error=GraphQLUnexpectedMultiplePayloadsError,
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -225,13 +227,6 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
         cancel_awaitable(result)  # type: ignore[arg-type]
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
-
-    if version_info >= (3, 3, 0):  # pragma: no cover
-        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
-
-        if isinstance(result, ExperimentalIncrementalExecutionResults):
-            context.result = get_error_execution_result(GraphQLUnexpectedMultiplePayloadsError())
-            return context.result
 
     context.result = result
     return context.result  # type: ignore[return-value]
@@ -291,7 +286,7 @@ async def _run_operation_async(context: LifecycleHookContext) -> GraphQLResult:
     if isawaitable(context.result):
         context.result = await context.result
 
-    return context.result
+    return context.result  # type: ignore[return-value]
 
 
 @with_parse_lifecycle_hooks_manager_async
@@ -353,6 +348,9 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
+            incremental_delivery_error=(
+                None if _is_incremental_request(context.request) else GraphQLIncrementalDeliveryNotRequestedError
+            ),
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -367,18 +365,8 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
     if executor.is_awaitable(result):
         result = await result  # type: ignore[misc]
 
-    if version_info >= (3, 3, 0) and not _is_incremental_request(context.request):  # pragma: no cover
-        from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
-
-        # Only the incremental delivery over HTTP transport can deliver multiple payloads
-        # for a single query or mutation, so other transports must reject the operation.
-        if isinstance(result, ExperimentalIncrementalExecutionResults):
-            await result.subsequent_results.aclose()
-            context.result = get_error_execution_result(GraphQLIncrementalDeliveryNotRequestedError())
-            return context.result
-
     context.result = result
-    return context.result
+    return context.result  # type: ignore[return-value]
 
 
 # Subscription enabled execution
@@ -479,6 +467,8 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
             variable_values=context.variables,
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
+            # Subscriptions reject incremental delivery by themselves.
+            incremental_delivery_error=None,
         )
     except GraphQLErrorGroup as error:
         return get_error_execution_result(error)
@@ -543,9 +533,10 @@ async def _execute_event(payload: Any, context: LifecycleHookContext) -> Executi
         variable_values=context.variables,
         operation_name=context.operation_name,
         middleware=_get_middleware_manager(context.lifecycle_hooks),
+        incremental_delivery_error=None,
     )
     # Result cannot be incremental for a subscription
-    result: AwaitableOrValue[ExecutionResult] = _execute(executor)
+    result: AwaitableOrValue[ExecutionResult] = _execute(executor)  # type: ignore[assignment]
     return await result if executor.is_awaitable(result) else result  # type: ignore[misc,return-value]
 
 
@@ -666,6 +657,7 @@ def _get_executor(
     variable_values: dict[str, Any],
     operation_name: str | None,
     middleware: MiddlewareManager | None,
+    incremental_delivery_error: type[GraphQLError] | None,
 ) -> UndineExecutor:
     executor_or_errors = undine_settings.EXECUTOR_CLASS.build(
         schema=undine_settings.SCHEMA,
@@ -675,12 +667,23 @@ def _get_executor(
         raw_variable_values=variable_values,
         operation_name=operation_name,
         middleware=middleware,
+        hide_suggestions=_hide_suggestions(),
     )
 
     if isinstance(executor_or_errors, list):
         raise GraphQLErrorGroup(errors=executor_or_errors)
 
+    executor_or_errors.incremental_delivery_error = incremental_delivery_error  # type: ignore[attr-defined]
     return executor_or_errors  # type: ignore[return-value]
+
+
+def _hide_suggestions() -> bool:
+    if not undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS:
+        return True
+
+    # Suggestions could reveal parts of the schema that are hidden from the user.
+    schema = undine_settings.SCHEMA
+    return bool(schema.extensions.get(undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY, False))
 
 
 def _get_middleware_manager(lifecycle_hooks: list[LifecycleHook]) -> MiddlewareManager | None:
@@ -711,6 +714,7 @@ def _validate(
         request=request,
         type_info=type_info,
         on_error=on_error,
+        hide_suggestions=_hide_suggestions(),
     )
 
     visitors = [rule(context) for rule in get_validation_rules(inside_request=request is not None)]
@@ -721,65 +725,12 @@ def _validate(
     return errors
 
 
-def _execute(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
-    if version_info < (3, 3, 0):
-        return _execute_old(executor)
-    return _execute_new(executor)
-
-
-def _execute_old(executor: UndineExecutor) -> AwaitableOrValue[ExecutionResult]:  # pragma: no cover
-    """Execution for graphql-core < 3.3.0."""
+def _execute(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:
     try:
-        data_or_awaitable = executor.execute_operation(executor.operation, executor.root_value)
-
-    except GraphQLError as error:
-        executor.errors.append(error)
-        return get_error_execution_result(executor.errors)
-
-    except GraphQLErrorGroup as error:
-        executor.errors.extend(error.flatten())
-        return get_error_execution_result(executor.errors)
-
-    if executor.is_awaitable(data_or_awaitable):
-
-        async def await_result() -> ExecutionResult:
-            try:
-                data = await data_or_awaitable  # type: ignore[misc]
-
-            except GraphQLError as err:
-                executor.errors.append(err)
-                return get_error_execution_result(executor.errors)
-
-            except GraphQLErrorGroup as err:
-                executor.errors.extend(err.flatten())
-                return get_error_execution_result(executor.errors)
-
-            else:
-                graphql_errors_hook(executor.errors)
-                return ExecutionResult(data=data, errors=executor.errors or None)
-
-        return await_result()
-
-    graphql_errors_hook(executor.errors)
-    return ExecutionResult(data=data_or_awaitable, errors=executor.errors or None)  # type: ignore[arg-type]
-
-
-def _execute_new(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  # pragma: no cover
-    """Execution for graphql-core >= 3.3.0."""
-    from graphql import ExperimentalIncrementalExecutionResults  # type: ignore[attr-defined] # noqa: PLC0415
-
-    try:
-        data = executor.execute_operation()  # type: ignore[call-arg]
-
-    except GraphQLError as error:
-        executor.errors = executor.errors or []
-        executor.errors.append(error)
-        return get_error_execution_result(executor.errors)
+        data = executor.execute_operation()
 
     except GraphQLErrorGroup as err:
-        executor.errors = executor.errors or []
-        executor.errors.extend(err.flatten())
-        return get_error_execution_result(executor.errors)
+        return get_error_execution_result([*executor.collected_errors.errors, *err.flatten()])
 
     if executor.is_awaitable(data):
 
@@ -787,15 +738,8 @@ def _execute_new(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  
             try:
                 awaited_data = await data  # type: ignore[misc]
 
-            except GraphQLError as error:
-                executor.errors = executor.errors or []
-                executor.errors.append(error)
-                return get_error_execution_result(executor.errors)
-
             except GraphQLErrorGroup as err:
-                executor.errors = executor.errors or []
-                executor.errors.extend(err.flatten())
-                return get_error_execution_result(executor.errors)
+                return get_error_execution_result([*executor.collected_errors.errors, *err.flatten()])
 
             if isinstance(awaited_data, ExecutionResult) and awaited_data.errors is not None:
                 graphql_errors_hook(awaited_data.errors)
@@ -822,130 +766,139 @@ def _execute_new(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:  
 # Contexts
 
 
-class UndineExecutor(Executor):
+class UndineExecutor(IncrementalExecutor):
     """Custom GraphQL executor class."""
 
-    if version_info >= (3, 3, 0):  # pragma: no cover
+    incremental_delivery_error: type[GraphQLError] | None = None
+    """
+    Error to raise if the operation would produce multiple payloads due to `@defer` or `@stream`.
+    If `None`, incremental delivery is allowed.
+    """
 
-        def handle_field_error(  # type: ignore[override]
-            self,
-            raw_error: Exception,
-            return_type: GraphQLOutputType,
-            field_details_list: FieldDetailsList,
-            path: Path,
-            incremental_context: IncrementalContext | None = None,
-        ) -> None:
-            from graphql.execution.execute import to_nodes  # type: ignore[attr-defined] # noqa: PLC0415
+    def execute_collected_root_fields(
+        self,
+        root_type: GraphQLObjectType,
+        root_value: Any,
+        grouped_field_set: GroupedFieldSet,
+        serially: bool,  # noqa: FBT001
+        new_defer_usages: Sequence[DeferUsage],
+    ) -> AwaitableOrValue[dict[str, Any]]:
+        if new_defer_usages:
+            self.check_incremental_delivery_allowed()
 
-            match raw_error:
-                case ValidationError():
-                    error_group = located_validation_error(
-                        raw_error,
-                        to_nodes(field_details_list),
-                        path.as_list(),
-                    )
-                    self.handle_field_errors_group(
-                        error_group,
-                        return_type,
-                        field_details_list,
-                        path,
-                        incremental_context,
-                    )
+        return super().execute_collected_root_fields(
+            root_type,
+            root_value,
+            grouped_field_set,
+            serially,
+            new_defer_usages,
+        )
 
-                case GraphQLErrorGroup():
-                    self.handle_field_errors_group(
-                        raw_error,
-                        return_type,
-                        field_details_list,
-                        path,
-                        incremental_context,
-                    )
+    def execute_collected_subfields(  # noqa: PLR0917
+        self,
+        parent_type: GraphQLObjectType,
+        source_value: Any,
+        path: Path,
+        grouped_field_set: GroupedFieldSet,
+        new_defer_usages: Sequence[DeferUsage],
+        delivery_group_map: DeliveryGroupMap | None,
+    ) -> AwaitableOrValue[dict[str, Any]]:
+        if new_defer_usages:
+            self.check_incremental_delivery_allowed()
 
-                case _:
-                    super().handle_field_error(  # type: ignore[call-arg]
-                        raw_error=raw_error,
-                        return_type=return_type,
-                        field_details_list=field_details_list,
-                        path=path,
-                        incremental_context=incremental_context,
-                    )
+        return super().execute_collected_subfields(
+            parent_type,
+            source_value,
+            path,
+            grouped_field_set,
+            new_defer_usages,
+            delivery_group_map,
+        )
 
-        def handle_field_errors_group(
-            self,
-            raw_error: GraphQLErrorGroup,
-            return_type: GraphQLOutputType,
-            field_details_list: FieldDetailsList,
-            path: Path,
-            incremental_context: IncrementalContext | None = None,
-        ) -> None:
-            from graphql.execution.execute import to_nodes  # type: ignore[attr-defined] # noqa: PLC0415
+    def complete_list_value(  # noqa: PLR0917
+        self,
+        return_type: GraphQLList[GraphQLOutputType],
+        field_details_list: FieldDetailsList,
+        info: GraphQLResolveInfo,
+        path: Path,
+        result: AsyncIterable[Any] | Iterable[Any],
+        position_context: DeliveryGroupMap | None,
+    ) -> AwaitableOrValue[list[Any]]:
+        stream_usage = self.get_stream_usage(field_details_list, path)
+        if stream_usage is not None:
+            self.check_incremental_delivery_allowed()
 
-            for err in raw_error.flatten():
-                if not err.path:
-                    err.path = path.as_list()
-                if not err.nodes:
-                    err.nodes = to_nodes(field_details_list)
+        return super().complete_list_value(
+            return_type,
+            field_details_list,
+            info,
+            path,
+            result,
+            position_context,
+        )
 
-            if is_non_null_type(return_type):
-                raise raw_error
+    def check_incremental_delivery_allowed(self) -> None:
+        if self.incremental_delivery_error is not None:
+            raise self.incremental_delivery_error
 
-            for err in raw_error.flatten():
-                self.handle_field_error(
-                    raw_error=err,
+    def handle_field_error(
+        self,
+        raw_error: Exception,
+        return_type: GraphQLOutputType,
+        field_details_list: FieldDetailsList,
+        path: Path,
+    ) -> None:
+        match raw_error:
+            case ValidationError():
+                error_group = located_validation_error(
+                    raw_error,
+                    to_nodes(field_details_list),
+                    path.as_list(),
+                )
+                self.handle_field_errors_group(
+                    error_group,
+                    return_type,
+                    field_details_list,
+                    path,
+                )
+
+            case GraphQLErrorGroup():
+                self.handle_field_errors_group(
+                    raw_error,
+                    return_type,
+                    field_details_list,
+                    path,
+                )
+
+            case _:
+                super().handle_field_error(
+                    raw_error=raw_error,
                     return_type=return_type,
                     field_details_list=field_details_list,
                     path=path,
-                    incremental_context=incremental_context,
                 )
 
-    else:  # pragma: no cover
+    def handle_field_errors_group(
+        self,
+        raw_error: GraphQLErrorGroup,
+        return_type: GraphQLOutputType,
+        field_details_list: FieldDetailsList,
+        path: Path,
+    ) -> None:
+        for err in raw_error.flatten():
+            if not err.path:
+                err.path = path.as_list()
+            if not err.nodes:
+                err.nodes = to_nodes(field_details_list)  # type: ignore[assignment]
 
-        @property
-        def errors(self) -> list[GraphQLError]:
-            return self.collected_errors.errors
+        if is_non_null_type(return_type):
+            raise raw_error
 
-        @errors.setter
-        def errors(self, value: list[GraphQLError]) -> None:
-            self.collected_errors._errors = value  # noqa: SLF001
-
-        def handle_field_error(  # type: ignore[misc]
-            self,
-            error: GraphQLError,
-            return_type: GraphQLOutputType,
-            path: Path,
-        ) -> None:  # type: ignore[misc,override]
-            raw_error: Exception = error.original_error or error
-            field_nodes = error.nodes or []
-
-            match raw_error:
-                case ValidationError():
-                    error_group = located_validation_error(raw_error, field_nodes, path.as_list())
-                    self.handle_field_errors_group(error_group, return_type, field_nodes, path)  # type: ignore[arg-type]
-
-                case GraphQLErrorGroup():
-                    self.handle_field_errors_group(raw_error, return_type, field_nodes, path)  # type: ignore[arg-type]
-
-                case _:
-                    super().handle_field_error(error=error, return_type=return_type, path=path)
-
-        def handle_field_errors_group(  # type: ignore[misc]
-            self,
-            raw_error: GraphQLErrorGroup,
-            return_type: GraphQLOutputType,
-            field_nodes: list[Node],
-            path: Path,
-        ) -> None:
-            for err in raw_error.flatten():
-                if not err.path:
-                    err.path = path.as_list()
-                if not err.nodes:
-                    err.nodes = field_nodes
-
-            if is_non_null_type(return_type):
-                raise raw_error
-
-            for err in raw_error.flatten():
-                self.handle_field_error(err, return_type, path)  # type: ignore[call-arg]
+        # graphql-core keeps only one error per nulled position, since it expects one error per field.
+        # All errors in the group belong to this field, so the rest are added after the first one.
+        first_error, *other_errors = raw_error.flatten()
+        self.collected_errors.add(first_error, path)
+        self.collected_errors.errors.extend(other_errors)
 
 
 class UndineValidationContext(ValidationContext):
@@ -959,8 +912,16 @@ class UndineValidationContext(ValidationContext):
         request: DjangoRequestProtocol | None,
         type_info: TypeInfo,
         on_error: Callable[[GraphQLError], None],
+        *,
+        hide_suggestions: bool = False,
     ) -> None:
-        super().__init__(schema=schema, ast=document, type_info=type_info, on_error=on_error)
+        super().__init__(
+            schema=schema,
+            ast=document,
+            type_info=type_info,
+            on_error=on_error,
+            hide_suggestions=hide_suggestions,
+        )
         self.variables = variables
         self.request = request
 

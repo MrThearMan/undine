@@ -191,10 +191,8 @@ def apply_visibility(schema: GraphQLSchema) -> bool:
     schema.extensions[undine_settings.VISIBILITY_ACTIVE_EXTENSIONS_KEY] = True
 
     from undine.utils.graphql.introspection import patch_introspection_schema  # noqa: PLC0415
-    from undine.utils.graphql.utils import disable_did_you_mean_suggestions  # noqa: PLC0415
 
     patch_introspection_schema()
-    disable_did_you_mean_suggestions()
     return True
 
 

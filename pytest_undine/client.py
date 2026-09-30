@@ -9,7 +9,16 @@ import pytest
 from asgiref.typing import ASGIVersions
 from django.contrib.auth import get_user_model
 from django.test.client import MULTIPART_CONTENT, AsyncClient, Client
-from graphql import ExecutionResult, FormattedExecutionResult, GraphQLError, version_info
+from graphql import (
+    ExecutionResult,
+    FormattedExecutionResult,
+    GraphQLError,
+    IncrementalDeferResult,
+    IncrementalStreamResult,
+    InitialIncrementalExecutionResult,
+    SubsequentIncrementalExecutionResult,
+)
+from graphql.execution import CompletedResult, PendingResult
 
 from undine.dataclasses import (
     CompletedEventDC,
@@ -36,13 +45,12 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.core.files import File
     from django.http import StreamingHttpResponse
-    from graphql import (  # type: ignore[attr-defined]
+    from graphql import (
         FormattedInitialIncrementalExecutionResult,
         FormattedSubsequentIncrementalExecutionResult,
         GraphQLFormattedError,
         IncrementalResult,
     )
-    from graphql.execution import CompletedResult, PendingResult  # type: ignore[attr-defined]
 
     from undine.typing import DjangoTestClientResponseProtocol, FormattedSingleIncrementalDeliveryResult
 
@@ -541,10 +549,6 @@ class AsyncGraphQLClient(WebSocketMixin, AsyncClient):
                                        convert it to a persisted document ID and send that.
         :param count_queries: If True, count the number of queries executed during the request.
         """
-        if version_info < (3, 3, 0):
-            msg = "The `incremental_delivery` method requires graphql-core >= 3.3.0"
-            raise RuntimeError(msg)
-
         variables = variables or {}
         body: dict[str, Any] = {}
         headers = headers or {}
@@ -844,7 +848,7 @@ class GraphQLClientIncrementalDeliveryResponse(BaseGraphQLClientResponse):
         super().__init__(database_queries=database_queries)
 
     @property
-    def json(
+    def json(  # type: ignore[override]
         self,
     ) -> (
         FormattedSingleIncrementalDeliveryResult
@@ -1020,8 +1024,6 @@ def _decode_multipart_mixed_heartbeat(event_data: bytes | str) -> MultipartMixed
 
 
 def _decode_incremental_delivery(event_data: bytes | str) -> IncrementalDeliveryResponse:
-    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # type: ignore[attr-defined] # noqa: PLC0415
-
     if isinstance(event_data, bytes):
         event_data = event_data.decode()
 
@@ -1105,8 +1107,6 @@ def _decode_incremental_delivery_complete(event_data: bytes | str) -> Incrementa
 
 
 def _decode_pending_results(event_data: list[dict[str, Any]]) -> list[PendingResult]:
-    from graphql.execution import PendingResult  # type: ignore[attr-defined] # noqa: PLC0415
-
     return [
         PendingResult(
             id=pending["id"],
@@ -1118,8 +1118,6 @@ def _decode_pending_results(event_data: list[dict[str, Any]]) -> list[PendingRes
 
 
 def _decode_completed_results(event_data: list[dict[str, Any]]) -> list[CompletedResult]:
-    from graphql.execution import CompletedResult  # type: ignore[attr-defined] # noqa: PLC0415
-
     completed: list[CompletedResult] = []
     for data in event_data:
         errors: list[GraphQLError] | None = None
@@ -1132,8 +1130,6 @@ def _decode_completed_results(event_data: list[dict[str, Any]]) -> list[Complete
 
 
 def _decode_incremental_results(event_data: list[dict[str, Any]]) -> list[IncrementalResult]:
-    from graphql import IncrementalDeferResult, IncrementalStreamResult  # type: ignore[attr-defined] # noqa: PLC0415
-
     results: list[IncrementalResult] = []
 
     for data in event_data:

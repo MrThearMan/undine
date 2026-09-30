@@ -273,6 +273,6 @@ cached on its own. See [visibility caching](caching.md#visibility-caching) for m
   reachable through an async fetch, resolve it using a [lifecycle hook](lifecycle-hooks.md)
   and store the result on the request object.
 - **Fail-closed on exception.** If a hook raises, the entity is treated as hidden.
-- **"did you mean" suggestions.** Auto-disabled globally when any schema uses
-  visibility so hidden entities never leak through error messages. This is equivalent to setting
+- **"did you mean" suggestions.** Auto-disabled when the schema uses visibility,
+  so hidden entities never leak through error messages. This is equivalent to setting
   [`ALLOW_DID_YOU_MEAN_SUGGESTIONS`](settings.md#allow_did_you_mean_suggestions) to `False`.

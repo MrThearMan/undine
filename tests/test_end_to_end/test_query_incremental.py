@@ -6,7 +6,7 @@ from typing import AsyncIterator
 
 import pytest
 from asgiref.sync import sync_to_async
-from graphql import GraphQLError, version_info
+from graphql import GraphQLError, InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult
 
 from example_project.app.models import Task
 from tests.factories import TaskFactory
@@ -15,12 +15,8 @@ from undine.dataclasses import IncrementalDeliveryResponse
 from undine.exceptions import GraphQLPermissionError
 from undine.optimizer import OptimizationData
 
-if version_info >= (3, 3, 0):
-    from graphql import InitialIncrementalExecutionResult, SubsequentIncrementalExecutionResult  # type: ignore[attr-defined]
-
 pytestmark = [
     pytest.mark.django_db(transaction=True),
-    pytest.mark.skipif(version_info < (3, 3, 0), reason="requires graphql >= 3.3.0"),
 ]
 
 
@@ -242,6 +238,128 @@ async def test_end_to_end__defer__errors_in_initial_responses(graphql_async, und
         ],
         "hasNext": False,
     }
+
+
+async def test_end_to_end__defer__errors_in_initial_responses__nullable_field(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @Field
+        def broken(self: Task) -> str | None:
+            msg = "Broken."
+            raise GraphQLError(msg)
+
+        @Field
+        async def slow(self: Task) -> str:
+            return "slow"
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo", points=1)
+
+    query = """
+        query {
+          tasks {
+            name
+            broken
+            ... @defer {
+              slow
+            }
+          }
+        }
+    """
+
+    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+
+    assert responses == [
+        {
+            "hasNext": True,
+            "data": {
+                "tasks": [
+                    {"name": "foo", "broken": None},
+                ],
+            },
+            "errors": [
+                {
+                    "message": "Broken.",
+                    "path": ["tasks", 0, "broken"],
+                    "extensions": {"status_code": 400},
+                }
+            ],
+            "pending": [
+                {"id": "0", "path": ["tasks", 0]},
+            ],
+        },
+        {
+            "hasNext": False,
+            "incremental": [
+                {"id": "0", "data": {"slow": "slow"}},
+            ],
+            "completed": [
+                {"id": "0"},
+            ],
+        },
+    ]
+
+
+async def test_end_to_end__defer__errors_in_initial_responses__sync_root_fields(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+
+    class Query(RootType):
+        @Entrypoint
+        def example(self) -> str:
+            return "foo"
+
+        @Entrypoint
+        def broken(self) -> str | None:
+            msg = "Broken."
+            raise GraphQLError(msg)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    query = """
+        query {
+          broken
+          ... @defer {
+            example
+          }
+        }
+    """
+
+    responses = [response.json async for response in graphql_async.incremental_delivery(query)]
+
+    assert responses == [
+        {
+            "hasNext": True,
+            "data": {"broken": None},
+            "errors": [
+                {
+                    "message": "Broken.",
+                    "path": ["broken"],
+                    "extensions": {"status_code": 400},
+                }
+            ],
+            "pending": [
+                {"id": "0", "path": []},
+            ],
+        },
+        {
+            "hasNext": False,
+            "incremental": [
+                {"id": "0", "data": {"example": "foo"}},
+            ],
+            "completed": [
+                {"id": "0"},
+            ],
+        },
+    ]
 
 
 async def test_end_to_end__defer__errors_in_subsequent_responses(graphql_async, undine_settings) -> None:
@@ -629,10 +747,13 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
         event.set()
         responses.append((await anext(stream)).json)
 
+    # The third item of the last stream raises only after its second item has been delivered.
+    responses.append((await anext(stream)).json)
+
     with pytest.raises(StopAsyncIteration):
         await anext(stream)
 
-    assert len(responses) == 4
+    assert len(responses) == 5
 
     assert responses[0] == {
         "hasNext": True,
@@ -675,9 +796,19 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
     }
 
     assert responses[3] == {
-        "hasNext": False,
+        "hasNext": True,
         "completed": [
             {"id": "1"},
+        ],
+        "incremental": [
+            {"id": "1", "items": ["slow"]},
+            {"id": "2", "items": ["slow"]},
+        ],
+    }
+
+    assert responses[4] == {
+        "hasNext": False,
+        "completed": [
             {
                 "id": "2",
                 "errors": [
@@ -688,10 +819,6 @@ async def test_end_to_end__stream__errors_in_subsequent_responses(graphql_async,
                     }
                 ],
             },
-        ],
-        "incremental": [
-            {"id": "1", "items": ["slow"]},
-            {"id": "2", "items": ["slow"]},
         ],
     }
 
@@ -739,6 +866,7 @@ async def test_end_to_end__defer__wrong_requested_content_type(graphql_async, un
                     "directive), but the client did not request incremental delivery. Set the 'Accept' header of "
                     "the request to 'multipart/mixed' to receive an incremental response over HTTP."
                 ),
+                "path": ["tasks", 0],
                 "extensions": {"error_code": "INCREMENTAL_DELIVERY_NOT_REQUESTED", "status_code": 400},
             }
         ],

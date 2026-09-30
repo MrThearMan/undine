@@ -370,7 +370,7 @@ class VisibilityRule(ValidationRule):
         graphql_enum_type: GraphQLEnumType,
     ) -> Generator[ast.EnumValueNode, None, None]:
         if isinstance(node, ast.EnumValueNode):
-            node = ast.ListValueNode(values=[node])
+            node = ast.ListValueNode(values=(node,))
 
         for value_node in node.values:
             if isinstance(value_node, ast.VariableNode):
@@ -386,7 +386,7 @@ class VisibilityRule(ValidationRule):
         graphql_input_type: GraphQLInputType,
     ) -> Generator[ast.ObjectFieldNode, None, None]:
         if isinstance(node, ast.ObjectValueNode):
-            node = ast.ListValueNode(values=[node])
+            node = ast.ListValueNode(values=(node,))
 
         for item in node.values:
             if isinstance(item, ast.VariableNode):

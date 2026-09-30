@@ -16,7 +16,6 @@ class UndineConfig(AppConfig):
         self.patch_graphql_wrapping_object()
         self.register_additional_types()
         self.register_converters()
-        self.maybe_disable_did_you_mean()
         self.patch_debug_toolbar_if_installed()
 
     def patch_graphql_wrapping_object(self) -> None:
@@ -44,15 +43,6 @@ class UndineConfig(AppConfig):
         for file in converter_dir.glob("impl/*.py"):
             import_path = file.relative_to(lib_root).as_posix().replace("/", ".").removesuffix(".py")
             import_module(import_path)
-
-    def maybe_disable_did_you_mean(self) -> None:
-        """Disable the 'did you mean' suggestions on error messages if `DISABLE_DID_YOU_MEAN` is True."""
-        from undine.settings import undine_settings  # noqa: PLC0415
-
-        if not undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS:
-            from undine.utils.graphql.utils import disable_did_you_mean_suggestions  # noqa: PLC0415
-
-            disable_did_you_mean_suggestions()
 
     def patch_debug_toolbar_if_installed(self) -> None:
         """Patch `django-debug-toolbar` to work with Undine if it's installed."""

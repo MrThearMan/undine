@@ -34,6 +34,7 @@ from undine.relay import Connection, Node
 from undine.settings import undine_settings
 from undine.subscriptions import SignalSubscription
 from undine.typing import CombinableExpression, ModelField, RelatedField
+from undine.utils.graphql.utils import non_null
 from undine.utils.model_utils import get_model_field
 from undine.utils.text import get_docstring, to_schema_name
 
@@ -53,7 +54,7 @@ def _(ref: FunctionType, **kwargs: Any) -> GraphQLArgumentMap:
         graphql_type = convert_to_graphql_type(param.annotation, **kwargs)
         nullable = parse_is_nullable(param.annotation)
         if not nullable:
-            graphql_type = GraphQLNonNull(graphql_type)
+            graphql_type = non_null(graphql_type)
 
         arguments[to_schema_name(param.name)] = GraphQLArgument(
             graphql_type,  # type: ignore[arg-type]
@@ -95,8 +96,9 @@ def _(ref: type[QueryType], **kwargs: Any) -> GraphQLArgumentMap:
 
         field = get_model_field(model=ref.__model__, lookup="pk")
         input_type = convert_to_graphql_type(field, model=ref.__model__)
-        input_type = GraphQLNonNull(input_type)
-        return {"pk": GraphQLArgument(input_type, out_name="pk")}
+        input_type = non_null(input_type)
+        # Model fields are converted to input types when used for arguments.
+        return {"pk": GraphQLArgument(input_type, out_name="pk")}  # type: ignore[arg-type]
 
     arguments: GraphQLArgumentMap = {}
 

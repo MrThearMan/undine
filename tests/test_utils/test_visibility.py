@@ -24,7 +24,6 @@ from graphql import (
     get_introspection_query,
     parse,
 )
-from graphql.pyutils import did_you_mean
 
 from example_project.app.models import Comment, Person, Project, Task
 from tests.factories import UserFactory
@@ -1257,10 +1256,8 @@ def test_visibility_cache_hook__extra_context_influences_key(graphql, undine_set
 
 
 @pytest.mark.django_db
-def test_did_you_mean__auto_disabled_when_schema_uses_visibility(undine_settings) -> None:
+def test_did_you_mean__auto_disabled_when_schema_uses_visibility(graphql, undine_settings) -> None:
     undine_settings.ALLOW_DID_YOU_MEAN_SUGGESTIONS = True
-
-    did_you_mean.__globals__["MAX_LENGTH"] = 5
 
     class TaskType(QueryType[Task], auto=False):
         pk = Field()
@@ -1272,9 +1269,16 @@ def test_did_you_mean__auto_disabled_when_schema_uses_visibility(undine_settings
     class Query(RootType):
         tasks = Entrypoint(TaskType, many=True)
 
-    create_schema(query=Query)
+    undine_settings.SCHEMA = create_schema(query=Query)
 
-    assert did_you_mean.__globals__["MAX_LENGTH"] == 0
+    response = graphql("query { taks { pk } }")
+
+    assert response.errors == [
+        {
+            "message": "Cannot query field 'taks' on type 'Query'.",
+            "extensions": {"status_code": 400},
+        },
+    ]
 
 
 @pytest.mark.django_db

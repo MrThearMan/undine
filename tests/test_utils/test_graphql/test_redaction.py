@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from graphql import parse, print_ast, version_info
+from graphql import parse, print_ast
 
 from undine.utils.graphql.redaction import redact_document, redact_variables
 
@@ -29,21 +29,12 @@ def test_redact_document__replaces_literal_values() -> None:
 def test_redact_document__replaces_values_inside_lists_and_objects() -> None:
     document = parse('{ search(filters: {names: ["Ada", "Grace"], limit: 10}, enabled: true) { id } }')
 
-    expected = (
-        dedent("""\
+    expected = dedent("""\
             {
               search(filters: { names: ["***", "***"], limit: "***" }, enabled: true) {
                 id
               }
             }""")
-        if version_info >= (3, 3, 0)
-        else dedent("""\
-            {
-              search(filters: {names: ["***", "***"], limit: "***"}, enabled: true) {
-                id
-              }
-            }""")
-    )
 
     assert redact_document(document) == expected
 

@@ -15,7 +15,7 @@ from graphql import (
     GraphQLIncludeDirective,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
-    GraphQLList,
+    GraphQLNonNull,
     GraphQLObjectType,
     GraphQLResolveInfo,
     GraphQLScalarType,
@@ -29,7 +29,6 @@ from graphql import (
     get_nullable_type,
     is_composite_type,
     is_list_type,
-    version_info,
 )
 
 from undine.exceptions import (
@@ -54,14 +53,15 @@ if TYPE_CHECKING:
         DirectiveLocation,
         DocumentNode,
         GraphQLField,
-        GraphQLNonNull,
+        GraphQLInputType,
+        GraphQLList,
         GraphQLOutputType,
         GraphQLSchema,
         GraphQLWrappingType,
         Node,
         SelectionNode,
     )
-    from graphql.execution.values import NodeWithDirective, VariableValues  # type: ignore[attr-defined]
+    from graphql.execution.values import NodeWithDirective, VariableValues
     from graphql.pyutils import Path
 
     from undine import Directive, Field, GQLInfo
@@ -90,6 +90,7 @@ __all__ = [
     "is_relation_id",
     "mask_error",
     "never_mask_error",
+    "non_null",
     "should_mask_error",
     "should_skip_node",
 ]
@@ -108,7 +109,6 @@ TGraphQLType = TypeVar(
         | GraphQLEnumType
         | GraphQLScalarType
         | GraphQLInputObjectType
-        | GraphQLList
     ),
 )
 
@@ -149,14 +149,7 @@ def get_field_path_identifier(path: Path) -> str:
 
 
 def get_field_def(schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode) -> GraphQLField:
-    try:  # pragma: no cover
-        from graphql.execution.execute import get_field_def  # noqa: PLC0415
-
-        return get_field_def(schema, parent_type, field_node)
-
-    # graphql-core >= 3.3.0
-    except ImportError:  # pragma: no cover
-        return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)  # type: ignore[attr-defined]
+    return schema.get_field(parent_type=parent_type, field_name=field_node.name.value)  # type: ignore[return-value]
 
 
 def get_operation_definition(document: DocumentNode, operation_name: str | None) -> OperationDefinitionNode:
@@ -303,6 +296,14 @@ def never_mask_error(error: GraphQLError) -> bool:
 # Misc.
 
 
+def non_null(graphql_type: GraphQLInputType | GraphQLOutputType) -> GraphQLInputType | GraphQLOutputType:
+    """Wrap the given GraphQL type in a non-null type, unless it's non-null already."""
+    if isinstance(graphql_type, GraphQLNonNull):
+        return graphql_type
+    # mypy doesn't treat a non-null of the combined input and output types as either of them.
+    return GraphQLNonNull(graphql_type)  # type: ignore[return-value]
+
+
 async def pre_evaluate_request_user(info: GQLInfo) -> None:
     """
     Fetches the request user from the context and caches it to the request.
@@ -347,14 +348,8 @@ def copy_info(info: GQLInfo, **kwargs: Unpack[GQLInfoDict]) -> GQLInfo:
         variable_values=kwargs.get("variable_values", info.variable_values),
         context=kwargs.get("context", info.context),
         is_awaitable=kwargs.get("is_awaitable", info.is_awaitable),
-        **(  # type: ignore[arg-type]
-            {
-                "abort_signal": kwargs.get("abort_signal", info.abort_signal),
-                "async_helpers": kwargs.get("async_helpers", info.async_helpers),
-            }
-            if version_info >= (3, 3, 0)
-            else {}
-        ),
+        abort_signal=kwargs.get("abort_signal", info.abort_signal),
+        async_helpers=kwargs.get("async_helpers", info.async_helpers),
     )
 
 
@@ -432,7 +427,7 @@ def located_validation_error(
     path: list[str | int],
 ) -> GraphQLErrorGroup:
     """Transform a Django ValidationError into GraphQL errors for each message in the error."""
-    code = getattr(error, "code", "").upper()
+    code = (getattr(error, "code", None) or "").upper()
     error_messages = get_validation_error_messages(error)
 
     errors: list[GraphQLError] = []
@@ -450,17 +445,3 @@ def located_validation_error(
             errors.append(graphql_error)
 
     return GraphQLErrorGroup(errors=errors)
-
-
-def enable_did_you_mean_suggestions() -> None:
-    # See: https://github.com/graphql-python/graphql-core/issues/97#issuecomment-642967670
-    from graphql.pyutils import did_you_mean  # noqa: PLC0415
-
-    did_you_mean.__globals__["MAX_LENGTH"] = 5
-
-
-def disable_did_you_mean_suggestions() -> None:
-    # See: https://github.com/graphql-python/graphql-core/issues/97#issuecomment-642967670
-    from graphql.pyutils import did_you_mean  # noqa: PLC0415
-
-    did_you_mean.__globals__["MAX_LENGTH"] = 0

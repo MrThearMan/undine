@@ -4,7 +4,7 @@ from typing import AsyncGenerator
 
 import pytest
 from django.db.models import Value
-from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, get_introspection_query, version_info
+from graphql import DirectiveLocation, GraphQLNonNull, GraphQLString, get_introspection_query
 
 from example_project.app.models import Project, Task
 from tests.test_utils.test_graphql.test_introspection.helpers import enable_visibility_patch, get_directives, get_types
@@ -52,13 +52,13 @@ def test_introspection__general(graphql, undine_settings):
         "atomic",
         "cacheRules",
         "complexity",
-        *(("defer",) if version_info >= (3, 3, 0) else []),
+        "defer",
         "deprecated",
         "include",
         "oneOf",
         "skip",
         "specifiedBy",
-        *(("stream",) if version_info >= (3, 3, 0) else []),
+        "stream",
     ]
 
     types = get_types(response)

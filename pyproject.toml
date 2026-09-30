@@ -33,7 +33,7 @@ classifiers = [
 requires-python = ">=3.11,<4"
 dependencies = [
     "django>=5.0",
-    "graphql-core>=3.2.12",
+    "graphql-core>=3.3.0",
     "django-settings-holder>=0.3.0",
     "sqlparse>=0.6.0",
 ]
@@ -128,7 +128,6 @@ omit = [
     "pytest_undine/*",
     "tests/*",
     "undine/persisted_documents/migrations/*",
-    "undine/utils/graphql/introspection.py",  # grpahql-core>=3.3.0a12 required
     "async.py",
     "manage.py",
     "noxfile.py",

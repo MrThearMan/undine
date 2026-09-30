@@ -4,6 +4,7 @@ import os
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
 import pytest
+from django.urls import resolve
 
 from pytest_undine.fixtures import graphql, graphql_async, undine_settings
 from tests.factories._base import UndineFaker
@@ -15,7 +16,6 @@ from undine.hooks import ParseCacheHook, ValidationCacheHook, get_enabled_lifecy
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.relay import Node
 from undine.utils.graphql.type_registry import DIRECTIVE_REGISTRY, GRAPHQL_REGISTRY, register_builtins
-from undine.utils.graphql.utils import enable_did_you_mean_suggestions
 from undine.utils.reflection import get_signature
 
 if TYPE_CHECKING:
@@ -26,6 +26,16 @@ __all__ = [
     "graphql_async",
     "undine_settings",
 ]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _load_url_conf() -> None:
+    """
+    Django imports the URL conf lazily on the first request, and `undine.http.urls` reads
+    `GRAPHQL_PATH` and `ASYNC` at import time. Load it before any test can change those settings,
+    so that the first test making a request doesn't decide the GraphQL view for the whole session.
+    """
+    resolve("/graphql/")
 
 
 @pytest.fixture(autouse=True)
@@ -44,8 +54,6 @@ def _clear_registries() -> None:
     Node.__implementations__.clear()
 
     get_signature.cache.clear()
-
-    enable_did_you_mean_suggestions()
 
     DIRECTIVE_REGISTRY[AtomicDirective.__schema_name__] = AtomicDirective
     DIRECTIVE_REGISTRY[CacheRulesDirective.__schema_name__] = CacheRulesDirective

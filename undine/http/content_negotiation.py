@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Literal, NamedTuple
 
 from django.http.request import MediaType
 from django.http.response import ResponseHeaders
-from graphql import version_info
 
 from undine.exceptions import GraphQLMissingContentTypeError, GraphQLUnsupportedContentTypeError
 from undine.http.responses import (
@@ -103,11 +102,7 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
         supported_types = [
             event_stream,
             multipart_subscription,
-            *(
-                (multipart_incremental,)
-                if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY and version_info >= (3, 3, 0)
-                else ()
-            ),
+            *((multipart_incremental,) if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY else ()),
             application_graphql,
             application_json,
         ]
