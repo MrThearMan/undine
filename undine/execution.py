@@ -471,20 +471,8 @@ async def _with_operation_hooks(stream: AsyncGenerator[ExecutionResult], hooks: 
 
 async def _subscribe(context: LifecycleHookContext) -> ExecutionResult | GraphQLStream:
     """Executes a subscription operation. See: `graphql.execution.subscribe.subscribe`."""
-    result_or_stream = await _create_source_event_stream(context=context)
-    if isinstance(result_or_stream, ExecutionResult):
-        return result_or_stream
-
-    return _map_source_to_response(source=result_or_stream, context=context)
-
-
-async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIterable[Any] | ExecutionResult:
-    """
-    A source event stream represents a sequence of events,
-    each of which triggers a GraphQL execution for that event.
-    """
     try:
-        exec_context = _get_executor(
+        executor = _get_executor(
             document=context.document,  # type: ignore[arg-type]
             root_value=undine_settings.ROOT_VALUE,
             request=context.request,
@@ -498,9 +486,21 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     except GraphQLErrorGroup as error:
         return get_error_execution_result(error)
 
+    result_or_stream = await _create_source_event_stream(executor)
+    if isinstance(result_or_stream, ExecutionResult):
+        return result_or_stream
+
+    return _map_source_to_response(source=result_or_stream, executor=executor, context=context)
+
+
+async def _create_source_event_stream(executor: UndineExecutor) -> AsyncIterable[Any] | ExecutionResult:
+    """
+    A source event stream represents a sequence of events,
+    each of which triggers a GraphQL execution for that event.
+    """
     try:
-        event_stream = execute_subscription(exec_context)
-        if exec_context.is_awaitable(event_stream):
+        event_stream = execute_subscription(executor)
+        if executor.is_awaitable(event_stream):
             event_stream = await event_stream
 
     except GraphQLError as error:
@@ -515,7 +515,11 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
     return event_stream
 
 
-async def _map_source_to_response(source: AsyncIterable[Any], context: LifecycleHookContext) -> GraphQLStream:
+async def _map_source_to_response(
+    source: AsyncIterable[Any],
+    executor: UndineExecutor,
+    context: LifecycleHookContext,
+) -> GraphQLStream:
     """
     For each payload yielded from a subscription,
     map it over the normal GraphQL `execute` function, with `payload` as the `root_value`.
@@ -538,12 +542,12 @@ async def _map_source_to_response(source: AsyncIterable[Any], context: Lifecycle
                     except StopAsyncIteration:
                         break
 
-                    context.result = await _execute_event(payload=payload, context=context)
+                    context.result = await _execute_event(payload=payload, executor=executor)
 
             yield context.result  # type: ignore[misc]
 
 
-async def _execute_event(payload: Any, context: LifecycleHookContext) -> ExecutionResult:
+async def _execute_event(payload: Any, executor: UndineExecutor) -> ExecutionResult:
     """Execute the GraphQL operation for a single event from a subscription's event stream."""
     if isinstance(payload, GraphQLError):
         return get_error_execution_result(payload)
@@ -551,19 +555,10 @@ async def _execute_event(payload: Any, context: LifecycleHookContext) -> Executi
     if isinstance(payload, GraphQLErrorGroup):
         return get_error_execution_result(payload)
 
-    executor = _get_executor(
-        document=context.document,  # type: ignore[arg-type]
-        root_value=payload,
-        request=context.request,
-        variable_values=context.variables,
-        operation_name=context.operation_name,
-        middleware=_get_middleware_manager(context.lifecycle_hooks),
-        incremental_delivery_error=None,
-        execution_timeout=None,
-    )
+    event_executor: UndineExecutor = executor.build_per_event_executor(payload)  # type: ignore[assignment]
     # Result cannot be incremental for a subscription
-    result: AwaitableOrValue[ExecutionResult] = _execute(executor)  # type: ignore[assignment]
-    return await result if executor.is_awaitable(result) else result  # type: ignore[misc,return-value]
+    result: AwaitableOrValue[ExecutionResult] = _execute(event_executor)  # type: ignore[assignment]
+    return await result if event_executor.is_awaitable(result) else result  # type: ignore[misc,return-value]
 
 
 # Helpers

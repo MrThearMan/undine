@@ -13,6 +13,7 @@ from graphql import (
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLObjectType,
+    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
     InitialIncrementalExecutionResult,
@@ -1067,7 +1068,18 @@ async def test_map_source_to_response__pre_existing_result(undine_settings) -> N
         yield ExecutionResult(data={"payload": "value"})
 
     results = []
-    async for item in _map_source_to_response(source=_source(), context=context):
+    executor = _get_executor(
+        document=context.document,
+        root_value=None,
+        request=request,
+        variable_values={},
+        operation_name=None,
+        middleware=None,
+        incremental_delivery_error=None,
+        execution_timeout=None,
+    )
+
+    async for item in _map_source_to_response(source=_source(), executor=executor, context=context):
         results.append(item)
         break  # Only get first result
 
@@ -1861,6 +1873,54 @@ async def test_map_source_to_response__full_loop(undine_settings) -> None:
     results = [item async for item in result]
 
     assert len(results) == 2
+
+
+async def test_map_source_to_response__variables_coerced_once(undine_settings) -> None:
+    parsed_values: list[Any] = []
+
+    def parse_value(value: Any) -> Any:
+        parsed_values.append(value)
+        return value
+
+    counting_scalar = GraphQLScalarType("Counting", parse_value=parse_value)
+
+    async def subscribe(root: Any, info: Any, value: Any) -> AsyncGenerator[str, None]:  # noqa: RUF029
+        for index in range(3):
+            yield f"{value}-{index}"
+
+    undine_settings.SCHEMA = GraphQLSchema(
+        query=GraphQLObjectType("Query", fields={"noop": GraphQLField(GraphQLString)}),
+        subscription=GraphQLObjectType(
+            "Subscription",
+            fields={
+                "testing": GraphQLField(
+                    GraphQLString,
+                    args={"value": GraphQLArgument(counting_scalar)},
+                    subscribe=subscribe,
+                    resolve=lambda root, info, value: root,  # noqa: ARG005
+                ),
+            },
+        ),
+    )
+
+    params = GraphQLHttpParams(
+        document="subscription ($value: Counting) { testing(value: $value) }",
+        variables={"value": "foo"},
+        operation_name=None,
+        extensions={},
+    )
+    result = await execute_graphql_with_subscription(params=params, request=MockRequest(method="WEBSOCKET"))
+
+    results = [item.formatted async for item in result]
+
+    assert results == [
+        {"data": {"testing": "foo-0"}},
+        {"data": {"testing": "foo-1"}},
+        {"data": {"testing": "foo-2"}},
+    ]
+
+    # Each event reuses the variables coerced for the whole subscription.
+    assert parsed_values == ["foo"]
 
 
 async def test_execute_graphql_http_async__sse_mutation_allowed(undine_settings) -> None:
