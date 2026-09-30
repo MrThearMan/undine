@@ -947,7 +947,7 @@ class UndineExecutor(IncrementalExecutor):
             if not err.nodes:
                 err.nodes = to_nodes(field_details_list)  # type: ignore[assignment]
 
-        if is_non_null_type(return_type):
+        if self.error_propagation and is_non_null_type(return_type):
             raise raw_error
 
         # graphql-core keeps only one error per nulled position, since it expects one error per field.

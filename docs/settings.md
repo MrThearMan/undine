@@ -368,6 +368,30 @@ Should be given as the dotted path to the executor class.
 
 ///
 
+/// details | `EXPERIMENTAL_DISABLE_ERROR_PROPAGATION`
+    attrs: {id: experimental_disable_error_propagation}
+
+Type: `bool` | Default: `False`
+
+Whether to add the experimental `@experimental_disableErrorPropagation` directive to the schema.
+When an operation uses the directive, an error in a non-null field makes only that field `null`.
+The error doesn't propagate to the parent fields.
+
+```graphql
+query @experimental_disableErrorPropagation {
+  tasks {
+    name
+  }
+}
+```
+
+The directive comes from `graphql-core` and may change, since error behavior is still
+[being discussed]{:target="_blank"} in the GraphQL Working Group.
+
+[being discussed]: https://github.com/graphql/graphql-spec/pull/1163
+
+///
+
 /// details | `EXPERIMENTAL_INCREMENTAL_DELIVERY`
     attrs: {id: experimental_incremental_delivery}
 

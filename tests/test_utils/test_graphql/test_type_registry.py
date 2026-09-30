@@ -18,6 +18,7 @@ from graphql import (
     GraphQLString,
     GraphQLUnionType,
 )
+from graphql.type.directives import GraphQLDisableErrorPropagationDirective
 
 from undine import Entrypoint, RootType, create_schema
 from undine.exceptions import GraphQLDuplicateTypeError
@@ -343,6 +344,25 @@ def test_register_builtins__incremental_directives_already_registered(undine_set
 
     assert GRAPHQL_REGISTRY["defer"] is GraphQLDeferDirective
     assert GRAPHQL_REGISTRY["stream"] is GraphQLStreamDirective
+
+
+def test_register_builtins__disable_error_propagation_enabled(undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_DISABLE_ERROR_PROPAGATION = True
+
+    GRAPHQL_REGISTRY.clear()
+    register_builtins()
+
+    assert GRAPHQL_REGISTRY["experimental_disableErrorPropagation"] is GraphQLDisableErrorPropagationDirective
+
+
+def test_register_builtins__disable_error_propagation_already_registered(undine_settings) -> None:
+    undine_settings.EXPERIMENTAL_DISABLE_ERROR_PROPAGATION = True
+
+    GRAPHQL_REGISTRY.clear()
+    GRAPHQL_REGISTRY["experimental_disableErrorPropagation"] = GraphQLDisableErrorPropagationDirective
+    register_builtins()
+
+    assert GRAPHQL_REGISTRY["experimental_disableErrorPropagation"] is GraphQLDisableErrorPropagationDirective
 
 
 def test_create_schema__incremental_delivery_disabled(undine_settings) -> None:

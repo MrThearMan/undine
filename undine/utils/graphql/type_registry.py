@@ -16,6 +16,7 @@ from graphql import (
     specified_directives,
     specified_scalar_types,
 )
+from graphql.type.directives import GraphQLDisableErrorPropagationDirective
 
 from undine.exceptions import GraphQLDuplicateTypeError
 from undine.settings import undine_settings
@@ -390,11 +391,19 @@ def register_builtins() -> None:
         if GraphQLStreamDirective.name not in GRAPHQL_REGISTRY:
             GRAPHQL_REGISTRY[GraphQLStreamDirective.name] = GraphQLStreamDirective
 
+    if (
+        undine_settings.EXPERIMENTAL_DISABLE_ERROR_PROPAGATION
+        and GraphQLDisableErrorPropagationDirective.name not in GRAPHQL_REGISTRY
+    ):
+        GRAPHQL_REGISTRY[GraphQLDisableErrorPropagationDirective.name] = GraphQLDisableErrorPropagationDirective
+
 
 def get_registered_directives() -> tuple[GraphQLDirective, ...]:
     additional_directives: tuple[GraphQLDirective, ...] = ()
     if undine_settings.EXPERIMENTAL_INCREMENTAL_DELIVERY:
-        additional_directives = (GraphQLDeferDirective, GraphQLStreamDirective)
+        additional_directives += (GraphQLDeferDirective, GraphQLStreamDirective)
+    if undine_settings.EXPERIMENTAL_DISABLE_ERROR_PROPAGATION:
+        additional_directives += (GraphQLDisableErrorPropagationDirective,)
 
     return (
         specified_directives

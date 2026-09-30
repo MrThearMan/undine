@@ -136,6 +136,12 @@ class UndineDefaultSettings(NamedTuple):
     EXECUTOR_CLASS: type[UndineExecutor] = "undine.execution.UndineExecutor"  # type: ignore[assignment]
     """GraphQL executor class used by the schema."""
 
+    EXPERIMENTAL_DISABLE_ERROR_PROPAGATION: bool = False
+    """
+    Whether to add the experimental `@experimental_disableErrorPropagation` directive to the schema.
+    Operations using the directive don't propagate errors from non-null fields to their parents.
+    """
+
     MAX_ALLOWED_ALIASES: int = 15
     """The maximum number of aliases allowed in a single operation."""
 
