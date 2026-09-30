@@ -341,13 +341,30 @@ To turn masking off, set this to `"undine.utils.graphql.utils.never_mask_error"`
 
 ///
 
-/// details | `EXECUTION_CONTEXT_CLASS`
-    attrs: {id: execution_context_class}
+/// details | `EXECUTION_TIMEOUT_SECONDS`
+    attrs: {id: execution_timeout_seconds}
 
-Type: `type[UndineExecutionContext]` | Default: `"undine.execution.UndineExecutionContext"`
+Type: `float` | Default: `0`
 
-GraphQL execution context class used by the schema.
-Should be given as the dotted path to the execution context class.
+Maximum time in seconds that the execution of a query or mutation can take.
+When the time runs out, the operation is aborted and the response contains an `EXECUTION_TIMEOUT` error.
+Set to 0 to disable.
+
+With [incremental delivery](incremental.md), the timeout also covers the subsequent payloads.
+Results that are still pending when the time runs out complete with the error.
+
+Only applies to async execution, since sync execution cannot be interrupted.
+Subscriptions are not affected.
+
+///
+
+/// details | `EXECUTOR_CLASS`
+    attrs: {id: executor_class}
+
+Type: `type[UndineExecutor]` | Default: `"undine.execution.UndineExecutor"`
+
+GraphQL executor class used by the schema.
+Should be given as the dotted path to the executor class.
 
 ///
 
@@ -517,6 +534,16 @@ Useful for debugging.
 Masked errors never include a traceback in the response.
 Turn masking off with [`ERROR_MASKING_PREDICATE`](#error_masking_predicate)
 to see tracebacks for server errors.
+
+///
+
+/// details | `INCREMENTAL_DELIVERY_EARLY_EXECUTION`
+    attrs: {id: incremental_delivery_early_execution}
+
+Type: `bool` | Default: `False`
+
+Whether deferred and streamed work can start while the initial payload is still executing.
+By default, the work starts only when the next payload is requested.
 
 ///
 

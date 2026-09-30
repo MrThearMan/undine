@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from graphql import ExecutionResult
+from graphql import ExecutionResult, GraphQLError, SubsequentIncrementalExecutionResult
+from graphql.execution import CompletedResult
 
 from undine.dataclasses import IncrementalDeliveryComplete, IncrementalDeliveryHeartbeat, IncrementalDeliveryResponse
 from undine.execution import execute_graphql_http_async
@@ -39,14 +40,30 @@ async def execute_graphql_incremental(
     graphql_errors_hook(result.initial_result.errors)
     yield IncrementalDeliveryResponse(result=result.initial_result)
 
-    async for subsequent_result in result.subsequent_results:
-        for completed in subsequent_result.completed or []:
-            graphql_errors_hook(completed.errors)
+    # Used as an ordered set, so that the pending results are completed in the order they were announced.
+    pending_ids: dict[str, None] = dict.fromkeys(pending.id for pending in result.initial_result.pending)
 
-        for incremental in subsequent_result.incremental or []:
-            graphql_errors_hook(incremental.errors)
+    try:
+        async for subsequent_result in result.subsequent_results:
+            for pending in subsequent_result.pending or []:
+                pending_ids[pending.id] = None
 
-        yield IncrementalDeliveryResponse(result=subsequent_result)
+            for completed in subsequent_result.completed or []:
+                pending_ids.pop(completed.id, None)
+                graphql_errors_hook(completed.errors)
+
+            for incremental in subsequent_result.incremental or []:
+                graphql_errors_hook(incremental.errors)
+
+            yield IncrementalDeliveryResponse(result=subsequent_result)
+
+    # Raised when the operation is aborted, e.g. when it times out. Subsequent payloads cannot contain
+    # errors for the whole operation, so the error is added to all results that are still pending.
+    except GraphQLError as error:
+        graphql_errors_hook([error])
+        completed_results = [CompletedResult(id=pending_id, errors=[error]) for pending_id in pending_ids]
+        final_result = SubsequentIncrementalExecutionResult(has_next=False, completed=completed_results)
+        yield IncrementalDeliveryResponse(result=final_result)
 
     yield IncrementalDeliveryComplete()
 

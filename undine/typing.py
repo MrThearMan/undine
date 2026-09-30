@@ -702,6 +702,7 @@ class UndineErrorCodes(StrEnum):
     DATA_LOADER_WRONG_NUMBER_OF_VALUES_RETURNED = auto()
     DUPLICATE_PRIMARY_KEYS = auto()
     DUPLICATE_TYPE = auto()
+    EXECUTION_TIMEOUT = auto()
     FIELD_NOT_NULLABLE = auto()
     FIELD_ONE_TO_ONE_CONSTRAINT_VIOLATION = auto()
     FILE_NOT_FOUND = auto()

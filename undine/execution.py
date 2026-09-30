@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import dataclasses
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
 from contextlib import AsyncExitStack, aclosing, nullcontext, suppress
 from functools import wraps
@@ -8,6 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from graphql import (
+    AbortController,
+    AbortedGraphQLExecutionError,
+    ExecutionHooks,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     GraphQLEnumType,
@@ -39,6 +44,7 @@ from undine.exceptions import (
     GraphQLCannotUseWebSocketsForMutationsError,
     GraphQLCannotUseWebSocketsForQueriesError,
     GraphQLErrorGroup,
+    GraphQLExecutionTimeoutError,
     GraphQLIncrementalDeliveryNotRequestedError,
     GraphQLIncrementalDeliveryNotSupportedError,
     GraphQLNoExecutionResultError,
@@ -81,6 +87,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable, Sequence
 
     from graphql import (
+        AsyncWorkFinishedInfo,
         DocumentNode,
         GraphQLInputType,
         GraphQLList,
@@ -216,6 +223,8 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
             operation_name=context.operation_name,
             middleware=_get_middleware_manager(context.lifecycle_hooks),
             incremental_delivery_error=GraphQLUnexpectedMultiplePayloadsError,
+            # Sync execution cannot be interrupted, so it cannot time out.
+            execution_timeout=None,
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -340,6 +349,20 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
     if context.result is not None:
         return context.result  # type: ignore[return-value]
 
+    execution_timeout = _ExecutionTimeout.start() if undine_settings.EXECUTION_TIMEOUT_SECONDS > 0 else None
+    try:
+        return await _execute_async_with_timeout(context, execution_timeout)
+    finally:
+        # Incremental results keep executing after this, so their timeout is stopped
+        # by the executor once all of the work has finished.
+        if execution_timeout is not None and not isinstance(context.result, ExperimentalIncrementalExecutionResults):
+            execution_timeout.stop()
+
+
+async def _execute_async_with_timeout(
+    context: LifecycleHookContext,
+    execution_timeout: _ExecutionTimeout | None,
+) -> GraphQLResult:
     try:
         executor = _get_executor(
             document=context.document,  # type: ignore[arg-type]
@@ -351,6 +374,7 @@ async def _execute_async(context: LifecycleHookContext) -> GraphQLResult:
             incremental_delivery_error=(
                 None if _is_incremental_request(context.request) else GraphQLIncrementalDeliveryNotRequestedError
             ),
+            execution_timeout=execution_timeout,
         )
     except GraphQLErrorGroup as error:
         context.result = get_error_execution_result(error)
@@ -469,6 +493,7 @@ async def _create_source_event_stream(context: LifecycleHookContext) -> AsyncIte
             middleware=_get_middleware_manager(context.lifecycle_hooks),
             # Subscriptions reject incremental delivery by themselves.
             incremental_delivery_error=None,
+            execution_timeout=None,
         )
     except GraphQLErrorGroup as error:
         return get_error_execution_result(error)
@@ -534,6 +559,7 @@ async def _execute_event(payload: Any, context: LifecycleHookContext) -> Executi
         operation_name=context.operation_name,
         middleware=_get_middleware_manager(context.lifecycle_hooks),
         incremental_delivery_error=None,
+        execution_timeout=None,
     )
     # Result cannot be incremental for a subscription
     result: AwaitableOrValue[ExecutionResult] = _execute(executor)  # type: ignore[assignment]
@@ -658,6 +684,7 @@ def _get_executor(
     operation_name: str | None,
     middleware: MiddlewareManager | None,
     incremental_delivery_error: type[GraphQLError] | None,
+    execution_timeout: _ExecutionTimeout | None,
 ) -> UndineExecutor:
     executor_or_errors = undine_settings.EXECUTOR_CLASS.build(
         schema=undine_settings.SCHEMA,
@@ -668,6 +695,9 @@ def _get_executor(
         operation_name=operation_name,
         middleware=middleware,
         hide_suggestions=_hide_suggestions(),
+        enable_early_execution=undine_settings.INCREMENTAL_DELIVERY_EARLY_EXECUTION,
+        abort_signal=None if execution_timeout is None else execution_timeout.controller.signal,
+        hooks=None if execution_timeout is None else ExecutionHooks(async_work_finished=execution_timeout.on_finished),
     )
 
     if isinstance(executor_or_errors, list):
@@ -675,6 +705,29 @@ def _get_executor(
 
     executor_or_errors.incremental_delivery_error = incremental_delivery_error  # type: ignore[attr-defined]
     return executor_or_errors  # type: ignore[return-value]
+
+
+@dataclasses.dataclass(slots=True, kw_only=True)
+class _ExecutionTimeout:
+    controller: AbortController
+    timer: asyncio.TimerHandle
+
+    @classmethod
+    def start(cls) -> _ExecutionTimeout:
+        controller = AbortController()
+        loop = asyncio.get_running_loop()
+        timer = loop.call_later(
+            undine_settings.EXECUTION_TIMEOUT_SECONDS,
+            controller.abort,
+            GraphQLExecutionTimeoutError(),
+        )
+        return cls(controller=controller, timer=timer)
+
+    def stop(self) -> None:
+        self.timer.cancel()
+
+    def on_finished(self, info: AsyncWorkFinishedInfo) -> None:
+        self.stop()
 
 
 def _hide_suggestions() -> bool:
@@ -740,6 +793,9 @@ def _execute(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:
 
             except GraphQLErrorGroup as err:
                 return get_error_execution_result([*executor.collected_errors.errors, *err.flatten()])
+
+            except AbortedGraphQLExecutionError as error:
+                return get_error_execution_result(error.reason)
 
             if isinstance(awaited_data, ExecutionResult) and awaited_data.errors is not None:
                 graphql_errors_hook(awaited_data.errors)

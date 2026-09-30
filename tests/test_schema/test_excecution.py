@@ -1815,6 +1815,7 @@ def test_get_execution_context__success(undine_settings) -> None:
         operation_name=None,
         middleware=None,
         incremental_delivery_error=None,
+        execution_timeout=None,
     )
 
     assert context is not None
@@ -2261,4 +2262,5 @@ def test_get_execution_context__invalid_variable_values(undine_settings) -> None
             operation_name=None,
             middleware=None,
             incremental_delivery_error=None,
+            execution_timeout=None,
         )

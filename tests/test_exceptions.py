@@ -59,6 +59,7 @@ from undine.exceptions import (
     GraphQLDuplicatePrimaryKeysError,
     GraphQLDuplicateTypeError,
     GraphQLErrorGroup,
+    GraphQLExecutionTimeoutError,
     GraphQLFieldNotNullableError,
     GraphQLFileNotFoundError,
     GraphQLFilePlacingError,
@@ -895,6 +896,12 @@ class GQLErrorParams(NamedTuple):
                 "Cannot add a new type '<class 'example_project.app.models.Task'>'."
             ),
             extensions={"error_code": "DUPLICATE_TYPE", "status_code": 400},
+        ),
+        GraphQLExecutionTimeoutError.__name__: GQLErrorParams(
+            cls=GraphQLExecutionTimeoutError,
+            args={},
+            message="GraphQL operation execution timed out",
+            extensions={"error_code": "EXECUTION_TIMEOUT", "status_code": 408},
         ),
         GraphQLFieldNotNullableError.__name__: GQLErrorParams(
             cls=GraphQLFieldNotNullableError,

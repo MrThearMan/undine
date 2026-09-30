@@ -127,6 +127,12 @@ class UndineDefaultSettings(NamedTuple):
     ADDITIONAL_VALIDATION_RULES: list[type[ASTValidationRule]] = []
     """Additional validation rules to use for validating the GraphQL schema."""
 
+    EXECUTION_TIMEOUT_SECONDS: float = 0
+    """
+    Maximum time in seconds the execution of a query or mutation can take before it's aborted.
+    Only applies to async execution. Set to 0 to disable.
+    """
+
     EXECUTOR_CLASS: type[UndineExecutor] = "undine.execution.UndineExecutor"  # type: ignore[assignment]
     """GraphQL executor class used by the schema."""
 
@@ -275,6 +281,12 @@ class UndineDefaultSettings(NamedTuple):
 
     EXPERIMENTAL_INCREMENTAL_DELIVERY: bool = False
     """Whether to enable experimental support for incremental delivery over HTTP."""
+
+    INCREMENTAL_DELIVERY_EARLY_EXECUTION: bool = False
+    """
+    Whether deferred and streamed work can start while the initial payload is still executing.
+    Without this, the work starts only when the next payload is requested.
+    """
 
     INCREMENTAL_DELIVERY_HEARTBEAT_INTERVAL: int = 0
     """

@@ -481,6 +481,105 @@ async def test_end_to_end__defer__errors_in_subsequent_responses(graphql_async, 
     }
 
 
+async def test_end_to_end__defer__early_execution(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.INCREMENTAL_DELIVERY_EARLY_EXECUTION = True
+
+    started = asyncio.Event()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @Field
+        async def slow(self: Task) -> str:
+            started.set()
+            return "slow"
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo")
+
+    query = """
+        query {
+          tasks {
+            name
+            ... @defer {
+              slow
+            }
+          }
+        }
+    """
+
+    stream = graphql_async.incremental_delivery(query)
+    await anext(stream)
+
+    # Deferred work starts, even though the next payload hasn't been requested yet.
+    await asyncio.wait_for(started.wait(), timeout=1)
+
+    responses = [response.json async for response in stream]
+    assert responses == [
+        {
+            "hasNext": False,
+            "incremental": [{"id": "0", "data": {"slow": "slow"}}],
+            "completed": [{"id": "0"}],
+        },
+    ]
+
+
+async def test_end_to_end__defer__no_early_execution(graphql_async, undine_settings) -> None:
+    undine_settings.ASYNC = True
+    undine_settings.GRAPHQL_PATH = "graphql/async/"
+    undine_settings.INCREMENTAL_DELIVERY_EARLY_EXECUTION = False
+
+    started = asyncio.Event()
+
+    class TaskType(QueryType[Task], auto=False):
+        name = Field()
+
+        @Field
+        async def slow(self: Task) -> str:
+            started.set()
+            return "slow"
+
+    class Query(RootType):
+        tasks = Entrypoint(TaskType, many=True)
+
+    undine_settings.SCHEMA = create_schema(query=Query)
+
+    await sync_to_async(TaskFactory.create)(name="foo")
+
+    query = """
+        query {
+          tasks {
+            name
+            ... @defer {
+              slow
+            }
+          }
+        }
+    """
+
+    stream = graphql_async.incremental_delivery(query)
+    await anext(stream)
+
+    # Deferred work starts only when the next payload is requested.
+    await asyncio.sleep(0.05)
+    assert not started.is_set()
+
+    responses = [response.json async for response in stream]
+    assert responses == [
+        {
+            "hasNext": False,
+            "incremental": [{"id": "0", "data": {"slow": "slow"}}],
+            "completed": [{"id": "0"}],
+        },
+    ]
+
+
 # Stream directive
 
 

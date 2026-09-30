@@ -970,6 +970,14 @@ class GraphQLDuplicateTypeError(GraphQLStatusError):
     code = UndineErrorCodes.DUPLICATE_TYPE
 
 
+class GraphQLExecutionTimeoutError(GraphQLStatusError):
+    """Error raised when the execution of a GraphQL operation takes longer than allowed."""
+
+    msg = "GraphQL operation execution timed out"
+    status = HTTPStatus.REQUEST_TIMEOUT
+    code = UndineErrorCodes.EXECUTION_TIMEOUT
+
+
 class GraphQLFieldNotNullableError(GraphQLStatusError):
     """Error raised when field result is null, but the field is not nullable."""
 
