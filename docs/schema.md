@@ -493,3 +493,29 @@ The option takes an optional path, defaulting to `schema.graphql` in the current
 ```bash
 python manage.py print_schema --check path/to/schema.graphql
 ```
+
+### Checking for breaking changes
+
+The `check_schema_changes` command compares the current schema to a committed SDL file
+and lists the changes between them. It exits with a non-zero status if any of the changes
+are breaking, so you can use it in CI to catch changes that would break existing clients.
+
+```bash
+python manage.py check_schema_changes path/to/schema.graphql
+```
+
+The path defaults to `schema.graphql` in the current directory. Changes are grouped by how
+they affect existing clients.
+
+```text
+Breaking changes:
+  FIELD_REMOVED: Field Query.removed was removed.
+Dangerous changes:
+  ARG_DEFAULT_VALUE_CHANGE: Query.count(limit:) has changed defaultValue from 10 to null.
+Safe changes:
+  FIELD_ADDED: Field Query.other was added.
+```
+
+**Breaking** changes break existing operations, like removing a field.
+**Dangerous** changes keep operations valid but might change their results, like changing
+a default value. **Safe** changes, like adding a field, don't affect existing operations.
