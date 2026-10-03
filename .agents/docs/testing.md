@@ -62,6 +62,45 @@ change. Do this even if the file wasn't at 100% before your change: don't
 assume a file is adequately covered just because that wasn't the number
 you started from.
 
+## All Python and Django versions
+
+Use `just nox-parallel` to run the suite in every supported Python and Django combination.
+The sessions come from the classifiers in `pyproject.toml`. Run it whenever a change can behave
+differently across versions: typing constructs, Django APIs, asyncio, or dependency bounds.
+
+- Start it in the background and watch it with a monitor on the summary lines (`ok`, `FAIL`, `Ran`).
+  A full run takes a few minutes.
+- Read failures in `.nox/logs/<session>.log`. Each log ends with the lines that session left uncovered.
+- The combined coverage printed at the end must be 100%. A single session can be below 100%,
+  because some branches only run on some versions.
+- To rerun a subset on one version, use that session's interpreter directly:
+  `.nox/tests-3-12-django-5-2/bin/python -m pytest tests/test_x.py`. Run the whole matrix with
+  `nox-parallel` only, since running sessions one after another is much slower.
+- `nox-parallel` runs `uv sync` first, which updates `uv.lock` if `pyproject.toml` changed.
+
+## Warnings
+
+Every warning fails the test that raises it (`"error"` in `filterwarnings` in `pyproject.toml`).
+Fix the cause of a new warning in the code or the test that raises it.
+
+Add an ignore only for a warning from a third-party library that Undine cannot fix. Make it specific:
+the full message, the category, and the module when it is stable. Put a comment above it that names
+the library and the reason.
+
+Some warnings come from garbage collection, for example `ResourceWarning`, a coroutine that was never
+awaited, or `PytestUnraisableExceptionWarning`. They fail whichever test happens to collect the garbage,
+not the test that caused them. To find the real source, run pytest with `--gc-after-each-test`
+(in a nox session: `nox -s <session> -- --gc-after-each-test`). Then the warning shows on the test
+that caused it. The option makes the suite many times slower, so narrow the run to a subset when you can.
+
+Stop every background thread a test starts, for example by closing SDK clients. A thread that
+outlives its test can change shared state, such as the global `random` state, and so cause
+flaky warnings in later tests.
+
+A local `pytest.ini` replaces the `pyproject.toml` config completely, also inside nox sessions.
+Keep its `filterwarnings` the same as in `pyproject.toml`, and also in the template in
+`example_project/app/management/commands/setup_local_configs.py`.
+
 ## Mypy
 
 See [mypy-tests.md](mypy-tests.md) for writing and running mypy test cases.
