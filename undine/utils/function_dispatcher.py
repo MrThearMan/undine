@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Hashable
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, Generic, Literal, get_origin
+from typing import TYPE_CHECKING, Any, Literal, get_origin
 
 from graphql import Undefined
 
@@ -16,7 +16,7 @@ from undine.exceptions import (
     FunctionDispatcherRegistrationError,
     FunctionDispatcherUnknownArgumentError,
 )
-from undine.typing import Lambda, LiteralArg, T
+from undine.typing import Lambda, LiteralArg
 
 from .reflection import (
     can_be_literal_arg,
@@ -27,6 +27,7 @@ from .reflection import (
     get_signature,
     is_lambda,
     is_union_origin,
+    unwrap_type_alias,
 )
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ __all__ = [
 ]
 
 
-class FunctionDispatcher(Generic[T]):
+class FunctionDispatcher[T]:
     """
     A class that holds different implementations for a function
     based on the function's first argument. Different implementations can be added with the `register` method.
@@ -118,7 +119,7 @@ class FunctionDispatcher(Generic[T]):
         if not isinstance(func, FunctionType):
             raise FunctionDispatcherRegistrationError(name=self.__name__, value=func)
 
-        annotation = self._first_param_type(func, depth=1)
+        annotation = unwrap_type_alias(self._first_param_type(func, depth=1))
 
         if annotation is Any:
             self.default = self.wrapper(func) if self.wrapper else func
@@ -158,7 +159,8 @@ class FunctionDispatcher(Generic[T]):
     def _iter_args(self, annotation: Any) -> Generator[tuple[str, Any], None, None]:
         origin = get_origin(annotation)
 
-        for arg in get_flattened_generic_params(annotation):
+        for generic_param in get_flattened_generic_params(annotation):
+            arg = unwrap_type_alias(generic_param)
             arg_origin = get_origin(arg)
 
             # Example: "str | int" or "Union[str, int]"
@@ -177,7 +179,7 @@ class FunctionDispatcher(Generic[T]):
 
             # Example: Literal["foo", "bar"]
             elif origin is Literal:
-                if not isinstance(arg, LiteralArg):
+                if not isinstance(arg, LiteralArg.__value__):
                     raise FunctionDispatcherImproperLiteralError(arg=arg)
                 yield "literals", arg
 

@@ -23,13 +23,7 @@ if TYPE_CHECKING:
 
     from undine import FilterSet, OrderSet
     from undine.query import Field
-    from undine.typing import (
-        DjangoRequestProtocol,
-        InterfaceFieldParams,
-        InterfaceTypeParams,
-        TInterfaceQueryType,
-        VisibilityFunc,
-    )
+    from undine.typing import DjangoRequestProtocol, InterfaceFieldParams, InterfaceTypeParams, VisibilityFunc
 
 __all__ = [
     "InterfaceField",
@@ -111,7 +105,7 @@ class InterfaceTypeMeta(type):
     def __contains__(cls, item: str) -> bool:
         return item in cls.__field_map__
 
-    def __call__(cls, implementation: type[TInterfaceQueryType]) -> type[TInterfaceQueryType]:
+    def __call__[T: QueryType | InterfaceType](cls, implementation: type[T]) -> type[T]:
         """
         Allow inheriting this InterfaceType to a QueryType or another InterfaceType using a decorator syntax.
 
@@ -123,7 +117,7 @@ class InterfaceTypeMeta(type):
         cls.__inherit__(implementation)
         return implementation
 
-    def __inherit__(cls, implementation: type[TInterfaceQueryType]) -> None:
+    def __inherit__[T: QueryType | InterfaceType](cls, implementation: type[T]) -> None:
         """Make the given `QueryType` or `InterfaceType` inherit from this `InterfaceType`."""
         if is_subclass(implementation, QueryType):
             for field_name, interface_field in cls.__field_map__.items():

@@ -64,7 +64,6 @@ if TYPE_CHECKING:
         ConnectionInitMessage,
         DjangoRequestProtocol,
         GraphQLWebSocketCloseCode,
-        P,
         PingMessage,
         RequestMethod,
         ServerMessage,
@@ -85,7 +84,7 @@ __all__ = [
 GRAPHQL_TRANSPORT_WS_PROTOCOL = "graphql-transport-ws"
 
 
-def close_websocket_on_error(func: Callable[P, Awaitable[None]]) -> Callable[P, Awaitable[None]]:
+def close_websocket_on_error[**P](func: Callable[P, Awaitable[None]]) -> Callable[P, Awaitable[None]]:
     """Close websockets if exceptions are raised."""
 
     @wraps(func)

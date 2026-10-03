@@ -12,7 +12,7 @@ from undine.settings import undine_settings
 if TYPE_CHECKING:
     from django.db.models import ManyToManyRel, Model, QuerySet
 
-    from undine.typing import PrefetchHackCacheType, TModel
+    from undine.typing import PrefetchHackCacheType
 
 __all__ = [
     "evaluate_with_prefetch_hack_async",
@@ -24,13 +24,13 @@ __all__ = [
 _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}"
 
 
-def evaluate_with_prefetch_hack_sync(queryset: QuerySet[TModel]) -> list[TModel]:
+def evaluate_with_prefetch_hack_sync[T: Model](queryset: QuerySet[T]) -> list[T]:
     """Evaluates the given queryset with the prefetch hack applied."""
     with patch(_PATH, side_effect=_prefetch_hack):
         return list(queryset)  # If the optimizer did its job, the database query is executed here
 
 
-async def evaluate_with_prefetch_hack_async(queryset: QuerySet[TModel]) -> list[TModel]:
+async def evaluate_with_prefetch_hack_async[T: Model](queryset: QuerySet[T]) -> list[T]:
     """Evaluates the given queryset with the prefetch hack applied."""
     with patch(_PATH, side_effect=_prefetch_hack):
         return [inst async for inst in queryset]  # If the optimizer did its job, the database query is executed here

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from tests.helpers import exact
@@ -21,7 +23,12 @@ def test_scalar__base32__str(func) -> None:
 
 @pytest.mark.parametrize("func", [base32_scalar.parse, base32_scalar.serialize])
 def test_scalar__base32__conversion_error(func) -> None:
-    msg = "'Base32' cannot represent value 'hello world': Incorrect padding"
+    if sys.version_info >= (3, 15):
+        error = "Only base32 data is allowed"
+    else:
+        error = "Incorrect padding"
+
+    msg = f"'Base32' cannot represent value 'hello world': {error}"
     with pytest.raises(GraphQLScalarConversionError, match=exact(msg)):
         func("hello world")
 

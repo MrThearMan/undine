@@ -46,7 +46,6 @@ if TYPE_CHECKING:
         DirectiveArgumentParams,
         DirectiveParams,
         DjangoRequestProtocol,
-        T,
         VisibilityFunc,
     )
     from undine.union import UnionType, UnionTypeMeta
@@ -193,7 +192,7 @@ class Directive(metaclass=DirectiveMeta):
     def __hash__(self) -> int:
         return hash((type(self), tuple(self.__parameters__.items())))
 
-    def __call__(self, other: T, /) -> T:
+    def __call__[T](self, other: T, /) -> T:
         """
         Allow adding directives using decorators.
 
@@ -205,7 +204,7 @@ class Directive(metaclass=DirectiveMeta):
         self.__connect__(other)
         return other
 
-    def __rmatmul__(self, other: T) -> T:
+    def __rmatmul__[T](self, other: T) -> T:
         """
         Allow adding directives using the @ operator.
 

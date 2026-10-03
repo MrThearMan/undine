@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any
 
 from asgiref.sync import sync_to_async
 from django.db.models.manager import BaseManager
@@ -20,7 +20,7 @@ from undine.exceptions import (
 from undine.optimizer.prefetch_hack import evaluate_with_prefetch_hack_async, evaluate_with_prefetch_hack_sync
 from undine.relay import Node, from_global_id, to_global_id
 from undine.settings import undine_settings
-from undine.typing import ConnectionDict, NodeDict, PageInfoDict, TModel
+from undine.typing import ConnectionDict, NodeDict, PageInfoDict
 from undine.utils.graphql.undine_extensions import get_undine_query_type
 from undine.utils.graphql.utils import (
     get_field_path_identifier,
@@ -60,12 +60,12 @@ class GlobalIDResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class NodeResolver(Generic[TModel]):
+class NodeResolver[T: Model]:
     """Resolves a model instance through a Global ID."""
 
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[T | None]:
         try:
             typename, object_id = from_global_id(kwargs["id"])
         except Exception as error:
@@ -98,7 +98,7 @@ class NodeResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ConnectionResolver(Generic[TModel]):
+class ConnectionResolver[T: Model]:
     """Resolves a connection of items."""
 
     connection: Connection
@@ -108,12 +108,12 @@ class ConnectionResolver(Generic[TModel]):
     def query_type(self) -> type[QueryType]:
         return self.connection.query_type  # type: ignore[return-value]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[T]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info)
         return self.run_sync(root, info)
 
-    def run_sync(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
+    def run_sync(self, root: Any, info: GQLInfo) -> ConnectionDict[T]:
         queryset = self.run_optimizer(info)
         instances = evaluate_with_prefetch_hack_sync(queryset)
         self.check_permissions(root, info, instances)
@@ -122,7 +122,7 @@ class ConnectionResolver(Generic[TModel]):
         pagination = info.context.undine_internal.connection_handler_storage[key]
         return self.to_connection(instances, pagination=pagination)
 
-    async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[TModel]:
+    async def run_async(self, root: Any, info: GQLInfo) -> ConnectionDict[T]:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -134,30 +134,30 @@ class ConnectionResolver(Generic[TModel]):
         pagination = info.context.undine_internal.connection_handler_storage[key]
         return self.to_connection(instances, pagination=pagination)
 
-    def get_queryset(self, info: GQLInfo) -> QuerySet[TModel]:
+    def get_queryset(self, info: GQLInfo) -> QuerySet[T]:
         return self.query_type.__get_queryset__(info)
 
-    def run_optimizer(self, info: GQLInfo) -> QuerySet[TModel]:
+    def run_optimizer(self, info: GQLInfo) -> QuerySet[T]:
         queryset = self.get_queryset(info)
         optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
         optimizations = optimizer.compile()
         return optimizations.apply(queryset, info)
 
-    async def run_optimizer_async(self, info: GQLInfo) -> QuerySet[TModel]:
+    async def run_optimizer_async(self, info: GQLInfo) -> QuerySet[T]:
         queryset = self.get_queryset(info)
         optimizer: QueryOptimizer = undine_settings.OPTIMIZER_CLASS(model=queryset.model, info=info)
         optimizations = optimizer.compile()
         # Applying may call 'queryset.count()'.
         return await sync_to_async(optimizations.apply)(queryset, info)
 
-    def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+    def check_permissions(self, root: Any, info: GQLInfo, instances: list[T]) -> None:
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 self.entrypoint.permissions_func(root, info, instance)
             else:
                 self.query_type.__permissions__(instance, info)
 
-    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[T]) -> None:
         for instance in instances:
             if self.entrypoint.permissions_func is not None:
                 if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
@@ -171,7 +171,7 @@ class ConnectionResolver(Generic[TModel]):
             else:
                 self.query_type.__permissions__(instance, info)
 
-    def to_connection(self, instances: list[TModel], pagination: CursorPaginationHandler) -> ConnectionDict[TModel]:
+    def to_connection(self, instances: list[T], pagination: CursorPaginationHandler) -> ConnectionDict[T]:
         page = pagination.get_page(instances)
         edges = [
             NodeDict(cursor=cursor, node=instance)
@@ -190,7 +190,7 @@ class ConnectionResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class NestedConnectionResolver(Generic[TModel]):
+class NestedConnectionResolver[T: Model]:
     """Resolves a nested connection from the given field."""
 
     connection: Connection
@@ -200,12 +200,12 @@ class NestedConnectionResolver(Generic[TModel]):
     def query_type(self) -> type[QueryType]:
         return self.connection.query_type  # type: ignore[return-value]
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[ConnectionDict[T]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info)
         return self.run_sync(root, info)
 
-    def run_sync(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+    def run_sync(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[T]:
         field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         self.check_permissions(root, info, instances)
@@ -214,7 +214,7 @@ class NestedConnectionResolver(Generic[TModel]):
         pagination = info.context.undine_internal.connection_handler_storage[key]
         return self.to_connection(instances, pagination)
 
-    async def run_async(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[TModel]:
+    async def run_async(self, root: Model, info: GQLInfo, **kwargs: Any) -> ConnectionDict[T]:
         field_name = get_queried_field_name(self.field.field_name, info)
         instances = self.get_instances(root, field_name)
         await self.check_permissions_async(root, info, instances)
@@ -223,20 +223,20 @@ class NestedConnectionResolver(Generic[TModel]):
         pagination = info.context.undine_internal.connection_handler_storage[key]
         return self.to_connection(instances, pagination)
 
-    def get_instances(self, root: Model, field_name: str) -> list[TModel]:
-        instances: list[TModel] = getattr(root, field_name)
+    def get_instances(self, root: Model, field_name: str) -> list[T]:
+        instances: list[T] = getattr(root, field_name)
         if isinstance(instances, BaseManager):
             instances = list(instances.get_queryset())
         return instances
 
-    def check_permissions(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+    def check_permissions(self, root: Any, info: GQLInfo, instances: list[T]) -> None:
         for instance in instances:
             if self.field.permissions_func is not None:
                 self.field.permissions_func(root, info, instance)
             else:
                 self.query_type.__permissions__(instance, info)
 
-    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[TModel]) -> None:
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instances: list[T]) -> None:
         for instance in instances:
             if self.field.permissions_func is not None:
                 if inspect.iscoroutinefunction(self.field.permissions_func):
@@ -250,7 +250,7 @@ class NestedConnectionResolver(Generic[TModel]):
             else:
                 self.query_type.__permissions__(instance, info)
 
-    def to_connection(self, instances: list[TModel], pagination: CursorPaginationHandler) -> ConnectionDict[TModel]:
+    def to_connection(self, instances: list[T], pagination: CursorPaginationHandler) -> ConnectionDict[T]:
         page = pagination.get_prefetch_page(instances)
         edges = [
             NodeDict(cursor=cursor, node=instance)

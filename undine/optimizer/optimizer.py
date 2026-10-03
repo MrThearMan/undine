@@ -43,7 +43,6 @@ if TYPE_CHECKING:
         QuerySetCallback,
         RelatedField,
         Selections,
-        TModel,
         ToManyField,
         ToOneField,
     )
@@ -58,27 +57,27 @@ __all__ = [
 
 
 @overload
-def optimize_sync(
-    queryset: QuerySet[TModel],
+def optimize_sync[T: Model](
+    queryset: QuerySet[T],
     info: GQLInfo,
     *,
     offset: int = 0,
     limit: int | None = None,
-) -> list[TModel]: ...
+) -> list[T]: ...
 
 
 @overload
-def optimize_sync(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
+def optimize_sync[T: Model](queryset: QuerySet[T], info: GQLInfo, **kwargs: Any) -> T | None: ...
 
 
-def optimize_sync(
-    queryset: QuerySet[TModel],
+def optimize_sync[T: Model](
+    queryset: QuerySet[T],
     info: GQLInfo,
     *,
     offset: int = 0,
     limit: int | None = None,
     **kwargs: Any,
-) -> list[TModel] | TModel | None:
+) -> list[T] | T | None:
     """
     Optimize a queryset and return the results synchronously.
 
@@ -107,27 +106,27 @@ def optimize_sync(
 
 
 @overload
-async def optimize_async(
-    queryset: QuerySet[TModel],
+async def optimize_async[T: Model](
+    queryset: QuerySet[T],
     info: GQLInfo,
     *,
     limit: int | None = None,
     offset: int = 0,
-) -> list[TModel]: ...
+) -> list[T]: ...
 
 
 @overload
-async def optimize_async(queryset: QuerySet[TModel], info: GQLInfo, **kwargs: Any) -> TModel | None: ...
+async def optimize_async[T: Model](queryset: QuerySet[T], info: GQLInfo, **kwargs: Any) -> T | None: ...
 
 
-async def optimize_async(
-    queryset: QuerySet[TModel],
+async def optimize_async[T: Model](
+    queryset: QuerySet[T],
     info: GQLInfo,
     *,
     offset: int = 0,
     limit: int | None = None,
     **kwargs: Any,
-) -> list[TModel] | TModel | None:
+) -> list[T] | T | None:
     """
     Optimize a queryset and return the results asynchronously.
 
@@ -687,7 +686,7 @@ class OptimizationResults:
     post_filter_callback: FilterCallback | None = None
     field_calculations: list[Calculation] = dataclasses.field(default_factory=list)
 
-    def apply(self, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:  # noqa: C901, PLR0912
+    def apply[T: Model](self, queryset: QuerySet[T], info: GQLInfo) -> QuerySet[T]:  # noqa: C901, PLR0912
         """Apply the optimization results to the given queryset."""
         if self.none:
             return queryset.none()

@@ -13,12 +13,10 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Generic,
     NamedTuple,
-    ParamSpec,
     Protocol,
+    TypeAliasType,
     TypeGuard,
-    TypeVar,
     Union,
     get_args,
     get_origin,
@@ -72,6 +70,7 @@ __all__ = [
     "is_union_origin",
     "reverse_enumerate",
     "sort_by_mro",
+    "unwrap_type_alias",
 ]
 
 
@@ -84,13 +83,7 @@ except ImportError:  # pragma: no cover
         return isinstance(tp, type) and getattr(tp, "_is_protocol", False) and tp != Protocol
 
 
-T = TypeVar("T")
-P = ParamSpec("P")
-TType = TypeVar("TType", bound=type)
-TEnum = TypeVar("TEnum", bound=Enum)
-
-
-def get_members(obj: object, type_: type[T]) -> dict[str, T]:
+def get_members[T](obj: object, type_: type[T]) -> dict[str, T]:
     """Get members of the given object that are instances of the given type."""
     return dict(inspect.getmembers(obj, lambda x: isinstance(x, type_)))
 
@@ -117,7 +110,14 @@ def get_wrapped_func(func: Callable[..., Any]) -> Callable[..., Any]:
     return func
 
 
-def get_origin_or_noop(type_hint: T) -> T:
+def unwrap_type_alias(type_hint: Any) -> Any:
+    """Get the value of the given type alias, or return the type hint itself if it's not a type alias."""
+    while isinstance(type_hint, TypeAliasType):
+        type_hint = type_hint.__value__
+    return type_hint
+
+
+def get_origin_or_noop[T](type_hint: T) -> T:
     """
     Get the unsubscripted version of the given type hint,
     or return the type hint itself if it's not unsubscripted.
@@ -133,7 +133,7 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, types.UnionType) else (arg,)))
 
 
-def get_all_subclasses(cls: TType) -> list[TType]:
+def get_all_subclasses[T: type](cls: T) -> list[T]:
     all_subclasses = []
 
     for subclass in cls.__subclasses__():
@@ -143,7 +143,7 @@ def get_all_subclasses(cls: TType) -> list[TType]:
     return all_subclasses
 
 
-def get_enum_from_string(enum_type: type[TEnum], value: str | TEnum) -> TEnum:
+def get_enum_from_string[T: Enum](enum_type: type[T], value: str | T) -> T:
     """Get an enum value from a string, allowing either the enum value or the string representation of the value."""
     try:
         return enum_type(value)
@@ -229,14 +229,14 @@ class _SignatureParser:
             "Any": Any,
         }
 
-        frame_locals: dict[str, Any] = frame.f_locals
+        frame_locals: dict[str, Any] = dict(frame.f_locals)
         frame_globals: dict[str, Any] = frame.f_globals | extra_globals
 
         # Check if previous frames are in the same file and collect their locals.
         depth += 1
         prev_frame: FrameType = sys._getframe(depth)
         while prev_frame.f_code.co_filename == frame.f_code.co_filename:
-            frame_locals = prev_frame.f_locals | frame_locals  # order matters!
+            frame_locals = dict(prev_frame.f_locals) | frame_locals  # order matters!
             depth += 1
             prev_frame = sys._getframe(depth)
 
@@ -257,12 +257,12 @@ def has_callable_attribute(obj: object, name: str) -> bool:
     return hasattr(obj, name) and callable(getattr(obj, name))
 
 
-def is_subclass(obj: object, cls: TType) -> TypeGuard[TType]:
+def is_subclass[T: type](obj: object, cls: T) -> TypeGuard[T]:
     """Check if the given object is a subclass of the given class."""
     return isinstance(obj, type) and issubclass(obj, cls)  # type: ignore[arg-type]
 
 
-def is_list_of(value: Any, cls: type[T], *, allow_empty: bool = False) -> TypeGuard[list[T]]:
+def is_list_of[T](value: Any, cls: type[T], *, allow_empty: bool = False) -> TypeGuard[list[T]]:
     """
     Check if the value is a homogeneous list of the given type.
     List must have at least one item to be considered a list of the given type, unless `allow_empty` is True.
@@ -293,12 +293,12 @@ def is_union_origin(type_: Any) -> TypeGuard[types.UnionType]:
 
 def is_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
     """Check if the given type is a TypedDict `Required` type."""
-    return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "Required"  # type: ignore[misc]
+    return isinstance(type_, ParametrizedType.__value__) and getattr(type_.__origin__, "_name", None) == "Required"  # type: ignore[misc]
 
 
 def is_not_required_type(type_: Any) -> TypeGuard[ParametrizedType]:
     """Check if the given type is a TypedDict `NotRequired` type."""
-    return isinstance(type_, ParametrizedType) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
+    return isinstance(type_, ParametrizedType.__value__) and getattr(type_.__origin__, "_name", None) == "NotRequired"  # type: ignore[misc]
 
 
 def is_namedtuple(obj: Any) -> TypeGuard[type[NamedTuple]]:
@@ -329,7 +329,7 @@ def is_same_func(
 
 
 def can_be_literal_arg(key: Any) -> TypeGuard[LiteralArg]:
-    return isinstance(key, LiteralArg)
+    return isinstance(key, LiteralArg.__value__)
 
 
 def get_instance_name() -> str:
@@ -348,7 +348,7 @@ def get_instance_name() -> str:
     return definition.split(":", maxsplit=1)[0].strip()
 
 
-class FunctionEqualityWrapper(Generic[T]):
+class FunctionEqualityWrapper[T]:
     """
     Adds equality checks for a function based on the provided context.
     Function is equal to another function if it's also wrapped with this class
@@ -398,7 +398,7 @@ def get_root_and_info_params(func: types.FunctionType | Callable[..., Any], *, d
     return RootAndInfoParams(root_param=root_param, info_param=info_param)
 
 
-def reverse_enumerate(sequence: Sequence[T]) -> Generator[tuple[int, T], None, None]:
+def reverse_enumerate[T](sequence: Sequence[T]) -> Generator[tuple[int, T], None, None]:
     """
     Enumerate the given sequence in reverse order.
     Using this allows using `.pop(index)` on the sequence to remove the iterated item if needed.
@@ -411,14 +411,14 @@ def reverse_enumerate(sequence: Sequence[T]) -> Generator[tuple[int, T], None, N
         yield index, sequence[index]
 
 
-async def async_enumerate(it: AsyncIterable[T]) -> AsyncGenerator[tuple[int, T], None]:
+async def async_enumerate[T](it: AsyncIterable[T]) -> AsyncGenerator[tuple[int, T], None]:
     """Enumerate the given async iterable."""
     counter = itertools.count()
     async for item in it:
         yield next(counter), item
 
 
-def sort_by_mro(classes: Iterable[type[T]]) -> list[type[T]]:
+def sort_by_mro[T](classes: Iterable[type[T]]) -> list[type[T]]:
     """
     Sorts a list of classes so that subclasses appear above their parents.
     If classes are unrelated, their relative order is preserved.
@@ -450,7 +450,7 @@ def get_traceback(traceback: TracebackType) -> list[str]:
     return [subline for line in format_tb(traceback) for subline in line.split("\n")]
 
 
-def as_coroutine_func_if_not(func: Callable[P, AwaitableOrValue[T]], /) -> Callable[P, Awaitable[T]]:
+def as_coroutine_func_if_not[**P, T](func: Callable[P, AwaitableOrValue[T]], /) -> Callable[P, Awaitable[T]]:
     """Convert function to a coroutine function using sync_to_async if needed."""
     if inspect.iscoroutinefunction(func):
         return func

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, TypeAlias
+from typing import Literal
 
 __all__ = [
     "ENProviders",
@@ -9,7 +9,7 @@ __all__ = [
 
 
 # See https://faker.readthedocs.io/en/master/providers.html for explanations of the providers.
-StandardProviders: TypeAlias = Literal[
+type StandardProviders = Literal[
     "aba",
     "am_pm",
     "android_platform_token",
@@ -254,7 +254,7 @@ StandardProviders: TypeAlias = Literal[
 
 
 # See https://faker.readthedocs.io/en/master/locales/en_US.html for explanations of the providers.
-ENProviders: TypeAlias = (
+type ENProviders = (
     StandardProviders
     | Literal[
         "address",

@@ -5,18 +5,18 @@ import hashlib
 from abc import ABC, abstractmethod
 from contextlib import aclosing
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any
 
 from django.db.models.signals import post_save, pre_delete
 
 from undine.brokers import get_subscription_broker
 from undine.exceptions import GraphQLSubscriptionTimeoutError
-from undine.typing import T, TModel
 from undine.utils.model_utils import deserialize_model_instance, serialize_model_instance, serialize_model_pk
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+    from django.db.models import Model
     from django.dispatch import Signal
 
     from undine import QueryType
@@ -32,7 +32,7 @@ __all__ = [
 ]
 
 
-class SignalSubscription(ABC, Generic[T]):
+class SignalSubscription[T](ABC):
     """A subscription that forwards data from a signal."""
 
     def __init__(
@@ -120,7 +120,7 @@ class SignalSubscription(ABC, Generic[T]):
         broker.publish(self.topic, self.serialize(kwargs))
 
 
-class SignalSubscriber(Generic[T]):
+class SignalSubscriber[T]:
     """Subscriber that receives events from a signal subscription."""
 
     def __init__(self, subscription: SignalSubscription) -> None:
@@ -150,7 +150,7 @@ class SignalSubscriber(Generic[T]):
                 yield subscription.transform(event)
 
 
-class QueryTypeSignalSubscription(SignalSubscription[TModel], ABC):
+class QueryTypeSignalSubscription[T: Model](SignalSubscription[T], ABC):
     """Signal subscription for returning model instances through a QueryType."""
 
     def __init__(
@@ -183,12 +183,12 @@ class QueryTypeSignalSubscription(SignalSubscription[TModel], ABC):
         )
 
 
-class ModelSaveSubscription(QueryTypeSignalSubscription[TModel]):
+class ModelSaveSubscription[T: Model](QueryTypeSignalSubscription[T]):
     """Subscription that sends an event after a model instance has been saved."""
 
     signal = post_save
 
-    def serialize(self, params: PostSaveParams[TModel]) -> ModelSaveEvent:  # type: ignore[override]
+    def serialize(self, params: PostSaveParams[T]) -> ModelSaveEvent:  # type: ignore[override]
         return {"pk": serialize_model_pk(params["instance"]), "created": params["created"]}
 
     def transform(self, event: ModelSaveEvent) -> Any:  # type: ignore[override]
@@ -197,30 +197,30 @@ class ModelSaveSubscription(QueryTypeSignalSubscription[TModel]):
         return event["pk"]
 
 
-class ModelCreateSubscription(ModelSaveSubscription[TModel]):
+class ModelCreateSubscription[T: Model](ModelSaveSubscription[T]):
     """Subscription that sends an event after a model instance has been created."""
 
     def filter(self, event: ModelSaveEvent) -> bool:  # type: ignore[override]
         return not event["created"]
 
 
-class ModelUpdateSubscription(ModelSaveSubscription[TModel]):
+class ModelUpdateSubscription[T: Model](ModelSaveSubscription[T]):
     """Subscription that sends an event after a model instance has been updated."""
 
     def filter(self, event: ModelSaveEvent) -> bool:  # type: ignore[override]
         return event["created"]
 
 
-class ModelDeleteSubscription(QueryTypeSignalSubscription[TModel]):
+class ModelDeleteSubscription[T: Model](QueryTypeSignalSubscription[T]):
     """Subscription that sends an event before a model instance is deleted."""
 
     signal = pre_delete
 
-    def serialize(self, params: PostDeleteParams[TModel]) -> ModelDeleteEvent:  # type: ignore[override]
+    def serialize(self, params: PostDeleteParams[T]) -> ModelDeleteEvent:  # type: ignore[override]
         # The row is gone by the time a subscriber receives the event, so the instance's own
         # columns travel with it. Its many-to-many relations do not, since reading them
         # queries rows that may already be deleted.
         return {"snapshot": serialize_model_instance(params["instance"])}
 
-    def transform(self, event: ModelDeleteEvent) -> TModel:  # type: ignore[override]
+    def transform(self, event: ModelDeleteEvent) -> T:  # type: ignore[override]
         return deserialize_model_instance(event["snapshot"])  # type: ignore[return-value]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.management import BaseCommand, CommandError
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         self.stdout.write(md)
 
 
-DirectoryStructure: TypeAlias = dict[str, Optional["DirectoryStructure"]]
+type DirectoryStructure = dict[str, "DirectoryStructure" | None]
 
 
 def get_ignored_files() -> set[str]:

@@ -12,7 +12,7 @@ import time
 from collections import UserDict
 from contextlib import contextmanager
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
@@ -83,7 +83,6 @@ __all__ = [
 # Longer for CI due to slower test runner.
 TEST_WAIT_TIME = 1 if os.getenv("CI") else 0.1
 
-TNamedTuple = TypeVar("TNamedTuple", bound=NamedTuple)
 
 PNG = base64.b64decode(b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4AWNgYGAAAAAEAAHklIQGAAAAAElFTkSuQmCC")
 """A single blank pixel PNG image in base64 encoding."""
@@ -112,13 +111,13 @@ class CountingValidationRule(ValidationRule):
         CountingValidationRule.runs += 1
 
 
-class ParametrizeArgs(TypedDict):
+class ParametrizeArgs[T: NamedTuple](TypedDict):
     argnames: list[str]
-    argvalues: list[TNamedTuple]  # type: ignore[valid-type]
+    argvalues: list[T]
     ids: list[str]
 
 
-def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
+def parametrize_helper[T: NamedTuple](__tests: dict[str, T], /) -> ParametrizeArgs[T]:
     """Construct parametrize input while setting test IDs."""
     assert __tests, "I need some tests, please!"
     values = list(__tests.values())
@@ -129,7 +128,7 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
             ids=list(__tests),
         )
     except AttributeError as error:
-        msg = "Improper configuration. Did you use a NamedTuple for TNamedTuple?"
+        msg = "Improper configuration. Did you use a NamedTuple for T?"
         raise UndineError(msg) from error
 
 

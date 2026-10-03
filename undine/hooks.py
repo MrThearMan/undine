@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from graphql.pyutils import AwaitableOrValue
 
     from undine.dataclasses import CacheControlResults, GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, GQLInfo, GraphQLResult, GraphQLStream, T
+    from undine.typing import DjangoRequestProtocol, GQLInfo, GraphQLResult, GraphQLStream
 
 __all__ = [
     "ExecutionLifecycleHookManager",
@@ -766,7 +766,7 @@ class ExecutionLifecycleHookManager(BaseLifecycleHookManager):
 # Decorators
 
 
-def with_lifecycle_hooks_manager(
+def with_lifecycle_hooks_manager[T](
     manager: type[BaseLifecycleHookManager],
 ) -> Callable[[Callable[[LifecycleHookContext], T]], Callable[[LifecycleHookContext], T]]:
     def decorator(func: Callable[[LifecycleHookContext], T]) -> Callable[[LifecycleHookContext], T]:
@@ -786,7 +786,7 @@ with_validation_lifecycle_hooks_manager = with_lifecycle_hooks_manager(Validatio
 with_execution_lifecycle_hooks_manager = with_lifecycle_hooks_manager(ExecutionLifecycleHookManager)
 
 
-def with_lifecycle_hooks_manager_async(
+def with_lifecycle_hooks_manager_async[T](
     manager: type[BaseLifecycleHookManager],
 ) -> Callable[[Callable[[LifecycleHookContext], Awaitable[T]]], Callable[[LifecycleHookContext], Awaitable[T]]]:
     def decorator(

@@ -9,7 +9,6 @@ from example_project.app.models import Task
 from tests.factories import TaskFactory
 from undine import Entrypoint, Field, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
 from undine.exceptions import GraphQLStatusError, GraphQLValidationError
-from undine.typing import TModel
 
 
 @pytest.mark.django_db
@@ -405,7 +404,7 @@ def test_end_to_end__union_errors__entrypoint__mutation(graphql, undine_settings
         type = Input(default_value="TASK")
 
         @classmethod
-        def __validate__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
+        def __validate__(cls, instance: Task, info: GQLInfo, input_data: dict[str, Any]) -> None:
             if len(input_data["name"]) < 3:
                 msg = "Task name must be at least 3 characters"
                 raise GraphQLValidationError(msg)

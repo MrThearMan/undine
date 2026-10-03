@@ -102,7 +102,7 @@ if TYPE_CHECKING:
     from graphql.pyutils import AwaitableOrValue, Path
 
     from undine.dataclasses import GraphQLHttpParams
-    from undine.typing import DjangoRequestProtocol, GraphQLResult, GraphQLStream, P
+    from undine.typing import DjangoRequestProtocol, GraphQLResult, GraphQLStream
 
 __all__ = [
     "execute_graphql_http_async",
@@ -114,7 +114,7 @@ __all__ = [
 # HTTP sync execution
 
 
-def raised_exceptions_as_execution_results_sync(
+def raised_exceptions_as_execution_results_sync[**P](
     func: Callable[P, ExecutionResult],
 ) -> Callable[P, ExecutionResult]:
     """Wraps raised exceptions as GraphQL ExecutionResults if they happen in `execute_graphql_sync`."""
@@ -245,7 +245,7 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
 # HTTP async execution
 
 
-def raised_exceptions_as_execution_results_async(
+def raised_exceptions_as_execution_results_async[**P](
     func: Callable[P, Awaitable[GraphQLResult]],
 ) -> Callable[P, Awaitable[GraphQLResult]]:
     """Wraps raised exceptions as GraphQL ExecutionResults if they happen in `execute_graphql_async`."""
@@ -398,7 +398,7 @@ async def _execute_async_with_timeout(
 # Subscription enabled execution
 
 
-def raised_exceptions_as_execution_results_with_subscriptions(
+def raised_exceptions_as_execution_results_with_subscriptions[**P](
     func: Callable[P, Awaitable[GraphQLResult | GraphQLStream]],
 ) -> Callable[P, Awaitable[GraphQLResult | GraphQLStream]]:
     @wraps(func)

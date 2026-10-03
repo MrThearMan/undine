@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from graphql import DirectiveLocation, GraphQLField, Undefined
 
@@ -20,7 +20,6 @@ from undine.directives import CacheRulesDirective, ComplexityDirective, Directiv
 from undine.exceptions import MissingModelGenericError, QueryTypeOptimizationsRenamedWarning
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import TModel
 from undine.utils.graphql.error_unions import build_union_with_errors, error_union_resolver_wrapper
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 from undine.utils.model_utils import get_default_manager, get_model_fields_for_graphql, get_related_name
@@ -148,7 +147,7 @@ class QueryTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_object_type(cls.__output_type__())
 
-    def __getitem__(cls, model: type[TModel]) -> type[QueryType[TModel]]:
+    def __getitem__[T: Model](cls, model: type[T]) -> type[QueryType[T]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'QueryType'!
         QueryTypeMeta.__model__ = model
@@ -172,7 +171,7 @@ class QueryTypeMeta(type):
         """Defer creating fields until all QueryTypes have been registered."""
         return {field.schema_name: field.as_graphql_field() for field in cls.__field_map__.values()}
 
-    def __is_type_of__(cls, value: TModel, info: GQLInfo) -> bool:
+    def __is_type_of__[T: Model](cls, value: T, info: GQLInfo) -> bool:
         """
         Function for resolving types of abstract GraphQL types like unions.
         Indicates whether the given value belongs to this `QueryType`.
@@ -181,7 +180,7 @@ class QueryTypeMeta(type):
         return type(value) is cls.__model__
 
 
-class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
+class QueryType[T: Model](metaclass=QueryTypeMeta):
     """
     A class for creating a query in the GraphQL schema based on a Django Model.
     Represents a GraphQL `ObjectType` in the GraphQL schema.
@@ -245,12 +244,12 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
     __attribute_docstrings__: ClassVar[dict[str, str]]
 
     @classmethod
-    def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+    def __filter_queryset__(cls, queryset: QuerySet[T], info: GQLInfo) -> QuerySet[T]:
         """Filtering that should always be applied when fetching objects through this QueryType."""
         return queryset
 
     @classmethod
-    def __permissions__(cls, instance: TModel, info: GQLInfo) -> None:
+    def __permissions__(cls, instance: T, info: GQLInfo) -> None:
         """Check permissions for accessing an instance through this `QueryType`."""
 
     @classmethod
@@ -266,7 +265,7 @@ class QueryType(Generic[TModel], metaclass=QueryTypeMeta):
         return True
 
     @classmethod
-    def __get_queryset__(cls, info: GQLInfo) -> QuerySet[TModel]:
+    def __get_queryset__(cls, info: GQLInfo) -> QuerySet[T]:
         """Base queryset for this `QueryType`."""
         return get_default_manager(cls.__model__).get_queryset()  # type: ignore[return-value]
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any
 
 from asgiref.sync import sync_to_async
 from django.db.models import Model, Q
@@ -10,7 +10,6 @@ from graphql import Undefined
 
 from undine.exceptions import GraphQLMissingLookupFieldError
 from undine.settings import undine_settings
-from undine.typing import TModel
 from undine.utils.graphql.utils import pre_evaluate_request_user
 from undine.utils.model_utils import (
     convert_integrity_errors,
@@ -44,26 +43,26 @@ __all__ = [
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class CreateResolver(Generic[TModel]):
+class CreateResolver[T: Model]:
     """Resolves a mutation for creating a model instance."""
 
-    mutation_type: type[MutationType[TModel]]
+    mutation_type: type[MutationType[T]]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[T | None]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     @property
-    def query_type(self) -> type[QueryType[TModel]]:
+    def query_type(self) -> type[QueryType[T]]:
         return self.mutation_type.__query_type__()
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> T | None:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
         instance = self.model()
@@ -85,7 +84,7 @@ class CreateResolver(Generic[TModel]):
 
         return instance
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> T | None:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -115,26 +114,26 @@ class CreateResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class UpdateResolver(Generic[TModel]):
+class UpdateResolver[T: Model]:
     """Resolves a mutation for updating a model instance."""
 
-    mutation_type: type[MutationType[TModel]]
+    mutation_type: type[MutationType[T]]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[T | None]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     @property
-    def query_type(self) -> type[QueryType[TModel]]:
+    def query_type(self) -> type[QueryType[T]]:
         return self.mutation_type.__query_type__()
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> T | None:
         input_data: dict[str, Any] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
         if "pk" not in input_data:
@@ -160,7 +159,7 @@ class UpdateResolver(Generic[TModel]):
 
         return instance
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> TModel | None:
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> T | None:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -193,7 +192,7 @@ class UpdateResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class DeleteResolver(Generic[TModel]):
+class DeleteResolver[T: Model]:
     """Resolves a mutation for deleting a model instance."""
 
     mutation_type: type[MutationType]
@@ -205,7 +204,7 @@ class DeleteResolver(Generic[TModel]):
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> SimpleNamespace:
@@ -269,32 +268,32 @@ class DeleteResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class BulkCreateResolver(Generic[TModel]):
+class BulkCreateResolver[T: Model]:
     """Resolves a bulk create mutation for creating a list of model instances."""
 
-    mutation_type: type[MutationType[TModel]]
+    mutation_type: type[MutationType[T]]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[T]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     @property
-    def query_type(self) -> type[QueryType[TModel]]:
+    def query_type(self) -> type[QueryType[T]]:
         return self.mutation_type.__query_type__()
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[T]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
         counter = info.context.undine_internal.mutation_counter
         check_mutation_instance_limit(counter, len(input_data))
 
-        instances: list[TModel] = [self.model() for _ in input_data]
+        instances: list[T] = [self.model() for _ in input_data]
 
         pre_mutation_many(
             instances=instances,  # type: ignore[arg-type]
@@ -316,7 +315,7 @@ class BulkCreateResolver(Generic[TModel]):
         )
         return resolver.run_sync(root, info)
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[T]:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -325,7 +324,7 @@ class BulkCreateResolver(Generic[TModel]):
         counter = info.context.undine_internal.mutation_counter
         check_mutation_instance_limit(counter, len(input_data))
 
-        instances: list[TModel] = [self.model() for _ in input_data]
+        instances: list[T] = [self.model() for _ in input_data]
 
         await pre_mutation_many_async(
             instances=instances,  # type: ignore[arg-type]
@@ -353,26 +352,26 @@ class BulkCreateResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class BulkUpdateResolver(Generic[TModel]):
+class BulkUpdateResolver[T: Model]:
     """Resolves a bulk update mutation for updating a list of model instances."""
 
-    mutation_type: type[MutationType[TModel]]
+    mutation_type: type[MutationType[T]]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[TModel]]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[list[T]]:
         if undine_settings.ASYNC:
             return self.run_async(root, info, **kwargs)
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     @property
-    def query_type(self) -> type[QueryType[TModel]]:
+    def query_type(self) -> type[QueryType[T]]:
         return self.mutation_type.__query_type__()
 
-    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[T]:
         input_data: list[dict[str, Any]] = kwargs[undine_settings.MUTATION_INPUT_DATA_KEY]
 
         counter = info.context.undine_internal.mutation_counter
@@ -403,7 +402,7 @@ class BulkUpdateResolver(Generic[TModel]):
         )
         return resolver.run_sync(root, info)
 
-    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[TModel]:
+    async def run_async(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[T]:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -443,7 +442,7 @@ class BulkUpdateResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class BulkDeleteResolver(Generic[TModel]):
+class BulkDeleteResolver[T: Model]:
     """Resolves a bulk delete mutation for deleting a list of model instances."""
 
     mutation_type: type[MutationType]
@@ -455,7 +454,7 @@ class BulkDeleteResolver(Generic[TModel]):
         return self.run_sync(root, info, **kwargs)
 
     @property
-    def model(self) -> type[TModel]:
+    def model(self) -> type[T]:
         return self.mutation_type.__model__  # type: ignore[return-value]
 
     def run_sync(self, root: Any, info: GQLInfo, **kwargs: Any) -> list[SimpleNamespace]:

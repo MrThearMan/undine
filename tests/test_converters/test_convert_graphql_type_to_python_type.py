@@ -198,7 +198,7 @@ def test_convert_graphql_type_to_python_type__graphql_interface() -> None:
     assert is_union_origin(origin)
     assert len(args) == 2
 
-    assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
+    assert isinstance(args[0], TypedDictType.__value__)  # type: ignore[misc]
     assert args[0].__name__ == "Interface"
     assert args[0].__annotations__ == {"field": str | None}
 
@@ -218,11 +218,11 @@ def test_convert_graphql_type_to_python_type__graphql_union() -> None:
     assert is_union_origin(origin)
     assert len(args) == 3
 
-    assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
+    assert isinstance(args[0], TypedDictType.__value__)  # type: ignore[misc]
     assert args[0].__name__ == "Obj1"
     assert args[0].__annotations__ == {"field": str | None}
 
-    assert isinstance(args[1], TypedDictType)  # type: ignore[misc]
+    assert isinstance(args[1], TypedDictType.__value__)  # type: ignore[misc]
     assert args[1].__name__ == "Obj2"
     assert args[1].__annotations__ == {"field": int | None}
 
@@ -256,7 +256,7 @@ def test_convert_graphql_type_to_python_type__graphql_object() -> None:
     assert is_union_origin(origin)
     assert len(args) == 2
 
-    assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
+    assert isinstance(args[0], TypedDictType.__value__)  # type: ignore[misc]
     assert args[0].__name__ == "Obj"
     assert args[0].__annotations__ == {"field": str | None}
 
@@ -273,7 +273,7 @@ def test_convert_graphql_type_to_python_type__graphql_input_object() -> None:
     assert is_union_origin(origin)
     assert len(args) == 2
 
-    assert isinstance(args[0], TypedDictType)  # type: ignore[misc]
+    assert isinstance(args[0], TypedDictType.__value__)  # type: ignore[misc]
     assert args[0].__name__ == "Obj"
     assert args[0].__annotations__ == {"field": str | None}
 

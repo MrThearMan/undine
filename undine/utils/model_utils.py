@@ -50,15 +50,7 @@ if TYPE_CHECKING:
     from django.db.backends.base.features import BaseDatabaseFeatures
     from django.db.models import Field, Manager, ManyToManyRel, Model, QuerySet
 
-    from undine.typing import (
-        CombinableExpression,
-        GenericField,
-        ModelField,
-        RelatedField,
-        TModel,
-        ToManyField,
-        ToOneField,
-    )
+    from undine.typing import CombinableExpression, GenericField, ModelField, RelatedField, ToManyField, ToOneField
 
 __all__ = [
     "SubqueryCount",
@@ -94,12 +86,12 @@ __all__ = [
 ]
 
 
-def get_default_manager(model: type[TModel]) -> Manager[TModel]:
+def get_default_manager[T: Model](model: type[T]) -> Manager[T]:
     """Get the default manager for the given model."""
     return model._meta.default_manager  # type: ignore[return-value]
 
 
-def get_instance_or_raise(*, model: type[TModel], pk: Any) -> TModel:
+def get_instance_or_raise[T: Model](*, model: type[T], pk: Any) -> T:
     """
     Get model instance by the given key with the given primary key.
 
@@ -111,7 +103,7 @@ def get_instance_or_raise(*, model: type[TModel], pk: Any) -> TModel:
         raise GraphQLModelNotFoundError(pk=pk, model=model) from error
 
 
-async def get_instance_or_raise_async(*, model: type[TModel], pk: Any) -> TModel:
+async def get_instance_or_raise_async[T: Model](*, model: type[T], pk: Any) -> T:
     """
     Get model instance by the given key with the given primary key.
 
@@ -123,13 +115,13 @@ async def get_instance_or_raise_async(*, model: type[TModel], pk: Any) -> TModel
         raise GraphQLModelNotFoundError(pk=pk, model=model) from error
 
 
-def get_instances_or_raise(*, model: type[TModel], pks: list[Any]) -> list[TModel]:
+def get_instances_or_raise[T: Model](*, model: type[T], pks: list[Any]) -> list[T]:
     """
     Get model instances by the given primary keys.
 
     :raises GraphQLModelsNotFoundError: If an instance for any of the given primary keys does not exist.
     """
-    instances: list[TModel] = list(get_default_manager(model).filter(pk__in=pks))
+    instances: list[T] = list(get_default_manager(model).filter(pk__in=pks))
     missing = set(pks) - {instance.pk for instance in instances}
     if missing:
         if len(missing) == 1:

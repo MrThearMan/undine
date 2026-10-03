@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation
@@ -13,7 +13,6 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import TQueryTypes
 from undine.utils.graphql.type_registry import get_or_create_graphql_union
 from undine.utils.text import get_docstring
 
@@ -95,7 +94,7 @@ class UnionTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_union_type(cls.__union_type__())
 
-    def __getitem__(cls, query_types: tuple[type[QueryType], ...]) -> type[UnionType[*TQueryTypes]]:
+    def __getitem__[*Ts](cls, query_types: tuple[type[QueryType], ...]) -> type[UnionType[*Ts]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'UnionType'!
         UnionTypeMeta.__query_types__ = query_types
@@ -125,7 +124,7 @@ class UnionTypeMeta(type):
         )
 
 
-class UnionType(Generic[*TQueryTypes], metaclass=UnionTypeMeta):
+class UnionType[*Ts](metaclass=UnionTypeMeta):
     """
     A class for creating a GraphQL Union based on two or more `QueryTypes`.
 

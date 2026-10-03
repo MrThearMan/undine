@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Hashable
 from contextlib import contextmanager
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, TypeGuard, TypeVar, Unpack
+from typing import TYPE_CHECKING, Any, TypeGuard, Unpack
 
 from django.db.models import ForeignKey
 from graphql import (
@@ -101,33 +101,27 @@ UNMASKED_ERROR_ATTRIBUTE: str = "undine_unmasked_error"
 """Attribute on a masked `GraphQLError` that holds the original error for server-side error reporting."""
 
 
-TGraphQLType = TypeVar(
-    "TGraphQLType",
-    bound=(
-        GraphQLObjectType
-        | GraphQLInterfaceType
-        | GraphQLUnionType
-        | GraphQLEnumType
-        | GraphQLScalarType
-        | GraphQLInputObjectType
-    ),
-)
-
-
 # Getters
 
 
-def get_underlying_type(
+def get_underlying_type[
+    T: GraphQLObjectType
+    | GraphQLInterfaceType
+    | GraphQLUnionType
+    | GraphQLEnumType
+    | GraphQLScalarType
+    | GraphQLInputObjectType
+](
     gql_type: (
-        TGraphQLType
-        | GraphQLList[TGraphQLType]
-        | GraphQLList[GraphQLNonNull[TGraphQLType]]
-        | GraphQLNonNull[TGraphQLType]
-        | GraphQLNonNull[GraphQLList[TGraphQLType]]
-        | GraphQLNonNull[GraphQLList[GraphQLNonNull[TGraphQLType]]]
-        | GraphQLWrappingType[TGraphQLType]
+        T
+        | GraphQLList[T]
+        | GraphQLList[GraphQLNonNull[T]]
+        | GraphQLNonNull[T]
+        | GraphQLNonNull[GraphQLList[T]]
+        | GraphQLNonNull[GraphQLList[GraphQLNonNull[T]]]
+        | GraphQLWrappingType[T]
     ),
-) -> TGraphQLType:
+) -> T:
     while hasattr(gql_type, "of_type"):
         gql_type = gql_type.of_type
     return gql_type

@@ -12,7 +12,7 @@ from graphql import GraphQLField, GraphQLInt, GraphQLNonNull, GraphQLObjectType
 from example_project.app.models import AcceptanceCriteria, Person, Project, Task, TaskStep, TaskTypeChoices
 from tests.factories import AcceptanceCriteriaFactory, PersonFactory, ProjectFactory, TaskFactory, TaskStepFactory
 from undine import Entrypoint, GQLInfo, Input, MutationType, QueryType, RootType, create_schema
-from undine.typing import RelatedAction, TModel
+from undine.typing import RelatedAction
 from undine.utils.graphql.type_registry import get_or_create_graphql_object_type
 
 
@@ -1010,7 +1010,7 @@ def test_update_mutation__update_causes_query_type_to_not_return_instance(graphq
 
     class TaskType(QueryType[Task]):
         @classmethod
-        def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+        def __filter_queryset__(cls, queryset: QuerySet[Task], info: GQLInfo) -> QuerySet[Task]:
             # Not run on 'TaskUpdateMutation' since it defines its own '__filter_queryset__'
             nonlocal not_run
             not_run = False
@@ -1018,7 +1018,7 @@ def test_update_mutation__update_causes_query_type_to_not_return_instance(graphq
 
     class TaskUpdateMutation(MutationType[Task]):
         @classmethod
-        def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+        def __filter_queryset__(cls, queryset: QuerySet[Task], info: GQLInfo) -> QuerySet[Task]:
             return queryset
 
     class Query(RootType):

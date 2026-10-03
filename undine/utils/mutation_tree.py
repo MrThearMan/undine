@@ -40,7 +40,6 @@ if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ForeignKeyDeferredAttribute, ManyToManyDescriptor
 
     from undine.dataclasses import RelInfo
-    from undine.typing import TModel
 
 __all__ = [
     "mutate",
@@ -48,33 +47,33 @@ __all__ = [
 
 
 @overload
-def mutate(
+def mutate[T: Model](
     *,
-    model: type[TModel],
+    model: type[T],
     data: dict[str, Any],
     related_action: RelatedAction = ...,
     counter: MutationInstanceCounter | None = ...,
-) -> TModel: ...
+) -> T: ...
 
 
 @overload
-def mutate(
+def mutate[T: Model](
     *,
-    model: type[TModel],
+    model: type[T],
     data: list[dict[str, Any]],
     related_action: RelatedAction = ...,
     counter: MutationInstanceCounter | None = ...,
-) -> list[TModel]: ...
+) -> list[T]: ...
 
 
 @transaction.atomic
-def mutate(
+def mutate[T: Model](
     *,
-    model: type[TModel],
+    model: type[T],
     data: dict[str, Any] | list[dict[str, Any]],
     related_action: RelatedAction = RelatedAction.null,
     counter: MutationInstanceCounter | None = None,
-) -> TModel | list[TModel]:
+) -> T | list[T]:
     """
     Mutates instance(s) of the given model using the given input data.
 

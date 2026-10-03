@@ -17,6 +17,12 @@ from undine.exceptions import (
 from undine.typing import Lambda
 from undine.utils.function_dispatcher import FunctionDispatcher
 
+type StrAlias = str
+type IntAlias = int
+type StrOrIntAlias = str | int
+type NestedAlias = StrAlias | IntAlias
+type LiteralAlias = Literal["foo", "bar"]
+
 
 def test_function_dispatcher__name() -> None:
     dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
@@ -188,6 +194,71 @@ def test_function_dispatcher__literal__union() -> None:
 
     @dispatcher.register
     def _(_: Literal["foo", "bar"]) -> str:
+        return "1"
+
+    assert dispatcher("foo") == "1"
+    assert dispatcher("bar") == "1"
+
+
+def test_function_dispatcher__type_alias() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: StrAlias) -> str:
+        return "1"
+
+    assert dispatcher("foo") == "1"
+
+
+def test_function_dispatcher__type_alias__union() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: StrOrIntAlias) -> str:
+        return "1"
+
+    assert dispatcher("foo") == "1"
+    assert dispatcher(1) == "1"
+
+
+def test_function_dispatcher__type_alias__nested() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: NestedAlias) -> str:
+        return "1"
+
+    assert dispatcher("foo") == "1"
+    assert dispatcher(1) == "1"
+
+
+def test_function_dispatcher__type_alias__in_union() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: StrAlias | bytes) -> str:
+        return "1"
+
+    assert dispatcher("foo") == "1"
+    assert dispatcher(b"foo") == "1"
+
+
+def test_function_dispatcher__type_alias__type() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: type[StrOrIntAlias]) -> str:
+        return "1"
+
+    assert dispatcher(str) == "1"
+    assert dispatcher(int) == "1"
+
+
+def test_function_dispatcher__type_alias__literal() -> None:
+    dispatcher: FunctionDispatcher[str] = FunctionDispatcher()
+
+    @dispatcher.register
+    def _(_: LiteralAlias) -> str:
         return "1"
 
     assert dispatcher("foo") == "1"

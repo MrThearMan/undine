@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import operator as op
+import sys
 import types
 from collections import UserDict, defaultdict
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -13,28 +14,22 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Generic,
     Literal,
     NamedTuple,
     NewType,
     NotRequired,
-    ParamSpec,
     Protocol,
     Self,
-    TypeAlias,
     TypedDict,
     TypeGuard,
-    TypeVar,
-    TypeVarTuple,
-    Union,
     runtime_checkable,
 )
 
 # Sort separately due to being a private import
-from typing import _GenericAlias  # type: ignore[attr-defined]  # isort: skip  # noqa: PLC2701
-from typing import _LiteralGenericAlias  # type: ignore[attr-defined]  # isort: skip  # noqa: PLC2701
-from typing import _TypedDictMeta  # type: ignore[attr-defined]  # isort: skip  # noqa: PLC2701
-from typing import _ProtocolMeta  # type: ignore[attr-defined]  # isort: skip  # noqa: PLC2701
+from typing import _GenericAlias  # type: ignore[attr-defined]  # isort: skip
+from typing import _LiteralGenericAlias  # type: ignore[attr-defined]  # isort: skip
+from typing import _TypedDictMeta  # type: ignore[attr-defined]  # isort: skip
+from typing import _ProtocolMeta  # type: ignore[attr-defined]  # isort: skip
 from typing import _eval_type  # type: ignore[attr-defined]  # isort: skip  # noqa: PLC2701
 
 from collections.abc import Iterable
@@ -71,7 +66,6 @@ from graphql import (
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLNamedType,
-    GraphQLNullableType,
     GraphQLObjectType,
     GraphQLResolveInfo,
     GraphQLScalarType,
@@ -118,7 +112,7 @@ if TYPE_CHECKING:
     from graphql.execution.collect_fields import FieldDetailsList, FragmentDetails
     from graphql.pyutils import Path
 
-    from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet, QueryType, UnionType
+    from undine import Directive, FilterSet, InterfaceType, MutationType, OrderSet
     from undine.optimizer.optimizer import OptimizationData
     from undine.relay import CursorPaginationHandler
     from undine.utils.graphql.websocket import WebSocketRequest
@@ -195,7 +189,6 @@ __all__ = [
     "PreSaveParams",
     "ProtocolType",
     "QueryTypeParams",
-    "R",
     "RelatedField",
     "RequestMethod",
     "ResultCacheData",
@@ -211,10 +204,6 @@ __all__ = [
     "SortedSequenceWithErrors",
     "SubscribeMessage",
     "SupportsLookup",
-    "TInterfaceType",
-    "TModels",
-    "TQueryType",
-    "TUnionType",
     "ToManyField",
     "ToOneField",
     "UndineErrorCodes",
@@ -226,49 +215,25 @@ __all__ = [
     "WebSocketProtocol",
 ]
 
-# Common TypeVars
-
-T = TypeVar("T")
-R = TypeVar("R")
-P = ParamSpec("P")
-T_co = TypeVar("T_co", covariant=True)
-T_contra = TypeVar("T_contra", contravariant=True)
-
 # Misc.
 
-TypedDictType: TypeAlias = _TypedDictMeta
-ParametrizedType: TypeAlias = _GenericAlias
-LiteralType: TypeAlias = _LiteralGenericAlias
-ProtocolType: TypeAlias = _ProtocolMeta
-PrefetchHackCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
-LiteralArg: TypeAlias = str | int | bytes | bool | Enum | None
-TypeHint: TypeAlias = type | types.UnionType | types.GenericAlias
-JsonObject: TypeAlias = dict[str, Any] | list[dict[str, Any]]
-DefaultValueType: TypeAlias = int | float | str | bool | dict | list | UndefinedType | None
-GraphQLResult: TypeAlias = ExecutionResult | ExperimentalIncrementalExecutionResults
-GraphQLStream: TypeAlias = AsyncIterator[ExecutionResult]
-SortedSequence: TypeAlias = list[T] | tuple[T, ...]
-SortedSequenceWithErrors: TypeAlias = SortedSequence[T] | SortedSequence[T | BaseException]
-
-# Bound TypeVars
-
-TModel = TypeVar("TModel", bound=Model)
-TUser = TypeVar("TUser", bound="AbstractUser")
-TUserCovariant = TypeVar("TUserCovariant", bound="AbstractUser", covariant=True)  # noqa: PLC0105
-TTypedDict = TypeVar("TTypedDict", bound=TypedDictType)
-GNT = TypeVar("GNT", bound=GraphQLNullableType)
-TTypeHint = TypeVar("TTypeHint", bound=TypeHint)
-TQueryType = TypeVar("TQueryType", bound="QueryType")
-TUnionType = TypeVar("TUnionType", bound="UnionType")
-TInterfaceType = TypeVar("TInterfaceType", bound="InterfaceType")
-TInterfaceQueryType = TypeVar("TInterfaceQueryType", bound="QueryType | InterfaceType")
-TQueryTypes = TypeVarTuple("TQueryTypes")
-TModels = TypeVarTuple("TModels")
-
+type TypedDictType = _TypedDictMeta
+type ParametrizedType = _GenericAlias
+type LiteralType = _LiteralGenericAlias
+type ProtocolType = _ProtocolMeta
+type PrefetchHackCacheType = defaultdict[str, defaultdict[str, set[str]]]
+type LiteralArg = str | int | bytes | bool | Enum | None
+type TypeHint = type | types.UnionType | types.GenericAlias
+type JsonObject = dict[str, Any] | list[dict[str, Any]]
+type DefaultValueType = int | float | str | bool | dict | list | UndefinedType | None
+type GraphQLResult = ExecutionResult | ExperimentalIncrementalExecutionResults
+type GraphQLStream = AsyncIterator[ExecutionResult]
+type SortedSequence[T] = list[T] | tuple[T, ...]
+type SortedSequenceWithErrors[T] = SortedSequence[T] | SortedSequence[T | BaseException]
 
 # Literals
 
-RequestMethod: TypeAlias = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD", "WEBSOCKET"]
+type RequestMethod = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE", "HEAD", "WEBSOCKET"]
 
 # NewTypes
 
@@ -317,8 +282,8 @@ class DjangoExpression(Protocol):
     ) -> DjangoExpression: ...
 
 
-class DispatchProtocol(Protocol[T_co]):
-    def __call__(self, key: Any, **kwargs: Any) -> T_co: ...
+class DispatchProtocol[T](Protocol):
+    def __call__(self, key: Any, **kwargs: Any) -> T: ...
 
 
 class MutationDataFunc(Protocol):
@@ -341,7 +306,7 @@ class MutationDataCoroutine(Protocol):
     ) -> None: ...
 
 
-class DjangoRequestProtocol(Protocol[TUserCovariant]):  # noqa: PLR0904
+class DjangoRequestProtocol[T: "AbstractUser"](Protocol):  # noqa: PLR0904
     """Protocol of a Django 'HttpRequest' object. Abbreviated to the most useful properties."""
 
     @property
@@ -393,10 +358,10 @@ class DjangoRequestProtocol(Protocol[TUserCovariant]):  # noqa: PLR0904
         """A string representing the current encoding used to decode form submission data."""
 
     @property
-    def user(self) -> TUser | AnonymousUser:
+    def user(self) -> T | AnonymousUser:
         """The user associated with the request."""
 
-    async def auser(self) -> TUser | AnonymousUser:
+    async def auser(self) -> T | AnonymousUser:
         """The user associated with the request."""
 
     @property
@@ -776,20 +741,20 @@ class UndineErrorCodes(StrEnum):
 
 # Django specific
 
-ToOneField: TypeAlias = OneToOneField | OneToOneRel | ForeignKey
-ToManyField: TypeAlias = ManyToManyField | ManyToManyRel | ManyToOneRel
-ForwardField: TypeAlias = OneToOneField | ForeignKey | ManyToManyField
-ReverseField: TypeAlias = OneToOneRel | ManyToManyRel | ManyToOneRel
-RelatedField: TypeAlias = ToOneField | ToManyField
-GenericField: TypeAlias = Union["GenericForeignKey", "GenericRelation", "GenericRel"]
-ModelField: TypeAlias = Field | ForeignObjectRel
-CombinableExpression: TypeAlias = Expression | Subquery
-Annotatable: TypeAlias = CombinableExpression | F | Q
-SupportsLookup: TypeAlias = RegisterLookupMixin | type[RegisterLookupMixin]
-SyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
-AsyncViewIn: TypeAlias = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
-SyncViewOut: TypeAlias = Callable[[HttpRequest], HttpResponse]
-AsyncViewOut: TypeAlias = Callable[[HttpRequest], Awaitable[HttpResponse]]
+type ToOneField = OneToOneField | OneToOneRel | ForeignKey
+type ToManyField = ManyToManyField | ManyToManyRel | ManyToOneRel
+type ForwardField = OneToOneField | ForeignKey | ManyToManyField
+type ReverseField = OneToOneRel | ManyToManyRel | ManyToOneRel
+type RelatedField = ToOneField | ToManyField
+type GenericField = "GenericForeignKey" | "GenericRelation" | "GenericRel"
+type ModelField = Field | ForeignObjectRel
+type CombinableExpression = Expression | Subquery
+type Annotatable = CombinableExpression | F | Q
+type SupportsLookup = RegisterLookupMixin | type[RegisterLookupMixin]
+type SyncViewIn = Callable[[DjangoRequestProtocol], DjangoResponseProtocol]
+type AsyncViewIn = Callable[[DjangoRequestProtocol], Awaitable[DjangoResponseProtocol]]
+type SyncViewOut = Callable[[HttpRequest], HttpResponse]
+type AsyncViewOut = Callable[[HttpRequest], Awaitable[HttpResponse]]
 
 # GraphQL specific
 
@@ -819,10 +784,10 @@ class UndineInternalContext:
 
 
 @dataclasses.dataclass(kw_only=True, eq=False)
-class GQLContext(Generic[TUser]):
+class GQLContext[T: "AbstractUser"]:
     """GraphQL execution context."""
 
-    request: DjangoRequestProtocol[TUser]
+    request: DjangoRequestProtocol[T]
     """Django request that initiated the GraphQL execution."""
 
     undine_internal: UndineInternalContext = dataclasses.field(default_factory=UndineInternalContext)
@@ -832,16 +797,16 @@ class GQLContext(Generic[TUser]):
     """Extension place for the user. Lasts for the lifetime of the graphql operation."""
 
     @property
-    def user(self) -> TUser | AnonymousUser:
+    def user(self) -> T | AnonymousUser:
         """The user associated with the request."""
         return self.request.user  # type: ignore[return-value]
 
-    async def auser(self) -> TUser | AnonymousUser:
+    async def auser(self) -> T | AnonymousUser:
         """The user associated with the request."""
         return await self.request.auser()
 
 
-class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
+class GQLInfo[T: "AbstractUser"](GraphQLResolveInfo):
     """GraphQL execution information given to a GraphQL field resolver."""
 
     field_name: str
@@ -880,7 +845,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     variable_values: VariableValues
     """The variables passed to the GraphQL operation."""
 
-    context: GQLContext[TUser]
+    context: GQLContext[T]
     """The context passed to the GraphQL operation. This is always the Django request object."""
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
@@ -893,7 +858,7 @@ class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
     """The async helpers passed to the GraphQL operation."""
 
 
-class GQLInfoDict(TypedDict, Generic[TUser], total=False):
+class GQLInfoDict[T: "AbstractUser"](TypedDict, total=False):
     field_name: str
     field_nodes: list[FieldNode]
     return_type: GraphQLOutputType
@@ -904,13 +869,13 @@ class GQLInfoDict(TypedDict, Generic[TUser], total=False):
     root_value: Any
     operation: OperationDefinitionNode
     variable_values: VariableValues
-    context: GQLContext[TUser]
+    context: GQLContext[T]
     is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
     abort_signal: AbortSignal | None
     async_helpers: GraphQLResolveInfoHelpers
 
 
-UniquelyNamedGraphQLElement: TypeAlias = (
+type UniquelyNamedGraphQLElement = (
     GraphQLScalarType
     | GraphQLObjectType
     | GraphQLInterfaceType
@@ -919,18 +884,18 @@ UniquelyNamedGraphQLElement: TypeAlias = (
     | GraphQLInputObjectType
     | GraphQLDirective
 )
-HasGraphQLExtensions: TypeAlias = (
+type HasGraphQLExtensions = (
     GraphQLNamedType | GraphQLDirective | GraphQLField | GraphQLInputField | GraphQLArgument | GraphQLEnumValue
 )
 
 
-Selections: TypeAlias = Iterable[SelectionNode]
-ObjectSelections: TypeAlias = Iterable[FieldNode | FragmentSpreadNode]
+type Selections = Iterable[SelectionNode]
+type ObjectSelections = Iterable[FieldNode | FragmentSpreadNode]
 
 
-class NodeDict(TypedDict, Generic[TModel]):
+class NodeDict[T: Model](TypedDict):
     cursor: str
-    node: TModel
+    node: T
 
 
 class PageInfoDict(TypedDict):
@@ -940,10 +905,10 @@ class PageInfoDict(TypedDict):
     endCursor: str | None
 
 
-class ConnectionDict(TypedDict, Generic[TModel]):
+class ConnectionDict[T: Model](TypedDict):
     totalCount: int
     pageInfo: PageInfoDict
-    edges: list[NodeDict[TModel]]
+    edges: list[NodeDict[T]]
 
 
 # TypedDicts
@@ -1178,13 +1143,13 @@ class CalculationArgumentParams(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class PreSaveParams(TypedDict, Generic[TModel]):
+class PreSaveParams[T: Model](TypedDict):
     """Parameters for a pre-save signal"""
 
-    sender: type[TModel]
+    sender: type[T]
     """The model whose instance is being saved"""
 
-    instance: TModel
+    instance: T
     """The instance being saved"""
 
     raw: bool
@@ -1200,13 +1165,13 @@ class PreSaveParams(TypedDict, Generic[TModel]):
     """The fields that are being updated (as passed to Model.save())"""
 
 
-class PostSaveParams(TypedDict, Generic[TModel]):
+class PostSaveParams[T: Model](TypedDict):
     """Parameters for a post-save signal"""
 
-    sender: type[TModel]
+    sender: type[T]
     """The model whose instance was saved"""
 
-    instance: TModel
+    instance: T
     """The instance that was saved"""
 
     created: bool
@@ -1225,29 +1190,29 @@ class PostSaveParams(TypedDict, Generic[TModel]):
     """The fields that are being updated (as passed to Model.save())"""
 
 
-class PreDeleteParams(TypedDict, Generic[TModel]):
+class PreDeleteParams[T: Model](TypedDict):
     """Parameters for a pre-delete signal"""
 
-    sender: type[TModel]
+    sender: type[T]
     """The model whose instance is being deleted"""
 
-    instance: TModel
+    instance: T
     """The instance being deleted"""
 
     using: str
     """The database alias being used"""
 
-    origin: TModel | QuerySet[TModel]
+    origin: T | QuerySet[T]
     """The Model or QuerySet instance from which the deletion originated."""
 
 
-class PostDeleteParams(TypedDict, Generic[TModel]):
+class PostDeleteParams[T: Model](TypedDict):
     """Parameters for a post-delete signal"""
 
-    sender: type[TModel]
+    sender: type[T]
     """The model whose instance was deleted"""
 
-    instance: TModel
+    instance: T
     """The instance that was deleted.
     Note that the instance will no longer be in the database,
     so its pk will be None and all relations have been disconnected.
@@ -1256,7 +1221,7 @@ class PostDeleteParams(TypedDict, Generic[TModel]):
     using: str
     """The database alias being used"""
 
-    origin: TModel | QuerySet[TModel]
+    origin: T | QuerySet[T]
     """The Model or QuerySet instance from which the deletion originated."""
 
 
@@ -1407,10 +1372,10 @@ class ErrorUnionFieldErrorDict(UserDict[str, Any]):
         super().__init__(data)
 
 
-ErrorUnionType: TypeAlias = ErrorUnionFieldValueDict | ErrorUnionFieldErrorDict
+type ErrorUnionType = ErrorUnionFieldValueDict | ErrorUnionFieldErrorDict
 
 
-FTSLang: TypeAlias = Literal[
+type FTSLang = Literal[
     "arabic",
     "armenian",
     "basque",
@@ -1441,7 +1406,7 @@ FTSLang: TypeAlias = Literal[
     "yiddish",
 ]
 
-LangCode: TypeAlias = Literal[
+type LangCode = Literal[
     "ar",
     "hy",
     "eu",
@@ -1472,29 +1437,29 @@ LangCode: TypeAlias = Literal[
     "yi",
 ]
 
-LangSep: TypeAlias = Literal["|", "&", "<->", "<1>", "<2>", "<3>", "<4>", "<5>", "<6>", "<7>", "<8>", "<9>"]
+type LangSep = Literal["|", "&", "<->", "<1>", "<2>", "<3>", "<4>", "<5>", "<6>", "<7>", "<8>", "<9>"]
 
 
 # Resolvers
 
-_AnyValue: TypeAlias = Annotated[Any, "value"]
-_AnyModel: TypeAlias = Annotated[Any, "django.db.models.Model"]
-_AnyField: TypeAlias = Annotated[Any, "undine.Field"]
-_AnyInput: TypeAlias = Annotated[Any, "undine.Input"]
-_AnyFilter: TypeAlias = Annotated[Any, "undine.Filter"]
-_AnyOrder: TypeAlias = Annotated[Any, "undine.Order"]
-_AnyFederationType: TypeAlias = Annotated[Any, "undine.federation.FederationType"]
+type _AnyValue = Annotated[Any, "value"]
+type _AnyModel = Annotated[Any, "django.db.models.Model"]
+type _AnyField = Annotated[Any, "undine.Field"]
+type _AnyInput = Annotated[Any, "undine.Input"]
+type _AnyFilter = Annotated[Any, "undine.Filter"]
+type _AnyOrder = Annotated[Any, "undine.Order"]
+type _AnyFederationType = Annotated[Any, "undine.federation.FederationType"]
 
-EntrypointPermFunc: TypeAlias = Callable[[Any, GQLInfo, _AnyValue], AwaitableOrValue[None]]
-FieldPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
-InputPermFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
-ValidatorFunc: TypeAlias = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
-FederationFieldPermFunc: TypeAlias = Callable[[_AnyFederationType, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+type EntrypointPermFunc = Callable[[Any, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+type FieldPermFunc = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+type InputPermFunc = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+type ValidatorFunc = Callable[[_AnyModel, GQLInfo, _AnyValue], AwaitableOrValue[None]]
+type FederationFieldPermFunc = Callable[[_AnyFederationType, GQLInfo, _AnyValue], AwaitableOrValue[None]]
 
-ConversionFunc: TypeAlias = Callable[[_AnyInput, _AnyValue], _AnyValue]
-VisibilityFunc: TypeAlias = Callable[[Any, DjangoRequestProtocol], bool]
+type ConversionFunc = Callable[[_AnyInput, _AnyValue], _AnyValue]
+type VisibilityFunc = Callable[[Any, DjangoRequestProtocol], bool]
 
-OptimizerFunc: TypeAlias = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
+type OptimizerFunc = Callable[[_AnyField, "OptimizationData", GQLInfo], None]
 
 
 class FilterAliasesFunc(Protocol):
@@ -1511,18 +1476,31 @@ class GraphQLFilterResolver(Protocol):
 
 # Callbacks
 
-QuerySetCallback: TypeAlias = Callable[[GQLInfo], QuerySet]
-FilterCallback: TypeAlias = Callable[[QuerySet, GQLInfo], QuerySet]
-PersistedDocumentsPermissionsCallback: TypeAlias = Callable[[DjangoRequestProtocol, dict[str, str]], None]
+type QuerySetCallback = Callable[[GQLInfo], QuerySet]
+type FilterCallback = Callable[[QuerySet, GQLInfo], QuerySet]
+type PersistedDocumentsPermissionsCallback = Callable[[DjangoRequestProtocol, dict[str, str]], None]
 
 
-def eval_type(type_: Any, *, globals_: dict[str, Any] | None = None, locals_: dict[str, Any] | None = None) -> Any:
+def eval_type(  # pragma: no cover
+    type_: Any,
+    *,
+    globals_: dict[str, Any] | None = None,
+    locals_: dict[str, Any] | None = None,
+    type_params: tuple[type[Any], ...] | None = None,
+) -> Any:
     """
     Evaluate a type, possibly using the given globals and locals.
 
     This is a proxy of the 'typing._eval_type' function.
     """
-    return _eval_type(type_, globals_ or {}, locals_ or {})  # pragma: no cover
+    if sys.version_info >= (3, 13):
+        return _eval_type(
+            type_,
+            globals_ or {},
+            locals_ or {},
+            type_params or (),
+        )
+    return _eval_type(type_, globals_ or {}, locals_ or {})
 
 
 # Websocket Subscriptions
@@ -1571,12 +1549,10 @@ class CompleteMessage(TypedDict):
     id: str
 
 
-ClientMessage: TypeAlias = ConnectionInitMessage | PingMessage | PongMessage | SubscribeMessage | CompleteMessage
+type ClientMessage = ConnectionInitMessage | PingMessage | PongMessage | SubscribeMessage | CompleteMessage
 """Messages sent by the client."""
 
-ServerMessage: TypeAlias = (
-    ConnectionAckMessage | PingMessage | PongMessage | NextMessage | ErrorMessage | CompleteMessage
-)
+type ServerMessage = ConnectionAckMessage | PingMessage | PongMessage | NextMessage | ErrorMessage | CompleteMessage
 """Messages sent by the server."""
 
 
@@ -1691,9 +1667,9 @@ class GraphQLWebSocketCloseCode(enum.IntEnum):
     """Server did not send the ConnectionAck message to the Client in the specified time."""
 
 
-WebSocketConnectionInitHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
-WebSocketConnectionPingHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
-WebSocketConnectionPongHook: TypeAlias = Callable[["WebSocketRequest"], AwaitableOrValue[None]]
+type WebSocketConnectionInitHook = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
+type WebSocketConnectionPingHook = Callable[["WebSocketRequest"], AwaitableOrValue[dict[str, Any] | None]]
+type WebSocketConnectionPongHook = Callable[["WebSocketRequest"], AwaitableOrValue[None]]
 
 
 class WebSocketProtocol(Protocol):

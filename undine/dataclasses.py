@@ -4,11 +4,11 @@ import dataclasses
 import json
 from collections import defaultdict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Generic, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from graphql import ExecutionResult, Undefined
 
-from undine.typing import FormattedMultipartMixedHttpResult, FormattedSingleIncrementalDeliveryResult, T, TModel
+from undine.typing import FormattedMultipartMixedHttpResult, FormattedSingleIncrementalDeliveryResult
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -142,19 +142,19 @@ class UnionFilterRef:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class PaginationCut(Generic[TModel]):
+class PaginationCut[T: Model]:
     """The items that make up a single page, and whether more items exist on either side of it."""
 
-    instances: list[TModel]
+    instances: list[T]
     has_next_page: bool
     has_previous_page: bool
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class PaginationPage(Generic[TModel]):
+class PaginationPage[T: Model]:
     """A single page of paginated items together with the information needed to describe it."""
 
-    instances: list[TModel]
+    instances: list[T]
     cursors: list[str]
     total_count: int
     has_next_page: bool
@@ -250,7 +250,7 @@ class BulkCreateKwargs(Mapping[str, Any]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class DispatchImplementations(Generic[T]):
+class DispatchImplementations[T]:
     """Holds the implementations of a `FunctionDispatcher`."""
 
     types: dict[type, DispatchProtocol[T]] = dataclasses.field(default_factory=dict)

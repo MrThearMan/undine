@@ -15,11 +15,11 @@ from .cursors import OrderingDescriptor, decode_cursor, encode_cursor, order_by_
 from .validation import validate_after_and_end, validate_first, validate_last
 
 if TYPE_CHECKING:
-    from django.db.models import QuerySet
+    from django.db.models import Model, QuerySet
 
     from undine import GQLInfo
     from undine.optimizer import OptimizationData
-    from undine.typing import TModel, ToManyField
+    from undine.typing import ToManyField
 
 
 class CursorPaginationHandler(PaginationHandler):
@@ -104,7 +104,7 @@ class CursorPaginationHandler(PaginationHandler):
 
         return queryset
 
-    def cut_to_page(self, instances: list[TModel]) -> PaginationCut[TModel]:
+    def cut_to_page[T: Model](self, instances: list[T]) -> PaginationCut[T]:
         """
         Cut the fetched rows down to the requested page.
 
@@ -133,7 +133,7 @@ class CursorPaginationHandler(PaginationHandler):
             has_previous_page=has_previous_page,
         )
 
-    def get_page(self, instances: list[TModel]) -> PaginationPage[TModel]:
+    def get_page[T: Model](self, instances: list[T]) -> PaginationPage[T]:
         cut = self.cut_to_page(instances)
 
         cursors: list[str] = []
@@ -189,7 +189,7 @@ class CursorPaginationHandler(PaginationHandler):
 
         return queryset
 
-    def get_prefetch_page(self, instances: list[TModel]) -> PaginationPage[TModel]:
+    def get_prefetch_page[T: Model](self, instances: list[T]) -> PaginationPage[T]:
         total_count: int = 0
         if instances:
             total_count = getattr(instances[0], undine_settings.PAGINATION_TOTAL_COUNT_KEY, 0) or 0

@@ -6,7 +6,7 @@ import operator
 import operator as op
 from collections import defaultdict
 from functools import reduce
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
@@ -34,7 +34,7 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import ManyMatch, TModels
+from undine.typing import ManyMatch
 from undine.utils.graphql.type_registry import get_or_create_graphql_input_object_type
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql, is_to_many, lookup_to_display_name
 from undine.utils.reflection import (
@@ -60,8 +60,6 @@ if TYPE_CHECKING:
         FilterParams,
         FilterSetParams,
         GQLInfo,
-        T,
-        TModel,
         VisibilityFunc,
     )
 
@@ -133,7 +131,7 @@ class FilterSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_input_object_type(cls.__input_type__())
 
-    def __getitem__(cls, models: type[Model] | tuple[type[Model], ...]) -> type[FilterSet[*TModels]]:
+    def __getitem__[*Ts](cls, models: type[Model] | tuple[type[Model], ...]) -> type[FilterSet[*Ts]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'FilterSet'!
         FilterSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
@@ -142,7 +140,7 @@ class FilterSetMeta(type):
     def __contains__(cls, item: str) -> bool:
         return item in cls.__filter_map__
 
-    def __call__(cls, ref: T) -> T:
+    def __call__[T](cls, ref: T) -> T:
         """
         Allow adding this FilterSet to a QueryType using a decorator syntax.
 
@@ -304,7 +302,7 @@ class FilterSetMeta(type):
         interface_type.__filterset__ = cls  # type: ignore[assignment]
 
 
-class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
+class FilterSet[*Ts](metaclass=FilterSetMeta):
     """
     A class for adding filtering for a `QueryType`.
 
@@ -345,7 +343,7 @@ class FilterSet(Generic[*TModels], metaclass=FilterSetMeta):
     __init__: Callable[[Any], None]
 
     @classmethod
-    def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+    def __filter_queryset__[T: Model](cls, queryset: QuerySet[T], info: GQLInfo) -> QuerySet[T]:
         """Filtering that should be done to the queryset after all other filters have been applied."""
         return queryset  # pragma: no cover
 
@@ -527,7 +525,7 @@ def get_filters_for_model(model: type[Model], *, exclude: Iterable[str] = ()) ->
     return result
 
 
-def get_filters_for_models(models: tuple[type[TModel], ...], *, exclude: Iterable[str] = ()) -> dict[str, Filter]:
+def get_filters_for_models[T: Model](models: tuple[type[T], ...], *, exclude: Iterable[str] = ()) -> dict[str, Filter]:
     result: dict[str, Filter] = {}
 
     # Lookups are separated by '__', but auto-generated names use '_' instead.

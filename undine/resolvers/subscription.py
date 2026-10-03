@@ -4,18 +4,19 @@ import dataclasses
 import inspect
 from collections.abc import AsyncGenerator
 from contextlib import aclosing, nullcontext
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any
 
 from graphql import GraphQLError, located_error
 
 from undine.exceptions import GraphQLErrorGroup
 from undine.optimizer import optimize_async
-from undine.typing import TModel
 from undine.utils.graphql.utils import pre_evaluate_request_user
 from undine.utils.reflection import get_root_and_info_params
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Callable, Coroutine
+
+    from django.db.models import Model
 
     from undine import Entrypoint, GQLInfo, QueryType
     from undine.subscriptions import QueryTypeSignalSubscription
@@ -94,20 +95,20 @@ class FunctionSubscriptionResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelSaveSubscriptionResolver(Generic[TModel]):
+class ModelSaveSubscriptionResolver[T: Model]:
     """Subscription resolver for a model save signal."""
 
-    subscription: QueryTypeSignalSubscription[TModel]
+    subscription: QueryTypeSignalSubscription[T]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[T]:
         return self.subscribe(root, info, **kwargs)
 
     @property
     def query_type(self) -> type[QueryType]:
         return self.subscription.query_type
 
-    async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
+    async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[T]:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -134,7 +135,7 @@ class ModelSaveSubscriptionResolver(Generic[TModel]):
             except Exception as error:
                 raise located_error(error, nodes=info.field_nodes, path=info.path.as_list()) from error
 
-    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: T) -> None:
         if self.entrypoint.permissions_func is not None:
             if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
                 await self.entrypoint.permissions_func(root, info, instance)
@@ -149,16 +150,16 @@ class ModelSaveSubscriptionResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelDeleteSubscriptionResolver(Generic[TModel]):
+class ModelDeleteSubscriptionResolver[T: Model]:
     """Subscription resolver for a model delete signal."""
 
-    subscription: QueryTypeSignalSubscription[TModel]
+    subscription: QueryTypeSignalSubscription[T]
     entrypoint: Entrypoint
 
-    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
+    def __call__(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[T]:
         return self.subscribe(root, info, **kwargs)
 
-    async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[TModel]:
+    async def subscribe(self, root: Any, info: GQLInfo, **kwargs: Any) -> AsyncIterable[T]:
         # Fetch user eagerly so that it's available in synchronous parts of the code.
         await pre_evaluate_request_user(info)
 
@@ -177,7 +178,7 @@ class ModelDeleteSubscriptionResolver(Generic[TModel]):
             except Exception as error:
                 raise located_error(error, nodes=info.field_nodes, path=info.path.as_list()) from error
 
-    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: TModel) -> None:
+    async def check_permissions_async(self, root: Any, info: GQLInfo, instance: T) -> None:
         if self.entrypoint.permissions_func is not None:
             if inspect.iscoroutinefunction(self.entrypoint.permissions_func):
                 await self.entrypoint.permissions_func(root, info, instance)

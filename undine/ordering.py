@@ -4,7 +4,7 @@ import functools
 import itertools
 import operator
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from django.db.models import OrderBy
 from graphql import DirectiveLocation, GraphQLEnumValue, Undefined
@@ -25,7 +25,6 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import TModels
 from undine.utils.graphql.type_registry import get_or_create_graphql_enum
 from undine.utils.model_utils import get_model_field, get_model_fields_for_graphql
 from undine.utils.reflection import get_members, get_wrapped_func, is_subclass
@@ -45,7 +44,6 @@ if TYPE_CHECKING:
         OrderAliasesFunc,
         OrderParams,
         OrderSetParams,
-        T,
         VisibilityFunc,
     )
 
@@ -117,7 +115,7 @@ class OrderSetMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_enum_type(cls.__enum_type__())
 
-    def __getitem__(cls, models: type[Model] | tuple[type[Model], ...]) -> type[OrderSet[*TModels]]:
+    def __getitem__[*Ts](cls, models: type[Model] | tuple[type[Model], ...]) -> type[OrderSet[*Ts]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'OrderSet'!
         OrderSetMeta.__models__ = models if isinstance(models, tuple) else (models,)
@@ -126,7 +124,7 @@ class OrderSetMeta(type):
     def __contains__(cls, item: str) -> bool:
         return item in cls.__order_map__
 
-    def __call__(cls, ref: T) -> T:
+    def __call__[T](cls, ref: T) -> T:
         """
         Allow adding this OrderSet to a QueryType using a decorator syntax.
 
@@ -253,7 +251,7 @@ class OrderSetMeta(type):
         interface_type.__orderset__ = cls  # type: ignore[assignment]
 
 
-class OrderSet(Generic[*TModels], metaclass=OrderSetMeta):
+class OrderSet[*Ts](metaclass=OrderSetMeta):
     """
     A class for adding ordering for a `QueryType`.
 

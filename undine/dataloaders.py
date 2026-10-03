@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 from asyncio import gather, get_running_loop
-from typing import TYPE_CHECKING, Any, Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self
 
 from django.core import signals
 
@@ -24,11 +24,7 @@ __all__ = [
 ]
 
 
-TKey = TypeVar("TKey")
-TResult = TypeVar("TResult")
-
-
-class DataLoader(Generic[TKey, TResult]):
+class DataLoader[TKey, TResult]:
     """A utility for loading data in batches. Requires an async server."""
 
     def __init__(
@@ -227,7 +223,7 @@ class DataLoader(Generic[TKey, TResult]):
 
 
 @dataclasses.dataclass(slots=True, kw_only=True)
-class DataLoaderBatch(Generic[TKey, TResult]):
+class DataLoaderBatch[TKey, TResult]:
     """A batch of loads to be loaded for a DataLoader."""
 
     loader: DataLoader[TKey, TResult]
@@ -300,7 +296,7 @@ class DataLoaderBatch(Generic[TKey, TResult]):
 
 
 @dataclasses.dataclass(slots=True, frozen=True, kw_only=True)
-class DataLoaderFuture(Generic[TKey, TResult]):
+class DataLoaderFuture[TKey, TResult]:
     """A Future in a DataLoaderBatch where the data is loaded."""
 
     key: TKey

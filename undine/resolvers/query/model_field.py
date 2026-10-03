@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import dataclasses
 import inspect
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any
 
 from undine.exceptions import GraphQLFieldNotNullableError
 from undine.settings import undine_settings
-from undine.typing import TModel
 from undine.utils.graphql.utils import get_queried_field_name
 
 if TYPE_CHECKING:
@@ -89,7 +88,7 @@ class ModelAttributeResolver:
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelSingleRelatedFieldResolver(Generic[TModel]):
+class ModelSingleRelatedFieldResolver[T: Model]:
     """Resolves a single-related model field to its primary key."""
 
     field: Field
@@ -100,7 +99,7 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
         return self.run_sync(root, info)
 
     def run_sync(self, root: Model, info: GQLInfo) -> Any:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+        value: T | None = getattr(root, self.field.field_name, None)
         if value is None:
             if not self.field.nullable:
                 raise GraphQLFieldNotNullableError(
@@ -113,7 +112,7 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
         return value.pk
 
     async def run_async(self, root: Model, info: GQLInfo) -> Any:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+        value: T | None = getattr(root, self.field.field_name, None)
         if value is None:
             if not self.field.nullable:
                 raise GraphQLFieldNotNullableError(
@@ -138,7 +137,7 @@ class ModelSingleRelatedFieldResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelManyRelatedFieldResolver(Generic[TModel]):
+class ModelManyRelatedFieldResolver[T: Model]:
     """Resolves a many-related model field to a list of their primary keys."""
 
     field: Field
@@ -158,17 +157,17 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
         await self.check_permissions_async(root, info, instances)
         return [instance.pk for instance in instances]
 
-    def get_instances(self, root: Model, info: GQLInfo) -> list[TModel]:
+    def get_instances(self, root: Model, info: GQLInfo) -> list[T]:
         field_name = get_queried_field_name(self.field.field_name, info)
-        manager: BaseManager[TModel] = getattr(root, field_name)
+        manager: BaseManager[T] = getattr(root, field_name)
         return list(manager.get_queryset())
 
-    def check_permissions(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
+    def check_permissions(self, root: Model, info: GQLInfo, instances: list[T]) -> None:
         if self.field.permissions_func is not None:
             for instance in instances:
                 self.field.permissions_func(root, info, instance)
 
-    async def check_permissions_async(self, root: Model, info: GQLInfo, instances: list[TModel]) -> None:
+    async def check_permissions_async(self, root: Model, info: GQLInfo, instances: list[T]) -> None:
         if self.field.permissions_func is not None:
             for instance in instances:
                 if inspect.iscoroutinefunction(self.field.permissions_func):
@@ -178,26 +177,26 @@ class ModelManyRelatedFieldResolver(Generic[TModel]):
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
-class ModelGenericForeignKeyResolver(Generic[TModel]):
+class ModelGenericForeignKeyResolver[T: Model]:
     """Resolves a generic foreign key field to its related model instance."""
 
     field: Field
 
-    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[TModel | None]:
+    def __call__(self, root: Model, info: GQLInfo, **kwargs: Any) -> AwaitableOrValue[T | None]:
         if undine_settings.ASYNC:
             return self.run_async(root, info)
         return self.run_sync(root, info)
 
-    def run_sync(self, root: Model, info: GQLInfo) -> TModel | None:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+    def run_sync(self, root: Model, info: GQLInfo) -> T | None:
+        value: T | None = getattr(root, self.field.field_name, None)
         if value is None:
             return None
 
         self.check_permissions(root, info, value)
         return value
 
-    async def run_async(self, root: Model, info: GQLInfo) -> TModel | None:
-        value: TModel | None = getattr(root, self.field.field_name, None)
+    async def run_async(self, root: Model, info: GQLInfo) -> T | None:
+        value: T | None = getattr(root, self.field.field_name, None)
         if value is None:
             return None
 

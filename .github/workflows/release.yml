@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    uses: MrThearMan/CI/.github/workflows/release.yml@v0.6.1
+    uses: MrThearMan/CI/.github/workflows/release.yml@v0.6.2
     with:
       uv-cache-suffix: "release"
     secrets:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Hashable
 from types import FunctionType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from django.db.models import Model
 from graphql import DirectiveLocation, GraphQLInputField, Undefined
@@ -24,7 +24,7 @@ from undine.exceptions import MissingModelGenericError, MutationTypeKindCannotBe
 from undine.parsers import parse_class_attribute_docstrings
 from undine.query import QUERY_TYPE_REGISTRY
 from undine.settings import undine_settings
-from undine.typing import MutationKind, RelatedAction, TModel
+from undine.typing import MutationKind, RelatedAction
 from undine.utils.graphql.type_registry import (
     get_or_create_graphql_input_object_type,
     get_or_create_graphql_object_type,
@@ -165,7 +165,7 @@ class MutationTypeMeta(type):
     def __str__(cls) -> str:
         return undine_settings.SDL_PRINTER.print_input_object_type(cls.__input_type__())
 
-    def __getitem__(cls, model: type[TModel]) -> type[MutationType[TModel]]:
+    def __getitem__[T: Model](cls, model: type[T]) -> type[MutationType[T]]:
         # Note that this should be cleaned up in '__new__',
         # but is not if an error occurs in the class body of the defined 'MutationType'!
         MutationTypeMeta.__model__ = model
@@ -218,7 +218,7 @@ class MutationTypeMeta(type):
         return input_data
 
 
-class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
+class MutationType[T: Model](metaclass=MutationTypeMeta):
     """
     A class for creating a mutation in the GraphQL schema based on a Django Model.
 
@@ -270,7 +270,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
     __model_inputs__: ClassVar[dict[str, Input]]
 
     @classmethod
-    def __mutate__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+    def __mutate__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> Any:
         """Method used for single object mutations."""
         return mutate(
             model=cls.__model__,
@@ -280,7 +280,7 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
         )
 
     @classmethod
-    def __bulk_mutate__(cls, instances: list[TModel], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+    def __bulk_mutate__(cls, instances: list[T], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
         """Method used for bulk mutations."""
         return mutate(
             model=cls.__model__,
@@ -290,19 +290,19 @@ class MutationType(Generic[TModel], metaclass=MutationTypeMeta):
         )
 
     @classmethod
-    def __permissions__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __permissions__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """Check permissions for a mutation using this `MutationType`."""
 
     @classmethod
-    def __validate__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __validate__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """Validate all input data given to this `MutationType`."""
 
     @classmethod
-    def __after__(cls, instance: TModel, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __after__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
         """A function that is run after a mutation using this `MutationType` has been executed."""
 
     @classmethod
-    def __filter_queryset__(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+    def __filter_queryset__(cls, queryset: QuerySet[T], info: GQLInfo) -> QuerySet[T]:
         """A function that is used to filter the queryset returned by this `MutationType`."""
         return queryset
 

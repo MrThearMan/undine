@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 from undine.exceptions import RegistryDuplicateError, RegistryMissingTypeError
 from undine.utils.reflection import get_instance_name
@@ -13,11 +13,7 @@ __all__ = [
 ]
 
 
-From = TypeVar("From")
-To = TypeVar("To")
-
-
-class Registry(Generic[From, To]):
+class Registry[From, To]:
     """
     A registry for values that need to be globally available.
     Verifies that a value for a given key is only registered once.

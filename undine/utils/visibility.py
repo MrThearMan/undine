@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 from graphql import (
     GraphQLArgument,
@@ -68,9 +68,9 @@ if TYPE_CHECKING:
     )
     from undine.federation import FederationField, FederationType
     from undine.relay import Connection
-    from undine.typing import DjangoRequestProtocol, HasGraphQLExtensions, T
+    from undine.typing import DjangoRequestProtocol, HasGraphQLExtensions
 
-    VisibilityMember: TypeAlias = (
+    type VisibilityMember = (
         CalculationArgument
         | DirectiveArgument
         | Entrypoint
@@ -81,7 +81,7 @@ if TYPE_CHECKING:
         | InterfaceField
         | Order
     )
-    VisibilityClass: TypeAlias = type[
+    type VisibilityClass = type[
         RootType
         | QueryType
         | MutationType
@@ -223,7 +223,7 @@ def get_visibility_memo(request: DjangoRequestProtocol) -> VisibilityMemo | None
     return memo
 
 
-def with_visibility_memo(
+def with_visibility_memo[T](
     func: Callable[[T, DjangoRequestProtocol], bool],
 ) -> Callable[[T, DjangoRequestProtocol | None], bool]:
 

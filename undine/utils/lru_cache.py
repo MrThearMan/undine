@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Hashable
 from threading import Lock
-from typing import Generic, TypeVar
 
 from graphql import DocumentNode, GraphQLError
 
@@ -17,11 +16,7 @@ __all__ = [
 ]
 
 
-TKey = TypeVar("TKey", bound=Hashable)
-TValue = TypeVar("TValue")
-
-
-class _LRUCache(ABC, Generic[TKey, TValue]):
+class _LRUCache[TKey: Hashable, TValue](ABC):
     """A thread-safe cache that discards the least recently used value when it becomes too large."""
 
     def __init__(self) -> None:

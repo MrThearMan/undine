@@ -48,10 +48,10 @@ body:
       description: >-
         Please note that python versions not available below are not supported.
       options:
+        - "3.15"
         - "3.14"
         - "3.13"
         - "3.12"
-        - "3.11"
     validations:
       required: true
   - type: dropdown

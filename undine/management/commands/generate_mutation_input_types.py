@@ -293,7 +293,7 @@ def _format_python_type(py_type: Any, *, collector: TypeCollector, define: bool 
         collector.add_module("uuid")
         return f"uuid.{py_type.__name__}"
 
-    if define and isinstance(py_type, TypedDictType):  # type: ignore[misc]
+    if define and isinstance(py_type, TypedDictType.__value__):  # type: ignore[misc]
         collector.add_definition_from_typed_dict(py_type)
         return py_type.__name__
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any
 
 import faker
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 
 FactoryType = str | type[BaseFactory] | Callable[[], type[BaseFactory]]
-TModel = TypeVar("TModel", bound=Model)
 
 
 __all__ = [
@@ -33,13 +32,11 @@ __all__ = [
     "ReverseOneToOneFactory",
 ]
 
-T = TypeVar("T")
-
 
 # --- Generic factories --------------------------------------------------------------------------------------------
 
 
-class GenericDjangoModelFactory(DjangoModelFactory, Generic[TModel]):
+class GenericDjangoModelFactory[T: Model](DjangoModelFactory):
     """
     DjangoModelFactory that adds return type annotations for the
     `build`, `create`, `build_batch`, and `create_batch` methods,
@@ -47,19 +44,19 @@ class GenericDjangoModelFactory(DjangoModelFactory, Generic[TModel]):
     """
 
     @classmethod
-    def build(cls, **kwargs: Any) -> TModel:
+    def build(cls, **kwargs: Any) -> T:
         return super().build(**kwargs)
 
     @classmethod
-    def create(cls, **kwargs: Any) -> TModel:
+    def create(cls, **kwargs: Any) -> T:
         return super().create(**kwargs)
 
     @classmethod
-    def build_batch(cls, size: int, **kwargs: Any) -> list[TModel]:
+    def build_batch(cls, size: int, **kwargs: Any) -> list[T]:
         return super().build_batch(size, **kwargs)
 
     @classmethod
-    def create_batch(cls, size: int, **kwargs: Any) -> list[TModel]:
+    def create_batch(cls, size: int, **kwargs: Any) -> list[T]:
         return super().create_batch(size, **kwargs)
 
 
@@ -99,7 +96,7 @@ class CustomFactoryWrapper:
 # --- Related factories --------------------------------------------------------------------------------------------
 
 
-class PostFactory(PostGeneration, Generic[TModel]):
+class PostFactory[T: Model](PostGeneration):
     def __init__(self, factory: FactoryType) -> None:
         super().__init__(function=self.generate)
         self.field_name: str = ""
@@ -112,7 +109,7 @@ class PostFactory(PostGeneration, Generic[TModel]):
     def get_factory(self) -> BaseFactory:
         return self.factory_wrapper.get()
 
-    def generate(self, instance: Model, create: bool, models: Iterable[TModel] | None, **kwargs: Any) -> None: ...
+    def generate(self, instance: Model, create: bool, models: Iterable[T] | None, **kwargs: Any) -> None: ...
 
     def manager(self, instance: Model) -> Any:
         """
@@ -128,7 +125,7 @@ class PostFactory(PostGeneration, Generic[TModel]):
         return getattr(instance, self.field_name)
 
 
-class ForeignKeyFactory(SubFactory, Generic[TModel]):
+class ForeignKeyFactory[T: Model](SubFactory):
     """
     Factory for forward 'many-to-one' (foreign key) related fields.
 
@@ -154,7 +151,7 @@ class ForeignKeyFactory(SubFactory, Generic[TModel]):
             return False
         return self.owner._meta.model._meta.get_field(self.name).null
 
-    def evaluate(self, instance: Resolver, step: BuildStep, extra: dict[str, Any]) -> TModel | None:
+    def evaluate(self, instance: Resolver, step: BuildStep, extra: dict[str, Any]) -> T | None:
         if not extra and self.null:
             return None
         return super().evaluate(instance, step, extra)
@@ -167,14 +164,14 @@ Basically the same as a SubFactory, but allows the related value to be 'None'.
 """
 
 
-class ReverseOneToOneFactory(PostFactory[TModel]):
+class ReverseOneToOneFactory[T: Model](PostFactory[T]):
     """
     Factory for reverse 'one-to-one' related fields.
     If given the related model, or 'factory style arguments' (related__field=value),
     the related object is created and linked to the current instance.
     """
 
-    def generate(self, instance: Model, create: bool, models: Iterable[TModel] | None, **kwargs: Any) -> None:
+    def generate(self, instance: Model, create: bool, models: Iterable[T] | None, **kwargs: Any) -> None:
         if not models and kwargs:
             factory = self.get_factory()
             field_name = instance._meta.get_field(self.field_name).remote_field.name
@@ -182,14 +179,14 @@ class ReverseOneToOneFactory(PostFactory[TModel]):
             factory.create(**kwargs) if create else factory.build(**kwargs)
 
 
-class ReverseForeignKeyFactory(PostFactory[TModel]):
+class ReverseForeignKeyFactory[T: Model](PostFactory[T]):
     """
     Factory for reverse foreign keys (one-to-many).
     If given the related model, or "factory style arguments" (related__field=value),
     a single related object is created and linked to the current instance.
     """
 
-    def generate(self, instance: Model, create: bool, models: Iterable[TModel] | None, **kwargs: Any) -> None:
+    def generate(self, instance: Model, create: bool, models: Iterable[T] | None, **kwargs: Any) -> None:
         if not models and kwargs:
             factory = self.get_factory()
             manager = self.manager(instance)
@@ -211,14 +208,14 @@ class ReverseForeignKeyFactory(PostFactory[TModel]):
             factory.create(**kwargs) if create else factory.build(**kwargs)
 
 
-class ManyToManyFactory(PostFactory[TModel]):
+class ManyToManyFactory[T: Model](PostFactory[T]):
     """
     Factory for forward/reverse many-to-many related fields.
     If given the related model, or "factory style arguments" (related__field=value),
     a single related object is created and linked to the current instance.
     """
 
-    def generate(self, instance: Model, create: bool, models: Iterable[TModel] | None, **kwargs: Any) -> None:
+    def generate(self, instance: Model, create: bool, models: Iterable[T] | None, **kwargs: Any) -> None:
         if not models and kwargs:
             factory = self.get_factory()
             model = factory.create(**kwargs) if create else factory.build(**kwargs)

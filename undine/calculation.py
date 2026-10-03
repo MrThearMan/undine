@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Self, Unpack
+from typing import TYPE_CHECKING, Any, ClassVar, Self, Unpack
 
 from graphql import DirectiveLocation, GraphQLArgument, Undefined
 
@@ -16,7 +16,6 @@ from undine.exceptions import (
 )
 from undine.parsers import parse_class_attribute_docstrings
 from undine.settings import undine_settings
-from undine.typing import T_co
 from undine.utils.reflection import get_members, get_wrapped_func
 from undine.utils.text import dotpath, to_schema_name
 
@@ -38,7 +37,7 @@ __all__ = [
 ]
 
 
-class Calculation(ABC, Generic[T_co]):
+class Calculation[T](ABC):
     """
     An object that wraps logic for calculating a field's value based on defined input arguments.
 

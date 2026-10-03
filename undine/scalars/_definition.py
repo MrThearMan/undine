@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from functools import wraps
-from typing import Any, Generic, NoReturn, TypeVar
+from typing import Any, NoReturn
 
 from django.core.exceptions import ValidationError
 from graphql import DirectiveLocation, GraphQLScalarType
@@ -12,7 +12,7 @@ from undine import Directive
 from undine.directives import DirectiveList
 from undine.exceptions import GraphQLScalarConversionError, GraphQLScalarTypeNotSupportedError
 from undine.settings import undine_settings
-from undine.typing import DispatchProtocol, T
+from undine.typing import DispatchProtocol
 from undine.utils.function_dispatcher import FunctionDispatcher
 from undine.utils.graphql.type_registry import get_or_create_graphql_scalar
 from undine.utils.text import dotpath
@@ -21,11 +21,8 @@ __all__ = [
     "ScalarType",
 ]
 
-TParse = TypeVar("TParse")
-TSerialize = TypeVar("TSerialize")
 
-
-class ScalarType(Generic[TParse, TSerialize]):
+class ScalarType[TParse, TSerialize]:
     """
     Create a new scalar for the GraphQL Schema.
 
@@ -85,7 +82,7 @@ class ScalarType(Generic[TParse, TSerialize]):
         )
 
 
-def handle_scalar_errors(typename: str) -> Callable[[DispatchProtocol[T]], DispatchProtocol[T]]:
+def handle_scalar_errors[T](typename: str) -> Callable[[DispatchProtocol[T]], DispatchProtocol[T]]:
     """Catch errors raised by the scalar parsers and serializers and reraise them as GraphQLErrors."""
 
     def decorator(func: DispatchProtocol[T]) -> DispatchProtocol[T]:
