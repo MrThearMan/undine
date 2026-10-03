@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import warnings
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
-from contextlib import AsyncExitStack, aclosing, nullcontext, suppress
+from contextlib import AsyncExitStack, aclosing, contextmanager, nullcontext, suppress
 from functools import wraps
 from inspect import isawaitable
 from typing import TYPE_CHECKING, Any
@@ -83,7 +84,7 @@ from undine.utils.graphql.validation_rules import get_validation_rules
 from undine.utils.reflection import cancel_awaitable
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Iterable, Sequence
+    from collections.abc import Awaitable, Callable, Generator, Iterable, Sequence
 
     from graphql import (
         AsyncWorkFinishedInfo,
@@ -158,8 +159,9 @@ def _run_operation_sync(context: LifecycleHookContext) -> ExecutionResult:
                 return _execute_sync(context)
 
     if isawaitable(context.result):
-        cancel_awaitable(context.result)
-        context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
+        with _ignore_never_awaited_coroutines():
+            cancel_awaitable(context.result)
+            context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
     if isinstance(context.result, ExperimentalIncrementalExecutionResults):
@@ -233,7 +235,9 @@ def _execute_sync(context: LifecycleHookContext) -> ExecutionResult:
     result = _execute(executor)
 
     if executor.is_awaitable(result):
-        cancel_awaitable(result)  # type: ignore[arg-type]
+        with _ignore_never_awaited_coroutines():
+            cancel_awaitable(result)  # type: ignore[arg-type]
+            del result
         context.result = get_error_execution_result(GraphQLAsyncNotSupportedError())
         return context.result
 
@@ -772,6 +776,21 @@ def _validate(
         visit(document, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
 
     return errors
+
+
+@contextmanager
+def _ignore_never_awaited_coroutines() -> Generator[None, None, None]:
+    """
+    Ignore warnings about coroutines that are never awaited.
+
+    A cancelled sync mode result wraps coroutines that graphql-core created for async resolvers.
+    Cancelling the result cannot close them, since they were never started. They are discarded
+    on purpose, so the warning is expected. The warning is emitted when the last reference
+    to the cancelled result is dropped, so that must happen inside this context.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="coroutine .* was never awaited", category=RuntimeWarning)
+        yield
 
 
 def _execute(executor: UndineExecutor) -> AwaitableOrValue[GraphQLResult]:

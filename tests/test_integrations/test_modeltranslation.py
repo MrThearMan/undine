@@ -11,7 +11,7 @@ from undine import FilterSet, MutationType, OrderSet, QueryType
 from undine.integrations import modeltranslation as modeltranslation_module
 
 
-class TestModel(Model):
+class TranslatedModel(Model):
     name = CharField(max_length=255)
 
     class Meta:
@@ -22,8 +22,8 @@ class TestModel(Model):
         return self.name
 
 
-@register(TestModel)
-class TestModelOptions(TranslationOptions):
+@register(TranslatedModel)
+class TranslatedModelOptions(TranslationOptions):
     fields = ["name"]
 
 
@@ -31,7 +31,7 @@ def test_modeltranslation__query_type_fields__include_translatable_and_translati
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslatedType(QueryType[TestModel], exclude=["pk"]): ...
+    class TranslatedType(QueryType[TranslatedModel], exclude=["pk"]): ...
 
     fields = TranslatedType.__field_map__
     assert sorted(fields) == ["name", "name_en", "name_fi"]
@@ -50,7 +50,7 @@ def test_modeltranslation__query_type_fields__only_translatable(undine_settings)
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = False
 
-    class TranslatedType(QueryType[TestModel], exclude=["pk"]): ...
+    class TranslatedType(QueryType[TranslatedModel], exclude=["pk"]): ...
 
     fields = TranslatedType.__field_map__
     assert sorted(fields) == ["name"]
@@ -63,7 +63,7 @@ def test_modeltranslation__query_type_fields__only_translations(undine_settings)
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = False
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslatedType(QueryType[TestModel], exclude=["pk"]): ...
+    class TranslatedType(QueryType[TranslatedModel], exclude=["pk"]): ...
 
     fields = TranslatedType.__field_map__
     assert sorted(fields) == ["name_en", "name_fi"]
@@ -79,7 +79,7 @@ def test_modeltranslation__mutation_inputs__include_translatable_and_translation
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationCreateMutation(MutationType[TestModel]): ...
+    class TranslationCreateMutation(MutationType[TranslatedModel]): ...
 
     inputs = TranslationCreateMutation.__input_map__
     assert sorted(inputs) == ["name", "name_en", "name_fi"]
@@ -98,7 +98,7 @@ def test_modeltranslation__mutation_inputs__only_translatable(undine_settings) -
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = False
 
-    class TranslationCreateMutation(MutationType[TestModel]): ...
+    class TranslationCreateMutation(MutationType[TranslatedModel]): ...
 
     inputs = TranslationCreateMutation.__input_map__
     assert sorted(inputs) == ["name"]
@@ -111,7 +111,7 @@ def test_modeltranslation__mutation_inputs__only_translations(undine_settings) -
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = False
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationCreateMutation(MutationType[TestModel]): ...
+    class TranslationCreateMutation(MutationType[TranslatedModel]): ...
 
     inputs = TranslationCreateMutation.__input_map__
     assert sorted(inputs) == ["name_en", "name_fi"]
@@ -127,7 +127,7 @@ def test_modeltranslation__filterset_filters__include_translatable_and_translati
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationFilterSet(FilterSet[TestModel], exclude=["pk"]): ...
+    class TranslationFilterSet(FilterSet[TranslatedModel], exclude=["pk"]): ...
 
     filters = TranslationFilterSet.__filter_map__
     assert sorted(filters) == [
@@ -167,7 +167,7 @@ def test_modeltranslation__filterset_filters__only_translatable(undine_settings)
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = False
 
-    class TranslationFilterSet(FilterSet[TestModel], exclude=["pk"]): ...
+    class TranslationFilterSet(FilterSet[TranslatedModel], exclude=["pk"]): ...
 
     filters = TranslationFilterSet.__filter_map__
     assert sorted(filters) == [
@@ -187,7 +187,7 @@ def test_modeltranslation__filterset_filters__only_translations(undine_settings)
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = False
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationFilterSet(FilterSet[TestModel], exclude=["pk"]): ...
+    class TranslationFilterSet(FilterSet[TranslatedModel], exclude=["pk"]): ...
 
     filters = TranslationFilterSet.__filter_map__
     assert sorted(filters) == [
@@ -218,7 +218,7 @@ def test_modeltranslation__orderset_orders__include_translatable_and_translation
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationOrderSet(OrderSet[TestModel], exclude=["pk"]): ...
+    class TranslationOrderSet(OrderSet[TranslatedModel], exclude=["pk"]): ...
 
     orders = TranslationOrderSet.__order_map__
     assert sorted(orders) == ["name", "name_en", "name_fi"]
@@ -228,7 +228,7 @@ def test_modeltranslation__orderset_orders__only_translatable(undine_settings) -
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = True
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = False
 
-    class TranslationOrderSet(OrderSet[TestModel], exclude=["pk"]): ...
+    class TranslationOrderSet(OrderSet[TranslatedModel], exclude=["pk"]): ...
 
     orders = TranslationOrderSet.__order_map__
     assert sorted(orders) == ["name"]
@@ -238,18 +238,18 @@ def test_modeltranslation__orderset_orders__only_translations(undine_settings) -
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATABLE = False
     undine_settings.MODELTRANSLATION_INCLUDE_TRANSLATIONS = True
 
-    class TranslationOrderSet(OrderSet[TestModel], exclude=["pk"]): ...
+    class TranslationOrderSet(OrderSet[TranslatedModel], exclude=["pk"]): ...
 
     orders = TranslationOrderSet.__order_map__
     assert sorted(orders) == ["name_en", "name_fi"]
 
 
 def test_modeltranslation__is_translation_field__not_installed() -> None:
-    field = TestModel._meta.get_field("name")
+    field = TranslatedModel._meta.get_field("name")
     with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", new=False):
         assert modeltranslation_module.is_translation_field(field) is False
 
 
 def test_modeltranslation__get_translatable_fields__not_installed() -> None:
     with patch.object(modeltranslation_module, "IS_MODELTRANSLATION_INSTALLED", new=False):
-        assert modeltranslation_module.get_translatable_fields(TestModel) == set()
+        assert modeltranslation_module.get_translatable_fields(TranslatedModel) == set()

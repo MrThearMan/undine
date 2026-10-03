@@ -70,11 +70,16 @@ class Command(BaseCommand):
             cleandoc(
                 """
                 [pytest]
-                asyncio_mode = auto
                 DJANGO_SETTINGS_MODULE = example_project.project.settings
-                addopts = --no-migrations --reuse-db --disable-warnings
-                # addopts = --reuse-db --disable-warnings
-                # addopts = --create-db --reuse-db --disable-warnings
+                asyncio_mode = auto
+                # Keep in sync with "filterwarnings" in pyproject.toml.
+                filterwarnings =
+                    error
+                    ignore:Module globals; __loader__ != __spec__\\.loader:DeprecationWarning:linecache
+
+                addopts = --no-migrations --reuse-db
+                # addopts = --reuse-db
+                # addopts = --create-db --reuse-db
                 """
             )
             + "\n"

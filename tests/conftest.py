@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
@@ -26,6 +27,24 @@ __all__ = [
     "graphql_async",
     "undine_settings",
 ]
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--gc-after-each-test",
+        action="store_true",
+        default=False,
+        help=(
+            "Run garbage collection after each test, so that warnings raised during garbage collection "
+            "(e.g. 'ResourceWarning') are reported on the test that caused them. Slows the suite down a lot."
+        ),
+    )
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> None:
+    if item.config.getoption("--gc-after-each-test"):
+        gc.collect()
 
 
 @pytest.fixture(scope="session", autouse=True)

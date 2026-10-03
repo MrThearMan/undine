@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import gc
+import sys
 from contextlib import suppress
+from unittest.mock import patch
 
 import pytest
 
@@ -89,6 +92,17 @@ def test_in_memory_broker__event_loop_closed() -> None:
 
     buffer = next(iter(broker.buffers["topic"].values()))
     assert buffer.events.empty()
+
+    # Finalizing the waiting subscriber tries to use the closed event loop. Check that here,
+    # so that the error is not reported on whichever test happens to collect the garbage.
+    unraisables: list[sys.UnraisableHookArgs] = []
+    with patch.object(sys, "unraisablehook", unraisables.append):
+        broker.buffers.clear()
+        del buffer
+        gc.collect()
+
+    errors = [repr(unraisable.exc_value) for unraisable in unraisables]
+    assert errors == [repr(RuntimeError("Event loop is closed"))]
 
 
 def test_get_subscription_broker(undine_settings) -> None:

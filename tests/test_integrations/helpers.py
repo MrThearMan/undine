@@ -327,7 +327,8 @@ def _sentry_client(**client_options: Any) -> Iterator[SentryPayloads]:
         try:
             yield transport.payloads
         finally:
-            client.flush()
+            # Also stops the client's background threads, which would otherwise outlive the test.
+            client.close()
 
 
 @contextmanager

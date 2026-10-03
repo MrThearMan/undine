@@ -147,8 +147,13 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "example_project.project.settings"
-addopts = "--disable-warnings"
 asyncio_mode = "auto"
+filterwarnings = [
+    "error",
+    # From 'wrapt' (used by 'ddtrace') on Python 3.15+, where its import hook
+    # leaves '__loader__' different from '__spec__.loader'. Not fixable here.
+    'ignore:Module globals; __loader__ != __spec__\.loader:DeprecationWarning:linecache',
+]
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

@@ -73,7 +73,7 @@ def tests(session: nox.Session, django: str) -> None:
         external=True,
     )
 
-    session.run("coverage", "run", "--parallel-mode", "-m", "pytest", external="error")
+    session.run("coverage", "run", "--parallel-mode", "-m", "pytest", *session.posargs, external="error")
 
     # "coverage combine" consumes all parallel data files next to the data file it writes to.
     # Sessions that run at the same time must therefore each set "COVERAGE_FILE"

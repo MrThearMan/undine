@@ -179,6 +179,10 @@ def saving_in_separate_thread(instance: Model, *, delay: float) -> Generator[Non
             instance.save()
         finally:
             connection.close()
+            # Django ignores 'close()' for in-memory SQLite databases, since closing the last connection
+            # would destroy the database. The main thread still holds a connection, so this one can go.
+            if connection.connection is not None:
+                connection.connection.close()
 
     thread = threading.Thread(target=save)
     thread.start()

@@ -43,6 +43,11 @@ class GenericDjangoModelFactory[T: Model](DjangoModelFactory):
     as well as some convenience methods for creating custom builder-methods.
     """
 
+    class Meta:
+        abstract = True
+        # Post-generation hooks only create related objects, so the instance doesn't need to be saved again.
+        skip_postgeneration_save = True
+
     @classmethod
     def build(cls, **kwargs: Any) -> T:
         return super().build(**kwargs)
