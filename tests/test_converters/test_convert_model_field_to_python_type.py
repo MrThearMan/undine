@@ -17,9 +17,11 @@ from django.db.models import (
     DurationField,
     FileField,
     FloatField,
+    GeneratedField,
     ImageField,
     IntegerField,
     JSONField,
+    Sum,
     TextField,
     TimeField,
     UUIDField,
@@ -169,6 +171,10 @@ class Params(NamedTuple):
         "JSONField": Params(
             input_type=JSONField(),
             output_type=dict[str, str],
+        ),
+        "GeneratedField": Params(
+            input_type=GeneratedField(expression=Sum("number"), output_field=IntegerField(), db_persist=False),
+            output_type=int,
         ),
     }),
 )

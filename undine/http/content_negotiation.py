@@ -3,7 +3,7 @@ from __future__ import annotations
 import operator
 from functools import wraps
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Literal, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from django.http.request import MediaType
 from django.http.response import ResponseHeaders
@@ -68,7 +68,7 @@ def require_graphql_request_sync(func: SyncViewIn) -> SyncViewOut:
             return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
         # 'text/html' is reserved for GraphiQL which must use GET
-        if media_type_match(media_type, text_html):
+        if media_type.match(text_html):
             if request.method != "GET":
                 return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
             return render_graphiql(request)  # type: ignore[arg-type]
@@ -118,12 +118,12 @@ def require_graphql_request_async(func: AsyncViewIn) -> AsyncViewOut:
             return HttpUnsupportedContentTypeResponse(supported_types=supported_types)
 
         # 'text/html' is reserved for GraphiQL which must use GET
-        if media_type_match(media_type, text_html):
+        if media_type.match(text_html):
             if request.method != "GET":
                 return HttpMethodNotAllowedResponse(allowed_methods=["GET"])
             return render_graphiql(request)  # type: ignore[arg-type]
 
-        if media_type_match(media_type, multipart_subscription) or media_type_match(media_type, multipart_incremental):
+        if media_type.match(multipart_subscription) or media_type.match(multipart_incremental):
             add_media_type_param(media_type, name="boundary", value="graphql")
 
         request.response_content_type = media_type
@@ -196,12 +196,12 @@ def get_preferred_response_content_type(
     preference: dict[str, PreferenceOrder] = {}
 
     for accept_order, accepted_type in enumerate(accepted):
-        if all_types_override and media_type_specificity(accepted_type) == 0:
+        if all_types_override and accepted_type.specificity == 0:
             preference.setdefault(
                 all_types_override,
                 PreferenceOrder(
-                    quality_neg=-media_type_quality(accepted_type),
-                    specificity_neg=-media_type_specificity(accepted_type),
+                    quality_neg=-accepted_type.quality,
+                    specificity_neg=-accepted_type.specificity,
                     support_order=0,
                     accept_order=accept_order,
                 ),
@@ -209,12 +209,12 @@ def get_preferred_response_content_type(
             continue
 
         for support_order, supported_type in enumerate(supported):
-            if media_type_match(accepted_type, supported_type):
+            if accepted_type.match(supported_type):
                 preference.setdefault(
                     supported_type,
                     PreferenceOrder(
-                        quality_neg=-media_type_quality(accepted_type),
-                        specificity_neg=-media_type_specificity(accepted_type),
+                        quality_neg=-accepted_type.quality,
+                        specificity_neg=-accepted_type.specificity,
                         support_order=support_order,
                         accept_order=accept_order,
                     ),
@@ -225,64 +225,6 @@ def get_preferred_response_content_type(
         return None
 
     return MediaType(min(preference, key=preference.get))  # type: ignore[arg-type]
-
-
-def media_type_match(self: MediaType | str, other: MediaType | str) -> bool:
-    """Port of Django>=5.2 `MediaType.match` method."""
-    if not other:
-        return False
-
-    if not isinstance(self, MediaType):
-        self = MediaType(self)
-
-    if not isinstance(other, MediaType):
-        other = MediaType(other)
-
-    main_types = [self.main_type, other.main_type]
-    sub_types = [self.sub_type, other.sub_type]
-
-    if not all((*main_types, *sub_types)):
-        return False
-
-    for this_type, other_type in (main_types, sub_types):
-        if this_type not in {other_type, "*"} and other_type != "*":
-            return False
-
-    self_range_params = media_type_range_params(self)
-    other_range_params = media_type_range_params(other)
-
-    if bool(self_range_params) == bool(other_range_params):
-        return self_range_params == other_range_params
-    return bool(self_range_params or not other_range_params)
-
-
-def media_type_quality(media_type: MediaType, /) -> float:
-    """Port of Django>=5.2 `MediaType.quality` property."""
-    try:
-        quality = float(media_type.params.get("q", 1))
-    except ValueError:
-        return 1
-    if quality < 0 or quality > 1:
-        return 1
-    return round(quality, 3)
-
-
-def media_type_specificity(media_type: MediaType, /) -> Literal[0, 1, 2, 3]:
-    """Port of Django>=5.2 `MediaType.specificity` property."""
-    if media_type.main_type == "*":
-        return 0
-    if media_type.sub_type == "*":
-        return 1
-    if not media_type_range_params(media_type):
-        return 2
-    return 3
-
-
-def media_type_range_params(media_type: MediaType, /) -> dict[str, bytes | str]:
-    """Port of Django>=5.2 `MediaType.range_params` property."""
-    range_params = media_type.params.copy()
-    range_params.pop("q", None)
-    return range_params  # type: ignore[return-value]
 
 
 def add_media_type_param(media_type: MediaType, *, name: str, value: str) -> MediaType:

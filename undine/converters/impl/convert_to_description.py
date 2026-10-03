@@ -3,7 +3,6 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
-from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db.models import F, Model, Q
 from graphql import GraphQLNamedType, GraphQLWrappingType
 
@@ -84,11 +83,6 @@ def _(_: GraphQLNamedType, **kwargs: Any) -> Any:
 @convert_to_description.register
 def _(ref: GraphQLWrappingType, **kwargs: Any) -> Any:
     return convert_to_description(ref.of_type)
-
-
-@convert_to_description.register
-def _(ref: GenericForeignKey, **kwargs: Any) -> Any:  # Required for Django<5.1
-    return getattr(ref, "help_text", None) or None
 
 
 @convert_to_description.register

@@ -68,7 +68,6 @@ from undine.hooks import (
     with_validation_lifecycle_hooks_manager,
     with_validation_lifecycle_hooks_manager_async,
 )
-from undine.http.content_negotiation import media_type_match
 from undine.http.utils import get_graphql_event_stream_token
 from undine.settings import undine_settings
 from undine.typing import GQLContext
@@ -645,7 +644,7 @@ def _is_multipart_mixed_request(request: DjangoRequestProtocol) -> bool:
     if not hasattr(request, "response_content_type"):
         return False
 
-    return media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql; subscriptionSpec=1.0")
+    return request.response_content_type.match("multipart/mixed; boundary=graphql; subscriptionSpec=1.0")
 
 
 def _is_incremental_request(request: DjangoRequestProtocol) -> bool:
@@ -653,7 +652,7 @@ def _is_incremental_request(request: DjangoRequestProtocol) -> bool:
     if not hasattr(request, "response_content_type"):
         return False
 
-    return media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql")
+    return request.response_content_type.match("multipart/mixed; boundary=graphql")
 
 
 def _is_sse_request(request: DjangoRequestProtocol) -> bool:
@@ -664,7 +663,7 @@ def _is_sse_request(request: DjangoRequestProtocol) -> bool:
     if not hasattr(request, "response_content_type"):
         return False
 
-    return media_type_match(request.response_content_type, "text/event-stream")
+    return request.response_content_type.match("text/event-stream")
 
 
 def _is_websocket_request(request: DjangoRequestProtocol) -> bool:

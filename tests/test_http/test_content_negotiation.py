@@ -12,8 +12,6 @@ from tests.helpers import MockRequest, parametrize_helper
 from undine.http.content_negotiation import (
     add_media_type_param,
     get_preferred_response_content_type,
-    media_type_match,
-    media_type_quality,
     require_graphql_request_async,
     require_graphql_request_sync,
     require_persisted_documents_request,
@@ -267,39 +265,6 @@ def test_get_preferred_response_content_type(accepted, supported, all_types_over
     assert str(content_type) == expected
 
 
-@pytest.mark.parametrize(
-    ("match", "other", "expected"),
-    [
-        ("application/json", "application/json", True),
-        ("application/json", MediaType("application/json"), True),
-        (MediaType("application/json"), "application/json", True),
-        (MediaType("application/"), MediaType("application/json"), False),
-        (MediaType("/json"), MediaType("application/json"), False),
-        (MediaType("text/plain"), MediaType("application/json"), False),
-        (MediaType("application/json"), "", False),
-    ],
-)
-def test_media_type_match(match, other, expected):
-    result = media_type_match(match, other)
-    assert result is expected
-
-
-@pytest.mark.parametrize(
-    ("media_type", "expected"),
-    [
-        (MediaType("application/json;q=0.8"), 0.8),
-        (MediaType("application/json;q=0.0125"), 0.013),
-        (MediaType("application/json;q=-0.5"), 1),
-        (MediaType("application/json;q=1.5"), 1),
-        (MediaType("application/json;q=invalid"), 1),
-    ],
-)
-def test_media_type_quality(media_type, expected):
-    result = media_type_quality(media_type)
-    assert result == expected
-
-
-@pytest.mark.skipif(not hasattr(MediaType, "range_params"), reason="`MediaType.range_params` does not exist")
 def test_add_media_type_param__deletes_cached_range_params() -> None:
     media_type = MediaType("multipart/mixed; subscriptionSpec=1.0")
     # Force the cached property to be stored in __dict__

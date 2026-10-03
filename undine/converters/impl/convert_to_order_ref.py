@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import itertools
+from contextlib import suppress
 from typing import Any
 
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel
+from django.contrib.contenttypes.fields import GenericRel
 from django.db.models import F, Model
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
@@ -124,12 +125,10 @@ def _(ref: GenericRel, **kwargs: Any) -> Any:
     return convert_to_order_ref(ref.field, **kwargs)
 
 
-@convert_to_order_ref.register  # Required for Django<5.1
-def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
-    caller = kwargs["caller"]
+# Django>=6.1 returns a descriptor for direct references instead of the field itself.
+with suppress(ImportError):  # pragma: no cover
+    from django.contrib.contenttypes.fields import GenericForeignKeyDescriptor  # type: ignore[attr-defined]
 
-    models = caller.orderset.__models__
-    if len(models) != 1:
-        raise UnionModelFieldDirectUsageError(kind="OrderSet")
-
-    return F(ref.name)
+    @convert_to_order_ref.register
+    def _(ref: GenericForeignKeyDescriptor, **kwargs: Any) -> Any:
+        return convert_to_order_ref(ref.field, **kwargs)

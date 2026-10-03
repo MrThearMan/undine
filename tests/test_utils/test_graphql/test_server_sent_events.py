@@ -352,31 +352,12 @@ async def test_sse_session_store__refresh__with_aload(undine_settings) -> None:
     assert store.session._session_cache == {"key": "val"}
 
 
-async def test_sse_session_store__refresh__without_aload(undine_settings) -> None:
-    store = _make_session_store()
-    # No 'aload' attribute
-    del store.session.aload
-    store.session.load = MagicMock(return_value={"key": "val2"})
-
-    await store.refresh()
-    assert store.session._session_cache == {"key": "val2"}
-
-
 async def test_sse_session_store__save__with_asave(undine_settings) -> None:
     store = _make_session_store()
     store.session.asave = AsyncMock()
 
     await store.save()
     store.session.asave.assert_called_once()
-
-
-async def test_sse_session_store__save__without_asave(undine_settings) -> None:
-    store = _make_session_store()
-    del store.session.asave
-    store.session.save = MagicMock()
-
-    await store.save()
-    store.session.save.assert_called_once()
 
 
 def _make_scope() -> dict:

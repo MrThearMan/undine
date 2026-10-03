@@ -18,6 +18,7 @@ from django.db.models import (
     DurationField,
     FileField,
     FloatField,
+    GeneratedField,
     ImageField,
     IntegerField,
     JSONField,
@@ -175,9 +176,6 @@ with suppress(ImportError):  # pragma: no cover
         return list.__class_getitem__(item_type)  # type: ignore[return-value]
 
 
-with suppress(ImportError):  # pragma: no cover
-    from django.db.models import GeneratedField
-
-    @convert_model_field_to_python_type.register
-    def _(ref: GeneratedField, **kwargs: Any) -> type:
-        return convert_model_field_to_python_type(ref.output_field, **kwargs)
+@convert_model_field_to_python_type.register
+def _(ref: GeneratedField, **kwargs: Any) -> type:
+    return convert_model_field_to_python_type(ref.output_field, **kwargs)

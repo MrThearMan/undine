@@ -7,11 +7,7 @@ from graphql import GraphQLError
 
 from undine.exceptions import GraphQLErrorGroup
 from undine.execution import execute_graphql_http_async, execute_graphql_http_sync
-from undine.http.content_negotiation import (
-    media_type_match,
-    require_graphql_request_async,
-    require_graphql_request_sync,
-)
+from undine.http.content_negotiation import require_graphql_request_async, require_graphql_request_sync
 from undine.http.responses import HttpEventSourcingNotAllowedResponse, graphql_result_response
 from undine.http.utils import get_http_version
 from undine.parsers import GraphQLRequestParamsParser
@@ -57,13 +53,13 @@ def graphql_view_sync(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
 @require_graphql_request_async
 async def graphql_view_async(request: DjangoRequestProtocol) -> DjangoResponseProtocol:
     """An async view for GraphQL requests."""
-    if media_type_match(request.response_content_type, "text/event-stream"):
+    if request.response_content_type.match("text/event-stream"):
         return await _handle_event_stream(request)
 
-    if media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql; subscriptionSpec=1.0"):
+    if request.response_content_type.match("multipart/mixed; boundary=graphql; subscriptionSpec=1.0"):
         return await _handle_multipart_mixed(request)
 
-    if media_type_match(request.response_content_type, "multipart/mixed; boundary=graphql"):
+    if request.response_content_type.match("multipart/mixed; boundary=graphql"):
         return await _handle_incremental(request)
 
     try:

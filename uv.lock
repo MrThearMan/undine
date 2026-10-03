@@ -2167,7 +2167,7 @@ test = [
 requires-dist = [
     { name = "channels", marker = "extra == 'channels'", specifier = ">=4.2.2" },
     { name = "ddtrace", marker = "extra == 'datadog'", specifier = ">=3.0.0" },
-    { name = "django", specifier = ">=5.0" },
+    { name = "django", specifier = ">=5.2.3" },
     { name = "django-debug-toolbar", marker = "extra == 'debug'", specifier = ">=7.1.1" },
     { name = "django-settings-holder", specifier = ">=0.3.0" },
     { name = "graphql-core", specifier = ">=3.3.0" },

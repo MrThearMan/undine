@@ -5,7 +5,7 @@ from contextlib import suppress
 from types import FunctionType
 from typing import Any
 
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRel
+from django.contrib.contenttypes.fields import GenericRel
 from django.db.models import F, Model, Q
 from django.db.models.fields.related_descriptors import (
     ForwardManyToOneDescriptor,
@@ -163,15 +163,13 @@ def _(ref: GenericRel, **kwargs: Any) -> Any:
     return convert_to_filter_ref(ref.field, **kwargs)
 
 
-@convert_to_filter_ref.register  # Required for Django<5.1
-def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
-    caller: Filter = kwargs["caller"]
+# Django>=6.1 returns a descriptor for direct references instead of the field itself.
+with suppress(ImportError):  # pragma: no cover
+    from django.contrib.contenttypes.fields import GenericForeignKeyDescriptor  # type: ignore[attr-defined]
 
-    models = caller.filterset.__models__
-    if len(models) != 1:
-        raise UnionModelFieldDirectUsageError(kind="FilterSet")
-
-    return ref
+    @convert_to_filter_ref.register
+    def _(ref: GenericForeignKeyDescriptor, **kwargs: Any) -> Any:
+        return convert_to_filter_ref(ref.field, **kwargs)
 
 
 with suppress(ImportError):  # pragma: no cover

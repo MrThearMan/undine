@@ -26,6 +26,7 @@ from django.db.models import (
     FileField,
     FloatField,
     ForeignKey,
+    GeneratedField,
     GenericIPAddressField,
     ImageField,
     IntegerChoices,
@@ -740,13 +741,9 @@ with suppress(ImportError):  # pragma: no cover
         return GraphQLList(inner_type)
 
 
-# Generated field
-with suppress(ImportError):  # pragma: no cover
-    from django.db.models import GeneratedField
-
-    @convert_to_graphql_type.register
-    def _(ref: GeneratedField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
-        return convert_to_graphql_type(ref.output_field, **kwargs)
+@convert_to_graphql_type.register
+def _(ref: GeneratedField, **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+    return convert_to_graphql_type(ref.output_field, **kwargs)
 
 
 # --- Django ORM ---------------------------------------------------------------------------------------------------

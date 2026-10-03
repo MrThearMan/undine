@@ -33,6 +33,7 @@ from django.db.models import (
     F,
     FileField,
     FloatField,
+    GeneratedField,
     GenericIPAddressField,
     ImageField,
     IntegerChoices,
@@ -1125,8 +1126,6 @@ def test_convert_to_graphql_type__mutation_type__is_input() -> None:
 
 
 def test_convert_to_graphql_type__generated_field() -> None:
-    from django.db.models import GeneratedField  # noqa: PLC0415
-
     field = GeneratedField(expression=Sum("number"), output_field=IntegerField(), db_persist=False)
     assert convert_to_graphql_type(field) == GraphQLInt
 

@@ -3,13 +3,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import inspect
-import sys
 from enum import Enum
 from functools import partial, wraps
 from inspect import Parameter
 from typing import TYPE_CHECKING, Annotated, NamedTuple, NotRequired, Required
 
-import django
 import pytest
 from graphql import GraphQLResolveInfo
 
@@ -493,8 +491,6 @@ def test_get_traceback() -> None:
     assert len(result) > 0
 
 
-@pytest.mark.skipif(sys.version_info < (3, 12), reason="Python 3.12 required")
-@pytest.mark.skipif(django.VERSION < (5, 2), reason="Django 5.2 required")
 def test_as_coroutine_func_if_not__sync() -> None:
     def sync_func(): ...
 

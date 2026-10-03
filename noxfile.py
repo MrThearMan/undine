@@ -45,10 +45,6 @@ def get_versions(pattern: re.Pattern[str]) -> list[str]:
 @nox.session(python=python_versions(), reuse_venv=True)
 @nox.parametrize("django", django_versions())
 def tests(session: nox.Session, django: str) -> None:
-    # Python 3.14 only supported for Django 5.2 and above
-    if session.python == "3.14" and django in {"5.0.*", "5.1.*"}:
-        session.skip()
-
     venv = session.virtualenv.location
     env = {"UV_PROJECT_ENVIRONMENT": venv}
 

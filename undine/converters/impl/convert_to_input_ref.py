@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import decimal
 import uuid
+from contextlib import suppress
 from enum import Enum
 from types import FunctionType
 from typing import Any
@@ -214,3 +215,12 @@ def _(ref: GenericRel, **kwargs: Any) -> Any:
 @convert_to_input_ref.register
 def _(ref: GenericForeignKey, **kwargs: Any) -> Any:
     return ref
+
+
+# Django>=6.1 returns a descriptor for direct references instead of the field itself.
+with suppress(ImportError):  # pragma: no cover
+    from django.contrib.contenttypes.fields import GenericForeignKeyDescriptor  # type: ignore[attr-defined]
+
+    @convert_to_input_ref.register
+    def _(ref: GenericForeignKeyDescriptor, **kwargs: Any) -> Any:
+        return convert_to_input_ref(ref.field, **kwargs)

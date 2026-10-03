@@ -190,6 +190,14 @@ def test_convert_to_input_ref__generic_foreign_key() -> None:
     assert convert_to_input_ref(field, caller=CommentCreateMutation.target) == field
 
 
+def test_convert_to_input_ref__generic_foreign_key__direct_ref() -> None:
+    class CommentCreateMutation(MutationType[Comment]):
+        target = Input(Comment.target)
+
+    field = Comment._meta.get_field("target")
+    assert convert_to_input_ref(Comment.target, caller=CommentCreateMutation.target) == field
+
+
 def test_convert_to_input_ref__mutation_type__single_input_for_many_related_field() -> None:
     class TaskStepMutation(MutationType[TaskStep], kind="related", auto=False):
         done = Input()

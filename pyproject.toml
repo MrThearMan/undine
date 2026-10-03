@@ -25,14 +25,13 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Framework :: Django",
-    "Framework :: Django :: 5.0",
-    "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
     "Framework :: Django :: 6.0",
+    "Framework :: Django :: 6.1",
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.0",
+    "django>=5.2.3",
     "graphql-core>=3.3.0",
     "django-settings-holder>=0.3.0",
     "sqlparse>=0.6.0",
