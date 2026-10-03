@@ -17,11 +17,11 @@ from undine.typing import DjangoRequestProtocol
 def run_print_schema(*, check: str | bool = False) -> str:
     out = io.StringIO()
     if isinstance(check, str):
-        call_command("print_schema", check=check, stdout=out)
+        call_command("print_schema", check=check, stdout=out, no_color=True)
     elif check:
-        call_command("print_schema", "--check", stdout=out)
+        call_command("print_schema", "--check", stdout=out, no_color=True)
     else:
-        call_command("print_schema", stdout=out)
+        call_command("print_schema", stdout=out, no_color=True)
     return out.getvalue().strip()
 
 

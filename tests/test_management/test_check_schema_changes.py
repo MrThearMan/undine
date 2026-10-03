@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 def run_check_schema_changes(path: Path) -> str:
     out = io.StringIO()
-    call_command("check_schema_changes", str(path), stdout=out)
+    call_command("check_schema_changes", str(path), stdout=out, no_color=True)
     return out.getvalue().strip()
 
 
@@ -88,7 +88,7 @@ def test_check_schema_changes__breaking_changes(undine_settings, tmp_path) -> No
 
     out = io.StringIO()
     with pytest.raises(CommandError) as error:
-        call_command("check_schema_changes", str(path), stdout=out)
+        call_command("check_schema_changes", str(path), stdout=out, no_color=True)
 
     assert str(error.value) == f"Found 1 breaking change(s) compared to schema file '{path}'."
     assert out.getvalue().strip() == cleandoc(
