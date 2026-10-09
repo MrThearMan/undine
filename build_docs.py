@@ -21,7 +21,7 @@ SITE_DIR = ROOT_DIR / "site"
 EXCLUDED_SUFFIXES = frozenset({".py"})
 EXCLUDED_DIRECTORIES = frozenset({"snippets", "overrides"})
 
-CACHEABLE_SUFFIXES = frozenset({".css", ".js", ".json", ".svg", ".png", ".ico", ".woff", ".woff2"})
+CACHEABLE_SUFFIXES = frozenset({".css", ".js", ".json", ".svg", ".png", ".ico", ".woff", ".woff2", ".xml"})
 
 LLMS_FILE_NAME = "llms.txt"
 SITEMAP_FILE_NAME = "sitemap.xml"

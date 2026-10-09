@@ -23,22 +23,53 @@ if (isUnprocessed) {
     );
   });
 } else {
-  // Install and cache resources
+  // Install and cache resources.
+  // "reload" skips the HTTP cache, which could still have pages from the previous build.
+  // Those pages would link to hashed assets that are not in this build's cache.
   self.addEventListener('install', event => {
     self.skipWaiting();
     event.waitUntil(
       caches.open(cacheName)
-        .then(cache => cache.addAll(urlsToCache))
+        .then(cache => cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' }))))
     );
   });
 
   // Fetch from cache, fallback to network
   self.addEventListener('fetch', event => {
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => response || fetch(event.request))
-    );
+    const request = event.request;
+    if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+
+    event.respondWith(respond(request));
   });
+
+  const respond = async request => {
+    // Search results link to pages with a "?h=" query that highlights the search term.
+    // The cached pages have no query, so the query is ignored when matching.
+    const cached = await caches.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+
+    try {
+      return await fetch(request);
+    } catch (error) {
+      if (request.mode !== 'navigate') throw error;
+      return offlinePage(request);
+    }
+  };
+
+  const offlinePage = async request => {
+    // Page URLs end with a slash. The server redirects to it, but cannot do so while offline.
+    const url = new URL(request.url);
+    url.search = '';
+    if (!url.pathname.endsWith('/')) {
+      url.pathname += '/';
+      if (await caches.match(url.href)) return Response.redirect(url.href, 301);
+    }
+
+    // The 404 page uses absolute links, so it works from any URL.
+    const notFound = await caches.match(new URL('404.html', self.registration.scope).href);
+    if (notFound) return new Response(notFound.body, { status: 404, headers: notFound.headers });
+    return Response.error();
+  };
 
   // Clean old caches when new service worker is installed
   self.addEventListener('activate', event => {

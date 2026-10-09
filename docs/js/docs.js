@@ -51,6 +51,11 @@ document.addEventListener("click", event => {
 // Local builds therefore get no worker, and any worker left over from before is removed.
 const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
 
+// This script is in "js/" at the site root, so the worker URL is resolved from the script's own URL.
+// This works whether the site is served from a domain root or from a sub-path.
+// "currentScript" is only set while the script first runs, so the URL is resolved here.
+const serviceWorkerUrl = new URL('../service-worker.js', document.currentScript.src);
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     if (isLocalHost) {
@@ -65,7 +70,7 @@ if ('serviceWorker' in navigator) {
       return;
     }
 
-    navigator.serviceWorker.register('/undine/service-worker.js', { scope: '/undine/' })
+    navigator.serviceWorker.register(serviceWorkerUrl)
       .then(reg => console.log('Service Worker registered:', reg.scope))
       .catch(err => console.error('Service Worker registration failed:', err));
   });
