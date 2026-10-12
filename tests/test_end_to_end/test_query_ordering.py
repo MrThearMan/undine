@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 from django.db.models.functions import Reverse
@@ -65,13 +65,13 @@ def test_end_to_end__ordering__multiple(graphql, undine_settings) -> None:
 
     undine_settings.SCHEMA = create_schema(query=Query)
 
-    TaskFactory.create(name="1", due_by=datetime.date(2025, 1, 1))
-    TaskFactory.create(name="3", due_by=datetime.date(2025, 1, 1))
-    TaskFactory.create(name="2", due_by=datetime.date(2025, 1, 1))
+    TaskFactory.create(name="1", due_by=dt.date(2025, 1, 1))
+    TaskFactory.create(name="3", due_by=dt.date(2025, 1, 1))
+    TaskFactory.create(name="2", due_by=dt.date(2025, 1, 1))
 
-    TaskFactory.create(name="2", due_by=datetime.date(2025, 1, 2))
-    TaskFactory.create(name="3", due_by=datetime.date(2025, 1, 2))
-    TaskFactory.create(name="1", due_by=datetime.date(2025, 1, 2))
+    TaskFactory.create(name="2", due_by=dt.date(2025, 1, 2))
+    TaskFactory.create(name="3", due_by=dt.date(2025, 1, 2))
+    TaskFactory.create(name="1", due_by=dt.date(2025, 1, 2))
 
     query = """
         query {

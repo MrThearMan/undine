@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -17,12 +17,12 @@ def test_scalar__time__unsupported_type(func) -> None:
 
 
 def test_scalar__time__parse__str() -> None:
-    assert time_scalar.parse("01:02:03") == datetime.time(1, 2, 3)
+    assert time_scalar.parse("01:02:03") == dt.time(1, 2, 3)
 
 
 def test_scalar__time__parse__str__has_timezone() -> None:
     # Timezones for times are ignored.
-    assert time_scalar.parse("12:15:30+02:00") == datetime.time(12, 15, 30)
+    assert time_scalar.parse("12:15:30+02:00") == dt.time(12, 15, 30)
 
 
 def test_scalar__time__parse__invalid_time() -> None:
@@ -38,26 +38,26 @@ def test_scalar__time__parse__str__conversion_error() -> None:
 
 
 def test_scalar__time__serialize__time() -> None:
-    value = datetime.time(1, 2, 3)
+    value = dt.time(1, 2, 3)
     assert time_scalar.serialize(value) == "01:02:03"
 
 
 def test_scalar__time__serialize__time__has_timezone() -> None:
-    tzinfo = datetime.timezone(datetime.timedelta(hours=2))
+    tzinfo = dt.timezone(dt.timedelta(hours=2))
     # Timezones for times are ignored.
-    value = datetime.time(1, 2, 3, tzinfo=tzinfo)
+    value = dt.time(1, 2, 3, tzinfo=tzinfo)
     assert time_scalar.serialize(value) == "01:02:03"
 
 
 def test_scalar__time__serialize__datetime() -> None:
-    value = datetime.datetime(2021, 1, 1, 1, 2, 3)  # noqa: DTZ001
+    value = dt.datetime(2021, 1, 1, 1, 2, 3)  # noqa: DTZ001
     assert time_scalar.serialize(value) == "01:02:03"
 
 
 def test_scalar__time__serialize__datetime__has_timezone() -> None:
-    tzinfo = datetime.timezone(datetime.timedelta(hours=2))
+    tzinfo = dt.timezone(dt.timedelta(hours=2))
     # Timezones for times are ignored.
-    value = datetime.datetime(2021, 1, 1, 1, 2, 3, tzinfo=tzinfo)
+    value = dt.datetime(2021, 1, 1, 1, 2, 3, tzinfo=tzinfo)
     assert time_scalar.serialize(value) == "01:02:03"
 
 

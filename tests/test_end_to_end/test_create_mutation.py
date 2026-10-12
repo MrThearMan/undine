@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from copy import deepcopy
 from itertools import count
 from typing import Any
@@ -1337,7 +1337,7 @@ def test_create_mutation__relations__reverse_one_to_one(graphql, undine_settings
 
     assert task.result == result
     assert result.task == task
-    assert result.time_used == datetime.timedelta(seconds=10)
+    assert result.time_used == dt.timedelta(seconds=10)
 
     assert response.data == {
         "createTask": {

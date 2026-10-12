@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import random
 import uuid
 
@@ -25,13 +25,13 @@ class TaskFactory(GenericDjangoModelFactory[Task]):
 
     name = UndineFaker("name")
     type = fuzzy.FuzzyChoice(TaskTypeChoices.values)
-    created_at = LazyFunction(datetime.datetime.now)
+    created_at = LazyFunction(dt.datetime.now)
     done = False
-    due_by = fuzzy.FuzzyDate(datetime.date(2020, 1, 1), datetime.date(2030, 1, 1))
-    check_time = LazyFunction(lambda: datetime.time(hour=random.randint(0, 23)))  # noqa: S311
+    due_by = fuzzy.FuzzyDate(dt.date(2020, 1, 1), dt.date(2030, 1, 1))
+    check_time = LazyFunction(lambda: dt.time(hour=random.randint(0, 23)))  # noqa: S311
     points = fuzzy.FuzzyInteger(0, 100)
     progress = 0
-    worked_hours = LazyFunction(lambda: datetime.timedelta(seconds=random.randint(0, 1000)))  # noqa: S311
+    worked_hours = LazyFunction(lambda: dt.timedelta(seconds=random.randint(0, 1000)))  # noqa: S311
     contact_email = UndineFaker("email")
     demo_url = UndineFaker("url")
     external_uuid = LazyFunction(uuid.uuid4)

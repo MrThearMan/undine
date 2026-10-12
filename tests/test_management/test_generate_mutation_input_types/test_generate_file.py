@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import uuid
 from decimal import Decimal
 from textwrap import dedent
@@ -231,8 +231,8 @@ def test_generate_file__builtin_types(undine_settings) -> None:
     class TaskCreateMutation(MutationType[Task], auto=False):
         name = Input(str, required=True)
         price = Input(Decimal, required=True)
-        due_by = Input(datetime.date, required=True)
-        moment = Input(datetime.datetime, required=True)
+        due_by = Input(dt.date, required=True)
+        moment = Input(dt.datetime, required=True)
         external_uuid = Input(uuid.UUID, required=True)
 
     undine_settings.SCHEMA = _create_schema(TaskCreateMutation)

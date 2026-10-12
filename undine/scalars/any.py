@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import math
 import uuid
 from typing import Any
@@ -55,7 +55,7 @@ def _(value: float) -> Any:
 
 @any_scalar.serialize.register
 @any_scalar.parse.register
-def _(value: datetime.datetime | datetime.date | datetime.time) -> Any:
+def _(value: dt.datetime | dt.date | dt.time) -> Any:
     return value.isoformat()
 
 

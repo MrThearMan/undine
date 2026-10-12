@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import uuid
 from contextlib import suppress
 from decimal import Decimal
@@ -72,22 +72,22 @@ def _(_: DecimalField, **kwargs: Any) -> type:
 
 @convert_model_field_to_python_type.register
 def _(_: DateField, **kwargs: Any) -> type:
-    return datetime.date
+    return dt.date
 
 
 @convert_model_field_to_python_type.register
 def _(_: DateTimeField, **kwargs: Any) -> type:
-    return datetime.datetime
+    return dt.datetime
 
 
 @convert_model_field_to_python_type.register
 def _(_: TimeField, **kwargs: Any) -> type:
-    return datetime.time
+    return dt.time
 
 
 @convert_model_field_to_python_type.register
 def _(_: DurationField, **kwargs: Any) -> type:
-    return datetime.timedelta
+    return dt.timedelta
 
 
 @convert_model_field_to_python_type.register

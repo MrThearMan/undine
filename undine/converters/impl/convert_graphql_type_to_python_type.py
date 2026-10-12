@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import functools
 import operator
 import types
@@ -103,22 +103,22 @@ def _(_: GraphQLBase64, **kwargs: Any) -> TypeHint | None:  # type: ignore[valid
 
 @convert_graphql_type_to_python_type.register
 def _(_: GraphQLDate, **kwargs: Any) -> TypeHint | None:  # type: ignore[valid-type]
-    return datetime.date | None
+    return dt.date | None
 
 
 @convert_graphql_type_to_python_type.register
 def _(_: GraphQLDateTime, **kwargs: Any) -> TypeHint | None:  # type: ignore[valid-type]
-    return datetime.datetime | None
+    return dt.datetime | None
 
 
 @convert_graphql_type_to_python_type.register
 def _(_: GraphQLTime, **kwargs: Any) -> TypeHint | None:  # type: ignore[valid-type]
-    return datetime.time | None
+    return dt.time | None
 
 
 @convert_graphql_type_to_python_type.register
 def _(_: GraphQLDuration, **kwargs: Any) -> TypeHint | None:  # type: ignore[valid-type]
-    return datetime.timedelta | None
+    return dt.timedelta | None
 
 
 @convert_graphql_type_to_python_type.register
