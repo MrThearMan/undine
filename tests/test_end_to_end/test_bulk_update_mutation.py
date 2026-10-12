@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from collections import defaultdict
 from copy import deepcopy
 from itertools import count
@@ -1177,8 +1177,8 @@ def test_bulk_update_mutation__relations__reverse_one_to_one(graphql, undine_set
 
     assert result_1.task == task_1
     assert result_2.task == task_2
-    assert result_1.time_used == datetime.timedelta(seconds=10)
-    assert result_2.time_used == datetime.timedelta(seconds=20)
+    assert result_1.time_used == dt.timedelta(seconds=10)
+    assert result_2.time_used == dt.timedelta(seconds=20)
 
     assert response.data == {
         "bulkUpdateTask": [

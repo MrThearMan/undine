@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 from uuid import uuid4  # noqa: ICN003
 
@@ -130,7 +130,7 @@ class Task(Model):
     check_time = TimeField(null=True, blank=True)
     points = IntegerField(null=True, blank=True)
     progress = DecimalField(default=0, max_digits=3, decimal_places=2)
-    worked_hours = DurationField(default=datetime.timedelta)
+    worked_hours = DurationField(default=dt.timedelta)
     contact_email = EmailField(null=True, blank=True)  # noqa: DJ001
     demo_url = URLField(null=True, blank=True)  # noqa: DJ001
     external_uuid = UUIDField(null=True, blank=True)

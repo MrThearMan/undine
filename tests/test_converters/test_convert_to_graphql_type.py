@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
+import datetime as dt
 import uuid
 from asyncio import Future
 from contextlib import suppress
@@ -143,19 +143,19 @@ class Params(NamedTuple):
             output_type=GraphQLDecimal,
         ),
         "datetime": Params(
-            input_type=datetime.datetime,
+            input_type=dt.datetime,
             output_type=GraphQLDateTime,
         ),
         "date": Params(
-            input_type=datetime.date,
+            input_type=dt.date,
             output_type=GraphQLDate,
         ),
         "time": Params(
-            input_type=datetime.time,
+            input_type=dt.time,
             output_type=GraphQLTime,
         ),
         "timedelta": Params(
-            input_type=datetime.timedelta,
+            input_type=dt.timedelta,
             output_type=GraphQLDuration,
         ),
         "uuid": Params(
@@ -356,7 +356,7 @@ class MyTypedDict(TypedDict):
 
     foo: int
     bar: str
-    fizz_buzz: datetime.datetime
+    fizz_buzz: dt.datetime
 
 
 def test_convert_to_graphql_type__typed_dict__output() -> None:

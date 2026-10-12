@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import factory
 from factory import fuzzy
@@ -15,6 +15,6 @@ class ServiceRequestFactory(GenericDjangoModelFactory[ServiceRequest]):
         model = ServiceRequest
 
     details = fuzzy.FuzzyText(length=100)
-    created_at = factory.LazyFunction(datetime.datetime.now)
+    created_at = factory.LazyFunction(dt.datetime.now)
 
     task = ReverseOneToOneFactory("tests.factories.TaskFactory")

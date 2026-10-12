@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import uuid
 
 import pytest
@@ -74,19 +74,19 @@ def test_scalar__any__float__nan(func) -> None:
 
 
 @pytest.mark.parametrize("func", [any_scalar.parse, any_scalar.serialize])
-@pytest.mark.parametrize("value", [datetime.datetime(2021, 1, 1)])  # noqa: DTZ001
+@pytest.mark.parametrize("value", [dt.datetime(2021, 1, 1)])  # noqa: DTZ001
 def test_scalar__any__datetime(func, value) -> None:
     assert func(value) == value.isoformat()
 
 
 @pytest.mark.parametrize("func", [any_scalar.parse, any_scalar.serialize])
-@pytest.mark.parametrize("value", [datetime.date(2021, 1, 1)])
+@pytest.mark.parametrize("value", [dt.date(2021, 1, 1)])
 def test_scalar__any__date(func, value) -> None:
     assert func(value) == value.isoformat()
 
 
 @pytest.mark.parametrize("func", [any_scalar.parse, any_scalar.serialize])
-@pytest.mark.parametrize("value", [datetime.time()])
+@pytest.mark.parametrize("value", [dt.time()])
 def test_scalar__any__time(func, value) -> None:
     assert func(value) == value.isoformat()
 

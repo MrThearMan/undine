@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -44,5 +44,5 @@ class ErrorLoggingMiddleware(LifecycleHook):
 
 def ping_hook(request: WebSocketRequest) -> AwaitableOrValue[dict[str, Any] | None]:
     """Hook for custom ping logic."""
-    timestamp = int(datetime.datetime.now(tz=datetime.UTC).timestamp() * 100_000)
+    timestamp = int(dt.datetime.now(tz=dt.UTC).timestamp() * 100_000)
     return {"timestamp": str(timestamp)}

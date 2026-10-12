@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import factory
 from factory import fuzzy
@@ -15,6 +15,6 @@ class CommentFactory(GenericDjangoModelFactory[Comment]):
         model = Comment
 
     contents = fuzzy.FuzzyText(length=100)
-    updated_at = factory.LazyFunction(datetime.datetime.now)
+    updated_at = factory.LazyFunction(dt.datetime.now)
 
     commenter = ForeignKeyFactory("tests.factories.PersonFactory")

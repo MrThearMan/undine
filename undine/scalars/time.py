@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from inspect import cleandoc
 
 from django.utils import dateparse
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-time_scalar: ScalarType[datetime.time, str] = ScalarType(
+time_scalar: ScalarType[dt.time, str] = ScalarType(
     name="Time",
     description=cleandoc(
         """
@@ -30,7 +30,7 @@ GraphQLTime = time_scalar.as_graphql_scalar()
 
 
 @time_scalar.parse.register
-def _(value: str) -> datetime.time:
+def _(value: str) -> dt.time:
     parsed_value = dateparse.parse_time(value)
     if parsed_value is None:
         raise GraphQLScalarInvalidValueError(typename="time")
@@ -48,10 +48,10 @@ def _(value: str) -> str:
 
 
 @time_scalar.serialize.register
-def _(value: datetime.time) -> str:
+def _(value: dt.time) -> str:
     return value.replace(tzinfo=None).isoformat()
 
 
 @time_scalar.serialize.register
-def _(value: datetime.datetime) -> str:
+def _(value: dt.datetime) -> str:
     return value.time().isoformat()

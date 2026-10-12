@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import decimal
 import uuid
 from types import FunctionType
@@ -82,15 +82,15 @@ def _(ref: type[uuid.UUID], **kwargs: Any) -> Any:
 
 
 @convert_to_federation_field_ref.register
-def _(ref: type[datetime.datetime], **kwargs: Any) -> Any:
+def _(ref: type[dt.datetime], **kwargs: Any) -> Any:
     return TypeRef(value=ref)
 
 
 @convert_to_federation_field_ref.register
-def _(ref: type[datetime.date], **kwargs: Any) -> Any:
+def _(ref: type[dt.date], **kwargs: Any) -> Any:
     return TypeRef(value=ref)
 
 
 @convert_to_federation_field_ref.register
-def _(ref: type[datetime.time], **kwargs: Any) -> Any:
+def _(ref: type[dt.time], **kwargs: Any) -> Any:
     return TypeRef(value=ref)

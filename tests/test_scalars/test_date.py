@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -17,7 +17,7 @@ def test_scalar__date__unsupported_type(func) -> None:
 
 
 def test_scalar__date__parse__str__date() -> None:
-    assert date_scalar.parse("2022-01-01") == datetime.date(2022, 1, 1)
+    assert date_scalar.parse("2022-01-01") == dt.date(2022, 1, 1)
 
 
 def test_scalar__date__parse__str__date__invalid_date() -> None:
@@ -39,12 +39,12 @@ def test_scalar__date__parse__str__conversion_error() -> None:
 
 
 def test_scalar__date__serialize__date() -> None:
-    value = datetime.date(2022, 1, 1)
+    value = dt.date(2022, 1, 1)
     assert date_scalar.serialize(value) == "2022-01-01"
 
 
 def test_scalar__date__serialize__datetime() -> None:
-    value = datetime.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
+    value = dt.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
     assert date_scalar.serialize(value) == "2022-01-01"
 
 

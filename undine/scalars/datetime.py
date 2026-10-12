@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import zoneinfo
 from inspect import cleandoc
 
@@ -18,7 +18,7 @@ __all__ = [
 ]
 
 
-datetime_scalar: ScalarType[datetime.datetime, str] = ScalarType(
+datetime_scalar: ScalarType[dt.datetime, str] = ScalarType(
     name="DateTime",
     description=cleandoc(
         """
@@ -33,8 +33,8 @@ GraphQLDateTime = datetime_scalar.as_graphql_scalar()
 
 
 @datetime_scalar.parse.register
-def _(value: str) -> datetime.datetime:
-    parsed_value: datetime.datetime | None = dateparse.parse_datetime(value)
+def _(value: str) -> dt.datetime:
+    parsed_value: dt.datetime | None = dateparse.parse_datetime(value)
     if parsed_value is None:
         raise GraphQLScalarInvalidValueError(typename="datetime")
 
@@ -47,7 +47,7 @@ def _(value: str) -> datetime.datetime:
 
 @datetime_scalar.serialize.register
 def _(value: str) -> str:
-    parsed_value: datetime.datetime | None = dateparse.parse_datetime(value)
+    parsed_value: dt.datetime | None = dateparse.parse_datetime(value)
     if parsed_value is None:
         raise GraphQLScalarInvalidValueError(typename="datetime")
 
@@ -59,5 +59,5 @@ def _(value: str) -> str:
 
 
 @datetime_scalar.serialize.register
-def _(value: datetime.datetime) -> str:
+def _(value: dt.datetime) -> str:
     return value.isoformat()
