@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import decimal
 import uuid
 from typing import Any, NamedTuple
@@ -462,9 +462,9 @@ class ScalarRefParams(NamedTuple):
         "float": ScalarRefParams(python_type=float, expected_scalar_name="Float"),
         "decimal": ScalarRefParams(python_type=decimal.Decimal, expected_scalar_name="Decimal"),
         "uuid": ScalarRefParams(python_type=uuid.UUID, expected_scalar_name="UUID"),
-        "datetime": ScalarRefParams(python_type=datetime.datetime, expected_scalar_name="DateTime"),
-        "date": ScalarRefParams(python_type=datetime.date, expected_scalar_name="Date"),
-        "time": ScalarRefParams(python_type=datetime.time, expected_scalar_name="Time"),
+        "datetime": ScalarRefParams(python_type=dt.datetime, expected_scalar_name="DateTime"),
+        "date": ScalarRefParams(python_type=dt.date, expected_scalar_name="Date"),
+        "time": ScalarRefParams(python_type=dt.time, expected_scalar_name="Time"),
     })
 )
 def test_federation_field__scalar_type_ref_conversion(python_type: type, expected_scalar_name: str) -> None:

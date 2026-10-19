@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
@@ -891,7 +891,7 @@ def test_mutation__reverse_o2o__instance(undine_settings) -> None:
     undine_settings.MUTATION_FULL_CLEAN = False
 
     task = TaskFactory.create()
-    result = TaskResult(task=task, details="result", time_used=datetime.timedelta(seconds=10))
+    result = TaskResult(task=task, details="result", time_used=dt.timedelta(seconds=10))
     result.save()
 
     task.refresh_from_db()
@@ -911,13 +911,13 @@ def test_mutation__reverse_o2o__delete(undine_settings) -> None:
     undine_settings.MUTATION_FULL_CLEAN = False
 
     task = TaskFactory.create()
-    existing_result = TaskResult(task=task, details="old result", time_used=datetime.timedelta(seconds=5))
+    existing_result = TaskResult(task=task, details="old result", time_used=dt.timedelta(seconds=5))
     existing_result.save()
 
     task.refresh_from_db()
     data = {
         "pk": task.pk,
-        "result": {"details": "new result", "time_used": datetime.timedelta(seconds=10)},
+        "result": {"details": "new result", "time_used": dt.timedelta(seconds=10)},
     }
 
     updated_task = mutate(model=Task, data=data, related_action=RelatedAction.delete)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -17,11 +17,11 @@ def test_scalar__duration__unsupported_type(func) -> None:
 
 
 def test_scalar__duration__parse__int() -> None:
-    assert duration_scalar.parse(1) == datetime.timedelta(seconds=1)
+    assert duration_scalar.parse(1) == dt.timedelta(seconds=1)
 
 
 def test_scalar__duration__parse__str() -> None:
-    assert duration_scalar.parse("1") == datetime.timedelta(seconds=1)
+    assert duration_scalar.parse("1") == dt.timedelta(seconds=1)
 
 
 def test_scalar__duration__parse__str__conversion_error() -> None:
@@ -31,12 +31,12 @@ def test_scalar__duration__parse__str__conversion_error() -> None:
 
 
 def test_scalar__duration__serialize__timedelta() -> None:
-    assert duration_scalar.serialize(datetime.timedelta(seconds=1)) == 1
+    assert duration_scalar.serialize(dt.timedelta(seconds=1)) == 1
 
 
 def test_scalar__duration__serialize__timedelta__fractional_seconds() -> None:
     # Default implementation serialize_durations to an int seconds, so it doesn't support fractional seconds.
-    value = datetime.timedelta(seconds=1, milliseconds=1, microseconds=1)
+    value = dt.timedelta(seconds=1, milliseconds=1, microseconds=1)
     assert duration_scalar.serialize(value) == 1
 
 

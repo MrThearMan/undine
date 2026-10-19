@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import random
 from typing import TYPE_CHECKING, Any
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class TimestampedError(Exception):
-    def __init__(self, message: str, /, *, timestamp: datetime.datetime) -> None:
+    def __init__(self, message: str, /, *, timestamp: dt.datetime) -> None:
         self.timestamp = timestamp
         super().__init__(message)
 
@@ -40,5 +40,5 @@ class TaskType(QueryType[Task]):
     def example(self) -> str:
         if random.random() > 0.5:
             msg = "Failed"
-            raise TimestampedError(msg, timestamp=datetime.datetime.now(tz=datetime.UTC))
+            raise TimestampedError(msg, timestamp=dt.datetime.now(tz=dt.UTC))
         return "OK"

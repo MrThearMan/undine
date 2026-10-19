@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import decimal
 import uuid
 from typing import NamedTuple
@@ -59,20 +59,20 @@ class Params(NamedTuple):
             expected=TypeRef(value=decimal.Decimal),
         ),
         "datetime": Params(
-            value=datetime.datetime,
-            expected=TypeRef(value=datetime.datetime),
+            value=dt.datetime,
+            expected=TypeRef(value=dt.datetime),
         ),
         "date": Params(
-            value=datetime.date,
-            expected=TypeRef(value=datetime.date),
+            value=dt.date,
+            expected=TypeRef(value=dt.date),
         ),
         "time": Params(
-            value=datetime.time,
-            expected=TypeRef(value=datetime.time),
+            value=dt.time,
+            expected=TypeRef(value=dt.time),
         ),
         "timedelta": Params(
-            value=datetime.timedelta,
-            expected=TypeRef(value=datetime.timedelta),
+            value=dt.timedelta,
+            expected=TypeRef(value=dt.timedelta),
         ),
         "uuid": Params(
             value=uuid.UUID,
