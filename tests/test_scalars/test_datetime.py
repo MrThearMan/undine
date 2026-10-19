@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import pytest
 from django.utils.timezone import get_default_timezone
@@ -20,24 +20,24 @@ def test_scalar__datetime__unsupported_type(func) -> None:
 
 
 def test_scalar__datetime__parse__str() -> None:
-    assert datetime_scalar.parse("2022-01-01T12:15:30") == datetime.datetime(2022, 1, 1, 12, 15, 30, tzinfo=UTC)
+    assert datetime_scalar.parse("2022-01-01T12:15:30") == dt.datetime(2022, 1, 1, 12, 15, 30, tzinfo=UTC)
 
 
 def test_scalar__datetime__parse__str__has_timezone() -> None:
-    tzinfo = datetime.timezone(datetime.timedelta(hours=2))
-    value = datetime.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
+    tzinfo = dt.timezone(dt.timedelta(hours=2))
+    value = dt.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
     assert datetime_scalar.parse("2022-01-01T12:15:30+02:00") == value
 
 
 def test_scalar__datetime__parse__str__not_use_tz(settings) -> None:
     settings.USE_TZ = False
-    assert datetime_scalar.parse("2022-01-01T12:15:30") == datetime.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
+    assert datetime_scalar.parse("2022-01-01T12:15:30") == dt.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
 
 
 def test_scalar__datetime__parse__str__not_use_tz__has_timezone(settings) -> None:
     settings.USE_TZ = False
-    tzinfo = datetime.timezone(datetime.timedelta(hours=2))
-    value = datetime.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
+    tzinfo = dt.timezone(dt.timedelta(hours=2))
+    value = dt.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
     assert datetime_scalar.parse("2022-01-01T12:15:30+02:00") == value
 
 
@@ -78,11 +78,11 @@ def test_scalar__datetime__serialize__str__conversion_error() -> None:
 
 
 def test_scalar__datetime__serialize__datetime() -> None:
-    value = datetime.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
+    value = dt.datetime(2022, 1, 1, 12, 15, 30)  # noqa: DTZ001
     assert datetime_scalar.serialize(value) == "2022-01-01T12:15:30"
 
 
 def test_scalar__datetime__serialize__datetime__has_timezone() -> None:
-    tzinfo = datetime.timezone(datetime.timedelta(hours=2))
-    value = datetime.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
+    tzinfo = dt.timezone(dt.timedelta(hours=2))
+    value = dt.datetime(2022, 1, 1, 12, 15, 30, tzinfo=tzinfo)
     assert datetime_scalar.serialize(value) == "2022-01-01T12:15:30+02:00"

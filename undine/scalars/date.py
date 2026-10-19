@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 from inspect import cleandoc
 
 from django.utils import dateparse
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-date_scalar: ScalarType[datetime.date, str] = ScalarType(
+date_scalar: ScalarType[dt.date, str] = ScalarType(
     name="Date",
     description=cleandoc(
         """
@@ -30,8 +30,8 @@ GraphQLDate = date_scalar.as_graphql_scalar()
 
 
 @date_scalar.parse.register
-def _(value: str) -> datetime.date:
-    parsed_value: datetime.date | None = dateparse.parse_date(value)
+def _(value: str) -> dt.date:
+    parsed_value: dt.date | None = dateparse.parse_date(value)
     if parsed_value is None:
         raise GraphQLScalarInvalidValueError(typename="date")
 
@@ -40,7 +40,7 @@ def _(value: str) -> datetime.date:
 
 @date_scalar.serialize.register
 def _(value: str) -> str:
-    parsed_value: datetime.date | None = dateparse.parse_date(value)
+    parsed_value: dt.date | None = dateparse.parse_date(value)
     if parsed_value is None:
         raise GraphQLScalarInvalidValueError(typename="date")
 
@@ -48,10 +48,10 @@ def _(value: str) -> str:
 
 
 @date_scalar.serialize.register
-def _(value: datetime.date) -> str:
+def _(value: dt.date) -> str:
     return value.isoformat()
 
 
 @date_scalar.serialize.register
-def _(value: datetime.datetime) -> str:
+def _(value: dt.datetime) -> str:
     return value.date().isoformat()

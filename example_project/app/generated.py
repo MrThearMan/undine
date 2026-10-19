@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    import datetime
+    import datetime as dt
     import uuid
     from decimal import Decimal
     from example_project.app.models import (
@@ -83,12 +83,12 @@ class CommentTargetTaskInputFullInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[Person]]
     attachment: NotRequired[str]
-    check_time: NotRequired[datetime.time]
+    check_time: NotRequired[dt.time]
     comments: NotRequired[list[Comment]]
     contact_email: NotRequired[str]
     demo_url: NotRequired[str]
     done: NotRequired[bool]
-    due_by: NotRequired[datetime.date]
+    due_by: NotRequired[dt.date]
     external_uuid: NotRequired[uuid.UUID]
     extra_data: NotRequired[dict[str, str]]
     image: NotRequired[str]
@@ -104,19 +104,19 @@ class CommentTargetTaskInputFullInputData(TypedDict):
     result: NotRequired[TaskResult]
     steps: NotRequired[list[TaskStep]]
     type: NotRequired[str]
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class CommentTargetTaskInputInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[Person]]
     attachment: NotRequired[str]
-    check_time: NotRequired[datetime.time]
+    check_time: NotRequired[dt.time]
     comments: NotRequired[list[Comment]]
     contact_email: NotRequired[str]
     demo_url: NotRequired[str]
     done: NotRequired[bool]
-    due_by: NotRequired[datetime.date]
+    due_by: NotRequired[dt.date]
     external_uuid: NotRequired[uuid.UUID]
     extra_data: NotRequired[dict[str, str]]
     image: NotRequired[str]
@@ -132,7 +132,7 @@ class CommentTargetTaskInputInputData(TypedDict):
     result: NotRequired[TaskResult]
     steps: NotRequired[list[TaskStep]]
     type: NotRequired[str]
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class PersonInputFullInputData(TypedDict):
@@ -178,27 +178,27 @@ class ReportInputInputData(TypedDict):
 class ServiceRequestInputFullInputData(TypedDict):
     details: NotRequired[str]
     pk: NotRequired[int]
-    submitted_at: NotRequired[datetime.date]
+    submitted_at: NotRequired[dt.date]
 
 
 class ServiceRequestInputInputData(TypedDict):
     details: NotRequired[str]
     pk: NotRequired[int]
-    submitted_at: NotRequired[datetime.date]
+    submitted_at: NotRequired[dt.date]
 
 
 class TaskCreateMutationTypeFullInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[PersonInputFullInputData]]
     attachment: str | None
-    check_time: datetime.time | None
+    check_time: dt.time | None
     comments: NotRequired[list[CommentInputFullInputData]]
     contact_email: str | None
     current_user: int | None
     custom: CustomInput
     demo_url: str | None
     done: bool
-    due_by: datetime.date | None
+    due_by: dt.date | None
     external_uuid: uuid.UUID | None
     extra_data: dict[str, str] | None
     image: str | None
@@ -214,19 +214,19 @@ class TaskCreateMutationTypeFullInputData(TypedDict):
     result: NotRequired[TaskResultInputFullInputData]
     steps: NotRequired[list[TaskStepInputFullInputData]]
     type: str
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class TaskCreateMutationTypeInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[PersonInputInputData]]
     attachment: str | None
-    check_time: datetime.time | None
+    check_time: dt.time | None
     comments: NotRequired[list[CommentInputInputData]]
     contact_email: str | None
     demo_url: str | None
     done: bool
-    due_by: datetime.date | None
+    due_by: dt.date | None
     external_uuid: uuid.UUID | None
     extra_data: dict[str, str] | None
     image: str | None
@@ -241,7 +241,7 @@ class TaskCreateMutationTypeInputData(TypedDict):
     result: NotRequired[TaskResultInputInputData]
     steps: NotRequired[list[TaskStepInputInputData]]
     type: str
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class TaskDeleteMutationTypeFullInputData(TypedDict):
@@ -256,12 +256,12 @@ class TaskInputFullInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[PersonInputFullInputData]]
     attachment: NotRequired[str]
-    check_time: NotRequired[datetime.time]
+    check_time: NotRequired[dt.time]
     comments: NotRequired[list[CommentInputFullInputData]]
     contact_email: NotRequired[str]
     demo_url: NotRequired[str]
     done: NotRequired[bool]
-    due_by: NotRequired[datetime.date]
+    due_by: NotRequired[dt.date]
     external_uuid: NotRequired[uuid.UUID]
     extra_data: NotRequired[dict[str, str]]
     image: NotRequired[str]
@@ -277,19 +277,19 @@ class TaskInputFullInputData(TypedDict):
     result: NotRequired[TaskResultInputFullInputData]
     steps: NotRequired[list[TaskStepInputFullInputData]]
     type: NotRequired[str]
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class TaskInputInputData(TypedDict):
     acceptancecriteria: NotRequired[list[AcceptanceCriteria]]
     assignees: NotRequired[list[PersonInputInputData]]
     attachment: NotRequired[str]
-    check_time: NotRequired[datetime.time]
+    check_time: NotRequired[dt.time]
     comments: NotRequired[list[CommentInputInputData]]
     contact_email: NotRequired[str]
     demo_url: NotRequired[str]
     done: NotRequired[bool]
-    due_by: NotRequired[datetime.date]
+    due_by: NotRequired[dt.date]
     external_uuid: NotRequired[uuid.UUID]
     extra_data: NotRequired[dict[str, str]]
     image: NotRequired[str]
@@ -305,19 +305,19 @@ class TaskInputInputData(TypedDict):
     result: NotRequired[TaskResultInputInputData]
     steps: NotRequired[list[TaskStepInputInputData]]
     type: NotRequired[str]
-    worked_hours: NotRequired[datetime.timedelta]
+    worked_hours: NotRequired[dt.timedelta]
 
 
 class TaskResultInputFullInputData(TypedDict):
     details: NotRequired[str]
     pk: NotRequired[int]
-    time_used: NotRequired[datetime.timedelta]
+    time_used: NotRequired[dt.timedelta]
 
 
 class TaskResultInputInputData(TypedDict):
     details: NotRequired[str]
     pk: NotRequired[int]
-    time_used: NotRequired[datetime.timedelta]
+    time_used: NotRequired[dt.timedelta]
 
 
 class TaskStepInputFullInputData(TypedDict):

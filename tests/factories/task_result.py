@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 
 import factory
 from factory import fuzzy
@@ -15,7 +15,7 @@ class TaskResultFactory(GenericDjangoModelFactory[TaskResult]):
         model = TaskResult
 
     details = fuzzy.FuzzyText(length=100)
-    time_used = datetime.timedelta(hours=10)
-    created_at = factory.LazyFunction(datetime.datetime.now)
+    time_used = dt.timedelta(hours=10)
+    created_at = factory.LazyFunction(dt.datetime.now)
 
     task = ForwardOneToOneFactory("tests.factories.TaskFactory")

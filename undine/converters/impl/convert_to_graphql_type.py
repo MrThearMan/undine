@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
+import datetime as dt
 import types
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator
@@ -172,22 +172,22 @@ def _(_: type[Decimal], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.datetime], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(_: type[dt.datetime], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLDateTime
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.date], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(_: type[dt.date], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLDate
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.time], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(_: type[dt.time], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLTime
 
 
 @convert_to_graphql_type.register
-def _(_: type[datetime.timedelta], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
+def _(_: type[dt.timedelta], **kwargs: Any) -> GraphQLInputType | GraphQLOutputType:
     return GraphQLDuration
 
 

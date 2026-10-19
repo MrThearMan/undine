@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import types
 import uuid
 from decimal import Decimal
@@ -100,11 +100,11 @@ class Params(NamedTuple):
         ),
         "GraphQLDate": Params(
             value=GraphQLDate,
-            expected=datetime.date | None,
+            expected=dt.date | None,
         ),
         "GraphQLDateTime": Params(
             value=GraphQLDateTime,
-            expected=datetime.datetime | None,
+            expected=dt.datetime | None,
         ),
         "GraphQLDecimal": Params(
             value=GraphQLDecimal,
@@ -112,7 +112,7 @@ class Params(NamedTuple):
         ),
         "GraphQLDuration": Params(
             value=GraphQLDuration,
-            expected=datetime.timedelta | None,
+            expected=dt.timedelta | None,
         ),
         "GraphQLEmail": Params(
             value=GraphQLEmail,
@@ -148,7 +148,7 @@ class Params(NamedTuple):
         ),
         "GraphQLTime": Params(
             value=GraphQLTime,
-            expected=datetime.time | None,
+            expected=dt.time | None,
         ),
         "GraphQLURL": Params(
             value=GraphQLURL,

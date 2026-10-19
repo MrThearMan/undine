@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import uuid
 from decimal import Decimal
 from typing import Any, NamedTuple
@@ -70,19 +70,19 @@ class Params(NamedTuple):
         ),
         "DateField": Params(
             input_type=DateField(),
-            output_type=datetime.date,
+            output_type=dt.date,
         ),
         "DateTimeField": Params(
             input_type=DateTimeField(),
-            output_type=datetime.datetime,
+            output_type=dt.datetime,
         ),
         "TimeField": Params(
             input_type=TimeField(),
-            output_type=datetime.time,
+            output_type=dt.time,
         ),
         "DurationField": Params(
             input_type=DurationField(),
-            output_type=datetime.timedelta,
+            output_type=dt.timedelta,
         ),
         "BinaryField": Params(
             input_type=BinaryField(),

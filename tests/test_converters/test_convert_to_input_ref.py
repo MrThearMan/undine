@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import decimal
 import uuid
 from enum import Enum
@@ -53,10 +53,10 @@ class ExampleTextChoices(TextChoices):
         int,
         float,
         decimal.Decimal,
-        datetime.datetime,
-        datetime.date,
-        datetime.time,
-        datetime.timedelta,
+        dt.datetime,
+        dt.date,
+        dt.time,
+        dt.timedelta,
         uuid.UUID,
         ExampleEnum,
         ExampleTextChoices,
