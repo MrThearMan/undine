@@ -4,6 +4,7 @@ import datetime as dt
 
 import pytest
 from django.contrib.contenttypes.models import ContentType
+from django.db.models.signals import post_save, pre_save
 
 from example_project.app.models import Comment, ServiceRequest, Task, TaskResult, TaskStep, TaskTypeChoices
 from example_project.example.models import Example, ExampleGeneric
@@ -981,6 +982,42 @@ def test_mutation__m2m__instance(undine_settings) -> None:
     task.refresh_from_db()
 
     assert list(task.assignees.all()) == [person]
+
+
+@pytest.mark.django_db
+def test_mutation__save_signals(undine_settings) -> None:
+    undine_settings.MUTATION_FULL_CLEAN = False
+
+    existing_task = TaskFactory.create(name="Existing Task")
+    received: list[tuple[str, str, bool | None, list[str] | None]] = []
+
+    def pre_save_handler(instance, update_fields, **kwargs) -> None:
+        fields = sorted(update_fields) if update_fields is not None else None
+        received.append(("pre_save", instance.name, None, fields))
+
+    def post_save_handler(instance, created, update_fields, **kwargs) -> None:
+        fields = sorted(update_fields) if update_fields is not None else None
+        received.append(("post_save", instance.name, created, fields))
+
+    pre_save.connect(pre_save_handler, sender=Task)
+    post_save.connect(post_save_handler, sender=Task)
+
+    data = [
+        {"pk": existing_task.pk, "name": "Updated Task"},
+        {"name": "New Task", "type": TaskTypeChoices.TASK},
+    ]
+    try:
+        mutate(model=Task, data=data)
+    finally:
+        pre_save.disconnect(pre_save_handler, sender=Task)
+        post_save.disconnect(post_save_handler, sender=Task)
+
+    assert received == [
+        ("pre_save", "Updated Task", None, ["name", "type"]),
+        ("pre_save", "New Task", None, None),
+        ("post_save", "Updated Task", False, ["name", "type"]),
+        ("post_save", "New Task", True, None),
+    ]
 
 
 @pytest.mark.django_db

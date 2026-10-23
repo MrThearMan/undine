@@ -662,6 +662,11 @@ def use_save_signals(
     instances: Iterable[Model],
     update_fields: set[str] | None,
 ) -> Generator[None, None, None]:
+    # Saving the instances sets 'adding' to False, so it must be read before the save.
+    created = {id(instance): instance._state.adding for instance in instances}  # noqa: SLF001
+    # Django's 'Model.save()' sends 'update_fields=None' when it creates an instance.
+    signal_update_fields = list(update_fields or [])
+
     if pre_save.has_listeners(model):
         for instance in instances:
             pre_save.send(
@@ -669,7 +674,7 @@ def use_save_signals(
                 instance=instance,
                 raw=False,
                 using=router.db_for_write(model, instance=instance),
-                update_fields=list(update_fields or []),
+                update_fields=None if created[id(instance)] else signal_update_fields,
             )
 
     yield
@@ -679,8 +684,8 @@ def use_save_signals(
             post_save.send(
                 sender=model,
                 instance=instance,
-                created=True,
-                update_fields=list(update_fields or []),
+                created=created[id(instance)],
+                update_fields=None if created[id(instance)] else signal_update_fields,
                 raw=False,
                 using=router.db_for_write(model, instance=instance),
             )
