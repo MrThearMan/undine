@@ -251,7 +251,7 @@ The gold standard for code-first plugin design: Relay, dataloader, auth-scopes, 
 
 ### Nexus
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -263,7 +263,7 @@ Historically important code-first builder with schema-file generation.
 
 ### TypeGraphQL
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -275,7 +275,7 @@ Decorator/class-based schema definition, middleware, auth, validation.
 
 ### Mercurius
 
-> Status: pending
+> Status: done
 
 > Stack: TS/Fastify
 
@@ -287,7 +287,7 @@ JIT compilation, caching, federation. Notable for performance ideas.
 
 ### graphql-ruby
 
-> Status: pending
+> Status: done
 
 > Stack: Ruby
 
@@ -299,7 +299,7 @@ Arguably the richest feature set anywhere: query analyzers, complexity/depth lim
 
 ### Absinthe
 
-> Status: pending
+> Status: done
 
 > Stack: Elixir
 
@@ -311,7 +311,7 @@ Compile-time schema verification, middleware pipeline, best-in-class subscriptio
 
 ### Hot Chocolate
 
-> Status: pending
+> Status: done
 
 > Stack: C#/.NET
 
@@ -323,7 +323,7 @@ Very feature-rich: auto filtering/sorting/projections from IQueryable, cost anal
 
 ### graphql-java
 
-> Status: pending
+> Status: done
 
 > Stack: Java
 
@@ -335,7 +335,7 @@ Instrumentation API, dataloader integration, execution strategies.
 
 ### Netflix DGS
 
-> Status: pending
+> Status: done
 
 > Stack: Java/Kotlin
 
@@ -347,7 +347,7 @@ Codegen, federation, error handling at scale.
 
 ### Spring for GraphQL
 
-> Status: pending
+> Status: done
 
 > Stack: Java
 
@@ -359,7 +359,7 @@ Notable for `@Argument`/projection binding and Querydsl/QueryByExample auto-repo
 
 ### graphql-kotlin
 
-> Status: pending
+> Status: done
 
 > Stack: Kotlin
 
@@ -371,7 +371,7 @@ Reflection-based code-first, federation, coroutine dataloaders.
 
 ### gqlgen
 
-> Status: pending
+> Status: done
 
 > Stack: Go
 
@@ -383,7 +383,7 @@ Schema-first with generated type-safe resolvers. Strong on complexity limits and
 
 ### async-graphql
 
-> Status: pending
+> Status: done
 
 > Stack: Rust
 
@@ -395,7 +395,7 @@ Full spec coverage including `@defer`/`@stream`, apollo tracing, federation, gua
 
 ### Juniper
 
-> Status: pending
+> Status: done
 
 > Stack: Rust
 
@@ -407,7 +407,7 @@ Older Rust implementation. Useful for macro-based schema definition contrasts.
 
 ### graphql-php
 
-> Status: pending
+> Status: done
 
 > Stack: PHP
 
@@ -419,7 +419,7 @@ Straight port of graphql-js with good query-complexity tooling.
 
 ### Lighthouse
 
-> Status: pending
+> Status: done
 
 > Stack: PHP/Laravel.
 
@@ -431,7 +431,7 @@ SDL-directive-driven ORM integration (`@all`, `@paginate`, `@whereConditions`). 
 
 ### Sangria
 
-> Status: pending
+> Status: done
 
 > Stack: Scala
 
@@ -443,7 +443,7 @@ Pioneered query complexity analysis, middleware, and deferred value resolution.
 
 ### Caliban
 
-> Status: pending
+> Status: done
 
 > Stack: Scala
 
@@ -455,7 +455,7 @@ Purely functional, derivation-based schemas, wrappers, federation, Tapir interop
 
 ### Hasura
 
-> Status: pending
+> Status: done
 
 > Stack: Haskell/Postgres
 
@@ -467,7 +467,7 @@ The reference for DB-to-GraphQL generation: filter/order/aggregate argument gram
 
 ### PostGraphile / Grafast
 
-> Status: pending
+> Status: done
 
 > Stack: Node/Postgres
 
@@ -479,7 +479,7 @@ Novel planning-based execution (Grafast) that batches at plan level rather than 
 
 ### pg_graphql
 
-> Status: pending
+> Status: done
 
 > Stack: Rust Postgres extension
 
@@ -491,7 +491,7 @@ GraphQL resolved entirely inside Postgres as a single SQL query.
 
 ### Dgraph
 
-> Status: pending
+> Status: done
 
 > Stack: Go
 
@@ -503,7 +503,7 @@ Native GraphQL graph database with `@auth`, `@lambda`, `@custom` directives.
 
 ### Neo4j GraphQL Library
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -515,7 +515,7 @@ Generates full CRUD plus nested filtering from SDL, compiling whole queries to s
 
 ### Apollo Router / Federation
 
-> Status: pending
+> Status: done
 
 > Stack: Rust
 
@@ -527,7 +527,7 @@ The federation spec reference. Relevant if Undine wants subgraph support.
 
 ### WunderGraph Cosmo
 
-> Status: pending
+> Status: done
 
 > Stack: Go/TS
 
@@ -539,7 +539,7 @@ Open-source federation platform with schema checks, analytics, and composition r
 
 ### GraphQL Mesh / Hive Gateway
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -551,7 +551,7 @@ Generates GraphQL from OpenAPI, gRPC, SOAP and databases. Broadest source-adapte
 
 ### API Platform
 
-> Status: pending
+> Status: done
 
 > Stack: PHP/Symfony
 
@@ -563,7 +563,7 @@ Generates REST and GraphQL from the same Doctrine entities plus attribute metada
 
 ### AWS AppSync
 
-> Status: pending
+> Status: done
 
 > Stack: Managed
 
@@ -573,7 +573,7 @@ Notable for its authorization-mode model and subscription filtering.
 
 ### Graphweaver
 
-> Status: pending
+> Status: done
 
 > Stack: TS
 
@@ -585,7 +585,7 @@ Generates a unified GraphQL API from multiple data sources with an admin UI. Dir
 
 ### WPGraphQL
 
-> Status: pending
+> Status: done
 
 > Stack: PHP/WordPress
 
