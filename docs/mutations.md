@@ -392,6 +392,45 @@ Note that this action applies to all related mutations executed from the "parent
 If you need more granular control, you should make the mutation a [custom mutation](#custom-mutations)
 instead.
 
+### Many-to-many through models
+
+If a many-to-many relation uses a custom through model with extra fields,
+link the related objects through the through model instead of the many-to-many field.
+
+```python
+-8<- "mutations/models_3.py"
+```
+
+The `memberships` reverse foreign key is a normal to-many relation, so you can use
+a `related` `MutationType` for the `Membership` model to set the extra fields.
+
+```python hl_lines="12 15"
+-8<- "mutations/mutation_type_related_through_model.py"
+```
+
+This creates the following `InputObjectTypes`:
+
+```graphql hl_lines="10"
+input ProjectMembership {
+  pk: Int
+  person: Int
+  role: String
+}
+
+input ProjectUpdateMutation {
+  pk: Int!
+  name: String
+  memberships: [ProjectMembership!]
+}
+```
+
+The through model's foreign key to `Project` is not nullable, so memberships that are
+left out of an update cannot be unlinked by setting the relation to null.
+Set the [related mutation action](#related-mutation-action) to `delete` or `ignore` instead.
+
+> A plain many-to-many `Input` for `members` doesn't work if the through model has required fields,
+> since Undine can't fill them in when it creates the through model instances.
+
 ### Order of operations
 
 The order of operations for executing a mutation using a `MutationType` is as follows:
