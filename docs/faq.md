@@ -32,3 +32,18 @@ Note that the [`QueryType` registry](queries.md#querytype-registry) allows only 
 for each model. If a service imports both schemas, two `QueryTypes` for the same model will
 conflict. Make sure each service only imports its own schema, or set `register=False` on
 the additional `QueryType`.
+
+## Why can't I use a model property as a `Field` reference?
+
+A model property hides database access behind normal attribute access.
+If the property reads a related object or a deferred field, each row runs its own query,
+and nothing catches this N+1 problem before runtime. This can happen even later,
+when someone adds a single model value to an existing property.
+
+Instead, compute the value in the database, so that the optimizer can fetch it with the rest of the query.
+Use an [expression reference](queries.md#expression-references) for values that can be written
+as an ORM expression, or a [`Calculation` reference](queries.md#calculation-references) for values
+that also need input arguments.
+
+If the value must be computed in Python, use a [function reference](queries.md#function-references)
+and add [custom optimizations](queries.md#custom-optimizations) for the data it needs.
