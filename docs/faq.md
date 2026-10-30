@@ -47,3 +47,17 @@ that also need input arguments.
 
 If the value must be computed in Python, use a [function reference](queries.md#function-references)
 and add [custom optimizations](queries.md#custom-optimizations) for the data it needs.
+
+## Why doesn't my model's `save()` method run in mutations?
+
+Undine saves model instances with `bulk_create()`, so that it can save many instances,
+including related ones, with few queries. Because of this, overrides of `Model.save()`
+are not called during mutations.
+
+Undine still sends the `pre_save` and `post_save` signals for each instance.
+If you have logic that must run every time a model instance is saved, put it in
+a `pre_save` signal receiver instead of a `save()` override.
+`pre_save` receivers can also change the instance before it's saved.
+
+If the logic only belongs to a single mutation, use a [custom mutation](mutations.md#custom-mutations)
+or an [`Input` conversion](mutations.md#conversion) instead.
