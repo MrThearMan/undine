@@ -190,9 +190,17 @@ By default, null values are placed according to your database default.
 Sometimes an `Order` may require additional expressions to be added as aliases
 to the queryset when the `Order` is used. For this, you can define a function
 that returns a dictionary of expressions and decorate it with the `aliases` decorator.
+Reference the alias with an `F` expression, since a string reference must point to a model field.
 
 ```python
 -8<- "ordering/order_aliases.py"
+```
+
+The aliases function gets the `GQLInfo` for the request, so the alias can depend on the request.
+For example, you can order the tasks assigned to the current user first.
+
+```python
+-8<- "ordering/order_aliases_request.py"
 ```
 
 ### Field name

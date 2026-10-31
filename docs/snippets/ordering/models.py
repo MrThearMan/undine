@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -11,3 +12,4 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
