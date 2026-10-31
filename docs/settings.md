@@ -680,7 +680,9 @@ even if validation is still not complete.
 
 Type: `int` | Default: `20`
 
-The maximum number of filters allowed to be used for filtering a single `QueryType`.
+The maximum number of filters that a request can use in a single filter argument.
+Filters inside `NOT`, `AND`, `OR` and `XOR` blocks are also counted.
+The limit applies to each filter argument in the operation, for example to each nested list field.
 
 ///
 
@@ -701,7 +703,8 @@ See the [`MaxListNestingDepthRule`](validation-rules.md#maxlistnestingdepthrule)
 
 Type: `int` | Default: `10`
 
-The maximum number of orderings allowed to be used for ordering a single `QueryType`.
+The maximum number of orders that a request can use in a single order argument.
+The limit applies to each order argument in the operation, for example to each nested list field.
 
 ///
 

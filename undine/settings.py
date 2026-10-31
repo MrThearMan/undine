@@ -91,10 +91,13 @@ class UndineDefaultSettings(NamedTuple):
     """
 
     MAX_FILTERS_PER_TYPE: int = 20
-    """The maximum number of filters allowed for a single `FilterSet`."""
+    """
+    The maximum number of filters that a request can use in a single filter argument.
+    Filters inside `NOT`, `AND`, `OR` and `XOR` blocks are also counted.
+    """
 
     MAX_ORDERS_PER_TYPE: int = 10
-    """The maximum number of orders allowed for a single `OrderSet`."""
+    """The maximum number of orders that a request can use in a single order argument."""
 
     # Pagination
 
