@@ -21,7 +21,7 @@ class ExampleHook(LifecycleHook):
         print("after")
 
         if info.is_awaitable(result):
-            return self.resolve_async(resolver=result, root=root, info=info, **kwargs)
+            return self.resolve_async(awaitable=result, root=root, info=info, **kwargs)
 
         return result
 
