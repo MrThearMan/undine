@@ -187,10 +187,10 @@ setting.
 ## InterfaceField
 
 When a `QueryType` implements an `InterfaceType`, all of the `InterfaceFields` on
-the `InterfaceType` are converted to `Fields` on the `QueryType`. The converted `Field` must
-correspond to a Model field on the `QueryType` Model, and the `InterfaceField` output type
-must match the GraphQL output type converted from the Model field. In other words, all `InterfaceFields`
-must correspond to Model fields when implemented on a `QueryType`.
+the `InterfaceType` become `Fields` on the `QueryType`. If the `QueryType` doesn't define
+a `Field` with the same name, one is created from the Model field with that name.
+In that case, the Model field must exist on the `QueryType` Model, and its GraphQL output type
+must match the `InterfaceField` output type.
 
 An `InterfaceField` always requires its desired GraphQL output type to be defined.
 
@@ -198,8 +198,17 @@ An `InterfaceField` always requires its desired GraphQL output type to be define
 -8<- "interfaces/interface_field.py"
 ```
 
+A `QueryType` can also define the `Field` itself. Then the `Field` can use any reference,
+for example an expression, a function, or a Model field with a different name.
+Only the GraphQL output type and arguments of the `Field` must match the `InterfaceField`.
+This way, each implementation can compute the value in its own way.
+
+```python
+-8<- "interfaces/interface_field_implement.py"
+```
+
 Optionally, you can define arguments that the `InterfaceField` requires.
-If defined, these must also match the Model field of the implementing `QueryType`.
+If defined, the `Field` on the implementing `QueryType` must have the same arguments.
 
 ```python
 -8<- "interfaces/interface_field_arguments.py"
