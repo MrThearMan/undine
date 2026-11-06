@@ -5,3 +5,4 @@ class Task(models.Model):
     name = models.CharField(max_length=255)
 
     image = models.ImageField()
+    attachment = models.FileField(null=True)

@@ -104,3 +104,52 @@ See the [Implementations]{:target="_blank"} section in the GraphQL multipart req
 for client side libraries that support file uploads.
 
 [Implementations]: https://github.com/jaydenseric/graphql-multipart-request-spec?tab=readme-ov-file#implementations
+
+## Reading file data
+
+By default, the `File` and `Image` scalars return the URL of the file. To return more
+data about the file, use a `TypedDict` as the `Field` reference and add a custom resolver.
+
+```python
+-8<- "file_uploads/query_type_file_info.py"
+```
+
+```graphql
+type FileInfoType {
+  url: String!
+  name: String!
+}
+
+type TaskType {
+  attachment: FileInfoType
+}
+```
+
+> Only add data that is stored in the database or computed without the storage backend.
+> For example, `FieldFile.size` asks the storage backend for the file size. With a remote
+> storage like S3, this is one request for every row in the result.
+
+### Image dimensions
+
+To return the width and height of an image, store them on the model with the `width_field`
+and `height_field` arguments of `ImageField`. Django updates these fields when the image is
+saved, and you can add them to the `QueryType` like other model fields.
+
+```python
+-8<- "file_uploads/models_image_dimensions.py"
+```
+
+```python
+-8<- "file_uploads/query_type_image_dimensions.py"
+```
+
+```graphql
+type TaskType {
+  image: Image!
+  imageWidth: Int!
+  imageHeight: Int!
+}
+```
+
+> Without these fields, `ImageFieldFile.width` and `ImageFieldFile.height` open and read
+> the image file for every row.
