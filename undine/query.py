@@ -177,7 +177,8 @@ class QueryTypeMeta(type):
         Indicates whether the given value belongs to this `QueryType`.
         """
         # Purposely not using `isinstance` here since models can inherit from other models.
-        return type(value) is cls.__model__
+        # `__class__` instead of `type()` so that lazy objects like `request.user` match their wrapped model.
+        return value.__class__ is cls.__model__
 
 
 class QueryType[T: Model](metaclass=QueryTypeMeta):

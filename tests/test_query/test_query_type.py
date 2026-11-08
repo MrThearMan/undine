@@ -3,6 +3,7 @@ from __future__ import annotations
 from inspect import cleandoc
 
 import pytest
+from django.utils.functional import SimpleLazyObject
 from graphql import DirectiveLocation, GraphQLEnumType, GraphQLField, GraphQLNonNull, GraphQLString
 
 from example_project.app.models import Project, Task
@@ -118,6 +119,13 @@ def test_query_type__is_type_of() -> None:
 
     assert MyQueryType.__is_type_of__(Task(), mock_gql_info()) is True
     assert MyQueryType.__is_type_of__(Project(), mock_gql_info()) is False
+
+
+def test_query_type__is_type_of__lazy_object() -> None:
+    class MyQueryType(QueryType[Task]): ...
+
+    assert MyQueryType.__is_type_of__(SimpleLazyObject(Task), mock_gql_info()) is True
+    assert MyQueryType.__is_type_of__(SimpleLazyObject(Project), mock_gql_info()) is False
 
 
 def test_query_type__filterset() -> None:
