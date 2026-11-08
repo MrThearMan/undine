@@ -26,6 +26,7 @@ nav = [
   { "Pagination" = "pagination.md" },
   { "Subscriptions" = "subscriptions.md" },
   { "Global Object IDs" = "global-object-ids.md" },
+  { "Authentication" = "authentication.md" },
   { "File Upload" = "file-upload.md" },
   { "Persisted Documents" = "persisted-documents.md" },
   { "Interfaces" = "interfaces.md" },
