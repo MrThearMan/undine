@@ -132,6 +132,23 @@ whether a given request reads from or writes to the cache.
 Response caching also sends `Cache-Control` and `Age` headers to the client, so that browser
 caches and CDN caches can store the response.
 
+To let clients revalidate a response instead of downloading it again, add Django's
+[`ConditionalGetMiddleware`][ConditionalGetMiddleware]{:target="_blank"} to your `MIDDLEWARE`.
+It adds an `ETag` header to responses for `GET` requests, and answers a request whose
+`If-None-Match` header matches with an empty `304 Not Modified` response.
+
+[ConditionalGetMiddleware]: https://docs.djangoproject.com/en/stable/ref/middleware/#django.middleware.http.ConditionalGetMiddleware
+
+```python
+MIDDLEWARE = [
+    # ...
+    "django.middleware.http.ConditionalGetMiddleware",
+]
+```
+
+> The `ETag` is computed from the response body, so the operation still runs, or is read from
+> the response cache, on every request. A `304` response only saves sending the body to the client.
+
 ## Visibility caching
 
 In a schema that uses [visibility](visibility.md), [response caching](#response-caching) is forced to be per-user when
