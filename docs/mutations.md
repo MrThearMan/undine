@@ -217,6 +217,11 @@ has been set to `None`.
 
 This can be useful for doing things like sending emails.
 
+Note that `__after__` runs after the mutation's database transaction has been committed.
+An error raised in `__after__` is returned to the client, but it does not undo the saved changes.
+To check the saved data and roll back the mutation on failure, use the [`@atomic`](#atomic-mutations)
+directive, so that the whole operation runs in one transaction.
+
 ### Custom mutations
 
 You can define your own custom logic by defining the `__mutate__` or `__bulk_mutate__` method on
