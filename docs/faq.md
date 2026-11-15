@@ -61,3 +61,27 @@ a `pre_save` signal receiver instead of a `save()` override.
 
 If the logic only belongs to a single mutation, use a [custom mutation](mutations.md#custom-mutations)
 or an [`Input` conversion](mutations.md#conversion) instead.
+
+## Does Undine support query batching?
+
+No, on purpose. Query batching sends a JSON array of operations in one HTTP request,
+which saved round trips over HTTP/1.1. With HTTP/2 or HTTP/3, many requests share
+one connection, so batching no longer saves round trips. It would also need extra
+limits, since each operation in a batch could use all of the per-request limits.
+
+Serve your API over HTTP/2 or HTTP/3, and turn off batching in your client,
+for example Apollo Client's [`BatchHttpLink`]{:target="_blank"}.
+
+[`BatchHttpLink`]: https://www.apollographql.com/docs/react/api/link/apollo-link-batch-http
+
+To fetch several things in one request, select several root fields in one operation.
+Use aliases if you need the same entrypoint more than once.
+
+```graphql
+query {
+  tasks { name }
+  projects { name }
+  firstTask: task(pk: 1) { name }
+  secondTask: task(pk: 2) { name }
+}
+```
