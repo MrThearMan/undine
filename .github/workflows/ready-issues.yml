@@ -1,0 +1,29 @@
+name: Sync ready to start label
+
+# Adds the 'ready to start' label to open issues with no open blocking issues, and removes it from the rest.
+# GitHub sends no workflow event when a dependency is added or removed, so a daily run catches those changes.
+
+on:
+  issues:
+    types: [closed, reopened, deleted]
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ready-issues
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - name: Sync ready to start label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .github/scripts/ready_issues.py --sync

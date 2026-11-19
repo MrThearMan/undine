@@ -143,6 +143,14 @@ run-python cmd:
 run-python-stdin:
     @DJANGO_SETTINGS_MODULE=example_project.project.settings uv run python -c 'import sys; import django; django.setup(); exec(sys.stdin.read())'
 
+# List open issues that have no open blocking issues
+issues-ready:
+    @python .github/scripts/ready_issues.py
+
+# Sync the "ready to start" label on issues with their blocking issues (use "--dry-run" to only print changes)
+issues-sync *args:
+    @python .github/scripts/ready_issues.py --sync {{args}}
+
 # Print the GraphQL schema
 schema:
     @uv run python manage.py print_schema
