@@ -17,3 +17,4 @@ Load these on demand when it matches what you're doing:
 - [Mypy plugin development](.agents/docs/mypy-plugin-development.md): Working on the Undine mypy plugin
 - [Documentation style](.agents/docs/documentation.md): Writing pages under `docs/`
 - [Library settings](.agents/docs/library-settings.md): Editing `undine/settings.py`
+- [Rejected features](.agents/docs/rejected-features.md): Proposing a feature, or checking why one was rejected
