@@ -270,7 +270,7 @@ class MutationType[T: Model](metaclass=MutationTypeMeta):
     __model_inputs__: ClassVar[dict[str, Input]]
 
     @classmethod
-    def __mutate__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> Any:
+    def __mutate__(cls, instance: T, info: GQLInfo, input_data: Any) -> Any:
         """Method used for single object mutations."""
         return mutate(
             model=cls.__model__,
@@ -280,7 +280,7 @@ class MutationType[T: Model](metaclass=MutationTypeMeta):
         )
 
     @classmethod
-    def __bulk_mutate__(cls, instances: list[T], info: GQLInfo, input_data: list[dict[str, Any]]) -> Any:
+    def __bulk_mutate__(cls, instances: list[T], info: GQLInfo, input_data: list[Any]) -> Any:
         """Method used for bulk mutations."""
         return mutate(
             model=cls.__model__,
@@ -290,15 +290,15 @@ class MutationType[T: Model](metaclass=MutationTypeMeta):
         )
 
     @classmethod
-    def __permissions__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __permissions__(cls, instance: T, info: GQLInfo, input_data: Any) -> None:
         """Check permissions for a mutation using this `MutationType`."""
 
     @classmethod
-    def __validate__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __validate__(cls, instance: T, info: GQLInfo, input_data: Any) -> None:
         """Validate all input data given to this `MutationType`."""
 
     @classmethod
-    def __after__(cls, instance: T, info: GQLInfo, input_data: dict[str, Any]) -> None:
+    def __after__(cls, instance: T, info: GQLInfo, input_data: Any) -> None:
         """A function that is run after a mutation using this `MutationType` has been executed."""
 
     @classmethod

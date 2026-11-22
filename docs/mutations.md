@@ -902,7 +902,7 @@ if any errors are thrown from top-level resolvers of a mutation operation.
 ## Generating input data types
 
 The `input_data` dictionary passed to `__mutate__`, `__bulk_mutate__`, `__permissions__`,
-`__validate__`, and `__after__` is typed as `dict[str, Any]` by default.
+`__validate__`, and `__after__` is typed as `Any` by default.
 Undine can generate `TypedDict` definitions for the actual shape of that
 dictionary for every `MutationType` in your schema.
 
