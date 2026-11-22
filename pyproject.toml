@@ -99,6 +99,7 @@ lint = [
 ]
 
 [tool.uv]
+required-version = ">=0.13.9"
 default-groups = "all"
 
 [tool.uv.sources]

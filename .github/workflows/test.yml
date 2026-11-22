@@ -20,6 +20,7 @@ jobs:
       exclude: '[{"os": "windows-latest", "python-version": "3.15"}]'
       allow-prereleases: true
       uv-cache-suffix: "test"
+      uv-version: ">=0.13.9"
       coveralls: ${{ fromJSON(vars.COVERALLS_ENABLED || 'false') }}
 
   test-async:
@@ -29,6 +30,7 @@ jobs:
       os: '["ubuntu-latest"]'
       env: '{"ASYNC": "true"}'
       uv-cache-suffix: 'test-async'
+      uv-version: ">=0.13.9"
       coveralls: false
 
   test-mypy:
@@ -59,7 +61,6 @@ jobs:
       - name: "Set up uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.12.10"
           enable-cache: true
           cache-suffix: "mypy"
 
