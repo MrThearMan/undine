@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from collections import defaultdict
 from types import FunctionType
 from typing import TYPE_CHECKING, Any
 
@@ -8,8 +9,10 @@ from asgiref.sync import sync_to_async
 from graphql import GraphQLError, Undefined
 
 from undine.exceptions import GraphQLErrorGroup
+from undine.typing import MutationInstanceCache
 from undine.utils.graphql.utils import graphql_error_path
 from undine.utils.model_utils import get_instance_or_raise, get_instances_or_raise
+from undine.utils.mutation_instance_cache import add_cached_instance, fetch_instances, get_cached_instance
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -36,41 +39,66 @@ def pre_mutation(
     mutation_type: type[MutationType],
 ) -> None:
     """Run all pre-mutation handling for the given instance and input data."""
+    instance_cache = _reset_instance_cache(info)
+    add_cached_instance(instance_cache, instance)
+    _fetch_related_instances(instance_cache, mutation_type=mutation_type, items=[input_data])
+    _run_steps(
+        instance=instance,
+        info=info,
+        input_data=input_data,
+        mutation_type=mutation_type,
+        instance_cache=instance_cache,
+    )
+
+
+def _run_steps(
+    instance: Model,
+    info: GQLInfo,
+    input_data: dict[str, Any],
+    mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
+) -> None:
     _fetch_model_inputs(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
     _add_hidden_inputs(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
     _run_function_inputs(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
     _permissions(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
     _validate(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
     _remove_input_only_inputs(
         instance=instance,
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=instance_cache,
     )
 
 
@@ -81,16 +109,21 @@ def pre_mutation_many(
     mutation_type: type[MutationType],
 ) -> None:
     """Run all pre-mutation handling for the given instances and input data."""
+    instance_cache = _reset_instance_cache(info)
+    for instance in instances:
+        add_cached_instance(instance_cache, instance)
+    _fetch_related_instances(instance_cache, mutation_type=mutation_type, items=input_data)
     errors: list[GraphQLError] = []
 
     for i, (instance, sub_data) in enumerate(zip(instances, input_data, strict=True)):
         try:
             with graphql_error_path(info, key=i) as sub_info:
-                pre_mutation(
+                _run_steps(
                     instance=instance,
                     info=sub_info,
                     input_data=sub_data,
                     mutation_type=mutation_type,
+                    instance_cache=instance_cache,
                 )
         except GraphQLError as error:
             errors.append(error)
@@ -102,11 +135,47 @@ def pre_mutation_many(
         raise GraphQLErrorGroup(errors)
 
 
+def _reset_instance_cache(info: GQLInfo) -> MutationInstanceCache:
+    instance_cache = MutationInstanceCache()
+    info.context.undine_internal.mutation_instance_cache = instance_cache
+    return instance_cache
+
+
+def _fetch_related_instances(
+    instance_cache: MutationInstanceCache,
+    *,
+    mutation_type: type[MutationType],
+    items: list[dict[str, Any]],
+) -> None:
+    """POC: Walk the input tree once and fetch existing related instances, one query per related model."""
+    pks_by_model: defaultdict[type[Model], list[Any]] = defaultdict(list)
+
+    stack: list[tuple[type[MutationType], dict[str, Any]]] = [(mutation_type, item) for item in items]
+    while stack:
+        current_type, data = stack.pop()
+        for input_field in current_type.__related_inputs__.values():
+            field_data = data.get(input_field.name)
+            if not field_data:
+                continue
+
+            related_type: type[MutationType] = input_field.ref
+            sub_items: list[dict[str, Any]] = field_data if input_field.many else [field_data]
+            for sub_item in sub_items:
+                pk = sub_item.get("pk")
+                if pk is not None:
+                    pks_by_model[related_type.__model__].append(pk)
+                stack.append((related_type, sub_item))
+
+    for model, pks in pks_by_model.items():
+        fetch_instances(instance_cache, model=model, pks=pks)
+
+
 def _fetch_model_inputs(
     instance: Model,
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     for input_field in mutation_type.__model_inputs__.values():
         field_data = input_data.get(input_field.name)
@@ -124,6 +193,7 @@ def _fetch_model_inputs(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
 
@@ -132,6 +202,7 @@ def _add_hidden_inputs(
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     for input_field in mutation_type.__hidden_inputs__.values():
         if isinstance(input_field.ref, FunctionType):
@@ -145,6 +216,7 @@ def _add_hidden_inputs(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
 
@@ -153,6 +225,7 @@ def _run_function_inputs(
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     for input_field in mutation_type.__function_inputs__.values():
         if input_field.hidden:  # Hidden function inputs have already been run
@@ -169,6 +242,7 @@ def _run_function_inputs(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
 
@@ -177,6 +251,7 @@ def _permissions(
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     with graphql_error_path(info):
         mutation_type.__permissions__(instance, info, input_data)
@@ -209,6 +284,7 @@ def _permissions(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
 
@@ -217,6 +293,7 @@ def _validate(
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     errors: list[GraphQLError] = []
 
@@ -246,6 +323,7 @@ def _validate(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
     with graphql_error_path(info):
@@ -257,6 +335,7 @@ def _remove_input_only_inputs(
     info: GQLInfo,
     input_data: dict[str, Any],
     mutation_type: type[MutationType],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     for input_field in mutation_type.__input_only_inputs__.values():
         input_data.pop(input_field.name, None)
@@ -266,6 +345,7 @@ def _remove_input_only_inputs(
         mutation_type=mutation_type,
         info=info,
         input_data=input_data,
+        instance_cache=instance_cache,
     )
 
 
@@ -274,6 +354,7 @@ def _run_for_related_mutation_types(
     mutation_type: type[MutationType],
     info: GQLInfo,
     input_data: dict[str, Any],
+    instance_cache: MutationInstanceCache,
 ) -> None:
     errors: list[GraphQLError] = []
 
@@ -291,10 +372,11 @@ def _run_for_related_mutation_types(
 
                 try:
                     func(
-                        instance=model(),
+                        instance=get_cached_instance(instance_cache, model=model, pk=dict_data.get("pk")) or model(),
                         info=sub_info,
                         input_data=dict_data,
                         mutation_type=related_mutation_type,
+                        instance_cache=instance_cache,
                     )
 
                 except GraphQLError as error:
@@ -310,10 +392,11 @@ def _run_for_related_mutation_types(
                 try:
                     with graphql_error_path(sub_info, key=i) as list_info:
                         func(
-                            instance=model(),
+                            instance=get_cached_instance(instance_cache, model=model, pk=item.get("pk")) or model(),
                             info=list_info,
                             input_data=item,
                             mutation_type=related_mutation_type,
+                            instance_cache=instance_cache,
                         )
 
                 except GraphQLError as error:
@@ -370,6 +453,7 @@ async def pre_mutation_async(
         info=info,
         input_data=input_data,
         mutation_type=mutation_type,
+        instance_cache=MutationInstanceCache(),  # POC: async not ported
     )
 
 

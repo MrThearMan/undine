@@ -277,6 +277,7 @@ class MutationType[T: Model](metaclass=MutationTypeMeta):
             data=input_data,
             related_action=cls.__related_action__,
             counter=info.context.undine_internal.mutation_counter,
+            instance_cache=info.context.undine_internal.mutation_instance_cache,
         )
 
     @classmethod
@@ -287,6 +288,7 @@ class MutationType[T: Model](metaclass=MutationTypeMeta):
             data=input_data,
             related_action=cls.__related_action__,
             counter=info.context.undine_internal.mutation_counter,
+            instance_cache=info.context.undine_internal.mutation_instance_cache,
         )
 
     @classmethod

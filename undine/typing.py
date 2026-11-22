@@ -766,6 +766,13 @@ class MutationInstanceCounter:
     count: int = 0
 
 
+@dataclasses.dataclass(slots=True)
+class MutationInstanceCache:
+    """POC: Existing model instances fetched during a single mutation entrypoint, by model and primary key."""
+
+    instances: dict[tuple[type[Model], Any], Model] = dataclasses.field(default_factory=dict)
+
+
 @dataclasses.dataclass(slots=True, kw_only=True)
 class UndineInternalContext:
     """Undine internal implementation context."""
@@ -775,6 +782,9 @@ class UndineInternalContext:
 
     mutation_counter: MutationInstanceCounter = dataclasses.field(default_factory=MutationInstanceCounter)
     """Counts the model instances mutated during this operation. See `MUTATION_INSTANCE_LIMIT`."""
+
+    mutation_instance_cache: MutationInstanceCache = dataclasses.field(default_factory=MutationInstanceCache)
+    """POC: Existing instances shared by pre-mutation checks and `mutate()`. Reset for each mutation entrypoint."""
 
     fragment_details: dict[str, FragmentDetails] | None = None
     """Details of the fragments in the operation's document. Only used with fragment arguments."""

@@ -30,6 +30,7 @@ from undine.utils.model_utils import (
     use_save_signals,
 )
 from undine.utils.mutation_counter import add_mutated_instances
+from undine.utils.mutation_instance_cache import fetch_instances
 from undine.utils.text import to_camel_case
 
 if TYPE_CHECKING:
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     from django.db.models.fields.related_descriptors import ForeignKeyDeferredAttribute, ManyToManyDescriptor
 
     from undine.dataclasses import RelInfo
+    from undine.typing import MutationInstanceCache
 
 __all__ = [
     "mutate",
@@ -53,6 +55,7 @@ def mutate[T: Model](
     data: dict[str, Any],
     related_action: RelatedAction = ...,
     counter: MutationInstanceCounter | None = ...,
+    instance_cache: MutationInstanceCache | None = ...,
 ) -> T: ...
 
 
@@ -63,6 +66,7 @@ def mutate[T: Model](
     data: list[dict[str, Any]],
     related_action: RelatedAction = ...,
     counter: MutationInstanceCounter | None = ...,
+    instance_cache: MutationInstanceCache | None = ...,
 ) -> list[T]: ...
 
 
@@ -73,6 +77,7 @@ def mutate[T: Model](
     data: dict[str, Any] | list[dict[str, Any]],
     related_action: RelatedAction = RelatedAction.null,
     counter: MutationInstanceCounter | None = None,
+    instance_cache: MutationInstanceCache | None = None,
 ) -> T | list[T]:
     """
     Mutates instance(s) of the given model using the given input data.
@@ -122,11 +127,12 @@ def mutate[T: Model](
     :param related_action: The action to take for existing related objects that are not included in the input.
                            Specifically used for reverse one-to-one and reverse one-to-many relations.
     :param counter: Counter to record the mutated instances in.
+    :param instance_cache: POC: Existing instances that were already fetched, to reuse instead of fetching again.
     """
     if counter is None:
         counter = MutationInstanceCounter()
 
-    start_node = MutationNode(model=model, related_action=related_action)
+    start_node = MutationNode(model=model, related_action=related_action, instance_cache=instance_cache)
 
     if isinstance(data, list):
         start_node.handle_many(data)
@@ -152,6 +158,9 @@ class MutationNode:
 
     related_action: RelatedAction = RelatedAction.null
     """What happens to related objects that are not included in the input?"""
+
+    instance_cache: MutationInstanceCache | None = None
+    """POC: Existing instances that were already fetched."""
 
     mutation_func: Callable[[], list[Model]] = dataclasses.field(init=False)
     """The function that should be run to mutate the instances."""
@@ -268,7 +277,7 @@ class MutationNode:
         """Handle data for a single object."""
         pk = data.get("pk")
         # We need to fetch the existing instance so that non-updated fields are present during bulk-create.
-        instance = self.model() if pk is None else get_instance_or_raise(model=self.model, pk=pk)
+        instance = self.model() if pk is None else fetch_instances(self.instance_cache, model=self.model, pks=[pk])[pk]
 
         self.instances.append(instance)
         self.handle_data(data, instance)
@@ -282,7 +291,7 @@ class MutationNode:
         pks = [item["pk"] for item in data if "pk" in item]
         if pks:
             # We need to fetch existing instances so that non-updated fields are present during bulk-create.
-            instance_map = {inst.pk: inst for inst in get_instances_or_raise(model=self.model, pks=pks)}
+            instance_map = fetch_instances(self.instance_cache, model=self.model, pks=pks)
 
         for item in data:
             pk = item.get("pk")
@@ -304,7 +313,9 @@ class MutationNode:
                 setattr(instance, field_name, field_data)
                 continue
 
-            node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
+            node = MutationNode(
+                model=rel_info.related_model, related_action=self.related_action, instance_cache=self.instance_cache
+            )  # type: ignore[arg-type]
             self.handle_relation(field_data, rel_info, instance, node)
 
         return self
@@ -516,7 +527,11 @@ class MutationNode:
         target_name = m2m.field.m2m_field_name() if reverse else m2m.field.m2m_reverse_field_name()
         symmetrical = m2m.rel.symmetrical
 
-        node = MutationNode(model=m2m.through, related_action=self.related_action)  # type: ignore[arg-type]
+        node = MutationNode(
+            model=m2m.through,  # type: ignore[arg-type]
+            related_action=self.related_action,
+            instance_cache=self.instance_cache,
+        )
         node.mutation_func = partial(
             node.mutate_through,
             source_name=source_name,
@@ -592,7 +607,9 @@ class MutationNode:
         if not rel_info.related_nullable:
             raise GraphQLRelationNotNullableError(field_name=rel_info.related_name, model=node.model)
 
-        disconnect_node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
+        disconnect_node = MutationNode(
+            model=rel_info.related_model, related_action=self.related_action, instance_cache=self.instance_cache
+        )  # type: ignore[arg-type]
 
         for instance in instances:
             setattr(instance, rel_info.related_name, None)  # type: ignore[arg-type]
@@ -609,7 +626,9 @@ class MutationNode:
 
     def _remove_instances(self, instances: set[Model], rel_info: RelInfo, node: MutationNode) -> None:
         """Remove the given related instances when a relation is updated."""
-        remove_node = MutationNode(model=rel_info.related_model, related_action=self.related_action)  # type: ignore[arg-type]
+        remove_node = MutationNode(
+            model=rel_info.related_model, related_action=self.related_action, instance_cache=self.instance_cache
+        )  # type: ignore[arg-type]
         remove_node.instances.extend(instances)
         remove_node.mutation_func = remove_node.mutate_delete
 
