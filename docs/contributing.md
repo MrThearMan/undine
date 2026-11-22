@@ -93,21 +93,22 @@ but if not, you can also ask for one.
 
 ## Creating a new release
 
-1. Increment the version in `pyproject.toml`, loosely following [semantic versioning] rules.
-2. Push the change to the `main` branch with the commit message `Bump version`.
-3. [Draft a new release] on GitHub.
-   - Use `v{version}` (e.g. v1.2.3) for the tag name and `Release {version}` for the release title,
-     using the same version that's in `pyproject.toml`. Note that the release will be made
-     with the `pyproject.toml` version and not the tag name!
-   - Fill in the release description.
-   - Add any attachments when applicable.
-4. Publish the release. This will start the `release` pipeline in [GitHub Actions].
-5. Check that the release pipeline was successful. If not, delete the tag from origin
-   with `git push --delete origin {tag_name}` and fix the issue before trying again.
+1. Choose the new version, loosely following [semantic versioning] rules.
+2. Run the [release pipeline] on the `main` branch with the new version (e.g. `1.2.3`).
+   You can also start it with `gh workflow run release.yml -f version=1.2.3`.
+   The pipeline will:
+   - Update the version in `pyproject.toml`, `uv.lock`, and the bug report issue template.
+   - Push the change to the `main` branch with the commit message `Bump version to {version}`,
+     together with an annotated tag `v{version}`.
+   - Create a GitHub release titled `Release {version}` with generated release notes,
+     and publish the package to PyPI at the same time.
+3. Check that the release pipeline was successful. If the release or the PyPI publish failed
+   for an external reason, like an expired token, fix it and re-run only the failed jobs.
+   Re-running uses the same bump commit, so if the code needs a fix, release a new version instead.
+4. Edit the release description on GitHub if the generated release notes need changes.
 
 [semantic versioning]: https://semver.org/
-[Draft a new release]: https://github.com/MrThearMan/undine/releases/new
-[Github Actions]: https://github.com/features/actions
+[release pipeline]: https://github.com/MrThearMan/undine/actions/workflows/release.yml
 
 ## Setting up the environment
 
