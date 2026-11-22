@@ -1,14 +1,100 @@
 name: Release
 
+# Bumps the version, pushes the bump commit and tag to main, then creates the GitHub release
+# and publishes to PyPI at the same time.
+#
+# Pushing to main needs the 'RELEASE_TOKEN' secret: a token that can bypass the main branch ruleset.
+# 'GITHUB_TOKEN' cannot bypass the ruleset.
+
 on:
-  release:
-    types:
-      - released
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, e.g. 0.5.2"
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ inputs.version }}
 
 jobs:
+  bump:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.push.outputs.sha }}
+    steps:
+      - name: "Check that the release is made from main"
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Releases can only be made from main, not from '$GITHUB_REF'."
+          exit 1
+
+      - name: "Check out repository"
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: "Bump version in the issue template, pyproject.toml and uv.lock"
+        run: |
+          python .github/scripts/bump_version.py "$VERSION"
+          uv version "$VERSION" --no-sync
+
+      - name: "Commit, tag and push"
+        id: push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Bump version to $VERSION"
+          git tag --annotate "v$VERSION" --message "Release $VERSION"
+          git push --atomic origin HEAD:main "v$VERSION"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   release:
-    uses: MrThearMan/CI/.github/workflows/release.yml@v0.6.2
-    with:
-      uv-cache-suffix: "release"
-    secrets:
-      pypi-token: ${{ secrets.PYPI_API_TOKEN }}
+    needs: bump
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: "Create GitHub release"
+        run: |
+          gh release create "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Release $VERSION" \
+            --generate-notes \
+            --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  publish:
+    needs: bump
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out the bump commit"
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.bump.outputs.sha }}
+
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+
+      - name: "Build distributions"
+        run: uv build
+
+      - name: "Publish on PyPI"
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
