@@ -133,8 +133,8 @@ def get_flattened_generic_params(tp: Any) -> tuple[Any, ...]:
     return tuple(a for arg in get_args(tp) for a in (get_args(arg) if isinstance(arg, types.UnionType) else (arg,)))
 
 
-def get_all_subclasses[T: type](cls: T) -> list[T]:
-    all_subclasses = []
+def get_all_subclasses[T](cls: type[T]) -> list[type[T]]:
+    all_subclasses: list[type[T]] = []
 
     for subclass in cls.__subclasses__():
         all_subclasses.append(subclass)
