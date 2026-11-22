@@ -151,6 +151,10 @@ issues-ready:
 issues-sync *args:
     @python .github/scripts/ready_issues.py --sync {{args}}
 
+# Start the release pipeline on GitHub for a new version (e.g. "just release 1.2.3")
+release version:
+    @gh workflow run release.yml --ref main --field version="{{version}}"
+
 # Print the GraphQL schema
 schema:
     @uv run python manage.py print_schema

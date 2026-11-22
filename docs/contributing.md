@@ -95,7 +95,7 @@ but if not, you can also ask for one.
 
 1. Choose the new version, loosely following [semantic versioning] rules.
 2. Run the [release pipeline] on the `main` branch with the new version (e.g. `1.2.3`).
-   You can also start it with `gh workflow run release.yml -f version=1.2.3`.
+   You can also start it with `just release 1.2.3`.
    The pipeline will:
    - Update the version in `pyproject.toml`, `uv.lock`, and the bug report issue template.
    - Push the change to the `main` branch with the commit message `Bump version to {version}`,
